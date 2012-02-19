@@ -6,6 +6,11 @@ import tokenize
 import cStringIO
 from token import ENDMARKER , NT_OFFSET , NUMBER , STRING , NEWLINE , INDENT , DEDENT , LPAR , RPAR , LSQB , RSQB , COLON , COMMA , SEMI , PLUS , MINUS , STAR , SLASH , VBAR , AMPER , LESS , GREATER , EQUAL , DOT , PERCENT , BACKQUOTE , LBRACE , RBRACE , EQEQUAL , NOTEQUAL , LESSEQUAL , GREATEREQUAL , TILDE , CIRCUMFLEX , LEFTSHIFT , RIGHTSHIFT , DOUBLESTAR , PLUSEQUAL , MINEQUAL , STAREQUAL , SLASHEQUAL , PERCENTEQUAL , AMPEREQUAL , VBAREQUAL , CIRCUMFLEXEQUAL , LEFTSHIFTEQUAL , RIGHTSHIFTEQUAL , DOUBLESTAREQUAL , DOUBLESLASH , DOUBLESLASHEQUAL , AT , NAME , ERRORTOKEN , N_TOKENS , OP
 
+def indent(text, indention="    "):
+    """ This function indents a text with a default of four spaces """
+    lines = text.split('\n')
+    return '\n'.join(map(lambda s: indention+s, lines))
+
 class Scope(object):
     def __init__(self,name,indent,docstr=''):
         self.subscopes = []
@@ -50,7 +55,7 @@ class Scope(object):
                 if l.find('=') > -1 and var == l.split('=')[0].strip():
                     self.locals.remove(l)
 
-    def get_code(self):
+    def get_code(self, first_indent=False, indention="    "):
         str = ""
         #str += 'class _PyCmplNoType:\n    def __getattr__(self,name):\n        return None\n'
         if len(self.docstr) > 0: str += '"""'+self.docstr+'"""\n'
@@ -58,10 +63,11 @@ class Scope(object):
             str += i.get_code() + '\n'
         #str += 'class _PyCmplNoType:\n    def __getattr__(self,name):\n        return None\n'
         for sub in self.subscopes:
-            str += sub.get_code()
+            str += sub.get_code(first_indent=True, indention=indention)
         for l in self.locals:
-            if not l.startswith('import'): str += l+'\n'
+            str += l+'\n'
 
+        if first_indent: str = indent(str, indention = indention)
         return str
 
     def pop(self,indent):
@@ -81,22 +87,23 @@ class Scope(object):
 
 class Class(Scope):
     def __init__(self, name, supers, indent, docstr=''):
-        Scope.__init__(self,name,indent, docstr)
+        super(Class, self).__init__(name,indent, docstr)
         self.supers = supers
     def copy_decl(self,indent=0):
         c = Class(self.name,self.supers,indent, self.docstr)
         for s in self.subscopes:
             c.add_scope(s.copy_decl(indent+1))
         return c
-    def get_code(self):
-        str = '%sclass %s' % (self.currentindent(),self.name)
+    def get_code(self, first_indent=False, indention="    "):
+        str = 'class %s' % (self.name)
         if len(self.supers) > 0: str += '(%s)' % ','.join(self.supers)
         str += ':\n'
-        if len(self.docstr) > 0: str += self.childindent()+'"""'+self.docstr+'"""\n'
-        if len(self.subscopes) > 0:
-            for s in self.subscopes: str += s.get_code()
-        else:
-            str += '%spass\n' % self.childindent()
+        str += super(Class, self).get_code(True, indention)
+        #if len(self.docstr) > 0: str += self.childindent()+'"""'+self.docstr+'"""\n'
+        #if len(self.subscopes) > 0:
+        #    for s in self.subscopes: str += s.get_code()
+        #else:
+        #    str += '%spass\n' % self.childindent()
         return str
 
 
@@ -106,12 +113,13 @@ class Function(Scope):
         self.params = params
     def copy_decl(self,indent=0):
         return Function(self.name,self.params,indent, self.docstr)
-    def get_code(self):
-        str = "%sdef %s(%s):\n" % \
-            (self.currentindent(),self.name,','.join(self.params))
-        if len(self.docstr) > 0: str += self.childindent()+'"""'+self.docstr+'"""\n'
-        str += "%spass\n" % self.childindent()
-        print "func_code:", self.locals
+    def get_code(self, first_indent=False, indention="    "):
+        str = "def %s(%s):\n" % (self.name,','.join(self.params))
+        #if len(self.docstr) > 0: str += self.childindent()+'"""'+self.docstr+'"""\n'
+        str += super(Function, self).get_code(True, indention)
+        if not len(self.subscopes):
+            str += indent("pass\n", indention=indention)
+        print "func", self.locals
         return str
 
 class Import(object):

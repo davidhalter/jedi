@@ -14,6 +14,7 @@ class Supi(A, datetime.datetime):
   """ test123 """
   class 2
 
+  static_var = 0
   def __init__():
     import time
     pass
@@ -44,7 +45,6 @@ def func():
 for i in range(3):
     asdf = aaa
     print 'blub'
-
 
 
 datetime. 
