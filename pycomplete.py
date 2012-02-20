@@ -40,12 +40,12 @@ class Completer(object):
         self.sc = sc # TODO rm
         src = sc.get_code()
         dbg("source: %s" % src)
-        try: exec(src) in self.compldict
-        except: dbg("parser: %s, %s" % (sys.exc_info()[0],sys.exc_info()[1]))
-        for l in sc.locals:
-            dbg("local: %s" % l)
-            try: exec(l) in self.compldict
-            except: dbg("locals: %s, %s [%s]" % (sys.exc_info()[0],sys.exc_info()[1],l))
+        #try: exec(src) in self.compldict
+        #except: dbg("parser: %s, %s" % (sys.exc_info()[0],sys.exc_info()[1]))
+        #for l in sc.locals:
+        #    dbg("local: %s" % l)
+        #    try: exec(l) in self.compldict
+        #    except: dbg("locals: %s, %s [%s]" % (sys.exc_info()[0],sys.exc_info()[1],l))
 
     def _cleanstr(self,doc):
         return doc.replace('"',' ').replace("'",' ')
@@ -184,7 +184,7 @@ for c in all:
 print ''
 showdbg()
 
-cmpl.parser.print_parser_code()
+print cmpl.parser.top.get_code()
 
 import code
 sh = code.InteractiveConsole(locals=locals())

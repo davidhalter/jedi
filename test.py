@@ -10,6 +10,10 @@ from token import OP as OP_TEST, INDENT as INDENT_TEST
 aaa = 6; bbb = 13
 ccc = bbb; d = open("test.py");
 
+class Intro:
+    def testing(self, string):
+      return string+","
+
 class Supi(A, datetime.datetime):
   """ test123 """
   class 2

@@ -4,10 +4,9 @@ TODO This is a parser
 import sys
 import tokenize
 import cStringIO
-from token import ENDMARKER , NT_OFFSET , NUMBER , STRING , NEWLINE , INDENT , DEDENT , LPAR , RPAR , LSQB , RSQB , COLON , COMMA , SEMI , PLUS , MINUS , STAR , SLASH , VBAR , AMPER , LESS , GREATER , EQUAL , DOT , PERCENT , BACKQUOTE , LBRACE , RBRACE , EQEQUAL , NOTEQUAL , LESSEQUAL , GREATEREQUAL , TILDE , CIRCUMFLEX , LEFTSHIFT , RIGHTSHIFT , DOUBLESTAR , PLUSEQUAL , MINEQUAL , STAREQUAL , SLASHEQUAL , PERCENTEQUAL , AMPEREQUAL , VBAREQUAL , CIRCUMFLEXEQUAL , LEFTSHIFTEQUAL , RIGHTSHIFTEQUAL , DOUBLESTAREQUAL , DOUBLESLASH , DOUBLESLASHEQUAL , AT , NAME , ERRORTOKEN , N_TOKENS , OP
 
-def indent(text, indention="    "):
-    """ This function indents a text with a default of four spaces """
+def indent_block(text, indention="    "):
+    """ This function indents a text block with a default of four spaces """
     lines = text.split('\n')
     return '\n'.join(map(lambda s: indention+s, lines))
 
@@ -43,10 +42,6 @@ class Scope(object):
     def add_import(self, imp):
         self.imports.append(imp)
 
-    def copy_decl(self,indent=0):
-        """ Copy a scope's declaration only, at the specified indent level - not local variables """
-        return Scope(self.name,indent,self.docstr)
-
     def _checkexisting(self,test):
         "Convienance function... keep out duplicates"
         if test.find('=') > -1:
@@ -67,43 +62,27 @@ class Scope(object):
         for l in self.locals:
             str += l+'\n'
 
-        if first_indent: str = indent(str, indention = indention)
-        return str
+        if first_indent: str = indent_block(str, indention = indention)
+        return "_%s_%s" % (self.indent, str)
 
-    def pop(self,indent):
-        #print 'pop scope: [%s] to [%s]' % (self.indent,indent)
-        outer = self
-        while outer.parent != None and outer.indent >= indent:
-            outer = outer.parent
-        return outer
-
-    def currentindent(self):
-        #print 'parse current indent: %s' % self.indent
-        return '    '*self.indent
-
-    def childindent(self):
-        #print 'parse child indent: [%s]' % (self.indent+1)
-        return '    '*(self.indent+1)
+    def is_empty(self):
+        """ 
+        this function returns true if there are no subscopes, imports, locals.
+        """
+        return not (self.locals, self.imports, self.subscopes)
 
 class Class(Scope):
     def __init__(self, name, supers, indent, docstr=''):
-        super(Class, self).__init__(name,indent, docstr)
+        super(Class, self).__init__(name, indent, docstr)
         self.supers = supers
-    def copy_decl(self,indent=0):
-        c = Class(self.name,self.supers,indent, self.docstr)
-        for s in self.subscopes:
-            c.add_scope(s.copy_decl(indent+1))
-        return c
+
     def get_code(self, first_indent=False, indention="    "):
         str = 'class %s' % (self.name)
         if len(self.supers) > 0: str += '(%s)' % ','.join(self.supers)
         str += ':\n'
         str += super(Class, self).get_code(True, indention)
-        #if len(self.docstr) > 0: str += self.childindent()+'"""'+self.docstr+'"""\n'
-        #if len(self.subscopes) > 0:
-        #    for s in self.subscopes: str += s.get_code()
-        #else:
-        #    str += '%spass\n' % self.childindent()
+        if self.is_empty():
+            str += indent_block("pass\n", indention=indention)
         return str
 
 
@@ -111,14 +90,13 @@ class Function(Scope):
     def __init__(self, name, params, indent, docstr=''):
         Scope.__init__(self,name,indent, docstr)
         self.params = params
-    def copy_decl(self,indent=0):
-        return Function(self.name,self.params,indent, self.docstr)
+
     def get_code(self, first_indent=False, indention="    "):
         str = "def %s(%s):\n" % (self.name,','.join(self.params))
         #if len(self.docstr) > 0: str += self.childindent()+'"""'+self.docstr+'"""\n'
         str += super(Function, self).get_code(True, indention)
-        if not len(self.subscopes) and not len(self.imports):
-            str += indent("pass\n", indention=indention)
+        if self.is_empty():
+            str += indent_block("pass\n", indention=indention)
         print "func", self.locals
         return str
 
@@ -152,7 +130,8 @@ class Import(object):
 
 class PyFuzzyParser(object):
     """
-    This class is used to parse a Python file, it then divides them into
+    This class is used to parse a Python file, it then divides them into a
+    class structure of differnt scopes.
     """
     def __init__(self):
         self.top = Scope('global',0)
@@ -162,30 +141,30 @@ class PyFuzzyParser(object):
         #returns (dottedname, nexttoken)
         name = []
         if pre is None:
-            tokentype, token, indent = self.next()
-            if tokentype != NAME and token != '*':
-                return ('', token)
-        else: token = pre
-        name.append(token)
+            tokentype, tok, indent = self.next()
+            if tokentype != tokenize.NAME and tok != '*':
+                return ('', tok)
+        else: tok = pre
+        name.append(tok)
         while True:
-            tokentype, token, indent = self.next()
-            if token != '.': break
-            tokentype, token, indent = self.next()
-            if tokentype != NAME: break
-            name.append(token)
-        return (".".join(name), token)
+            tokentype, tok, indent = self.next()
+            if tok != '.': break
+            tokentype, tok, indent = self.next()
+            if tokentype != tokenize.NAME: break
+            name.append(tok)
+        return (".".join(name), tok)
 
     def _parseimportlist(self):
         imports = []
         while True:
-            name, token = self._parsedotname()
+            name, tok = self._parsedotname()
             if not name: break
             name2 = ''
-            if token == 'as': name2, token = self._parsedotname()
+            if tok == 'as': name2, tok = self._parsedotname()
             imports.append((name, name2))
-            while token != "," and "\n" not in token:
-                tokentype, token, indent = self.next()
-            if token != ",": break
+            while tok != "," and "\n" not in tok:
+                tokentype, tok, indent = self.next()
+            if tok != ",": break
         return imports
 
     def _parseparen(self):
@@ -193,28 +172,27 @@ class PyFuzzyParser(object):
         names = []
         level = 1
         while True:
-            tokentype, token, indent = self.next()
-            if token in (')', ',') and level == 1:
+            tokentype, tok, indent = self.next()
+            if tok in (')', ',') and level == 1:
                 if '=' not in name: name = name.replace(' ', '')
                 names.append(name.strip())
                 name = ''
-            if token == '(':
+            if tok == '(':
                 level += 1
                 name += "("
-            elif token == ')':
+            elif tok == ')':
                 level -= 1
                 if level == 0: break
                 else: name += ")"
-            elif token == ',' and level == 1:
+            elif tok == ',' and level == 1:
                 pass
             else:
-                name += "%s " % str(token)
+                name += "%s " % str(tok)
         return names
 
-    def _parsefunction(self,indent):
-        self.scope=self.scope.pop(indent)
+    def _parsefunction(self, indent):
         tokentype, fname, ind = self.next()
-        if tokentype != NAME: return None
+        if tokentype != tokenize.NAME: return None
 
         tokentype, open, ind = self.next()
         if open != '(': return None
@@ -223,12 +201,11 @@ class PyFuzzyParser(object):
         tokentype, colon, ind = self.next()
         if colon != ':': return None
 
-        return Function(fname,params,indent)
+        return Function(fname, params, indent)
 
-    def _parseclass(self,indent):
-        self.scope=self.scope.pop(indent)
+    def _parseclass(self, indent):
         tokentype, cname, ind = self.next()
-        if tokentype != NAME: return None
+        if tokentype != tokenize.NAME: return None
 
         super = []
         tokentype, next, ind = self.next()
@@ -240,83 +217,44 @@ class PyFuzzyParser(object):
 
     def _parseassignment(self):
         assign=''
-        tokentype, token, indent = self.next()
-        if tokentype == tokenize.STRING or token == 'str':
+        tokentype, tok, indent = self.next()
+        if tokentype == tokenize.STRING or tok == 'str':
             return '""'
-        elif token == '(' or token == 'tuple':
+        elif tok == '(' or tok == 'tuple':
             return '()'
-        elif token == '[' or token == 'list':
+        elif tok == '[' or tok == 'list':
             return '[]'
-        elif token == '{' or token == 'dict':
+        elif tok == '{' or tok == 'dict':
             return '{}'
         elif tokentype == tokenize.NUMBER:
             return '0'
-        elif token == 'open' or token == 'file':
+        elif tok == 'open' or tok == 'file':
             return 'file'
-        elif token == 'None':
+        elif tok == 'None':
             return '_PyCmplNoType()'
-        elif token == 'type':
+        elif tok == 'type':
             return 'type(_PyCmplNoType)' #only for method resolution
         else:
-            assign += token
+            assign += tok
             level = 0
             while True:
-                tokentype, token, indent = self.next()
-                if token in ('(','{','['):
+                tokentype, tok, indent = self.next()
+                if tok in ('(','{','['):
                     level += 1
-                elif token in (']','}',')'):
+                elif tok in (']','}',')'):
                     level -= 1
                     if level == 0: break
                 elif level == 0:
-                    if token in (';','\n'): break
-                    assign += token
+                    if tok in (';','\n'): break
+                    assign += tok
         return "%s" % assign
 
     def next(self):
-        type, token, (lineno, indent), end, self.parserline = self.gen.next()
+        type, tok, (lineno, indent), end, self.parserline = self.gen.next()
         if lineno == self.curline:
             #print 'line found [%s] scope=%s' % (line.replace('\n',''),self.scope.name)
             self.currentscope = self.scope
-        return (type, token, indent)
-
-    def _adjustvisibility(self):
-        newscope = Scope('result',0)
-        scp = self.currentscope
-        while scp != None:
-            if type(scp) == Function:
-                slice = 0
-                #Handle 'self' params
-                if scp.parent != None and type(scp.parent) == Class:
-                    slice = 1
-                    newscope.add_local('%s = %s' % (scp.params[0],scp.parent.name))
-                for p in scp.params[slice:]:
-                    i = p.find('=')
-                    if len(p) == 0: continue
-                    pvar = ''
-                    ptype = ''
-                    if i == -1:
-                        pvar = p
-                        ptype = '_PyCmplNoType()'
-                    else:
-                        pvar = p[:i]
-                        ptype = _sanitize(p[i+1:])
-                    if pvar.startswith('**'):
-                        pvar = pvar[2:]
-                        ptype = '{}'
-                    elif pvar.startswith('*'):
-                        pvar = pvar[1:]
-                        ptype = '[]'
-
-                    newscope.add_local('%s = %s' % (pvar,ptype))
-
-            for s in scp.subscopes:
-                ns = s.copy_decl(0)
-                newscope.add_scope(ns)
-            for l in scp.locals: newscope.add_local(l)
-            scp = scp.parent
-
-        self.currentscope = newscope
-        return self.currentscope
+        return (type, tok, indent)
 
     #p.parse(vim.current.buffer[:],vim.eval("line('.')"))
     def parse(self,text,curline=0):
@@ -328,12 +266,12 @@ class PyFuzzyParser(object):
         try:
             freshscope=True
             while True:
-                tokentype, token, indent = self.next()
-                #dbg( 'main: token=[%s] indent=[%s]' % (token,indent))
+                tokentype, tok, indent = self.next()
+                dbg( 'main: tok=[%s] indent=[%s]' % (tok,indent))
 
-                if tokentype == DEDENT or token == "pass":
-                    self.scope = self.scope.pop(indent)
-                elif token == 'def':
+                if tokentype == tokenize.DEDENT:
+                    self.scope = self.scope.parent
+                elif tok == 'def':
                     func = self._parsefunction(indent)
                     if func is None:
                         print "function: syntax error..."
@@ -341,7 +279,7 @@ class PyFuzzyParser(object):
                     dbg("new scope: function")
                     freshscope = True
                     self.scope = self.scope.add_scope(func)
-                elif token == 'class':
+                elif tok == 'class':
                     cls = self._parseclass(indent)
                     if cls is None:
                         print "class: syntax error..."
@@ -349,26 +287,25 @@ class PyFuzzyParser(object):
                     freshscope = True
                     dbg("new scope: class")
                     self.scope = self.scope.add_scope(cls)
-
-                elif token == 'import':
+                elif tok == 'import':
                     imports = self._parseimportlist()
                     for mod, alias in imports:
                         self.scope.add_import(Import(mod, alias))
                     freshscope = False
-                elif token == 'from':
-                    mod, token = self._parsedotname()
-                    if not mod or token != "import":
+                elif tok == 'from':
+                    mod, tok = self._parsedotname()
+                    if not mod or tok != "import":
                         print "from: syntax error..."
                         continue
                     names = self._parseimportlist()
                     for name, alias in names:
                         self.scope.add_import(Import(name, alias, mod))
                     freshscope = False
-                elif tokentype == STRING:
-                    if freshscope: self.scope.doc(token)
-                elif tokentype == NAME:
-                    name,token = self._parsedotname(token)
-                    if token == '=':
+                elif tokentype == tokenize.STRING:
+                    if freshscope: self.scope.doc(tok)
+                elif tokentype == tokenize.NAME:
+                    name,tok = self._parsedotname(tok)
+                    if tok == '=':
                         stmt = self._parseassignment()
                         dbg("parseassignment: %s = %s" % (name, stmt))
                         if stmt != None:
@@ -376,14 +313,10 @@ class PyFuzzyParser(object):
                     freshscope = False
         except StopIteration: #thrown on EOF
             pass
-        except:
-            dbg("parse error: %s, %s @ %s" %
-                (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
-        return self._adjustvisibility()
-
-    def print_parser_code(self):
-        """ prints the result of the parser operation """
-        print self.scope.get_code()
+        #except:
+        #    dbg("parse error: %s, %s @ %s" %
+        #        (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
+        return self.top #self._adjustvisibility()
 
 def _sanitize(str):
     val = ''
