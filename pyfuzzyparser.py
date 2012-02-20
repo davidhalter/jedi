@@ -117,7 +117,7 @@ class Function(Scope):
         str = "def %s(%s):\n" % (self.name,','.join(self.params))
         #if len(self.docstr) > 0: str += self.childindent()+'"""'+self.docstr+'"""\n'
         str += super(Function, self).get_code(True, indention)
-        if not len(self.subscopes):
+        if not len(self.subscopes) and not len(self.imports):
             str += indent("pass\n", indention=indention)
         print "func", self.locals
         return str
