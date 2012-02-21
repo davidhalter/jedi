@@ -10,7 +10,7 @@ from token import OP as OP_TEST, INDENT as INDENT_TEST
 aaa = 6; bbb = 13
 ccc = bbb; d = open("test.py");
 
-class Intro:
+class Intro(object):
     def testing(self, string):
       return string+","
 
@@ -20,23 +20,24 @@ class Supi(A, datetime.datetime):
 
   static_var = 0
   def __init__():
-    import time
     pass
   def test(self):
+    import time
     print 1
     return A()
 
 class A():
-  class B():
+  #class B():
   def test(self):
     return A()
 
-class C:
 a = A()
 
 b = a.test()
 
-def blub:
+class Empty():
+  pass
+def blub():
 
 cdef = 5
 def func():

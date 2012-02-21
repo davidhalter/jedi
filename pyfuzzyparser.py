@@ -8,12 +8,16 @@ import cStringIO
 
 def indent_block(text, indention="    "):
     """ This function indents a text block with a default of four spaces """
+    temp = ''
+    while text and text[-1] == '\n':
+        temp += text[-1]
+        text = text[:-1]
     lines = text.split('\n')
-    return '\n'.join(map(lambda s: indention + s, lines))
+    return '\n'.join(map(lambda s: indention + s, lines)) + temp
 
 
 class Scope(object):
-    def __init__(self, name, indent, docstr=''):
+    def __init__(self, name, indent, line_nr, docstr=''):
         self.subscopes = []
         self.locals = []
         self.imports = []
@@ -21,6 +25,7 @@ class Scope(object):
         self.parent = None
         self.name = name
         self.indent = indent
+        self.line_nr = line_nr
 
     def add_scope(self, sub):
         #print 'push scope: [%s@%s]' % (sub.name, sub.indent)
@@ -56,30 +61,30 @@ class Scope(object):
                     self.locals.remove(l)
 
     def get_code(self, first_indent=False, indention="    "):
-        str = ""
+        string = ""
         if len(self.docstr) > 0:
-            str += '"""' + self.docstr + '"""\n'
+            string += '"""' + self.docstr + '"""\n'
         for i in self.imports:
-            str += i.get_code() + '\n'
+            string += i.get_code() + '\n'
         for sub in self.subscopes:
-            str += sub.get_code(first_indent=True, indention=indention)
+            string += str(sub.line_nr) + sub.get_code(first_indent=True, indention=indention)
         for l in self.locals:
-            str += l + '\n'
+            string += l + '\n'
 
         if first_indent:
-            str = indent_block(str, indention=indention)
-        return "_%s_%s" % (self.indent, str)
+            string = indent_block(string, indention=indention)
+        return string
 
     def is_empty(self):
         """
         this function returns true if there are no subscopes, imports, locals.
         """
-        return not (self.locals, self.imports, self.subscopes)
+        return not (self.locals or self.imports or self.subscopes)
 
 
 class Class(Scope):
-    def __init__(self, name, supers, indent, docstr=''):
-        super(Class, self).__init__(name, indent, docstr)
+    def __init__(self, name, supers, indent, line_nr, docstr=''):
+        super(Class, self).__init__(name, indent, line_nr, docstr)
         self.supers = supers
 
     def get_code(self, first_indent=False, indention="    "):
@@ -88,14 +93,15 @@ class Class(Scope):
             str += '(%s)' % ','.join(self.supers)
         str += ':\n'
         str += super(Class, self).get_code(True, indention)
+        print "get_code class %s %i" % (self.name, self.is_empty())
         if self.is_empty():
-            str += indent_block("pass\n", indention=indention)
+            str += "pass\n"
         return str
 
 
 class Function(Scope):
-    def __init__(self, name, params, indent, docstr=''):
-        Scope.__init__(self, name, indent, docstr)
+    def __init__(self, name, params, indent, line_nr, docstr=''):
+        Scope.__init__(self, name, indent, line_nr, docstr)
         self.params = params
 
     def get_code(self, first_indent=False, indention="    "):
@@ -104,26 +110,71 @@ class Function(Scope):
         #    str += self.childindent()+'"""'+self.docstr+'"""\n'
         str += super(Function, self).get_code(True, indention)
         if self.is_empty():
-            str += indent_block("pass\n", indention=indention)
+            str += "pass\n"
         print "func", self.locals
         return str
 
 
 class Import(object):
     """
-    stores the imports of class files
-    """
-    def __init__(self, namespace, alias='', from_ns='', star=False):
+    stores the imports of any scopes
+    """  # TODO check star?
+    def __init__(self, line_nr, namespace, alias='', from_ns='', star=False):
         """
+        @param line_nr
         @param namespace: the namespace which is imported
         @param alias: the alias (valid in the current namespace)
         @param from_ns: from declaration in an import
         @param star: if a star is used -> from time import *
         """
+        self.line_nr = line_nr
         self.namespace = namespace
         self.alias = alias
         self.from_ns = from_ns
         self.star = star
+
+    def get_code(self):
+        if self.alias:
+            ns_str = "%s as %s" % (self.namespace, self.alias)
+        else:
+            ns_str = self.namespace
+        if self.from_ns:
+            if self.star:
+                ns_str = '*'
+            return "test from %s import %s" % (self.from_ns, ns_str)
+        else:
+            return "test import " + ns_str
+
+
+class Statement(object):
+    """ This is the super class for Local and Functions """
+    def __init__(self, line_nr, stmt):
+        """
+        @param line_nr
+        @param stmt the statement string
+        """
+        self.line_nr = line_nr
+        self. stmt = stmt
+
+    def get_code(self):
+        raise NotImplementedError()
+
+
+class Local(object):
+    """
+    stores locals variables of any scopes
+    """
+    def __init__(self, line_nr, left, right=None, is_global=False):
+        """
+        @param line_nr
+        @param left: the left part of the local assignment
+        @param right: the right part of the assignment, must not be set
+                      (in case of global)
+        @param is_global: defines a global variable
+        """
+        self.line_nr = line_nr
+        self.left = left
+        self.right = right
 
     def get_code(self):
         if self.alias:
@@ -144,7 +195,7 @@ class PyFuzzyParser(object):
     class structure of differnt scopes.
     """
     def __init__(self):
-        self.top = Scope('global', 0)
+        self.top = Scope('global', 0, 0)
         self.scope = self.top
 
     def _parsedotname(self, pre=None):
@@ -223,7 +274,7 @@ class PyFuzzyParser(object):
         if colon != ':':
             return None
 
-        return Function(fname, params, indent)
+        return Function(fname, params, indent, self.line_nr)
 
     def _parseclass(self, indent):
         tokentype, cname, ind = self.next()
@@ -237,7 +288,7 @@ class PyFuzzyParser(object):
         elif next != ':':
             return None
 
-        return Class(cname, super, indent)
+        return Class(cname, super, indent, self.line_nr)
 
     def _parseassignment(self):
         assign = ''
@@ -276,14 +327,11 @@ class PyFuzzyParser(object):
         return "%s" % assign
 
     def next(self):
-        type, tok, (lineno, indent), end, self.parserline = self.gen.next()
-        if lineno == self.curline:
-            self.currentscope = self.scope
+        type, tok, position, dummy, self.parserline = self.gen.next()
+        (self.line_nr, indent) = position
         return (type, tok, indent)
 
-    #p.parse(vim.current.buffer[:], vim.eval("line('.')"))
-    def parse(self, text, curline=0):
-        self.curline = int(curline)
+    def parse(self, text):
         buf = cStringIO.StringIO(''.join(text) + '\n')
         self.gen = tokenize.generate_tokens(buf.readline)
         self.currentscope = self.scope
@@ -292,7 +340,8 @@ class PyFuzzyParser(object):
             freshscope = True
             while True:
                 tokentype, tok, indent = self.next()
-                dbg('main: tok=[%s] indent=[%s]' % (tok, indent))
+                dbg('main: tok=[%s] type=[%s] indent=[%s]'\
+                    % (tok, tokentype, indent))
 
                 if tokentype == tokenize.DEDENT:
                     self.scope = self.scope.parent
@@ -315,7 +364,7 @@ class PyFuzzyParser(object):
                 elif tok == 'import':
                     imports = self._parseimportlist()
                     for mod, alias in imports:
-                        self.scope.add_import(Import(mod, alias))
+                        self.scope.add_import(Import(self.line_nr, mod, alias))
                     freshscope = False
                 elif tok == 'from':
                     mod, tok = self._parsedotname()
@@ -324,7 +373,8 @@ class PyFuzzyParser(object):
                         continue
                     names = self._parseimportlist()
                     for name, alias in names:
-                        self.scope.add_import(Import(name, alias, mod))
+                        i = Import(self.line_nr, name, alias, mod)
+                        self.scope.add_import(i)
                     freshscope = False
                 elif tokentype == tokenize.STRING:
                     if freshscope:
@@ -342,7 +392,7 @@ class PyFuzzyParser(object):
         #except:
         #    dbg("parse error: %s, %s @ %s" %
         #        (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
-        return self.top  # self._adjustvisibility()
+        return self.top
 
 
 def _sanitize(str):

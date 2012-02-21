@@ -38,7 +38,7 @@ class Completer(object):
         self.parser = PyFuzzyParser()
 
     def evalsource(self, text, line=0):
-        sc = self.parser.parse(text, line)
+        sc = self.parser.parse(text)
         self.sc = sc  # TODO rm
         src = sc.get_code()
         dbg("source: %s" % src)
@@ -208,7 +208,10 @@ print ''
 showdbg()
 
 print cmpl.parser.top.get_code()
+#print cmpl.parser.top.subscopes[1].subscopes[0].get_code()
 
+p = cmpl.parser
+s = p.top
 import code
 sh = code.InteractiveConsole(locals=locals())
 #sh.interact("InteractiveConsole")
