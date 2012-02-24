@@ -1,5 +1,19 @@
 """"
 TODO This is a parser
+
+scope
+    imports
+    subscopes
+    statements
+
+Ignored simple statements:
+ - print (no use for it)
+ - assert
+ - break, continue (because we avoid loops)
+ - del (also no used, since this script avoids loops and files)
+ - exec (dangerous - not controllable)
+
+global is a special case and will not be used here
 """
 import sys
 import tokenize
@@ -21,6 +35,7 @@ class Scope(object):
         self.subscopes = []
         self.locals = []
         self.imports = []
+        self.statements = []
         self.docstr = docstr
         self.parent = None
         self.name = name
@@ -28,7 +43,8 @@ class Scope(object):
         self.line_nr = line_nr
 
     def add_scope(self, sub):
-        #print 'push scope: [%s@%s]' % (sub.name, sub.indent)
+        if sub == None:
+            print 'push scope: [%s@%s]' % (sub.name, sub.indent)
         sub.parent = self
         self.subscopes.append(sub)
         return sub
@@ -61,6 +77,7 @@ class Scope(object):
                     self.locals.remove(l)
 
     def get_code(self, first_indent=False, indention="    "):
+        """ Returns the code of the current scope. """
         string = ""
         if len(self.docstr) > 0:
             string += '"""' + self.docstr + '"""\n'
@@ -98,6 +115,31 @@ class Class(Scope):
             str += "pass\n"
         return str
 
+class Flow(Scope):
+    """
+    Used to describe programming structure - flow statements,
+    which indent code, but are not classes or functions:
+    - for
+    - while
+    - if
+    - try
+    - with
+    Therefore statements like else, except and finally are also here,
+    they are now saved in the root flow elements, but in the next variable.
+    """
+    def __init__(self, code, functions, indent, line_nr):
+        super(Flow, self).__init__(name, indent, line_nr, None)
+        name = code
+        self.next = None
+
+    def get_code(self, first_indent=False, indention="    "):
+        str = 'class %s' % (self.name)
+        str += ':\n'
+        str += super(Class, self).get_code(True, indention)
+        print "get_code class %s %i" % (self.name, self.is_empty())
+        if self.is_empty():
+            str += "pass\n"
+        return str
 
 class Function(Scope):
     def __init__(self, name, params, indent, line_nr, docstr=''):
@@ -117,16 +159,23 @@ class Function(Scope):
 
 class Import(object):
     """
-    stores the imports of any scopes
-    """  # TODO check star?
+    stores the imports of any scopes.
+
+    >>> 1+1
+    2
+
+    :param line_nr: Line number.
+    :param namespace: the namespace which is imported.
+    :param alias: the alias (valid in the current namespace).
+    :param from_ns: from declaration in an import.
+    :param star: if a star is used -> from time import *.
+
+    :returns: test
+    :raises:
+
+    TODO check star?
+    """
     def __init__(self, line_nr, namespace, alias='', from_ns='', star=False):
-        """
-        @param line_nr
-        @param namespace: the namespace which is imported
-        @param alias: the alias (valid in the current namespace)
-        @param from_ns: from declaration in an import
-        @param star: if a star is used -> from time import *
-        """
         self.line_nr = line_nr
         self.namespace = namespace
         self.alias = alias
@@ -147,14 +196,14 @@ class Import(object):
 
 
 class Statement(object):
-    """ This is the super class for Local and Functions """
-    def __init__(self, line_nr, stmt):
+    """ This is the class for Local and Functions """
+    def __init__(self, code, locals, functions):
         """
         @param line_nr
         @param stmt the statement string
         """
         self.line_nr = line_nr
-        self. stmt = stmt
+        self.stmt = stmt
 
     def get_code(self):
         raise NotImplementedError()
@@ -189,6 +238,22 @@ class Local(object):
             return "test import " + ns_str
 
 
+class Name(object):
+    """
+    Used to define names in python.
+    Which means the whole namespace/class/function stuff.
+    So a name like "module.class.function"
+    would result in an array of [module, class, function]
+    """
+    def __init__(self, names):
+        super(Name, self).__init__()
+        self.names = names
+
+    def get_code(self):
+        """ returns the name again in a full string format """
+        return ".".join(names)
+
+
 class PyFuzzyParser(object):
     """
     This class is used to parse a Python file, it then divides them into a
@@ -198,16 +263,16 @@ class PyFuzzyParser(object):
         self.top = Scope('global', 0, 0)
         self.scope = self.top
 
-    def _parsedotname(self, pre=None):
-        #returns (dottedname, nexttoken)
-        name = []
-        if pre is None:
+    def _parsedotname(self, pre_used_token=None):
+        """ @return (dottedname, nexttoken) """
+        names = []
+        if pre_used_token is None:
             tokentype, tok, indent = self.next()
             if tokentype != tokenize.NAME and tok != '*':
-                return ('', tok)
+                return ([], tok)
         else:
-            tok = pre
-        name.append(tok)
+            tok = pre_used_token
+        names.append(tok)
         while True:
             tokentype, tok, indent = self.next()
             if tok != '.':
@@ -215,8 +280,29 @@ class PyFuzzyParser(object):
             tokentype, tok, indent = self.next()
             if tokentype != tokenize.NAME:
                 break
-            name.append(tok)
-        return (".".join(name), tok)
+            names.append(tok)
+        return (names, tok)
+
+
+    def _parse_value_list(self, pre_used_token=None):
+        """
+        A value list is a comma separated list. This is used for:
+        >>> for a,b,self.c in enumerate(test)
+        """
+        value_list = []
+        if pre_used_token:
+            n = self._parsedotname(pre_used_token)
+            if n:
+                value_list.append(n)
+
+        tokentype, tok, indent = self.next()
+        while tok != 'in' or tokentype == tokenize.NEWLINE:
+            n = self._parsedotname(tok)
+            if n:
+                value_list.append(n)
+
+            tokentype, tok, indent = self.next()
+        return (value_list, tok)
 
     def _parseimportlist(self):
         imports = []
@@ -260,6 +346,7 @@ class PyFuzzyParser(object):
                 name += "%s " % str(tok)
         return names
 
+
     def _parsefunction(self, indent):
         tokentype, fname, ind = self.next()
         if tokentype != tokenize.NAME:
@@ -276,6 +363,7 @@ class PyFuzzyParser(object):
 
         return Function(fname, params, indent, self.line_nr)
 
+
     def _parseclass(self, indent):
         tokentype, cname, ind = self.next()
         if tokentype != tokenize.NAME:
@@ -289,6 +377,7 @@ class PyFuzzyParser(object):
             return None
 
         return Class(cname, super, indent, self.line_nr)
+
 
     def _parseassignment(self):
         assign = ''
@@ -326,6 +415,29 @@ class PyFuzzyParser(object):
                     assign += tok
         return "%s" % assign
 
+
+    def _parse_words(self, word):
+        """
+        Used to parse a word, if the tokenizer returned a word at the start of
+        a new command.
+        """
+        return 
+
+
+    def _parse_statement(self, tok = None):
+        """
+        Parses statements like:
+        >>> a = test(b)
+        >>> a += 3 - 2 or b
+        and so on. One row at a time.
+        """
+        string = tok 
+        tok = True
+        while tok:
+            tokentype, tok, indent = self.next()
+            string += tok
+        return string
+
     def next(self):
         type, tok, position, dummy, self.parserline = self.gen.next()
         (self.line_nr, indent) = position
@@ -350,7 +462,7 @@ class PyFuzzyParser(object):
                     if func is None:
                         print "function: syntax error..."
                         continue
-                    dbg("new scope: function")
+                    dbg("new scope: function %s" % (func.name))
                     freshscope = True
                     self.scope = self.scope.add_scope(func)
                 elif tok == 'class':
@@ -359,8 +471,9 @@ class PyFuzzyParser(object):
                         print "class: syntax error..."
                         continue
                     freshscope = True
-                    dbg("new scope: class")
+                    dbg("new scope: class %s" % (cls.name))
                     self.scope = self.scope.add_scope(cls)
+                # import stuff
                 elif tok == 'import':
                     imports = self._parseimportlist()
                     for mod, alias in imports:
@@ -376,6 +489,16 @@ class PyFuzzyParser(object):
                         i = Import(self.line_nr, name, alias, mod)
                         self.scope.add_import(i)
                     freshscope = False
+                #loops
+                elif tok == 'for':
+                    value_list, tok = self._parse_value_list()
+                    if tok == 'in':
+                        statement, tok = self._parse_statement()
+                        if tok == ':':
+                            self.scope.append(statement)
+
+                elif tok == 'while':
+                    param_list = self._parse_while_loop()
                 elif tokentype == tokenize.STRING:
                     if freshscope:
                         self.scope.doc(tok)
@@ -386,7 +509,12 @@ class PyFuzzyParser(object):
                         dbg("parseassignment: %s = %s" % (name, stmt))
                         if stmt != None:
                             self.scope.add_local("%s = %s" % (name, stmt))
+                    else:
+                        #print "_not_implemented_", tok, self.parserline
+                        pass
                     freshscope = False
+                #else:
+                    #print "_not_implemented_", tok, self.parserline
         except StopIteration:  # thrown on EOF
             pass
         #except:

@@ -46,11 +46,28 @@ def func():
     cdef = A()
     return test
 
+#for i in range(3):
+#    asdf = aaa
+#    print 'blub'
 
-for i in range(3):
-    asdf = aaa
-    print 'blub'
+
+def ass_test(a):
+    """docstring for assignment test"""
+    a -= 1
+    b, c, d = (1,2,3)
+    del b
+    return (a+b)*2
 
 
-datetime. 
-A. 
+matrix = [[1,2,3], [4,5,6], [7,8,9]]
+def loop_test(a):
+    """docstring for loop_test"""
+    global matrix
+    for i in matrix:
+        print a
+    #while 1:
+    #    del a 
+    #    print a
+
+    return Matrix[0,1]
+
