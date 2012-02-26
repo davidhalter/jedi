@@ -56,7 +56,8 @@ def ass_test(a):
     a -= 1
     b, c, d = (1,2,3)
     del b
-    return (a+b)*2
+    result = int((a+b)*2)
+    return result
 
 
 matrix = [[1,2,3], [4,5,6], [7,8,9]]

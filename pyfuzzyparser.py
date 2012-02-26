@@ -18,6 +18,7 @@ global is a special case and will not be used here
 import sys
 import tokenize
 import cStringIO
+import token
 
 
 def indent_block(text, indention="    "):
@@ -110,7 +111,6 @@ class Class(Scope):
             str += '(%s)' % ','.join(self.supers)
         str += ':\n'
         str += super(Class, self).get_code(True, indention)
-        print "get_code class %s %i" % (self.name, self.is_empty())
         if self.is_empty():
             str += "pass\n"
         return str
@@ -153,7 +153,7 @@ class Function(Scope):
         str += super(Function, self).get_code(True, indention)
         if self.is_empty():
             str += "pass\n"
-        print "func", self.locals
+        #print "func", self.locals
         return str
 
 
@@ -165,7 +165,9 @@ class Import(object):
     2
 
     :param line_nr: Line number.
-    :param namespace: the namespace which is imported.
+    :type line_nr: int
+    :param namespace: the import, as an array list, e.g. ['datetime', 'time'] 
+    :type namespace: list
     :param alias: the alias (valid in the current namespace).
     :param from_ns: from declaration in an import.
     :param star: if a star is used -> from time import *.
@@ -183,27 +185,29 @@ class Import(object):
         self.star = star
 
     def get_code(self):
+        ns = ".".join(self.namespace)
         if self.alias:
-            ns_str = "%s as %s" % (self.namespace, self.alias)
+            ns_str = "%s as %s" % (ns, self.alias)
         else:
-            ns_str = self.namespace
+            ns_str = ns
         if self.from_ns:
             if self.star:
                 ns_str = '*'
-            return "test from %s import %s" % (self.from_ns, ns_str)
+            return "from %s import %s" % (self.from_ns, ns_str)
         else:
-            return "test import " + ns_str
+            return "import " + ns_str
 
 
 class Statement(object):
-    """ This is the class for Local and Functions """
+    """
+    This is the class for Local and Functions
+    :param code:
+    :param locals: 
+    """
     def __init__(self, code, locals, functions):
-        """
-        @param line_nr
-        @param stmt the statement string
-        """
-        self.line_nr = line_nr
-        self.stmt = stmt
+        self.code = code
+        self.locals = locals
+        self.functions = functions
 
     def get_code(self):
         raise NotImplementedError()
@@ -271,7 +275,7 @@ class PyFuzzyParser(object):
             if tokentype != tokenize.NAME and tok != '*':
                 return ([], tok)
         else:
-            tok = pre_used_token
+            tokentype, tok, indent = pre_used_token
         names.append(tok)
         while True:
             tokentype, tok, indent = self.next()
@@ -291,13 +295,14 @@ class PyFuzzyParser(object):
         """
         value_list = []
         if pre_used_token:
-            n = self._parsedotname(pre_used_token)
+            tokentype, tok, indent = pre_used_token
+            n = self._parsedotname(tok)
             if n:
                 value_list.append(n)
 
         tokentype, tok, indent = self.next()
-        while tok != 'in' or tokentype == tokenize.NEWLINE:
-            n = self._parsedotname(tok)
+        while tok != 'in' and tokentype != tokenize.NEWLINE:
+            n = self._parsedotname(self.current)
             if n:
                 value_list.append(n)
 
@@ -416,32 +421,79 @@ class PyFuzzyParser(object):
         return "%s" % assign
 
 
-    def _parse_words(self, word):
+    def _parse_words(self, pre_used_token):
         """
         Used to parse a word, if the tokenizer returned a word at the start of
         a new command.
+
+        :param pre_used_token: The pre parsed token.
+        :type pre_used_token: set
         """
-        return 
+        return self._parse_statement(pre_used_token)
 
 
-    def _parse_statement(self, tok = None):
+    def _parse_statement(self, pre_used_token = None):
         """
         Parses statements like:
+
         >>> a = test(b)
         >>> a += 3 - 2 or b
+
         and so on. One row at a time.
+
+        :param pre_used_token: The pre parsed token.
+        :type pre_used_token: set
+        :return: Statement + last parsed token.
+        :rtype: (Statement, str)
         """
-        string = tok 
-        tok = True
-        while tok:
-            tokentype, tok, indent = self.next()
-            string += tok
-        return string
+        string = ''
+        set_vars = []
+        used_funcs = []
+        used_vars = []
+
+        token_type, tok, indent = pre_used_token
+        while tok != '\n' and tok != ';':
+            set_string = ''
+            print 'parse_stmt', tok, token.tok_name[token_type]
+            if token_type == tokenize.NAME:
+                if tok == 'pass':
+                    set_string = ''
+                elif tok == 'return' or tok == 'del':
+                    set_string = tok + ' '
+                elif tok == 'print':
+                    set_string = ''
+                else:
+                    path, tok = self._parsedotname(self.current)
+                    if tok == '(':
+                        # it must be a function
+                        used_funcs.append(path)
+                    else:
+                        used_vars.append(path)
+                    string += ".".join(path)
+                    print 'parse_stmt', tok, token.tok_name[token_type]
+                    if tok == '\n' or tok == ';':
+                        break
+
+            if ('=' in tok and not tok in ['>=', '<=', '==', '!=']):
+                # there has been an assignement -> change vars
+                set_vars = used_vars
+                used_vars = []
+
+            if set_string:
+                string = set_string
+            else:
+                string += tok
+            token_type, tok, indent = self.next()
+        if not string:
+            return None, tok
+        print 'new_stat', string, set_vars, used_funcs, used_vars
+        #return Statement(), tok
 
     def next(self):
         type, tok, position, dummy, self.parserline = self.gen.next()
         (self.line_nr, indent) = position
-        return (type, tok, indent)
+        self.current = (type, tok, indent)
+        return self.current
 
     def parse(self, text):
         buf = cStringIO.StringIO(''.join(text) + '\n')
@@ -451,7 +503,8 @@ class PyFuzzyParser(object):
         try:
             freshscope = True
             while True:
-                tokentype, tok, indent = self.next()
+                full_token = self.next()
+                tokentype, tok, indent = full_token
                 dbg('main: tok=[%s] type=[%s] indent=[%s]'\
                     % (tok, tokentype, indent))
 
@@ -491,6 +544,7 @@ class PyFuzzyParser(object):
                     freshscope = False
                 #loops
                 elif tok == 'for':
+                    print tok, tokentype
                     value_list, tok = self._parse_value_list()
                     if tok == 'in':
                         statement, tok = self._parse_statement()
@@ -499,10 +553,14 @@ class PyFuzzyParser(object):
 
                 elif tok == 'while':
                     param_list = self._parse_while_loop()
+                elif tok == 'global':
+                    self._parse_words(full_token)
                 elif tokentype == tokenize.STRING:
                     if freshscope:
                         self.scope.doc(tok)
                 elif tokentype == tokenize.NAME:
+                    self._parse_words(full_token)
+                    """
                     name, tok = self._parsedotname(tok)
                     if tok == '=':
                         stmt = self._parseassignment()
@@ -512,6 +570,7 @@ class PyFuzzyParser(object):
                     else:
                         #print "_not_implemented_", tok, self.parserline
                         pass
+                    """
                     freshscope = False
                 #else:
                     #print "_not_implemented_", tok, self.parserline
@@ -537,4 +596,5 @@ def _sanitize(str):
 
 
 def dbg(*args):
-    print args
+    #print args
+    pass

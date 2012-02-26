@@ -41,7 +41,7 @@ class Completer(object):
         sc = self.parser.parse(text)
         self.sc = sc  # TODO rm
         src = sc.get_code()
-        dbg("source: %s" % src)
+        #dbg("source: %s" % src)
         #try: exec(src) in self.compldict
         #except: dbg("parser: %s, %s" % (sys.exc_info()[0], sys.exc_info()[1]))
         #for l in sc.locals:
@@ -197,14 +197,14 @@ def showdbg():
 text = cStringIO.StringIO(open('test.py').read())
 cmpl = Completer()
 cmpl.evalsource(text, 51)
-print cmpl.sc.get_code()
-all = cmpl.get_completions("cdef.", '')
+#print cmpl.sc.get_code()
+#all = cmpl.get_completions("cdef.", '')
 
-print "Completions:", len(all)
-for c in all:
-    print c['word'],
-    print ',',
-print ''
+#print "Completions:", len(all)
+#for c in all:
+#    print c['word'],
+#    print ',',
+#print ''
 showdbg()
 
 print cmpl.parser.top.get_code()
