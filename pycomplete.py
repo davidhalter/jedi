@@ -5,7 +5,7 @@ import cStringIO
 import sys
 import types
 
-from pyfuzzyparser import PyFuzzyParser, _sanitize
+from pyfuzzyparser import PyFuzzyParser
 
 
 def complete(file_name, line, colon):
@@ -32,6 +32,19 @@ if __name__ == '__main__':
     pass
 
 
+def _sanitize(str):
+    val = ''
+    level = 0
+    for c in str:
+        if c in ('(', '{', '['):
+            level += 1
+        elif c in (']', '}', ')'):
+            level -= 1
+        elif level == 0:
+            val += c
+    return val
+
+
 class Completer(object):
     def __init__(self):
         self.compldict = {}
@@ -39,7 +52,6 @@ class Completer(object):
 
     def evalsource(self, text, line=0):
         sc = self.parser.parse(text)
-        self.sc = sc  # TODO rm
         src = sc.get_code()
         #dbg("source: %s" % src)
         #try: exec(src) in self.compldict
@@ -209,6 +221,8 @@ showdbg()
 
 print cmpl.parser.top.get_code()
 #print cmpl.parser.top.subscopes[1].subscopes[0].get_code()
+
+#print cmpl.parser.top.get_locals()
 
 p = cmpl.parser
 s = p.top
