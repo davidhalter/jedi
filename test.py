@@ -34,41 +34,68 @@ class A():
 a = A()
 
 b = a.test()
+c = a or b
 
 class Empty():
   pass
-def blub():
+#def blub():
 
 cdef = 5
+cdef cdef
 def func():
-    def test:
-      return 2
+    #def test:
+    #  return 2
     cdef = A()
     return test
 
-#for i in range(3):
-#    asdf = aaa
-#    print 'blub'
-
+for i in range(3):
+    asdf = aaa
+    print 'blub'
+else:
+    a = 0
 
 def ass_test(a):
     """docstring for assignment test"""
     a -= 1
+# (comment without indent)
     b, c, d = (1,2,3)
     del b
+    # test strange statements
+    [a,c] ; {1: a}; (1,); `a`
     result = int((a+b)*2)
     return result
 
-
 matrix = [[1,2,3], [4,5,6], [7,8,9]]
-def loop_test(a):
-    """docstring for loop_test"""
+def flow_test(a):
     global matrix
     for i in matrix:
         print a
-    #while 1:
-    #    del a 
-    #    print a
+    else:
+        pass
+    while 1:
+        del a 
+        print a
+    else:
+        pass
+    try:
+        if True or a:
+            m = 1
+            for i,j in enumerate(range(3)):
+             print i,j
+            for a in test(t):
+                p
+        else:
+            while 1:
+                m = 2
+                break
+    except IndexError, e:
+        raise e
+        yield e
+    except:
+        pass
+    finally:
+        pass
+    return Matrix[0,m]
 
-    return Matrix[0,1]
-
+if True or a:
+    print a
