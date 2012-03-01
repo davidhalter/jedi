@@ -190,6 +190,45 @@ class Class(Scope):
         return str
 
 
+class Function(Scope):
+    """
+    Used to store the parsed contents of a python function.
+
+    :param name: The Function name.
+    :type name: string
+    :param params: The parameters of a Function.
+    :type name: list
+    :param indent: The indent level of the flow statement.
+    :type indent: int
+    :param line_nr: Line number of the flow statement.
+    :type line_nr: int
+    :param docstr: The docstring for the current Scope.
+    :type docstr: str
+    """
+    def __init__(self, name, params, indent, line_nr, docstr=''):
+        Scope.__init__(self, indent, line_nr, docstr)
+        self.name = name
+        self.params = params
+
+    def get_code(self, first_indent=False, indention="    "):
+        str = "def %s(%s):\n" % (self.name, ','.join(self.params))
+        str += super(Function, self).get_code(True, indention)
+        if self.is_empty():
+            str += "pass\n"
+        return str
+
+    def get_names(self):
+        """
+        Get the names for the flow. This includes also a call to the super
+        class.
+        """
+        n = self.set_args
+        if self.next:
+            n += self.next.get_names()
+        n += super(Flow, self).get_names()
+        return n
+
+
 class Flow(Scope):
     """
     Used to describe programming structure - flow statements,
@@ -262,45 +301,6 @@ class Flow(Scope):
             self.next = next
             next.parent = self.parent
             return next
-
-
-class Function(Scope):
-    """
-    Used to store the parsed contents of a python function.
-
-    :param name: The Function name.
-    :type name: string
-    :param params: The parameters of a Function.
-    :type name: list
-    :param indent: The indent level of the flow statement.
-    :type indent: int
-    :param line_nr: Line number of the flow statement.
-    :type line_nr: int
-    :param docstr: The docstring for the current Scope.
-    :type docstr: str
-    """
-    def __init__(self, name, params, indent, line_nr, docstr=''):
-        Scope.__init__(self, indent, line_nr, docstr)
-        self.name = name
-        self.params = params
-
-    def get_code(self, first_indent=False, indention="    "):
-        str = "def %s(%s):\n" % (self.name, ','.join(self.params))
-        str += super(Function, self).get_code(True, indention)
-        if self.is_empty():
-            str += "pass\n"
-        return str
-
-    def get_names(self):
-        """
-        Get the names for the flow. This includes also a call to the super
-        class.
-        """
-        n = self.set_args
-        if self.next:
-            n += self.next.get_names()
-        n += super(Flow, self).get_names()
-        return n
 
 
 class Import(object):
