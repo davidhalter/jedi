@@ -60,8 +60,6 @@ class Scope(object):
     well as variables and imports. It is used to access the structure of python
     files.
 
-    :param name: The name of the current Scope, which could be a class name.
-    :type name: string
     :param indent: The indent level of the flow statement.
     :type indent: int
     :param line_nr: Line number of the flow statement.
@@ -75,12 +73,11 @@ class Scope(object):
         self.statements = []
         self.docstr = docstr
         self.parent = None
-        self.name = name
         self.indent = indent
         self.line_nr = line_nr
 
     def add_scope(self, sub):
-        # print 'push scope: [%s@%s]' % (sub.name, sub.indent)
+        # print 'push scope: [%s@%s]' % (sub.line_nr, sub.indent)
         sub.parent = self
         self.subscopes.append(sub)
         return sub
@@ -90,8 +87,7 @@ class Scope(object):
         Used to add a Statement or a Scope.
         A statement would be a normal command (Statement) or a Scope (Flow).
         """
-        if isinstance(stmt, Scope):
-            stmt.parent = self
+        stmt.parent = self
         self.statements.append(stmt)
         return stmt
 
@@ -179,7 +175,8 @@ class Class(Scope):
     :type docstr: str
     """
     def __init__(self, name, supers, indent, line_nr, docstr=''):
-        super(Class, self).__init__(name, indent, line_nr, docstr)
+        super(Class, self).__init__(indent, line_nr, docstr)
+        self.name = name
         self.supers = supers
 
     def get_code(self, first_indent=False, indention="    "):
@@ -220,7 +217,7 @@ class Flow(Scope):
     """
     def __init__(self, command, statement, indent, line_nr, set_args=None):
         name = "%s@%s" % (command, line_nr)
-        super(Flow, self).__init__(name, indent, line_nr, '')
+        super(Flow, self).__init__(indent, line_nr, '')
         self.command = command
         self.statement = statement
         if set_args == None:
@@ -283,7 +280,8 @@ class Function(Scope):
     :type docstr: str
     """
     def __init__(self, name, params, indent, line_nr, docstr=''):
-        Scope.__init__(self, name, indent, line_nr, docstr)
+        Scope.__init__(self, indent, line_nr, docstr)
+        self.name = name
         self.params = params
 
     def get_code(self, first_indent=False, indention="    "):
@@ -292,6 +290,17 @@ class Function(Scope):
         if self.is_empty():
             str += "pass\n"
         return str
+
+    def get_names(self):
+        """
+        Get the names for the flow. This includes also a call to the super
+        class.
+        """
+        n = self.set_args
+        if self.next:
+            n += self.next.get_names()
+        n += super(Flow, self).get_names()
+        return n
 
 
 class Import(object):
@@ -365,6 +374,7 @@ class Statement(object):
 
         self.indent = indent
         self.line_nr = line_nr
+        self.parent = None
 
     def get_code(self, new_line=True):
         if new_line:
@@ -389,6 +399,7 @@ class Name(object):
         self.names = names
         self.indent = indent
         self.line_nr = line_nr
+        self.parent = None
 
     def get_code(self):
         """ Returns the names in a full string format """
@@ -720,7 +731,7 @@ class PyFuzzyParser(object):
                     % (tok, token_type, indent))
 
                 if token_type == tokenize.DEDENT:
-                    print 'dedent', self.scope.name
+                    print 'dedent'
                     self.scope = self.scope.parent
                 elif tok == 'def':
                     func = self._parsefunction(indent)
@@ -762,7 +773,7 @@ class PyFuzzyParser(object):
                         if tok == ':':
                             f = Flow('for', statement, indent, self.line_nr, \
                                         value_list)
-                            dbg("new scope: flow %s" % (f.name))
+                            dbg("new scope: flow for@%s" % (f.line_nr))
                             self.scope = self.scope.add_statement(f)
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
@@ -771,7 +782,7 @@ class PyFuzzyParser(object):
                     statement, tok = self._parse_statement()
                     if tok == ':':
                         f = Flow(command, statement, indent, self.line_nr)
-                        dbg("new scope: flow %s" % (f.name))
+                        dbg("new scope: flow %s@%s" % (command, self.line_nr))
                         if command in extended_flow:
                             # the last statement has to be another part of
                             # the flow statement
