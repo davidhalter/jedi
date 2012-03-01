@@ -15,7 +15,7 @@ of the python module 'tokenize'.
 This original codebase of this parser, which has been refactored and heavily
 changed, was programmed by Aaron Griffin <aaronmgriffin@gmail.com>.
 
-*The structure of the following script:*
+**The structure of the following script:**
 A Scope has
  - imports (Import)
  - subscopes (Scope, Class, Function, Flow)
@@ -97,6 +97,8 @@ class Scope(object):
 
     def add_docstr(self, str):
         """ Clean up a docstring """
+        # TODO the docstring clean isn't good, because things like
+        # r""" test """ are not being handled
         d = str.replace('\n', ' ')
         d = d.replace('\t', ' ')
         while d.find('  ') > -1:
@@ -138,6 +140,20 @@ class Scope(object):
         if first_indent:
             string = indent_block(string, indention=indention)
         return string
+
+    def get_names(self):
+        """
+        Get all the names, that are active and accessible in the current
+        scope.
+
+        :return: list of Name
+        :rtype: list
+        """
+        n = []
+        for stmt in self.statements:
+            n += stmt.get_names()
+        n += self.subscopes
+        return n
 
     def is_empty(self):
         """
@@ -207,7 +223,10 @@ class Flow(Scope):
         super(Flow, self).__init__(name, indent, line_nr, '')
         self.command = command
         self.statement = statement
-        self.set_args = set_args
+        if set_args == None:
+            self.set_args = []
+        else:
+            self.set_args = set_args
         self.next = None
 
     def get_code(self, first_indent=False, indention="    "):
@@ -226,6 +245,17 @@ class Flow(Scope):
         if self.next:
             str += self.next.get_code()
         return str
+
+    def get_names(self):
+        """
+        Get the names for the flow. This includes also a call to the super
+        class.
+        """
+        n = self.set_args
+        if self.next:
+            n += self.next.get_names()
+        n += super(Flow, self).get_names()
+        return n
 
     def set_next(self, next):
         """ Set the next element in the flow, those are else, except, etc. """
@@ -341,6 +371,10 @@ class Statement(object):
             return self.code + '\n'
         else:
             return self.code
+
+    def get_names(self):
+        """ Get the names for the statement. """
+        return self.set_vars
 
 
 class Name(object):

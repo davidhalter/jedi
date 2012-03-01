@@ -15,7 +15,7 @@ class Intro(object):
       return string+","
 
 class Supi(A, datetime.datetime):
-  """ test123 """
+  r""" test123 """
   class 2
 
   static_var = 0
@@ -30,11 +30,15 @@ class A():
   #class B():
   def test(self):
     return A()
+class init:
+    def __init__(self, a):
+     self.a  =  a
 
 a = A()
 
 b = a.test()
 c = a or b
+c = a or c
 
 class Empty():
   pass

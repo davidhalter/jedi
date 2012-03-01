@@ -222,7 +222,13 @@ showdbg()
 print cmpl.parser.top.get_code()
 #print cmpl.parser.top.subscopes[1].subscopes[0].get_code()
 
-#print cmpl.parser.top.get_locals()
+names = cmpl.parser.top.get_names()
+for n in names:
+    try:
+        print n.names
+    except:
+        print n.name
+        
 
 p = cmpl.parser
 s = p.top
