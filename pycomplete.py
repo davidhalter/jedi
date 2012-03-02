@@ -6,6 +6,7 @@ import sys
 import types
 
 from pyfuzzyparser import PyFuzzyParser
+import pyfuzzyparser
 
 
 def complete(file_name, line, colon):
@@ -222,13 +223,13 @@ showdbg()
 print cmpl.parser.top.get_code()
 #print cmpl.parser.top.subscopes[1].subscopes[0].get_code()
 
+print 'global names:'
 names = cmpl.parser.top.get_names()
-for n in names:
-    try:
-        print n.names
-    except:
-        print n.name
-        
+print [n.names for n in names]
+
+print 'global names:'
+names = cmpl.parser.top.subscopes[0].get_names()
+print [n.names for n in names]
 
 p = cmpl.parser
 s = p.top

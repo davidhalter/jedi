@@ -10,6 +10,13 @@ from token import OP as OP_TEST, INDENT as INDENT_TEST
 aaa = 6; bbb = 13
 ccc = bbb; d = open("test.py");
 
+def func():
+    #def test:
+    #  return 2
+    cdef = A()
+    return test
+
+
 class Intro(object):
     def testing(self, string):
       return string+","
@@ -46,12 +53,6 @@ class Empty():
 
 cdef = 5
 cdef cdef
-def func():
-    #def test:
-    #  return 2
-    cdef = A()
-    return test
-
 for i in range(3):
     asdf = aaa
     print 'blub'
@@ -67,6 +68,7 @@ def ass_test(a):
     # test strange statements
     [a,c] ; {1: a}; (1,); `a`
     result = int((a+b)*2)
+    global global_test
     return result
 
 matrix = [[1,2,3], [4,5,6], [7,8,9]]

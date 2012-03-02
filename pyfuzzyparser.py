@@ -30,9 +30,7 @@ Ignored statements:
 
 TODO be tolerant with indents
 TODO dictionaries not working with statement parser
-TODO except has local vars
 TODO take special care for future imports
-TODO add global statements
 """
 
 import sys
@@ -71,6 +69,7 @@ class Scope(object):
         self.subscopes = []
         self.imports = []
         self.statements = []
+        self.global_vars = []
         self.docstr = docstr
         self.parent = None
         self.indent = indent
@@ -108,6 +107,17 @@ class Scope(object):
 
     def add_import(self, imp):
         self.imports.append(imp)
+
+    def add_global(self, name):
+        """
+        Global means in these context a function (subscope) which has a global
+        statement.
+        This is only relevant for the top scope.
+
+        :param name: The name of the global.
+        :type name: Name
+        """
+        self.global_vars.append(name)
 
     def _checkexisting(self, test):
         "Convienance function... keep out duplicates"
@@ -148,7 +158,10 @@ class Scope(object):
         n = []
         for stmt in self.statements:
             n += stmt.get_names()
-        n += self.subscopes
+
+        # function and class names
+        n += [s.name for s in self.subscopes]
+        n += self.global_vars
         return n
 
     def is_empty(self):
@@ -196,7 +209,7 @@ class Function(Scope):
 
     :param name: The Function name.
     :type name: string
-    :param params: The parameters of a Function.
+    :param params: The parameters (Name) of a Function.
     :type name: list
     :param indent: The indent level of the flow statement.
     :type indent: int
@@ -218,14 +231,8 @@ class Function(Scope):
         return str
 
     def get_names(self):
-        """
-        Get the names for the flow. This includes also a call to the super
-        class.
-        """
-        n = self.set_args
-        if self.next:
-            n += self.next.get_names()
-        n += super(Flow, self).get_names()
+        n = self.params
+        n += super(Function, self).get_names()
         return n
 
 
@@ -323,8 +330,6 @@ class Import(object):
     :type star: bool
 
     :raises: None
-
-    TODO check star?
     """
     def __init__(self, line_nr, namespace, alias='', from_ns='', star=False):
         self.line_nr = line_nr
@@ -396,7 +401,7 @@ class Name(object):
     """
     def __init__(self, names, indent, line_nr):
         super(Name, self).__init__()
-        self.names = names
+        self.names = tuple(names)
         self.indent = indent
         self.line_nr = line_nr
         self.parent = None
@@ -407,6 +412,17 @@ class Name(object):
 
     def __str__(self):
         return self.get_code()
+
+    def __eq__(self, other):
+        return self.names == other.names \
+                and self.indent == other.indent \
+                and self.line_nr == self.line_nr
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.names) + hash(self.indent) + hash(self.line_nr)
 
 
 class PyFuzzyParser(object):
@@ -549,6 +565,8 @@ class PyFuzzyParser(object):
         if token_type != tokenize.NAME:
             return None
 
+        fname = Name([fname], ind, self.line_nr)
+
         token_type, open, ind = self.next()
         if open != '(':
             return None
@@ -573,6 +591,8 @@ class PyFuzzyParser(object):
             print "class: syntax error - token is not a name@%s (%s: %s)" \
                             % (self.line_nr, token.tok_name[token_type], cname)
             return None
+
+        cname = Name([cname], ind, self.line_nr)
 
         super = []
         token_type, next, ind = self.next()
@@ -661,17 +681,14 @@ class PyFuzzyParser(object):
                 else:
                     path, token_type, tok, start_indent = \
                             self._parsedotname(self.current)
-                    print 'path', path
                     n = Name(path, start_indent, self.line_nr)
                     if tok == '(':
                         # it must be a function
                         used_funcs.append(n)
                     else:
-                        used_vars.append(n)
-                    if string:
-                        print 'str', string[-1]
+                        if not n.names[0] in ['global']:
+                            used_vars.append(n)
                     if string and re.match(r'[\w\d]', string[-1]):
-                        print 'yay'
                         string += ' '
                     #if token_type == tokenize.NAME \
                     #    and self.last_token[0] == tokenize.NAME:
@@ -762,7 +779,10 @@ class PyFuzzyParser(object):
                     mod = Name(mod, start_indent, self.line_nr)
                     names = self._parseimportlist()
                     for name, alias in names:
-                        i = Import(self.line_nr, name, alias, mod)
+                        star = name.names[0] == '*'
+                        if star:
+                            name = None
+                        i = Import(self.line_nr, name, alias, mod, star)
                         self.scope.add_import(i)
                     freshscope = False
                 #loops
@@ -778,6 +798,7 @@ class PyFuzzyParser(object):
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
                     # TODO with statement has local variables
+                    # TODO except has local vars
                     command = tok
                     statement, tok = self._parse_statement()
                     if tok == ':':
@@ -791,9 +812,14 @@ class PyFuzzyParser(object):
                             self.scope = self.scope.add_statement(f)
 
                 elif tok == 'global':
-                    self._parse_statement(self.current)
-                    pass
-                    # TODO add suport for global
+                    stmt, tok = self._parse_statement(self.current)
+                    if stmt:
+                        self.scope.add_statement(stmt)
+                        print 'global_vars', stmt.used_vars
+                        for name in stmt.used_vars:
+                            # add the global to the top, because there it is
+                            # important.
+                            self.top.add_global(name)
                 elif token_type == tokenize.STRING:
                     if freshscope:
                         self.scope.add_docstr(tok)
@@ -806,9 +832,9 @@ class PyFuzzyParser(object):
                     #print "_not_implemented_", tok, self.parserline
         except StopIteration:  # thrown on EOF
             pass
-        #except:
-        #    dbg("parse error: %s, %s @ %s" %
-        #        (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
+        except StopIteration:  # TODO catch the right error
+            dbg("parse error: %s, %s @ %s" %
+                (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
         return self.top
 
 
