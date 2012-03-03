@@ -5,7 +5,6 @@ import cStringIO
 import sys
 import types
 
-from pyfuzzyparser import PyFuzzyParser
 import pyfuzzyparser
 
 
@@ -49,7 +48,7 @@ def _sanitize(str):
 class Completer(object):
     def __init__(self):
         self.compldict = {}
-        self.parser = PyFuzzyParser()
+        self.parser = pyfuzzyparser.PyFuzzyParser()
 
     def evalsource(self, text, line=0):
         sc = self.parser.parse(text)
@@ -207,6 +206,7 @@ def showdbg():
         print "DBG: %s " % d
 
 
+pyfuzzyparser.debug_function = pyfuzzyparser.dbg()
 text = cStringIO.StringIO(open('test.py').read())
 cmpl = Completer()
 cmpl.evalsource(text, 51)
@@ -223,13 +223,32 @@ showdbg()
 print cmpl.parser.top.get_code()
 #print cmpl.parser.top.subscopes[1].subscopes[0].get_code()
 
+def handle_names(names):
+    #print names
+    for n in names:
+        try:
+            print n.names
+        except AttributeError:
+            print 'star!', n.from_ns
+
 print 'global names:'
 names = cmpl.parser.top.get_names()
-print [n.names for n in names]
+handle_names(names)
 
+print
 print 'func names:'
 names = cmpl.parser.top.subscopes[0].get_names()
-print [n.names for n in names]
+handle_names(names)
+
+print
+print 'class names:'
+names = cmpl.parser.top.subscopes[2].get_names()
+handle_names(names)
+for s in cmpl.parser.top.subscopes[2].subscopes:
+    print 'method names:'
+    names = s.get_names()
+    handle_names(names)
+
 
 p = cmpl.parser
 s = p.top

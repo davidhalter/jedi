@@ -29,8 +29,8 @@ Ignored statements:
  - exec (dangerous - not controllable)
 
 TODO be tolerant with indents
-TODO dictionaries not working with statement parser
 TODO take special care for future imports
+TODO check meta classes
 """
 
 import sys
@@ -65,7 +65,7 @@ class Scope(object):
     :param docstr: The docstring for the current Scope.
     :type docstr: str
     """
-    def __init__(self, name, indent, line_nr, docstr=''):
+    def __init__(self, indent, line_nr, docstr=''):
         self.subscopes = []
         self.imports = []
         self.statements = []
@@ -162,6 +162,10 @@ class Scope(object):
         # function and class names
         n += [s.name for s in self.subscopes]
         n += self.global_vars
+
+        for i in self.imports:
+            n += i.get_names()
+
         return n
 
     def is_empty(self):
@@ -192,10 +196,14 @@ class Class(Scope):
         self.name = name
         self.supers = supers
 
+    def __repr__(self):
+        return "<Class instance: %s@%s>" % (self.name, self.line_nr)
+
     def get_code(self, first_indent=False, indention="    "):
         str = 'class %s' % (self.name)
         if len(self.supers) > 0:
-            str += '(%s)' % ','.join(self.supers)
+            sup = ','.join([stmt.code for stmt in self.supers])
+            str += '(%s)' % sup
         str += ':\n'
         str += super(Class, self).get_code(True, indention)
         if self.is_empty():
@@ -209,7 +217,7 @@ class Function(Scope):
 
     :param name: The Function name.
     :type name: string
-    :param params: The parameters (Name) of a Function.
+    :param params: The parameters (Statement) of a Function.
     :type name: list
     :param indent: The indent level of the flow statement.
     :type indent: int
@@ -223,15 +231,22 @@ class Function(Scope):
         self.name = name
         self.params = params
 
+    def __repr__(self):
+        return "<Function instance: %s@%s>" % (self.name, self.line_nr)
+
     def get_code(self, first_indent=False, indention="    "):
-        str = "def %s(%s):\n" % (self.name, ','.join(self.params))
+        params = ','.join([stmt.code for stmt in self.params])
+        str = "def %s(%s):\n" % (self.name, params)
         str += super(Function, self).get_code(True, indention)
         if self.is_empty():
             str += "pass\n"
         return str
 
     def get_names(self):
-        n = self.params
+        #n = self.params
+        n = []
+        for p in self.params:
+            n += p.set_vars or p.used_vars
         n += super(Function, self).get_names()
         return n
 
@@ -258,32 +273,35 @@ class Flow(Scope):
     :type indent: int
     :param line_nr: Line number of the flow statement.
     :type line_nr: int
-    :param set_args: Local variables used in the for loop (only there).
-    :type set_args: list
+    :param set_vars: Local variables used in the for loop (only there).
+    :type set_vars: list
     """
-    def __init__(self, command, statement, indent, line_nr, set_args=None):
+    def __init__(self, command, statement, indent, line_nr, set_vars=None):
         name = "%s@%s" % (command, line_nr)
         super(Flow, self).__init__(indent, line_nr, '')
         self.command = command
         self.statement = statement
-        if set_args == None:
-            self.set_args = []
+        if set_vars == None:
+            self.set_vars = []
         else:
-            self.set_args = set_args
+            self.set_vars = set_vars
         self.next = None
 
+    def __repr__(self):
+        return "<Flow instance: %s@%s>" % (self.command, self.line_nr)
+
     def get_code(self, first_indent=False, indention="    "):
-        if self.set_args:
-            args = ",".join(map(lambda x: x.get_code(), self.set_args))
-            args += ' in '
+        if self.set_vars:
+            vars = ",".join(map(lambda x: x.get_code(), self.set_vars))
+            vars += ' in '
         else:
-            args = ''
+            vars = ''
 
         if self.statement:
             stmt = self.statement.get_code(new_line=False)
         else:
             stmt = ''
-        str = "%s %s%s:\n" % (self.command, args, stmt)
+        str = "%s %s%s:\n" % (self.command, vars, stmt)
         str += super(Flow, self).get_code(True, indention)
         if self.next:
             str += self.next.get_code()
@@ -294,7 +312,7 @@ class Flow(Scope):
         Get the names for the flow. This includes also a call to the super
         class.
         """
-        n = self.set_args
+        n = self.set_vars
         if self.next:
             n += self.next.get_names()
         n += super(Flow, self).get_names()
@@ -349,6 +367,11 @@ class Import(object):
             return "from %s import %s" % (self.from_ns, ns_str) + '\n'
         else:
             return "import " + ns_str + '\n'
+
+    def get_names(self):
+        if self.star:
+            return [self]
+        return [self.alias] if self.alias else [self.namespace]
 
 
 class Statement(object):
@@ -431,7 +454,8 @@ class PyFuzzyParser(object):
     class structure of different scopes.
     """
     def __init__(self):
-        self.top = Scope('global', 0, 0)
+        # initialize global Scope
+        self.top = Scope(0, 0)
         self.scope = self.top
         self.current = (None, None, None)
 
@@ -521,43 +545,18 @@ class PyFuzzyParser(object):
     def _parseparen(self):
         """
         Functions and Classes have params (which means for classes
-        super-classes). They are parsed here and returned as Names.
+        super-classes). They are parsed here and returned as Statements.
 
-        TODO change behaviour, at the moment it's acting pretty weird and
-        doesn't return list(Name)
-        :return: List of Names
+        :return: List of Statements
         :rtype: list
         """
-        name = ''
         names = []
-        level = 1
+        tok = None
+        while tok not in [')', '\n', ':']:
+            stmt, tok = self._parse_statement(add_break=',')
+            if stmt:
+                names.append(stmt)
 
-        while True:
-            self._parse_statement()
-            
-        while True:
-            break
-            token_type, tok, indent = self.next()
-            if tok in (')', ',') and level == 1:
-                if '=' in name:
-                    pass
-                else:
-                    name = name.replace(' ', '')
-                names.append(name.strip())
-                name = ''
-            if tok == '(':
-                level += 1
-                name += "("
-            elif tok == ')':
-                level -= 1
-                if level == 0:
-                    break
-                else:
-                    name += ")"
-            elif tok == ',' and level == 1:
-                pass
-            else:
-                name += "%s " % str(tok)
         return names
 
     def _parsefunction(self, indent):
@@ -666,18 +665,20 @@ class PyFuzzyParser(object):
         set_vars = []
         used_funcs = []
         used_vars = []
+        level = 0  # The level of parentheses
 
         if pre_used_token:
             token_type, tok, indent = pre_used_token
         else:
             token_type, tok, indent = self.next()
 
-        breaks = ['\n', ':', ';']
+        breaks = ['\n', ':', ';', ')']
         if add_break:
             breaks += add_break
+
         is_break_token = lambda tok: tok in breaks
 
-        while not is_break_token(tok):
+        while not (is_break_token(tok) and level <= 0):
             set_string = ''
             #print 'parse_stmt', tok, token.tok_name[token_type]
             if token_type == tokenize.NAME:
@@ -707,10 +708,14 @@ class PyFuzzyParser(object):
                     string += ".".join(path)
                     #print 'parse_stmt', tok, token.tok_name[token_type]
                     continue
-            elif ('=' in tok and not tok in ['>=', '<=', '==', '!=']):
+            elif '=' in tok and not tok in ['>=', '<=', '==', '!=']:
                 # there has been an assignement -> change vars
                 set_vars = used_vars
                 used_vars = []
+            elif tok in ['{', '(', '[']:
+                level += 1
+            elif tok in ['}', ')', ']']:
+                level -= 1
 
             if set_string:
                 string = set_string
@@ -758,7 +763,7 @@ class PyFuzzyParser(object):
                     % (tok, token_type, indent))
 
                 if token_type == tokenize.DEDENT:
-                    print 'dedent'
+                    print 'dedent', self.scope
                     self.scope = self.scope.parent
                 elif tok == 'def':
                     func = self._parsefunction(indent)
