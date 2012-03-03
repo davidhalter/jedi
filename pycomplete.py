@@ -227,7 +227,7 @@ print 'global names:'
 names = cmpl.parser.top.get_names()
 print [n.names for n in names]
 
-print 'global names:'
+print 'func names:'
 names = cmpl.parser.top.subscopes[0].get_names()
 print [n.names for n in names]
 

@@ -531,10 +531,17 @@ class PyFuzzyParser(object):
         name = ''
         names = []
         level = 1
+
         while True:
+            self._parse_statement()
+            
+        while True:
+            break
             token_type, tok, indent = self.next()
             if tok in (')', ',') and level == 1:
-                if '=' not in name:
+                if '=' in name:
+                    pass
+                else:
                     name = name.replace(' ', '')
                 names.append(name.strip())
                 name = ''
@@ -641,7 +648,7 @@ class PyFuzzyParser(object):
                     assign += tok
         return "%s" % assign
 
-    def _parse_statement(self, pre_used_token=None):
+    def _parse_statement(self, pre_used_token=None, add_break=None):
         """
         Parses statements like:
 
@@ -665,7 +672,10 @@ class PyFuzzyParser(object):
         else:
             token_type, tok, indent = self.next()
 
-        is_break_token = lambda tok: tok in ['\n', ':', ';']
+        breaks = ['\n', ':', ';']
+        if add_break:
+            breaks += add_break
+        is_break_token = lambda tok: tok in breaks
 
         while not is_break_token(tok):
             set_string = ''

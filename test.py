@@ -38,7 +38,7 @@ class A():
   def test(self):
     return A()
 class init:
-    def __init__(self, a):
+    def __init__(self, a, b=3, c = A()):
      self.a  =  a
 
 a = A()
