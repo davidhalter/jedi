@@ -101,13 +101,17 @@ def flow_test(a):
             while 1:
                 m = 2
                 break
-    except IndexError, e:
+    except IndexError as e:
         raise e
         yield e
+    #except TypeError, e:
+    #    pass
     except:
         pass
     finally:
         pass
+    with open('test.py') as f, open('narf.py' as g):
+        print f
     return matrix[0,m]
 
 if True or a:

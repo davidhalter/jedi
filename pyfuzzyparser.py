@@ -92,6 +92,7 @@ class Scope(object):
     def add_docstr(self, string):
         """ Clean up a docstring """
 
+        # TODO use prefixes, to format the doc strings
         # scan for string prefixes like r, u, etc.
         index1 = string.find("'")
         index2 = string.find('"')
@@ -337,6 +338,8 @@ class Flow(Scope):
         class.
         """
         n = self.set_vars
+        if self.statement:
+            n += self.statement.set_vars
         if self.next:
             n += self.next.get_set_vars()
         n += super(Flow, self).get_set_vars()
@@ -577,7 +580,7 @@ class PyFuzzyParser(object):
         names = []
         tok = None
         while tok not in [')', '\n', ':']:
-            stmt, tok = self._parse_statement(add_break=',')
+            stmt, tok = self._parse_statement(added_breaks=',')
             if stmt:
                 names.append(stmt)
 
@@ -671,7 +674,7 @@ class PyFuzzyParser(object):
                     assign += tok
         return "%s" % assign
 
-    def _parse_statement(self, pre_used_token=None, add_break=None):
+    def _parse_statement(self, pre_used_token=None, added_breaks=None):
         """
         Parses statements like:
 
@@ -696,16 +699,30 @@ class PyFuzzyParser(object):
         else:
             token_type, tok, indent = self.next()
 
-        breaks = ['\n', ':', ';', ')']
-        if add_break:
-            breaks += add_break
+        # the difference between "break" and "always break" is that the latter
+        # will even break in parentheses. This is true for typical flow
+        # commands like def and class and the imports, which will never be used
+        # in a statement.
+        breaks = ['\n', ':', ')']
+        always_break = [';', 'import', 'from', 'class', 'def', 'try', 'except',
+                        'finally']
+        if added_breaks:
+            breaks += added_breaks
 
-        is_break_token = lambda tok: tok in breaks
-
-        while not (is_break_token(tok) and level <= 0):
+        while not (tok in always_break or tok in breaks and level <= 0):
             set_string = ''
             #print 'parse_stmt', tok, token.tok_name[token_type]
-            if token_type == tokenize.NAME:
+            if tok == 'as':
+                string += " %s " % tok
+                token_type, tok, indent_dummy = self.next()
+                if token_type == tokenize.NAME:
+                    path, token_type, tok, start_indent = \
+                            self._parsedotname(self.current)
+                    n = Name(path, start_indent, self.line_nr)
+                    set_vars.append(n)
+                    string += ".".join(path)
+                continue
+            elif token_type == tokenize.NAME:
                 print 'is_name', tok
                 if tok == 'pass':
                     set_string = ''
@@ -725,10 +742,6 @@ class PyFuzzyParser(object):
                             used_vars.append(n)
                     if string and re.match(r'[\w\d]', string[-1]):
                         string += ' '
-                    #if token_type == tokenize.NAME \
-                    #    and self.last_token[0] == tokenize.NAME:
-                    #    print 'last_token', self.last_token, token_type
-                    #    string += ' ' + tok
                     string += ".".join(path)
                     #print 'parse_stmt', tok, token.tok_name[token_type]
                     continue
@@ -836,10 +849,15 @@ class PyFuzzyParser(object):
                             self.scope = self.scope.add_statement(f)
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
-                    # TODO with statement has local variables
-                    # TODO except has local vars
+                    # TODO except can use a comma, which means a local var
+                    added_breaks = []
                     command = tok
-                    statement, tok = self._parse_statement()
+                    if command == 'except':
+                        added_breaks += (',')
+                    statement, tok = \
+                        self._parse_statement(added_breaks=added_breaks)
+                    if tok in added_breaks:
+                        pass
                     if tok == ':':
                         f = Flow(command, statement, indent, self.line_nr)
                         dbg("new scope: flow %s@%s" % (command, self.line_nr))
