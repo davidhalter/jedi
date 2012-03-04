@@ -232,21 +232,21 @@ def handle_names(names):
             print 'star!', n.from_ns
 
 print 'global names:'
-names = cmpl.parser.top.get_names()
+names = cmpl.parser.top.get_set_vars()
 handle_names(names)
 
 print
 print 'func names:'
-names = cmpl.parser.top.subscopes[0].get_names()
+names = cmpl.parser.top.subscopes[7].get_set_vars()
 handle_names(names)
 
 print
 print 'class names:'
-names = cmpl.parser.top.subscopes[2].get_names()
+names = cmpl.parser.top.subscopes[2].get_set_vars()
 handle_names(names)
 for s in cmpl.parser.top.subscopes[2].subscopes:
     print 'method names:'
-    names = s.get_names()
+    names = s.get_set_vars()
     handle_names(names)
 
 

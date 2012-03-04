@@ -26,7 +26,7 @@ class Supi(A, datetime.datetime):
   class 2
 
   static_var = 0
-  def __init__():
+  def __init__(self):
     self.b = A()
   def test(self):
     import time
@@ -36,6 +36,7 @@ class Supi(A, datetime.datetime):
     2,[3,2
     ])
     self.c = {1:3,
+    a = self.a
     4:2,5:9}
     return A()
 
@@ -69,7 +70,7 @@ def ass_test(a):
     """docstring for assignment test"""
     a -= 1
 # (comment without indent)
-    b, c, d = (1,2,3)
+    (b, c, d) = (1,2,3)
     del b
     # test strange statements
     [a,c] ; {1: a}; (1,); `a`
@@ -107,7 +108,7 @@ def flow_test(a):
         pass
     finally:
         pass
-    return Matrix[0,m]
+    return matrix[0,m]
 
 if True or a:
     print a

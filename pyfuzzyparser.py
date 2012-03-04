@@ -33,7 +33,6 @@ TODO take special care for future imports
 TODO check meta classes
 """
 
-import sys
 import tokenize
 import cStringIO
 import token
@@ -147,7 +146,7 @@ class Scope(object):
             string = indent_block(string, indention=indention)
         return string
 
-    def get_names(self):
+    def get_set_vars(self):
         """
         Get all the names, that are active and accessible in the current
         scope.
@@ -157,7 +156,7 @@ class Scope(object):
         """
         n = []
         for stmt in self.statements:
-            n += stmt.get_names()
+            n += stmt.get_set_vars()
 
         # function and class names
         n += [s.name for s in self.subscopes]
@@ -210,6 +209,24 @@ class Class(Scope):
             str += "pass\n"
         return str
 
+    def get_set_vars(self):
+        n = []
+        for s in self.subscopes:
+            try:
+                # get the self name, if there's one
+                self_name = s.params[0].used_vars[0].names[0]
+            except:
+                pass
+            else:
+                for n2 in s.get_set_vars():
+                    # Only names with the selfname are being added.
+                    # It is also important, that they have a len() of 2,
+                    # because otherwise, they are just something else
+                    if n2.names[0] == self_name and len(n2.names) == 2:
+                        n.append(n2)
+        n += super(Class, self).get_set_vars()
+        return n
+
 
 class Function(Scope):
     """
@@ -242,12 +259,11 @@ class Function(Scope):
             str += "pass\n"
         return str
 
-    def get_names(self):
-        #n = self.params
+    def get_set_vars(self):
         n = []
-        for p in self.params:
+        for i, p in enumerate(self.params):
             n += p.set_vars or p.used_vars
-        n += super(Function, self).get_names()
+        n += super(Function, self).get_set_vars()
         return n
 
 
@@ -307,15 +323,15 @@ class Flow(Scope):
             str += self.next.get_code()
         return str
 
-    def get_names(self):
+    def get_set_vars(self):
         """
         Get the names for the flow. This includes also a call to the super
         class.
         """
         n = self.set_vars
         if self.next:
-            n += self.next.get_names()
-        n += super(Flow, self).get_names()
+            n += self.next.get_set_vars()
+        n += super(Flow, self).get_set_vars()
         return n
 
     def set_next(self, next):
@@ -410,7 +426,7 @@ class Statement(object):
         else:
             return self.code
 
-    def get_names(self):
+    def get_set_vars(self):
         """ Get the names for the statement. """
         return self.set_vars
 
@@ -847,9 +863,9 @@ class PyFuzzyParser(object):
                     #print "_not_implemented_", tok, self.parserline
         except StopIteration:  # thrown on EOF
             pass
-        except StopIteration:  # TODO catch the right error
-            dbg("parse error: %s, %s @ %s" %
-                (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
+        #except StopIteration:
+        #    dbg("parse error: %s, %s @ %s" %
+        #        (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
         return self.top
 
 
