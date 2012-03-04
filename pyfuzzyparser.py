@@ -89,11 +89,19 @@ class Scope(object):
         self.statements.append(stmt)
         return stmt
 
-    def add_docstr(self, str):
+    def add_docstr(self, string):
         """ Clean up a docstring """
-        # TODO the docstring clean isn't good, because things like
-        # r""" test """ are not being handled
-        d = str.replace('\n', ' ')
+
+        # scan for string prefixes like r, u, etc.
+        index1 = string.find("'")
+        index2 = string.find('"')
+        index = index1 if index1 < index2 and index1 > -1 else index2
+        prefix = string[:index]
+        d = string[index:]
+        print 'docstr', d, prefix
+
+        # now clean docstr
+        d = d.replace('\n', ' ')
         d = d.replace('\t', ' ')
         while d.find('  ') > -1:
             d = d.replace('  ', ' ')
