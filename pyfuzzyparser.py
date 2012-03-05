@@ -533,7 +533,6 @@ class PyFuzzyParser(object):
             if tok == 'in':
                 break
 
-            print 'for_tok', tok
             token_type, tok, indent = self.next()
         return (value_list, tok)
 
@@ -710,7 +709,7 @@ class PyFuzzyParser(object):
             breaks += added_breaks
 
         while not (tok in always_break or tok in breaks and level <= 0):
-            set_string = ''
+            set_string = None
             #print 'parse_stmt', tok, token.tok_name[token_type]
             if tok == 'as':
                 string += " %s " % tok
@@ -728,8 +727,9 @@ class PyFuzzyParser(object):
                     set_string = ''
                 elif tok in ['return', 'yield', 'del', 'raise', 'assert']:
                     set_string = tok + ' '
-                elif tok == 'print':
-                    set_string = tok + ' '
+                elif tok in ['print', 'exec']:
+                    # delete those statements, just let the rest stand there
+                    set_string = ''
                 else:
                     path, token_type, tok, start_indent = \
                             self._parsedotname(self.current)
@@ -740,7 +740,7 @@ class PyFuzzyParser(object):
                     else:
                         if not n.names[0] in ['global']:
                             used_vars.append(n)
-                    if string and re.match(r'[\w\d]', string[-1]):
+                    if string and re.match(r'[\w\d\'"]', string[-1]):
                         string += ' '
                     string += ".".join(path)
                     #print 'parse_stmt', tok, token.tok_name[token_type]
@@ -754,7 +754,7 @@ class PyFuzzyParser(object):
             elif tok in ['}', ')', ']']:
                 level -= 1
 
-            if set_string:
+            if set_string is not None:
                 string = set_string
             else:
                 string += tok

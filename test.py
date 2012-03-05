@@ -72,6 +72,8 @@ def ass_test(a):
 # (comment without indent)
     (b, c, d) = (1,2,3)
     del b
+    f = {}
+    exec 'a = 999' in f
     # test strange statements
     [a,c] ; {1: a}; (1,); `a`
     result = int((a+b)*2)
@@ -105,7 +107,7 @@ def flow_test(a):
         raise e
         yield e
     #except TypeError, e:
-    #    pass
+        pass
     except:
         pass
     finally:
