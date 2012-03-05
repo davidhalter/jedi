@@ -28,14 +28,12 @@ Ignored statements:
  - print (no use for it, just slows down)
  - exec (dangerous - not controllable)
 
-TODO be tolerant with indents
 TODO take special care for future imports
 TODO check meta classes
 """
 
 import tokenize
 import cStringIO
-import token
 import re
 
 
@@ -210,7 +208,7 @@ class Class(Scope):
     def get_code(self, first_indent=False, indention="    "):
         str = 'class %s' % (self.name)
         if len(self.supers) > 0:
-            sup = ','.join([stmt.code for stmt in self.supers])
+            sup = ','.join(stmt.code for stmt in self.supers)
             str += '(%s)' % sup
         str += ':\n'
         str += super(Class, self).get_code(True, indention)
@@ -373,8 +371,6 @@ class Import(object):
     :type from_ns: list
     :param star: If a star is used -> from time import *.
     :type star: bool
-
-    :raises: None
     """
     def __init__(self, line_nr, namespace, alias='', from_ns='', star=False):
         self.line_nr = line_nr
@@ -621,7 +617,7 @@ class PyFuzzyParser(object):
         token_type, cname, ind = self.next()
         if token_type != tokenize.NAME:
             print "class: syntax error - token is not a name@%s (%s: %s)" \
-                            % (self.line_nr, token.tok_name[token_type], cname)
+                            % (self.line_nr, tokenize.tok_name[token_type], cname)
             return None
 
         cname = Name([cname], ind, self.line_nr)
@@ -710,7 +706,7 @@ class PyFuzzyParser(object):
 
         while not (tok in always_break or tok in breaks and level <= 0):
             set_string = None
-            #print 'parse_stmt', tok, token.tok_name[token_type]
+            #print 'parse_stmt', tok, tokenize.tok_name[token_type]
             if tok == 'as':
                 string += " %s " % tok
                 token_type, tok, indent_dummy = self.next()
@@ -722,10 +718,8 @@ class PyFuzzyParser(object):
                     string += ".".join(path)
                 continue
             elif token_type == tokenize.NAME:
-                print 'is_name', tok
-                if tok == 'pass':
-                    set_string = ''
-                elif tok in ['return', 'yield', 'del', 'raise', 'assert']:
+                #print 'is_name', tok
+                if tok in ['return', 'yield', 'del', 'raise', 'assert']:
                     set_string = tok + ' '
                 elif tok in ['print', 'exec']:
                     # delete those statements, just let the rest stand there
@@ -743,7 +737,7 @@ class PyFuzzyParser(object):
                     if string and re.match(r'[\w\d\'"]', string[-1]):
                         string += ' '
                     string += ".".join(path)
-                    #print 'parse_stmt', tok, token.tok_name[token_type]
+                    #print 'parse_stmt', tok, tokenize.tok_name[token_type]
                     continue
             elif '=' in tok and not tok in ['>=', '<=', '==', '!=']:
                 # there has been an assignement -> change vars
@@ -784,6 +778,8 @@ class PyFuzzyParser(object):
 
         :param text: The code which should be parsed.
         :param type: str
+
+        :raises: IndentationError
         """
         buf = cStringIO.StringIO(''.join(text) + '\n')
         self.gen = tokenize.generate_tokens(buf.readline)
@@ -799,10 +795,23 @@ class PyFuzzyParser(object):
                 dbg('main: tok=[%s] type=[%s] indent=[%s]'\
                     % (tok, token_type, indent))
 
-                if token_type == tokenize.DEDENT:
+                while token_type == tokenize.DEDENT and self.scope != self.top:
                     print 'dedent', self.scope
+                    token_type, tok, indent = self.next()
+                    if indent <= self.scope.indent:
+                        self.scope = self.scope.parent
+
+                # check again for unindented stuff. this is true for syntax
+                # errors. only check for names, because thats relevant here. If
+                # some docstrings are not indented, I don't care.
+                if indent <= self.scope.indent \
+                        and token_type in [tokenize.NAME] \
+                        and self.scope != self.top:
+                    print 'syntax_err, dedent @%s - %s<=%s', \
+                            (self.line_nr, indent, self.scope.indent)
                     self.scope = self.scope.parent
-                elif tok == 'def':
+
+                if tok == 'def':
                     func = self._parsefunction(indent)
                     if func is None:
                         print "function: syntax error@%s" % self.line_nr
@@ -872,7 +881,7 @@ class PyFuzzyParser(object):
                             self.scope = self.scope.statements[-1].set_next(f)
                         else:
                             self.scope = self.scope.add_statement(f)
-
+                # globals
                 elif tok == 'global':
                     stmt, tok = self._parse_statement(self.current)
                     if stmt:
@@ -882,9 +891,15 @@ class PyFuzzyParser(object):
                             # add the global to the top, because there it is
                             # important.
                             self.top.add_global(name)
+                elif tok == 'pass':
+                    continue
+                # check for docstrings
                 elif token_type == tokenize.STRING:
                     if freshscope:
                         self.scope.add_docstr(tok)
+                # this is the main part - a name can be a function or a normal
+                # var, which can follow anything. but this is done by the
+                # statement parser.
                 elif token_type == tokenize.NAME or tok in statement_toks:
                     stmt, tok = self._parse_statement(self.current)
                     if stmt:

@@ -41,7 +41,7 @@ class Supi(A, datetime.datetime):
     return A()
 
 class A():
-  #class B():
+  class B():
   def test(self):
     return A()
 class init:
@@ -112,7 +112,7 @@ def flow_test(a):
         pass
     finally:
         pass
-    with open('test.py') as f, open('narf.py' as g):
+    with open('test.py') as f, open('narf.py' as g), m as cm:
         print f
     return matrix[0,m]
 
