@@ -249,6 +249,10 @@ for s in cmpl.parser.top.subscopes[2].subscopes:
     names = s.get_set_vars()
     handle_names(names)
 
+print
+print 'start/end'
+for s in cmpl.parser.top.subscopes:
+    print repr(s)
 
 p = cmpl.parser
 s = p.top

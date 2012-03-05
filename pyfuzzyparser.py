@@ -30,6 +30,8 @@ Ignored statements:
 
 TODO take special care for future imports
 TODO check meta classes
+TODO evaluate options to either replace tokenize or change its behavior for
+multiline parentheses (if they don't close, there must be a break somewhere)
 """
 
 import tokenize
@@ -71,10 +73,12 @@ class Scope(object):
         self.parent = None
         self.indent = indent
         self.line_nr = line_nr
+        self.line_end = None
 
-    def add_scope(self, sub):
+    def add_scope(self, sub, decorators):
         # print 'push scope: [%s@%s]' % (sub.line_nr, sub.indent)
         sub.parent = self
+        sub.decorators = decorators
         self.subscopes.append(sub)
         return sub
 
@@ -181,6 +185,15 @@ class Scope(object):
         """
         return not (self.imports or self.subscopes or self.statements)
 
+    def __repr__(self):
+        try:
+            name = self.name
+        except:
+            name = self.command
+
+        return "<%s: %s@%s-%s>" % \
+                (self.__class__.__name__, name, self.line_nr, self.line_end)
+
 
 class Class(Scope):
     """
@@ -201,12 +214,11 @@ class Class(Scope):
         super(Class, self).__init__(indent, line_nr, docstr)
         self.name = name
         self.supers = supers
-
-    def __repr__(self):
-        return "<Class instance: %s@%s>" % (self.name, self.line_nr)
+        self.decorators = []
 
     def get_code(self, first_indent=False, indention="    "):
-        str = 'class %s' % (self.name)
+        str = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
+        str += 'class %s' % (self.name)
         if len(self.supers) > 0:
             sup = ','.join(stmt.code for stmt in self.supers)
             str += '(%s)' % sup
@@ -254,13 +266,12 @@ class Function(Scope):
         Scope.__init__(self, indent, line_nr, docstr)
         self.name = name
         self.params = params
-
-    def __repr__(self):
-        return "<Function instance: %s@%s>" % (self.name, self.line_nr)
+        self.decorators = []
 
     def get_code(self, first_indent=False, indention="    "):
+        str = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
         params = ','.join([stmt.code for stmt in self.params])
-        str = "def %s(%s):\n" % (self.name, params)
+        str += "def %s(%s):\n" % (self.name, params)
         str += super(Function, self).get_code(True, indention)
         if self.is_empty():
             str += "pass\n"
@@ -300,7 +311,6 @@ class Flow(Scope):
     :type set_vars: list
     """
     def __init__(self, command, statement, indent, line_nr, set_vars=None):
-        name = "%s@%s" % (command, line_nr)
         super(Flow, self).__init__(indent, line_nr, '')
         self.command = command
         self.statement = statement
@@ -309,9 +319,6 @@ class Flow(Scope):
         else:
             self.set_vars = set_vars
         self.next = None
-
-    def __repr__(self):
-        return "<Flow instance: %s@%s>" % (self.command, self.line_nr)
 
     def get_code(self, first_indent=False, indention="    "):
         if self.set_vars:
@@ -617,7 +624,7 @@ class PyFuzzyParser(object):
         token_type, cname, ind = self.next()
         if token_type != tokenize.NAME:
             print "class: syntax error - token is not a name@%s (%s: %s)" \
-                            % (self.line_nr, tokenize.tok_name[token_type], cname)
+                    % (self.line_nr, tokenize.tok_name[token_type], cname)
             return None
 
         cname = Name([cname], ind, self.line_nr)
@@ -785,12 +792,13 @@ class PyFuzzyParser(object):
         self.gen = tokenize.generate_tokens(buf.readline)
         self.currentscope = self.scope
 
-        try:
-            extended_flow = ['else', 'except', 'finally']
-            statement_toks = ['{', '[', '(', '`']
+        extended_flow = ['else', 'except', 'finally']
+        statement_toks = ['{', '[', '(', '`']
 
-            freshscope = True
-            while True:
+        decorators = []
+        freshscope = True
+        while True:
+            try:
                 token_type, tok, indent = self.next()
                 dbg('main: tok=[%s] type=[%s] indent=[%s]'\
                     % (tok, token_type, indent))
@@ -799,16 +807,18 @@ class PyFuzzyParser(object):
                     print 'dedent', self.scope
                     token_type, tok, indent = self.next()
                     if indent <= self.scope.indent:
+                        self.scope.line_end = self.line_nr
                         self.scope = self.scope.parent
 
                 # check again for unindented stuff. this is true for syntax
                 # errors. only check for names, because thats relevant here. If
                 # some docstrings are not indented, I don't care.
-                if indent <= self.scope.indent \
+                while indent <= self.scope.indent \
                         and token_type in [tokenize.NAME] \
                         and self.scope != self.top:
                     print 'syntax_err, dedent @%s - %s<=%s', \
                             (self.line_nr, indent, self.scope.indent)
+                    self.scope.line_end = self.line_nr
                     self.scope = self.scope.parent
 
                 if tok == 'def':
@@ -818,14 +828,16 @@ class PyFuzzyParser(object):
                         continue
                     dbg("new scope: function %s" % (func.name))
                     freshscope = True
-                    self.scope = self.scope.add_scope(func)
+                    self.scope = self.scope.add_scope(func, decorators)
+                    decorators = []
                 elif tok == 'class':
                     cls = self._parseclass(indent)
                     if cls is None:
                         continue
                     freshscope = True
                     dbg("new scope: class %s" % (cls.name))
-                    self.scope = self.scope.add_scope(cls)
+                    self.scope = self.scope.add_scope(cls, decorators)
+                    decorators = []
                 # import stuff
                 elif tok == 'import':
                     imports = self._parseimportlist()
@@ -891,6 +903,10 @@ class PyFuzzyParser(object):
                             # add the global to the top, because there it is
                             # important.
                             self.top.add_global(name)
+                # decorator
+                elif tok == '@':
+                    stmt, tok = self._parse_statement()
+                    decorators.append(stmt)
                 elif tok == 'pass':
                     continue
                 # check for docstrings
@@ -907,8 +923,8 @@ class PyFuzzyParser(object):
                     freshscope = False
                 #else:
                     #print "_not_implemented_", tok, self.parserline
-        except StopIteration:  # thrown on EOF
-            pass
+            except StopIteration:  # thrown on EOF
+                break
         #except StopIteration:
         #    dbg("parse error: %s, %s @ %s" %
         #        (sys.exc_info()[0], sys.exc_info()[1], self.parserline))

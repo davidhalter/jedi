@@ -56,11 +56,12 @@ c = a or c
 
 class Empty():
   pass
-#def blub():
+def blub():
 
 cdef = 5
 cdef cdef
 for i in range(3):
+    if 1:if 2:for a in range(3): exec a
     asdf = aaa
     print 'blub'
 else:
@@ -81,6 +82,7 @@ def ass_test(a):
     return result
 
 matrix = [[1,2,3], [4,5,6], [7,8,9]]
+@property
 def flow_test(a):
     global matrix
     for i in matrix:
