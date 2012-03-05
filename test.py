@@ -106,7 +106,7 @@ def flow_test(a):
     except IndexError as e:
         raise e
         yield e
-    #except TypeError, e:
+    except TypeError, e2:
         pass
     except:
         pass

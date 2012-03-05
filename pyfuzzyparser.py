@@ -849,7 +849,6 @@ class PyFuzzyParser(object):
                             self.scope = self.scope.add_statement(f)
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
-                    # TODO except can use a comma, which means a local var
                     added_breaks = []
                     command = tok
                     if command == 'except':
@@ -857,7 +856,13 @@ class PyFuzzyParser(object):
                     statement, tok = \
                         self._parse_statement(added_breaks=added_breaks)
                     if tok in added_breaks:
-                        pass
+                        # the except statement defines a var
+                        # this is only true for python 2
+                        path, token_type, tok, start_indent = \
+                                self._parsedotname()
+                        n = Name(path, start_indent, self.line_nr)
+                        statement.set_vars.append(n)
+                        statement.code += ',' + n.get_code()
                     if tok == ':':
                         f = Flow(command, statement, indent, self.line_nr)
                         dbg("new scope: flow %s@%s" % (command, self.line_nr))
