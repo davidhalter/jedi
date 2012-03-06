@@ -5,7 +5,7 @@ import cStringIO
 import sys
 import types
 
-import pyfuzzyparser
+import parsing
 
 
 def complete(file_name, line, colon):
@@ -48,10 +48,9 @@ def _sanitize(str):
 class Completer(object):
     def __init__(self):
         self.compldict = {}
-        self.parser = pyfuzzyparser.PyFuzzyParser()
 
     def evalsource(self, text, line=0):
-        sc = self.parser.parse(text)
+        sc = self.parsing.parse(text)
         src = sc.get_code()
         #dbg("source: %s" % src)
         #try: exec(src) in self.compldict
@@ -219,13 +218,13 @@ showdbg()
 def show_debug(*args):
     print args
 
-pyfuzzyparser.debug_function = show_debug
+parsing.debug_function = show_debug
 
 text = open('test.py').read()
-parser = pyfuzzyparser.PyFuzzyParser(text)
+p = parsing.PyFuzzyParser(text)
 
 
-print parser.top.get_code()
+print p.top.get_code()
 #print cmpl.parser.top.subscopes[1].subscopes[0].get_code()
 
 def handle_names(names):
@@ -237,29 +236,29 @@ def handle_names(names):
             print 'star!', n.from_ns
 
 print 'global names:'
-names = parser.top.get_set_vars()
+names = p.top.get_set_vars()
 handle_names(names)
 
 print
 print 'func names:'
-names = parser.top.subscopes[7].get_set_vars()
+names = p.top.subscopes[7].get_set_vars()
 handle_names(names)
 
 print
 print 'class names:'
-names = parser.top.subscopes[2].get_set_vars()
+names = p.top.subscopes[2].get_set_vars()
 handle_names(names)
-for s in parser.top.subscopes[2].subscopes:
+for s in p.top.subscopes[2].subscopes:
     print 'method names:'
     names = s.get_set_vars()
     handle_names(names)
 
 print
 print 'start/end'
-for s in parser.top.subscopes:
+for s in p.top.subscopes:
     print repr(s)
 
-s = parser.top
+s = p.top
 import code
 sh = code.InteractiveConsole(locals=locals())
 #sh.interact("InteractiveConsole")

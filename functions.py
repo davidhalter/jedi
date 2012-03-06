@@ -1,4 +1,4 @@
-import pyfuzzyparser
+import parsing
 
 def complete(source, row, colum, file_callback=None):
     """
@@ -13,4 +13,5 @@ def complete(source, row, colum, file_callback=None):
     :return: list
     :rtype: list
     """
+    p = parsing.PyFuzzyParser(source, row)
     return []
