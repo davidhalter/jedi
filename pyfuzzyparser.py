@@ -482,12 +482,22 @@ class PyFuzzyParser(object):
     """
     This class is used to parse a Python file, it then divides them into a
     class structure of different scopes.
+
+    :param code: The codebase for the parser.
+    :type code: str
+    :param user_line: The line, the user is currently on.
+    :type user_line: int
     """
-    def __init__(self):
+    def __init__(self, code, user_line=None):
+        self.user_line = user_line
+        self.code = code
+
         # initialize global Scope
         self.top = Scope(0, 0)
         self.scope = self.top
         self.current = (None, None, None)
+
+        self.parse()
 
     def _parsedotname(self, pre_used_token=None):
         """
@@ -773,11 +783,15 @@ class PyFuzzyParser(object):
         """ Generate the next tokenize pattern. """
         type, tok, position, dummy, self.parserline = self.gen.next()
         (self.line_nr, indent) = position
+        if self.line_nr == self.user_line:
+            print 'user scope found [%s] =%s' % \
+                    (self.parserline.replace('\n', ''), self.scope.get_name())
+            self.user_scope = self.scope
         self.last_token = self.current
         self.current = (type, tok, indent)
         return self.current
 
-    def parse(self, text):
+    def parse(self):
         """
         The main part of the program. It analyzes the given code-text and
         returns a tree-like scope. For a more detailed description, see the
@@ -788,7 +802,7 @@ class PyFuzzyParser(object):
 
         :raises: IndentationError
         """
-        buf = cStringIO.StringIO(''.join(text) + '\n')
+        buf = cStringIO.StringIO(self.code)
         self.gen = tokenize.generate_tokens(buf.readline)
         self.currentscope = self.scope
 

@@ -205,22 +205,27 @@ def showdbg():
     for d in debugstmts:
         print "DBG: %s " % d
 
-
-pyfuzzyparser.debug_function = pyfuzzyparser.dbg()
-text = cStringIO.StringIO(open('test.py').read())
-cmpl = Completer()
-cmpl.evalsource(text, 51)
 #print cmpl.sc.get_code()
 #all = cmpl.get_completions("cdef.", '')
+
+showdbg()
 
 #print "Completions:", len(all)
 #for c in all:
 #    print c['word'],
 #    print ',',
 #print ''
-showdbg()
 
-print cmpl.parser.top.get_code()
+def show_debug(*args):
+    print args
+
+pyfuzzyparser.debug_function = show_debug
+
+text = open('test.py').read()
+parser = pyfuzzyparser.PyFuzzyParser(text)
+
+
+print parser.top.get_code()
 #print cmpl.parser.top.subscopes[1].subscopes[0].get_code()
 
 def handle_names(names):
@@ -232,30 +237,29 @@ def handle_names(names):
             print 'star!', n.from_ns
 
 print 'global names:'
-names = cmpl.parser.top.get_set_vars()
+names = parser.top.get_set_vars()
 handle_names(names)
 
 print
 print 'func names:'
-names = cmpl.parser.top.subscopes[7].get_set_vars()
+names = parser.top.subscopes[7].get_set_vars()
 handle_names(names)
 
 print
 print 'class names:'
-names = cmpl.parser.top.subscopes[2].get_set_vars()
+names = parser.top.subscopes[2].get_set_vars()
 handle_names(names)
-for s in cmpl.parser.top.subscopes[2].subscopes:
+for s in parser.top.subscopes[2].subscopes:
     print 'method names:'
     names = s.get_set_vars()
     handle_names(names)
 
 print
 print 'start/end'
-for s in cmpl.parser.top.subscopes:
+for s in parser.top.subscopes:
     print repr(s)
 
-p = cmpl.parser
-s = p.top
+s = parser.top
 import code
 sh = code.InteractiveConsole(locals=locals())
 #sh.interact("InteractiveConsole")
