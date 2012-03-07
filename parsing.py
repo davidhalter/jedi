@@ -49,7 +49,16 @@ def indent_block(text, indention="    "):
     return '\n'.join(map(lambda s: indention + s, lines)) + temp
 
 
-class Scope(object):
+class Simple(object):
+    """ The super class for Scope, Import and Statement. """
+    def __init__(self, indent, line_nr, line_end=None):
+        self.indent = indent
+        self.line_nr = line_nr
+        self.line_end = line_end
+        self.parent = None
+
+
+class Scope(Simple):
     """
     Super class for the parser tree, which represents the state of a python
     text file.
@@ -65,15 +74,12 @@ class Scope(object):
     :type docstr: str
     """
     def __init__(self, indent, line_nr, docstr=''):
+        super(Scope, self).__init__(indent, line_nr)
         self.subscopes = []
         self.imports = []
         self.statements = []
         self.global_vars = []
         self.docstr = docstr
-        self.parent = None
-        self.indent = indent
-        self.line_nr = line_nr
-        self.line_end = None
 
     def add_scope(self, sub, decorators):
         # print 'push scope: [%s@%s]' % (sub.line_nr, sub.indent)
@@ -185,11 +191,22 @@ class Scope(object):
         """
         return not (self.imports or self.subscopes or self.statements)
 
+    def get_simple_for_line(self, line):
+        """ Get the Simple objects, which are on the line. """
+        simple = []
+        for s in self.statements:
+            if s.line_nr <= line <= s.line_end:
+                simple.append(s)
+        return simple
+
     def __repr__(self):
         try:
             name = self.name
         except:
-            name = self.command
+            try:
+                name = self.command
+            except:
+                name = 'global'
 
         return "<%s: %s@%s-%s>" % \
                 (self.__class__.__name__, name, self.line_nr, self.line_end)
@@ -404,7 +421,7 @@ class Import(object):
         return [self.alias] if self.alias else [self.namespace]
 
 
-class Statement(object):
+class Statement(Simple):
     """
     This is the class for all the possible statements. Which means, this class
     stores pretty much all the Python code, except functions, classes, imports,
@@ -424,15 +441,13 @@ class Statement(object):
     :param line_nr: Line number of the flow statement.
     :type line_nr: int
     """
-    def __init__(self, code, set_vars, used_funcs, used_vars, indent, line_nr):
+    def __init__(self, code, set_vars, used_funcs, used_vars, indent, line_nr,
+            line_end):
+        super(Statement, self).__init__(indent, line_nr, line_end)
         self.code = code
         self.set_vars = set_vars
         self.used_funcs = used_funcs
         self.used_vars = used_vars
-
-        self.indent = indent
-        self.line_nr = line_nr
-        self.parent = None
 
     def get_code(self, new_line=True):
         if new_line:
@@ -476,6 +491,10 @@ class Name(object):
 
     def __hash__(self):
         return hash(self.names) + hash(self.indent) + hash(self.line_nr)
+
+    def __repr__(self):
+        return "<%s: %s@%s>" % \
+                (self.__class__.__name__, self.get_code(), self.line_nr)
 
 
 class PyFuzzyParser(object):
@@ -711,6 +730,8 @@ class PyFuzzyParser(object):
         else:
             token_type, tok, indent = self.next()
 
+        line_start = self.line_nr
+
         # the difference between "break" and "always break" is that the latter
         # will even break in parentheses. This is true for typical flow
         # commands like def and class and the imports, which will never be used
@@ -776,7 +797,7 @@ class PyFuzzyParser(object):
             return None, tok
         #print 'new_stat', string, set_vars, used_funcs, used_vars
         stmt = Statement(string, set_vars, used_funcs, used_vars,\
-                            self.line_nr, indent)
+                            indent, line_start, self.line_nr)
         return stmt, tok
 
     def next(self):
@@ -785,7 +806,7 @@ class PyFuzzyParser(object):
         (self.line_nr, indent) = position
         if self.line_nr == self.user_line:
             print 'user scope found [%s] =%s' % \
-                    (self.parserline.replace('\n', ''), self.scope.get_name())
+                    (self.parserline.replace('\n', ''), repr(self.scope))
             self.user_scope = self.scope
         self.last_token = self.current
         self.current = (type, tok, indent)

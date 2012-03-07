@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # python >= 2.4 working with readmodule_ex
 import pyclbr
-import cStringIO
 import sys
 import types
 

@@ -13,5 +13,11 @@ def complete(source, row, colum, file_callback=None):
     :return: list
     :rtype: list
     """
+    row = 38
     p = parsing.PyFuzzyParser(source, row)
-    return []
+
+    print 
+    print 
+    print p.user_scope
+    print p.user_scope.get_simple_for_line(row)
+    return p.user_scope.get_set_vars()

@@ -9,6 +9,7 @@ from token import OP as OP_TEST, INDENT as INDENT_TEST
 
 aaa = 6; bbb = 13
 ccc = bbb; d = open("test.py");
+a
 
 def func(a,b,c=3):
     #def test:
@@ -31,10 +32,10 @@ class Supi(A, datetime.datetime):
   def test(self):
     import time
     print 1
-    self.a = 1
+    
     self.b = (1,
     2,[3,2
-    ])
+    ]);self.a = 1
     self.c = {1:3,
     a = self.a
     4:2,5:9}
