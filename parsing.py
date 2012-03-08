@@ -389,7 +389,7 @@ class Import(Simple):
 
     :param line_nr: Line number.
     :type line_nr: int
-    :param namespace: The import, as an array list of Name,\
+    :param namespace: The import, as an array list of Name, \
     e.g. ['datetime', 'time'].
     :type namespace: list
     :param alias: The alias of a namespace(valid in the current namespace).
@@ -399,7 +399,8 @@ class Import(Simple):
     :param star: If a star is used -> from time import *.
     :type star: bool
     """
-    def __init__(self, indent, line_nr, line_end, namespace, alias='', from_ns='', star=False):
+    def __init__(self, indent, line_nr, line_end, namespace, alias='', \
+                    from_ns='', star=False):
         super(Import, self).__init__(indent, line_nr, line_end)
         self.namespace = namespace
         self.alias = alias
@@ -552,19 +553,25 @@ class PyFuzzyParser(object):
         """
         A value list is a comma separated list. This is used for:
         >>> for a,b,self.c in enumerate(test)
+
+        TODO there may be multiple "sub" value lists e.g. (a,(b,c)).
         """
         value_list = []
         if pre_used_token:
             token_type, tok, indent = pre_used_token
-            n, token_type, tok, start_indent, start_line = self._parsedotname(tok)
+            n, token_type, tok, start_indent, start_line = \
+                self._parsedotname(tok)
             if n:
-                value_list.append(Name(n, start_indent, start_line, self.line_nr))
+                temp = Name(n, start_indent, start_line, self.line_nr)
+                value_list.append()
 
         token_type, tok, indent = self.next()
         while tok != 'in' and token_type != tokenize.NEWLINE:
-            n, token_type, tok, start_indent, start_line = self._parsedotname(self.current)
+            n, token_type, tok, start_indent, start_line = \
+                self._parsedotname(self.current)
             if n:
-                value_list.append(Name(n, start_indent, start_line, self.line_nr))
+                temp = Name(n, start_indent, start_line, self.line_nr)
+                value_list.append(temp)
             if tok == 'in':
                 break
 
@@ -589,14 +596,17 @@ class PyFuzzyParser(object):
         """
         imports = []
         while True:
-            name, token_type, tok, start_indent, start_line = self._parsedotname()
+            name, token_type, tok, start_indent, start_line = \
+                self._parsedotname()
             if not name:
                 break
             name2 = None
             if tok == 'as':
-                name2, token_type, tok, start_indent2, start_line = self._parsedotname()
+                name2, token_type, tok, start_indent2, start_line = \
+                    self._parsedotname()
                 name2 = Name(name2, start_indent2, start_line, self.line_nr)
-            imports.append((Name(name, start_indent, start_line, self.line_nr), name2))
+            i = Name(name, start_indent, start_line, self.line_nr)
+            imports.append((i, name2))
             while tok != "," and "\n" not in tok:
                 token_type, tok, indent = self.next()
             if tok != ",":
@@ -882,11 +892,13 @@ class PyFuzzyParser(object):
                 # import stuff
                 elif tok == 'import':
                     imports = self._parseimportlist()
-                    for mod, alias in imports:
-                        self.scope.add_import(Import(indent, start_line, self.line_nr, mod, alias))
+                    for m, alias in imports:
+                        i = Import(indent, start_line, self.line_nr, m, alias)
+                        self.scope.add_import(i)
                     freshscope = False
                 elif tok == 'from':
-                    mod, token_type, tok, start_indent, start_line2 = self._parsedotname()
+                    mod, token_type, tok, start_indent, start_line2 = \
+                        self._parsedotname()
                     if not mod or tok != "import":
                         print "from: syntax error..."
                         continue
@@ -896,7 +908,8 @@ class PyFuzzyParser(object):
                         star = name.names[0] == '*'
                         if star:
                             name = None
-                        i = Import(indent, start_line, self.line_nr, name, alias, mod, star)
+                        i = Import(indent, start_line, self.line_nr, name,
+                                    alias, mod, star)
                         self.scope.add_import(i)
                     freshscope = False
                 #loops
@@ -920,7 +933,7 @@ class PyFuzzyParser(object):
                     if tok in added_breaks:
                         # the except statement defines a var
                         # this is only true for python 2
-                        path, token_type, tok, start_indent, start_line2= \
+                        path, token_type, tok, start_indent, start_line2 = \
                                 self._parsedotname()
                         n = Name(path, start_indent, start_line2, self.line_nr)
                         statement.set_vars.append(n)

@@ -79,6 +79,9 @@ def ass_test(a):
     # test strange statements
     [a,c] ; {1: a}; (1,); `a`
     result = int((a+b)*2)
+    result = s.a(
+      adsfa ) [].3.\
+             a()
     global global_test
     return result
 

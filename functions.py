@@ -1,5 +1,14 @@
 
 import parsing
+import re
+
+__all__ = ['complete']
+
+
+class ParserError(LookupError):
+    """ The exception that is thrown if some handmade parser fails. """
+    pass
+
 
 class File(object):
     """
@@ -18,6 +27,10 @@ class File(object):
         self.row = row
         self.line_cache = None
 
+        # this two are only used, because there is no nonlocal in Python 2
+        self._row_temp = None
+        self._relevant_temp = None
+
         if not self.module_name and not self.source:
             raise AttributeError("Submit a module name or the source code")
         elif self.module_name:
@@ -33,12 +46,117 @@ class File(object):
             self.line_cache = self.source.split('\n')
 
         if 1 <= line <= len(self.line_cache):
-            return self.line_cache[line-1]
+            return self.line_cache[line - 1]
         else:
             return None
 
+    def get_row_path(self, column):
+        """ Get the path under the cursor. """
+        def fetch_line(with_column=False):
+            line = self.get_line(self._row_temp)
+            if with_column:
+                self._relevant_temp = line[:column - 1]
+            else:
+                self._relevant_temp += line + ' ' + self._relevant_temp
+            while self._row_temp > 1:
+                self._row_temp -= 1
+                last_line = self.get_line(self._row_temp)
+                if last_line and last_line[-1] == '\\':
+                    self._relevant_temp = last_line[:-1] + self._relevant_temp
+                else:
+                    break
 
-def complete(source, row, colum, file_callback=None):
+        def fetch_name(is_first):
+            """
+            :param is_first: This means, that there can be a point \
+            (which is a name separator) directly. There is no need for a name.
+            :type is_first: str
+            :return: The list of names and an is_finished param.
+            :rtype: (list, bool)
+            """
+            def get_char():
+                char = self._relevant_temp[-1]
+                self._relevant_temp = self._relevant_temp[:-1]
+                return char
+
+            whitespace = [' ', '\n', '\r', '\\']
+            open_brackets = ['(', '[', '{']
+            close_brackets = [')', ']', '}']
+            is_word = lambda char: re.search('\w', char)
+            name = ''
+            force_point = False
+            force_no_brackets = False
+            is_finished = False
+            while True:
+                try:
+                    char = get_char()
+                except IndexError:
+                    is_finished = True
+                    break
+
+                if force_point:
+                    if char in whitespace:
+                        continue
+                    elif char != '.':
+                        is_finished = True
+                        break
+
+                if char == '.':
+                    if not is_first and not name:
+                        raise ParserError('No name after point: %s'
+                                            % self._relevant_temp)
+                    break
+                elif char in whitespace:
+                    if is_word(name[0]):
+                        force_point = True
+                elif char in close_brackets:
+                    # TODO strings are not looked at here, they are dangerous!
+                    # handle them!
+                    if force_no_brackets:
+                        is_finished = True
+                        break
+                    level = 1
+                    name = char + name
+                    while True:
+                        try:
+                            char = get_char()
+                        except IndexError:
+                            while not self._relevant_temp:
+                                # TODO can raise an exception, when there are
+                                # no more lines
+                                fetch_line()
+                            char = get_char()
+                        if char in close_brackets:
+                            level += 1
+                        elif char in open_brackets:
+                            level -= 1
+                        name = char + name
+                        if level == 0:
+                            break
+                elif is_word(char):
+                    name = char + name
+                    force_no_brackets = True
+                else:
+                    is_finished = True
+                    break
+            return name, is_finished
+
+        self._row_temp = self.row
+        self._relevant_temp = ''
+        fetch_line(True)
+        print self._relevant_temp
+
+        names = []
+        is_finished = False
+        while not is_finished:
+            # do this not with tokenize, because it might fail
+            # due to single line processing
+            name, is_finished = fetch_name(not bool(names))
+            names.insert(0, name)
+        return names
+
+
+def complete(source, row, column, file_callback=None):
     """
     An auto completer for python files.
 
@@ -51,12 +169,15 @@ def complete(source, row, colum, file_callback=None):
     :return: list
     :rtype: list
     """
-    row = 89
+    row = 84
+    column = 17
     f = File(source=source, row=row)
 
-    print 
-    print 
-    print f.get_line(row)
+    print
+    print
     print f.parser.user_scope
     print f.parser.user_scope.get_simple_for_line(row)
+
+    print f.get_row_path(column)
+
     return f.parser.user_scope.get_set_vars()
