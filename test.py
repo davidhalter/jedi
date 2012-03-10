@@ -128,7 +128,7 @@ if True or a:
 # completion
 import time
 class c1():
-    c2 = 1
+    c2 = c1()
     def c3(self): 
         import time as c4
         c5 = 3
@@ -136,5 +136,5 @@ class c1():
 
 
 
-c1.\
+c1.c2.\
 c

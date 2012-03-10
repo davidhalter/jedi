@@ -60,6 +60,11 @@ class Simple(object):
         self.line_end = line_end
         self.parent = None
 
+    def __repr__(self):
+        code = self.get_code().replace('\n', ' ')
+        return "<%s: %s@%s>" % \
+                (self.__class__.__name__, code, self.line_nr)
+
 
 class Scope(Simple):
     """
@@ -126,6 +131,7 @@ class Scope(Simple):
 
     def add_import(self, imp):
         self.imports.append(imp)
+        imp.parent = self
 
     def add_global(self, name):
         """
@@ -137,14 +143,7 @@ class Scope(Simple):
         :type name: Name
         """
         self.global_vars.append(name)
-
-    def _checkexisting(self, test):
-        "Convienance function... keep out duplicates"
-        if test.find('=') > -1:
-            var = test.split('=')[0].strip()
-            for l in self.locals:
-                if l.find('=') > -1 and var == l.split('=')[0].strip():
-                    self.locals.remove(l)
+        # set no parent here, because globals are not defined in this scope.
 
     def get_code(self, first_indent=False, indention="    "):
         """
@@ -291,7 +290,10 @@ class Function(Scope):
     def __init__(self, name, params, indent, line_nr, docstr=''):
         Scope.__init__(self, indent, line_nr, docstr)
         self.name = name
+        name.parent = self
         self.params = params
+        for p in params:
+            p.parent = self
         self.decorators = []
 
     def get_code(self, first_indent=False, indention="    "):
@@ -340,10 +342,14 @@ class Flow(Scope):
         super(Flow, self).__init__(indent, line_nr, '')
         self.command = command
         self.statement = statement
+        if statement:
+            statement.parent = self
         if set_vars == None:
             self.set_vars = []
         else:
             self.set_vars = set_vars
+            for s in self.set_vars:
+                s.parent = self
         self.next = None
 
     def get_code(self, first_indent=False, indention="    "):
@@ -395,22 +401,30 @@ class Import(Simple):
 
     :param line_nr: Line number.
     :type line_nr: int
-    :param namespace: The import, as an array list of Name, \
-    e.g. ['datetime', 'time'].
-    :type namespace: list
+    :param namespace: The import, can be empty if a star is given
+    :type namespace: Name
     :param alias: The alias of a namespace(valid in the current namespace).
-    :type alias: str
+    :type alias: Name
     :param from_ns: Like the namespace, can be equally used.
-    :type from_ns: list
+    :type from_ns: Name
     :param star: If a star is used -> from time import *.
     :type star: bool
     """
     def __init__(self, indent, line_nr, line_end, namespace, alias='', \
                     from_ns='', star=False):
         super(Import, self).__init__(indent, line_nr, line_end)
+
         self.namespace = namespace
+        namespace.parent = self
+
         self.alias = alias
+        if alias:
+            alias.parent = self
+
         self.from_ns = from_ns
+        if from_ns:
+            from_ns.parent = self
+
         self.star = star
 
     def get_code(self):
@@ -429,10 +443,6 @@ class Import(Simple):
         if self.star:
             return [self]
         return [self.alias] if self.alias else [self.namespace]
-
-    def __repr__(self):
-        return "<%s: %s@%s>" % \
-                (self.__class__.__name__, self.get_code(), self.line_nr)
 
 
 class Statement(Simple):
@@ -462,6 +472,8 @@ class Statement(Simple):
         self.set_vars = set_vars
         self.used_funcs = used_funcs
         self.used_vars = used_vars
+        for s in set_vars + used_funcs + used_vars:
+            s.parent = self
 
     def get_code(self, new_line=True):
         if new_line:
@@ -502,10 +514,6 @@ class Name(Simple):
 
     def __hash__(self):
         return hash(self.names) + hash(self.indent) + hash(self.line_nr)
-
-    def __repr__(self):
-        return "<%s: %s@%s>" % \
-                (self.__class__.__name__, self.get_code(), self.line_nr)
 
     def __len__(self):
         return len(self.names)

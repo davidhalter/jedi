@@ -1,5 +1,6 @@
 
 import parsing
+import evaluate
 import re
 
 __all__ = ['complete', 'set_debug_function']
@@ -181,8 +182,11 @@ def complete(source, row, column, file_callback=None):
     f = File(source=source, row=row)
     scope = f.parser.user_scope
 
-    print
-    print
+    # print a dbg title
+    dbg()
+    dbg('-' * 70)
+    dbg(' ' * 62 + 'complete')
+    dbg('-' * 70)
     print scope
     print f.parser.user_scope.get_simple_for_line(row)
 
@@ -197,7 +201,7 @@ def complete(source, row, column, file_callback=None):
 
         name = path.pop()
         if path:
-            scopes = follow_path(scope, tuple(path))
+            scopes = evaluate.follow_path(scope, tuple(path))
 
         dbg('possible scopes', scopes)
         compl = []
@@ -213,46 +217,6 @@ def complete(source, row, column, file_callback=None):
     return result
 
 
-def get_names_for_scope(scope):
-    """ Get all completions possible for the current scope. """
-    comp = []
-    start_scope = scope
-    while scope:
-        # class variables/functions are only availabe
-        if not isinstance(scope, parsing.Class) or scope == start_scope:
-            comp += scope.get_set_vars()
-        scope = scope.parent
-    return comp
-
-def follow_path(scope, path):
-    """
-    Follow a path of python names.
-    recursive!
-    :returns: list(Scope)
-    """
-    comp = get_names_for_scope(scope)
-    print path, comp
-
-    path = list(path)
-    name = path.pop()
-    scopes = []
-
-    # make the full comparison, because the names have to match exactly
-    comp = [c for c in comp if [name] == list(c.names)]
-    # TODO differentiate between the different comp input (some are overridden)
-    for c in comp:
-        p_class = c.parent.__class__
-        if p_class == parsing.Class or p_class == parsing.Scope:
-            scopes.append(c.parent)
-        #elif p_class == parsing.Function:
-        else:
-            print 'error follow_path:', p_class
-    if path:
-        for s in tuple(scopes):
-            scopes += follow_path(s, tuple(path))
-    return set(scopes)
-
-
 def dbg(*args):
     if debug_function:
         debug_function(*args)
@@ -262,6 +226,7 @@ def set_debug_function(func):
     global debug_function
     debug_function = func
     parsing.debug_function = func
+    evaluate.debug_function = func
 
 
 debug_function = None
