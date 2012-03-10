@@ -2,7 +2,7 @@
 import parsing
 import re
 
-__all__ = ['complete']
+__all__ = ['complete', 'set_debug_function']
 
 
 class ParserError(LookupError):
@@ -73,10 +73,12 @@ class File(object):
             :type is_first: str
             :return: The list of names and an is_finished param.
             :rtype: (list, bool)
+
+            :raises: ParserError
             """
             def get_char():
-                char = self._relevant_temp[-1]
-                self._relevant_temp = self._relevant_temp[:-1]
+                self._relevant_temp, char = self._relevant_temp[:-1], \
+                                            self._relevant_temp[-1]
                 return char
 
             whitespace = [' ', '\n', '\r', '\\']
@@ -103,8 +105,9 @@ class File(object):
 
                 if char == '.':
                     if not is_first and not name:
-                        raise ParserError('No name after point: %s'
-                                            % self._relevant_temp)
+                        raise ParserError('No name after point (@%s): %s'
+                                            % (self._row_temp,
+                                                self._relevant_temp + char))
                     break
                 elif char in whitespace:
                     if is_word(name[0]):
@@ -112,6 +115,7 @@ class File(object):
                 elif char in close_brackets:
                     # TODO strings are not looked at here, they are dangerous!
                     # handle them!
+                    # TODO handle comments
                     if force_no_brackets:
                         is_finished = True
                         break
@@ -134,6 +138,7 @@ class File(object):
                         if level == 0:
                             break
                 elif is_word(char):
+                    # TODO handle strings -> "asdf".join([1,2])
                     name = char + name
                     force_no_brackets = True
                 else:
@@ -144,7 +149,6 @@ class File(object):
         self._row_temp = self.row
         self._relevant_temp = ''
         fetch_line(True)
-        print self._relevant_temp
 
         names = []
         is_finished = False
@@ -171,13 +175,93 @@ def complete(source, row, column, file_callback=None):
     """
     row = 84
     column = 17
+
+    row = 140
+    column = 2
     f = File(source=source, row=row)
+    scope = f.parser.user_scope
 
     print
     print
-    print f.parser.user_scope
+    print scope
     print f.parser.user_scope.get_simple_for_line(row)
 
-    print f.get_row_path(column)
+    try:
+        path = f.get_row_path(column)
+    except ParserError as e:
+        path = []
+        dbg(e)
 
-    return f.parser.user_scope.get_set_vars()
+    result = []
+    if path:
+
+        name = path.pop()
+        if path:
+            scopes = follow_path(scope, tuple(path))
+
+        dbg('possible scopes', scopes)
+        compl = []
+        for s in scopes:
+            compl += s.get_defined_names()
+
+        dbg('possible-compl', compl)
+
+        # make a partial comparison, because the other options have to
+        # be returned as well.
+        result = [c for c in compl if name in c.names[-1]]
+
+    return result
+
+
+def get_names_for_scope(scope):
+    """ Get all completions possible for the current scope. """
+    comp = []
+    start_scope = scope
+    while scope:
+        # class variables/functions are only availabe
+        if not isinstance(scope, parsing.Class) or scope == start_scope:
+            comp += scope.get_set_vars()
+        scope = scope.parent
+    return comp
+
+def follow_path(scope, path):
+    """
+    Follow a path of python names.
+    recursive!
+    :returns: list(Scope)
+    """
+    comp = get_names_for_scope(scope)
+    print path, comp
+
+    path = list(path)
+    name = path.pop()
+    scopes = []
+
+    # make the full comparison, because the names have to match exactly
+    comp = [c for c in comp if [name] == list(c.names)]
+    # TODO differentiate between the different comp input (some are overridden)
+    for c in comp:
+        p_class = c.parent.__class__
+        if p_class == parsing.Class or p_class == parsing.Scope:
+            scopes.append(c.parent)
+        #elif p_class == parsing.Function:
+        else:
+            print 'error follow_path:', p_class
+    if path:
+        for s in tuple(scopes):
+            scopes += follow_path(s, tuple(path))
+    return set(scopes)
+
+
+def dbg(*args):
+    if debug_function:
+        debug_function(*args)
+
+
+def set_debug_function(func):
+    global debug_function
+    debug_function = func
+    parsing.debug_function = func
+
+
+debug_function = None

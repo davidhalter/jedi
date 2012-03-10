@@ -3,7 +3,7 @@
 # test comment
 
 import datetime
-from token import *
+#from token import *
 from time import sleep
 from token import OP as OP_TEST, INDENT as INDENT_TEST
 
@@ -124,3 +124,17 @@ def flow_test(a):
 
 if True or a:
     print a
+
+# completion
+import time
+class c1():
+    c2 = 1
+    def c3(self): 
+        import time as c4
+        c5 = 3
+
+
+
+
+c1.\
+c

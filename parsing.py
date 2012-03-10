@@ -110,7 +110,7 @@ class Scope(Simple):
         index = index1 if index1 < index2 and index1 > -1 else index2
         prefix = string[:index]
         d = string[index:]
-        print 'docstr', d, prefix
+        dbg('add_docstr', d, prefix)
 
         # now clean docstr
         d = d.replace('\n', ' ')
@@ -187,6 +187,9 @@ class Scope(Simple):
 
         return n
 
+    def get_defined_names(self):
+        return [n for n in self.get_set_vars() if len(n) == 1]
+
     def is_empty(self):
         """
         :return: True if there are no subscopes, imports and statements.
@@ -233,7 +236,10 @@ class Class(Scope):
     def __init__(self, name, supers, indent, line_nr, docstr=''):
         super(Class, self).__init__(indent, line_nr, docstr)
         self.name = name
+        name.parent = self
         self.supers = supers
+        for s in self.supers:
+            s.parent = self
         self.decorators = []
 
     def get_code(self, first_indent=False, indention="    "):
@@ -248,7 +254,7 @@ class Class(Scope):
             str += "pass\n"
         return str
 
-    def get_set_vars(self):
+    def get_instance_set_vars(self):
         n = []
         for s in self.subscopes:
             try:
@@ -424,6 +430,10 @@ class Import(Simple):
             return [self]
         return [self.alias] if self.alias else [self.namespace]
 
+    def __repr__(self):
+        return "<%s: %s@%s>" % \
+                (self.__class__.__name__, self.get_code(), self.line_nr)
+
 
 class Statement(Simple):
     """
@@ -496,6 +506,9 @@ class Name(Simple):
     def __repr__(self):
         return "<%s: %s@%s>" % \
                 (self.__class__.__name__, self.get_code(), self.line_nr)
+
+    def __len__(self):
+        return len(self.names)
 
 
 class PyFuzzyParser(object):
@@ -667,8 +680,8 @@ class PyFuzzyParser(object):
         start_line = self.line_nr
         token_type, cname, ind = self.next()
         if token_type != tokenize.NAME:
-            print "class: syntax error - token is not a name@%s (%s: %s)" \
-                    % (self.line_nr, tokenize.tok_name[token_type], cname)
+            dbg("class: syntax error - token is not a name@%s (%s: %s)" \
+                    % (self.line_nr, tokenize.tok_name[token_type], cname))
             return None
 
         cname = Name([cname], ind, self.line_nr, self.line_nr)
@@ -820,8 +833,8 @@ class PyFuzzyParser(object):
         type, tok, position, dummy, self.parserline = self.gen.next()
         (self.line_nr, indent) = position
         if self.line_nr == self.user_line:
-            print 'user scope found [%s] =%s' % \
-                    (self.parserline.replace('\n', ''), repr(self.scope))
+            dbg('user scope found [%s] =%s' % \
+                    (self.parserline.replace('\n', ''), repr(self.scope)))
             self.user_scope = self.scope
         self.last_token = self.current
         self.current = (type, tok, indent)
@@ -854,7 +867,7 @@ class PyFuzzyParser(object):
                     % (tok, token_type, indent))
 
                 while token_type == tokenize.DEDENT and self.scope != self.top:
-                    print 'dedent', self.scope
+                    dbg('dedent', self.scope)
                     token_type, tok, indent = self.next()
                     if indent <= self.scope.indent:
                         self.scope.line_end = self.line_nr
@@ -866,8 +879,8 @@ class PyFuzzyParser(object):
                 while indent <= self.scope.indent \
                         and token_type in [tokenize.NAME] \
                         and self.scope != self.top:
-                    print 'syntax_err, dedent @%s - %s<=%s', \
-                            (self.line_nr, indent, self.scope.indent)
+                    dbg( 'syntax_err, dedent @%s - %s<=%s', \
+                            (self.line_nr, indent, self.scope.indent))
                     self.scope.line_end = self.line_nr
                     self.scope = self.scope.parent
 
@@ -952,7 +965,7 @@ class PyFuzzyParser(object):
                     stmt, tok = self._parse_statement(self.current)
                     if stmt:
                         self.scope.add_statement(stmt)
-                        print 'global_vars', stmt.used_vars
+                        dbg('global_vars', stmt.used_vars)
                         for name in stmt.used_vars:
                             # add the global to the top, because there it is
                             # important.
@@ -986,7 +999,6 @@ class PyFuzzyParser(object):
 
 
 def dbg(*args):
-    global debug_function
     if debug_function:
         debug_function(*args)
 
