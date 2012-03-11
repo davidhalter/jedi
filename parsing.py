@@ -39,6 +39,14 @@ import cStringIO
 import re
 
 
+class TokenNotFoundError(Exception):
+    pass
+
+
+class ParserError(Exception):
+    pass
+
+
 def indent_block(text, indention="    "):
     """ This function indents a text block with a default of four spaces """
     temp = ''
@@ -460,18 +468,21 @@ class Statement(Simple):
     :param used_funcs: str
     :param used_vars: The variables which are used by the statement.
     :param used_vars: str
+    :param token_list: Token list which is also peppered with Name.
+    :param token_list: list
     :param indent: The indent level of the flow statement.
     :type indent: int
     :param line_nr: Line number of the flow statement.
     :type line_nr: int
     """
-    def __init__(self, code, set_vars, used_funcs, used_vars, indent, line_nr,
-            line_end):
+    def __init__(self, code, set_vars, used_funcs, used_vars, token_list,
+            indent, line_nr, line_end):
         super(Statement, self).__init__(indent, line_nr, line_end)
         self.code = code
         self.set_vars = set_vars
         self.used_funcs = used_funcs
         self.used_vars = used_vars
+        self.token_list = token_list
         for s in set_vars + used_funcs + used_vars:
             s.parent = self
 
@@ -484,6 +495,170 @@ class Statement(Simple):
     def get_set_vars(self):
         """ Get the names for the statement. """
         return self.set_vars
+
+    def get_assignment_calls(self):
+        """
+        This is not done in the main parser, because it might be slow and
+        most of the statements won't need this data anyway. This is something
+        'like' a lazy execution.
+        """
+        result = None
+        has_assignment = False
+        level = 0
+        is_chain = False
+
+        for tok_temp in self.token_list:
+            print 'tok', tok_temp
+            try:
+                token_type, tok, indent = tok_temp
+                if '=' in tok and not tok in ['>=', '<=', '==', '!=']:
+                    # This means, there is an assignment here.
+                    # TODO there may be multiple assignments: a = b = 1
+                    has_assignment = True
+
+                    # initialize the first item
+                    result = Array(Array.EMPTY)
+                    continue
+            except TypeError:
+                # the token is a Name, which has already been parsed
+                tok = tok_temp
+
+            if has_assignment:
+                brackets = {'(': Array.EMPTY, '[': Array.LIST, '{': Array.SET}
+                is_call = isinstance(result, Call)
+                if isinstance(tok, Name):
+                    call = Call(tok, result)
+                    if is_chain:
+                        result = result.set_next_chain_call(call)
+                        is_chain = False
+                    else:
+                        result.add_to_current_field(call)
+                        result = call
+                        print 'asdf', result, result.parent
+                elif tok in brackets.keys():
+                    level += 1
+                    result = Array(brackets[tok], result)
+                    if is_call:
+                        result = result.parent.add_execution(result)
+                    else:
+                        result.parent.add_to_current_field(result)
+                elif tok == ':':
+                    if is_call:
+                        result = result.parent
+                    result.add_dictionary_key()
+                elif tok == '.':
+                    is_chain = True
+                elif tok == ',':
+                    if is_call:
+                        result = result.parent
+                    result.add_field()
+                    # important - it cannot be empty anymore
+                    if result.arr_type == Array.EMPTY:
+                        result.arr_type = Array.TUPLE
+                elif tok in [')', '}', ']']:
+                    level -= 1
+                    print 'asdf2', result, result.parent
+                    result = result.parent
+                else:
+                    # TODO catch numbers and strings -> token_type and make
+                    # calls out of them
+                    if is_call:
+                        result = result.parent
+                    result.add_to_current_field(tok)
+
+        if not has_assignment:
+            raise TokenNotFoundError("You are requesting the result of an "
+                            "assignment, where the token cannot be found")
+        if level != 0:
+            raise ParserError("Brackets don't match: %s. This is not normal "
+                                "behaviour. Please submit a bug" % level)
+        return result
+
+
+class Array(object):
+    """
+    Describes the different python types for an array, but also empty
+    statements. In the Python syntax definitions this type is named 'atom'.
+    http://docs.python.org/release/3.0.1/reference/grammar.html
+    Array saves sub-arrays as well as normal operators and calls to methods.
+
+    :param array_type: The type of an array, which can be one of the constants\
+    below.
+    :type array_type: int
+    """
+    EMPTY = object()
+    TUPLE = object()
+    LIST = object()
+    DICT = object()
+    SET = object()
+
+    def __init__(self, arr_type, parent=None):
+        self.arr_type = arr_type
+        self.values = []
+        self.keys = []
+        self.parent = parent
+
+    def add_field(self):
+        """
+        Just add a new field to the values.
+        """
+        self.values.append([])
+        self.keys.append(None)
+
+    def add_to_current_field(self, tok):
+        """ Adds a token to the latest field (in content). """
+        if not self.values:
+            # add the first field, this is done here, because if nothing
+            # gets added, the list is empty, which is also needed sometimes.
+            self.values.append([])
+        self.values[-1].append(tok)
+
+    def add_dictionary_key(self):
+        """
+        Only used for dictionaries, automatically adds the tokens added by now
+        from the values to keys.
+        """
+        self.arr_type = Array.DICT
+        c = self._counter
+        self.keys[c] = self.values[c]
+        self.values[c] = []
+
+    def __len__(self):
+        return len(self.values)
+
+    def __getitem__(self, key):
+        return self.values[key]
+
+    def __iter__(self):
+        if self.arr_type == self.DICT:
+            return self.values.items()
+        else:
+            return self.values
+
+
+class Call(object):
+    """ The statement object of functions, to  """
+    def __init__(self, name, parent):
+        self.name = name
+        self.parent = parent
+
+        self.next = None
+        self.param_array = None
+        self.executions = []
+
+    def set_next_chain_call(self, call):
+        """ Adds another part of the statement"""
+        self.next = call
+        call.parent = self.parent
+        return call
+
+    def add_execution(self, call):
+        """
+        An execution is nothing else than brackets, with params in them, which
+        shows access on the internals of this name.
+        """
+        self.executions.append(call)
+        return call
 
 
 class Name(Simple):
@@ -704,43 +879,6 @@ class PyFuzzyParser(object):
 
         return Class(cname, super, indent, start_line)
 
-    def _parseassignment(self):
-        """ TODO remove or replace, at the moment not used """
-        assign = ''
-        token_type, tok, indent = self.next()
-        if token_type == tokenize.STRING or tok == 'str':
-            return '""'
-        elif tok == '(' or tok == 'tuple':
-            return '()'
-        elif tok == '[' or tok == 'list':
-            return '[]'
-        elif tok == '{' or tok == 'dict':
-            return '{}'
-        elif token_type == tokenize.NUMBER:
-            return '0'
-        elif tok == 'open' or tok == 'file':
-            return 'file'
-        elif tok == 'None':
-            return '_PyCmplNoType()'
-        elif tok == 'type':
-            return 'type(_PyCmplNoType)'  # only for method resolution
-        else:
-            assign += tok
-            level = 0
-            while True:
-                token_type, tok, indent = self.next()
-                if tok in ('(', '{', '['):
-                    level += 1
-                elif tok in (']', '}', ')'):
-                    level -= 1
-                    if level == 0:
-                        break
-                elif level == 0:
-                    if tok in (';', '\n'):
-                        break
-                    assign += tok
-        return "%s" % assign
-
     def _parse_statement(self, pre_used_token=None, added_breaks=None):
         """
         Parses statements like:
@@ -778,9 +916,11 @@ class PyFuzzyParser(object):
         if added_breaks:
             breaks += added_breaks
 
+        tok_list = []
         while not (tok in always_break or tok in breaks and level <= 0):
             set_string = None
             #print 'parse_stmt', tok, tokenize.tok_name[token_type]
+            tok_list.append(self.current)
             if tok == 'as':
                 string += " %s " % tok
                 token_type, tok, indent_dummy = self.next()
@@ -789,6 +929,7 @@ class PyFuzzyParser(object):
                             self._parsedotname(self.current)
                     n = Name(path, start_indent, start_line, self.line_nr)
                     set_vars.append(n)
+                    tok_list.append(n)
                     string += ".".join(path)
                 continue
             elif token_type == tokenize.NAME:
@@ -802,12 +943,13 @@ class PyFuzzyParser(object):
                     path, token_type, tok, start_indent, start_line = \
                             self._parsedotname(self.current)
                     n = Name(path, start_indent, start_line, self.line_nr)
+                    tok_list.pop()  # remove last entry, because we add Name
+                    tok_list.append(n)
                     if tok == '(':
                         # it must be a function
                         used_funcs.append(n)
                     else:
-                        if not n.names[0] in ['global']:
-                            used_vars.append(n)
+                        used_vars.append(n)
                     if string and re.match(r'[\w\d\'"]', string[-1]):
                         string += ' '
                     string += ".".join(path)
@@ -833,7 +975,7 @@ class PyFuzzyParser(object):
             return None, tok
         #print 'new_stat', string, set_vars, used_funcs, used_vars
         stmt = Statement(string, set_vars, used_funcs, used_vars,\
-                            indent, line_start, self.line_nr)
+                            tok_list, indent, line_start, self.line_nr)
         return stmt, tok
 
     def next(self):
@@ -887,7 +1029,7 @@ class PyFuzzyParser(object):
                 while indent <= self.scope.indent \
                         and token_type in [tokenize.NAME] \
                         and self.scope != self.top:
-                    dbg( 'syntax_err, dedent @%s - %s<=%s', \
+                    dbg('syntax_err, dedent @%s - %s<=%s', \
                             (self.line_nr, indent, self.scope.indent))
                     self.scope.line_end = self.line_nr
                     self.scope = self.scope.parent

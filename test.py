@@ -128,11 +128,11 @@ if True or a:
 # completion
 import time
 class c1():
-    c2 = c1()
+    c2,c5 = c1(), c1().c3()
     def c3(self): 
         import time as c4
         c5 = 3
-
+        return 'asdf'
 
 
 

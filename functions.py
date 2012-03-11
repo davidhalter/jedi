@@ -222,11 +222,15 @@ def dbg(*args):
         debug_function(*args)
 
 
-def set_debug_function(func):
+def set_debug_function(func_cb):
+    """
+    You can define a callback debug function to get all the debug messages.
+    :param func_cb: The callback function for debug messages, with n params.
+    """
     global debug_function
-    debug_function = func
-    parsing.debug_function = func
-    evaluate.debug_function = func
+    debug_function = func_cb
+    parsing.debug_function = func_cb
+    evaluate.debug_function = func_cb
 
 
 debug_function = None
