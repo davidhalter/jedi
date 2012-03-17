@@ -171,7 +171,7 @@ def complete(source, row, column, file_callback=None):
     :type row: int
     :param col: The column to complete in.
     :type col: int
-    :return: list
+    :return: list of completion objects
     :rtype: list
     """
     row = 84
@@ -198,15 +198,23 @@ def complete(source, row, column, file_callback=None):
 
     result = []
     if path:
-
         name = path.pop()
         if path:
+            # just parse one statement
+            r = parsing.PyFuzzyParser(".".join(path))
+            print 'p', r.top.get_code(), r.top.statements[0]
+            evaluate.follow_statement(scope, r.top.statements[0])
+            exit()
+
             scopes = evaluate.follow_path(scope, tuple(path))
 
-        dbg('possible scopes', scopes)
-        compl = []
-        for s in scopes:
-            compl += s.get_defined_names()
+            dbg('possible scopes', scopes)
+            compl = []
+            for s in scopes:
+                compl += s.get_defined_names()
+
+        else:
+            compl = evaluate.get_names_for_scope(scope)
 
         dbg('possible-compl', compl)
 

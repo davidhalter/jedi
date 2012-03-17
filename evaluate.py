@@ -2,14 +2,26 @@ import parsing
 
 def get_names_for_scope(scope):
     """ Get all completions possible for the current scope. """
-    comp = []
+    compl = []
     start_scope = scope
     while scope:
         # class variables/functions are only availabe
         if not isinstance(scope, parsing.Class) or scope == start_scope:
-            comp += scope.get_set_vars()
+            compl += scope.get_set_vars()
         scope = scope.parent
-    return comp
+    return compl
+
+
+# default: name in scope
+# point: chaining
+# execution: -> eval returns default & ?
+def follow_statement(scope, stmt):
+    arr = stmt.get_assignment_calls()
+    return call
+
+
+def follow_array(scope, array):
+    return
 
 
 def follow_path(scope, path):
@@ -18,17 +30,17 @@ def follow_path(scope, path):
     recursive!
     :returns: list(Scope)
     """
-    comp = get_names_for_scope(scope)
-    print path, comp
+    compl = get_names_for_scope(scope)
+    print path, compl
 
     path = list(path)
     name = path.pop(0)
     scopes = []
 
     # make the full comparison, because the names have to match exactly
-    comp = [c for c in comp if [name] == list(c.names)]
+    compl = [c for c in compl if [name] == list(c.names)]
     # TODO differentiate between the different comp input (some are overridden)
-    for c in comp:
+    for c in compl:
         p_class = c.parent.__class__
         if p_class == parsing.Class or p_class == parsing.Scope:
             scopes.append(c.parent)

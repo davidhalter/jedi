@@ -39,10 +39,6 @@ import cStringIO
 import re
 
 
-class TokenNotFoundError(Exception):
-    pass
-
-
 class ParserError(Exception):
     pass
 
@@ -502,19 +498,18 @@ class Statement(Simple):
         most of the statements won't need this data anyway. This is something
         'like' a lazy execution.
         """
-        result = None
-        has_assignment = False
+        result = Array(Array.EMPTY)
         level = 0
         is_chain = False
 
         for tok_temp in self.token_list:
-            print 'tok', tok_temp
+            #print 'tok', tok_temp
             try:
                 token_type, tok, indent = tok_temp
-                if '=' in tok and not tok in ['>=', '<=', '==', '!=']:
+                if level == 0 and \
+                        '=' in tok and not tok in ['>=', '<=', '==', '!=']:
                     # This means, there is an assignment here.
                     # TODO there may be multiple assignments: a = b = 1
-                    has_assignment = True
 
                     # initialize the first item
                     result = Array(Array.EMPTY)
@@ -523,52 +518,50 @@ class Statement(Simple):
                 # the token is a Name, which has already been parsed
                 tok = tok_temp
 
-            if has_assignment:
-                brackets = {'(': Array.EMPTY, '[': Array.LIST, '{': Array.SET}
-                is_call = isinstance(result, Call)
-                if isinstance(tok, Name):
-                    call = Call(tok, result)
-                    if is_chain:
-                        result = result.set_next_chain_call(call)
-                        is_chain = False
-                    else:
-                        result.add_to_current_field(call)
-                        result = call
-                        print 'asdf', result, result.parent
-                elif tok in brackets.keys():
-                    level += 1
-                    result = Array(brackets[tok], result)
-                    if is_call:
-                        result = result.parent.add_execution(result)
-                    else:
-                        result.parent.add_to_current_field(result)
-                elif tok == ':':
-                    if is_call:
-                        result = result.parent
-                    result.add_dictionary_key()
-                elif tok == '.':
-                    is_chain = True
-                elif tok == ',':
-                    if is_call:
-                        result = result.parent
-                    result.add_field()
-                    # important - it cannot be empty anymore
-                    if result.arr_type == Array.EMPTY:
-                        result.arr_type = Array.TUPLE
-                elif tok in [')', '}', ']']:
-                    level -= 1
-                    print 'asdf2', result, result.parent
-                    result = result.parent
+            brackets = {'(': Array.EMPTY, '[': Array.LIST, '{': Array.SET}
+            is_call = isinstance(result, Call)
+            if isinstance(tok, Name):
+                call = Call(tok, result)
+                if is_chain:
+                    result = result.set_next_chain_call(call)
+                    is_chain = False
                 else:
-                    # TODO catch numbers and strings -> token_type and make
-                    # calls out of them
-                    if is_call:
-                        result = result.parent
-                    result.add_to_current_field(tok)
+                    result.add_to_current_field(call)
+                    result = call
+            elif tok in brackets.keys():
+                level += 1
+                result = Array(brackets[tok], result)
+                if is_call:
+                    result = result.parent.add_execution(result)
+                else:
+                    result.parent.add_to_current_field(result)
+            elif tok == ':':
+                if is_call:
+                    result = result.parent
+                result.add_dictionary_key()
+            elif tok == '.':
+                is_chain = True
+            elif tok == ',':
+                if is_call:
+                    result = result.parent
+                result.add_field()
+                # important - it cannot be empty anymore
+                if result.arr_type == Array.EMPTY:
+                    result.arr_type = Array.TUPLE
+            elif tok in [')', '}', ']']:
+                level -= 1
+                result = result.parent
+            else:
+                # TODO catch numbers and strings -> token_type and make
+                # calls out of them
+                if is_call:
+                    result = result.parent
+                result.add_to_current_field(tok)
 
-        if not has_assignment:
-            raise TokenNotFoundError("You are requesting the result of an "
-                            "assignment, where the token cannot be found")
+        if isinstance(result, Call):
+            # if the last added object was a name, the result will not be the
+            # top tree.
+            result = result.parent
         if level != 0:
             raise ParserError("Brackets don't match: %s. This is not normal "
                                 "behaviour. Please submit a bug" % level)
@@ -635,6 +628,18 @@ class Array(object):
         else:
             return self.values
 
+    def __repr__(self):
+        if self.arr_type == self.EMPTY:
+            temp = 'empty'
+        elif self.arr_type == self.TUPLE:
+            temp = 'tuple'
+        elif self.arr_type == self.DICT:
+            temp = 'dict'
+        elif self.arr_type == self.SET:
+            temp = 'set'
+        return "<%s: %s of %s>" % \
+                (self.__class__.__name__, temp, self.parent)
+
 
 class Call(object):
     """ The statement object of functions, to  """
@@ -659,6 +664,10 @@ class Call(object):
         """
         self.executions.append(call)
         return call
+
+    def __repr__(self):
+        return "<%s: %s of %s>" % \
+                (self.__class__.__name__, self.name, self.parent)
 
 
 class Name(Simple):
@@ -706,7 +715,7 @@ class PyFuzzyParser(object):
     """
     def __init__(self, code, user_line=None):
         self.user_line = user_line
-        self.code = code
+        self.code = code + '\n'  # end with \n, because the parser needs it
 
         # initialize global Scope
         self.top = Scope(0, 0)
