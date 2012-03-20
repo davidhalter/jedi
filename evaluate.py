@@ -1,4 +1,34 @@
 import parsing
+import __builtin__
+import itertools
+
+
+class Arr(object):
+    """
+    - caching one function
+    - iterating over arrays objects
+    - test
+    """
+    cache = []
+
+    def __init__(self, scope, ):
+        self.counter = 0
+        self.types = []  # each an array, like: [[list], [A,B]]
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self.counter < len(Arr.cache):
+            return Arr.cache[self.counter]
+        else:
+            if blub:
+                Arr.cache.append(1)
+                self.counter += 1
+                return Arr.cache[self.counter]
+            else:
+                raise StopIteration
+
 
 def get_names_for_scope(scope):
     """ Get all completions possible for the current scope. """
@@ -16,15 +46,69 @@ def get_names_for_scope(scope):
 # point: chaining
 # execution: -> eval returns default & ?
 def follow_statement(scope, stmt):
-    arr = stmt.get_assignment_calls()
-    return call
+    arr = stmt.get_assignment_calls().values[0][0]
+    print arr
+
+    path = arr.generate_call_list()
+    path, path_print = itertools.tee(path)
+    print '\n\ncalls:'
+    for c in path_print:
+        print c
+
+    print '\n\nfollow'
+    current = next(path)
+    result = []
+    if isinstance(current, parsing.Array):
+        if current.arr_type == parsing.Array.EMPTY:
+            # the normal case - no array type
+            print 'length', len(current)
+        elif current.arr_type == parsing.Array.LIST:
+            result.append(__builtin__.list())
+        elif current.arr_type == parsing.Array.SET:
+            result.append(__builtin__.set())
+        elif current.arr_type == parsing.Array.TUPLE:
+            result.append(__builtin__.tuple())
+        elif current.arr_type == parsing.Array.DICT:
+            result.append(__builtin__.dict())
+    else:
+        print current
+        pass
+
+    print result
+    result = follow_paths(path, result)
+    print result
+    exit()
+
+    return result
+
+
+def follow_paths(path, results):
+    results_new = []
+    try:
+        if len(results) > 1:
+            iter_paths = itertools.tee(path, len(results))
+        else:
+            iter_paths = [path]
+        for i, r in enumerate(results):
+            results_new += follow_path(iter_paths[i], r)
+    except StopIteration:
+        return results
+    return results_new
+
+
+def follow_path(path, result):
+    current = next(path)
+    #result = []
+
+    result = follow_paths(path, result)
+    return result
 
 
 def follow_array(scope, array):
-    return
+    yield 1
 
 
-def follow_path(scope, path):
+def follow_path_old(scope, path):
     """
     Follow a path of python names.
     recursive!

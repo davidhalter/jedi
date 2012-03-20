@@ -499,11 +499,14 @@ class Statement(Simple):
         'like' a lazy execution.
         """
         result = Array(Array.EMPTY)
+        top = result
         level = 0
         is_chain = False
+        close_brackets = False
 
-        for tok_temp in self.token_list:
-            #print 'tok', tok_temp
+        print 'tok_list', self.token_list
+        for i, tok_temp in enumerate(self.token_list):
+            #print 'tok', tok_temp, result
             try:
                 token_type, tok, indent = tok_temp
                 if level == 0 and \
@@ -519,56 +522,126 @@ class Statement(Simple):
                 tok = tok_temp
 
             brackets = {'(': Array.EMPTY, '[': Array.LIST, '{': Array.SET}
-            is_call = isinstance(result, Call)
+            is_call = lambda: result.__class__ == Call
+            is_call_or_close = lambda: is_call() or close_brackets
             if isinstance(tok, Name):
-                call = Call(tok, result)
                 if is_chain:
+                    call = Call(tok, result)
                     result = result.set_next_chain_call(call)
                     is_chain = False
+                    close_brackets  = False
                 else:
+                    if close_brackets:
+                        result = result.parent
+                        close_brackets = False
+                    call = Call(tok, result)
                     result.add_to_current_field(call)
                     result = call
             elif tok in brackets.keys():
                 level += 1
-                result = Array(brackets[tok], result)
-                if is_call:
+                if is_call_or_close():
+                    result = Array(brackets[tok], result)
                     result = result.parent.add_execution(result)
+                    close_brackets = False
                 else:
+                    result = Array(brackets[tok], result)
                     result.parent.add_to_current_field(result)
             elif tok == ':':
-                if is_call:
+                if is_call_or_close():
                     result = result.parent
+                    close_brackets = False
                 result.add_dictionary_key()
             elif tok == '.':
+                if close_brackets:
+                    result = result.parent
+                    close_brackets = False
                 is_chain = True
             elif tok == ',':
-                if is_call:
+                if is_call_or_close():
                     result = result.parent
+                    close_brackets = False
                 result.add_field()
                 # important - it cannot be empty anymore
                 if result.arr_type == Array.EMPTY:
                     result.arr_type = Array.TUPLE
             elif tok in [')', '}', ']']:
+                while is_call_or_close():
+                    result = result.parent
+                    close_brackets = False
+                if tok == '}' and not len(result):
+                    # this is a really special case - empty brackets {} are
+                    # always dictionaries and not sets.
+                    result.arr_type = Array.DICT
                 level -= 1
-                result = result.parent
+                #result = result.parent
+                close_brackets = True
             else:
                 # TODO catch numbers and strings -> token_type and make
                 # calls out of them
-                if is_call:
+                if is_call_or_close():
                     result = result.parent
+                    close_brackets = False
                 result.add_to_current_field(tok)
 
-        if isinstance(result, Call):
-            # if the last added object was a name, the result will not be the
-            # top tree.
-            result = result.parent
+            print 'tok_end', tok_temp, result, close_brackets
+
         if level != 0:
             raise ParserError("Brackets don't match: %s. This is not normal "
                                 "behaviour. Please submit a bug" % level)
-        return result
+        return top
 
 
-class Array(object):
+class Call(object):
+    """ The statement object of functions, to  """
+    def __init__(self, name, parent=None):
+        self.name = name
+        # parent is not the oposite of next. The parent of c: a = [b.c] would
+        # be an array.
+        self.parent = parent
+
+        self.next = None
+        self.execution = None
+
+    def set_next_chain_call(self, call):
+        """ Adds another part of the statement"""
+        self.next = call
+        #print '\n\npar', call.parent, self.parent, type(call), type(self)
+        call.parent = self.parent
+        return call
+
+    def add_execution(self, call):
+        """
+        An execution is nothing else than brackets, with params in them, which
+        shows access on the internals of this name.
+        """
+        self.execution = call
+        # there might be multiple executions, like a()[0], in that case, they
+        # have the same parent. Otherwise it's not possible to parse proper.
+        if self.parent.execution == self:
+            call.parent = self.parent
+        else:
+            call.parent = self
+        return call
+
+    def generate_call_list(self):
+        try:
+            for name_part in self.name.names:
+                yield name_part
+        except AttributeError:
+            yield self
+        if self.execution is not None:
+            for y in self.execution.generate_call_list():
+                yield y
+        if self.next is not None:
+            for y in self.next.generate_call_list():
+                yield y
+
+    def __repr__(self):
+        return "<%s: %s of %s>" % \
+                (self.__class__.__name__, self.name, self.parent)
+
+
+class Array(Call):
     """
     Describes the different python types for an array, but also empty
     statements. In the Python syntax definitions this type is named 'atom'.
@@ -586,14 +659,18 @@ class Array(object):
     SET = object()
 
     def __init__(self, arr_type, parent=None):
+        super(Array, self).__init__(None, parent)
+
         self.arr_type = arr_type
         self.values = []
         self.keys = []
-        self.parent = parent
 
     def add_field(self):
         """
         Just add a new field to the values.
+
+        Each value has a sub-array, because there may be different tokens in
+        one array.
         """
         self.values.append([])
         self.keys.append(None)
@@ -624,15 +701,17 @@ class Array(object):
 
     def __iter__(self):
         if self.arr_type == self.DICT:
-            return self.values.items()
+            return self.values.items().__iter__()
         else:
-            return self.values
+            return self.values.__iter__()
 
     def __repr__(self):
         if self.arr_type == self.EMPTY:
             temp = 'empty'
         elif self.arr_type == self.TUPLE:
             temp = 'tuple'
+        elif self.arr_type == self.LIST:
+            temp = 'list'
         elif self.arr_type == self.DICT:
             temp = 'dict'
         elif self.arr_type == self.SET:
@@ -641,33 +720,8 @@ class Array(object):
                 (self.__class__.__name__, temp, self.parent)
 
 
-class Call(object):
-    """ The statement object of functions, to  """
-    def __init__(self, name, parent):
-        self.name = name
-        self.parent = parent
-
-        self.next = None
-        self.param_array = None
-        self.executions = []
-
-    def set_next_chain_call(self, call):
-        """ Adds another part of the statement"""
-        self.next = call
-        call.parent = self.parent
-        return call
-
-    def add_execution(self, call):
-        """
-        An execution is nothing else than brackets, with params in them, which
-        shows access on the internals of this name.
-        """
-        self.executions.append(call)
-        return call
-
-    def __repr__(self):
-        return "<%s: %s of %s>" % \
-                (self.__class__.__name__, self.name, self.parent)
+class NamePart(str):
+    pass
 
 
 class Name(Simple):
@@ -679,7 +733,7 @@ class Name(Simple):
     """
     def __init__(self, names, indent, line_nr, line_end):
         super(Name, self).__init__(indent, line_nr, line_end)
-        self.names = tuple(names)
+        self.names = tuple(NamePart(n) for n in names)
 
     def get_code(self):
         """ Returns the names in a full string format """
