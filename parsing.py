@@ -511,7 +511,7 @@ class Statement(Simple):
                     call = Call(tok, result)
                     result = result.set_next_chain_call(call)
                     is_chain = False
-                    close_brackets  = False
+                    close_brackets = False
                 else:
                     if close_brackets:
                         result = result.parent
