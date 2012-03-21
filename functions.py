@@ -178,6 +178,7 @@ def complete(source, row, column, file_callback=None):
     column = 17
 
     row = 140
+    row = 144
     column = 200
     f = File(source=source, row=row)
     scope = f.parser.user_scope

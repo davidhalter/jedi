@@ -257,24 +257,6 @@ class Class(Scope):
             str += "pass\n"
         return str
 
-    def get_instance_set_vars(self):
-        n = []
-        for s in self.subscopes:
-            try:
-                # get the self name, if there's one
-                self_name = s.params[0].used_vars[0].names[0]
-            except:
-                pass
-            else:
-                for n2 in s.get_set_vars():
-                    # Only names with the selfname are being added.
-                    # It is also important, that they have a len() of 2,
-                    # because otherwise, they are just something else
-                    if n2.names[0] == self_name and len(n2.names) == 2:
-                        n.append(n2)
-        n += super(Class, self).get_set_vars()
-        return n
-
 
 class Function(Scope):
     """
