@@ -177,7 +177,7 @@ def complete(source, row, column, file_callback=None):
     column = 17
 
     row = 140
-    row = 144
+    row = 148
     column = 200
     f = File(source=source, row=row)
     scope = f.parser.user_scope
@@ -197,11 +197,11 @@ def complete(source, row, column, file_callback=None):
         dbg(e)
 
     result = []
-    if path:
+    if path and path[0]:
         # just parse one statement
         r = parsing.PyFuzzyParser(".".join(path))
         print 'p', r.top.get_code().replace('\n', r'\n'), r.top.statements[0]
-        evaluate.follow_statement(scope, r.top.statements[0])
+        evaluate.follow_statement(r.top.statements[0], scope)
         exit()
 
         name = path.pop()
@@ -237,7 +237,7 @@ def set_debug_function(func_cb):
     """
     global debug_function
     debug_function = func_cb
-    parsing.debug_function = func_cb
+    #parsing.debug_function = func_cb
     evaluate.debug_function = func_cb
 
 

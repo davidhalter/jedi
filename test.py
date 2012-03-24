@@ -44,16 +44,16 @@ class Supi(A, datetime.datetime):
 class A():
   class B():
   def test(self):
-    return A()
+    return a.test()
 class init:
     def __init__(self, a, b=3, c = A):
      self.a  =  a
 
-a = A()
+aclass = A()
 
-b = a.test()
-c = a or b
-c = a or c
+b = aclass.test()
+c = aclass or b
+c = aclass or c
 
 class Empty():
   pass
@@ -131,9 +131,9 @@ class c1():
     c2,c5 = c1(), c1().c3()
     def c3(self): 
         import time as c4
-        c5 = 3
-        return 'asdf'
-
+        c5 = c4
+        c5 = 1
+        return c5+1+'asdf'
 
 
 (c1().c2.\
@@ -141,4 +141,8 @@ c, 1, c3()) [0].pop()
 
 c = "a".join([1,2])
 
-c = c1().c3()[0]
+c = c1().c3().sleep()
+
+asdf = c1; asdf2 = asdf
+b= asdf2
+c = b().test()

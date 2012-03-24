@@ -64,6 +64,13 @@ class Simple(object):
         self.line_end = line_end
         self.parent = None
 
+    def get_parent_until(self, *classes):
+        """ Takes always the parent, until one class """
+        scope = self
+        while not (scope.parent is None or scope.__class__ in classes):
+            scope = scope.parent
+        return scope
+
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
         return "<%s: %s@%s>" % \
@@ -179,7 +186,10 @@ class Scope(Simple):
         """
         n = []
         for stmt in self.statements:
-            n += stmt.get_set_vars()
+            try:
+                n += stmt.get_set_vars(True)
+            except TypeError:
+                n += stmt.get_set_vars()
 
         # function and class names
         n += [s.name for s in self.subscopes]
@@ -281,6 +291,8 @@ class Function(Scope):
         for p in params:
             p.parent = self
         self.decorators = []
+        self.returns = []
+        is_generator = False
 
     def get_code(self, first_indent=False, indention="    "):
         str = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
@@ -355,18 +367,25 @@ class Flow(Scope):
             str += self.next.get_code()
         return str
 
-    def get_set_vars(self):
+    def get_set_vars(self, is_internal_call=False):
         """
         Get the names for the flow. This includes also a call to the super
         class.
+        :param is_internal_call: defines an option for internal files to crawl\
+        through this class. Normally it will just call its superiors, to\
+        generate the output.
         """
-        n = self.set_vars
-        if self.statement:
-            n += self.statement.set_vars
-        if self.next:
-            n += self.next.get_set_vars()
-        n += super(Flow, self).get_set_vars()
-        return n
+        if is_internal_call:
+            n = []
+            n += self.set_vars
+            if self.statement:
+                n += self.statement.set_vars
+            if self.next:
+                n += self.next.get_set_vars(is_internal_call)
+            n += super(Flow, self).get_set_vars()
+            return n
+        else:
+            return self.get_parent_until(Class, Function).get_set_vars()
 
     def set_next(self, next):
         """ Set the next element in the flow, those are else, except, etc. """
@@ -464,6 +483,9 @@ class Statement(Simple):
         for s in set_vars + used_funcs + used_vars:
             s.parent = self
 
+        # cache
+        self.assignment_calls = None
+
     def get_code(self, new_line=True):
         if new_line:
             return self.code + '\n'
@@ -480,24 +502,27 @@ class Statement(Simple):
         most of the statements won't need this data anyway. This is something
         'like' a lazy execution.
         """
+        if self.assignment_calls:
+            return self.assignment_calls
         result = Array(Array.EMPTY)
         top = result
         level = 0
         is_chain = False
         close_brackets = False
 
-        print 'tok_list', self.token_list
+        dbg('tok_list', self.token_list)
         for i, tok_temp in enumerate(self.token_list):
             #print 'tok', tok_temp, result
             try:
                 token_type, tok, indent = tok_temp
-                if level == 0 and \
+                if tok in ['return', 'yield'] or level == 0 and \
                         '=' in tok and not tok in ['>=', '<=', '==', '!=']:
                     # This means, there is an assignment here.
                     # TODO there may be multiple assignments: a = b = 1
 
                     # initialize the first item
                     result = Array(Array.EMPTY)
+                    top = result
                     continue
             except TypeError:
                 # the token is a Name, which has already been parsed
@@ -506,7 +531,7 @@ class Statement(Simple):
             brackets = {'(': Array.EMPTY, '[': Array.LIST, '{': Array.SET}
             is_call = lambda: result.__class__ == Call
             is_call_or_close = lambda: is_call() or close_brackets
-            if isinstance(tok, Name):
+            if isinstance(tok, Name):  # names
                 if is_chain:
                     call = Call(tok, result)
                     result = result.set_next_chain_call(call)
@@ -519,7 +544,7 @@ class Statement(Simple):
                     call = Call(tok, result)
                     result.add_to_current_field(call)
                     result = call
-            elif tok in brackets.keys():
+            elif tok in brackets.keys():  # brackets
                 level += 1
                 if is_call_or_close():
                     result = Array(brackets[tok], result)
@@ -557,19 +582,31 @@ class Statement(Simple):
                 level -= 1
                 #result = result.parent
                 close_brackets = True
-            else:
+            elif tok in [tokenize.STRING, tokenize.NUMBER]:
                 # TODO catch numbers and strings -> token_type and make
                 # calls out of them
                 if is_call_or_close():
                     result = result.parent
                     close_brackets = False
+
+                call = Call(tok, result)
+                result.add_to_current_field(call)
+                result = call
+                result.add_to_current_field(tok)
+                pass
+            else:
+                if is_call_or_close():
+                    result = result.parent
+                    close_brackets = False
                 result.add_to_current_field(tok)
 
-            print 'tok_end', tok_temp, result, close_brackets
+            #print 'tok_end', tok_temp, result, close_brackets
 
         if level != 0:
             raise ParserError("Brackets don't match: %s. This is not normal "
                                 "behaviour. Please submit a bug" % level)
+
+        self.assignment_calls = top
         return top
 
 
@@ -943,6 +980,7 @@ class PyFuzzyParser(object):
         used_funcs = []
         used_vars = []
         level = 0  # The level of parentheses
+        is_return = None
 
         if pre_used_token:
             token_type, tok, indent = pre_used_token
@@ -981,6 +1019,8 @@ class PyFuzzyParser(object):
                 #print 'is_name', tok
                 if tok in ['return', 'yield', 'del', 'raise', 'assert']:
                     set_string = tok + ' '
+                    if tok in ['return', 'yield']:
+                        is_return = tok
                 elif tok in ['print', 'exec']:
                     # delete those statements, just let the rest stand there
                     set_string = ''
@@ -1021,6 +1061,13 @@ class PyFuzzyParser(object):
         #print 'new_stat', string, set_vars, used_funcs, used_vars
         stmt = Statement(string, set_vars, used_funcs, used_vars,\
                             tok_list, indent, line_start, self.line_nr)
+        if is_return:
+            # add returns to the scope
+            func = self.scope.get_parent_until(Function)
+            func.returns.append(stmt)
+            if is_return == 'yield':
+                func.is_generator = True
+
         return stmt, tok
 
     def next(self):
