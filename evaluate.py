@@ -42,15 +42,28 @@ class Execution(Exec):
     This class is used to evaluate functions and their returns.
     """
 
+    cache = {}
     def get_return_types(self):
         """
         Get the return vars of a function.
         """
+        # check cache
+        try:
+            return Execution.cache[self.base]
+        except KeyError:
+            # cache is not only here as a cache, but also to prevent an
+            # endless recursion.
+            Execution.cache[self.base] = []
+        def remove_executions(scope):
+            if isinstance(scope, Execution):
+                # there maybe executions of executions
+                stmts = scope.get_return_types()
+            else:
+                stmts = scope.returns
+            return stmts
         result = []
-        if isinstance(self.base, Execution):
-            stmts = self.base.get_return_types()
-        else:
-            stmts = self.base.returns
+        stmts = remove_executions(self.base)
+        print 'stmts=', stmts, self.base, repr(self)
 
         #n += self.function.get_set_vars()
         # these are the statements of the return functions
@@ -61,9 +74,11 @@ class Execution(Exec):
                 result.append(Instance(stmt))
             else:
                 print 'addstmt', stmt
-                result += follow_statement(stmt)
+                for followed in follow_statement(stmt):
+                    result += remove_executions(followed)
 
             print 'ret', stmt
+        Execution.cache[self.base] = result
         return result
 
     def __repr__(self):
@@ -174,7 +189,6 @@ def follow_paths(path, results):
         print 'enter', results, len(results)
         if len(results):
             for i, r in enumerate(results):
-                print 1
                 results_new += follow_path(iter_paths[i], r)
     except StopIteration:
         return results
@@ -204,6 +218,7 @@ def follow_path(path, input):
                                     search_func=input.get_instance_vars)
             elif isinstance(input, Execution):
                 #try:
+                    print '\n\n\n\n\nbefexec', input
                     stmts = input.get_return_types()
                     print 'exec', stmts
                     for s in stmts:
