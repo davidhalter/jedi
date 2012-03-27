@@ -38,6 +38,8 @@ import tokenize
 import cStringIO
 import re
 
+import debug
+
 
 class ParserError(Exception):
     pass
@@ -126,7 +128,7 @@ class Scope(Simple):
         index = index1 if index1 < index2 and index1 > -1 else index2
         prefix = string[:index]
         d = string[index:]
-        dbg('add_docstr', d, prefix)
+        debug.dbg('add_docstr', d, prefix)
 
         # now clean docstr
         d = d.replace('\n', ' ')
@@ -137,7 +139,7 @@ class Scope(Simple):
             d = d[1:]
         while d[-1] in '"\'\t ':
             d = d[:-1]
-        dbg("Scope(%s)::docstr = %s" % (self, d))
+        debug.dbg("Scope(%s)::docstr = %s" % (self, d))
         self.docstr = d
 
     def add_import(self, imp):
@@ -420,7 +422,8 @@ class Import(Simple):
         super(Import, self).__init__(indent, line_nr, line_end)
 
         self.namespace = namespace
-        namespace.parent = self
+        if namespace:
+            namespace.parent = self
 
         self.alias = alias
         if alias:
@@ -510,7 +513,7 @@ class Statement(Simple):
         is_chain = False
         close_brackets = False
 
-        dbg('tok_list', self.token_list)
+        debug.dbg('tok_list', self.token_list)
         for i, tok_temp in enumerate(self.token_list):
             #print 'tok', tok_temp, result
             try:
@@ -945,7 +948,7 @@ class PyFuzzyParser(object):
         start_line = self.line_nr
         token_type, cname, ind = self.next()
         if token_type != tokenize.NAME:
-            dbg("class: syntax error - token is not a name@%s (%s: %s)" \
+            debug.dbg("class: syntax error - token is not a name@%s (%s: %s)" \
                     % (self.line_nr, tokenize.tok_name[token_type], cname))
             return None
 
@@ -1075,7 +1078,7 @@ class PyFuzzyParser(object):
         type, tok, position, dummy, self.parserline = self.gen.next()
         (self.line_nr, indent) = position
         if self.line_nr == self.user_line:
-            dbg('user scope found [%s] =%s' % \
+            debug.dbg('user scope found [%s] =%s' % \
                     (self.parserline.replace('\n', ''), repr(self.scope)))
             self.user_scope = self.scope
         self.last_token = self.current
@@ -1105,11 +1108,11 @@ class PyFuzzyParser(object):
         while True:
             try:
                 token_type, tok, indent = self.next()
-                dbg('main: tok=[%s] type=[%s] indent=[%s]'\
+                debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
                     % (tok, token_type, indent))
 
                 while token_type == tokenize.DEDENT and self.scope != self.top:
-                    dbg('dedent', self.scope)
+                    debug.dbg('dedent', self.scope)
                     token_type, tok, indent = self.next()
                     if indent <= self.scope.indent:
                         self.scope.line_end = self.line_nr
@@ -1121,7 +1124,7 @@ class PyFuzzyParser(object):
                 while indent <= self.scope.indent \
                         and token_type in [tokenize.NAME] \
                         and self.scope != self.top:
-                    dbg('syntax_err, dedent @%s - %s<=%s', \
+                    debug.dbg('syntax_err, dedent @%s - %s<=%s', \
                             (self.line_nr, indent, self.scope.indent))
                     self.scope.line_end = self.line_nr
                     self.scope = self.scope.parent
@@ -1132,7 +1135,7 @@ class PyFuzzyParser(object):
                     if func is None:
                         print "function: syntax error@%s" % self.line_nr
                         continue
-                    dbg("new scope: function %s" % (func.name))
+                    debug.dbg("new scope: function %s" % (func.name))
                     freshscope = True
                     self.scope = self.scope.add_scope(func, decorators)
                     decorators = []
@@ -1141,7 +1144,7 @@ class PyFuzzyParser(object):
                     if cls is None:
                         continue
                     freshscope = True
-                    dbg("new scope: class %s" % (cls.name))
+                    debug.dbg("new scope: class %s" % (cls.name))
                     self.scope = self.scope.add_scope(cls, decorators)
                     decorators = []
                 # import stuff
@@ -1175,7 +1178,7 @@ class PyFuzzyParser(object):
                         if tok == ':':
                             f = Flow('for', statement, indent, self.line_nr, \
                                         value_list)
-                            dbg("new scope: flow for@%s" % (f.line_nr))
+                            debug.dbg("new scope: flow for@%s" % (f.line_nr))
                             self.scope = self.scope.add_statement(f)
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
@@ -1195,7 +1198,8 @@ class PyFuzzyParser(object):
                         statement.code += ',' + n.get_code()
                     if tok == ':':
                         f = Flow(command, statement, indent, self.line_nr)
-                        dbg("new scope: flow %s@%s" % (command, self.line_nr))
+                        debug.dbg("new scope: flow %s@%s"
+                                        % (command, self.line_nr))
                         if command in extended_flow:
                             # the last statement has to be another part of
                             # the flow statement
@@ -1207,7 +1211,7 @@ class PyFuzzyParser(object):
                     stmt, tok = self._parse_statement(self.current)
                     if stmt:
                         self.scope.add_statement(stmt)
-                        dbg('global_vars', stmt.used_vars)
+                        debug.dbg('global_vars', stmt.used_vars)
                         for name in stmt.used_vars:
                             # add the global to the top, because there it is
                             # important.
@@ -1235,14 +1239,6 @@ class PyFuzzyParser(object):
             except StopIteration:  # thrown on EOF
                 break
         #except StopIteration:
-        #    dbg("parse error: %s, %s @ %s" %
+        #    debug.dbg("parse error: %s, %s @ %s" %
         #        (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
         return self.top
-
-
-def dbg(*args):
-    if debug_function:
-        debug_function(*args)
-
-
-debug_function = None

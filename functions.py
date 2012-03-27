@@ -1,6 +1,9 @@
+import re
+
 import parsing
 import evaluate
-import re
+import modules
+import debug
 
 __all__ = ['complete', 'set_debug_function']
 
@@ -10,7 +13,7 @@ class ParserError(LookupError):
     pass
 
 
-class File(object):
+class FileWithCursor(modules.File):
     """
     Manages all files, that are parsed and caches them.
     Important are the params source and module_name, one of them has to
@@ -21,34 +24,15 @@ class File(object):
     :param row: The row, the user is currently in. Only important for the \
     main file.
     """
-    def __init__(self, source=None, module_name=None, row=None):
-        self.source = source
-        self.module_name = module_name
+    def __init__(self, module_name, source, row):
+        super(FileWithCursor, self).__init__(module_name, source)
         self.row = row
-        self.line_cache = None
 
         # this two are only used, because there is no nonlocal in Python 2
         self._row_temp = None
         self._relevant_temp = None
 
-        if not self.module_name and not self.source:
-            raise AttributeError("Submit a module name or the source code")
-        elif self.module_name:
-            self.load_module()
-
-        self.parser = parsing.PyFuzzyParser(source, row)
-
-    def load_module(self):
-        pass
-
-    def get_line(self, line):
-        if not self.line_cache:
-            self.line_cache = self.source.split('\n')
-
-        if 1 <= line <= len(self.line_cache):
-            return self.line_cache[line - 1]
-        else:
-            return None
+        self._parser = parsing.PyFuzzyParser(source, row)
 
     def get_row_path(self, column):
         """ Get the path under the cursor. """
@@ -179,14 +163,14 @@ def complete(source, row, column, file_callback=None):
     row = 140
     row = 148
     column = 200
-    f = File(source=source, row=row)
+    f = FileWithCursor('__main__', source=source, row=row)
     scope = f.parser.user_scope
 
-    # print a dbg title
-    dbg()
-    dbg('-' * 70)
-    dbg(' ' * 62 + 'complete')
-    dbg('-' * 70)
+    # print a debug.dbg title
+    debug.dbg()
+    debug.dbg('-' * 70)
+    debug.dbg(' ' * 62 + 'complete')
+    debug.dbg('-' * 70)
     print scope
     print f.parser.user_scope.get_simple_for_line(row)
 
@@ -194,7 +178,7 @@ def complete(source, row, column, file_callback=None):
         path = f.get_row_path(column)
     except ParserError as e:
         path = []
-        dbg(e)
+        debug.dbg(e)
 
     result = []
     if path and path[0]:
@@ -208,7 +192,7 @@ def complete(source, row, column, file_callback=None):
         if path:
             scopes = evaluate.follow_path(scope, tuple(path))
 
-            dbg('possible scopes', scopes)
+            debug.dbg('possible scopes', scopes)
             compl = []
             for s in scopes:
                 compl += s.get_defined_names()
@@ -216,7 +200,7 @@ def complete(source, row, column, file_callback=None):
         else:
             compl = evaluate.get_names_for_scope(scope)
 
-        dbg('possible-compl', compl)
+        debug.dbg('possible-compl', compl)
 
         # make a partial comparison, because the other options have to
         # be returned as well.
@@ -225,20 +209,9 @@ def complete(source, row, column, file_callback=None):
     return result
 
 
-def dbg(*args):
-    if debug_function:
-        debug_function(*args)
-
-
 def set_debug_function(func_cb):
     """
     You can define a callback debug function to get all the debug messages.
     :param func_cb: The callback function for debug messages, with n params.
     """
-    global debug_function
-    debug_function = func_cb
-    #parsing.debug_function = func_cb
-    evaluate.debug_function = func_cb
-
-
-debug_function = None
+    debug.debug_function = func_cb

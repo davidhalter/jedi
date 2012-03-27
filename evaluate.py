@@ -1,12 +1,15 @@
 import parsing
 import itertools
+import modules
+
 
 class Exec(object):
     def __init__(self, base):
         self.base = base
     def get_parent_until(self, *args):
         return self.base.get_parent_until(*args)
-        
+
+
 class Instance(Exec):
     """ This class is used to evaluate instances. """
 
@@ -47,6 +50,17 @@ class Execution(Exec):
         """
         Get the return vars of a function.
         """
+        def remove_executions(scope, get_returns=False):
+            if isinstance(scope, Execution):
+                # there maybe executions of executions
+                stmts = scope.get_return_types()
+            else:
+                if get_returns:
+                    stmts = scope.returns
+                else:
+                    stmts = [scope]
+            return stmts
+
         # check cache
         try:
             return Execution.cache[self.base]
@@ -54,15 +68,9 @@ class Execution(Exec):
             # cache is not only here as a cache, but also to prevent an
             # endless recursion.
             Execution.cache[self.base] = []
-        def remove_executions(scope):
-            if isinstance(scope, Execution):
-                # there maybe executions of executions
-                stmts = scope.get_return_types()
-            else:
-                stmts = scope.returns
-            return stmts
+
         result = []
-        stmts = remove_executions(self.base)
+        stmts = remove_executions(self.base, True)
         print 'stmts=', stmts, self.base, repr(self)
 
         #n += self.function.get_set_vars()
@@ -75,6 +83,7 @@ class Execution(Exec):
             else:
                 print 'addstmt', stmt
                 for followed in follow_statement(stmt):
+                    print 'followed', followed
                     result += remove_executions(followed)
 
             print 'ret', stmt
@@ -227,6 +236,10 @@ def follow_path(path, input):
                 #    dbg('cannot execute:', input)
             elif isinstance(input, parsing.Import):
                 print 'dini mueter, steile griech!'
+                try:
+                    modules.follow_module(input)
+                except modules.ModuleNotFound:
+                    dbg('Module not found: ' + str(input))
             else:
                 # TODO check default class methods and return them also
                 result = get_scopes_for_name(input, current)
