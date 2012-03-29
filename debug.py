@@ -7,6 +7,9 @@ def dbg(*args):
         if not (mod.__name__ in ignored_modules):
             debug_function(*args)
 
+def warning(*args):
+    if debug_function:
+        debug_function(*args)
 
 debug_function = None
 ignored_modules = []

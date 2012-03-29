@@ -904,7 +904,7 @@ class PyFuzzyParser(object):
         """
         names = []
         tok = None
-        while tok not in [')', '\n', ':']:
+        while tok not in [')', ':']:
             stmt, tok = self._parse_statement(added_breaks=',')
             if stmt:
                 names.append(stmt)
@@ -1124,7 +1124,7 @@ class PyFuzzyParser(object):
                 while indent <= self.scope.indent \
                         and token_type in [tokenize.NAME] \
                         and self.scope != self.top:
-                    debug.dbg('syntax_err, dedent @%s - %s<=%s', \
+                    debug.warning('syntax_err, dedent @%s - %s<=%s', \
                             (self.line_nr, indent, self.scope.indent))
                     self.scope.line_end = self.line_nr
                     self.scope = self.scope.parent
@@ -1133,7 +1133,8 @@ class PyFuzzyParser(object):
                 if tok == 'def':
                     func = self._parsefunction(indent)
                     if func is None:
-                        print "function: syntax error@%s" % self.line_nr
+                        debug.warning("function: syntax error@%s" %
+                                            self.line_nr)
                         continue
                     debug.dbg("new scope: function %s" % (func.name))
                     freshscope = True
@@ -1142,6 +1143,8 @@ class PyFuzzyParser(object):
                 elif tok == 'class':
                     cls = self._parseclass(indent)
                     if cls is None:
+                        debug.warning("class: syntax error@%s" %
+                                            self.line_nr)
                         continue
                     freshscope = True
                     debug.dbg("new scope: class %s" % (cls.name))
@@ -1158,7 +1161,8 @@ class PyFuzzyParser(object):
                     mod, token_type, tok, start_indent, start_line2 = \
                         self._parsedotname()
                     if not mod or tok != "import":
-                        print "from: syntax error..."
+                        debug.warning("from: syntax error@%s" %
+                                            self.line_nr)
                         continue
                     mod = Name(mod, start_indent, start_line2, self.line_nr)
                     names = self._parseimportlist()
