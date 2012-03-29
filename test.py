@@ -130,7 +130,7 @@ import time
 class c1():
     c2,c5 = c1(), c1().c3()
     def c3(self): 
-        from os import F_OK as c4
+        from parsing import Scope as c4
         c5 = c4
         c5 = 1
         return c5+1+'asdf'

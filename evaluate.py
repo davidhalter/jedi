@@ -1,6 +1,8 @@
-import parsing
 import itertools
+
+import parsing
 import modules
+import debug
 
 
 class Exec(object):
@@ -129,6 +131,22 @@ def get_scopes_for_name(scope, name, search_global=False, search_func=None):
                 res_new.append(r)
         return res_new
 
+    def filter_name(scopes):
+        # the name is already given in the parent function
+        result = []
+        for scope in scopes:
+            if isinstance(scope, parsing.Import):
+                try:
+                    i = follow_import(scope).get_defined_names()
+                except modules.ModuleNotFound:
+                    debug.dbg('StarImport not found: ' + str(scope))
+                else:
+                    result += filter_name(i)
+            else:
+                if [name] == list(scope.names):
+                    result.append(scope.parent)
+        return result
+
     if search_func:
         names = search_func()
     elif search_global:
@@ -136,8 +154,9 @@ def get_scopes_for_name(scope, name, search_global=False, search_func=None):
     else:
         names = scope.get_set_vars()
 
-    result = [c.parent for c in names if [name] == list(c.names)]
-    return remove_statements(result)
+    # TODO here are the star imports handled, we need to get the names here.
+    # This means things like from pylab import *
+    return remove_statements(filter_name(names))
 
 
 def follow_statement(stmt, scope=None):
@@ -233,13 +252,13 @@ def follow_path(path, input):
                     for s in stmts:
                         result += add_result(current, s)
                 #except AttributeError:
-                #    dbg('cannot execute:', input)
+                #    debug.dbg('cannot execute:', input)
             elif isinstance(input, parsing.Import):
                 print 'dini mueter, steile griech!'
                 try:
-                    modules.follow_module(input)
+                    result.append(follow_import(input))
                 except modules.ModuleNotFound:
-                    dbg('Module not found: ' + str(input))
+                    debug.dbg('Module not found: ' + str(input))
             else:
                 # TODO check default class methods and return them also
                 result = get_scopes_for_name(input, current)
@@ -251,9 +270,23 @@ def follow_path(path, input):
     return follow_paths(path, add_result(cur, input))
 
 
-def dbg(*args):
-    if debug_function:
-        debug_function(*args)
+def follow_import(_import):
+    """
+    follows a module name and returns the parser.
+    :param _import: The import statement.
+    :type _import: parsing.Import
+    """
+    # set path together
+    ns_list = []
+    if _import.from_ns:
+        ns_list += _import.from_ns.names
+    if _import.namespace:
+        ns_list += _import.namespace.names
 
+    scope, rest = modules.find_module(ns_list)
+    if rest:
+        scope = follow_path(rest.__iter__(), scope)
 
-debug_function = None
+    debug.dbg('after import', scope, rest)
+    return scope
+

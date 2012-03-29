@@ -814,7 +814,7 @@ class PyFuzzyParser(object):
             token_type, tok, indent = self.next()
             start_line = self.line_nr
             if token_type != tokenize.NAME and tok != '*':
-                return ([], tok)
+                return ([], token_type, tok, indent, start_line)
         else:
             token_type, tok, indent = pre_used_token
             start_line = self.line_nr
@@ -1100,7 +1100,7 @@ class PyFuzzyParser(object):
         self.gen = tokenize.generate_tokens(buf.readline)
         self.currentscope = self.scope
 
-        extended_flow = ['else', 'except', 'finally']
+        extended_flow = ['else', 'elif', 'except', 'finally']
         statement_toks = ['{', '[', '(', '`']
 
         decorators = []

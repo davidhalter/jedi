@@ -16,12 +16,11 @@ class ModuleNotFound(Exception):
 class File(object):
     """
     Manages all files, that are parsed and caches them.
-    If the source is not given, it is loaded by load_module.
 
     :param source: The source code of the file.
     :param module_name: The module name of the file.
     """
-    def __init__(self, module_name, source=None):
+    def __init__(self, module_name, source):
         self.source = source
         self.module_name = module_name
         self._line_cache = None
@@ -37,13 +36,6 @@ class File(object):
             return self.load_module()
 
     def load_module(self):
-        if not self.source:
-            if i[0]:  # is the file pointer
-                self.source = open(i[0]).read()
-                print self.source, 'yesssa'
-            else:
-                self.source = ''
-                print 'shizzel'
         self._parser = parsing.PyFuzzyParser(self.source)
         return self._parser
 
@@ -56,45 +48,62 @@ class File(object):
         else:
             return None
 
+class BuiltinModule:
+    def __init__(self, name):
+        self.name = name
+        self.content = {}
+        exec 'import %s as module' % name in self.content
+        self.module = self.content['module']
 
-def follow_module(_import):
+    @property
+    def docstr(self):
+        # TODO get the help string, not just the docstr
+        return self.module.__doc__
+
+    def get_defined_names(self):
+        return dir(self.module)
+
+def find_module(point_path):
     """
-    follows a module name and returns the parser.
-    :param name: A name from the parser.
-    :type name: parsing.Name
+    Find a module with a path (of the module, like usb.backend.libusb10).
+
+    :param point_path: A name from the parser.
+    :return: The rest of the path, and the module top scope.
     """
     def follow_str(ns, string):
-        print ns, string
+        debug.dbg('follow_module', ns, string)
         if ns:
             path = ns[1]
         else:
+            # TODO modules can be system modules, without '.' in path
             path = module_find_path
             debug.dbg('search_module', string, path)
-        i = imp.find_module(string, path)
+        try:
+            i = imp.find_module(string, path)
+        except ImportError:
+            # find builtins (ommit path):
+            i = imp.find_module(string)
+            if i[0]:
+                # if the import has a file descriptor, it cannot be a builtin.
+                raise
         return i
-
-    # set path together
-    ns_list = []
-    if _import.from_ns:
-        ns_list += _import.from_ns.names
-    if _import.namespace:
-        ns_list += _import.namespace.names
 
     # now execute those paths
     current_namespace = None
-    rest = None
-    for i, s in enumerate(ns_list):
+    rest = []
+    for i, s in enumerate(point_path):
         try:
             current_namespace = follow_str(current_namespace, s)
         except ImportError:
             if current_namespace:
-                rest = ns_list[i:]
+                rest = point_path[i:]
             else:
                 raise ModuleNotFound(
                         'The module you searched has not been found')
 
-    print 'yay', current_namespace
-    f = File(current_namespace[2], current_namespace[0].read())
-    out = f.parser.top.get_names()
-    print out
-    return parser
+    if current_namespace[0]:
+        f = File(current_namespace[2], current_namespace[0].read())
+        scope = f.parser.top
+    else:
+        scope = BuiltinModule(current_namespace[1])
+    return scope, rest
