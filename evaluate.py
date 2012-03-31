@@ -15,7 +15,7 @@ class Exec(object):
 class Instance(Exec):
     """ This class is used to evaluate instances. """
 
-    def get_instance_vars(self):
+    def get_set_vars(self):
         """
         Get the instance vars of a class. This includes the vars of all
         classes
@@ -224,50 +224,54 @@ def follow_paths(path, results):
 
 
 def follow_path(path, input):
-    """ takes a generator and tries to complete the path """
-    def add_result(current, input):
+    """
+    takes a generator and tries to complete the path
+    """
+    def add_results(scopes):
+        """ Here we follow the results - to get what we really want """
+        result = []
+        for s in scopes:
+            if isinstance(s, parsing.Import):
+                print 'dini mueter, steile griech!'
+                try:
+                    result.append(follow_import(s))
+                except modules.ModuleNotFound:
+                    debug.dbg('Module not found: ' + str(s))
+            else:
+                result.append(s)
+        return result
+
+    def filter_result(scope):
         result = []
         if isinstance(current, parsing.Array):
             # this must be an execution, either () or []
             if current.arr_type == parsing.Array.LIST:
                 result = []  # TODO eval lists
             else:
-                # input must be a class or func - make an instance or execution
-                if isinstance(input, parsing.Class):
-                    result.append(Instance(input))
+                # scope must be a class or func - make an instance or execution
+                if isinstance(scope, parsing.Class):
+                    result.append(Instance(scope))
                 else:
-                    result.append(Execution(input))
+                    #try:
+                    print '\n\n\n\n\nbefexec', scope
+                    stmts = add_results(Execution(scope).get_return_types())
+                    debug.dbg('exec', stmts)
+                    result = stmts
+                    #except AttributeError:
+                    #    debug.dbg('cannot execute:', scope)
         else:
-            if isinstance(input, parsing.Function):
+            if isinstance(scope, parsing.Function):
                 # TODO check default function methods and return them
                 result = []
-            elif isinstance(input, Instance):
-                result = get_scopes_for_name(input, current,
-                                    search_func=input.get_instance_vars)
-            elif isinstance(input, Execution):
-                #try:
-                    print '\n\n\n\n\nbefexec', input
-                    stmts = input.get_return_types()
-                    print 'exec', stmts
-                    for s in stmts:
-                        result += add_result(current, s)
-                #except AttributeError:
-                #    debug.dbg('cannot execute:', input)
-            elif isinstance(input, parsing.Import):
-                print 'dini mueter, steile griech!'
-                try:
-                    result.append(follow_import(input))
-                except modules.ModuleNotFound:
-                    debug.dbg('Module not found: ' + str(input))
             else:
-                # TODO check default class methods and return them also
-                result = get_scopes_for_name(input, current)
+                # TODO check magic class methods and return them also
+                result = add_results(get_scopes_for_name(scope, current))
         return result
 
-    cur = next(path)
-    print 'follow', input, cur
+    current = next(path)
+    print 'follow', input, current
 
-    return follow_paths(path, add_result(cur, input))
+    return follow_paths(path, filter_result(input))
 
 
 def follow_import(_import):
