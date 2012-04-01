@@ -171,8 +171,8 @@ def complete(source, row, column, file_callback=None):
     debug.dbg('-' * 70)
     debug.dbg(' ' * 62 + 'complete')
     debug.dbg('-' * 70)
-    print scope
-    print f.parser.user_scope.get_simple_for_line(row)
+    print 'complete_scope', scope
+    print 'user_scope', f.parser.user_scope.get_simple_for_line(row)
 
     try:
         path = f.get_row_path(column)
@@ -184,27 +184,24 @@ def complete(source, row, column, file_callback=None):
     if path and path[0]:
         # just parse one statement
         r = parsing.PyFuzzyParser(".".join(path))
-        print 'p', r.top.get_code().replace('\n', r'\n'), r.top.statements[0]
-        evaluate.follow_statement(r.top.statements[0], scope)
-        exit()
+        #print 'p', r.top.get_code().replace('\n', r'\n'), r.top.statements[0]
+        scopes = evaluate.follow_statement(r.top.statements[0], scope)
 
-        name = path.pop()
-        if path:
-            scopes = evaluate.follow_path(scope, tuple(path))
+        #name = path.pop() # use this later
+        compl = []
+        debug.dbg('possible scopes')
+        for s in scopes:
+            compl += s.get_defined_names()
 
-            debug.dbg('possible scopes', scopes)
-            compl = []
-            for s in scopes:
-                compl += s.get_defined_names()
-
-        else:
-            compl = evaluate.get_names_for_scope(scope)
+        #else:
+        #    compl = evaluate.get_names_for_scope(scope)
 
         debug.dbg('possible-compl', compl)
 
         # make a partial comparison, because the other options have to
         # be returned as well.
-        result = [c for c in compl if name in c.names[-1]]
+        result = compl
+        #result = [c for c in compl if name in c.names[-1]]
 
     return result
 

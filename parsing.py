@@ -146,6 +146,15 @@ class Scope(Simple):
         self.imports.append(imp)
         imp.parent = self
 
+    def get_imports(self):
+        """ Gets also the imports within flow statements """
+        i = self.imports
+        for s in self.statements:
+            if isinstance(s, Scope):
+                i += s.get_imports() 
+        print 'geti', i
+        return i 
+
     def add_global(self, name):
         """
         Global means in these context a function (subscope) which has a global
@@ -198,12 +207,13 @@ class Scope(Simple):
         n += self.global_vars
 
         for i in self.imports:
-            n += i.get_names()
+            if not i.star:
+                n += i.get_names()
 
         return n
 
     def get_defined_names(self):
-        return [n for n in self.get_set_vars() if len(n) == 1]
+        return [n for n in self.get_set_vars() if isinstance(n, Import) or len(n) == 1]
 
     def is_empty(self):
         """
@@ -1124,7 +1134,7 @@ class PyFuzzyParser(object):
                 while indent <= self.scope.indent \
                         and token_type in [tokenize.NAME] \
                         and self.scope != self.top:
-                    debug.warning('syntax_err, dedent @%s - %s<=%s', \
+                    debug.warning('syntax error: dedent @%s - %s<=%s', \
                             (self.line_nr, indent, self.scope.indent))
                     self.scope.line_end = self.line_nr
                     self.scope = self.scope.parent
