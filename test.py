@@ -44,7 +44,7 @@ class Supi(A, datetime.datetime):
 class A():
   class B():
   def test(self):
-    return a.test()
+    return 8 + a.test()
 class init:
     def __init__(self, a, b=3, c = A):
      self.a  =  a
@@ -130,7 +130,7 @@ import time
 class c1():
     c2,c5 = c1(), c1().c3()
     def c3(self): 
-        from parsing import Scope as c4
+        import tokenize as c4 #from parsing import Scope as c4
         c5 = c4
         c5 = 1
         return c5+1+'asdf'
@@ -142,7 +142,7 @@ c, 1, c3()) [0].pop()
 c = "a".join([1,2])
 
 c = c1().c3().sleep()
-
 asdf = c1; asdf2 = asdf
 b= asdf2
-c = b().c3().F_OK
+#import parsing as test
+c = b().c3()

@@ -3,11 +3,13 @@ import sys
 
 import debug
 import parsing
+import builtin
 
 files = {}
 load_module_cb = None
 module_find_path = sys.path[1:]
 
+# TODO we need module caching
 
 class ModuleNotFound(Exception):
     pass
@@ -48,20 +50,6 @@ class File(object):
         else:
             return None
 
-class BuiltinModule:
-    def __init__(self, name):
-        self.name = name
-        self.content = {}
-        exec 'import %s as module' % name in self.content
-        self.module = self.content['module']
-
-    @property
-    def docstr(self):
-        # TODO get the help string, not just the docstr
-        return self.module.__doc__
-
-    def get_defined_names(self):
-        return dir(self.module)
 
 def find_module(point_path):
     """
@@ -103,7 +91,6 @@ def find_module(point_path):
 
     if current_namespace[0]:
         f = File(current_namespace[2], current_namespace[0].read())
-        scope = f.parser.top
     else:
-        scope = BuiltinModule(current_namespace[1])
-    return scope, rest
+        f = builtin.Parser(current_namespace[1])
+    return f.parser.top, rest
