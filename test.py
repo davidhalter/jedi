@@ -130,11 +130,7 @@ import time
 class c1():
     c2,c5 = c1(), c1().c3()
     def c3(self): 
-<<<<<<< HEAD
         import os as c4 #from parsing import Scope as c4
-=======
-        import tokenize as c4 #from parsing import Scope as c4
->>>>>>> 118908f3118ef557502dd35ca10a98ca547f3ce1
         c5 = c4
         c5 = 1
         return c5+1+'asdf'
@@ -149,7 +145,4 @@ asdf = c1; asdf2 = asdf
 b= asdf2
 #import parsing as test
 c = b().c3()
-<<<<<<< HEAD
 c = "a".join([1,2])
-=======
->>>>>>> 118908f3118ef557502dd35ca10a98ca547f3ce1

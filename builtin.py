@@ -200,6 +200,12 @@ elif current.arr_type == parsing.Array.DICT:
     result.append(__builtin__.dict())
     """
 
-class Builtin(object):
+class _Builtin(object):
     _builtins = Parser('__builtin__')
-    scope = _builtins.parser.top
+
+    @property
+    def scope(self):
+        return self._builtins.parser.top
+
+
+Builtin = _Builtin()
