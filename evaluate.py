@@ -163,6 +163,7 @@ def resolve_results(scopes):
     result = []
     for s in scopes:
         if isinstance(s, parsing.Import):
+            print 'dini mueter, steile griech!'
             try:
                 scope = follow_import(s)
                 #for r in resolve_results([follow_import(s)]):
