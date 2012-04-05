@@ -152,7 +152,6 @@ class Scope(Simple):
         for s in self.statements:
             if isinstance(s, Scope):
                 i += s.get_imports() 
-        print 'geti', i
         return i 
 
     def add_global(self, name):
@@ -810,6 +809,9 @@ class PyFuzzyParser(object):
 
         self.parse()
 
+        # delete code again, only the parser needs it
+        del self.code
+
     def _parsedotname(self, pre_used_token=None):
         """
         The dot name parser parses a name, variable or function and returns
@@ -969,7 +971,7 @@ class PyFuzzyParser(object):
         if next == '(':
             super = self._parseparen()
         elif next != ':':
-            print "class: syntax error - %s@%s" % (cname, self.line_nr)
+            debug.dbg("class: syntax error - %s@%s" % (cname, self.line_nr))
             return None
 
         return Class(cname, super, indent, start_line)

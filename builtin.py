@@ -2,6 +2,7 @@ import re
 
 import debug
 import parsing
+import __builtin__
 
 
 class Parser(object):
@@ -9,6 +10,7 @@ class Parser(object):
         'floating point number': '0.0',
         'string': '""',
         'str': '""',
+        'character': '"a"',
         'integer': '0',
         'int': '0',
         'dictionary': '{}',
@@ -56,7 +58,8 @@ class Parser(object):
                     continue
                 # this has a builtin_function_or_method
                 exe = getattr(scope, n)
-                if type(exe).__name__ == 'builtin_function_or_method':
+                if type(exe).__name__ in ['method_descriptor',
+                                            'builtin_function_or_method']:
                     funcs[n] = exe
                 elif type(exe) == type:
                     classes[n] = exe
@@ -80,7 +83,6 @@ class Parser(object):
         names = set(dir(scope)) - {'__file__', '__name__', '__doc__',
                                     '__path__', '__package__'}
         classes, funcs, stmts, members = get_types(names)
-        #print 'blub', get_types(names)
 
         # classes
         for name, cl in classes.iteritems():
@@ -109,16 +111,23 @@ class Parser(object):
 
         # variables
         for name, value in stmts.iteritems():
-            if isinstance(value, str):
-                value = repr(value)
-            elif type(value) == file:
+            if type(value) == file:
                 value = 'file'
+            elif type(value).__name__ in ['int', 'bool', 'float',
+                                          'dict', 'list', 'tuple']:
+                value = repr(value)
+            else:
+                # get the type, if the type is not simple.
+                mod = type(value).__module__
+                value = type(value).__name__ + '()'
+                if mod != '__builtin__':
+                    value = '%s.%s' % (mod, value)
             code += '%s = %s\n' % (name, value)
 
-        import sys
-        #if depth == 0:
-        #    sys.stdout.write(code)
-        #    exit()
+        if depth == 10:
+            import sys
+            sys.stdout.write(code)
+            exit()
         return code
 
 
@@ -130,15 +139,46 @@ def parse_function_doc(func):
     # TODO: things like utime(path, (atime, mtime)) and a(b [, b]) -> None
     params = []
     doc = func.__doc__
-    end = doc.index(')')
-    #print 'blubedi', doc
-    param_str = doc[doc.index('(') + 1:end]
+
+    # get full string, parse round parentheses: def func(a, (b,c))
+    try:
+        count = 0
+        debug.dbg(func, func.__name__, doc)
+        start = doc.index('(')
+        for i, s in enumerate(doc[start:]):
+            if s == '(':
+                count += 1
+            elif s == ')':
+                count -= 1
+            if count == 0:
+                end = start + i
+                break
+        param_str = doc[start + 1:end]
+
+        # remove square brackets, which show an optional param ( in Python = None)
+        def change_options(m):
+            args = m.group(1).split(',')
+            for i, a in enumerate(args):
+                if a and '=' not in a:
+                    args[i] += '=None'
+            return ','.join(args)
+        while True:
+            (param_str, changes) = re.subn(r' ?\[([^\[\]]+)\]',
+                                            change_options, param_str)
+            if changes == 0:
+                break
+    except (ValueError, AttributeError):
+        debug.dbg('no brackets found - no param')
+        end = 0
+        param_str = ''
+
     try:
         index = doc.index('-> ', end, end + 7)
-    except ValueError:
+    except (ValueError, AttributeError):
         ret = 'pass'
     else:
-        pattern = re.compile(r'(,\n|[^\n])+')
+        # get result type, which can contain newlines
+        pattern = re.compile(r'(,\n|[^\n-])+')
         ret_str = pattern.match(doc, index + 3).group(0)
         ret = Parser.map_types.get(ret_str, ret_str)
         if ret == ret_str and ret not in ['None', 'object', 'tuple', 'set']:
@@ -149,7 +189,7 @@ def parse_function_doc(func):
 
 """if current.arr_type == parsing.Array.EMPTY:
     # the normal case - no array type
-    print 'length', len(current)
+    debug.dbg('length', len(current))
 elif current.arr_type == parsing.Array.LIST:
     result.append(__builtin__.list())
 elif current.arr_type == parsing.Array.SET:
@@ -159,3 +199,7 @@ elif current.arr_type == parsing.Array.TUPLE:
 elif current.arr_type == parsing.Array.DICT:
     result.append(__builtin__.dict())
     """
+
+class Builtin(object):
+    _builtins = Parser('__builtin__')
+    scope = _builtins.parser.top

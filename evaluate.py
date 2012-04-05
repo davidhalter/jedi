@@ -9,6 +9,7 @@ import itertools
 import parsing
 import modules
 import debug
+import builtin
 
 
 class Exec(object):
@@ -103,6 +104,9 @@ def get_names_for_scope(scope):
         if not isinstance(scope, parsing.Class) or scope == start_scope:
             compl += scope.get_set_vars()
         scope = scope.parent
+
+    # add builtins to the global scope
+    compl += builtin.Builtin.scope.get_set_vars()
     return compl
 
 
@@ -159,7 +163,6 @@ def resolve_results(scopes):
     result = []
     for s in scopes:
         if isinstance(s, parsing.Import):
-            print 'dini mueter, steile griech!'
             try:
                 scope = follow_import(s)
                 #for r in resolve_results([follow_import(s)]):

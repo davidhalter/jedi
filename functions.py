@@ -171,8 +171,8 @@ def complete(source, row, column, file_callback=None):
     debug.dbg('-' * 70)
     debug.dbg(' ' * 62 + 'complete')
     debug.dbg('-' * 70)
-    print 'complete_scope', scope
-    print 'user_scope', f.parser.user_scope.get_simple_for_line(row)
+    debug.dbg('complete_scope', scope)
+    debug.dbg('user_scope', f.parser.user_scope.get_simple_for_line(row))
 
     try:
         path = f.get_row_path(column)
@@ -181,6 +181,7 @@ def complete(source, row, column, file_callback=None):
         debug.dbg(e)
 
     result = []
+    print path
     if path and path[0]:
         # just parse one statement
         r = parsing.PyFuzzyParser(".".join(path))
