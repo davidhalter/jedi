@@ -68,6 +68,7 @@ class FileWithCursor(modules.File):
             whitespace = [' ', '\n', '\r', '\\']
             open_brackets = ['(', '[', '{']
             close_brackets = [')', ']', '}']
+            strings = ['"', '"""', "'", "'''"]
             is_word = lambda char: re.search('\w', char)
             name = ''
             force_point = False
@@ -172,7 +173,6 @@ def complete(source, row, column, file_callback=None):
     debug.dbg(' ' * 62 + 'complete')
     debug.dbg('-' * 70)
     debug.dbg('complete_scope', scope)
-    debug.dbg('user_scope', f.parser.user_scope.get_simple_for_line(row))
 
     try:
         path = f.get_row_path(column)
@@ -181,7 +181,6 @@ def complete(source, row, column, file_callback=None):
         debug.dbg(e)
 
     result = []
-    print path
     if path and path[0]:
         # just parse one statement
         r = parsing.PyFuzzyParser(".".join(path))

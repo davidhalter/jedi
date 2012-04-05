@@ -195,6 +195,8 @@ def follow_statement(stmt, scope=None):
             if not isinstance(tok, str):
                 # the string tokens are just operations (+, -, etc.)
                 result += follow_call(scope, tok)
+            else:
+                debug.warning('dini mueter, found string:', tok)
     return result
 
 

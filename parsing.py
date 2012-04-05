@@ -221,14 +221,6 @@ class Scope(Simple):
         """
         return not (self.imports or self.subscopes or self.statements)
 
-    def get_simple_for_line(self, line):
-        """ Get the Simple objects, which are on the line. """
-        simple = []
-        for s in self.statements + self.imports:
-            if s.line_nr <= line <= s.line_end:
-                simple.append(s)
-        return simple
-
     def __repr__(self):
         try:
             name = self.name
