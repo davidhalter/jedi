@@ -1,4 +1,5 @@
 import re
+import tokenize
 
 import parsing
 import evaluate
@@ -36,113 +37,65 @@ class FileWithCursor(modules.File):
 
     def get_row_path(self, column):
         """ Get the path under the cursor. """
-        def fetch_line(with_column=False):
+        self._is_first = True
+        def fetch_line():
             line = self.get_line(self._row_temp)
-            if with_column:
-                self._relevant_temp = line[:column - 1]
+            if self._is_first:
+                self._is_first = False
+                line = line[:column - 1]
             else:
-                self._relevant_temp += line + ' ' + self._relevant_temp
+                line = line + '\n'
+            # add lines with a backslash at the end
             while self._row_temp > 1:
                 self._row_temp -= 1
                 last_line = self.get_line(self._row_temp)
                 if last_line and last_line[-1] == '\\':
-                    self._relevant_temp = last_line[:-1] + self._relevant_temp
+                    line = last_line[:-1] + ' ' + line
                 else:
                     break
-
-        def fetch_name(is_first):
-            """
-            :param is_first: This means, that there can be a point \
-            (which is a name separator) directly. There is no need for a name.
-            :type is_first: str
-            :return: The list of names and an is_finished param.
-            :rtype: (list, bool)
-
-            :raises: ParserError
-            """
-            def get_char():
-                self._relevant_temp, char = self._relevant_temp[:-1], \
-                                            self._relevant_temp[-1]
-                return char
-
-            whitespace = [' ', '\n', '\r', '\\']
-            open_brackets = ['(', '[', '{']
-            close_brackets = [')', ']', '}']
-            strings = ['"', '"""', "'", "'''"]
-            is_word = lambda char: re.search('\w', char)
-            name = ''
-            force_point = False
-            force_no_brackets = False
-            is_finished = False
-            while True:
-                try:
-                    char = get_char()
-                except IndexError:
-                    is_finished = True
-                    break
-
-                if force_point:
-                    if char in whitespace:
-                        continue
-                    elif char != '.':
-                        is_finished = True
-                        break
-
-                if char == '.':
-                    if not is_first and not name:
-                        raise ParserError('No name after point (@%s): %s'
-                                            % (self._row_temp,
-                                                self._relevant_temp + char))
-                    break
-                elif char in whitespace:
-                    if is_word(name[0]):
-                        force_point = True
-                elif char in close_brackets:
-                    # TODO strings are not looked at here, they are dangerous!
-                    # handle them!
-                    # TODO handle comments
-                    if force_no_brackets:
-                        is_finished = True
-                        break
-                    level = 1
-                    name = char + name
-                    while True:
-                        try:
-                            char = get_char()
-                        except IndexError:
-                            while not self._relevant_temp:
-                                # TODO can raise an exception, when there are
-                                # no more lines
-                                fetch_line()
-                            char = get_char()
-                        if char in close_brackets:
-                            level += 1
-                        elif char in open_brackets:
-                            level -= 1
-                        name = char + name
-                        if level == 0:
-                            break
-                elif is_word(char):
-                    # TODO handle strings -> "asdf".join([1,2])
-                    name = char + name
-                    force_no_brackets = True
-                else:
-                    is_finished = True
-                    break
-            return name, is_finished
+            return line[::-1]
 
         self._row_temp = self.row
-        self._relevant_temp = ''
-        fetch_line(True)
 
-        names = []
-        is_finished = False
-        while not is_finished:
-            # do this not with tokenize, because it might fail
-            # due to single line processing
-            name, is_finished = fetch_name(not bool(names))
-            names.insert(0, name)
-        return names
+        force_point = False
+        open_brackets = ['(', '[', '{']
+        close_brackets = [')', ']', '}']
+
+        gen = tokenize.generate_tokens(fetch_line)
+        string = ''
+        level = 0
+        for token_type, tok, start, end, line in gen:
+            #print token_type, tok, line
+            if level > 0:
+                if tok in close_brackets:
+                    level += 1
+                if tok in open_brackets:
+                    level -= 1
+            elif tok == '.':
+                force_point = False
+            elif force_point:
+                if tok != '.':
+                    break
+            elif tok in close_brackets:
+                level += 1
+            elif token_type in [tokenize.NAME, tokenize.STRING,
+                                tokenize.NUMBER]:
+                force_point = True
+            else:
+                break
+
+            string += tok
+
+        return string[::-1]
+
+    def get_line(self, line):
+        if not self._line_cache:
+            self._line_cache = self.source.split('\n')
+
+        try:
+            return self._line_cache[line - 1]
+        except IndexError:
+            raise StopIteration()
 
 
 def complete(source, row, column, file_callback=None):
@@ -176,6 +129,7 @@ def complete(source, row, column, file_callback=None):
 
     try:
         path = f.get_row_path(column)
+        debug.dbg('completion_path', path)
     except ParserError as e:
         path = []
         debug.dbg(e)
@@ -183,7 +137,7 @@ def complete(source, row, column, file_callback=None):
     result = []
     if path and path[0]:
         # just parse one statement
-        r = parsing.PyFuzzyParser(".".join(path))
+        r = parsing.PyFuzzyParser(path)
         #print 'p', r.top.get_code().replace('\n', r'\n'), r.top.statements[0]
         scopes = evaluate.follow_statement(r.top.statements[0], scope)
 

@@ -35,21 +35,12 @@ class File(object):
         if not self.module_name and not self.source:
             raise AttributeError("Submit a module name or the source code")
         elif self.module_name:
-            return self.load_module()
+            return self._load_module()
 
-    def load_module(self):
+    def _load_module(self):
         self._parser = parsing.PyFuzzyParser(self.source)
+        del self.source  # efficiency
         return self._parser
-
-    def get_line(self, line):
-        if not self._line_cache:
-            self._line_cache = self.source.split('\n')
-
-        if 1 <= line <= len(self._line_cache):
-            return self._line_cache[line - 1]
-        else:
-            return None
-
 
 def find_module(point_path):
     """
