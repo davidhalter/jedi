@@ -124,10 +124,13 @@ class Parser(object):
                     value = '%s.%s' % (mod, value)
             code += '%s = %s\n' % (name, value)
 
-        if depth == 10:
-            import sys
-            sys.stdout.write(code)
-            exit()
+        if depth == 0:
+            #with open('writeout.py', 'w') as f:
+            #    f.write(code)
+            #import sys
+            #sys.stdout.write(code)
+            #exit()
+            pass
         return code
 
 

@@ -75,13 +75,18 @@ class FileWithCursor(modules.File):
                 force_point = False
             elif force_point:
                 if tok != '.':
-                    break
+                    # it is reversed, therefore a number is getting recognized
+                    # as a floating point number
+                    if not (token_type == tokenize.NUMBER and tok[0] == '.'):
+                        #print 'break2', token_type, tok
+                        break
             elif tok in close_brackets:
                 level += 1
             elif token_type in [tokenize.NAME, tokenize.STRING,
                                 tokenize.NUMBER]:
                 force_point = True
             else:
+                #print 'break', token_type, tok
                 break
 
             string += tok
@@ -115,7 +120,7 @@ def complete(source, row, column, file_callback=None):
     column = 17
 
     row = 140
-    row = 148
+    row = 150
     column = 200
     f = FileWithCursor('__main__', source=source, row=row)
     scope = f.parser.user_scope
@@ -129,6 +134,7 @@ def complete(source, row, column, file_callback=None):
 
     try:
         path = f.get_row_path(column)
+        print path
         debug.dbg('completion_path', path)
     except ParserError as e:
         path = []
@@ -137,7 +143,9 @@ def complete(source, row, column, file_callback=None):
     result = []
     if path and path[0]:
         # just parse one statement
+        #debug.ignored_modules = ['builtin']
         r = parsing.PyFuzzyParser(path)
+        #debug.ignored_modules = ['parsing', 'builtin']
         #print 'p', r.top.get_code().replace('\n', r'\n'), r.top.statements[0]
         scopes = evaluate.follow_statement(r.top.statements[0], scope)
 

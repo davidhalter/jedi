@@ -45,6 +45,9 @@ class Instance(Exec):
         n += self.base.get_set_vars()
         return n
 
+    def get_defined_names(self):
+        return self.get_set_vars()
+
     def __repr__(self):
         return "<%s of %s>" % \
                 (self.__class__.__name__, self.base)
@@ -107,6 +110,7 @@ def get_names_for_scope(scope):
 
     # add builtins to the global scope
     compl += builtin.Builtin.scope.get_set_vars()
+    #print 'gnfs', scope, compl
     return compl
 
 
@@ -136,15 +140,15 @@ def get_scopes_for_name(scope, name, search_global=False):
         # the name is already given in the parent function
         result = []
         for scope in scopes:
-            if isinstance(scope, parsing.Import):
-                try:
-                    debug.dbg('star import', scope)
-                    i = follow_import(scope).get_defined_names()
-                except modules.ModuleNotFound:
-                    debug.dbg('StarImport not found: ' + str(scope))
-                else:
-                    result += filter_name(i)
-            else:
+            #if isinstance(scope, parsing.Import):
+            #    try:
+            #        debug.dbg('star import', scope)
+            #        i = follow_import(scope).get_defined_names()
+            #    except modules.ModuleNotFound:
+            #        debug.dbg('StarImport not found: ' + str(scope))
+            #    else:
+            #        result += filter_name(i)
+            #else:
                 if [name] == list(scope.names):
                     result.append(scope.parent)
         debug.dbg('sfn filter', result)
@@ -158,24 +162,22 @@ def get_scopes_for_name(scope, name, search_global=False):
     return remove_statements(filter_name(names))
 
 
-def resolve_results(scopes):
-    """ Here we follow the results - to get what we really want """
+def strip_imports(scopes):
+    """
+    Here we strip the imports - they don't get resolved necessarily, but star
+    imports are looked at here.
+    """
     result = []
     for s in scopes:
         if isinstance(s, parsing.Import):
             print 'dini mueter, steile griech!'
             try:
                 scope = follow_import(s)
-                #for r in resolve_results([follow_import(s)]):
-                #    if isinstance(r, parsing.Import):
-                #        resolve_results(r)
-                #    else:
-                #        resolve
             except modules.ModuleNotFound:
                 debug.dbg('Module not found: ' + str(s))
             else:
                 result.append(scope)
-                result += resolve_results(i for i in scope.get_imports() if i.star)
+                result += strip_imports(i for i in scope.get_imports() if i.star)
         else:
             result.append(s)
     return result
@@ -196,8 +198,6 @@ def follow_statement(stmt, scope=None):
             if not isinstance(tok, str):
                 # the string tokens are just operations (+, -, etc.)
                 result += follow_call(scope, tok)
-            else:
-                debug.warning('dini mueter, found string:', tok)
     return result
 
 
@@ -209,8 +209,15 @@ def follow_call(scope, call):
     if isinstance(current, parsing.Array):
         result = [current]
     else:
-        scopes = get_scopes_for_name(scope, current, search_global=True)
-        result = resolve_results(scopes)
+        # TODO add better care for int/unicode, now str/float are just used
+        # instead
+        if current.type == parsing.Call.STRING:
+            scopes = get_scopes_for_name(builtin.Builtin.scope, 'str')
+        elif current.type == parsing.Call.NUMBER:
+            scopes = get_scopes_for_name(builtin.Builtin.scope, 'float')
+        else:
+            scopes = get_scopes_for_name(scope, current, search_global=True)
+        result = strip_imports(scopes)
 
     debug.dbg('call before', result, current, scope)
     result = follow_paths(path, result)
@@ -245,12 +252,12 @@ def follow_path(path, input):
         result = []
         if isinstance(current, parsing.Array):
             # this must be an execution, either () or []
-            if current.arr_type == parsing.Array.LIST:
+            if current.type == parsing.Array.LIST:
                 result = []  # TODO eval lists
-            elif current.arr_type not in [parsing.Array.DICT, parsing]:
+            elif current.type not in [parsing.Array.DICT, parsing]:
                 # scope must be a class or func - make an instance or execution
                 debug.dbg('befexec', scope)
-                result = resolve_results(Execution(scope).get_return_types())
+                result = strip_imports(Execution(scope).get_return_types())
                 debug.dbg('exec', result)
                 #except AttributeError:
                 #    debug.dbg('cannot execute:', scope)
@@ -263,7 +270,7 @@ def follow_path(path, input):
                 result = []
             else:
                 # TODO check magic class methods and return them also
-                result = resolve_results(get_scopes_for_name(scope, current))
+                result = strip_imports(get_scopes_for_name(scope, current))
         return result
     return follow_paths(path, filter_result(input))
 

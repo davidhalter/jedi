@@ -515,6 +515,7 @@ class Statement(Simple):
         close_brackets = False
 
         debug.dbg('tok_list', self.token_list)
+        print 'tok_list', self.token_list
         for i, tok_temp in enumerate(self.token_list):
             #print 'tok', tok_temp, result
             try:
@@ -531,13 +532,21 @@ class Statement(Simple):
             except TypeError:
                 # the token is a Name, which has already been parsed
                 tok = tok_temp
+                token_type = None
 
             brackets = {'(': Array.EMPTY, '[': Array.LIST, '{': Array.SET}
             is_call = lambda: result.__class__ == Call
             is_call_or_close = lambda: is_call() or close_brackets
-            if isinstance(tok, Name):  # names
+            if isinstance(tok, Name) or token_type in [tokenize.STRING,
+                                                 tokenize.NUMBER]:  # names
+                c_type = Call.NAME
+                if token_type == tokenize.STRING:
+                    c_type = Call.STRING
+                elif token_type == tokenize.NUMBER:
+                    c_type = Call.NUMBER
+
                 if is_chain:
-                    call = Call(tok, result)
+                    call = Call(tok, c_type, result)
                     result = result.set_next_chain_call(call)
                     is_chain = False
                     close_brackets = False
@@ -545,7 +554,7 @@ class Statement(Simple):
                     if close_brackets:
                         result = result.parent
                         close_brackets = False
-                    call = Call(tok, result)
+                    call = Call(tok, c_type, result)
                     result.add_to_current_field(call)
                     result = call
             elif tok in brackets.keys():  # brackets
@@ -573,8 +582,8 @@ class Statement(Simple):
                     close_brackets = False
                 result.add_field()
                 # important - it cannot be empty anymore
-                if result.arr_type == Array.EMPTY:
-                    result.arr_type = Array.TUPLE
+                if result.type == Array.EMPTY:
+                    result.type = Array.TUPLE
             elif tok in [')', '}', ']']:
                 while is_call_or_close():
                     result = result.parent
@@ -582,22 +591,10 @@ class Statement(Simple):
                 if tok == '}' and not len(result):
                     # this is a really special case - empty brackets {} are
                     # always dictionaries and not sets.
-                    result.arr_type = Array.DICT
+                    result.type = Array.DICT
                 level -= 1
                 #result = result.parent
                 close_brackets = True
-            elif tok in [tokenize.STRING, tokenize.NUMBER]:
-                # TODO catch numbers and strings -> token_type and make
-                # calls out of them
-                if is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-
-                call = Call(tok, result)
-                result.add_to_current_field(call)
-                result = call
-                result.add_to_current_field(tok)
-                pass
             else:
                 if is_call_or_close():
                     result = result.parent
@@ -611,16 +608,22 @@ class Statement(Simple):
                                 "behaviour. Please submit a bug" % level)
 
         self.assignment_calls = top
+        print 'top', top.values
         return top
 
 
 class Call(object):
+    NAME = object()
+    NUMBER = object()
+    STRING = object()
+
     """ The statement object of functions, to  """
-    def __init__(self, name, parent=None):
+    def __init__(self, name, type, parent=None):
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
         self.parent = parent
+        self.type = type
 
         self.next = None
         self.execution = None
@@ -682,9 +685,8 @@ class Array(Call):
     SET = object()
 
     def __init__(self, arr_type, parent=None):
-        super(Array, self).__init__(None, parent)
+        super(Array, self).__init__(None, arr_type, parent)
 
-        self.arr_type = arr_type
         self.values = []
         self.keys = []
 
@@ -711,7 +713,7 @@ class Array(Call):
         Only used for dictionaries, automatically adds the tokens added by now
         from the values to keys.
         """
-        self.arr_type = Array.DICT
+        self.type = Array.DICT
         c = self._counter
         self.keys[c] = self.values[c]
         self.values[c] = []
@@ -723,21 +725,21 @@ class Array(Call):
         return self.values[key]
 
     def __iter__(self):
-        if self.arr_type == self.DICT:
+        if self.type == self.DICT:
             return self.values.items().__iter__()
         else:
             return self.values.__iter__()
 
     def __repr__(self):
-        if self.arr_type == self.EMPTY:
+        if self.type == self.EMPTY:
             temp = 'empty'
-        elif self.arr_type == self.TUPLE:
+        elif self.type == self.TUPLE:
             temp = 'tuple'
-        elif self.arr_type == self.LIST:
+        elif self.type == self.LIST:
             temp = 'list'
-        elif self.arr_type == self.DICT:
+        elif self.type == self.DICT:
             temp = 'dict'
-        elif self.arr_type == self.SET:
+        elif self.type == self.SET:
             temp = 'set'
         return "<%s: %s of %s>" % \
                 (self.__class__.__name__, temp, self.parent)
@@ -962,7 +964,9 @@ class PyFuzzyParser(object):
         token_type, next, ind = self.next()
         if next == '(':
             super = self._parseparen()
-        elif next != ':':
+            token_type, next, ind = self.next()
+
+        if next != ':':
             debug.dbg("class: syntax error - %s@%s" % (cname, self.line_nr))
             return None
 
@@ -982,6 +986,7 @@ class PyFuzzyParser(object):
         :return: Statement + last parsed token.
         :rtype: (Statement, str)
         """
+
         string = ''
         set_vars = []
         used_funcs = []
@@ -1035,7 +1040,7 @@ class PyFuzzyParser(object):
                     path, token_type, tok, start_indent, start_line = \
                             self._parsedotname(self.current)
                     n = Name(path, start_indent, start_line, self.line_nr)
-                    tok_list.pop()  # remove last entry, because we add Name
+                    tok_list.pop()  # removed last entry, because we add Name
                     tok_list.append(n)
                     if tok == '(':
                         # it must be a function
@@ -1066,8 +1071,12 @@ class PyFuzzyParser(object):
         if not string:
             return None, tok
         #print 'new_stat', string, set_vars, used_funcs, used_vars
-        stmt = Statement(string, set_vars, used_funcs, used_vars,\
-                            tok_list, indent, line_start, self.line_nr)
+        if self.freshscope and len(tok_list) > 1 \
+                    and self.last_token[1] == tokenize.STRING:
+            self.scope.add_docstr(self.last_token[1])
+        else:
+            stmt = Statement(string, set_vars, used_funcs, used_vars,\
+                                tok_list, indent, line_start, self.line_nr)
         if is_return:
             # add returns to the scope
             func = self.scope.get_parent_until(Function)
@@ -1108,7 +1117,7 @@ class PyFuzzyParser(object):
         statement_toks = ['{', '[', '(', '`']
 
         decorators = []
-        freshscope = True
+        self.freshscope = True
         while True:
             try:
                 token_type, tok, indent = self.next()
@@ -1141,7 +1150,7 @@ class PyFuzzyParser(object):
                                             self.line_nr)
                         continue
                     debug.dbg("new scope: function %s" % (func.name))
-                    freshscope = True
+                    self.freshscope = True
                     self.scope = self.scope.add_scope(func, decorators)
                     decorators = []
                 elif tok == 'class':
@@ -1150,7 +1159,7 @@ class PyFuzzyParser(object):
                         debug.warning("class: syntax error@%s" %
                                             self.line_nr)
                         continue
-                    freshscope = True
+                    self.freshscope = True
                     debug.dbg("new scope: class %s" % (cls.name))
                     self.scope = self.scope.add_scope(cls, decorators)
                     decorators = []
@@ -1160,7 +1169,7 @@ class PyFuzzyParser(object):
                     for m, alias in imports:
                         i = Import(indent, start_line, self.line_nr, m, alias)
                         self.scope.add_import(i)
-                    freshscope = False
+                    self.freshscope = False
                 elif tok == 'from':
                     mod, token_type, tok, start_indent, start_line2 = \
                         self._parsedotname()
@@ -1177,7 +1186,7 @@ class PyFuzzyParser(object):
                         i = Import(indent, start_line, self.line_nr, name,
                                     alias, mod, star)
                         self.scope.add_import(i)
-                    freshscope = False
+                    self.freshscope = False
                 #loops
                 elif tok == 'for':
                     value_list, tok = self._parse_value_list()
@@ -1230,23 +1239,26 @@ class PyFuzzyParser(object):
                     decorators.append(stmt)
                 elif tok == 'pass':
                     continue
-                # check for docstrings
-                elif token_type == tokenize.STRING:
-                    if freshscope:
-                        self.scope.add_docstr(tok)
-                # this is the main part - a name can be a function or a normal
-                # var, which can follow anything. but this is done by the
-                # statement parser.
-                elif token_type == tokenize.NAME or tok in statement_toks:
+                # default
+                elif token_type in [tokenize.NAME, tokenize.STRING,
+                                    tokenize.NUMBER] \
+                        or tok in statement_toks:
+                    # this is the main part - a name can be a function or a
+                    # normal var, which can follow anything. but this is done
+                    # by the statement parser.
                     stmt, tok = self._parse_statement(self.current)
                     if stmt:
                         self.scope.add_statement(stmt)
-                    freshscope = False
-                #else:
-                    #print "_not_implemented_", tok, self.parserline
+                    self.freshscope = False
+                else:
+                    if token_type not in [tokenize.COMMENT, tokenize.INDENT,
+                                          tokenize.NEWLINE, tokenize.NL,
+                                          tokenize.ENDMARKER]:
+                        debug.warning('token not classified', tok, token_type,
+                                        self.line_nr)
             except StopIteration:  # thrown on EOF
                 break
-        #except StopIteration:
+        #except:
         #    debug.dbg("parse error: %s, %s @ %s" %
         #        (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
         return self.top
