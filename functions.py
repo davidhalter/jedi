@@ -105,7 +105,7 @@ class CompletionMatch(object):
         self.has_dot = has_dot
 
     def __str__(self):
-        dot = '.' if self.has_dot else ''
+        dot = '' if self.has_dot else '.'
         return dot + self.name.names[-1]
 
 
