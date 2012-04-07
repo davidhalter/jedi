@@ -9,6 +9,6 @@ functions.modules.module_find_path.insert(0, '.')
 with open('test.py') as f:
     code = f.read()
 for i in range(1):
-    completions = functions.complete(code, 50, 20)
+    completions = functions.complete(code, 50, 200)
 
-print '\n', [c.names for c in completions]
+print '\n', [c.names[-1] for c in completions]

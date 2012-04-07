@@ -151,8 +151,8 @@ class Scope(Simple):
         i = self.imports
         for s in self.statements:
             if isinstance(s, Scope):
-                i += s.get_imports() 
-        return i 
+                i += s.get_imports()
+        return i
 
     def add_global(self, name):
         """
@@ -212,7 +212,8 @@ class Scope(Simple):
         return n
 
     def get_defined_names(self):
-        return [n for n in self.get_set_vars() if isinstance(n, Import) or len(n) == 1]
+        return [n for n in self.get_set_vars() \
+                            if isinstance(n, Import) or len(n) == 1]
 
     def is_empty(self):
         """
@@ -515,7 +516,6 @@ class Statement(Simple):
         close_brackets = False
 
         debug.dbg('tok_list', self.token_list)
-        print 'tok_list', self.token_list
         for i, tok_temp in enumerate(self.token_list):
             #print 'tok', tok_temp, result
             try:
@@ -608,8 +608,21 @@ class Statement(Simple):
                                 "behaviour. Please submit a bug" % level)
 
         self.assignment_calls = top
-        print 'top', top.values, top.values[0][0].name, repr(top.values[0][0].name)
         return top
+
+
+class Param(Statement):
+    """
+    The class which shows definitions of params of classes and functions.
+    But this is not to define function calls.
+    """
+    def __init__(self, code, set_vars, used_funcs, used_vars, token_list,
+            indent, line_nr, line_end):
+        super(Param, self).__init__(code, set_vars, used_funcs,
+                        used_vars, token_list, indent, line_nr, line_end)
+
+        # this is defined by the parser later on, not at the initialization
+        self.position = None
 
 
 class Call(object):
@@ -910,10 +923,14 @@ class PyFuzzyParser(object):
         """
         names = []
         tok = None
+        pos = 0
         while tok not in [')', ':']:
-            stmt, tok = self._parse_statement(added_breaks=',')
+            stmt, tok = self._parse_statement(added_breaks=',',
+                                              stmt_class=Param)
             if stmt:
+                stmt.position = pos
                 names.append(stmt)
+                pos += 1
 
         return names
 
@@ -972,7 +989,8 @@ class PyFuzzyParser(object):
 
         return Class(cname, super, indent, start_line)
 
-    def _parse_statement(self, pre_used_token=None, added_breaks=None):
+    def _parse_statement(self, pre_used_token=None, added_breaks=None,
+                            stmt_class=Statement):
         """
         Parses statements like:
 
@@ -1075,7 +1093,7 @@ class PyFuzzyParser(object):
                     and self.last_token[1] == tokenize.STRING:
             self.scope.add_docstr(self.last_token[1])
         else:
-            stmt = Statement(string, set_vars, used_funcs, used_vars,\
+            stmt = stmt_class(string, set_vars, used_funcs, used_vars,\
                                 tok_list, indent, line_start, self.line_nr)
         if is_return:
             # add returns to the scope

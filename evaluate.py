@@ -21,10 +21,10 @@ def memoize(default=None):
     don't think, that there is a big speed difference, but there are many cases
     where recursion could happen (think about a = b; b = a).
     """
-    memo = {}
     def func(function):
+        memo = {}
+
         def wrapper(*args):
-            print function, args
             if args in memo:
                 return memo[args]
             else:
@@ -166,7 +166,20 @@ def get_scopes_for_name(scope, name, search_global=False):
             #        result += filter_name(i)
             #else:
                 if [name] == list(scope.names):
-                    result.append(scope.parent)
+                    par = scope.parent
+                    if isinstance(par, parsing.Flow):
+                        # TODO get Flow data, which is defined by the loop (or
+                        # with)
+                        pass
+                    elif isinstance(par, parsing.Param):
+                        if isinstance(par.parent.parent, parsing.Class) \
+                                and par.position == 0:
+                            result.append(Instance(par.parent.parent))
+                        else:
+                            # TODO get function data
+                            pass
+                    else:
+                        result.append(scope.parent)
         debug.dbg('sfn filter', result)
         return result
 
@@ -188,12 +201,12 @@ def strip_imports(scopes):
         if isinstance(s, parsing.Import):
             print 'dini mueter, steile griech!'
             try:
-                scope = follow_import(s)
+                new = follow_import(s)
             except modules.ModuleNotFound:
                 debug.dbg('Module not found: ' + str(s))
             else:
-                result.append(scope)
-                result += strip_imports(i for i in scope.get_imports() if i.star)
+                result.append(new)
+                result += strip_imports(i for i in new.get_imports() if i.star)
         else:
             result.append(s)
     return result
@@ -223,7 +236,6 @@ def follow_call(scope, call):
     path = call.generate_call_list()
 
     current = next(path)
-    print 'call', scope, call, current
     if isinstance(current, parsing.Array):
         result = [current]
     else:

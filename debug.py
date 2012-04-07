@@ -23,5 +23,6 @@ def print_to_stdout(level, *args):
     """ The default debug function """
     print 'dbg:' if level == NOTICE else 'warning:', args
 
-debug_function = print_to_stdout
+debug_function = None
+#debug_function = print_to_stdout
 ignored_modules = []

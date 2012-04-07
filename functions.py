@@ -8,11 +8,6 @@ import debug
 __all__ = ['complete', 'complete_test', 'set_debug_function']
 
 
-class ParserError(LookupError):
-    """ The exception that is thrown if some handmade parser fails. """
-    pass
-
-
 class FileWithCursor(modules.File):
     """
     Manages all files, that are parsed and caches them.
@@ -118,44 +113,27 @@ def complete(source, row, column, file_callback=None):
     """
     f = FileWithCursor('__main__', source=source, row=row)
     scope = f.parser.user_scope
+    path = f.get_row_path(column)
+    debug.dbg('completion_start: %s in %s' % (path, scope))
 
-    # print a debug.dbg title
-    debug.dbg('complete_scope', scope)
+    # just parse one statement, take it and evaluate it
+    r = parsing.PyFuzzyParser(path)
+    scopes = evaluate.follow_statement(r.top.statements[0], scope)
 
-    try:
-        path = f.get_row_path(column)
-        print path
-        debug.dbg('completion_path', path)
-    except ParserError as e:
-        path = []
-        debug.dbg(e)
+    #name = path.pop() # use this later
+    completions = []
+    debug.dbg('possible scopes', scopes)
+    for s in scopes:
+        completions += s.get_defined_names()
 
-    result = []
-    if path and path[0]:
-        # just parse one statement
-        #debug.ignored_modules = ['builtin']
-        r = parsing.PyFuzzyParser(path)
-        #debug.ignored_modules = ['parsing', 'builtin']
-        #print 'p', r.top.get_code().replace('\n', r'\n'), r.top.statements[0]
-        scopes = evaluate.follow_statement(r.top.statements[0], scope)
+    #else:
+    #    compl = evaluate.get_names_for_scope(scope)
 
-        #name = path.pop() # use this later
-        compl = []
-        debug.dbg('possible scopes')
-        for s in scopes:
-            compl += s.get_defined_names()
+    debug.dbg('possible-compl', completions)
 
-        #else:
-        #    compl = evaluate.get_names_for_scope(scope)
+    #result = [c for c in compl if name in c.names[-1]]
 
-        debug.dbg('possible-compl', compl)
-
-        # make a partial comparison, because the other options have to
-        # be returned as well.
-        result = compl
-        #result = [c for c in compl if name in c.names[-1]]
-
-    return result
+    return completions
 
 
 def complete_test(source, row, column, file_callback=None):
