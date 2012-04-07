@@ -133,7 +133,7 @@ class c1():
         import os as c4 #from parsing import Scope as c4
         c5 = c4
         c5 = 1
-        return c5+1+'asdf'
+        return c5+'asdf'
 
 
 (c1().c2.\
@@ -147,4 +147,4 @@ b= asdf2
 #import parsing as test
 c = b().c3()
 
-"1.0".join()
+1.0.fromhex()

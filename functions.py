@@ -82,9 +82,10 @@ class FileWithCursor(modules.File):
                         break
             elif tok in close_brackets:
                 level += 1
-            elif token_type in [tokenize.NAME, tokenize.STRING,
-                                tokenize.NUMBER]:
+            elif token_type in [tokenize.NAME, tokenize.STRING]:
                 force_point = True
+            elif token_type == tokenize.NUMBER:
+                pass
             else:
                 #print 'break', token_type, tok
                 break

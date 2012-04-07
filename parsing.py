@@ -608,7 +608,7 @@ class Statement(Simple):
                                 "behaviour. Please submit a bug" % level)
 
         self.assignment_calls = top
-        print 'top', top.values
+        print 'top', top.values, top.values[0][0].name, repr(top.values[0][0].name)
         return top
 
 

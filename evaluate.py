@@ -72,16 +72,18 @@ class Execution(Exec):
                 if get_returns:
                     ret = scope.returns
                     for s in ret:
-                        for stmt in  follow_statement(s):
-                            stmts += remove_executions(stmt)
+                        #for stmt in follow_statement(s):
+                        #    stmts += remove_executions(stmt)
+                        stmts += follow_statement(s)
                 else:
                     stmts.append(scope)
             return stmts
 
         # check cache
         try:
-            debug.dbg('hit function cache', self.base)
-            return Execution.cache[self.base]
+            ex = Execution.cache[self.base]
+            debug.dbg('hit function cache', self.base, ex)
+            return ex
         except KeyError:
             # cache is not only here as a cache, but also to prevent an
             # endless recursion.
@@ -206,14 +208,16 @@ def follow_call(scope, call):
     path = call.generate_call_list()
 
     current = next(path)
+    print 'call', scope, call, current
     if isinstance(current, parsing.Array):
         result = [current]
     else:
         # TODO add better care for int/unicode, now str/float are just used
         # instead
-        if current.type == parsing.Call.STRING:
+        not_name_part = not isinstance(current, parsing.NamePart)
+        if not_name_part and current.type == parsing.Call.STRING:
             scopes = get_scopes_for_name(builtin.Builtin.scope, 'str')
-        elif current.type == parsing.Call.NUMBER:
+        elif not_name_part and current.type == parsing.Call.NUMBER:
             scopes = get_scopes_for_name(builtin.Builtin.scope, 'float')
         else:
             scopes = get_scopes_for_name(scope, current, search_global=True)
