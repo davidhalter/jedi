@@ -12,6 +12,30 @@ import debug
 import builtin
 
 
+def memoize(default=None):
+    """
+    This is a typical memoization decorator, BUT there is one difference:
+    To prevent recursion it sets defaults.
+
+    Preventing recursion is in this case the much bigger use than speed. I
+    don't think, that there is a big speed difference, but there are many cases
+    where recursion could happen (think about a = b; b = a).
+    """
+    memo = {}
+    def func(function):
+        def wrapper(*args):
+            print function, args
+            if args in memo:
+                return memo[args]
+            else:
+                memo[args] = default
+                rv = function(*args)
+                memo[args] = rv
+                return rv
+        return wrapper
+    return func
+
+
 class Exec(object):
     def __init__(self, base):
         self.base = base
@@ -59,6 +83,7 @@ class Execution(Exec):
     """
     cache = {}
 
+    @memoize(default=[])
     def get_return_types(self):
         """
         Get the return vars of a function.
@@ -79,20 +104,9 @@ class Execution(Exec):
                     stmts.append(scope)
             return stmts
 
-        # check cache
-        try:
-            ex = Execution.cache[self.base]
-            debug.dbg('hit function cache', self.base, ex)
-            return ex
-        except KeyError:
-            # cache is not only here as a cache, but also to prevent an
-            # endless recursion.
-            Execution.cache[self.base] = []
-
         result = remove_executions(self.base, True)
         debug.dbg('exec stmts=', result, self.base, repr(self))
 
-        Execution.cache[self.base] = result
         return result
 
     def __repr__(self):
@@ -185,6 +199,7 @@ def strip_imports(scopes):
     return result
 
 
+@memoize(default=[])
 def follow_statement(stmt, scope=None):
     """
     :param stmt: contains a statement

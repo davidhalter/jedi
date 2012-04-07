@@ -1,4 +1,3 @@
-import re
 import tokenize
 
 import parsing
@@ -6,7 +5,7 @@ import evaluate
 import modules
 import debug
 
-__all__ = ['complete', 'set_debug_function']
+__all__ = ['complete', 'complete_test', 'set_debug_function']
 
 
 class ParserError(LookupError):
@@ -117,10 +116,62 @@ def complete(source, row, column, file_callback=None):
     :return: list of completion objects
     :rtype: list
     """
-    row = 84
-    column = 17
+    f = FileWithCursor('__main__', source=source, row=row)
+    scope = f.parser.user_scope
 
-    row = 140
+    # print a debug.dbg title
+    debug.dbg('complete_scope', scope)
+
+    try:
+        path = f.get_row_path(column)
+        print path
+        debug.dbg('completion_path', path)
+    except ParserError as e:
+        path = []
+        debug.dbg(e)
+
+    result = []
+    if path and path[0]:
+        # just parse one statement
+        #debug.ignored_modules = ['builtin']
+        r = parsing.PyFuzzyParser(path)
+        #debug.ignored_modules = ['parsing', 'builtin']
+        #print 'p', r.top.get_code().replace('\n', r'\n'), r.top.statements[0]
+        scopes = evaluate.follow_statement(r.top.statements[0], scope)
+
+        #name = path.pop() # use this later
+        compl = []
+        debug.dbg('possible scopes')
+        for s in scopes:
+            compl += s.get_defined_names()
+
+        #else:
+        #    compl = evaluate.get_names_for_scope(scope)
+
+        debug.dbg('possible-compl', compl)
+
+        # make a partial comparison, because the other options have to
+        # be returned as well.
+        result = compl
+        #result = [c for c in compl if name in c.names[-1]]
+
+    return result
+
+
+def complete_test(source, row, column, file_callback=None):
+    """
+    An auto completer for python files.
+
+    :param source: The source code of the current file
+    :type source: string
+    :param row: The row to complete in.
+    :type row: int
+    :param col: The column to complete in.
+    :type col: int
+    :return: list of completion objects
+    :rtype: list
+    """
+    # !!!!!!! this is the old version and will be deleted soon !!!!!!!
     row = 150
     column = 200
     f = FileWithCursor('__main__', source=source, row=row)
