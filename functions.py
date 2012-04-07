@@ -1,4 +1,5 @@
 import tokenize
+import re
 
 import parsing
 import evaluate
@@ -98,6 +99,16 @@ class FileWithCursor(modules.File):
             raise StopIteration()
 
 
+class CompletionMatch(object):
+    def __init__(self, name, has_dot):
+        self.name = name
+        self.has_dot = has_dot
+
+    def __str__(self):
+        dot = '.' if self.has_dot else ''
+        return dot + self.name.names[-1]
+
+
 def complete(source, row, column, file_callback=None):
     """
     An auto completer for python files.
@@ -116,22 +127,24 @@ def complete(source, row, column, file_callback=None):
     path = f.get_row_path(column)
     debug.dbg('completion_start: %s in %s' % (path, scope))
 
+    match = re.match(r'^(.+?)(?:(\.)(\w?[\w\d]*))?$', path, flags=re.S)
+    path, dot, like = match.groups()
     # just parse one statement, take it and evaluate it
     r = parsing.PyFuzzyParser(path)
-    scopes = evaluate.follow_statement(r.top.statements[0], scope)
+    try:
+        stmt = r.top.statements[0]
+    except IndexError:
+        completions = evaluate.get_names_for_scope(scope)
+    else:
+        scopes = evaluate.follow_statement(stmt, scope)
 
-    #name = path.pop() # use this later
-    completions = []
-    debug.dbg('possible scopes', scopes)
-    for s in scopes:
-        completions += s.get_defined_names()
+        completions = []
+        debug.dbg('possible scopes', scopes)
+        for s in scopes:
+            completions += s.get_defined_names()
 
-    #else:
-    #    compl = evaluate.get_names_for_scope(scope)
-
-    debug.dbg('possible-compl', completions)
-
-    #result = [c for c in compl if name in c.names[-1]]
+    completions = [CompletionMatch(c, bool(dot)) for c in completions
+                            if like in c.names[-1]]
 
     return completions
 
@@ -162,13 +175,9 @@ def complete_test(source, row, column, file_callback=None):
     debug.dbg('-' * 70)
     debug.dbg('complete_scope', scope)
 
-    try:
-        path = f.get_row_path(column)
-        print path
-        debug.dbg('completion_path', path)
-    except ParserError as e:
-        path = []
-        debug.dbg(e)
+    path = f.get_row_path(column)
+    print path
+    debug.dbg('completion_path', path)
 
     result = []
     if path and path[0]:

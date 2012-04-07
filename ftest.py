@@ -11,4 +11,4 @@ with open('test.py') as f:
 for i in range(1):
     completions = functions.complete(code, 50, 200)
 
-print '\n', [c.names[-1] for c in completions]
+print '\n', ', '.join(str(c) for c in completions)
