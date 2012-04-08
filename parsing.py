@@ -99,7 +99,6 @@ class Scope(Simple):
         self.subscopes = []
         self.imports = []
         self.statements = []
-        self.global_vars = []
         self.docstr = docstr
 
     def add_scope(self, sub, decorators):
@@ -154,18 +153,6 @@ class Scope(Simple):
                 i += s.get_imports()
         return i
 
-    def add_global(self, name):
-        """
-        Global means in these context a function (subscope) which has a global
-        statement.
-        This is only relevant for the top scope.
-
-        :param name: The name of the global.
-        :type name: Name
-        """
-        self.global_vars.append(name)
-        # set no parent here, because globals are not defined in this scope.
-
     def get_code(self, first_indent=False, indention="    "):
         """
         :return: Returns the code of the current scope.
@@ -203,11 +190,10 @@ class Scope(Simple):
 
         # function and class names
         n += [s.name for s in self.subscopes]
-        n += self.global_vars
 
         for i in self.imports:
             if not i.star:
-                n += i.get_names()
+                n += i.get_defined_names()
 
         return n
 
@@ -229,10 +215,39 @@ class Scope(Simple):
             try:
                 name = self.command
             except:
-                name = 'global'
+                name = self.module_path
 
         return "<%s: %s@%s-%s>" % \
                 (self.__class__.__name__, name, self.line_nr, self.line_end)
+
+
+class GlobalScope(Scope):
+    """
+    The top scope, which is a module.
+    I don't know why I didn't name it Module :-)
+    """
+    def __init__(self, module_path, docstr=''):
+        super(GlobalScope, self).__init__(module_path, docstr)
+        self.module_path = module_path
+        self.global_vars = []
+
+    def add_global(self, name):
+        """
+        Global means in these context a function (subscope) which has a global
+        statement.
+        This is only relevant for the top scope.
+
+        :param name: The name of the global.
+        :type name: Name
+        """
+        self.global_vars.append(name)
+        # set no parent here, because globals are not defined in this scope.
+
+    def get_set_vars(self):
+        n = []
+        n += super(GlobalScope, self).get_set_vars()
+        n += self.global_vars
+        return n 
 
 
 class Class(Scope):
@@ -420,7 +435,7 @@ class Import(Simple):
     :type star: bool
     """
     def __init__(self, indent, line_nr, line_end, namespace, alias='', \
-                    from_ns='', star=False):
+                    from_ns='', star=False, relative_count=None):
         super(Import, self).__init__(indent, line_nr, line_end)
 
         self.namespace = namespace
@@ -436,6 +451,7 @@ class Import(Simple):
             from_ns.parent = self
 
         self.star = star
+        self.relative_count = relative_count
 
     def get_code(self):
         if self.alias:
@@ -449,7 +465,7 @@ class Import(Simple):
         else:
             return "import " + ns_str + '\n'
 
-    def get_names(self):
+    def get_defined_names(self):
         if self.star:
             return [self]
         return [self.alias] if self.alias else [self.namespace]
@@ -805,12 +821,12 @@ class PyFuzzyParser(object):
     :param user_line: The line, the user is currently on.
     :type user_line: int
     """
-    def __init__(self, code, user_line=None):
+    def __init__(self, code, module_path=None, user_line=None):
         self.user_line = user_line
         self.code = code + '\n'  # end with \n, because the parser needs it
 
         # initialize global Scope
-        self.top = Scope(0, 0)
+        self.top = GlobalScope(module_path)
         self.scope = self.top
         self.current = (None, None, None)
 
@@ -1072,8 +1088,9 @@ class PyFuzzyParser(object):
                     continue
             elif '=' in tok and not tok in ['>=', '<=', '==', '!=']:
                 # there has been an assignement -> change vars
-                set_vars = used_vars
-                used_vars = []
+                if level == 0:
+                    set_vars = used_vars
+                    used_vars = []
             elif tok in ['{', '(', '[']:
                 level += 1
             elif tok in ['}', ')', ']']:
@@ -1139,8 +1156,8 @@ class PyFuzzyParser(object):
         while True:
             try:
                 token_type, tok, indent = self.next()
-                debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
-                    % (tok, token_type, indent))
+                #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
+                #    % (tok, token_type, indent))
 
                 while token_type == tokenize.DEDENT and self.scope != self.top:
                     debug.dbg('dedent', self.scope)
@@ -1187,10 +1204,19 @@ class PyFuzzyParser(object):
                     for m, alias in imports:
                         i = Import(indent, start_line, self.line_nr, m, alias)
                         self.scope.add_import(i)
+                        debug.dbg("new import: %s" % (i))
                     self.freshscope = False
                 elif tok == 'from':
+                    # take care for relative imports
+                    relative_count = 0
+                    while 1:
+                        token_type, tok, indent = self.next()
+                        if tok != '.':
+                            break;
+                        relative_count += 1
+                    # the from import
                     mod, token_type, tok, start_indent, start_line2 = \
-                        self._parsedotname()
+                        self._parsedotname(self.current)
                     if not mod or tok != "import":
                         debug.warning("from: syntax error@%s" %
                                             self.line_nr)
@@ -1202,8 +1228,9 @@ class PyFuzzyParser(object):
                         if star:
                             name = None
                         i = Import(indent, start_line, self.line_nr, name,
-                                    alias, mod, star)
+                                    alias, mod, star, relative_count)
                         self.scope.add_import(i)
+                        debug.dbg("new from: %s" % (i))
                     self.freshscope = False
                 #loops
                 elif tok == 'for':

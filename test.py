@@ -147,4 +147,4 @@ b= asdf2
 #import parsing as test
 c = b().c3()
 
-1.0.fromhex()
+1.0.fromhex(); from flask import Flask; Flask.

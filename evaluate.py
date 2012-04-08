@@ -12,6 +12,14 @@ import debug
 import builtin
 
 
+memoize_caches = []
+
+
+def clear_caches():
+    for m in memoize_caches:
+        m.clear()
+
+
 def memoize(default=None):
     """
     This is a typical memoization decorator, BUT there is one difference:
@@ -23,6 +31,7 @@ def memoize(default=None):
     """
     def func(function):
         memo = {}
+        memoize_caches.append(memo)
 
         def wrapper(*args):
             if args in memo:
@@ -201,12 +210,13 @@ def strip_imports(scopes):
         if isinstance(s, parsing.Import):
             print 'dini mueter, steile griech!'
             try:
-                new = follow_import(s)
+                new_scopes = follow_import(s)
             except modules.ModuleNotFound:
                 debug.dbg('Module not found: ' + str(s))
             else:
-                result.append(new)
-                result += strip_imports(i for i in new.get_imports() if i.star)
+                result += new_scopes
+                for n in new_scopes:
+                        result += strip_imports(i for i in n.get_imports() if i.star)
         else:
             result.append(s)
     return result
@@ -319,9 +329,13 @@ def follow_import(_import):
     if _import.namespace:
         ns_list += _import.namespace.names
 
-    scope, rest = modules.find_module(ns_list)
-    if rest:
-        scope = follow_path(rest.__iter__(), scope)
+    loaded_in = _import.get_parent_until()
 
-    debug.dbg('after import', scope, rest)
-    return scope
+    scope, rest = modules.find_module(loaded_in, ns_list)
+    if rest:
+        scopes = follow_path(rest.__iter__(), scope)
+    else:
+        scopes = [scope]
+
+    debug.dbg('after import', scopes, rest)
+    return scopes

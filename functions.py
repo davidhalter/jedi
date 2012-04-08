@@ -12,23 +12,23 @@ __all__ = ['complete', 'get_completion_parts', 'complete_test', 'set_debug_funct
 class FileWithCursor(modules.File):
     """
     Manages all files, that are parsed and caches them.
-    Important are the params source and module_name, one of them has to
+    Important are the params source and module_path, one of them has to
     be there.
 
     :param source: The source code of the file.
-    :param module_name: The module name of the file.
+    :param module_path: The module name of the file.
     :param row: The row, the user is currently in. Only important for the \
     main file.
     """
-    def __init__(self, module_name, source, row):
-        super(FileWithCursor, self).__init__(module_name, source)
+    def __init__(self, module_path, source, row):
+        super(FileWithCursor, self).__init__(module_path, source)
         self.row = row
 
         # this two are only used, because there is no nonlocal in Python 2
         self._row_temp = None
         self._relevant_temp = None
 
-        self._parser = parsing.PyFuzzyParser(source, row)
+        self._parser = parsing.PyFuzzyParser(source, module_path, row)
 
     def get_row_path(self, column):
         """ Get the path under the cursor. """
@@ -122,9 +122,29 @@ class Completion(object):
         except:
             return ''
 
-    @property
-    def type(self):
-        return '' # type(self.name)
+    def get_type(self):
+        return type(self.name.parent)
+
+    def get_vim_type(self):
+        """
+        This is the only function, which is vim specific, it returns the vim
+        type, see help(complete-items)
+        """
+        typ = self.get_type()
+        if typ == parsing.Statement:
+            return 'v'  # variable
+        elif typ == parsing.Function:
+            return 'f'  # function / method
+        elif typ in [parsing.Class, evaluate.Instance]:
+            return 't'  # typedef -> abused as class
+        elif typ == parsing.Import:
+            return 'd'  # define -> abused as import
+        if typ == parsing.Param:
+            return 'm'  # member -> abused as param
+        else:
+            debug.dbg('other python type: ', typ)
+
+        return ''
 
     def __str__(self):
         return self.name.names[-1]
@@ -138,7 +158,7 @@ def get_completion_parts(path):
     match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
     return match.groups()
 
-def complete(source, row, column, file_callback=None):
+def complete(source, row, column, source_path):
     """
     An auto completer for python files.
 
@@ -148,17 +168,20 @@ def complete(source, row, column, file_callback=None):
     :type row: int
     :param col: The column to complete in.
     :type col: int
+    :param source_path: The path in the os, the current module is in.
+    :type source_path: int
+
     :return: list of completion objects
     :rtype: list
     """
-    f = FileWithCursor('__main__', source=source, row=row)
+    f = FileWithCursor(source_path, source=source, row=row)
     scope = f.parser.user_scope
     path = f.get_row_path(column)
     debug.dbg('completion_start: %s in %s' % (path, scope))
 
     # just parse one statement, take it and evaluate it
     path, dot, like = get_completion_parts(path)
-    r = parsing.PyFuzzyParser(path)
+    r = parsing.PyFuzzyParser(path, source_path)
     try:
         stmt = r.top.statements[0]
     except IndexError:
@@ -171,13 +194,11 @@ def complete(source, row, column, file_callback=None):
         for s in scopes:
             completions += s.get_defined_names()
 
-    print repr(path), repr(dot), repr(like), row, column
-    print len(completions)
     needs_dot = not dot and path
     completions = [Completion(c, needs_dot, len(like)) for c in completions
                             if c.names[-1].lower().startswith(like.lower())]
-    print 'nr2', len(completions)
 
+    _clear_caches()
     return completions
 
 
@@ -245,3 +266,6 @@ def set_debug_function(func_cb):
     :param func_cb: The callback function for debug messages, with n params.
     """
     debug.debug_function = func_cb
+
+def _clear_caches():
+    evaluate.clear_caches()
