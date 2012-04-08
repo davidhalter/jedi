@@ -47,7 +47,7 @@ class A():
     return 8 + a.test()
 class init:
     def __init__(self, a, b=3, c = A):
-     a=0;self.a  =  a;self.a
+     a=0;self.a  =  a.i
 
 aclass = A()
 

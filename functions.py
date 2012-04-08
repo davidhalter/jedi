@@ -6,7 +6,7 @@ import evaluate
 import modules
 import debug
 
-__all__ = ['complete', 'complete_test', 'set_debug_function']
+__all__ = ['complete', 'get_completion_parts', 'complete_test', 'set_debug_function']
 
 
 class FileWithCursor(modules.File):
@@ -37,7 +37,7 @@ class FileWithCursor(modules.File):
             line = self.get_line(self._row_temp)
             if self._is_first:
                 self._is_first = False
-                line = line[:column - 1]
+                line = line[:column]
             else:
                 line = line + '\n'
             # add lines with a backslash at the end
@@ -57,6 +57,7 @@ class FileWithCursor(modules.File):
         close_brackets = [')', ']', '}']
 
         gen = tokenize.generate_tokens(fetch_line)
+        # TODO can happen: raise TokenError, ("EOF in multi-line statement"
         string = ''
         level = 0
         for token_type, tok, start, end, line in gen:
@@ -99,15 +100,43 @@ class FileWithCursor(modules.File):
             raise StopIteration()
 
 
-class CompletionMatch(object):
-    def __init__(self, name, has_dot):
+class Completion(object):
+    def __init__(self, name, needs_dot, like_name_length):
         self.name = name
-        self.has_dot = has_dot
+        self.needs_dot = needs_dot
+        self.like_name_length = like_name_length
+
+    @property
+    def complete(self):
+        dot = '.' if self.needs_dot else ''
+        return dot + self.name.names[-1][self.like_name_length:]
+
+    @property
+    def description(self):
+        return str(self.name.parent)
+
+    @property
+    def help(self):
+        try:
+            return str(self.name.parent.docstr)
+        except:
+            return ''
+
+    @property
+    def type(self):
+        return '' # type(self.name)
 
     def __str__(self):
-        dot = '' if self.has_dot else '.'
-        return dot + self.name.names[-1]
+        return self.name.names[-1]
 
+
+def get_completion_parts(path):
+    """
+    Returns the parts for the completion
+    :return: tuple - (path, dot, like)
+    """
+    match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
+    return match.groups()
 
 def complete(source, row, column, file_callback=None):
     """
@@ -127,9 +156,8 @@ def complete(source, row, column, file_callback=None):
     path = f.get_row_path(column)
     debug.dbg('completion_start: %s in %s' % (path, scope))
 
-    match = re.match(r'^(.+?)(?:(\.)(\w?[\w\d]*))?$', path, flags=re.S)
-    path, dot, like = match.groups()
     # just parse one statement, take it and evaluate it
+    path, dot, like = get_completion_parts(path)
     r = parsing.PyFuzzyParser(path)
     try:
         stmt = r.top.statements[0]
@@ -143,8 +171,12 @@ def complete(source, row, column, file_callback=None):
         for s in scopes:
             completions += s.get_defined_names()
 
-    completions = [CompletionMatch(c, bool(dot)) for c in completions
-                            if like in c.names[-1]]
+    print repr(path), repr(dot), repr(like), row, column
+    print len(completions)
+    needs_dot = not dot and path
+    completions = [Completion(c, needs_dot, len(like)) for c in completions
+                            if c.names[-1].lower().startswith(like.lower())]
+    print 'nr2', len(completions)
 
     return completions
 
