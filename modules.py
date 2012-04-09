@@ -10,7 +10,7 @@ files = {}
 load_module_cb = None
 module_find_path = sys.path[1:]
 
-# TODO we need module caching
+
 
 class ModuleNotFound(Exception):
     pass
@@ -23,6 +23,8 @@ class File(object):
     :param source: The source code of the file.
     :param module_path: The module path of the file.
     """
+    module_cache = {}
+
     def __init__(self, module_path, source):
         self.source = source
         self.module_path = module_path
@@ -36,11 +38,24 @@ class File(object):
         if not self.module_path and not self.source:
             raise AttributeError("Submit a module name or the source code")
         elif self.module_path:
+            # check the cache
+            try:
+                timestamp, _parser = File.module_cache[self.module_path]
+                if timestamp == os.path.getmtime(self.module_path):
+                    debug.dbg('hit cache')
+                    return _parser
+            except:
+                pass
+
             return self._load_module()
 
     def _load_module(self):
         self._parser = parsing.PyFuzzyParser(self.source, self.module_path)
         del self.source  # efficiency
+
+        # insert into cache
+        to_cache = (os.path.getmtime(self.module_path), self._parser)
+        File.module_cache[self.module_path] = to_cache
         return self._parser
 
 def find_module(current_module, point_path):
@@ -59,7 +74,6 @@ def find_module(current_module, point_path):
         if ns:
             path = [ns[1]]
         else:
-            # TODO modules can be system modules, without '.' in path
             path = None
             debug.dbg('search_module', string, path)
         try:
