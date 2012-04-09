@@ -30,8 +30,6 @@ Ignored statements:
 
 TODO take special care for future imports
 TODO check meta classes
-TODO evaluate options to either replace tokenize or change its behavior for
-multiline parentheses (if they don't close, there must be a break somewhere)
 """
 
 import tokenize
@@ -830,10 +828,17 @@ class PyFuzzyParser(object):
         self.scope = self.top
         self.current = (None, None, None)
 
+        self._tokenize_line_nr = 0
+        self._line_of_tokenize_restart = 0
+
         self.parse()
 
         # delete code again, only the parser needs it
         del self.code
+
+    @property
+    def line_nr(self):
+        return self._line_of_tokenize_restart + self._tokenize_line_nr
 
     def _parsedotname(self, pre_used_token=None):
         """
@@ -923,7 +928,7 @@ class PyFuzzyParser(object):
                 name2 = Name(name2, start_indent2, start_line, self.line_nr)
             i = Name(name, start_indent, start_line, self.line_nr)
             imports.append((i, name2))
-            while tok != "," and "\n" not in tok:
+            while tok not in [",", ";", "\n"]:
                 token_type, tok, indent = self.next()
             if tok != ",":
                 break
@@ -1041,7 +1046,7 @@ class PyFuzzyParser(object):
         # in a statement.
         breaks = ['\n', ':', ')']
         always_break = [';', 'import', 'from', 'class', 'def', 'try', 'except',
-                        'finally']
+                        'finally', 'while']
         if added_breaks:
             breaks += added_breaks
 
@@ -1064,6 +1069,19 @@ class PyFuzzyParser(object):
             elif token_type == tokenize.NAME:
                 #print 'is_name', tok
                 if tok in ['return', 'yield', 'del', 'raise', 'assert']:
+                    if len(tok_list) > 1:
+                        # this happens, when a statement has opening brackets,
+                        # which are not closed again, here I just start a new
+                        # statement. This is a hack, but I could not come up
+                        # with a better solution.
+                        # This is basically a reset of the statement.
+                        debug.warning('return in statement @%s', tok_list,
+                                        self.line_nr)
+                        tok_list = [tok]
+                        set_vars = []
+                        used_funcs = []
+                        used_vars = []
+                        level = 0
                     set_string = tok + ' '
                     if tok in ['return', 'yield']:
                         is_return = tok
@@ -1124,7 +1142,7 @@ class PyFuzzyParser(object):
     def next(self):
         """ Generate the next tokenize pattern. """
         type, tok, position, dummy, self.parserline = self.gen.next()
-        (self.line_nr, indent) = position
+        (self._tokenize_line_nr, indent) = position
         if self.line_nr == self.user_line:
             debug.dbg('user scope found [%s] =%s' % \
                     (self.parserline.replace('\n', ''), repr(self.scope)))
@@ -1170,7 +1188,7 @@ class PyFuzzyParser(object):
                 # errors. only check for names, because thats relevant here. If
                 # some docstrings are not indented, I don't care.
                 while indent <= self.scope.indent \
-                        and token_type in [tokenize.NAME] \
+                        and (token_type == tokenize.NAME or tok in ['(', '['])\
                         and self.scope != self.top:
                     debug.warning('syntax error: dedent @%s - %s<=%s', \
                             (self.line_nr, indent, self.scope.indent))
@@ -1204,7 +1222,7 @@ class PyFuzzyParser(object):
                     for m, alias in imports:
                         i = Import(indent, start_line, self.line_nr, m, alias)
                         self.scope.add_import(i)
-                        debug.dbg("new import: %s" % (i))
+                        debug.dbg("new import: %s" % (i), self.current)
                     self.freshscope = False
                 elif tok == 'from':
                     # take care for relative imports
@@ -1293,6 +1311,7 @@ class PyFuzzyParser(object):
                     # by the statement parser.
                     stmt, tok = self._parse_statement(self.current)
                     if stmt:
+                        debug.dbg('new stmt', stmt)
                         self.scope.add_statement(stmt)
                     self.freshscope = False
                 else:
@@ -1303,6 +1322,21 @@ class PyFuzzyParser(object):
                                         self.line_nr)
             except StopIteration:  # thrown on EOF
                 break
+            except tokenize.TokenError:
+                # We just ignore this error, I try to handle it earlier - as
+                # good as possible
+                debug.warning('parentheses not closed error')
+            except IndentationError:
+                # This is an error, that tokenize may produce, because the code
+                # is not indented as it should. Here it just ignores this line
+                # and restarts the parser.
+                # (This is a rather unlikely error message, for normal code,
+                # tokenize seems to be pretty tolerant)
+                self._line_of_tokenize_restart = self.line_nr + 1
+                self._tokenize_line_nr = 0
+                debug.warning('indentation error on line %s, ignoring it' %
+                                (self.line_nr))
+                self.gen = tokenize.generate_tokens(buf.readline)
         #except:
         #    debug.dbg("parse error: %s, %s @ %s" %
         #        (sys.exc_info()[0], sys.exc_info()[1], self.parserline))

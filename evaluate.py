@@ -3,6 +3,8 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 'follow_import'
 
 `get_names_for_scope` and `get_scopes_for_name` are search functions
+
+TODO include super classes
 """
 import itertools
 

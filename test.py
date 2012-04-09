@@ -131,11 +131,11 @@ class c1():
     c2,c5 = c1(), c1().c3()
     def c3(self): 
         import os as c4 #from parsing import Scope as c4
-        c5 = c4
-        c5 = 1
+       c5 = 1
+        c5 = c4(
+        if 1:
+            print 1
         return c5+'asdf'
-
-
 (c1().c2.\
 c, 1, c3()) [0].pop()
 
@@ -146,5 +146,5 @@ asdf = c1; asdf2 = asdf
 b= asdf2
 #import parsing as test
 c = b().c3()
-
-1.0.fromhex(); from flask import Flask; Flask.
+1.0.fromhex(); import flask ; flsk = flask.Flask + flask.Request;
+c2(flask().

@@ -58,10 +58,11 @@ class FileWithCursor(modules.File):
 
         gen = tokenize.generate_tokens(fetch_line)
         # TODO can happen: raise TokenError, ("EOF in multi-line statement"
+        # where???
         string = ''
         level = 0
         for token_type, tok, start, end, line in gen:
-            #print token_type, tok, line
+            #print token_type, tok, force_point
             if level > 0:
                 if tok in close_brackets:
                     level += 1
@@ -70,12 +71,13 @@ class FileWithCursor(modules.File):
             elif tok == '.':
                 force_point = False
             elif force_point:
-                if tok != '.':
-                    # it is reversed, therefore a number is getting recognized
-                    # as a floating point number
-                    if not (token_type == tokenize.NUMBER and tok[0] == '.'):
-                        #print 'break2', token_type, tok
-                        break
+                # it is reversed, therefore a number is getting recognized
+                # as a floating point number
+                if token_type == tokenize.NUMBER and tok[0] == '.':
+                    force_point = False
+                else:
+                    #print 'break2', token_type, tok
+                    break
             elif tok in close_brackets:
                 level += 1
             elif token_type in [tokenize.NAME, tokenize.STRING]:
