@@ -39,7 +39,7 @@ if 1:
                 out.append(d)
 
             strout = str(out)
-        except Exception as e:
+        except Exception:
             # print to stdout, will be in :messages
             print(traceback.format_exc())
             strout = ''
