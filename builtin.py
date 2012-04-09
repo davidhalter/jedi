@@ -2,7 +2,6 @@ import re
 
 import debug
 import parsing
-import __builtin__
 
 
 class Parser(object):
@@ -80,8 +79,8 @@ class Parser(object):
             pass
         code += '"""\n%s\n"""\n' % scope.__doc__
 
-        names = set(dir(scope)) - {'__file__', '__name__', '__doc__',
-                                    '__path__', '__package__'}
+        names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
+                                    '__path__', '__package__'])
         classes, funcs, stmts, members = get_types(names)
 
         # classes
@@ -140,7 +139,6 @@ def parse_function_doc(func):
     This is nothing more than a docstring parser.
     """
     # TODO: things like utime(path, (atime, mtime)) and a(b [, b]) -> None
-    params = []
     doc = func.__doc__
 
     # get full string, parse round parentheses: def func(a, (b,c))

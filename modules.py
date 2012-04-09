@@ -86,6 +86,7 @@ def find_module(current_module, point_path):
                 raise
         return i
 
+    # TODO handle relative paths - they are included int the import object
     current_namespace = None
     sys.path.insert(0, os.path.dirname(current_module.module_path))
     # now execute those paths
@@ -108,8 +109,10 @@ def find_module(current_module, point_path):
         # is a directory module
         if is_package_directory:
             path += '/__init__.py'
-            with open(path) as f:
-                source = f.read()
+            # python2.5 cannot cope with the `with` statement
+            #with open(path) as f:
+            #    source = f.read()
+            source = open(path).read()
         else:
             source = current_namespace[0].read()
         f = File(path, source)

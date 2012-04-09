@@ -8,7 +8,6 @@ import debug
 
 __all__ = ['complete', 'get_completion_parts', 'complete_test', 'set_debug_function']
 
-
 class FileWithCursor(modules.File):
     """
     Manages all files, that are parsed and caches them.

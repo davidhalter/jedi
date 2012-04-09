@@ -6,6 +6,13 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 
 TODO include super classes
 """
+# python2.5 compatibility
+try:
+    next
+except NameError:
+    def next(obj): 
+        return obj.next()
+
 import itertools
 
 import parsing

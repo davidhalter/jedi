@@ -11,8 +11,8 @@ f_name = 'test.py'
 import os
 path = os.getcwd() + '/' + f_name
 
-with open(path) as f:
-    code = f.read()
+f = open(path)
+code = f.read()
 for i in range(1):
     completions = functions.complete(code, 150, 200, path)
 
