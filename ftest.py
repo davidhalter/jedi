@@ -3,11 +3,11 @@
 import functions
 
 functions.debug.debug_function = functions.debug.print_to_stdout
-#functions.debug.ignored_modules += ['parsing', 'builtin']
-functions.debug.ignored_modules += ['parsing', 'builtin', 'evaluate', 'modules']
+functions.debug.ignored_modules = ['parsing', 'builtin']
+#functions.debug.ignored_modules = ['parsing', 'builtin', 'evaluate', 'modules']
 functions.modules.module_find_path.insert(0, '.')
 
-f_name = 'test.py'
+f_name = 'parsetest.py'
 import os
 path = os.getcwd() + '/' + f_name
 
