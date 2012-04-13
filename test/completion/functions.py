@@ -1,7 +1,7 @@
 import os
 
 def array():
-    return []
+    return list()
 #? ['append']
 array().app
 

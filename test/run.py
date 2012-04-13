@@ -3,6 +3,7 @@ import os
 import sys
 import re
 import StringIO
+import traceback
 
 sys.path.append('../')
 import functions
@@ -29,13 +30,20 @@ def completion_test(source):
         if correct:
             # lines start with 1 and column is just the last (makes no
             # difference for testing)
-            completions = functions.complete(source, line_nr, 999,
-                                                completion_test_dir)
-            comp_str = str([str(c) for c in completions])
-            if comp_str != correct:
-                print 'Solution not correct, received %s, wanted %s' % \
-                            (correct, comp_str)
+            try:
+                completions = functions.complete(source, line_nr, 999,
+                                                    completion_test_dir)
+            except:
+                print 'test: %s' % line
+                print traceback.format_exc()
                 fails += 1
+            else:
+                # TODO remove sorted? completions should be sorted
+                comp_str = str(sorted([str(c) for c in completions]))
+                if comp_str != correct:
+                    print 'Solution not correct, received %s, wanted %s' % \
+                                (correct, comp_str)
+                    fails += 1
             correct = None
             tests += 1
         else:
@@ -47,9 +55,16 @@ def completion_test(source):
 
 # completion tests:
 completion_test_dir = 'completion'
+summary = []
 for f_name in os.listdir(completion_test_dir ):
     if f_name.endswith(".py"):
         path = os.path.join(completion_test_dir, f_name)
         f = open(path)
         num_tests, fails = completion_test(f.read())
-        print 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
+        s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
+        print s
+        summary.append(s)
+
+print '\nSummary:'
+for s in summary:
+    print s
