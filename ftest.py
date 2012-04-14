@@ -9,7 +9,7 @@ functions.modules.module_find_path.insert(0, '.')
 
 f_name = 'parsetest.py'
 import os
-path = os.getcwd() + '/' + f_name
+path = os.path.join(os.getcwd(), f_name)
 
 f = open(path)
 code = f.read()

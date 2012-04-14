@@ -10,7 +10,7 @@ TODO include super classes
 try:
     next
 except NameError:
-    def next(obj): 
+    def next(obj):
         return obj.next()
 
 import itertools
@@ -55,8 +55,9 @@ def memoize(default=None):
 
 
 class Exec(object):
-    def __init__(self, base):
+    def __init__(self, base, params):
         self.base = base
+        self.params = params
 
     def get_parent_until(self, *args):
         return self.base.get_parent_until(*args)
@@ -95,6 +96,60 @@ class Instance(Exec):
                 (self.__class__.__name__, self.base)
 
 
+class Array(object):
+    """
+    Used as a mirror to parsing.Array, if needed. It defines some getter
+    methods which are important in this module.
+    """
+    def __init__(self, array):
+        self._array = array
+
+    def get_index_type(self, index):
+        #print self._array.values, index.values
+        values = self._array.values
+        #print 'ui', index.values, index.values[0][0].type
+        iv = index.values
+        if len(iv) == 1 and len(iv[0]) == 1 and iv[0][0].type == \
+                parsing.Call.NUMBER and self._array.type != parsing.Array.DICT:
+            try:
+                values = [self._array.values[int(iv[0][0].name)]]
+            except:
+                pass
+        scope = self._array.parent_stmt.parent
+        return follow_call_list(scope, values)
+
+    def get_defined_names(self):
+        """ This method generates all ArrayElements for one parsing.Array. """
+        # array.type is a string with the type, e.g. 'list'
+        scope = get_scopes_for_name(builtin.Builtin.scope, self._array.type)[0]
+        names = scope.get_defined_names()
+        return [ArrayElement(n) for n in names]
+
+    def __repr__(self):
+        return "<%s of %s>" % (self.__class__.__name__, self._array)
+
+
+class ArrayElement(object):
+    def __init__(self, name):
+        self.name = name
+
+    @property
+    def parent(self):
+        raise NotImplementedError("This shouldn't happen")
+        return
+
+    @property
+    def returns(self):
+        return self.name.parent.returns
+
+    @property
+    def names(self):
+        return self.name.names
+
+    def __repr__(self):
+        return "<%s of %s>" % (self.__class__.__name__, self.name)
+
+
 class Execution(Exec):
     """
     This class is used to evaluate functions and their returns.
@@ -110,7 +165,7 @@ class Execution(Exec):
             stmts = []
             if isinstance(scope, parsing.Class):
                 # there maybe executions of executions
-                stmts = [Instance(scope)]
+                stmts = [Instance(scope, self.params)]
             else:
                 if get_returns:
                     ret = scope.returns
@@ -139,11 +194,11 @@ def get_names_for_scope(scope):
     while scope:
         # class variables/functions are only availabe
         if not isinstance(scope, parsing.Class) or scope == start_scope:
-            compl += scope.get_set_vars()
+            compl += scope.get_defined_names()
         scope = scope.parent
 
     # add builtins to the global scope
-    compl += builtin.Builtin.scope.get_set_vars()
+    compl += builtin.Builtin.scope.get_defined_names()
     #print 'gnfs', scope, compl
     return compl
 
@@ -184,27 +239,30 @@ def get_scopes_for_name(scope, name, search_global=False):
             #        result += filter_name(i)
             #else:
                 if [name] == list(scope.names):
-                    par = scope.parent
-                    if isinstance(par, parsing.Flow):
-                        # TODO get Flow data, which is defined by the loop (or
-                        # with)
-                        pass
-                    elif isinstance(par, parsing.Param):
-                        if isinstance(par.parent.parent, parsing.Class) \
-                                and par.position == 0:
-                            result.append(Instance(par.parent.parent))
-                        else:
-                            # TODO get function data
-                            pass
+                    if isinstance(scope, ArrayElement):
+                        result.append(scope)
                     else:
-                        result.append(scope.parent)
+                        par = scope.parent
+                        if isinstance(par, parsing.Flow):
+                            # TODO get Flow data, which is defined by the loop
+                            # (or with)
+                            pass
+                        elif isinstance(par, parsing.Param):
+                            if isinstance(par.parent.parent, parsing.Class) \
+                                    and par.position == 0:
+                                result.append(Instance(par.parent.parent))
+                            else:
+                                # TODO get function data
+                                pass
+                        else:
+                            result.append(scope.parent)
         debug.dbg('sfn filter', result)
         return result
 
     if search_global:
         names = get_names_for_scope(scope)
     else:
-        names = scope.get_set_vars()
+        names = scope.get_defined_names()
 
     return remove_statements(filter_name(names))
 
@@ -225,7 +283,8 @@ def strip_imports(scopes):
             else:
                 result += new_scopes
                 for n in new_scopes:
-                        result += strip_imports(i for i in n.get_imports() if i.star)
+                        result += strip_imports(i for i in n.get_imports()
+                                                                if i.star)
         else:
             result.append(s)
     return result
@@ -239,14 +298,19 @@ def follow_statement(stmt, scope=None):
     """
     if scope is None:
         scope = stmt.get_parent_until(parsing.Function)
+    call_list = stmt.get_assignment_calls()
+    debug.dbg('calls', call_list, call_list.values)
+    return follow_call_list(scope, call_list)
+
+
+def follow_call_list(scope, call_list):
+    """ The call list has a special structure """
     result = []
-    calls = stmt.get_assignment_calls()
-    debug.dbg('calls', calls, calls.values)
-    for tokens in calls:
-        for tok in tokens:
-            if not isinstance(tok, str):
+    for calls in call_list:
+        for call in calls:
+            if not isinstance(call, str):
                 # the string tokens are just operations (+, -, etc.)
-                result += follow_call(scope, tok)
+                result += follow_call(scope, call)
     return result
 
 
@@ -256,7 +320,7 @@ def follow_call(scope, call):
 
     current = next(path)
     if isinstance(current, parsing.Array):
-        result = [current]
+        result = [Array(current)]
     else:
         # TODO add better care for int/unicode, now str/float are just used
         # instead
@@ -286,6 +350,9 @@ def follow_paths(path, results):
             for i, r in enumerate(results):
                 results_new += follow_path(iter_paths[i], r)
     except StopIteration:
+        #if isinstance(s, parsing.Array):
+        #    completions += s.
+        #else:
         return results
     return results_new
 
@@ -303,11 +370,12 @@ def follow_path(path, input):
         if isinstance(current, parsing.Array):
             # this must be an execution, either () or []
             if current.type == parsing.Array.LIST:
-                result = []  # TODO eval lists
-            elif current.type not in [parsing.Array.DICT, parsing]:
+                result = scope.get_index_type(current)
+            elif current.type not in [parsing.Array.DICT]:
                 # scope must be a class or func - make an instance or execution
                 debug.dbg('befexec', scope)
-                result = strip_imports(Execution(scope).get_return_types())
+                exe = Execution(scope, current)
+                result = strip_imports(exe.get_return_types())
                 debug.dbg('exec', result)
                 #except AttributeError:
                 #    debug.dbg('cannot execute:', scope)

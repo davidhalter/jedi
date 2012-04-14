@@ -140,11 +140,11 @@ class c1():
 c, 1, c3()) [0].pop()
 
 c = u"asdf".join([1,2])
-matrx_test = [[1,2], [1,3]]
+matrix_test = [[1,2], [1,3]]
 c = c1().c3().sleep()
 asdf = c1; asdf2 = asdf
 b= asdf2
 #import parsing as test
 c = b().c3()
 1.0.fromhex(); import flask ; flsk = flask.Flask + flask.Request;
-matrix_test.
+abc = [1,2+3]; abc[0].

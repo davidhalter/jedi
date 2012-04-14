@@ -520,10 +520,13 @@ class Statement(Simple):
         This is not done in the main parser, because it might be slow and
         most of the statements won't need this data anyway. This is something
         'like' a lazy execution.
+
+        This is not really nice written, sorry for that. If you plan to replace
+        it and make it nicer, that would be cool :-)
         """
         if self.assignment_calls:
             return self.assignment_calls
-        result = Array(Array.EMPTY)
+        result = Array(Array.EMPTY, self)
         top = result
         level = 0
         is_chain = False
@@ -540,7 +543,7 @@ class Statement(Simple):
                     # TODO there may be multiple assignments: a = b = 1
 
                     # initialize the first item
-                    result = Array(Array.EMPTY)
+                    result = Array(Array.EMPTY, self)
                     top = result
                     continue
             except TypeError:
@@ -560,7 +563,7 @@ class Statement(Simple):
                     c_type = Call.NUMBER
 
                 if is_chain:
-                    call = Call(tok, c_type, result)
+                    call = Call(tok, c_type, self, result)
                     result = result.set_next_chain_call(call)
                     is_chain = False
                     close_brackets = False
@@ -568,17 +571,19 @@ class Statement(Simple):
                     if close_brackets:
                         result = result.parent
                         close_brackets = False
-                    call = Call(tok, c_type, result)
+                    call = Call(tok, c_type, self, result)
                     result.add_to_current_field(call)
                     result = call
             elif tok in brackets.keys():  # brackets
                 level += 1
+                # TODO why is this not working, when the two statements ar not
+                # in the if/else clause (they are exactly the same!!!)
                 if is_call_or_close():
-                    result = Array(brackets[tok], result)
+                    result = Array(brackets[tok], self, result)
                     result = result.parent.add_execution(result)
                     close_brackets = False
                 else:
-                    result = Array(brackets[tok], result)
+                    result = Array(brackets[tok], self, result)
                     result.parent.add_to_current_field(result)
             elif tok == ':':
                 if is_call_or_close():
@@ -586,7 +591,8 @@ class Statement(Simple):
                     close_brackets = False
                 result.add_dictionary_key()
             elif tok == '.':
-                if close_brackets:
+                if close_brackets and result.parent != top:
+                    # only get out of the array, if it is a array execution
                     result = result.parent
                     close_brackets = False
                 is_chain = True
@@ -645,7 +651,7 @@ class Call(object):
     STRING = object()
 
     """ The statement object of functions, to  """
-    def __init__(self, name, type, parent=None):
+    def __init__(self, name, type, parent_stmt, parent=None):
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
@@ -654,6 +660,7 @@ class Call(object):
 
         self.next = None
         self.execution = None
+        self.parent_stmt = parent_stmt
 
     def set_next_chain_call(self, call):
         """ Adds another part of the statement"""
@@ -705,14 +712,14 @@ class Array(Call):
     below.
     :type array_type: int
     """
-    EMPTY = object()
-    TUPLE = object()
-    LIST = object()
-    DICT = object()
-    SET = object()
+    EMPTY = None
+    TUPLE = 'tuple'
+    LIST = 'list'
+    DICT = 'dict'
+    SET = 'set'
 
-    def __init__(self, arr_type, parent=None):
-        super(Array, self).__init__(None, arr_type, parent)
+    def __init__(self, arr_type, parent_stmt, parent=None):
+        super(Array, self).__init__(None, arr_type, parent_stmt, parent)
 
         self.values = []
         self.keys = []
@@ -1024,6 +1031,8 @@ class PyFuzzyParser(object):
         :type pre_used_token: set
         :return: Statement + last parsed token.
         :rtype: (Statement, str)
+
+        TODO improve abort criterion of not closing parentheses 
         """
 
         string = ''
