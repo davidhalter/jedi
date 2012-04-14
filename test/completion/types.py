@@ -1,12 +1,30 @@
 # -----------------
+# non array
+# -----------------
+
+#? ['imag']
+int.imag
+
+#? []
+int.is_integer
+
+#? ['is_integer']
+float.is_int
+
+#? ['is_integer']
+1.0.is_integer
+
+# -----------------
 # lists
 # -----------------
 arr = []
 #? ['append']
-arr().app
+arr.app
 
 #? ['append']
 list().app
+#? ['append']
+[].append
 
 
 # -----------------
@@ -20,6 +38,8 @@ dic.c
 dic2 = dict(a=1, b=2)
 #? ['pop', 'popitem']
 dic2.p
+#? ['popitem']
+{}.popitem
 
 
 # -----------------
@@ -46,3 +66,5 @@ tup.c
 tup2 = tuple()
 #? ['index']
 tup2.i
+#? ['index']
+().i

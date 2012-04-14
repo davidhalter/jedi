@@ -42,7 +42,7 @@ def completion_test(source):
                 comp_str = str(sorted([str(c) for c in completions]))
                 if comp_str != correct:
                     print 'Solution not correct, received %s, wanted %s' % \
-                                (correct, comp_str)
+                                (comp_str, correct)
                     fails += 1
             correct = None
             tests += 1
