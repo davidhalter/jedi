@@ -21,11 +21,18 @@ class Parser(object):
     """ This module tries to imitate parsing.Scope """
     def __init__(self, name):
         self.name = name
-        self.parent = None
-        self.content = {}
-        exec 'import %s as module' % name in self.content
-        self.module = self.content['module']
+        self._content = {}
         self._parser = None
+        self._module = None
+
+    @property
+    def module(self):
+        if not self._module:
+            print 'import', self.name
+            exec 'import %s as module' % self.name in self._content
+            print 'import2', self.name
+            self._module = self._content['module']
+        return self._module
 
     @property
     def parser(self):
@@ -33,7 +40,7 @@ class Parser(object):
         if self._parser:
             return self._parser
         else:
-            code = self.generate_code(self.module)
+            code = self._generate_code(self.module)
             try:
                 self._parser = parsing.PyFuzzyParser(code)
             except:
@@ -42,7 +49,7 @@ class Parser(object):
                 raise
             return self._parser
 
-    def generate_code(self, scope, depth=0):
+    def _generate_code(self, scope, depth=0):
         """
         Generate a string, which uses python syntax as an input to the
         PyFuzzyParser.
@@ -88,7 +95,7 @@ class Parser(object):
             bases = (c.__name__ for c in cl.__bases__)
             code += 'class %s(%s):\n' % (name, ','.join(bases))
             if depth == 0:
-                cl_code = self.generate_code(cl, depth + 1)
+                cl_code = self._generate_code(cl, depth + 1)
                 code += parsing.indent_block(cl_code)
             code += '\n'
 
@@ -126,8 +133,8 @@ class Parser(object):
         if depth == 0:
             #with open('writeout.py', 'w') as f:
             #    f.write(code)
-            #import sys
-            #sys.stdout.write(code)
+            import sys
+            sys.stdout.write(code)
             #exit()
             pass
         return code

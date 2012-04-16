@@ -55,7 +55,7 @@ def memoize(default=None):
 
 
 class Exec(object):
-    def __init__(self, base, params):
+    def __init__(self, base, params=None):
         self.base = base
         self.params = params
 
@@ -238,24 +238,25 @@ def get_scopes_for_name(scope, name, search_global=False):
             #    else:
             #        result += filter_name(i)
             #else:
-                if [name] == list(scope.names):
-                    if isinstance(scope, ArrayElement):
-                        result.append(scope)
-                    else:
-                        par = scope.parent
-                        if isinstance(par, parsing.Flow):
-                            # TODO get Flow data, which is defined by the loop
-                            # (or with)
-                            pass
-                        elif isinstance(par, parsing.Param):
-                            if isinstance(par.parent.parent, parsing.Class) \
-                                    and par.position == 0:
-                                result.append(Instance(par.parent.parent))
-                            else:
-                                # TODO get function data
-                                pass
+            if [name] == list(scope.names):
+                if isinstance(scope, ArrayElement):
+                    result.append(scope)
+                else:
+                    par = scope.parent
+                    if isinstance(par, parsing.Flow):
+                        # TODO get Flow data, which is defined by the loop
+                        # (or with)
+                        pass
+                    elif isinstance(par, parsing.Param):
+                        if isinstance(par.parent.parent, parsing.Class) \
+                                and par.position == 0:
+                            # this is where self is added
+                            result.append(Instance(par.parent.parent))
                         else:
-                            result.append(scope.parent)
+                            # TODO get function data
+                            pass
+                    else:
+                        result.append(scope.parent)
         debug.dbg('sfn filter', result)
         return result
 

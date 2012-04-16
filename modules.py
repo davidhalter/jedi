@@ -75,7 +75,8 @@ def find_module(current_module, point_path):
             path = [ns[1]]
         else:
             path = None
-            debug.dbg('search_module', string, path)
+            debug.dbg('search_module', string, path,
+                                            current_module.module_path)
         try:
             i = imp.find_module(string, path)
         except ImportError:
@@ -86,7 +87,7 @@ def find_module(current_module, point_path):
                 raise
         return i
 
-    # TODO handle relative paths - they are included int the import object
+    # TODO handle relative paths - they are included in the import object
     current_namespace = None
     sys.path.insert(0, os.path.dirname(current_module.module_path))
     # now execute those paths
@@ -105,6 +106,7 @@ def find_module(current_module, point_path):
     path = current_namespace[1]
     is_package_directory = current_namespace[2][2] == imp.PKG_DIRECTORY
 
+    f = None
     if is_package_directory or current_namespace[0]:
         # is a directory module
         if is_package_directory:
@@ -115,7 +117,11 @@ def find_module(current_module, point_path):
             source = open(path).read()
         else:
             source = current_namespace[0].read()
-        f = File(path, source)
-    else:
+        if path.endswith('.py'):
+            f = File(path, source)
+    if not f:
+        print 'lala'
         f = builtin.Parser(path)
+        print 'lala2'
+
     return f.parser.top, rest

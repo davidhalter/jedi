@@ -10,6 +10,7 @@ import functions
 
 #functions.set_debug_function(functions.debug.print_to_stdout)
 
+
 def completion_test(source):
     """
     This is the completion test for some cases. The tests are not unit test
@@ -56,7 +57,7 @@ def completion_test(source):
 # completion tests:
 completion_test_dir = 'completion'
 summary = []
-for f_name in os.listdir(completion_test_dir ):
+for f_name in os.listdir(completion_test_dir):
     if f_name.endswith(".py"):
         path = os.path.join(completion_test_dir, f_name)
         f = open(path)
