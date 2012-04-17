@@ -145,7 +145,7 @@ class Scope(Simple):
 
     def get_imports(self):
         """ Gets also the imports within flow statements """
-        i = self.imports
+        i = [] + self.imports
         for s in self.statements:
             if isinstance(s, Scope):
                 i += s.get_imports()
@@ -403,6 +403,12 @@ class Flow(Scope):
             return n
         else:
             return self.get_parent_until(Class, Function).get_set_vars()
+
+    def get_imports(self):
+        i = super(Flow, self).get_imports()
+        if self.next:
+            i += self.next.get_imports()
+        return i
 
     def set_next(self, next):
         """ Set the next element in the flow, those are else, except, etc. """
@@ -1199,7 +1205,7 @@ class PyFuzzyParser(object):
                 while indent <= self.scope.indent \
                         and (token_type == tokenize.NAME or tok in ['(', '['])\
                         and self.scope != self.top:
-                    debug.warning('syntax error: dedent @%s - %s<=%s', \
+                    debug.dbg('syntax: dedent @%s - %s<=%s', \
                             (self.line_nr, indent, self.scope.indent))
                     self.scope.line_end = self.line_nr
                     self.scope = self.scope.parent

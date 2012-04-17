@@ -11,7 +11,6 @@ load_module_cb = None
 module_find_path = sys.path[1:]
 
 
-
 class ModuleNotFound(Exception):
     pass
 
@@ -42,7 +41,7 @@ class File(object):
             try:
                 timestamp, _parser = File.module_cache[self.module_path]
                 if timestamp == os.path.getmtime(self.module_path):
-                    debug.dbg('hit cache')
+                    debug.dbg('hit module cache')
                     return _parser
             except:
                 pass
@@ -81,15 +80,12 @@ def find_module(current_module, point_path):
             i = imp.find_module(string, path)
         except ImportError:
             # find builtins (ommit path):
-            i = imp.find_module(string)
-            if i[0]:
-                # if the import has a file descriptor, it cannot be a builtin.
-                raise
+            i = imp.find_module(string, module_find_path)
         return i
 
     # TODO handle relative paths - they are included in the import object
     current_namespace = None
-    sys.path.insert(0, os.path.dirname(current_module.module_path))
+    module_find_path.insert(0, os.path.dirname(current_module.module_path))
     # now execute those paths
     rest = []
     for i, s in enumerate(point_path):
@@ -102,7 +98,7 @@ def find_module(current_module, point_path):
                 raise ModuleNotFound(
                         'The module you searched has not been found')
 
-    sys.path.pop(0)
+    module_find_path.pop(0)
     path = current_namespace[1]
     is_package_directory = current_namespace[2][2] == imp.PKG_DIRECTORY
 
@@ -119,9 +115,9 @@ def find_module(current_module, point_path):
             source = current_namespace[0].read()
         if path.endswith('.py'):
             f = File(path, source)
-    if not f:
-        print 'lala'
-        f = builtin.Parser(path)
-        print 'lala2'
+        else:
+            f = builtin.Parser(path=path)
+    else:
+        f = builtin.Parser(name=path)
 
     return f.parser.top, rest

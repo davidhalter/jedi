@@ -1,10 +1,23 @@
 import re
+import sys
+import os
 
 import debug
 import parsing
 
 
 class Parser(object):
+    """
+    This module is a parser for all builtin modules, which are programmed in
+    C/C++. It should also work on third party modules.
+    It can be instantiated with either a path or a name of the module. The path
+    is important for third party modules.
+
+    :param name: The name of the module.
+    :param path: The path of the module.
+    :param sys_path: The sys.path, which is can be customizable.
+    """
+
     map_types = {
         'floating point number': '0.0',
         'string': '""',
@@ -17,37 +30,55 @@ class Parser(object):
         'object': '{}',
         # TODO things like dbg: ('not working', 'tuple of integers')
     }
+    cache = {}
 
-    """ This module tries to imitate parsing.Scope """
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name=None, path=None, sys_path=sys.path):
+        self.path = path
+        print path
+        if name:
+            self.name = name
+        else:
+            name = os.path.basename(self.path)
+            self.name = name.rpartition('.')[0]  # cut file type (normally .so)
+            self.path = os.path.dirname(self.path)
+            print self.name, self.path
         self._content = {}
         self._parser = None
         self._module = None
+        self.sys_path = sys_path
 
     @property
     def module(self):
         if not self._module:
-            print 'import', self.name
+            self.sys_path.insert(0, self.path)
+
+            temp, sys.path = sys.path, self.sys_path
+            print 'sypa', sys.path
             exec 'import %s as module' % self.name in self._content
-            print 'import2', self.name
+            self.sys_path, sys.path = sys.path, temp
+
+            self.sys_path.pop(0)
             self._module = self._content['module']
+            print 'mod', self._content['module']
         return self._module
 
     @property
     def parser(self):
         """ get the parser lazy """
-        if self._parser:
-            return self._parser
-        else:
-            code = self._generate_code(self.module)
+        if not self._parser:
             try:
-                self._parser = parsing.PyFuzzyParser(code)
-            except:
-                debug.warning('not possible to resolve', self.name, code)
-                #open('builtin_fail', 'w').write(code)
-                raise
-            return self._parser
+                self._parser = Parser.cache[self.name, self.path].parser
+            except KeyError:
+                code = self._generate_code(self.module)
+                try:
+                    self._parser = parsing.PyFuzzyParser(code)
+                except:
+                    debug.warning('not possible to resolve', self.name, code)
+                    #open('builtin_fail', 'w').write(code)
+                    raise
+                else:
+                    Parser.cache[self.name, self.path] = self
+        return self._parser
 
     def _generate_code(self, scope, depth=0):
         """
@@ -133,8 +164,8 @@ class Parser(object):
         if depth == 0:
             #with open('writeout.py', 'w') as f:
             #    f.write(code)
-            import sys
-            sys.stdout.write(code)
+            #import sys
+            #sys.stdout.write(code)
             #exit()
             pass
         return code
@@ -195,21 +226,9 @@ def parse_function_doc(func):
             ret = 'return ' + ret
     return param_str, ret
 
-"""if current.arr_type == parsing.Array.EMPTY:
-    # the normal case - no array type
-    debug.dbg('length', len(current))
-elif current.arr_type == parsing.Array.LIST:
-    result.append(__builtin__.list())
-elif current.arr_type == parsing.Array.SET:
-    result.append(__builtin__.set())
-elif current.arr_type == parsing.Array.TUPLE:
-    result.append(__builtin__.tuple())
-elif current.arr_type == parsing.Array.DICT:
-    result.append(__builtin__.dict())
-    """
 
 class _Builtin(object):
-    _builtins = Parser('__builtin__')
+    _builtins = Parser(name='__builtin__')
 
     @property
     def scope(self):

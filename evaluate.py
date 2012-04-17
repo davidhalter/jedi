@@ -270,22 +270,17 @@ def get_scopes_for_name(scope, name, search_global=False):
 
 def strip_imports(scopes):
     """
-    Here we strip the imports - they don't get resolved necessarily, but star
-    imports are looked at here.
+    Here we strip the imports - they don't get resolved necessarily.
+    Really used anymore?
     """
     result = []
     for s in scopes:
         if isinstance(s, parsing.Import):
             print 'dini mueter, steile griech!'
             try:
-                new_scopes = follow_import(s)
+                result += follow_import(s)
             except modules.ModuleNotFound:
-                debug.dbg('Module not found: ' + str(s))
-            else:
-                result += new_scopes
-                for n in new_scopes:
-                        result += strip_imports(i for i in n.get_imports()
-                                                                if i.star)
+                debug.warning('Module not found: ' + str(s))
         else:
             result.append(s)
     return result
@@ -415,5 +410,10 @@ def follow_import(_import):
     else:
         scopes = [scope]
 
+    for s in scopes:
+        scopes += strip_imports(i for i in s.get_imports() if i.star)
+
     debug.dbg('after import', scopes, rest)
-    return scopes
+
+    # filter duplicate modules
+    return list(set(scopes))
