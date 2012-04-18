@@ -36,7 +36,6 @@ class Parser(object):
 
     def __init__(self, name=None, path=None, sys_path=sys.path):
         self.path = path
-        print path
         if name:
             self.name = name
         else:
