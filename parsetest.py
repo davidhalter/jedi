@@ -147,4 +147,4 @@ c = b().c3()
 1.0.fromhex(); import flask ; flsk = flask.Flask + flask.Request;
 abc = [1,2+3]; abc[0].
 import pylab
-abc = datetime; return [abc][0].
+abc = datetime; return [abc][0]. ;pylab.

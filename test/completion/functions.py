@@ -1,9 +1,15 @@
-import os
 
 def array():
     return list()
 #? ['append']
-array().app
+array().append
 
 #? ['array']
 arr
+
+
+def inputs(param):
+    return param
+
+#? ['append']
+inputs(list).append

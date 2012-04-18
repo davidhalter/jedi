@@ -244,5 +244,8 @@ class _Builtin(object):
     def scope(self):
         return self._builtins.parser.top
 
+    def get_defined_names(self):
+        return self.scope.get_defined_names()
+
 
 Builtin = _Builtin()

@@ -187,8 +187,12 @@ class Execution(Exec):
                 (self.__class__.__name__, self.base)
 
 
-def get_names_for_scope(scope):
-    """ Get all completions possible for the current scope. """
+def get_names_for_scope(scope, star_search=True):
+    """ 
+    Get all completions possible for the current scope.
+    The star search option is only here to provide an optimization. Otherwise
+    the whole thing would make a little recursive maddness
+    """
     compl = []
     start_scope = scope
     while scope:
@@ -199,6 +203,11 @@ def get_names_for_scope(scope):
 
     # add builtins to the global scope
     compl += builtin.Builtin.scope.get_defined_names()
+
+    # add star imports
+    if star_search:
+        for s in remove_star_imports(start_scope.get_parent_until()):
+            compl += get_names_for_scope(s, star_search=False)
     #print 'gnfs', scope, compl
     return compl
 
@@ -229,15 +238,6 @@ def get_scopes_for_name(scope, name, search_global=False):
         # the name is already given in the parent function
         result = []
         for scope in scopes:
-            #if isinstance(scope, parsing.Import):
-            #    try:
-            #        debug.dbg('star import', scope)
-            #        i = follow_import(scope).get_defined_names()
-            #    except modules.ModuleNotFound:
-            #        debug.dbg('StarImport not found: ' + str(scope))
-            #    else:
-            #        result += filter_name(i)
-            #else:
             if [name] == list(scope.names):
                 if isinstance(scope, ArrayElement):
                     result.append(scope)
@@ -410,10 +410,21 @@ def follow_import(_import):
     else:
         scopes = [scope]
 
-    for s in scopes:
-        scopes += strip_imports(i for i in s.get_imports() if i.star)
+    new = []
+    for scope in scopes:
+        new += remove_star_imports(scope)
+    scopes += new
 
     debug.dbg('after import', scopes, rest)
+    return scopes
+
+
+def remove_star_imports(scope):
+    modules = strip_imports(i for i in scope.get_imports() if i.star)
+    new = []
+    for m in modules:
+        new += remove_star_imports(m)
+    modules += new
 
     # filter duplicate modules
-    return list(set(scopes))
+    return list(set(modules))

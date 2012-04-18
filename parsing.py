@@ -244,7 +244,7 @@ class GlobalScope(Scope):
     def get_set_vars(self):
         n = super(GlobalScope, self).get_set_vars()
         n += self.global_vars
-        return n 
+        return n
 
 
 class Class(Scope):
@@ -1035,7 +1035,7 @@ class PyFuzzyParser(object):
         :return: Statement + last parsed token.
         :rtype: (Statement, str)
 
-        TODO improve abort criterion of not closing parentheses 
+        TODO improve abort criterion of not closing parentheses
         """
 
         string = ''
@@ -1245,7 +1245,7 @@ class PyFuzzyParser(object):
                     while 1:
                         token_type, tok, indent = self.next()
                         if tok != '.':
-                            break;
+                            break
                         relative_count += 1
                     # the from import
                     mod, token_type, tok, start_indent, start_line2 = \
