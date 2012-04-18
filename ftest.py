@@ -16,5 +16,7 @@ code = f.read()
 for i in range(1):
     completions = functions.complete(code, 150, 200, path)
 
-#print '\n', ', '.join(sorted(str(c) for c in completions))
+print '\n', ', '.join(sorted(str(c) for c in completions))
+#print [n.name for n in completions]
+#print [n.name.get_parent_until() for n in completions]
 print '#', len(completions)

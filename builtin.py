@@ -13,6 +13,8 @@ class Parser(object):
     It can be instantiated with either a path or a name of the module. The path
     is important for third party modules.
 
+    TODO maybe remove some code and merge it with `modules`?
+
     :param name: The name of the module.
     :param path: The path of the module.
     :param sys_path: The sys.path, which is can be customizable.
@@ -67,7 +69,12 @@ class Parser(object):
         """ get the parser lazy """
         if not self._parser:
             try:
-                self._parser = Parser.cache[self.name, self.path].parser
+                timestamp, parser = Parser.cache[self.name, self.path]
+                if timestamp == os.path.getmtime(self.path):
+                    debug.dbg('hit builtin cache')
+                    self._parser = parser
+                else:
+                    raise KeyError
             except KeyError:
                 code = self._generate_code(self.module)
                 try:
@@ -77,7 +84,11 @@ class Parser(object):
                     #open('builtin_fail', 'w').write(code)
                     raise
                 else:
-                    Parser.cache[self.name, self.path] = self
+                    if self.path:
+                        p_time = os.path.getmtime(self.path)
+                    else:
+                        p_time = None
+                    Parser.cache[self.name, self.path] = p_time, self._parser
         return self._parser
 
     def _generate_code(self, scope, depth=0):
