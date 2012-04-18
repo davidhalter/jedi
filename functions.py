@@ -188,6 +188,7 @@ def complete(source, row, column, source_path):
     except IndexError:
         completions = evaluate.get_names_for_scope(scope)
     else:
+        stmt.parent = scope
         scopes = evaluate.follow_statement(stmt, scope)
 
         completions = []

@@ -42,7 +42,7 @@ class Parser(object):
             name = os.path.basename(self.path)
             self.name = name.rpartition('.')[0]  # cut file type (normally .so)
             self.path = os.path.dirname(self.path)
-            print self.name, self.path
+            #print self.name, self.path
         self._content = {}
         self._parser = None
         self._module = None
@@ -54,13 +54,13 @@ class Parser(object):
             self.sys_path.insert(0, self.path)
 
             temp, sys.path = sys.path, self.sys_path
-            print 'sypa', sys.path
+            #print 'sypa', sys.path TODO reenable and check (stackoverflow ticket)
             exec 'import %s as module' % self.name in self._content
             self.sys_path, sys.path = sys.path, temp
 
             self.sys_path.pop(0)
             self._module = self._content['module']
-            print 'mod', self._content['module']
+            #print 'mod', self._content['module']
         return self._module
 
     @property
@@ -69,7 +69,7 @@ class Parser(object):
         if not self._parser:
             try:
                 timestamp, parser = Parser.cache[self.name, self.path]
-                if timestamp == os.path.getmtime(self.path):
+                if not self.path or timestamp == os.path.getmtime(self.path):
                     debug.dbg('hit builtin cache')
                     self._parser = parser
                 else:

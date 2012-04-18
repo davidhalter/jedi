@@ -65,7 +65,7 @@ class Simple(object):
         self.parent = None
 
     def get_parent_until(self, *classes):
-        """ Takes always the parent, until one class """
+        """ Takes always the parent, until one class (not a Class) """
         scope = self
         while not (scope.parent is None or scope.__class__ in classes):
             scope = scope.parent
@@ -209,14 +209,14 @@ class Scope(Simple):
     def __repr__(self):
         try:
             name = self.name
-        except:
+        except AttributeError:
             try:
                 name = self.command
-            except:
+            except AttributeError:
                 name = self.module_path
 
         return "<%s: %s@%s-%s>" % \
-                (self.__class__.__name__, name, self.line_nr, self.line_end)
+                (self.__class__.__name__, name, self.line_nr, self.__hash__())
 
 
 class GlobalScope(Scope):
@@ -242,8 +242,7 @@ class GlobalScope(Scope):
         # set no parent here, because globals are not defined in this scope.
 
     def get_set_vars(self):
-        n = []
-        n += super(GlobalScope, self).get_set_vars()
+        n = super(GlobalScope, self).get_set_vars()
         n += self.global_vars
         return n 
 
@@ -321,10 +320,9 @@ class Function(Scope):
         return str
 
     def get_set_vars(self):
-        n = []
+        n = super(Function, self).get_set_vars()
         for i, p in enumerate(self.params):
             n += p.set_vars or p.used_vars
-        n += super(Function, self).get_set_vars()
         return n
 
 
@@ -393,8 +391,7 @@ class Flow(Scope):
         generate the output.
         """
         if is_internal_call:
-            n = []
-            n += self.set_vars
+            n = list(self.set_vars)
             if self.statement:
                 n += self.statement.set_vars
             if self.next:
@@ -519,7 +516,7 @@ class Statement(Simple):
 
     def get_set_vars(self):
         """ Get the names for the statement. """
-        return self.set_vars
+        return list(self.set_vars)
 
     def get_assignment_calls(self):
         """
@@ -1148,9 +1145,12 @@ class PyFuzzyParser(object):
         if is_return:
             # add returns to the scope
             func = self.scope.get_parent_until(Function)
-            func.returns.append(stmt)
             if is_return == 'yield':
                 func.is_generator = True
+            try:
+                func.returns.append(stmt)
+            except AttributeError:
+                debug.warning('return in non-function')
 
         return stmt, tok
 

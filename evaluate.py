@@ -276,7 +276,7 @@ def strip_imports(scopes):
     result = []
     for s in scopes:
         if isinstance(s, parsing.Import):
-            print 'dini mueter, steile griech!'
+            #print 'dini mueter, steile griech!'
             try:
                 result += follow_import(s)
             except modules.ModuleNotFound:

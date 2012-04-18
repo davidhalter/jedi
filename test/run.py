@@ -49,7 +49,7 @@ def completion_test(source):
             tests += 1
         else:
             try:
-                correct = re.search(r'#\?\s*([^\n]+)', line).group(1)
+                correct = re.search(r'(?:^|\s)#\?\s*([^\n]+)', line).group(1)
             except:
                 correct = None
     return tests, fails
