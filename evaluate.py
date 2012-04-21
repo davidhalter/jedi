@@ -99,59 +99,6 @@ class Instance(Exec):
                 (self.__class__.__name__, self.base)
 
 
-class Array(object):
-    """
-    Used as a mirror to parsing.Array, if needed. It defines some getter
-    methods which are important in this module.
-    """
-    def __init__(self, array):
-        self._array = array
-
-    def get_index_type(self, index):
-        #print self._array.values, index.values
-        values = self._array.values
-        #print 'ui', index.values, index.values[0][0].type
-        iv = index.values
-        if len(iv) == 1 and len(iv[0]) == 1 and iv[0][0].type == \
-                parsing.Call.NUMBER and self._array.type != parsing.Array.DICT:
-            try:
-                values = [self._array.values[int(iv[0][0].name)]]
-            except:
-                pass
-        scope = self._array.parent_stmt.parent
-        return follow_call_list(scope, values)
-
-    def get_defined_names(self):
-        """ This method generates all ArrayElements for one parsing.Array. """
-        # array.type is a string with the type, e.g. 'list'
-        scope = get_scopes_for_name(builtin.Builtin.scope, self._array.type)[0]
-        names = scope.get_defined_names()
-        return [ArrayElement(n) for n in names]
-
-    def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self._array)
-
-
-class ArrayElement(object):
-    def __init__(self, name):
-        self.name = name
-
-    @property
-    def parent(self):
-        raise NotImplementedError("This shouldn't happen")
-
-    @property
-    def returns(self):
-        return self.name.parent.returns
-
-    @property
-    def names(self):
-        return self.name.names
-
-    def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self.name)
-
-
 class Execution(Exec):
     """
     This class is used to evaluate functions and their returns.
@@ -209,6 +156,59 @@ class Execution(Exec):
     def __repr__(self):
         return "<%s of %s>" % \
                 (self.__class__.__name__, self.base)
+
+
+class Array(object):
+    """
+    Used as a mirror to parsing.Array, if needed. It defines some getter
+    methods which are important in this module.
+    """
+    def __init__(self, array):
+        self._array = array
+
+    def get_index_type(self, index):
+        #print self._array.values, index.values
+        values = self._array.values
+        #print 'ui', index.values, index.values[0][0].type
+        iv = index.values
+        if len(iv) == 1 and len(iv[0]) == 1 and iv[0][0].type == \
+                parsing.Call.NUMBER and self._array.type != parsing.Array.DICT:
+            try:
+                values = [self._array.values[int(iv[0][0].name)]]
+            except:
+                pass
+        scope = self._array.parent_stmt.parent
+        return follow_call_list(scope, values)
+
+    def get_defined_names(self):
+        """ This method generates all ArrayElements for one parsing.Array. """
+        # array.type is a string with the type, e.g. 'list'
+        scope = get_scopes_for_name(builtin.Builtin.scope, self._array.type)[0]
+        names = scope.get_defined_names()
+        return [ArrayElement(n) for n in names]
+
+    def __repr__(self):
+        return "<%s of %s>" % (self.__class__.__name__, self._array)
+
+
+class ArrayElement(object):
+    def __init__(self, name):
+        self.name = name
+
+    @property
+    def parent(self):
+        raise NotImplementedError("This shouldn't happen")
+
+    @property
+    def returns(self):
+        return self.name.parent.returns
+
+    @property
+    def names(self):
+        return self.name.names
+
+    def __repr__(self):
+        return "<%s of %s>" % (self.__class__.__name__, self.name)
 
 
 def get_names_for_scope(scope, star_search=True):
