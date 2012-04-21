@@ -57,6 +57,7 @@ class File(object):
         File.module_cache[self.module_path] = to_cache
         return self._parser
 
+
 def find_module(current_module, point_path):
     """
     Find a module with a path (of the module, like usb.backend.libusb10).

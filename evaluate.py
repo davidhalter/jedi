@@ -189,15 +189,16 @@ class Execution(Exec):
     def get_params(self):
         result = []
         for i, param in enumerate(self.base.params):
-            try: 
+            try:
                 value = self.params.values[i]
             except IndexError:
                 # This means, that there is no param in the call. So we just
-                # ignore it and take the default params. 
+                # ignore it and take the default params.
                 result.append(param.get_name())
             else:
                 new_param = copy.copy(param)
-                calls = parsing.Array(parsing.Array.EMPTY, self.params.parent_stmt)
+                calls = parsing.Array(parsing.Array.EMPTY,
+                                        self.params.parent_stmt)
                 calls.values = [value]
                 new_param.assignment_calls = calls
                 name = copy.copy(param.get_name())
@@ -270,13 +271,12 @@ def get_scopes_for_name(scope, name, search_global=False):
                         # TODO get Flow data, which is defined by the loop
                         # (or with)
                         pass
-                    elif isinstance(par, parsing.Param):
-                        if isinstance(par.parent.parent, parsing.Class) \
-                                and par.position == 0:
-                            # this is where self is added
-                            result.append(Instance(par.parent.parent))
-                        else:
-                            result.append(par)
+                    elif isinstance(par, parsing.Param) \
+                            and isinstance(par.parent.parent, parsing.Class) \
+                            and par.position == 0:
+                        # this is where self gets added
+                        result.append(Instance(par.parent.parent))
+                        result.append(par)
                     else:
                         result.append(par)
         debug.dbg('sfn filter', result)

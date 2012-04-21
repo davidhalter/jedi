@@ -6,7 +6,8 @@ import evaluate
 import modules
 import debug
 
-__all__ = ['complete', 'get_completion_parts', 'complete_test', 'set_debug_function']
+__all__ = ['complete', 'get_completion_parts', 'set_debug_function']
+
 
 class FileWithCursor(modules.File):
     """
@@ -32,6 +33,7 @@ class FileWithCursor(modules.File):
     def get_row_path(self, column):
         """ Get the path under the cursor. """
         self._is_first = True
+
         def fetch_line():
             line = self.get_line(self._row_temp)
             if self._is_first:
@@ -159,6 +161,7 @@ def get_completion_parts(path):
     match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
     return match.groups()
 
+
 def complete(source, row, column, source_path):
     """
     An auto completer for python files.
@@ -210,6 +213,7 @@ def set_debug_function(func_cb):
     :param func_cb: The callback function for debug messages, with n params.
     """
     debug.debug_function = func_cb
+
 
 def _clear_caches():
     evaluate.clear_caches()

@@ -54,7 +54,8 @@ class Parser(object):
             self.sys_path.insert(0, self.path)
 
             temp, sys.path = sys.path, self.sys_path
-            #print 'sypa', sys.path TODO reenable and check (stackoverflow ticket)
+            # TODO reenable and check (stackoverflow question - pylab builtins)
+            #print 'sypa', sys.path
             exec 'import %s as module' % self.name in self._content
             self.sys_path, sys.path = sys.path, temp
 
@@ -204,7 +205,7 @@ def parse_function_doc(func):
                 break
         param_str = doc[start + 1:end]
 
-        # remove square brackets, which show an optional param ( in Python = None)
+        # remove square brackets, that show an optional param ( = None)
         def change_options(m):
             args = m.group(1).split(',')
             for i, a in enumerate(args):
