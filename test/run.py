@@ -40,7 +40,8 @@ def completion_test(source):
                 fails += 1
             else:
                 # TODO remove sorted? completions should be sorted?
-                comp_str = str(sorted([str(c) for c in completions]))
+                # TODO remove set! duplicates should not be normal
+                comp_str = str(sorted(set([str(c) for c in completions])))
                 if comp_str != correct:
                     print 'Solution not correct, received %s, wanted %s' % \
                                 (comp_str, correct)

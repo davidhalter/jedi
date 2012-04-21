@@ -197,7 +197,6 @@ def complete(source, row, column, source_path):
         for s in scopes:
             completions += s.get_defined_names()
 
-    # remove duplicates
     completions = list(set(completions))
 
     needs_dot = not dot and path
