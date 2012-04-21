@@ -6,6 +6,7 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 
 TODO include super classes
 """
+
 # python2.5 compatibility
 try:
     next
@@ -138,7 +139,6 @@ class ArrayElement(object):
     @property
     def parent(self):
         raise NotImplementedError("This shouldn't happen")
-        return
 
     @property
     def returns(self):

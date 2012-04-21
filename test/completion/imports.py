@@ -1,4 +1,22 @@
+# -----------------
+# std lib modules
+# -----------------
+import tokenize
+#? ['tok_name']
+tokenize.tok_name
 
+from pyclbr import *
+
+#? ['readmodule_ex']
+readmodule_ex
+import os
+
+#? ['dirname']
+os.path.dirname
+
+# -----------------
+# builtins
+# -----------------
 
 import sys
 #? ['prefix']
@@ -7,14 +25,13 @@ sys.prefix
 #? ['append']
 sys.path.append
 
-
-# --- builtin math ---
-
 from math import *
 #? ['cos', 'cosh']
 cos
 
-import os
+def func_with_import():
+    import time
+    return time
 
-#? ['dirname']
-os.path.dirname
+#? ['sleep']
+func_with_import().sleep

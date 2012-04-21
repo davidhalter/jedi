@@ -570,6 +570,7 @@ class Statement(Simple):
             brackets = {'(': Array.EMPTY, '[': Array.LIST, '{': Array.SET}
             is_call = lambda: result.__class__ == Call
             is_call_or_close = lambda: is_call() or close_brackets
+
             if isinstance(tok, Name) or token_type in [tokenize.STRING,
                                                  tokenize.NUMBER]:  # names
                 c_type = Call.NAME

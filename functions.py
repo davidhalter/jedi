@@ -58,8 +58,6 @@ class FileWithCursor(modules.File):
         close_brackets = [')', ']', '}']
 
         gen = tokenize.generate_tokens(fetch_line)
-        # TODO can happen: raise TokenError, ("EOF in multi-line statement"
-        # where???
         string = ''
         level = 0
         for token_type, tok, start, end, line in gen:
@@ -198,6 +196,9 @@ def complete(source, row, column, source_path):
         debug.dbg('possible scopes', scopes)
         for s in scopes:
             completions += s.get_defined_names()
+
+    # remove duplicates
+    completions = list(set(completions))
 
     needs_dot = not dot and path
     completions = [Completion(c, needs_dot, len(like)) for c in completions

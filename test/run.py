@@ -39,11 +39,12 @@ def completion_test(source):
                 print traceback.format_exc()
                 fails += 1
             else:
-                # TODO remove sorted? completions should be sorted
+                # TODO remove sorted? completions should be sorted?
                 comp_str = str(sorted([str(c) for c in completions]))
                 if comp_str != correct:
                     print 'Solution not correct, received %s, wanted %s' % \
                                 (comp_str, correct)
+                    #print [(c.name, c.name.parent) for c in completions]
                     fails += 1
             correct = None
             tests += 1
