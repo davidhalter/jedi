@@ -21,7 +21,8 @@ def error(*args):
 
 def print_to_stdout(level, *args):
     """ The default debug function """
-    print 'dbg:' if level == NOTICE else 'warning:', args
+    print(('dbg: ' if level == NOTICE else 'warning: ') +
+            ', '.join(str(a) for a in args))
 
 debug_function = None
 #debug_function = print_to_stdout

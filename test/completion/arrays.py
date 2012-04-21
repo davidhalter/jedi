@@ -5,3 +5,6 @@
 a = list()
 #? ['append']
 [a][0].append
+
+#? ['append']
+[[a]][0][100].append

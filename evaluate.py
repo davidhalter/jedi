@@ -14,6 +14,7 @@ except NameError:
         return obj.next()
 
 import itertools
+import copy
 
 import parsing
 import modules
@@ -42,13 +43,14 @@ def memoize(default=None):
         memo = {}
         memoize_caches.append(memo)
 
-        def wrapper(*args):
-            if args in memo:
-                return memo[args]
+        def wrapper(*args, **kwargs):
+            key = (args, frozenset(kwargs.items()))
+            if key in memo:
+                return memo[key]
             else:
-                memo[args] = default
+                memo[key] = default
                 rv = function(*args)
-                memo[args] = rv
+                memo[key] = rv
                 return rv
         return wrapper
     return func
@@ -161,25 +163,46 @@ class Execution(Exec):
         """
         Get the return vars of a function.
         """
-        def remove_executions(scope, get_returns=False):
-            stmts = []
-            if isinstance(scope, parsing.Class):
-                # there maybe executions of executions
-                stmts = [Instance(scope, self.params)]
+        stmts = []
+        #print '\n\n', self.params, self.params.values, self.params.parent_stmt
+        if isinstance(self.base, parsing.Class):
+            # there maybe executions of executions
+            stmts = [Instance(self.base, self.params)]
+        else:
+            # set the callback function to get the params
+            self.base.param_cb = self.get_params
+            ret = self.base.returns
+            for s in ret:
+                #temp, s.parent = s.parent, self
+                stmts += follow_statement(s)
+                #s.parent = temp
+
+            # reset the callback function on exit
+            self.base.param_cb = None
+
+        debug.dbg('exec stmts=', stmts, self.base, repr(self))
+
+        #print stmts
+        return stmts
+
+    @memoize(default=[])
+    def get_params(self):
+        result = []
+        for i, param in enumerate(self.base.params):
+            try: 
+                value = self.params.values[i]
+            except IndexError:
+                # This means, that there is no param in the call. So we just
+                # ignore it and take the default params. 
+                result.append(param.get_name())
             else:
-                if get_returns:
-                    ret = scope.returns
-                    for s in ret:
-                        #for stmt in follow_statement(s):
-                        #    stmts += remove_executions(stmt)
-                        stmts += follow_statement(s)
-                else:
-                    stmts.append(scope)
-            return stmts
-
-        result = remove_executions(self.base, True)
-        debug.dbg('exec stmts=', result, self.base, repr(self))
-
+                new_param = copy.copy(param)
+                calls = parsing.Array(parsing.Array.EMPTY, self.params.parent_stmt)
+                calls.values = [value]
+                new_param.assignment_calls = calls
+                name = copy.copy(param.get_name())
+                name.parent = new_param
+                result.append(name)
         return result
 
     def __repr__(self):
@@ -188,7 +211,7 @@ class Execution(Exec):
 
 
 def get_names_for_scope(scope, star_search=True):
-    """ 
+    """
     Get all completions possible for the current scope.
     The star search option is only here to provide an optimization. Otherwise
     the whole thing would make a little recursive maddness
@@ -231,7 +254,7 @@ def get_scopes_for_name(scope, name, search_global=False):
                 res_new += remove_statements(scopes)
             else:
                 res_new.append(r)
-        debug.dbg('sfn remove', res_new, result)
+        debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
 
     def filter_name(scopes):
@@ -253,10 +276,9 @@ def get_scopes_for_name(scope, name, search_global=False):
                             # this is where self is added
                             result.append(Instance(par.parent.parent))
                         else:
-                            # TODO get function data
-                            pass
+                            result.append(par)
                     else:
-                        result.append(scope.parent)
+                        result.append(par)
         debug.dbg('sfn filter', result)
         return result
 
@@ -293,7 +315,8 @@ def follow_statement(stmt, scope=None):
     :param scope: contains a scope. If not given, takes the parent of stmt.
     """
     if scope is None:
-        scope = stmt.get_parent_until(parsing.Function)
+        scope = stmt.get_parent_until(parsing.Function, Execution,
+                                        parsing.Class, Instance)
     call_list = stmt.get_assignment_calls()
     debug.dbg('calls', call_list, call_list.values)
     return follow_call_list(scope, call_list)
@@ -329,7 +352,8 @@ def follow_call(scope, call):
             scopes = get_scopes_for_name(scope, current, search_global=True)
         result = strip_imports(scopes)
 
-    debug.dbg('call before', result, current, scope)
+    debug.dbg('call before result %s, current %s, scope %s'
+                                % (result, current, scope))
     result = follow_paths(path, result)
 
     return result

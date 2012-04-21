@@ -141,10 +141,10 @@ c, 1, c3()) [0].pop()
 c = u"asdf".join([1,2])
 matrix_test = [[1,2], [1,3]]
 c = c1().c3().sleep()
-asdf = c1; asdf2 = asdf
-b= asdf2
+asdf = c1; asdf2 = asdf b= asdf2
+
 c = b().c3()
 1.0.fromhex(); import flask ; flsk = flask.Flask + flask.Request;
 abc = [1,2+3]; abc[0].
-import pylab
-abc = datetime; return [abc][0]. ;pylab.
+import pylab; def add(a1,b1): nana = 1; return a1+b1
+abc = datetime; return [abc][0]. ;pylab.; add(1+2,2).

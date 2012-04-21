@@ -216,7 +216,7 @@ class Scope(Simple):
                 name = self.module_path
 
         return "<%s: %s@%s-%s>" % \
-                (self.__class__.__name__, name, self.line_nr, self.__hash__())
+                (self.__class__.__name__, name, self.line_nr, self.line_end)
 
 
 class GlobalScope(Scope):
@@ -308,7 +308,10 @@ class Function(Scope):
             p.parent = self
         self.decorators = []
         self.returns = []
-        is_generator = False
+        self.is_generator = False
+
+        # callback to set the function
+        self.param_cb = None
 
     def get_code(self, first_indent=False, indention="    "):
         str = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
@@ -321,8 +324,18 @@ class Function(Scope):
 
     def get_set_vars(self):
         n = super(Function, self).get_set_vars()
-        for i, p in enumerate(self.params):
-            n += p.set_vars or p.used_vars
+        if self.param_cb or False:
+            # this is the really ugly part, where the functional style of this
+            # get methods is broken, it executes a callback.
+            # This is important, because something has to inject the params
+            # into the functions, with the right values.
+            n += self.param_cb()
+        else:
+            for p in self.params:
+                try:
+                    n.append(p.get_name())
+                except IndexError:
+                    debug.warning("multiple names in param %s" % n)
         return n
 
 
@@ -646,6 +659,13 @@ class Param(Statement):
 
         # this is defined by the parser later on, not at the initialization
         self.position = None
+
+    def get_name(self):
+        """ get the name of the param """
+        n = self.set_vars or self.used_vars
+        if len(n) > 1:
+            raise IndexError("Multiple param names (%s)." % n)
+        return n[0]
 
 
 class Call(object):

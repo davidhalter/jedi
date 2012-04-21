@@ -212,7 +212,7 @@ def parse_function_doc(func):
                     args[i] += '=None'
             return ','.join(args)
         while True:
-            (param_str, changes) = re.subn(r' ?\[([^\[\]]+)\]',
+            param_str, changes = re.subn(r' ?\[([^\[\]]+)\]',
                                             change_options, param_str)
             if changes == 0:
                 break
