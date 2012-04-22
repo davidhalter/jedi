@@ -31,6 +31,7 @@ Ignored statements:
 TODO take special care for future imports
 TODO check meta classes
 """
+from _compatibility import next
 
 import tokenize
 import cStringIO
@@ -355,8 +356,8 @@ class Flow(Scope):
 
     :param command: The flow command, if, while, else, etc.
     :type command: str
-    :param statement: The statement after the flow comand -> while 'statement'.
-    :type statement: Statement
+    :param inits: The initializations of a flow -> while 'statement'.
+    :type inits: list(Statement)
     :param indent: The indent level of the flow statement.
     :type indent: int
     :param line_nr: Line number of the flow statement.
@@ -364,12 +365,13 @@ class Flow(Scope):
     :param set_vars: Local variables used in the for loop (only there).
     :type set_vars: list
     """
-    def __init__(self, command, statement, indent, line_nr, set_vars=None):
+    def __init__(self, command, inits, indent, line_nr, set_vars=None):
         super(Flow, self).__init__(indent, line_nr, '')
         self.command = command
-        self.statement = statement
-        if statement:
-            statement.parent = self
+        # These have to be statements, because of with, which takes multiple.
+        self.inits = inits
+        for s in inits:
+            s.parent = self
         if set_vars == None:
             self.set_vars = []
         else:
@@ -385,10 +387,10 @@ class Flow(Scope):
         else:
             vars = ''
 
-        if self.statement:
-            stmt = self.statement.get_code(new_line=False)
-        else:
-            stmt = ''
+        stmts = []
+        for s in self.inits:
+            stmts.append(s.get_code(new_line=False))
+        stmt = ', '.join(stmts)
         str = "%s %s%s:\n" % (self.command, vars, stmt)
         str += super(Flow, self).get_code(True, indention)
         if self.next:
@@ -405,8 +407,8 @@ class Flow(Scope):
         """
         if is_internal_call:
             n = list(self.set_vars)
-            if self.statement:
-                n += self.statement.set_vars
+            for s in self.inits:
+                n += s.set_vars
             if self.next:
                 n += self.next.get_set_vars(is_internal_call)
             n += super(Flow, self).get_set_vars()
@@ -549,7 +551,8 @@ class Statement(Simple):
         close_brackets = False
 
         debug.dbg('tok_list', self.token_list)
-        for i, tok_temp in enumerate(self.token_list):
+        tok_iter = enumerate(self.token_list)
+        for i, tok_temp in tok_iter:
             #print 'tok', tok_temp, result
             try:
                 token_type, tok, indent = tok_temp
@@ -561,6 +564,12 @@ class Statement(Simple):
                     # initialize the first item
                     result = Array(Array.EMPTY, self)
                     top = result
+                    continue
+                elif tok == 'as':
+                    # TODO change with parser to allow multiple statements
+                    # This is the name and can be ignored, because set_vars is
+                    # already caring for this.
+                    next(tok_iter)
                     continue
             except TypeError:
                 # the token is a Name, which has already been parsed
@@ -1292,36 +1301,49 @@ class PyFuzzyParser(object):
                     if tok == 'in':
                         statement, tok = self._parse_statement()
                         if tok == ':':
-                            f = Flow('for', statement, indent, self.line_nr, \
-                                        value_list)
+                            f = Flow('for', [statement], indent,
+                                                self.line_nr, value_list)
                             debug.dbg("new scope: flow for@%s" % (f.line_nr))
                             self.scope = self.scope.add_statement(f)
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
                     added_breaks = []
                     command = tok
-                    if command == 'except':
-                        added_breaks += (',')
-                    statement, tok = \
-                        self._parse_statement(added_breaks=added_breaks)
-                    if tok in added_breaks:
-                        # the except statement defines a var
-                        # this is only true for python 2
-                        path, token_type, tok, start_indent, start_line2 = \
-                                self._parsedotname()
-                        n = Name(path, start_indent, start_line2, self.line_nr)
-                        statement.set_vars.append(n)
-                        statement.code += ',' + n.get_code()
+                    if command in ['except', 'with']:
+                        added_breaks.append(',')
+                    # multiple statements because of with
+                    inits = []
+                    first = True
+                    while first or command == 'with' and tok != ':':
+                        statement, tok = \
+                            self._parse_statement(added_breaks=added_breaks)
+                        if command == 'except' and tok in added_breaks:
+                            # the except statement defines a var
+                            # this is only true for python 2
+                            path, token_type, tok, start_indent, start_line2 = \
+                                    self._parsedotname()
+                            n = Name(path, start_indent, start_line2,
+                                                            self.line_nr)
+                            statement.set_vars.append(n)
+                            statement.code += ',' + n.get_code()
+                        if statement:
+                            inits.append(statement)
+                        first = False
+
                     if tok == ':':
-                        f = Flow(command, statement, indent, self.line_nr)
+                        f = Flow(command, inits, indent, self.line_nr)
                         debug.dbg("new scope: flow %s@%s"
                                         % (command, self.line_nr))
                         if command in extended_flow:
                             # the last statement has to be another part of
-                            # the flow statement
+                            # the flow statement, because a dedent releases the
+                            # main scope, so just take the last statement.
                             self.scope = self.scope.statements[-1].set_next(f)
                         else:
                             self.scope = self.scope.add_statement(f)
+                    else:
+                        debug.warning('syntax err, flow started @%s',
+                                                            self.line_nr)
                 # globals
                 elif tok == 'global':
                     stmt, tok = self._parse_statement(self.current)

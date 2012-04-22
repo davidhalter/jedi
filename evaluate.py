@@ -6,13 +6,7 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 
 TODO include super classes
 """
-
-# python2.5 compatibility
-try:
-    next
-except NameError:
-    def next(obj):
-        return obj.next()
+from _compatibility import next
 
 import itertools
 import copy
@@ -270,7 +264,10 @@ def get_scopes_for_name(scope, name, search_global=False):
                     if isinstance(par, parsing.Flow):
                         # TODO get Flow data, which is defined by the loop
                         # (or with)
-                        pass
+                        if par.command == 'for':
+                            print 'for', par, par.inits
+                        else:
+                            debug.warning('Why are you here? %s' % par.command)
                     elif isinstance(par, parsing.Param) \
                             and isinstance(par.parent.parent, parsing.Class) \
                             and par.position == 0:

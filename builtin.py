@@ -29,7 +29,7 @@ class Parser(object):
         'int': '0',
         'dictionary': '{}',
         'list': '[]',
-        'object': '{}',
+        'file object': 'file("")',
         # TODO things like dbg: ('not working', 'tuple of integers')
     }
     cache = {}
