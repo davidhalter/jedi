@@ -6,6 +6,11 @@ def array(first_param):
 
 #? []
 array.first_param
+#? []
+array.first_param.
+func = array
+#? []
+func.first_param
 
 #? ['append']
 array().append

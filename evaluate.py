@@ -324,7 +324,7 @@ def follow_statement(stmt, scope=None):
                                         parsing.Class, Instance)
     call_list = stmt.get_assignment_calls()
     debug.dbg('calls', call_list, call_list.values)
-    return follow_call_list(scope, call_list)
+    return set(follow_call_list(scope, call_list))
 
 
 def follow_call_list(scope, call_list):
@@ -382,40 +382,39 @@ def follow_paths(path, results):
     return results_new
 
 
-def follow_path(path, input):
+def follow_path(path, scope):
     """
     Takes a generator and tries to complete the path.
     """
     # current is either an Array or a Scope
     current = next(path)
-    debug.dbg('follow', current, input)
+    debug.dbg('follow', current, scope)
 
-    def filter_result(scope):
-        result = []
-        if isinstance(current, parsing.Array):
-            # this must be an execution, either () or []
-            if current.type == parsing.Array.LIST:
-                result = scope.get_index_types(current)
-            elif current.type not in [parsing.Array.DICT]:
-                # scope must be a class or func - make an instance or execution
-                debug.dbg('befexec', scope)
-                exe = Execution(scope, current)
-                result = strip_imports(exe.get_return_types())
-                debug.dbg('exec', result)
-                #except AttributeError:
-                #    debug.dbg('cannot execute:', scope)
-            else:
-                # curly braces are not allowed, because they make no sense
-                debug.warning('strange function call with {}', current, scope)
+    result = []
+    if isinstance(current, parsing.Array):
+        # this must be an execution, either () or []
+        if current.type == parsing.Array.LIST:
+            result = scope.get_index_types(current)
+        elif current.type not in [parsing.Array.DICT]:
+            # scope must be a class or func - make an instance or execution
+            debug.dbg('befexec', scope)
+            exe = Execution(scope, current)
+            result = strip_imports(exe.get_return_types())
+            debug.dbg('exec', result)
+            #except AttributeError:
+            #    debug.dbg('cannot execute:', scope)
         else:
-            if isinstance(scope, parsing.Function):
-                # TODO check default function methods and return them
-                result = []
-            else:
-                # TODO check magic class methods and return them also
-                result = strip_imports(get_scopes_for_name(scope, current))
-        return result
-    return follow_paths(path, filter_result(input))
+            # curly braces are not allowed, because they make no sense
+            debug.warning('strange function call with {}', current, scope)
+    else:
+        if isinstance(scope, parsing.Function):
+            # TODO this is never reached, just remove it?
+            # TODO check default function methods and return them
+            result = []
+        else:
+            # TODO check magic class methods and return them also
+            result = strip_imports(get_scopes_for_name(scope, current))
+    return follow_paths(path, result)
 
 
 def follow_import(_import):
@@ -456,4 +455,4 @@ def remove_star_imports(scope):
     modules += new
 
     # filter duplicate modules
-    return list(set(modules))
+    return set(modules)

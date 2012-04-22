@@ -188,6 +188,9 @@ def complete(source, row, column, source_path):
         stmt = r.top.statements[0]
     except IndexError:
         completions = evaluate.get_names_for_scope(scope)
+        #for c in completions:
+        #    if isinstance(, parsing.Function):
+        #        print c.parent
     else:
         stmt.parent = scope
         scopes = evaluate.follow_statement(stmt, scope=scope)
@@ -195,16 +198,17 @@ def complete(source, row, column, source_path):
         completions = []
         debug.dbg('possible scopes', scopes)
         for s in scopes:
-            completions += s.get_defined_names()
+            # TODO is this reall the right way, just ignore the functions?
+            if not isinstance(s, parsing.Function):
+                completions += s.get_defined_names()
 
-    completions = list(set(completions))
-
-    needs_dot = not dot and path
-    completions = [Completion(c, needs_dot, len(like)) for c in completions
+    completions = [c for c in completions
                             if c.names[-1].lower().startswith(like.lower())]
 
     _clear_caches()
-    return completions
+
+    needs_dot = not dot and path
+    return [Completion(c, needs_dot, len(like)) for c in set(completions)]
 
 
 def set_debug_function(func_cb):
