@@ -19,3 +19,17 @@ def inputs(param):
 
 #? ['append']
 inputs(list).append
+
+def variable_middle():
+    var = 3
+    return var
+
+#? ['real']
+variable_middle().real
+
+def variable_rename(param):
+    var = param
+    return var
+
+#? ['imag']
+variable_rename(1).imag
