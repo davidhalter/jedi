@@ -160,17 +160,20 @@ class Array(object):
     def __init__(self, array):
         self._array = array
 
-    def get_index_type(self, index):
+    def get_index_types(self, index=None):
         #print self._array.values, index.values
         values = self._array.values
         #print 'ui', index.values, index.values[0][0].type
-        iv = index.values
-        if len(iv) == 1 and len(iv[0]) == 1 and iv[0][0].type == \
-                parsing.Call.NUMBER and self._array.type != parsing.Array.DICT:
-            try:
-                values = [self._array.values[int(iv[0][0].name)]]
-            except:
-                pass
+        if index is not None:
+            # This is indexing only one element, with a fixed index number
+            iv = index.values
+            if len(iv) == 1 and len(iv[0]) == 1 \
+                    and iv[0][0].type == parsing.Call.NUMBER \
+                    and self._array.type != parsing.Array.DICT:
+                try:
+                    values = [self._array.values[int(iv[0][0].name)]]
+                except:
+                    pass
         scope = self._array.parent_stmt.parent
         return follow_call_list(scope, values)
 
@@ -265,7 +268,12 @@ def get_scopes_for_name(scope, name, search_global=False):
                         # TODO get Flow data, which is defined by the loop
                         # (or with)
                         if par.command == 'for':
-                            print 'for', par, par.inits
+                            # take the first statement (for has always only
+                            # one, remember `in`). And follow it. After that,
+                            # get the types which are in the array
+                            arrays = follow_statement(par.inits[0])
+                            for array in arrays:
+                                result += array.get_index_types()
                         else:
                             debug.warning('Why are you here? %s' % par.command)
                     elif isinstance(par, parsing.Param) \
@@ -387,7 +395,7 @@ def follow_path(path, input):
         if isinstance(current, parsing.Array):
             # this must be an execution, either () or []
             if current.type == parsing.Array.LIST:
-                result = scope.get_index_type(current)
+                result = scope.get_index_types(current)
             elif current.type not in [parsing.Array.DICT]:
                 # scope must be a class or func - make an instance or execution
                 debug.dbg('befexec', scope)
