@@ -141,7 +141,7 @@ class Execution(Exec):
                 calls = parsing.Array(parsing.Array.EMPTY,
                                         self.params.parent_stmt)
                 calls.values = [value]
-                new_param.assignment_calls = calls
+                new_param._assignment_calls = calls
                 name = copy.copy(param.get_name())
                 name.parent = new_param
                 result.append(name)
@@ -323,8 +323,17 @@ def follow_statement(stmt, scope=None):
         scope = stmt.get_parent_until(parsing.Function, Execution,
                                         parsing.Class, Instance)
     call_list = stmt.get_assignment_calls()
-    debug.dbg('calls', call_list, call_list.values)
-    return set(follow_call_list(scope, call_list))
+    debug.dbg('calls', call_list, call_list)
+    result = set(follow_call_list(scope, call_list))
+
+    if stmt.assignment_details:
+        new_result = []
+        for op, set_vars in stmt.assignment_details:
+            stmt.assignment_details[0]
+            #print '\n\nlala', op, set_vars.values, call_list.values
+            #print stmt, scope
+        #result = new_result
+    return result
 
 
 def follow_call_list(scope, call_list):

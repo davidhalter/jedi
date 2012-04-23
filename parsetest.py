@@ -147,4 +147,4 @@ c = b().c3(); abc = datetime; return [abc][0]. ;pylab.; add(1+2,2).; for fi in [
 1.0.fromhex(); import flask ; flsk = flask.Flask + flask.Request;
 abc = [1,2+3]; abc[0].
 import pylab; def add(a1,b1): nana = 1; return a1+b1
-flow_test.
+flow_test.; a12, b12 = (1,""); a12.

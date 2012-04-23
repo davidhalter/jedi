@@ -521,7 +521,8 @@ class Statement(Simple):
             s.parent = self
 
         # cache
-        self.assignment_calls = None
+        self._assignment_calls = None
+        self._assignment_details = None
 
     def get_code(self, new_line=True):
         if new_line:
@@ -533,6 +534,15 @@ class Statement(Simple):
         """ Get the names for the statement. """
         return list(self.set_vars)
 
+    @property
+    def assignment_details(self):
+        if self._assignment_details is None:
+            # normally, this calls sets this variable
+            self.get_assignment_calls()
+        # it may not have been set by get_assignment_calls -> just use an empty
+        # array
+        return self._assignment_details or []
+
     def get_assignment_calls(self):
         """
         This is not done in the main parser, because it might be slow and
@@ -542,8 +552,9 @@ class Statement(Simple):
         This is not really nice written, sorry for that. If you plan to replace
         it and make it nicer, that would be cool :-)
         """
-        if self.assignment_calls:
-            return self.assignment_calls
+        if self._assignment_calls:
+            return self._assignment_calls
+        self._assignment_details = []
         result = Array(Array.EMPTY, self)
         top = result
         level = 0
@@ -556,25 +567,24 @@ class Statement(Simple):
             #print 'tok', tok_temp, result
             try:
                 token_type, tok, indent = tok_temp
+            except TypeError:
+                # the token is a Name, which has already been parsed
+                tok = tok_temp
+                token_type = None
+            else:
                 if tok in ['return', 'yield'] or level == 0 and \
                         '=' in tok and not tok in ['>=', '<=', '==', '!=']:
                     # This means, there is an assignment here.
                     # TODO there may be multiple assignments: a = b = 1
 
+                    self._assignment_details.append((tok, top))
                     # initialize the first item
                     result = Array(Array.EMPTY, self)
                     top = result
                     continue
                 elif tok == 'as':
-                    # TODO change with parser to allow multiple statements
-                    # This is the name and can be ignored, because set_vars is
-                    # already caring for this.
                     next(tok_iter)
                     continue
-            except TypeError:
-                # the token is a Name, which has already been parsed
-                tok = tok_temp
-                token_type = None
 
             brackets = {'(': Array.EMPTY, '[': Array.LIST, '{': Array.SET}
             is_call = lambda: result.__class__ == Call
@@ -653,7 +663,7 @@ class Statement(Simple):
             raise ParserError("Brackets don't match: %s. This is not normal "
                                 "behaviour. Please submit a bug" % level)
 
-        self.assignment_calls = top
+        self._assignment_calls = top
         return top
 
 
@@ -808,8 +818,8 @@ class Array(Call):
             temp = 'dict'
         elif self.type == self.SET:
             temp = 'set'
-        return "<%s: %s of %s>" % \
-                (self.__class__.__name__, temp, self.parent)
+        parent_str = " of %s" % self.parent if self.parent else ""
+        return "<%s: %s%s>" % (self.__class__.__name__, temp, parent_str)
 
 
 class NamePart(str):
