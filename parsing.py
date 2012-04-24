@@ -813,7 +813,7 @@ class Array(Call):
 
     def __repr__(self):
         if self.type == self.NOARRAY:
-            temp = 'empty'
+            temp = 'noarray'
         elif self.type == self.TUPLE:
             temp = 'tuple'
         elif self.type == self.LIST:
