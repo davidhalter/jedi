@@ -808,6 +808,16 @@ class Array(Call):
             raise AttributeError("More than one value found")
         return self.values[0][0]
 
+    @staticmethod
+    def is_type(instance, typ):
+        """
+        This is not only used for calls on the actual object, but for
+        ducktyping, to invoke this function with anything as `self`.
+        """
+        if isinstance(instance, Array):
+            if instance.type == typ:
+                return True
+        return False
 
     def __len__(self):
         return len(self.values)

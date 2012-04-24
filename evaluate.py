@@ -347,16 +347,10 @@ def assign_tuples(tup, results, seek_name):
             # check the left part, if it's still tuples in it or a Call
             if isinstance(t, parsing.Array):
                 # these are "sub" tuples
-                print 'arr', t
                 result += assign_tuples(t, eval_results(i), seek_name)
-                print 'arr2', result
             else:
                 if t.name.names[-1] == seek_name:
                     result += eval_results(i)
-                    print 't', t, result
-                else:
-                    print 'name not found', t.name
-        print seek_name, tup, results
     return result
 
 @memoize(default=[])
@@ -375,14 +369,9 @@ def follow_statement(stmt, scope=None, seek_name=None):
     # assignment checking is only important if the statement defines multiple
     # variables
     if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
-        print 'seek', seek_name
         new_result = []
         for op, set_vars in stmt.assignment_details:
-            print '\ntup'
             new_result += assign_tuples(set_vars, result, seek_name)
-            print new_result
-            print '\n\nlala', op, set_vars.values, call_list.values
-            print stmt, scope
         result = new_result
     return result
 
@@ -392,18 +381,20 @@ def follow_call_list(scope, call_list):
     The call list has a special structure.
     This can be either `parsing.Array` or `list`.
     """
-    if isinstance(call_list, parsing.Array) \
-            and call_list.type != parsing.Array.NOARRAY:
-        # Especially tuples can stand just alone without any braces. These
-        # would be recognized as separate calls, but actually are a tuple.
+    if parsing.Array.is_type(call_list, parsing.Array.TUPLE):
+        # Tuples can stand just alone without any braces. These would be 
+        # recognized as separate calls, but actually are a tuple.
         result = follow_call(scope, call_list)
     else:
         result = []
         for calls in call_list:
             for call in calls:
-                if not isinstance(call, str):
-                    # The string tokens are just operations (+, -, etc.)
-                    result += follow_call(scope, call)
+                if parsing.Array.is_type(call, parsing.Array.NOARRAY):
+                    result += follow_call_list(scope, call)
+                else:
+                    if not isinstance(call, str):
+                        # The string tokens are just operations (+, -, etc.)
+                        result += follow_call(scope, call)
     return result
 
 
@@ -444,9 +435,6 @@ def follow_paths(path, results):
             for i, r in enumerate(results):
                 results_new += follow_path(iter_paths[i], r)
     except StopIteration:
-        #if isinstance(s, parsing.Array):
-        #    completions += s.
-        #else:
         return results
     return results_new
 

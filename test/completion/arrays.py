@@ -32,11 +32,28 @@ a2.imag
 #? ['upper']
 b2.upper
 
+# list assignment
+[list1, list2] = (1, "")
+#? ['real']
+list1.real
+#? ['lower']
+list2.lower
+#? []
+list2.real
+
+[list3, list4] = [1, ""]
+#? ['real']
+list3.real
+#? ['lower']
+list4.lower
+#? []
+list4.real
+
 # -----------------
 # subtuple assignment
 # -----------------
 (a3, (b3, c3)) = (1, ("", list))
-##? ['append']
+#? ['append']
 c3.append
 #? []
 c3.upper
@@ -59,8 +76,23 @@ b4.upper
 # -----------------
 # unnessecary braces
 # -----------------
+#? ['real']
+(1).real
+#? ['real']
+((1)).real
+#? ['real']
+((1)+1).real
+
 u, v = 1, ""
 #? ['real']
 u.real
 #? []
 u.upper
+
+((u1, v1)) = 1, ""
+#? ['real']
+u1.real
+#? ['real']
+(u1).real
+#? []
+u1.upper
