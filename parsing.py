@@ -543,6 +543,10 @@ class Statement(Simple):
         # array
         return self._assignment_details or []
 
+    def is_global(self):
+        # first keyword of the first token is global -> must be a global
+        return str(self.token_list[0]) == "global"
+
     def get_assignment_calls(self):
         """
         This is not done in the main parser, because it might be slow and

@@ -5,6 +5,7 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 `get_names_for_scope` and `get_scopes_for_name` are search functions
 
 TODO include super classes
+TOOD nonlocal statement
 """
 from _compatibility import next
 
@@ -123,7 +124,6 @@ class Execution(Exec):
 
         debug.dbg('exec stmts=', stmts, self.base, repr(self))
 
-        #print stmts
         return stmts
 
     @memoize(default=[])
@@ -249,8 +249,15 @@ def get_scopes_for_name(scope, name, search_global=False):
         res_new = []
         for r in result:
             if isinstance(r, parsing.Statement):
-                scopes = follow_statement(r, seek_name=name)
-                res_new += remove_statements(scopes)
+                if r.is_global():
+                    res_new += []
+                    for token_name in r.token_list[1:]:
+                        if isinstance(token_name, parsing.Name):
+                            res_new += get_scopes_for_name(r.parent,
+                                                            str(token_name))
+                else:
+                    scopes = follow_statement(r, seek_name=name)
+                    res_new += remove_statements(scopes)
             else:
                 res_new.append(r)
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
@@ -266,13 +273,12 @@ def get_scopes_for_name(scope, name, search_global=False):
                 else:
                     par = scope.parent
                     if isinstance(par, parsing.Flow):
-                        # TODO get Flow data, which is defined by the loop
-                        # (or with)
                         if par.command == 'for':
                             # take the first statement (for has always only
                             # one, remember `in`). And follow it. After that,
                             # get the types which are in the array
                             arrays = follow_statement(par.inits[0])
+                            # TODO for loops can have tuples as set_vars
                             for array in arrays:
                                 result += array.get_index_types()
                         else:
@@ -465,7 +471,6 @@ def follow_path(path, scope):
             debug.warning('strange function call with {}', current, scope)
     else:
         if isinstance(scope, parsing.Function):
-            # TODO this is never reached, just remove it?
             # TODO check default function methods and return them
             result = []
         else:

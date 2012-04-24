@@ -124,7 +124,6 @@ def flow_test(a):
 
 if True or a:
     print a
-
 # completion
 import time
 class c1():
@@ -148,3 +147,14 @@ c = b().c3(); abc = datetime; return [abc][0]. ;pylab.; add(1+2,2).; for fi in [
 abc = [1,2+3]; abc[0].
 import pylab; def add(a1,b1): nana = 1; return a1+b1
 flow_test.; a12, (b12, c12) = (1,(list, "")); b12.
+
+
+
+def globalfunc():
+    global globalvar, globalvar2
+    globalvar = 3
+
+
+
+
+globalvar.
