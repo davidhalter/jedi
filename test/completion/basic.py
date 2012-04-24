@@ -22,6 +22,22 @@ for a3, b3 in (1,""), (1,""), (1,""):
     #? ['upper']
     b3.upper
 
+for a4, (b4, c4) in (1,("", list)), (1,("", list)):
+    #? ['real']
+    a4.real
+    #? []
+    a4.upper
+    #? []
+    b4.real
+    #? ['upper']
+    b4.upper
+    #? []
+    c4.real
+    #? ['append']
+    c4.append
+    #? []
+    c4.upper
+
 # -----------------
 # with statements
 # -----------------
