@@ -431,6 +431,7 @@ class Flow(Scope):
             next.parent = self.parent
             return next
 
+
 class ForFlow(Flow):
     """
     Used for the for loop, because there are two statement parts.
@@ -439,6 +440,7 @@ class ForFlow(Flow):
         super(ForFlow, self).__init__(command, inits, indent, line_nr,
                                         set_stmt.used_vars)
         self.set_stmt = set_stmt
+
 
 class Import(Simple):
     """
@@ -705,6 +707,9 @@ class Param(Statement):
 
 
 class Call(object):
+    """
+    TODO doc
+    """
     NAME = object()
     NUMBER = object()
     STRING = object()
@@ -853,6 +858,10 @@ class Array(Call):
 
 
 class NamePart(str):
+    """
+    A string. Sometimes it is important to know if the string belongs to a name
+    or not.
+    """
     pass
 
 
@@ -1406,7 +1415,4 @@ class PyFuzzyParser(object):
                 debug.warning('indentation error on line %s, ignoring it' %
                                 (self.line_nr))
                 self.gen = tokenize.generate_tokens(buf.readline)
-        #except:
-        #    debug.dbg("parse error: %s, %s @ %s" %
-        #        (sys.exc_info()[0], sys.exc_info()[1], self.parserline))
         return self.top

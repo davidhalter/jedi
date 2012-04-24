@@ -5,7 +5,8 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 `get_names_for_scope` and `get_scopes_for_name` are search functions
 
 TODO include super classes
-TOOD nonlocal statement
+TODO nonlocal statement
+TODO doc
 """
 from _compatibility import next
 
@@ -523,6 +524,9 @@ def follow_import(_import):
 
 
 def remove_star_imports(scope):
+    """
+    TODO doc
+    """
     modules = strip_imports(i for i in scope.get_imports() if i.star)
     new = []
     for m in modules:
