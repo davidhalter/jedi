@@ -43,8 +43,8 @@ def completion_test(source):
                 # TODO remove set! duplicates should not be normal
                 comp_str = str(sorted(set([str(c) for c in completions])))
                 if comp_str != correct:
-                    print 'Solution not correct, received %s, wanted %s' % \
-                                (comp_str, correct)
+                    print 'Solution on %s not correct, received %s, wanted %s'\
+                                % (line_nr, comp_str, correct)
                     #print [(c.name, c.name.parent) for c in completions]
                     fails += 1
             correct = None

@@ -161,19 +161,15 @@ class Array(object):
         self._array = array
 
     def get_index_types(self, index=None):
-        #print self._array.values, index.values
         values = self._array.values
-        #print 'ui', index.values, index.values[0][0].type
         if index is not None:
-            # This is indexing only one element, with a fixed index number
-            iv = index.values
-            if len(iv) == 1 and len(iv[0]) == 1 \
-                    and iv[0][0].type == parsing.Call.NUMBER \
-                    and self._array.type != parsing.Array.DICT:
-                try:
-                    values = [self._array[int(iv[0][0].name)]]
-                except:
-                    pass
+            # This is indexing only one element, with a fixed index number,
+            # otherwise it just ignores the index (e.g. [1+1])
+            try:
+                index_nr = int(index.get_only_subelement().name)
+                values = [self._array[index_nr]]
+            except:
+                pass
         scope = self._array.parent_stmt.parent
         return follow_call_list(scope, values)
 
@@ -317,7 +313,7 @@ def strip_imports(scopes):
             result.append(s)
     return result
 
-def assign_tuples(scope, tuples, results, seek_name):
+def assign_tuples(tup, results, seek_name):
     """
     This is a normal assignment checker. In python functions and other things
     can return tuples:
@@ -326,6 +322,8 @@ def assign_tuples(scope, tuples, results, seek_name):
 
     Here, if seek_name is "a", the number type will be returned.
     The first part (before `=`) is the param tuples, the second one result.
+
+    :type tup: parsing.Array
     """
     def eval_results(index):
         types = []
@@ -334,23 +332,31 @@ def assign_tuples(scope, tuples, results, seek_name):
         return types
 
     result = []
-    for i, t in enumerate(tuples):
-        # used in an assignment, there is just one call and no other things,
-        # therefor we can just assume, that the first part is important.
-        t = t[0]
-        # check the left part, if it's still tuples in it or a Call
-        if isinstance(t, parsing.Array):
-            # these are "sub" tuples
-            print 'arr', t
-            result += assign_tuples(scope, t, eval_results(i), seek_name)
-        else:
-            if t.name.names[-1] == seek_name:
-                result += eval_results(i)
-                print 't', t, result
+    if tup.type == parsing.Array.NOARRAY:
+        # here we have unnessecary braces, which we just remove
+        arr = tup.get_only_subelement()
+        result = assign_tuples(arr, results, seek_name)
+    else:
+        for i, t in enumerate(tup):
+            # used in assignments. there is just one call and no other things,
+            # therefor we can just assume, that the first part is important.
+            if len(t) != 1:
+                raise AttributeError('Array length should be 1')
+            t = t[0]
+
+            # check the left part, if it's still tuples in it or a Call
+            if isinstance(t, parsing.Array):
+                # these are "sub" tuples
+                print 'arr', t
+                result += assign_tuples(t, eval_results(i), seek_name)
+                print 'arr2', result
             else:
-                print 'name not found'
-        #print follow_call_list(scope, result[i])
-    print seek_name, tuples, results
+                if t.name.names[-1] == seek_name:
+                    result += eval_results(i)
+                    print 't', t, result
+                else:
+                    print 'name not found', t.name
+        print seek_name, tup, results
     return result
 
 @memoize(default=[])
@@ -373,7 +379,7 @@ def follow_statement(stmt, scope=None, seek_name=None):
         new_result = []
         for op, set_vars in stmt.assignment_details:
             print '\ntup'
-            new_result += assign_tuples(scope, set_vars, result, seek_name)
+            new_result += assign_tuples(set_vars, result, seek_name)
             print new_result
             print '\n\nlala', op, set_vars.values, call_list.values
             print stmt, scope
@@ -382,13 +388,22 @@ def follow_statement(stmt, scope=None, seek_name=None):
 
 
 def follow_call_list(scope, call_list):
-    """ The call list has a special structure """
-    result = []
-    for calls in call_list:
-        for call in calls:
-            if not isinstance(call, str):
-                # the string tokens are just operations (+, -, etc.)
-                result += follow_call(scope, call)
+    """
+    The call list has a special structure.
+    This can be either `parsing.Array` or `list`.
+    """
+    if isinstance(call_list, parsing.Array) \
+            and call_list.type != parsing.Array.NOARRAY:
+        # Especially tuples can stand just alone without any braces. These
+        # would be recognized as separate calls, but actually are a tuple.
+        result = follow_call(scope, call_list)
+    else:
+        result = []
+        for calls in call_list:
+            for call in calls:
+                if not isinstance(call, str):
+                    # The string tokens are just operations (+, -, etc.)
+                    result += follow_call(scope, call)
     return result
 
 

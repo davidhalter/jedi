@@ -799,6 +799,16 @@ class Array(Call):
         self.keys[c] = self.values[c]
         self.values[c] = []
 
+    def get_only_subelement(self):
+        """
+        Returns the only element that an array contains. If it contains
+        more than one element, raise an exception.
+        """
+        if len(self.values) != 1 or len(self.values[0]) != 1:
+            raise AttributeError("More than one value found")
+        return self.values[0][0]
+
+
     def __len__(self):
         return len(self.values)
 
@@ -814,14 +824,8 @@ class Array(Call):
     def __repr__(self):
         if self.type == self.NOARRAY:
             temp = 'noarray'
-        elif self.type == self.TUPLE:
-            temp = 'tuple'
-        elif self.type == self.LIST:
-            temp = 'list'
-        elif self.type == self.DICT:
-            temp = 'dict'
-        elif self.type == self.SET:
-            temp = 'set'
+        else:
+            temp = self.type
         parent_str = " of %s" % self.parent if self.parent else ""
         return "<%s: %s%s>" % (self.__class__.__name__, temp, parent_str)
 

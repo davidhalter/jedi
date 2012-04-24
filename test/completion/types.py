@@ -68,3 +68,11 @@ tup2 = tuple()
 tup2.i
 ##? ['index'] TODO enable
 ().i
+
+tup3 = 1,""
+#? ['index']
+tup3.index
+
+tup4 = 1,""
+#? ['index']
+tup4.index

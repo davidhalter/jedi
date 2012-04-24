@@ -14,7 +14,7 @@ with open('') as f1, open('') as f2:
 
 
 def global_define():
-    #global glob
+    global glob
     glob = 3
 
 #? ['real']
