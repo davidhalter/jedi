@@ -154,7 +154,7 @@ def globalfunc():
     global globalvar, globalvar2
     globalvar = 3
 
+for abcde, efgh in [(1,"")]:
+    abcde.real
 
-
-
-globalvar.
+abcde.

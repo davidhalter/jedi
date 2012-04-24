@@ -431,6 +431,14 @@ class Flow(Scope):
             next.parent = self.parent
             return next
 
+class ForFlow(Flow):
+    """
+    Used for the for loop, because there are two statement parts.
+    """
+    def __init__(self, command, inits, indent, line_nr, set_stmt):
+        super(ForFlow, self).__init__(command, inits, indent, line_nr,
+                                        set_stmt.used_vars)
+        self.set_stmt = set_stmt
 
 class Import(Simple):
     """
@@ -942,35 +950,6 @@ class PyFuzzyParser(object):
             names.append(tok)
         return (names, token_type, tok, start_indent, start_line)
 
-    def _parse_value_list(self, pre_used_token=None):
-        """
-        A value list is a comma separated list. This is used for:
-        >>> for a,b,self.c in enumerate(test)
-
-        TODO there may be multiple "sub" value lists e.g. (a,(b,c)).
-        """
-        value_list = []
-        if pre_used_token:
-            token_type, tok, indent = pre_used_token
-            n, token_type, tok, start_indent, start_line = \
-                self._parsedotname(tok)
-            if n:
-                temp = Name(n, start_indent, start_line, self.line_nr)
-                value_list.append()
-
-        token_type, tok, indent = self.next()
-        while tok != 'in' and token_type != tokenize.NEWLINE:
-            n, token_type, tok, start_indent, start_line = \
-                self._parsedotname(self.current)
-            if n:
-                temp = Name(n, start_indent, start_line, self.line_nr)
-                value_list.append(temp)
-            if tok == 'in':
-                break
-
-            token_type, tok, indent = self.next()
-        return (value_list, tok)
-
     def _parseimportlist(self):
         """
         The parser for the imports. Unlike the class and function parse
@@ -1329,12 +1308,12 @@ class PyFuzzyParser(object):
                     self.freshscope = False
                 #loops
                 elif tok == 'for':
-                    value_list, tok = self._parse_value_list()
+                    set_stmt, tok = self._parse_statement(added_breaks=['in'])
                     if tok == 'in':
                         statement, tok = self._parse_statement()
                         if tok == ':':
-                            f = Flow('for', [statement], indent,
-                                                self.line_nr, value_list)
+                            f = ForFlow('for', [statement], indent,
+                                            self.line_nr, set_stmt)
                             debug.dbg("new scope: flow for@%s" % (f.line_nr))
                             self.scope = self.scope.add_statement(f)
 
@@ -1352,7 +1331,7 @@ class PyFuzzyParser(object):
                         if command == 'except' and tok in added_breaks:
                             # the except statement defines a var
                             # this is only true for python 2
-                            path, token_type, tok, start_indent, start_line2 = \
+                            path, token_type, tok, start_indent, start_line2 =\
                                     self._parsedotname()
                             n = Name(path, start_indent, start_line2,
                                                             self.line_nr)

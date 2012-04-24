@@ -12,7 +12,7 @@ for a1 in 1,"":
     #? ['upper']
     a1.upper
 
-for a3, b3 in (1,""), (1,""):
+for a3, b3 in (1,""), (1,""), (1,""):
     #? ['real']
     a3.real
     #? []

@@ -219,7 +219,8 @@ def get_names_for_scope(scope, star_search=True):
     start_scope = scope
     while scope:
         # class variables/functions are only availabe
-        if not isinstance(scope, parsing.Class) or scope == start_scope:
+        if (not isinstance(scope, parsing.Class) or scope == start_scope) \
+                and not isinstance(scope, parsing.Flow):
             compl += scope.get_defined_names()
         scope = scope.parent
 
@@ -249,8 +250,8 @@ def get_scopes_for_name(scope, name, search_global=False):
         res_new = []
         for r in result:
             if isinstance(r, parsing.Statement):
+                # global variables handling
                 if r.is_global():
-                    res_new += []
                     for token_name in r.token_list[1:]:
                         if isinstance(token_name, parsing.Name):
                             res_new += get_scopes_for_name(r.parent,
@@ -265,32 +266,42 @@ def get_scopes_for_name(scope, name, search_global=False):
 
     def filter_name(scopes):
         # the name is already given in the parent function
+
+        def handle_non_arrays():
+            result = []
+            par = scope.parent
+            if isinstance(par, parsing.Flow):
+                if par.command == 'for':
+                    # take the first statement (for has always only
+                    # one, remember `in`). And follow it. After that,
+                    # get the types which are in the array
+                    arrays = follow_statement(par.inits[0])
+                    for array in arrays:
+                        for_vars = array.get_index_types()
+                        if len(par.set_vars) > 1:
+                            var_arr = par.set_stmt.get_assignment_calls()
+                            result += assign_tuples(var_arr, for_vars, name)
+                        else:
+                            result += for_vars
+                else:
+                    debug.warning('Why are you here? %s' % par.command)
+            elif isinstance(par, parsing.Param) \
+                    and isinstance(par.parent.parent, parsing.Class) \
+                    and par.position == 0:
+                # this is where self gets added
+                result.append(Instance(par.parent.parent))
+                result.append(par)
+            else:
+                result.append(par)
+            return result
+
         result = []
         for scope in scopes:
             if [name] == list(scope.names):
                 if isinstance(scope, ArrayElement):
                     result.append(scope)
                 else:
-                    par = scope.parent
-                    if isinstance(par, parsing.Flow):
-                        if par.command == 'for':
-                            # take the first statement (for has always only
-                            # one, remember `in`). And follow it. After that,
-                            # get the types which are in the array
-                            arrays = follow_statement(par.inits[0])
-                            # TODO for loops can have tuples as set_vars
-                            for array in arrays:
-                                result += array.get_index_types()
-                        else:
-                            debug.warning('Why are you here? %s' % par.command)
-                    elif isinstance(par, parsing.Param) \
-                            and isinstance(par.parent.parent, parsing.Class) \
-                            and par.position == 0:
-                        # this is where self gets added
-                        result.append(Instance(par.parent.parent))
-                        result.append(par)
-                    else:
-                        result.append(par)
+                    result += handle_non_arrays()
         debug.dbg('sfn filter', result)
         return result
 
@@ -318,6 +329,7 @@ def strip_imports(scopes):
         else:
             result.append(s)
     return result
+
 
 def assign_tuples(tup, results, seek_name):
     """
@@ -359,6 +371,7 @@ def assign_tuples(tup, results, seek_name):
                     result += eval_results(i)
     return result
 
+
 @memoize(default=[])
 def follow_statement(stmt, scope=None, seek_name=None):
     """
@@ -388,7 +401,7 @@ def follow_call_list(scope, call_list):
     This can be either `parsing.Array` or `list`.
     """
     if parsing.Array.is_type(call_list, parsing.Array.TUPLE):
-        # Tuples can stand just alone without any braces. These would be 
+        # Tuples can stand just alone without any braces. These would be
         # recognized as separate calls, but actually are a tuple.
         result = follow_call(scope, call_list)
     else:
