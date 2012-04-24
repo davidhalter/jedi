@@ -44,7 +44,7 @@ def memoize(default=None):
                 return memo[key]
             else:
                 memo[key] = default
-                rv = function(*args)
+                rv = function(*args, **kwargs)
                 memo[key] = rv
                 return rv
         return wrapper
@@ -138,7 +138,7 @@ class Execution(Exec):
                 result.append(param.get_name())
             else:
                 new_param = copy.copy(param)
-                calls = parsing.Array(parsing.Array.EMPTY,
+                calls = parsing.Array(parsing.Array.NOARRAY,
                                         self.params.parent_stmt)
                 calls.values = [value]
                 new_param._assignment_calls = calls
@@ -171,9 +171,14 @@ class Array(object):
                     and iv[0][0].type == parsing.Call.NUMBER \
                     and self._array.type != parsing.Array.DICT:
                 try:
-                    values = [self._array.values[int(iv[0][0].name)]]
+                    values = [self._array[int(iv[0][0].name)]]
                 except:
                     pass
+        scope = self._array.parent_stmt.parent
+        return follow_call_list(scope, values)
+
+    def get_exact_index_types(self, index):
+        values = [self._array[index]]
         scope = self._array.parent_stmt.parent
         return follow_call_list(scope, values)
 
@@ -185,7 +190,7 @@ class Array(object):
         return [ArrayElement(n) for n in names]
 
     def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self._array)
+        return "<p%s of %s>" % (self.__class__.__name__, self._array)
 
 
 class ArrayElement(object):
@@ -248,7 +253,7 @@ def get_scopes_for_name(scope, name, search_global=False):
         res_new = []
         for r in result:
             if isinstance(r, parsing.Statement):
-                scopes = follow_statement(r)
+                scopes = follow_statement(r, seek_name=name)
                 res_new += remove_statements(scopes)
             else:
                 res_new.append(r)
@@ -312,9 +317,44 @@ def strip_imports(scopes):
             result.append(s)
     return result
 
+def assign_tuples(scope, tuples, results, seek_name):
+    """
+    This is a normal assignment checker. In python functions and other things
+    can return tuples:
+    >>> a, b = 1, ""
+    >>> a, (b, c) = 1, ("", 1.0)
+
+    Here, if seek_name is "a", the number type will be returned.
+    The first part (before `=`) is the param tuples, the second one result.
+    """
+    def eval_results(index):
+        types = []
+        for r in results:
+            types += r.get_exact_index_types(index)
+        return types
+
+    result = []
+    for i, t in enumerate(tuples):
+        # used in an assignment, there is just one call and no other things,
+        # therefor we can just assume, that the first part is important.
+        t = t[0]
+        # check the left part, if it's still tuples in it or a Call
+        if isinstance(t, parsing.Array):
+            # these are "sub" tuples
+            print 'arr', t
+            result += assign_tuples(scope, t, eval_results(i), seek_name)
+        else:
+            if t.name.names[-1] == seek_name:
+                result += eval_results(i)
+                print 't', t, result
+            else:
+                print 'name not found'
+        #print follow_call_list(scope, result[i])
+    print seek_name, tuples, results
+    return result
 
 @memoize(default=[])
-def follow_statement(stmt, scope=None):
+def follow_statement(stmt, scope=None, seek_name=None):
     """
     :param stmt: contains a statement
     :param scope: contains a scope. If not given, takes the parent of stmt.
@@ -326,13 +366,18 @@ def follow_statement(stmt, scope=None):
     debug.dbg('calls', call_list, call_list)
     result = set(follow_call_list(scope, call_list))
 
-    if stmt.assignment_details:
+    # assignment checking is only important if the statement defines multiple
+    # variables
+    if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
+        print 'seek', seek_name
         new_result = []
         for op, set_vars in stmt.assignment_details:
-            stmt.assignment_details[0]
-            #print '\n\nlala', op, set_vars.values, call_list.values
-            #print stmt, scope
-        #result = new_result
+            print '\ntup'
+            new_result += assign_tuples(scope, set_vars, result, seek_name)
+            print new_result
+            print '\n\nlala', op, set_vars.values, call_list.values
+            print stmt, scope
+        result = new_result
     return result
 
 

@@ -555,7 +555,7 @@ class Statement(Simple):
         if self._assignment_calls:
             return self._assignment_calls
         self._assignment_details = []
-        result = Array(Array.EMPTY, self)
+        result = Array(Array.NOARRAY, self)
         top = result
         level = 0
         is_chain = False
@@ -578,15 +578,19 @@ class Statement(Simple):
                     # TODO there may be multiple assignments: a = b = 1
 
                     self._assignment_details.append((tok, top))
-                    # initialize the first item
-                    result = Array(Array.EMPTY, self)
+                    # All these calls wouldn't be important if nonlocal would
+                    # exist. -> Initialize the first item again.
+                    result = Array(Array.NOARRAY, self)
                     top = result
+                    level = 0
+                    close_brackets = False
+                    is_chain = False
                     continue
                 elif tok == 'as':
                     next(tok_iter)
                     continue
 
-            brackets = {'(': Array.EMPTY, '[': Array.LIST, '{': Array.SET}
+            brackets = {'(': Array.NOARRAY, '[': Array.LIST, '{': Array.SET}
             is_call = lambda: result.__class__ == Call
             is_call_or_close = lambda: is_call() or close_brackets
 
@@ -638,7 +642,7 @@ class Statement(Simple):
                     close_brackets = False
                 result.add_field()
                 # important - it cannot be empty anymore
-                if result.type == Array.EMPTY:
+                if result.type == Array.NOARRAY:
                     result.type = Array.TUPLE
             elif tok in [')', '}', ']']:
                 while is_call_or_close():
@@ -755,7 +759,7 @@ class Array(Call):
     below.
     :type array_type: int
     """
-    EMPTY = None
+    NOARRAY = None
     TUPLE = 'tuple'
     LIST = 'list'
     DICT = 'dict'
@@ -808,7 +812,7 @@ class Array(Call):
             return self.values.__iter__()
 
     def __repr__(self):
-        if self.type == self.EMPTY:
+        if self.type == self.NOARRAY:
             temp = 'empty'
         elif self.type == self.TUPLE:
             temp = 'tuple'
