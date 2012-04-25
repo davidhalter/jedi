@@ -115,14 +115,17 @@ class Execution(Exec):
         else:
             # set the callback function to get the params
             self.base.param_cb = self.get_params
-            ret = self.base.returns
-            for s in ret:
-                #temp, s.parent = s.parent, self
-                stmts += follow_statement(s)
-                #s.parent = temp
+            # don't do this with exceptions, as usual, because some deeper
+            # exceptions could be catched - and I wouldn't know what happened.
+            if hasattr(self.base, 'returns'):
+                ret = self.base.returns
+                for s in ret:
+                    #temp, s.parent = s.parent, self
+                    stmts += follow_statement(s)
+                    #s.parent = temp
 
-            # reset the callback function on exit
-            self.base.param_cb = None
+                # reset the callback function on exit
+                self.base.param_cb = None
 
         debug.dbg('exec stmts=', stmts, self.base, repr(self))
 
@@ -432,11 +435,15 @@ def follow_call(scope, call):
     else:
         # TODO add better care for int/unicode, now str/float are just used
         # instead
-        not_name_part = not isinstance(current, parsing.NamePart)
-        if not_name_part and current.type == parsing.Call.STRING:
-            scopes = get_scopes_for_name(builtin.Builtin.scope, 'str')
-        elif not_name_part and current.type == parsing.Call.NUMBER:
-            scopes = get_scopes_for_name(builtin.Builtin.scope, 'float')
+        if not isinstance(current, parsing.NamePart):
+            if current.type == parsing.Call.STRING:
+                scopes = get_scopes_for_name(builtin.Builtin.scope, 'str')
+            elif current.type == parsing.Call.NUMBER:
+                scopes = get_scopes_for_name(builtin.Builtin.scope, 'float')
+            else:
+                debug.warning('unknown type:', current.type, current)
+            # make instances of those number/string objects
+            scopes = [Instance(s) for s in scopes]
         else:
             scopes = get_scopes_for_name(scope, current, search_global=True)
         result = strip_imports(scopes)

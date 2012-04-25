@@ -98,7 +98,7 @@ u1.real
 u1.upper
 
 # -----------------
-# should fail
+# should fail (return nothing)
 # -----------------
 (f, g) = (1,)
 #? ['imag']

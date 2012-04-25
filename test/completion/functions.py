@@ -38,3 +38,9 @@ def variable_rename(param):
 
 #? ['imag']
 variable_rename(1).imag
+
+# double execution -> shouldn't work (and throw no error)
+#? []
+variable_rename(list())().
+#? []
+variable_rename(1)().
