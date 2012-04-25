@@ -128,13 +128,14 @@ if True or a:
 import time
 class c1():
     c2,c5 = c1(), c1().c3()
-    def c3(self): 
+    def c3(self, daeparam): 
         import os as c4 #from parsing import Scope as c4
        c5 = 1
         c5 = c4(
         if 1:
             print 1
-        return c5+'asdf'
+        #return c5+'asdf'
+        return daeparam
 (c1().c2.\
 c, 1, c3()) [0].pop()
 c = u"asdf".join([1,2])
@@ -154,7 +155,6 @@ def globalfunc():
     global globalvar, globalvar2
     globalvar = 3
 
-for abcde, efgh in [(1,"")]:
-    abcde.real
 
-abcde.
+
+c1().c3(1).

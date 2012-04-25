@@ -7,6 +7,7 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 TODO include super classes
 TODO nonlocal statement
 TODO doc
+TODO list comprehensions, priority?
 """
 from _compatibility import next
 
@@ -347,7 +348,10 @@ def assign_tuples(tup, results, seek_name):
     def eval_results(index):
         types = []
         for r in results:
-            types += r.get_exact_index_types(index)
+            if hasattr(r, "get_exact_index_types"):
+                types += r.get_exact_index_types(index)
+            else:
+                debug.warning("assign tuples: invalid tuple lookup")
         return types
 
     result = []
