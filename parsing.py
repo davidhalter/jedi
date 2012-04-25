@@ -585,6 +585,10 @@ class Statement(Simple):
                 # the token is a Name, which has already been parsed
                 tok = tok_temp
                 token_type = None
+            except ValueError:
+                debug.warning("unkown value, shouldn't happen",
+                                tok_temp, type(tok_temp))
+                raise
             else:
                 if tok in ['return', 'yield'] or level == 0 and \
                         '=' in tok and not tok in ['>=', '<=', '==', '!=']:
@@ -1137,9 +1141,9 @@ class PyFuzzyParser(object):
                         # statement. This is a hack, but I could not come up
                         # with a better solution.
                         # This is basically a reset of the statement.
-                        debug.warning('return in statement @%s', tok_list,
+                        debug.warning('keyword in statement @%s', tok_list,
                                         self.line_nr)
-                        tok_list = [tok]
+                        tok_list = [self.current]
                         set_vars = []
                         used_funcs = []
                         used_vars = []

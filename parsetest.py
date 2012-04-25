@@ -157,4 +157,4 @@ def globalfunc():
 
 
 
-c1().c3(1).
+c1().c3(1)
