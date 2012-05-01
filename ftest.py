@@ -8,6 +8,7 @@ functions.debug.ignored_modules = ['parsing', 'builtin']
 functions.modules.module_find_path.insert(0, '.')
 
 f_name = 'parsetest.py'
+#f_name = 'test/completion/classes.py'
 import os
 path = os.path.join(os.getcwd(), f_name)
 
@@ -15,6 +16,7 @@ f = open(path)
 code = f.read()
 for i in range(1):
     completions = functions.complete(code, 160, 200, path)
+    #completions = functions.complete(code, 42, 200, path)
 
 print '\n', ', '.join(sorted(str(c) for c in completions))
 #print [n.name for n in completions]
