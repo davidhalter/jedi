@@ -2,7 +2,7 @@
 
 # test comment
 
-import datetime
+import datetime, os, sys
 #from token import *
 from time import sleep
 from token import OP as OP_TEST, INDENT as INDENT_TEST
@@ -140,7 +140,7 @@ class c1():
         return  self.acp # self.bcp +
 (c1().c2.\
 c, 1, c3()) [0].pop()
-c = u"asdf".join([1,2])
+c = u"asdf".join([1,2]); c1(1).c3(r"")
 matrix_test = [[1,2], [1,3]]
 c = c1().c3().sleep()
 asdf = c1; asdf2 = asdf b= asdf2
@@ -151,10 +151,11 @@ abc = [1,2+3]; abc[0].
 import pylab; def add(a1,b1): nana = 1; return a1+b1
 flow_test.; a12, (b12, c12) = (1,(list, "")); b12.
 
-
-
 def globalfunc():
     global globalvar, globalvar2
     globalvar = 3
-
-c1(1).c3(r"")
+# completetion:
+a8 = 3
+#a8 = ""
+a8.; sys.path.
+a8=list

@@ -27,6 +27,15 @@ class TestClass(object):
     def ret(self, a1):
         return a1
 
+# should not work
+#? []
+var_local
+#? []
+var_inst
+#? []
+var_func
+
+# instance
 inst = TestClass(1)
 
 #? ['var_class', 'var_func', 'var_inst', 'var_local']

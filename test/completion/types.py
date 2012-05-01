@@ -14,6 +14,12 @@ float.is_int
 #? ['is_integer']
 1.0.is_integer
 
+#? ['upper']
+"".upper
+
+#? ['upper']
+r"".upper
+
 # -----------------
 # lists
 # -----------------

@@ -192,6 +192,8 @@ def complete(source, row, column, source_path):
         #    if isinstance(, parsing.Function):
         #        print c.parent
     else:
+        stmt.line_nr = row
+        stmt.indent = column
         stmt.parent = scope
         scopes = evaluate.follow_statement(stmt, scope=scope)
 

@@ -29,6 +29,16 @@ def clear_caches():
         m.clear()
 
 
+def get_defined_names_for_position(obj, position):
+    names = obj.get_defined_names()
+    if not position:
+        return names
+    names_new = []
+    for n in names:
+        if (n.line_nr, n.indent) <= position:
+            names_new.append(n)
+    return names_new
+
 def memoize(default=None):
     """
     This is a typical memoization decorator, BUT there is one difference:
@@ -292,7 +302,7 @@ class ArrayElement(object):
         return "<%s of %s>" % (self.__class__.__name__, self.name)
 
 
-def get_names_for_scope(scope, star_search=True):
+def get_names_for_scope(scope, position=None, star_search=True):
     """
     Get all completions possible for the current scope.
     The star search option is only here to provide an optimization. Otherwise
@@ -304,7 +314,7 @@ def get_names_for_scope(scope, star_search=True):
         # class variables/functions are only availabe
         if (not isinstance(scope, parsing.Class) or scope == start_scope) \
                 and not isinstance(scope, parsing.Flow):
-            compl += scope.get_defined_names()
+            compl += get_def
         scope = scope.parent
 
     # add builtins to the global scope
@@ -318,8 +328,9 @@ def get_names_for_scope(scope, star_search=True):
     return compl
 
 
-def get_scopes_for_name(scope, name, search_global=False):
+def get_scopes_for_name(scope, name, position=None, search_global=False):
     """
+    :param position: Position of the last statement ->tuple of line, indent
     :return: List of Names. Their parents are the scopes, they are defined in.
     :rtype: list
     """
@@ -394,9 +405,13 @@ def get_scopes_for_name(scope, name, search_global=False):
         return result
 
     if search_global:
-        names = get_names_for_scope(scope)
+        names = get_names_for_scope(scope, position=position)
     else:
-        names = scope.get_defined_names()
+        if position:
+            names = get_defined_names_for_position(scope, position)
+        else:
+            names = scope.get_defined_names()
+    print ' ln', position
 
     return remove_statements(filter_name(names))
 
@@ -469,12 +484,11 @@ def follow_statement(stmt, scope=None, seek_name=None):
     :param stmt: contains a statement
     :param scope: contains a scope. If not given, takes the parent of stmt.
     """
-    debug.dbg('follow_stmt', stmt, 'in', stmt.parent, scope, seek_name)
     if scope is None:
         scope = stmt.get_parent_until(parsing.Function, Execution,
                                         parsing.Class, Instance,
                                         InstanceElement)
-    debug.dbg('follow_stmt', stmt, 'in', stmt.parent, scope, seek_name)
+    debug.dbg('follow_stmt', stmt, 'in', scope, seek_name)
 
     call_list = stmt.get_assignment_calls()
     debug.dbg('calls', call_list, call_list.values)
@@ -516,6 +530,7 @@ def follow_call(scope, call):
     """ Follow a call is following a function, variable, string, etc. """
     path = call.generate_call_list()
 
+    position = (call.parent_stmt.line_nr, call.parent_stmt.indent)
     current = next(path)
     if isinstance(current, parsing.Array):
         result = [Array(current)]
@@ -532,17 +547,19 @@ def follow_call(scope, call):
             # make instances of those number/string objects
             scopes = [Instance(s) for s in scopes]
         else:
-            scopes = get_scopes_for_name(scope, current, search_global=True)
+            # this is the first global lookup
+            scopes = get_scopes_for_name(scope, current, position=position,
+                                            search_global=True)
         result = strip_imports(scopes)
 
     debug.dbg('call before result %s, current %s, scope %s'
                                 % (result, current, scope))
-    result = follow_paths(path, result)
+    result = follow_paths(path, result, position=position)
 
     return result
 
 
-def follow_paths(path, results):
+def follow_paths(path, results, position=None):
     results_new = []
     try:
         if results:
@@ -551,13 +568,13 @@ def follow_paths(path, results):
             else:
                 iter_paths = [path]
             for i, r in enumerate(results):
-                results_new += follow_path(iter_paths[i], r)
+                results_new += follow_path(iter_paths[i], r, position=position)
     except StopIteration:
         return results
     return results_new
 
 
-def follow_path(path, scope):
+def follow_path(path, scope, position=None):
     """
     Takes a generator and tries to complete the path.
     """
@@ -585,8 +602,10 @@ def follow_path(path, scope):
             result = []
         else:
             # TODO check magic class methods and return them also
-            result = strip_imports(get_scopes_for_name(scope, current))
-    return follow_paths(path, result)
+            # this is the typical lookup while chaining things
+            result = strip_imports(get_scopes_for_name(scope, current,
+                                                        position=position))
+    return follow_paths(path, result, position=position)
 
 
 def follow_import(_import):
