@@ -60,13 +60,14 @@ def completion_test(source):
 completion_test_dir = 'completion'
 summary = []
 for f_name in os.listdir(completion_test_dir):
-    if f_name.endswith(".py"):
-        path = os.path.join(completion_test_dir, f_name)
-        f = open(path)
-        num_tests, fails = completion_test(f.read())
-        s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
-        print s
-        summary.append(s)
+    if len(sys.argv) == 1 or [a for a in sys.argv[1:] if a in f_name]:
+        if f_name.endswith(".py"):
+            path = os.path.join(completion_test_dir, f_name)
+            f = open(path)
+            num_tests, fails = completion_test(f.read())
+            s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
+            print s
+            summary.append(s)
 
 print '\nSummary:'
 for s in summary:

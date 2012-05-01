@@ -8,6 +8,7 @@ TODO include super classes
 TODO nonlocal statement
 TODO doc
 TODO list comprehensions, priority?
+TODO care for *args **kwargs
 """
 from _compatibility import next
 
@@ -54,49 +55,144 @@ def memoize(default=None):
     return func
 
 
-class Exec(object):
-    def __init__(self, base, params=None):
+class Executable(object):
+    """ An instance is also an executable - because __init__ is called """
+    def __init__(self, base, params=[]):
         self.base = base
         self.params = params
+        self.func = None
 
     def get_parent_until(self, *args):
         return self.base.get_parent_until(*args)
 
+    @memoize(default=[])
+    def get_params(self):
+        """
+        This returns the params for an Execution/Instance and is injected as a
+        'hack' into the parsing.Function class.
+        This needs to be here, because Instance can have __init__ functions,
+        which act the same way as normal functions
+        """
+        result = []
+        offset = 0
+        #print '\n\nfunc_params', self.func, self.func.parent, self.func
+        if isinstance(self.func, InstanceElement):
+            # care for self -> just exclude it and add the instance
+            #print '\n\nyes', self.func, self.func.instance
+            offset = 1
+            self_name = copy.copy(self.func.params[0].get_name())
+            self_name.parent = self.func.instance
+            result.append(self_name)
+        # There may be calls, which don't fit all the params, this just ignores
+        # it.
+        for i, value in enumerate(self.params, offset):
+            try:
+                param = self.func.params[i]
+            except IndexError:
+                debug.warning('Too many arguments given.', value)
+            else:
+                new_param = copy.copy(param)
+                calls = parsing.Array(parsing.Array.NOARRAY,
+                                        self.params.parent_stmt)
+                calls.values = [value]
+                new_param._assignment_calls = calls
+                name = copy.copy(param.get_name())
+                name.parent = new_param
+                #print 'insert', i, name, calls.values, value, self.func.params
+                result.append(name)
+        return result
 
-class Instance(Exec):
+    def set_param_cb(self, func):
+        self.func = func
+        func.param_cb = self.get_params
+
+
+class Instance(Executable):
     """ This class is used to evaluate instances. """
+    def __init__(self, base, params=[]):
+        super(Instance, self).__init__(base, params)
+        if params:
+            self.set_init_params()
+
+    def set_init_params(self):
+        for sub in self.base.subscopes:
+            if isinstance(sub, parsing.Function) \
+                    and sub.name.get_code() == '__init__':
+                self.set_param_cb(InstanceElement(self, sub))
+
+    def get_func_self_name(self, func):
+        """
+        Returns the name of the first param in a class method (which is
+        normally self
+        """
+        try:
+            return func.params[0].used_vars[0].names[0]
+        except:
+            return None
 
     def get_set_vars(self):
         """
         Get the instance vars of a class. This includes the vars of all
         classes
         """
-        n = []
+        def add_self_name(name):
+            n = copy.copy(name)
+            n.names = n.names[1:]
+            names.append(InstanceElement(self, n))
+        names = []
+        # this loop adds the names of the self object, copies them and removes
+        # the self.
         for s in self.base.subscopes:
-            try:
-                # get the self name, if there's one
-                self_name = s.params[0].used_vars[0].names[0]
-            except:
-                pass
-            else:
-                for n2 in s.get_set_vars():
+            # get the self name, if there's one
+            self_name = self.get_func_self_name(s)
+            if self_name:
+                for n in s.get_set_vars():
                     # Only names with the selfname are being added.
                     # It is also important, that they have a len() of 2,
                     # because otherwise, they are just something else
-                    if n2.names[0] == self_name and len(n2.names) == 2:
-                        n.append(n2)
-        n += self.base.get_set_vars()
-        return n
+                    if n.names[0] == self_name and len(n.names) == 2:
+                        add_self_name(n)
+        for var in self.base.get_set_vars():
+            # functions are also instance elements
+            if isinstance(var.parent, (parsing.Function)):
+                var = InstanceElement(self, var)
+            names.append(var)
+        return names
 
     def get_defined_names(self):
         return self.get_set_vars()
 
     def __repr__(self):
-        return "<%s of %s>" % \
-                (self.__class__.__name__, self.base)
+        return "<%s of %s (params: %s)>" % \
+                (self.__class__.__name__, self.base, len(self.params or []))
 
 
-class Execution(Exec):
+class InstanceElement(object):
+    def __init__(self, instance, var):
+        super(InstanceElement, self).__init__()
+        self.instance = instance
+        self.var = var
+
+    @property
+    def parent(self):
+        return InstanceElement(self.instance, self.var.parent)
+
+    @property
+    def param_cb(self):
+        return self.var.param_cb
+
+    @param_cb.setter
+    def param_cb(self, value):
+        self.var.param_cb = value
+
+    def __getattr__(self, name):
+        return getattr(self.var, name)
+
+    def __repr__(self):
+        return "<%s of %s>" % (self.__class__.__name__, self.var)
+
+
+class Execution(Executable):
     """
     This class is used to evaluate functions and their returns.
     """
@@ -114,7 +210,7 @@ class Execution(Exec):
             stmts = [Instance(self.base, self.params)]
         else:
             # set the callback function to get the params
-            self.base.param_cb = self.get_params
+            self.set_param_cb(self.base)
             # don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
             if hasattr(self.base, 'returns'):
@@ -126,31 +222,12 @@ class Execution(Exec):
 
                 # reset the callback function on exit
                 self.base.param_cb = None
+            else:
+                debug.warning("no execution possible", self.base)
 
         debug.dbg('exec stmts=', stmts, self.base, repr(self))
 
         return stmts
-
-    @memoize(default=[])
-    def get_params(self):
-        result = []
-        for i, param in enumerate(self.base.params):
-            try:
-                value = self.params.values[i]
-            except IndexError:
-                # This means, that there is no param in the call. So we just
-                # ignore it and take the default params.
-                result.append(param.get_name())
-            else:
-                new_param = copy.copy(param)
-                calls = parsing.Array(parsing.Array.NOARRAY,
-                                        self.params.parent_stmt)
-                calls.values = [value]
-                new_param._assignment_calls = calls
-                name = copy.copy(param.get_name())
-                name.parent = new_param
-                result.append(name)
-        return result
 
     def __repr__(self):
         return "<%s of %s>" % \
@@ -196,6 +273,7 @@ class Array(object):
 
 class ArrayElement(object):
     def __init__(self, name):
+        super(ArrayElement, self).__init__()
         self.name = name
 
     @property
@@ -254,7 +332,9 @@ def get_scopes_for_name(scope, name, search_global=False):
         """
         res_new = []
         for r in result:
-            if isinstance(r, parsing.Statement):
+            if isinstance(r, parsing.Statement) \
+                    or isinstance(r, InstanceElement) \
+                    and isinstance(r.var, parsing.Statement):
                 # global variables handling
                 if r.is_global():
                     for token_name in r.token_list[1:]:
@@ -289,11 +369,14 @@ def get_scopes_for_name(scope, name, search_global=False):
                         else:
                             result += for_vars
                 else:
-                    debug.warning('Why are you here? %s' % par.command)
+                    debug.warning('Flow: Why are you here? %s' % par.command)
             elif isinstance(par, parsing.Param) \
                     and isinstance(par.parent.parent, parsing.Class) \
                     and par.position == 0:
-                # this is where self gets added
+                # this is where self gets added - this happens at another
+                # place, if the params are clear. But some times the class is
+                # not known. Therefore set self.
+                #print '\nselfadd', par, scope, scope.parent, par.parent, par.parent.parent
                 result.append(Instance(par.parent.parent))
                 result.append(par)
             else:
@@ -307,7 +390,7 @@ def get_scopes_for_name(scope, name, search_global=False):
                     result.append(scope)
                 else:
                     result += handle_non_arrays()
-        debug.dbg('sfn filter', result)
+        debug.dbg('sfn filter', name, result)
         return result
 
     if search_global:
@@ -386,11 +469,15 @@ def follow_statement(stmt, scope=None, seek_name=None):
     :param stmt: contains a statement
     :param scope: contains a scope. If not given, takes the parent of stmt.
     """
+    debug.dbg('follow_stmt', stmt, 'in', stmt.parent, scope, seek_name)
     if scope is None:
         scope = stmt.get_parent_until(parsing.Function, Execution,
-                                        parsing.Class, Instance)
+                                        parsing.Class, Instance,
+                                        InstanceElement)
+    debug.dbg('follow_stmt', stmt, 'in', stmt.parent, scope, seek_name)
+
     call_list = stmt.get_assignment_calls()
-    debug.dbg('calls', call_list, call_list)
+    debug.dbg('calls', call_list, call_list.values)
     result = set(follow_call_list(scope, call_list))
 
     # assignment checking is only important if the statement defines multiple
@@ -489,8 +576,6 @@ def follow_path(path, scope):
             exe = Execution(scope, current)
             result = strip_imports(exe.get_return_types())
             debug.dbg('exec', result)
-            #except AttributeError:
-            #    debug.dbg('cannot execute:', scope)
         else:
             # curly braces are not allowed, because they make no sense
             debug.warning('strange function call with {}', current, scope)

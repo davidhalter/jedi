@@ -34,8 +34,12 @@ b2.upper
 
 # list assignment
 [list1, list2] = (1, "")
+#? []
+list1.index
 #? ['real']
 list1.real
+#? []
+list1.lower
 #? ['lower']
 list2.lower
 #? []

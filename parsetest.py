@@ -3,7 +3,7 @@
 # test comment
 
 import datetime
-from token import *
+#from token import *
 from time import sleep
 from token import OP as OP_TEST, INDENT as INDENT_TEST
 
@@ -128,14 +128,16 @@ if True or a:
 import time
 class c1():
     c2,c5 = c1(), c1().c3()
-    def c3(self, daeparam): 
+    def __init__(self, athefirst):
+        self.acp = athefirst; self.bcp = 3
+    def c3(self, daeparam):
         import os as c4 #from parsing import Scope as c4
        c5 = 1
         c5 = c4(
         if 1:
             print 1
         #return c5+'asdf'
-        return daeparam
+        return  self.acp # self.bcp +
 (c1().c2.\
 c, 1, c3()) [0].pop()
 c = u"asdf".join([1,2])
@@ -155,6 +157,4 @@ def globalfunc():
     global globalvar, globalvar2
     globalvar = 3
 
-
-
-c1().c3(1)
+c1(1).c3(r"")
