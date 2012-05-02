@@ -187,7 +187,10 @@ def complete(source, row, column, source_path):
     try:
         stmt = r.top.statements[0]
     except IndexError:
-        completions = evaluate.get_names_for_scope(scope)
+        scope_generator = evaluate.get_names_for_scope(scope)
+        completions = []
+        for name_list in scope_generator:
+            completions += name_list
         #for c in completions:
         #    if isinstance(, parsing.Function):
         #        print c.parent

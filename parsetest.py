@@ -154,8 +154,8 @@ flow_test.; a12, (b12, c12) = (1,(list, "")); b12.
 def globalfunc():
     global globalvar, globalvar2
     globalvar = 3
-# completetion:
 a8 = 3
-#a8 = ""
-a8.; sys.path.
+a8 = set
+# completion:
+a8.
 a8=list

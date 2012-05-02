@@ -35,7 +35,7 @@ def completion_test(source):
                 completions = functions.complete(source, line_nr, 999,
                                                     completion_test_dir)
             except:
-                print 'test @%s: %s' % (line_nr, line)
+                print 'test @#%s: %s' % (line_nr-1, line)
                 print traceback.format_exc()
                 fails += 1
             else:
@@ -43,8 +43,8 @@ def completion_test(source):
                 # TODO remove set! duplicates should not be normal
                 comp_str = str(sorted(set([str(c) for c in completions])))
                 if comp_str != correct:
-                    print 'Solution on @%s not correct, received %s, wanted %s'\
-                                % (line_nr, comp_str, correct)
+                    print 'Solution on @#%s not right, received %s, wanted %s'\
+                                % (line_nr - 1, comp_str, correct)
                     #print [(c.name, c.name.parent) for c in completions]
                     fails += 1
             correct = None

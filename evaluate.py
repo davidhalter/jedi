@@ -140,7 +140,7 @@ class Instance(Executable):
         except:
             return None
 
-    def get_set_vars(self):
+    def get_defined_names(self):
         """
         Get the instance vars of a class. This includes the vars of all
         classes
@@ -168,9 +168,6 @@ class Instance(Executable):
                 var = InstanceElement(self, var)
             names.append(var)
         return names
-
-    def get_defined_names(self):
-        return self.get_set_vars()
 
     def __repr__(self):
         return "<%s of %s (params: %s)>" % \
@@ -306,29 +303,26 @@ def get_names_for_scope(scope, position=None, star_search=True):
     """
     Get all completions possible for the current scope.
     The star search option is only here to provide an optimization. Otherwise
-    the whole thing would make a little recursive maddness
+    the whole thing would probably start a little recursive madness.
     """
-    compl = []
     start_scope = scope
     while scope:
         # class variables/functions are only availabe
         if (not isinstance(scope, parsing.Class) or scope == start_scope) \
                 and not isinstance(scope, parsing.Flow):
-            compl += get_def
+            yield get_defined_names_for_position(scope, position)
         scope = scope.parent
-
-    # add builtins to the global scope
-    compl += builtin.Builtin.scope.get_defined_names()
 
     # add star imports
     if star_search:
         for s in remove_star_imports(start_scope.get_parent_until()):
-            compl += get_names_for_scope(s, star_search=False)
-    #print 'gnfs', scope, compl
-    return compl
+            for name_list in get_names_for_scope(s, star_search=False):
+                yield name_list
 
+    # add builtins to the global scope
+    yield builtin.Builtin.scope.get_defined_names()
 
-def get_scopes_for_name(scope, name, position=None, search_global=False):
+def get_scopes_for_name(scope, name_str, position=None, search_global=False):
     """
     :param position: Position of the last statement ->tuple of line, indent
     :return: List of Names. Their parents are the scopes, they are defined in.
@@ -353,19 +347,19 @@ def get_scopes_for_name(scope, name, position=None, search_global=False):
                             res_new += get_scopes_for_name(r.parent,
                                                             str(token_name))
                 else:
-                    scopes = follow_statement(r, seek_name=name)
+                    scopes = follow_statement(r, seek_name=name_str)
                     res_new += remove_statements(scopes)
             else:
                 res_new.append(r)
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
 
-    def filter_name(scopes):
+    def filter_name(scope_generator):
         # the name is already given in the parent function
 
-        def handle_non_arrays():
+        def handle_non_arrays(name):
             result = []
-            par = scope.parent
+            par = name.parent
             if isinstance(par, parsing.Flow):
                 if par.command == 'for':
                     # take the first statement (for has always only
@@ -376,7 +370,7 @@ def get_scopes_for_name(scope, name, position=None, search_global=False):
                         for_vars = array.get_index_types()
                         if len(par.set_vars) > 1:
                             var_arr = par.set_stmt.get_assignment_calls()
-                            result += assign_tuples(var_arr, for_vars, name)
+                            result += assign_tuples(var_arr, for_vars, name_str)
                         else:
                             result += for_vars
                 else:
@@ -387,7 +381,7 @@ def get_scopes_for_name(scope, name, position=None, search_global=False):
                 # this is where self gets added - this happens at another
                 # place, if the params are clear. But some times the class is
                 # not known. Therefore set self.
-                #print '\nselfadd', par, scope, scope.parent, par.parent, par.parent.parent
+                #print '\nselfadd', par, name, name.parent, par.parent, par.parent.parent
                 result.append(Instance(par.parent.parent))
                 result.append(par)
             else:
@@ -395,13 +389,18 @@ def get_scopes_for_name(scope, name, position=None, search_global=False):
             return result
 
         result = []
-        for scope in scopes:
-            if [name] == list(scope.names):
-                if isinstance(scope, ArrayElement):
-                    result.append(scope)
-                else:
-                    result += handle_non_arrays()
-        debug.dbg('sfn filter', name, result)
+        for name_list in scope_generator:
+            for name in name_list:
+                if name_str == name.get_code():
+                    if isinstance(name, ArrayElement):
+                        print 'dini mueter, wieso?', name
+                        result.append(name)
+                    else:
+                        result += handle_non_arrays(name)
+            # if there are results, ignore the other scopes
+            if result:
+                break
+        debug.dbg('sfn filter', name_str, result)
         return result
 
     if search_global:
@@ -411,7 +410,8 @@ def get_scopes_for_name(scope, name, position=None, search_global=False):
             names = get_defined_names_for_position(scope, position)
         else:
             names = scope.get_defined_names()
-    print ' ln', position
+        names = [names].__iter__()
+    #print ' ln', position
 
     return remove_statements(filter_name(names))
 
@@ -551,6 +551,10 @@ def follow_call(scope, call):
             scopes = get_scopes_for_name(scope, current, position=position,
                                             search_global=True)
         result = strip_imports(scopes)
+
+        if result != scopes:
+            # reset the position, when imports where stripped
+            position = None
 
     debug.dbg('call before result %s, current %s, scope %s'
                                 % (result, current, scope))

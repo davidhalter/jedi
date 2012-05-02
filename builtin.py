@@ -78,7 +78,7 @@ class Parser(object):
             except KeyError:
                 code = self._generate_code(self.module)
                 try:
-                    self._parser = parsing.PyFuzzyParser(code)
+                    self._parser = parsing.PyFuzzyParser(code, self.name)
                 except:
                     debug.warning('not possible to resolve', self.name, code)
                     #open('builtin_fail', 'w').write(code)
