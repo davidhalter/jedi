@@ -391,18 +391,20 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             return result
 
         result = []
+        # compare func uses the tuple of line/indent = row/column
+        comparison_func = lambda name: (name.line_nr, name.indent)
         for scope, name_list in scope_generator:
-            for name in sorted(name_list, key=lambda name: name.line_nr,
-                                                        reverse=True):
+            # here is the position stuff happening (sorting of variables)
+            for name in sorted(name_list, key=comparison_func, reverse=True):
                 if name_str == name.get_code():
                     if isinstance(name, ArrayElement):
                         # TODO why? don't know why this exists, was if/else
                         raise Exception('dini mueter, wieso?' + str(name))
                         result.append(name)
                     result += handle_non_arrays(name)
+                    #print name, name.parent.parent, scope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
-                    #print name, name.parent.parent, scope
                     if name.parent.parent == scope:
                         break
             # if there are results, ignore the other scopes

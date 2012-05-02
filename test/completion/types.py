@@ -72,7 +72,7 @@ tup.c
 tup2 = tuple()
 #? ['index']
 tup2.i
-##? ['index'] TODO enable
+#? ['index']
 ().i
 
 tup3 = 1,""

@@ -39,8 +39,31 @@ def variable_rename(param):
 #? ['imag']
 variable_rename(1).imag
 
-# double execution -> shouldn't work (and throw no error)
+# -----------------
+# double execution
+# -----------------
+def double_exe(param):
+    return param
+
+#? ['upper']
+variable_rename(double_exe)("").upper
+
+# -> shouldn't work (and throw no error)
 #? []
 variable_rename(list())().
 #? []
 variable_rename(1)().
+
+# -----------------
+# closures
+# -----------------
+def a():
+    l = 3
+    def func_b():
+        #? ['real']
+        l.real
+        l = ''
+    #? ['func_b']
+    func_b
+    #? ['real']
+    l.real
