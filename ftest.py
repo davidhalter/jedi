@@ -15,7 +15,7 @@ path = os.path.join(os.getcwd(), f_name)
 f = open(path)
 code = f.read()
 for i in range(1):
-    completions = functions.complete(code, 160, 200, path)
+    completions = functions.complete(code, 180, 200, path)
     #completions = functions.complete(code, 42, 200, path)
 
 print '\n', ', '.join(sorted(str(c) for c in completions))

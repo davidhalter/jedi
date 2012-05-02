@@ -92,3 +92,42 @@ strs.second.upper
 
 #? ['var_class']
 TestClass.var_class.var_class.var_class.var_class
+
+# -----------------
+# inheritance
+# -----------------
+
+class SuperClass(object):
+    class_super = 3
+    def __init__(self):
+        self.var_super = ''
+    def method_super(self):
+        self.var2_super = list
+
+class Mixin(SuperClass):
+    def method_super(self):
+        return int
+
+class SubClass(SuperClass):
+    class_sub = 3
+    def __init__(self):
+        self.var_sub = ''
+    def method_sub(self):
+        self.var_sub = list
+        return tuple
+
+instance = SubClass()
+
+#? ['method_sub', 'method_super']
+instance.method_
+#? ['var2_super', 'var_sub', 'var_super']
+instance.var
+#? ['class_sub', 'class_super']
+instance.class_
+
+#? ['method_sub', 'method_super']
+SubClass.method_
+#? []
+SubClass.var
+#? ['class_sub', 'class_super']
+SubClass.class_

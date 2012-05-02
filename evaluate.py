@@ -35,7 +35,7 @@ def get_defined_names_for_position(obj, position):
         return names
     names_new = []
     for n in names:
-        if (n.line_nr, n.indent) <= position:
+        if (n.line_nr, n.indent) < position:
             names_new.append(n)
     return names_new
 
@@ -167,6 +167,14 @@ class Instance(Executable):
             if isinstance(var.parent, (parsing.Function)):
                 var = InstanceElement(self, var)
             names.append(var)
+
+        # check super classes:
+        for s in self.base.supers:
+            for cls in follow_statement(s):
+                # get the inherited names
+                for i in Instance(cls).get_defined_names():
+                    if not i.in_iterable(names):
+                        names.append(i)
         return names
 
     def parent(self):

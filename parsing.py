@@ -884,6 +884,13 @@ class Name(Simple):
         """ Returns the names in a full string format """
         return ".".join(self.names)
 
+    def in_iterable(self, iterable):
+        for i in iterable:
+            if i.names == self.names:
+                return True
+        return False
+
+
     def __str__(self):
         return self.get_code()
 

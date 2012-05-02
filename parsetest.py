@@ -154,8 +154,27 @@ flow_test.; a12, (b12, c12) = (1,(list, "")); b12.
 def globalfunc():
     global globalvar, globalvar2
     globalvar = 3
-a8 = 3
-a8 = tuple
-# completion:
-a8.
-a8=list
+a = 3; b = ""
+b,a=a,b
+a.
+
+class SuperClass(object):
+    super_class = 3
+    def __init__(self):
+        self.super_var = ''
+    def super_method(self)
+        self.super_var2 = list
+class Mixin(SuperClass):
+    def super_method(self):
+        return int
+class SubClass(Mixin, SuperClass):
+    sub_class = 3
+    def __init__(self):
+        self.sub_var = ''
+    def sub_method(self):
+        self.sub_var2 = list
+        return tuple
+instance = SubClass()
+
+
+instance.

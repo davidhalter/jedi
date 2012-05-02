@@ -13,11 +13,24 @@ a.append
 
 a = list
 
-b ="";b=1
+b = 1; b = ""
+#? ['upper']
+b.upper
+#? []
+b.real
+
+a = 1
+temp = b;
+b = a
+a = temp
 #? ['real']
 b.real
 #? []
 b.upper
+#? []
+a.real
+#? ['upper']
+a.upper
 
 # -----------------
 # tuples exchanges
@@ -42,6 +55,15 @@ a.real
 #? ['upper']
 a.upper
 
+b, a = a, b
+#? ['real']
+a.real
+#? []
+a.upper
+#? []
+b.real
+#? ['upper']
+b.upper
 
 # -----------------
 # function stuff
