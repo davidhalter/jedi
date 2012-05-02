@@ -155,7 +155,7 @@ def globalfunc():
     global globalvar, globalvar2
     globalvar = 3
 a8 = 3
-a8 = set
+a8 = tuple
 # completion:
 a8.
 a8=list

@@ -189,7 +189,7 @@ def complete(source, row, column, source_path):
     except IndexError:
         scope_generator = evaluate.get_names_for_scope(scope)
         completions = []
-        for name_list in scope_generator:
+        for dummy, name_list in scope_generator:
             completions += name_list
         #for c in completions:
         #    if isinstance(, parsing.Function):

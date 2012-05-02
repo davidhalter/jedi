@@ -1210,7 +1210,7 @@ class PyFuzzyParser(object):
 
     def next(self):
         """ Generate the next tokenize pattern. """
-        type, tok, position, dummy, self.parserline = self.gen.next()
+        type, tok, position, dummy, self.parserline = next(self.gen)
         (self._tokenize_line_nr, indent) = position
         if self.line_nr == self.user_line:
             debug.dbg('user scope found [%s] =%s' % \

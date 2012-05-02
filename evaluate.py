@@ -169,6 +169,9 @@ class Instance(Executable):
             names.append(var)
         return names
 
+    def parent(self):
+        return self.base.parent
+
     def __repr__(self):
         return "<%s of %s (params: %s)>" % \
                 (self.__class__.__name__, self.base, len(self.params or []))
@@ -310,17 +313,18 @@ def get_names_for_scope(scope, position=None, star_search=True):
         # class variables/functions are only availabe
         if (not isinstance(scope, parsing.Class) or scope == start_scope) \
                 and not isinstance(scope, parsing.Flow):
-            yield get_defined_names_for_position(scope, position)
+            yield scope, get_defined_names_for_position(scope, position)
         scope = scope.parent
 
     # add star imports
     if star_search:
         for s in remove_star_imports(start_scope.get_parent_until()):
-            for name_list in get_names_for_scope(s, star_search=False):
-                yield name_list
+            for g in get_names_for_scope(s, star_search=False):
+                yield g
 
     # add builtins to the global scope
-    yield builtin.Builtin.scope.get_defined_names()
+    builtin_scope = builtin.Builtin.scope
+    yield builtin_scope, builtin_scope.get_defined_names()
 
 def get_scopes_for_name(scope, name_str, position=None, search_global=False):
     """
@@ -355,8 +359,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         return res_new
 
     def filter_name(scope_generator):
-        # the name is already given in the parent function
-
         def handle_non_arrays(name):
             result = []
             par = name.parent
@@ -389,14 +391,20 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             return result
 
         result = []
-        for name_list in scope_generator:
-            for name in name_list:
+        for scope, name_list in scope_generator:
+            for name in sorted(name_list, key=lambda name: name.line_nr,
+                                                        reverse=True):
                 if name_str == name.get_code():
                     if isinstance(name, ArrayElement):
-                        print 'dini mueter, wieso?', name
+                        # TODO why? don't know why this exists, was if/else
+                        raise Exception('dini mueter, wieso?' + str(name))
                         result.append(name)
-                    else:
-                        result += handle_non_arrays(name)
+                    result += handle_non_arrays(name)
+                    # this means that a definition was found and is not e.g.
+                    # in if/else.
+                    #print name, name.parent.parent, scope
+                    if name.parent.parent == scope:
+                        break
             # if there are results, ignore the other scopes
             if result:
                 break
@@ -404,16 +412,16 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         return result
 
     if search_global:
-        names = get_names_for_scope(scope, position=position)
+        scope_generator = get_names_for_scope(scope, position=position)
     else:
         if position:
             names = get_defined_names_for_position(scope, position)
         else:
             names = scope.get_defined_names()
-        names = [names].__iter__()
+        scope_generator = [(scope, names)].__iter__()
     #print ' ln', position
 
-    return remove_statements(filter_name(names))
+    return remove_statements(filter_name(scope_generator))
 
 
 def strip_imports(scopes):

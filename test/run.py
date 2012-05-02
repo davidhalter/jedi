@@ -54,6 +54,10 @@ def completion_test(source):
                 correct = re.search(r'(?:^|\s)#\?\s*([^\n]+)', line).group(1)
             except:
                 correct = None
+            else:
+                # reset the test, if only one specific test is wanted
+                if len(sys.argv) > 2 and line_nr != int(sys.argv[2]):
+                    correct = None
     return tests, fails
 
 # completion tests:
