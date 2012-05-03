@@ -32,6 +32,15 @@ a.real
 #? ['upper']
 a.upper
 
+a = tuple
+if 1:
+    a = list
+
+#? ['append']
+a.append
+#? ['index']
+a.index
+
 # -----------------
 # tuples exchanges
 # -----------------

@@ -200,6 +200,14 @@ class Class(object):
         self.base = base
 
     def get_defined_names(self, as_instance=False):
+        def in_iterable(name, iterable):
+            for i in iterable:
+                # only the last name is important, because these names have a
+                # maximal length of 2, with the first one being `self`.
+                if i.names[-1] == name.names[-1]:
+                    return True
+            return False
+
         names = self.base.get_defined_names()
 
         # check super classes:
@@ -209,7 +217,7 @@ class Class(object):
                 if as_instance:
                     cls = Instance(cls)
                 for i in cls.get_defined_names():
-                    if not i.in_iterable(names):
+                    if not in_iterable(i, names):
                         names.append(i)
         return names
 
