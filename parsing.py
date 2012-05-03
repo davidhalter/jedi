@@ -848,9 +848,9 @@ class Array(Call):
 
     def __iter__(self):
         if self.type == self.DICT:
-            return self.values.items().__iter__()
+            return iter(self.values.items())
         else:
-            return self.values.__iter__()
+            return iter(self.values)
 
     def __repr__(self):
         if self.type == self.NOARRAY:

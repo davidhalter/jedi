@@ -9,6 +9,7 @@ TODO nonlocal statement
 TODO doc
 TODO list comprehensions, priority?
 TODO care for *args **kwargs
+TODO annotations
 """
 from _compatibility import next
 
@@ -85,7 +86,8 @@ class Executable(object):
             result.append(self_name)
         # There may be calls, which don't fit all the params, this just ignores
         # it.
-        for i, value in enumerate(self.params, offset):
+        param_iterator = iter(self.params)
+        for i, value in enumerate(param_iterator, offset):
             try:
                 param = self.func.params[i]
             except IndexError:
@@ -98,7 +100,7 @@ class Executable(object):
                 new_param._assignment_calls = calls
                 name = copy.copy(param.get_name())
                 name.parent = new_param
-                #print 'insert', i, name, calls.values, value, self.func.params
+                print 'insert', i, name, calls.values, value, self.func.params
                 result.append(name)
         return result
 
@@ -455,7 +457,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             names = get_defined_names_for_position(scope, position)
         else:
             names = scope.get_defined_names()
-        scope_generator = [(scope, names)].__iter__()
+        scope_generator = iter([(scope, names)])
     #print ' ln', position
 
     return remove_statements(filter_name(scope_generator))
@@ -674,7 +676,7 @@ def follow_import(_import):
 
     scope, rest = modules.find_module(loaded_in, ns_list)
     if rest:
-        scopes = follow_path(rest.__iter__(), scope)
+        scopes = follow_path(iter(rest), scope)
     else:
         scopes = [scope]
 

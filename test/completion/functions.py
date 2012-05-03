@@ -67,3 +67,13 @@ def a():
     func_b
     #? ['real']
     l.real
+
+# -----------------
+# *args / ** kwargs
+# -----------------
+
+def args_func(*args):
+    return args
+
+#? ['real']
+args_func(1)[0].real
