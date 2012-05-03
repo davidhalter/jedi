@@ -177,4 +177,4 @@ class SubClass(Mixin, SuperClass):
 instance = SubClass()
 
 
-instance.
+SubClass.

@@ -29,16 +29,6 @@ def clear_caches():
         m.clear()
 
 
-def get_defined_names_for_position(obj, position):
-    names = obj.get_defined_names()
-    if not position:
-        return names
-    names_new = []
-    for n in names:
-        if (n.line_nr, n.indent) < position:
-            names_new.append(n)
-    return names_new
-
 def memoize(default=None):
     """
     This is a typical memoization decorator, BUT there is one difference:
@@ -149,6 +139,7 @@ class Instance(Executable):
             n = copy.copy(name)
             n.names = n.names[1:]
             names.append(InstanceElement(self, n))
+
         names = []
         # this loop adds the names of the self object, copies them and removes
         # the self.
@@ -162,26 +153,20 @@ class Instance(Executable):
                     # because otherwise, they are just something else
                     if n.names[0] == self_name and len(n.names) == 2:
                         add_self_name(n)
-        for var in self.base.get_set_vars():
+
+        for var in self.base.get_defined_names(as_instance=True):
             # functions are also instance elements
             if isinstance(var.parent, (parsing.Function)):
                 var = InstanceElement(self, var)
             names.append(var)
 
-        # check super classes:
-        for s in self.base.supers:
-            for cls in follow_statement(s):
-                # get the inherited names
-                for i in Instance(cls).get_defined_names():
-                    if not i.in_iterable(names):
-                        names.append(i)
         return names
 
     def parent(self):
         return self.base.parent
 
     def __repr__(self):
-        return "<%s of %s (params: %s)>" % \
+        return "<p%s of %s (params: %s)>" % \
                 (self.__class__.__name__, self.base, len(self.params or []))
 
 
@@ -210,6 +195,31 @@ class InstanceElement(object):
         return "<%s of %s>" % (self.__class__.__name__, self.var)
 
 
+class Class(object):
+    def __init__(self, base):
+        self.base = base
+
+    def get_defined_names(self, as_instance=False):
+        names = self.base.get_defined_names()
+
+        # check super classes:
+        for s in self.base.supers:
+            for cls in follow_statement(s):
+                # get the inherited names
+                if as_instance:
+                    cls = Instance(cls)
+                for i in cls.get_defined_names():
+                    if not i.in_iterable(names):
+                        names.append(i)
+        return names
+
+    def __getattr__(self, name):
+        return getattr(self.base, name)
+
+    def __repr__(self):
+        return "<%s of %s>" % (self.__class__.__name__, self.base)
+
+
 class Execution(Executable):
     """
     This class is used to evaluate functions and their returns.
@@ -223,7 +233,7 @@ class Execution(Executable):
         """
         stmts = []
         #print '\n\n', self.params, self.params.values, self.params.parent_stmt
-        if isinstance(self.base, parsing.Class):
+        if isinstance(self.base, Class):
             # there maybe executions of executions
             stmts = [Instance(self.base, self.params)]
         else:
@@ -310,6 +320,17 @@ class ArrayElement(object):
         return "<%s of %s>" % (self.__class__.__name__, self.name)
 
 
+def get_defined_names_for_position(obj, position):
+    names = obj.get_defined_names()
+    if not position:
+        return names
+    names_new = []
+    for n in names:
+        if (n.line_nr, n.indent) < position:
+            names_new.append(n)
+    return names_new
+
+
 def get_names_for_scope(scope, position=None, star_search=True):
     """
     Get all completions possible for the current scope.
@@ -318,8 +339,8 @@ def get_names_for_scope(scope, position=None, star_search=True):
     """
     start_scope = scope
     while scope:
-        # class variables/functions are only availabe
-        if (not isinstance(scope, parsing.Class) or scope == start_scope) \
+        # class variables/functions are only available
+        if (not isinstance(scope, Class) or scope == start_scope) \
                 and not isinstance(scope, parsing.Flow):
             yield scope, get_defined_names_for_position(scope, position)
         scope = scope.parent
@@ -333,6 +354,7 @@ def get_names_for_scope(scope, position=None, star_search=True):
     # add builtins to the global scope
     builtin_scope = builtin.Builtin.scope
     yield builtin_scope, builtin_scope.get_defined_names()
+
 
 def get_scopes_for_name(scope, name_str, position=None, search_global=False):
     """
@@ -362,6 +384,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     scopes = follow_statement(r, seek_name=name_str)
                     res_new += remove_statements(scopes)
             else:
+                if isinstance(r, parsing.Class):
+                    r = Class(r)
                 res_new.append(r)
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
@@ -377,12 +401,12 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     # get the types which are in the array
                     arrays = follow_statement(par.inits[0])
                     for array in arrays:
-                        for_vars = array.get_index_types()
+                        in_vars = array.get_index_types()
                         if len(par.set_vars) > 1:
                             var_arr = par.set_stmt.get_assignment_calls()
-                            result += assign_tuples(var_arr, for_vars, name_str)
+                            result += assign_tuples(var_arr, in_vars, name_str)
                         else:
-                            result += for_vars
+                            result += in_vars
                 else:
                     debug.warning('Flow: Why are you here? %s' % par.command)
             elif isinstance(par, parsing.Param) \
@@ -391,8 +415,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 # this is where self gets added - this happens at another
                 # place, if the params are clear. But some times the class is
                 # not known. Therefore set self.
-                #print '\nselfadd', par, name, name.parent, par.parent, par.parent.parent
-                result.append(Instance(par.parent.parent))
+                result.append(Instance(Class(par.parent.parent)))
                 result.append(par)
             else:
                 result.append(par)
@@ -405,10 +428,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):
                 if name_str == name.get_code():
-                    if isinstance(name, ArrayElement):
-                        # TODO why? don't know why this exists, was if/else
-                        raise Exception('dini mueter, wieso?' + str(name))
-                        result.append(name)
                     result += handle_non_arrays(name)
                     #print name, name.parent.parent, scope
                     # this means that a definition was found and is not e.g.
