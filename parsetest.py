@@ -164,17 +164,17 @@ a.
 
 
 
+class C(object):
+    def c_a(self):
+        self.c_b = 1
 
 
 
 
-
-
-
-
-
-def args_func(arg1, *args):
+def args_func(arg1=0, *args, **kwargs):
+    return arg1
     return args
 
 #? ['real']
-args_func(1,"")[0].real
+args_func(1,"", a=list)[0].
+args_func().; C().

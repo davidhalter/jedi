@@ -854,11 +854,11 @@ class Array(Call):
 
     def __repr__(self):
         if self.type == self.NOARRAY:
-            temp = 'noarray'
+            type = 'noarray'
         else:
-            temp = self.type
-        parent_str = " of %s" % self.parent if self.parent else ""
-        return "<%s: %s%s>" % (self.__class__.__name__, temp, parent_str)
+            type = self.type
+        #parent_str = " of %s" % self.parent if self.parent else ""
+        return "<%s: %s%s>" % (self.__class__.__name__, type, self.values)
 
 
 class NamePart(str):

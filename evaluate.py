@@ -58,9 +58,9 @@ def memoize(default=None):
 
 class Executable(object):
     """ An instance is also an executable - because __init__ is called """
-    def __init__(self, base, params=[]):
+    def __init__(self, base, var_args=[]):
         self.base = base
-        self.params = params
+        self.var_args = var_args
         self.func = None
 
     def get_parent_until(self, *args):
@@ -75,34 +75,55 @@ class Executable(object):
         which act the same way as normal functions
         """
         result = []
-        offset = 0
+        start_offset = 0
         #print '\n\nfunc_params', self.func, self.func.parent, self.func
         if isinstance(self.func, InstanceElement):
             # care for self -> just exclude it and add the instance
             #print '\n\nyes', self.func, self.func.instance
-            offset = 1
+            start_offset = 1
             self_name = copy.copy(self.func.params[0].get_name())
             self_name.parent = self.func.instance
             result.append(self_name)
         # There may be calls, which don't fit all the params, this just ignores
         # it.
-        param_iterator = iter(self.params)
-        for i, value in enumerate(param_iterator, offset):
+        param_iterator = iter(self.var_args)
+        for i, value in enumerate(param_iterator, start_offset):
             try:
                 param = self.func.params[i]
             except IndexError:
                 debug.warning('Too many arguments given.', value)
             else:
-                new_param = copy.copy(param)
                 calls = parsing.Array(parsing.Array.NOARRAY,
-                                        self.params.parent_stmt)
+                                        self.var_args.parent_stmt)
+
+                assignment = param.get_assignment_calls().values[0]
                 calls.values = [value]
+
+                if assignment[0] == '*':
+                    # it is a *args param
+                    print '\n\n*', assignment
+                    for value in param_iterator:
+                        print value
+                        calls.values.append(value)
+                    calls.type = parsing.Array.TUPLE
+                elif assignment[0] == '**':
+                    for value in param_iterator:
+                        print value
+                        calls.values.append(value)
+                    calls.type = parsing.Array.DICT
+                    # it is a **args param
+                    print '\n\n**', assignment
+
+                new_param = copy.copy(param)
                 new_param._assignment_calls = calls
                 name = copy.copy(param.get_name())
                 name.parent = new_param
-                print 'insert', i, name, calls.values, value, self.func.params
+                #print 'insert', i, name, calls.values, value, self.func.params
                 result.append(name)
         return result
+
+    def var_args_iterator(self):
+        yield
 
     def set_param_cb(self, func):
         self.func = func
@@ -111,9 +132,9 @@ class Executable(object):
 
 class Instance(Executable):
     """ This class is used to evaluate instances. """
-    def __init__(self, base, params=[]):
-        super(Instance, self).__init__(base, params)
-        if params:
+    def __init__(self, base, var_args=[]):
+        super(Instance, self).__init__(base, var_args)
+        if var_args:
             self.set_init_params()
 
     def set_init_params(self):
@@ -128,7 +149,7 @@ class Instance(Executable):
         normally self
         """
         try:
-            return func.params[0].used_vars[0].names[0]
+            return func.var_args[0].used_vars[0].names[0]
         except:
             return None
 
@@ -168,8 +189,8 @@ class Instance(Executable):
         return self.base.parent
 
     def __repr__(self):
-        return "<p%s of %s (params: %s)>" % \
-                (self.__class__.__name__, self.base, len(self.params or []))
+        return "<p%s of %s (var_args: %s)>" % \
+                (self.__class__.__name__, self.base, len(self.var_args or []))
 
 
 class InstanceElement(object):
@@ -227,7 +248,7 @@ class Class(object):
         return getattr(self.base, name)
 
     def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self.base)
+        return "<p%s of %s>" % (self.__class__.__name__, self.base)
 
 
 class Execution(Executable):
@@ -242,12 +263,12 @@ class Execution(Executable):
         Get the return vars of a function.
         """
         stmts = []
-        #print '\n\n', self.params, self.params.values, self.params.parent_stmt
+        #print '\n\n', self.var_args, self.var_args.values, self.var_args.parent_stmt
         if isinstance(self.base, Class):
             # there maybe executions of executions
-            stmts = [Instance(self.base, self.params)]
+            stmts = [Instance(self.base, self.var_args)]
         else:
-            # set the callback function to get the params
+            # set the callback function to get the var_args
             self.set_param_cb(self.base)
             # don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
@@ -423,7 +444,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     and isinstance(par.parent.parent, parsing.Class) \
                     and par.position == 0:
                 # this is where self gets added - this happens at another
-                # place, if the params are clear. But some times the class is
+                # place, if the var_args are clear. But some times the class is
                 # not known. Therefore set self.
                 result.append(Instance(Class(par.parent.parent)))
                 result.append(par)
