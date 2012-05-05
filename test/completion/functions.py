@@ -69,11 +69,47 @@ def a():
     l.real
 
 # -----------------
-# *args / ** kwargs
+# *args
 # -----------------
 
 def args_func(*args):
     return args
 
+exe = args_func(1, "")
 #? ['real']
-args_func(1)[0].real
+exe[0].real
+#? []
+exe[0].upper
+
+#? []
+exe[1].real
+#? ['upper']
+exe[1].upper
+
+
+def args_func(arg1, *args):
+    return arg1, args
+
+exe = args_func(1, "", list)
+#? ['real']
+exe[0].real
+#? []
+exe[0].upper
+
+#? []
+exe[1].real
+#? ['index']
+exe[1].index
+
+#? []
+exe[1][1].upper
+#? ['append']
+exe[1][1].append
+
+# -----------------
+# ** kwargs
+# -----------------
+
+# -----------------
+# *args / ** kwargs
+# -----------------

@@ -168,13 +168,13 @@ class C(object):
     def c_a(self):
         self.c_b = 1
 
+test = [1,2]
 
 
+def args_func(arg1, *args, **kwargs):
+    return (arg1, args)
 
-def args_func(arg1=0, *args, **kwargs):
-    return arg1
-    return args
-
-#? ['real']
+exe = args_func(list,"", 3)
 args_func(1,"", a=list)[0].
-args_func().; C().
+args_func(arg1=0, *test + [3], *[4,5], **{'a': 'b'}).
+exe[1].
