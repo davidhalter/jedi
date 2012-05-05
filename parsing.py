@@ -845,7 +845,7 @@ class Array(Call):
 
     def __iter__(self):
         if self.type == self.DICT:
-            return iter(self.values.items())
+            return iter(zip(self.keys, self.values))
         else:
             return iter(self.values)
 

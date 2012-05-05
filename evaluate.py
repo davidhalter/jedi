@@ -60,11 +60,23 @@ class Executable(object):
     """ An instance is also an executable - because __init__ is called """
     def __init__(self, base, var_args=[]):
         self.base = base
+        # the param input array
         self.var_args = var_args
         self.func = None
 
     def get_parent_until(self, *args):
         return self.base.get_parent_until(*args)
+
+    @property
+    def scope(self):
+        """ Just try through the whole param array to find the own scope """
+        for param in self.var_args:
+            for call in param:
+                try:
+                    return call.parent_stmt.parent
+                except AttributeError:  # if operators are there
+                    pass
+        raise IndexError('No params available')
 
     @memoize(default=[])
     def get_params(self):
@@ -84,35 +96,55 @@ class Executable(object):
             self_name = copy.copy(self.func.params[0].get_name())
             self_name.parent = self.func.instance
             result.append(self_name)
+
+        param_dict = {}
+        for param in self.func.params:
+            # print 'para', param.get_name()
+            param_dict[str(param.get_name())] = param
         # There may be calls, which don't fit all the params, this just ignores
         # it.
-        param_iterator = iter(self.var_args)
-        for i, value in enumerate(param_iterator, start_offset):
+        var_arg_iterator = self.get_var_args_iterator()
+        for i, (key, value) in enumerate(var_arg_iterator, start_offset):
+            param = None
             try:
-                param = self.func.params[i]
-            except IndexError:
-                debug.warning('Too many arguments given.', value)
-            else:
+                param = param_dict[key]
+            except:
+                try:
+                    param = self.func.params[i]
+                except IndexError:
+                    debug.warning('Too many arguments given.', value)
+
+            if param:
                 calls = parsing.Array(parsing.Array.NOARRAY,
                                         self.var_args.parent_stmt)
 
                 assignment = param.get_assignment_calls().values[0]
-                calls.values = [value]
-
                 if assignment[0] == '*':
-                    # it is a *args param
-                    print '\n\n*', assignment
-                    for value in param_iterator:
-                        print value
-                        calls.values.append(value)
+                    # *args param
+                    print '\n\n3*', value, assignment
                     calls.type = parsing.Array.TUPLE
+                    if key:
+                        var_arg_iterator.push_back(key, value)
+                    else:
+                        calls.values = [value]
+                        for key, value in var_arg_iterator:
+                            if key:
+                                var_arg_iterator.push_back(key, value)
+                                break
+                            calls.values.append(value)
                 elif assignment[0] == '**':
-                    for value in param_iterator:
-                        print value
-                        calls.values.append(value)
+                    # **kwargs param
                     calls.type = parsing.Array.DICT
+                    calls.values = [value]
+                    calls.keys = [key]
+                    for value in var_arg_iterator:
+                        calls.values.append(value)
+                        calls.keys.append(key)
                     # it is a **args param
-                    print '\n\n**', assignment
+                    print '\n\n**', key, value, assignment
+                else:
+                    # normal param
+                    calls.values = [value]
 
                 new_param = copy.copy(param)
                 new_param._assignment_calls = calls
@@ -122,8 +154,64 @@ class Executable(object):
                 result.append(name)
         return result
 
-    def var_args_iterator(self):
-        yield
+    def get_var_args_iterator(self):
+        """
+        Yields a key/value pair, the key is None, if its not a named arg.
+        """
+        def iterate():
+            # var_args is typically an Array, and not a list
+            for var_arg in self.var_args:
+                print '\nv', var_arg
+                # *args
+                if var_arg[0] == '*':
+                    arrays = follow_call_list(self.scope, [var_arg[1:]])
+                    for array in arrays:
+                        for field in array.get_contents():
+                            yield None, field
+                # **kwargs
+                elif var_arg[0] == '**':
+                    arrays = follow_call_list(self.scope, [var_arg[1:]])
+                    for array in arrays:
+                        for key, field in array.get_contents():
+                            yield key[0].name, field
+                    print '**', var_arg
+                    yield var_arg
+                # normal arguments (including key arguments)
+                else:
+                    if len(var_arg) > 1 and var_arg[1] == '=':
+                        # this is a named parameter
+                        print '\nnix',  var_arg[0].name, '\n'
+                        yield var_arg[0].name, var_arg[2:]
+                    else:
+                        yield None, var_arg
+
+        class PushBackIterator(object):
+            def __init__(self, iterator):
+                self.pushes = []
+                self.iterator = iterator
+
+            def push_back(self, key, value):
+                self.pushes.append((key,value))
+                print 'pushed back', self.pushes
+
+            def __iter__(self):
+                return self
+
+            def next(self):
+                """ Python 2 Compatibility """
+                return self.__next__()
+
+            def __next__(self):
+                try:
+                    return self.pushes.pop()
+                except IndexError:
+                    return next(self.iterator)
+
+        print 'va', self.var_args
+        #print 'va2', self.var_args[0]
+
+        return iter(PushBackIterator(iterate()))
+
 
     def set_param_cb(self, func):
         self.func = func
@@ -149,7 +237,7 @@ class Instance(Executable):
         normally self
         """
         try:
-            return func.var_args[0].used_vars[0].names[0]
+            return func.params[0].used_vars[0].names[0]
         except:
             return None
 
@@ -280,7 +368,8 @@ class Execution(Executable):
                     #s.parent = temp
 
                 # reset the callback function on exit
-                self.base.param_cb = None
+                # TODO how can we deactivate this again?
+                #self.base.param_cb = None
             else:
                 debug.warning("no execution possible", self.base)
 
@@ -325,6 +414,9 @@ class Array(object):
         scope = get_scopes_for_name(builtin.Builtin.scope, self._array.type)[0]
         names = scope.get_defined_names()
         return [ArrayElement(n) for n in names]
+
+    def get_contents(self):
+        return self._array
 
     def __repr__(self):
         return "<p%s of %s>" % (self.__class__.__name__, self._array)
@@ -560,11 +652,13 @@ def follow_statement(stmt, scope=None, seek_name=None):
 
     call_list = stmt.get_assignment_calls()
     debug.dbg('calls', call_list, call_list.values)
-    result = set(follow_call_list(scope, call_list))
+    result = follow_call_list(scope, call_list)
 
     # assignment checking is only important if the statement defines multiple
     # variables
     if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
+        # TODO this should have its own call_list, because call_list can also
+        # return 3 results for 2 variables.
         new_result = []
         for op, set_vars in stmt.assignment_details:
             new_result += assign_tuples(set_vars, result, seek_name)
@@ -574,8 +668,10 @@ def follow_statement(stmt, scope=None, seek_name=None):
 
 def follow_call_list(scope, call_list):
     """
-    The call list has a special structure.
-    This can be either `parsing.Array` or `list`.
+    The call_list has a special structure.
+    This can be either `parsing.Array` or `list of list`.
+    It is used to evaluate a two dimensional object, that has calls, arrays and
+    operators in it.
     """
     if parsing.Array.is_type(call_list, parsing.Array.TUPLE):
         # Tuples can stand just alone without any braces. These would be
@@ -591,7 +687,7 @@ def follow_call_list(scope, call_list):
                     if not isinstance(call, str):
                         # The string tokens are just operations (+, -, etc.)
                         result += follow_call(scope, call)
-    return result
+    return set(result)
 
 
 def follow_call(scope, call):
