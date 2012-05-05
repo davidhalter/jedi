@@ -800,7 +800,6 @@ class Array(Call):
         one array.
         """
         self.values.append([])
-        self.keys.append(None)
 
     def add_to_current_field(self, tok):
         """ Adds a token to the latest field (in content). """
@@ -813,12 +812,10 @@ class Array(Call):
     def add_dictionary_key(self):
         """
         Only used for dictionaries, automatically adds the tokens added by now
-        from the values to keys.
+        from the values to keys, because the parser works this way.
         """
         self.type = Array.DICT
-        c = self._counter
-        self.keys[c] = self.values[c]
-        self.values[c] = []
+        self.keys.append(self.values.pop())
 
     def get_only_subelement(self):
         """

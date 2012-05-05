@@ -32,6 +32,9 @@ list().app
 #? ['append']
 [].append
 
+arr2 = [1,2,3]
+#? ['append']
+arr2.app
 
 # -----------------
 # dicts
@@ -47,6 +50,12 @@ dic2.p
 #? ['popitem']
 {}.popitem
 
+dic2 = {'asdf': 3}
+#? ['popitem']
+dic2.popitem
+
+#? ['real']
+dic2['asdf'].real
 
 # -----------------
 # set
