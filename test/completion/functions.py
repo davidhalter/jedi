@@ -55,7 +55,7 @@ variable_rename(list())().
 variable_rename(1)().
 
 # -----------------
-# double execution
+# keyword arguments
 # -----------------
 
 def func(a=1, b=''):
@@ -69,6 +69,7 @@ exe[0].index
 
 #? ['append']
 exe[1].append
+
 # -----------------
 # closures
 # -----------------
@@ -101,6 +102,20 @@ exe[1].real
 #? ['upper']
 exe[1].upper
 
+lis = [1,""]
+exe2 = args_func(lis)[0]
+
+#? []
+exe2[1].real
+#? ['upper']
+exe2[1].upper
+
+exe3 = args_func([1,""])[0]
+
+##? []
+exe3[1].real
+##? ['upper']
+exe3[1].upper
 
 def args_func(arg1, *args):
     return arg1, args
