@@ -325,7 +325,7 @@ class Function(Scope):
 
     def get_set_vars(self):
         n = super(Function, self).get_set_vars()
-        if self.param_cb or False:
+        if self.param_cb:
             # this is the really ugly part, where the functional style of this
             # get methods is broken, it executes a callback.
             # This is important, because something has to inject the params
@@ -533,6 +533,8 @@ class Statement(Simple):
         # cache
         self._assignment_calls = None
         self._assignment_details = None
+        # this is important for other scripts
+        self._assignment_calls_calculated = False
 
     def get_code(self, new_line=True):
         if new_line:
@@ -566,7 +568,7 @@ class Statement(Simple):
         This is not really nice written, sorry for that. If you plan to replace
         it and make it nicer, that would be cool :-)
         """
-        if self._assignment_calls:
+        if self._assignment_calls_calculated:
             return self._assignment_calls
         self._assignment_details = []
         result = Array(Array.NOARRAY, self)
@@ -827,13 +829,13 @@ class Array(Call):
         return self.values[0][0]
 
     @staticmethod
-    def is_type(instance, typ):
+    def is_type(instance, *types):
         """
         This is not only used for calls on the actual object, but for
         ducktyping, to invoke this function with anything as `self`.
         """
         if isinstance(instance, Array):
-            if instance.type == typ:
+            if instance.type in types:
                 return True
         return False
 

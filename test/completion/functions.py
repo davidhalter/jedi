@@ -109,7 +109,21 @@ exe[1][1].append
 # -----------------
 # ** kwargs
 # -----------------
+def kwargs_func(**kwargs):
+    return kwargs
+
+exe = kwargs_func(a=3,b=4)
+#? []
+exe.
 
 # -----------------
 # *args / ** kwargs
 # -----------------
+
+def fu(a=1, b="", *args, **kwargs):
+    return a,b,args,kwargs
+
+exe = fu(list, 1, "", c=set)
+
+##? ['append']
+exe[0].

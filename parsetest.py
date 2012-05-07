@@ -160,10 +160,6 @@ a.
 
 
 
-
-
-
-
 class C(object):
     def c_a(self):
         self.c_b = 1
@@ -171,10 +167,14 @@ class C(object):
 test = [1,2]
 
 
-def args_func(arg1, *args, **kwargs):
-    return (arg1, args)
+def args_func(arg1, arg2=1, *args, **kwargs):
+    return arg1, arg2, args, kwargs
 
-exe = args_func(list,"", 3)
-args_func(1,"", a=list)[0].
+exe = args_func(1,"")
+args_func() #1,"", a=list)[0].
 args_func(arg1=0, *test + [3], *[4,5], **{'a': 'b'}).
-exe[1].
+
+
+
+
+exe[3].

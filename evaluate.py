@@ -25,12 +25,16 @@ import builtin
 memoize_caches = []
 
 
+class MultiLevelStopIteration(Exception):
+    pass
+
+
 def clear_caches():
     for m in memoize_caches:
         m.clear()
 
 
-def memoize(default=None):
+def memoize_default(default=None):
     """
     This is a typical memoization decorator, BUT there is one difference:
     To prevent recursion it sets defaults.
@@ -78,7 +82,7 @@ class Executable(object):
                     pass
         raise IndexError('No params available')
 
-    @memoize(default=[])
+    @memoize_default(default=[])
     def get_params(self):
         """
         This returns the params for an Execution/Instance and is injected as a
@@ -86,6 +90,21 @@ class Executable(object):
         This needs to be here, because Instance can have __init__ functions,
         which act the same way as normal functions
         """
+        def gen_param_name_copy(param, keys=[], values=[], array_type=None):
+            calls = parsing.Array(parsing.Array.NOARRAY,
+                                    self.var_args.parent_stmt)
+            calls.values = values
+            calls.keys = keys
+            print 'arr_t', array_type
+            calls.type = array_type
+            new_param = copy.copy(param)
+            new_param._assignment_calls_calculated = True
+            new_param._assignment_calls = calls
+            name = copy.copy(param.get_name())
+            name.parent = new_param
+            #print 'insert', i, name, calls.values, value, self.func.params
+            return name
+
         result = []
         start_offset = 0
         #print '\n\nfunc_params', self.func, self.func.parent, self.func
@@ -104,54 +123,56 @@ class Executable(object):
         # There may be calls, which don't fit all the params, this just ignores
         # it.
         var_arg_iterator = self.get_var_args_iterator()
-        for i, (key, value) in enumerate(var_arg_iterator, start_offset):
-            param = None
-            try:
-                param = param_dict[key]
-            except:
+
+        non_matching_keys = []
+        for param in self.func.params[start_offset:]:
+            # The value and key can both be null. There, the defaults apply.
+            # args / kwargs will just be empty arrays / dicts, respectively.
+            key, value = next(var_arg_iterator, (None, None))
+            print '\n\nlala', key, value
+            while key:
                 try:
-                    param = self.func.params[i]
+                    key_param = param_dict[key]
                 except IndexError:
-                    debug.warning('Too many arguments given.', value)
+                    non_matching_keys.append((key, value))
+                else:
+                    result.append(gen_param_name_copy(key_param,
+                                                        values=[value]))
+                key, value = next(var_arg_iterator, (None, None))
 
-            if param:
-                calls = parsing.Array(parsing.Array.NOARRAY,
-                                        self.var_args.parent_stmt)
+            #debug.warning('Too many arguments given.', value)
 
-                assignment = param.get_assignment_calls().values[0]
-                if assignment[0] == '*':
-                    # *args param
-                    print '\n\n3*', value, assignment
-                    calls.type = parsing.Array.TUPLE
+            assignment = param.get_assignment_calls().values[0]
+            keys = []
+            values = []
+            array_type = None
+            if assignment[0] == '*':
+                # *args param
+                print '\n\n3*', value, assignment
+
+                array_type = parsing.Array.TUPLE
+                if value:
+                    values.append(value)
+                for key, value in var_arg_iterator:
+                    # iterate until a key argument is found
                     if key:
                         var_arg_iterator.push_back(key, value)
-                    else:
-                        calls.values = [value]
-                        for key, value in var_arg_iterator:
-                            if key:
-                                var_arg_iterator.push_back(key, value)
-                                break
-                            calls.values.append(value)
-                elif assignment[0] == '**':
-                    # **kwargs param
-                    calls.type = parsing.Array.DICT
-                    calls.values = [value]
-                    calls.keys = [key]
-                    for value in var_arg_iterator:
-                        calls.values.append(value)
-                        calls.keys.append(key)
-                    # it is a **args param
-                    print '\n\n**', key, value, assignment
-                else:
-                    # normal param
-                    calls.values = [value]
+                        break
+                    values.append(value)
+            elif assignment[0] == '**':
+                # **kwargs param
+                array_type = parsing.Array.DICT
+                if non_matching_keys:
+                    keys, values = zip(*non_matching_keys)
+                print '\n\n**', keys, values, assignment
+            else:
+                # normal param
+                print 'normal', value
+                if value:
+                    values = [value]
 
-                new_param = copy.copy(param)
-                new_param._assignment_calls = calls
-                name = copy.copy(param.get_name())
-                name.parent = new_param
-                #print 'insert', i, name, calls.values, value, self.func.params
-                result.append(name)
+            result.append(gen_param_name_copy(param, keys=keys, values=values,
+                                                array_type=array_type))
         return result
 
     def get_var_args_iterator(self):
@@ -345,7 +366,7 @@ class Execution(Executable):
     """
     cache = {}
 
-    @memoize(default=[])
+    @memoize_default(default=[])
     def get_return_types(self):
         """
         Get the return vars of a function.
@@ -465,7 +486,10 @@ def get_names_for_scope(scope, position=None, star_search=True):
         # class variables/functions are only available
         if (not isinstance(scope, Class) or scope == start_scope) \
                 and not isinstance(scope, parsing.Flow):
-            yield scope, get_defined_names_for_position(scope, position)
+            try:
+                yield scope, get_defined_names_for_position(scope, position)
+            except StopIteration:
+                raise MultiLevelStopIteration('StopIteration raised somewhere')
         scope = scope.parent
 
     # add star imports
@@ -638,7 +662,7 @@ def assign_tuples(tup, results, seek_name):
     return result
 
 
-@memoize(default=[])
+@memoize_default(default=[])
 def follow_statement(stmt, scope=None, seek_name=None):
     """
     :param stmt: contains a statement
@@ -673,9 +697,12 @@ def follow_call_list(scope, call_list):
     It is used to evaluate a two dimensional object, that has calls, arrays and
     operators in it.
     """
-    if parsing.Array.is_type(call_list, parsing.Array.TUPLE):
+    print 'inpu', scope, call_list
+    if parsing.Array.is_type(call_list, parsing.Array.TUPLE,
+                                        parsing.Array.DICT):
         # Tuples can stand just alone without any braces. These would be
         # recognized as separate calls, but actually are a tuple.
+        print 'inpu', scope, call_list
         result = follow_call(scope, call_list)
     else:
         result = []
@@ -729,16 +756,19 @@ def follow_call(scope, call):
 
 def follow_paths(path, results, position=None):
     results_new = []
-    try:
-        if results:
-            if len(results) > 1:
-                iter_paths = itertools.tee(path, len(results))
+    if results:
+        if len(results) > 1:
+            iter_paths = itertools.tee(path, len(results))
+        else:
+            iter_paths = [path]
+
+        for i, r in enumerate(results):
+            fp = follow_path(iter_paths[i], r, position=position)
+            if fp is not None:
+                results_new += fp
             else:
-                iter_paths = [path]
-            for i, r in enumerate(results):
-                results_new += follow_path(iter_paths[i], r, position=position)
-    except StopIteration:
-        return results
+                # this means stop iteration 
+                return results
     return results_new
 
 
@@ -747,7 +777,10 @@ def follow_path(path, scope, position=None):
     Takes a generator and tries to complete the path.
     """
     # current is either an Array or a Scope
-    current = next(path)
+    try:
+        current = next(path)
+    except StopIteration:
+        return None
     debug.dbg('follow', current, scope)
 
     result = []
