@@ -113,8 +113,8 @@ def kwargs_func(**kwargs):
     return kwargs
 
 exe = kwargs_func(a=3,b=4)
-#? []
-exe.
+#? ['items']
+exe.items
 
 # -----------------
 # *args / ** kwargs

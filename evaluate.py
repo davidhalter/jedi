@@ -133,7 +133,7 @@ class Executable(object):
             while key:
                 try:
                     key_param = param_dict[key]
-                except IndexError:
+                except KeyError:
                     non_matching_keys.append((key, value))
                 else:
                     result.append(gen_param_name_copy(key_param,
