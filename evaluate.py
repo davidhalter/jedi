@@ -132,7 +132,7 @@ class Executable(object):
             print '\n\nlala', key, value
             while key:
                 try:
-                    key_param = param_dict[key]
+                    key_param = param_dict[str(key)]
                 except KeyError:
                     non_matching_keys.append((key, value))
                 else:

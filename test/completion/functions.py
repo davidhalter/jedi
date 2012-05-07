@@ -55,6 +55,21 @@ variable_rename(list())().
 variable_rename(1)().
 
 # -----------------
+# double execution
+# -----------------
+
+def func(a=1, b=''):
+    return a, b
+
+exe = func(b=list, a=tuple)
+#? []
+exe[0].real
+#? ['index']
+exe[0].index
+
+#? ['append']
+exe[1].append
+# -----------------
 # closures
 # -----------------
 def a():

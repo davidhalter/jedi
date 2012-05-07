@@ -170,11 +170,11 @@ test = [1,2]
 def args_func(arg1, arg2=1, *args, **kwargs):
     return arg1, arg2, args, kwargs
 
-exe = args_func(1,"")
+exe = args_func(arg2=1,arg1=set)
 args_func() #1,"", a=list)[0].
 args_func(arg1=0, *test + [3], *[4,5], **{'a': 'b'}).
 
 
 
 
-exe[3].
+exe[0].
