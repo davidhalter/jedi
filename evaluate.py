@@ -229,7 +229,6 @@ class Executable(object):
                     return next(self.iterator)
 
         print 'va', self.var_args
-        #print 'va2', self.var_args[0]
 
         return iter(PushBackIterator(iterate()))
 
@@ -697,12 +696,10 @@ def follow_call_list(scope, call_list):
     It is used to evaluate a two dimensional object, that has calls, arrays and
     operators in it.
     """
-    print 'inpu', scope, call_list
     if parsing.Array.is_type(call_list, parsing.Array.TUPLE,
                                         parsing.Array.DICT):
         # Tuples can stand just alone without any braces. These would be
         # recognized as separate calls, but actually are a tuple.
-        print 'inpu', scope, call_list
         result = follow_call(scope, call_list)
     else:
         result = []

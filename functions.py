@@ -205,7 +205,6 @@ def complete(source, row, column, source_path):
         for s in scopes:
             # TODO is this reall the right way? just ignore the functions? \
             # do the magic functions first? and then recheck here?
-            print 'scope, '
             if not isinstance(s, parsing.Function):
                 completions += s.get_defined_names()
 

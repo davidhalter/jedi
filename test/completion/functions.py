@@ -155,5 +155,15 @@ def fu(a=1, b="", *args, **kwargs):
 
 exe = fu(list, 1, "", c=set)
 
-##? ['append']
-exe[0].
+#? ['append']
+exe[0].append
+#? ['real']
+exe[1].real
+#? ['index']
+exe[2].index
+#? ['upper']
+exe[2][0].upper
+#? ['items']
+exe[3].items
+#? ['union']
+exe[3]['c'].union
