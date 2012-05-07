@@ -95,7 +95,6 @@ class Executable(object):
                                     self.var_args.parent_stmt)
             calls.values = values
             calls.keys = keys
-            print 'arr_t', array_type
             calls.type = array_type
             new_param = copy.copy(param)
             new_param._assignment_calls_calculated = True
@@ -110,7 +109,6 @@ class Executable(object):
         #print '\n\nfunc_params', self.func, self.func.parent, self.func
         if isinstance(self.func, InstanceElement):
             # care for self -> just exclude it and add the instance
-            #print '\n\nyes', self.func, self.func.instance
             start_offset = 1
             self_name = copy.copy(self.func.params[0].get_name())
             self_name.parent = self.func.instance
@@ -118,7 +116,6 @@ class Executable(object):
 
         param_dict = {}
         for param in self.func.params:
-            # print 'para', param.get_name()
             param_dict[str(param.get_name())] = param
         # There may be calls, which don't fit all the params, this just ignores
         # it.
@@ -129,7 +126,6 @@ class Executable(object):
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
             key, value = next(var_arg_iterator, (None, None))
-            print '\n\nlala', key, value
             while key:
                 try:
                     key_param = param_dict[str(key)]
@@ -148,8 +144,6 @@ class Executable(object):
             array_type = None
             if assignment[0] == '*':
                 # *args param
-                print '\n\n3*', value, assignment
-
                 array_type = parsing.Array.TUPLE
                 if value:
                     values.append(value)
@@ -164,10 +158,8 @@ class Executable(object):
                 array_type = parsing.Array.DICT
                 if non_matching_keys:
                     keys, values = zip(*non_matching_keys)
-                print '\n\n**', keys, values, assignment
             else:
                 # normal param
-                print 'normal', value
                 if value:
                     values = [value]
 
@@ -182,7 +174,6 @@ class Executable(object):
         def iterate():
             # var_args is typically an Array, and not a list
             for var_arg in self.var_args:
-                print '\nv', var_arg
                 # *args
                 if var_arg[0] == '*':
                     arrays = follow_call_list(self.scope, [var_arg[1:]])
@@ -195,13 +186,11 @@ class Executable(object):
                     for array in arrays:
                         for key, field in array.get_contents():
                             yield key[0].name, field
-                    print '**', var_arg
                     yield var_arg
                 # normal arguments (including key arguments)
                 else:
                     if len(var_arg) > 1 and var_arg[1] == '=':
                         # this is a named parameter
-                        print '\nnix',  var_arg[0].name, '\n'
                         yield var_arg[0].name, var_arg[2:]
                     else:
                         yield None, var_arg
@@ -213,7 +202,6 @@ class Executable(object):
 
             def push_back(self, key, value):
                 self.pushes.append((key,value))
-                print 'pushed back', self.pushes
 
             def __iter__(self):
                 return self
@@ -227,8 +215,6 @@ class Executable(object):
                     return self.pushes.pop()
                 except IndexError:
                     return next(self.iterator)
-
-        print 'va', self.var_args
 
         return iter(PushBackIterator(iterate()))
 
