@@ -124,6 +124,7 @@ dic2 = {'asdf': 3, 'b': 'str'}
 dic2['asdf'].real
 #? []
 dic2['asdf'].upper
+# string literal
 #? ['real']
 dic2[r'asdf'].real
 #? []

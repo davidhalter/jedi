@@ -769,8 +769,8 @@ class Call(object):
                 yield y
 
     def __repr__(self):
-        return "<%s: %s of %s>" % \
-                (self.__class__.__name__, self.name, self.parent)
+        return "<%s: %s>" % \
+                (self.__class__.__name__, self.name)
 
 
 class Array(Call):
@@ -820,6 +820,7 @@ class Array(Call):
         """
         self.type = Array.DICT
         self.keys.append(self.values.pop())
+        self.values.append([])
 
     def get_only_subelement(self):
         """

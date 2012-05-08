@@ -4,14 +4,13 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 
 `get_names_for_scope` and `get_scopes_for_name` are search functions
 
-TODO include super classes
 TODO nonlocal statement
 TODO doc
 TODO list comprehensions, priority?
-TODO care for *args **kwargs
-TODO annotations
+TODO annotations ? how ?
+TODO generators
 """
-from _compatibility import next, literal_eval
+from _compatibility import next
 
 import itertools
 import copy
@@ -403,7 +402,6 @@ class Array(object):
             # otherwise it just ignores the index (e.g. [1+1])
             i = index.get_only_subelement().name
             try:
-                print 'index', i
                 return self.get_exact_index_types(i)
             except (IndexError, KeyError):
                 pass
@@ -413,16 +411,19 @@ class Array(object):
         if self._array.type == parsing.Array.DICT:
             old_index = index
             index = None
-            for key_elements in self._array.keys:
+            for i, key_elements in enumerate(self._array.keys):
                 # because we only want the key to be a string
                 if len(key_elements) == 1:
                     try:
-                        str_key = key_elements[0].name
-                        if old_index == str_key:
-                            index = str_key.name
-                        break
+                        str_key = key_elements.get_code()
                     except AttributeError:
-                        pass
+                        try:
+                            str_key = key_elements[0].name
+                        except AttributeError:
+                            str_key = None
+                    if old_index == str_key:
+                        index = i
+                        break
             if index is None:
                 raise KeyError('No key found in dictionary')
         values = [self._array[index]]

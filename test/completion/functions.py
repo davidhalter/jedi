@@ -153,7 +153,7 @@ exe.items
 def fu(a=1, b="", *args, **kwargs):
     return a, b, args, kwargs
 
-exe = fu(list, 1, "", c=set)
+exe = fu(list, 1, "", c=set, d="")
 
 #? ['append']
 exe[0].append
@@ -167,3 +167,5 @@ exe[2][0].upper
 exe[3].items
 #? ['union']
 exe[3]['c'].union
+#? []
+exe[3]['c'].upper
