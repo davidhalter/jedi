@@ -167,14 +167,16 @@ class C(object):
 test = [1,2]
 
 
-def args_func(arg1, arg2=1, *args, **kwargs):
-    return arg1, arg2, args, kwargs
+def fu(a=1, b="", *args, **kwargs):
+    return a, b, args, kwargs
 
-exe = args_func(arg2=1,arg1=set)
+exe = fu(arg2=1,arg1=set)
+exe = fu(list, 1, "", c=set)
 args_func() #1,"", a=list)[0].
 args_func(arg1=0, *test + [3], *[4,5], **{'a': 'b'}).
 
 
 
-
+exe[2][0].
+exe[3]['c'].union
 exe[0].

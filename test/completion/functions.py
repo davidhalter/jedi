@@ -151,7 +151,7 @@ exe.items
 # -----------------
 
 def fu(a=1, b="", *args, **kwargs):
-    return a,b,args,kwargs
+    return a, b, args, kwargs
 
 exe = fu(list, 1, "", c=set)
 

@@ -11,7 +11,7 @@ TODO list comprehensions, priority?
 TODO care for *args **kwargs
 TODO annotations
 """
-from _compatibility import next
+from _compatibility import next, literal_eval
 
 import itertools
 import copy
@@ -401,16 +401,35 @@ class Array(object):
         if index is not None:
             # This is indexing only one element, with a fixed index number,
             # otherwise it just ignores the index (e.g. [1+1])
+            i = index.get_only_subelement().name
             try:
-                index_nr = int(index.get_only_subelement().name)
-                values = [self._array[index_nr]]
-            except:
+                print 'index', i
+                return self.get_exact_index_types(i)
+            except (IndexError, KeyError):
                 pass
-        scope = self._array.parent_stmt.parent
-        return follow_call_list(scope, values)
+        return self.follow_values(values)
 
     def get_exact_index_types(self, index):
+        if self._array.type == parsing.Array.DICT:
+            old_index = index
+            index = None
+            for key_elements in self._array.keys:
+                # because we only want the key to be a string
+                if len(key_elements) == 1:
+                    try:
+                        str_key = key_elements[0].name
+                        if old_index == str_key:
+                            index = str_key.name
+                        break
+                    except AttributeError:
+                        pass
+            if index is None:
+                raise KeyError('No key found in dictionary')
         values = [self._array[index]]
+        return self.follow_values(values)
+
+    def follow_values(self, values):
+        """ helper function for the index getters """
         scope = self._array.parent_stmt.parent
         return follow_call_list(scope, values)
 

@@ -31,7 +31,7 @@ Ignored statements:
 TODO take special care for future imports
 TODO check meta classes
 """
-from _compatibility import next
+from _compatibility import next, literal_eval
 
 import tokenize
 import cStringIO
@@ -326,7 +326,7 @@ class Function(Scope):
     def get_set_vars(self):
         n = super(Function, self).get_set_vars()
         if self.param_cb:
-            # this is the really ugly part, where the functional style of this
+            # This is the really ugly part, where the functional style of this
             # get methods is broken, it executes a callback.
             # This is important, because something has to inject the params
             # into the functions, with the right values.
@@ -614,13 +614,15 @@ class Statement(Simple):
             is_call = lambda: result.__class__ == Call
             is_call_or_close = lambda: is_call() or close_brackets
 
-            if isinstance(tok, Name) or token_type in [tokenize.STRING,
-                                                 tokenize.NUMBER]:  # names
+            is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
+            if isinstance(tok, Name) or is_literal:
                 c_type = Call.NAME
-                if token_type == tokenize.STRING:
-                    c_type = Call.STRING
-                elif token_type == tokenize.NUMBER:
-                    c_type = Call.NUMBER
+                if is_literal:
+                    tok = literal_eval(tok)
+                    if token_type == tokenize.STRING:
+                        c_type = Call.STRING
+                    elif token_type == tokenize.NUMBER:
+                        c_type = Call.NUMBER
 
                 if is_chain:
                     call = Call(tok, c_type, self, result)

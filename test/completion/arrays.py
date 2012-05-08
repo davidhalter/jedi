@@ -119,6 +119,12 @@ g1.
 # -----------------
 # dicts
 # -----------------
-dic2 = {'asdf': 3}
+dic2 = {'asdf': 3, 'b': 'str'}
 #? ['real']
 dic2['asdf'].real
+#? []
+dic2['asdf'].upper
+#? ['real']
+dic2[r'asdf'].real
+#? []
+dic2[r'asdf'].upper

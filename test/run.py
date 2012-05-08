@@ -34,7 +34,7 @@ def completion_test(source):
             try:
                 completions = functions.complete(source, line_nr, 999,
                                                     completion_test_dir)
-            except:
+            except Exception:
                 print 'test @%s: %s' % (line_nr-1, line)
                 print traceback.format_exc()
                 fails += 1

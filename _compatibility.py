@@ -1,5 +1,9 @@
-
-# python2.5 compatibility
+"""
+This is a compatibility module, to make it possible to use jedi also with older
+python versions.
+"""
+# next was defined in python 2.6, in python 3 obj.next won't be possible
+# anymore
 try:
     next = next
 except NameError:
@@ -14,3 +18,9 @@ except NameError:
                 raise
             else:
                 return default
+
+# ast module was defined in python 2.6
+try:
+    from ast import literal_eval
+except ImportError:
+    literal_eval = eval
