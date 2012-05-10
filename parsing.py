@@ -224,13 +224,12 @@ class Scope(Simple):
                 (self.__class__.__name__, name, self.line_nr, self.line_end)
 
 
-class GlobalScope(Scope):
+class Module(Scope):
     """
     The top scope, which is always a module.
-    I don't know why I didn't name it Module :-)
     """
     def __init__(self, path, docstr=''):
-        super(GlobalScope, self).__init__(path, docstr)
+        super(Module, self).__init__(path, docstr)
         self.path = path
         self.global_vars = []
 
@@ -247,7 +246,7 @@ class GlobalScope(Scope):
         # set no parent here, because globals are not defined in this scope.
 
     def get_set_vars(self):
-        n = super(GlobalScope, self).get_set_vars()
+        n = super(Module, self).get_set_vars()
         n += self.global_vars
         return n
 
@@ -932,7 +931,7 @@ class PyFuzzyParser(object):
         self.code = code + '\n'  # end with \n, because the parser needs it
 
         # initialize global Scope
-        self.top = GlobalScope(module_path)
+        self.top = Module(module_path)
         self.scope = self.top
         self.current = (None, None, None)
 
