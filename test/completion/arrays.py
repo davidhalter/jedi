@@ -12,7 +12,21 @@ a = list()
 [a][0].append
 
 #? ['append']
-[[a]][0][100].append
+[[a,a,a]][2][100].append
+
+c = [[a,""]]
+#? []
+c[0][1].append
+#? ['upper']
+c[0][1].upper
+
+b = [6,7]
+
+#? ['real']
+b[8-7].real
+
+#? ['append']
+b[8:].append
 
 
 # -----------------

@@ -658,7 +658,10 @@ class Statement(Simple):
                 if is_call_or_close():
                     result = result.parent
                     close_brackets = False
-                result.add_dictionary_key()
+                if result.type == Array.LIST:  # [:] lookups
+                    result.add_to_current_field(tok)
+                else:
+                    result.add_dictionary_key()
             elif tok == '.':
                 if close_brackets and result.parent != top:
                     # only get out of the array, if it is a array execution

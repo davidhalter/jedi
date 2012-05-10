@@ -4,12 +4,15 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 
 `get_names_for_scope` and `get_scopes_for_name` are search functions
 
-TODO nonlocal statement
 TODO doc
 TODO list comprehensions, priority?
-TODO annotations ? how ? type evaluation and return?
 TODO evaluate asserts (type safety)
 TODO generators
+
+python 3 stuff:
+TODO class decorators
+TODO annotations ? how ? type evaluation and return?
+TODO nonlocal statement
 """
 from _compatibility import next
 
@@ -446,13 +449,21 @@ class Array(object):
     def get_index_types(self, index=None):
         values = self._array.values
         if index is not None:
-            # This is indexing only one element, with a fixed index number,
-            # otherwise it just ignores the index (e.g. [1+1])
-            i = index.get_only_subelement().name
-            try:
-                return self.get_exact_index_types(i)
-            except (IndexError, KeyError):
-                pass
+            if [x for x in index if ':' in x]:
+                return [self]
+            else:
+                # This is indexing only one element, with a fixed index number,
+                # otherwise it just ignores the index (e.g. [1+1])
+                try:
+                    # multiple elements in the array
+                    i = index.get_only_subelement().name
+                except AttributeError:
+                    pass
+                else:
+                    try:
+                        return self.get_exact_index_types(i)
+                    except (IndexError, KeyError):
+                        pass
         return self.follow_values(values)
 
     def get_exact_index_types(self, index):
@@ -841,6 +852,7 @@ def follow_path(path, scope, position=None):
     if isinstance(current, parsing.Array):
         # this must be an execution, either () or []
         if current.type == parsing.Array.LIST:
+            print 'cur', current, scope
             result = scope.get_index_types(current)
         elif current.type not in [parsing.Array.DICT]:
             # scope must be a class or func - make an instance or execution
