@@ -5,8 +5,53 @@ import os
 import debug
 import parsing
 
+class CachedModule(object):
+    cache = {}
 
-class Parser(object):
+    def __init__(self, name=None, path=None, sys_path=sys.path):
+        self.path = path
+        if name:
+            self.name = name
+        else:
+            name = os.path.basename(self.path)
+            self.name = name.rpartition('.')[0]  # cut file type (normally .so)
+            self.path = os.path.dirname(self.path)
+            #print self.name, self.path
+        self._content = {}
+        self._parser = None
+        self._module = None
+        self.sys_path = sys_path
+
+    @property
+    def parser(self):
+        """ get the parser lazy """
+        if not self._parser:
+            try:
+                timestamp, parser = self.cache[self.path or self.name]
+                if not self.path or timestamp == os.path.getmtime(self.path):
+                    self._parser = parser
+                else:
+                    raise KeyError
+            except KeyError:
+                self._load_module()
+        return self._parser
+
+    def _get_source(self):
+        raise NotImplementedError()
+
+    def _load_module(self):
+        source = self._get_source()
+        self._parser = parsing.PyFuzzyParser(source, self.name)
+        #except:
+        #    debug.warning('not possible to resolve', self.name, source)
+            #open('builtin_fail', 'w').write(code)
+        #    raise
+        p_time = None if not self.path else os.path.getmtime(self.path)
+
+        self.cache[self.path or self.name] = p_time, self._parser
+
+
+class Parser(CachedModule):
     """
     This module is a parser for all builtin modules, which are programmed in
     C/C++. It should also work on third party modules.
@@ -32,9 +77,11 @@ class Parser(object):
         'file object': 'file("")',
         # TODO things like dbg: ('not working', 'tuple of integers')
     }
-    cache = {}
+    module_cache = {}
 
     def __init__(self, name=None, path=None, sys_path=sys.path):
+        super(Parser, self).__init__(name, path)
+
         self.path = path
         if name:
             self.name = name
@@ -64,32 +111,8 @@ class Parser(object):
             #print 'mod', self._content['module']
         return self._module
 
-    @property
-    def parser(self):
-        """ get the parser lazy """
-        if not self._parser:
-            try:
-                timestamp, parser = Parser.cache[self.name, self.path]
-                if not self.path or timestamp == os.path.getmtime(self.path):
-                    debug.dbg('hit builtin cache')
-                    self._parser = parser
-                else:
-                    raise KeyError
-            except KeyError:
-                code = self._generate_code(self.module)
-                try:
-                    self._parser = parsing.PyFuzzyParser(code, self.name)
-                except:
-                    debug.warning('not possible to resolve', self.name, code)
-                    #open('builtin_fail', 'w').write(code)
-                    raise
-                else:
-                    if self.path:
-                        p_time = os.path.getmtime(self.path)
-                    else:
-                        p_time = None
-                    Parser.cache[self.name, self.path] = p_time, self._parser
-        return self._parser
+    def _get_source(self):
+        return self._generate_code(self.module)
 
     def _generate_code(self, scope, depth=0):
         """

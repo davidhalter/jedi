@@ -15,7 +15,7 @@ class ModuleNotFound(Exception):
     pass
 
 
-class File(object):
+class Module(builtin.CachedModule):
     """
     Manages all files, that are parsed and caches them.
 
@@ -32,21 +32,19 @@ class File(object):
 
     @property
     def parser(self):
-        if self._parser:
-            return self._parser
-        if not self.module_path and not self.source:
-            raise AttributeError("Submit a module name or the source code")
-        elif self.module_path:
+        if not self._parser:
             # check the cache
             try:
-                timestamp, _parser = File.module_cache[self.module_path]
+                timestamp, _parser = Module.module_cache[self.module_path]
                 if timestamp == os.path.getmtime(self.module_path):
                     debug.dbg('hit module cache')
                     return _parser
-            except:
-                pass
+            except KeyError:
+                self._load_module()
+        return self._parser
 
-            return self._load_module()
+    def _get_source(self):
+        return self.source
 
     def _load_module(self):
         self._parser = parsing.PyFuzzyParser(self.source, self.module_path)
@@ -54,8 +52,7 @@ class File(object):
 
         # insert into cache
         to_cache = (os.path.getmtime(self.module_path), self._parser)
-        File.module_cache[self.module_path] = to_cache
-        return self._parser
+        Module.module_cache[self.module_path] = to_cache
 
 
 def find_module(current_module, point_path):
@@ -115,7 +112,7 @@ def find_module(current_module, point_path):
         else:
             source = current_namespace[0].read()
         if path.endswith('.py'):
-            f = File(path, source)
+            f = Module(path, source)
         else:
             f = builtin.Parser(path=path)
     else:

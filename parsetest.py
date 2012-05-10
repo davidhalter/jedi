@@ -162,7 +162,7 @@ def gen():
     yield 1
     yield ""
 
-gen_exe = gen()
+gen_exe =  t12343 + gen()
 
 def dec(func):
     def wrapper(*args, **kwargs):

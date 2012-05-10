@@ -9,7 +9,7 @@ import debug
 __all__ = ['complete', 'get_completion_parts', 'set_debug_function']
 
 
-class FileWithCursor(modules.File):
+class FileWithCursor(modules.Module):
     """
     Manages all files, that are parsed and caches them.
     Important are the params source and module_path, one of them has to
