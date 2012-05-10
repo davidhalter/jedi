@@ -209,7 +209,7 @@ class Executable(object):
                 self.iterator = iterator
 
             def push_back(self, key, value):
-                self.pushes.append((key,value))
+                self.pushes.append((key, value))
 
             def __iter__(self):
                 return self
@@ -225,7 +225,6 @@ class Executable(object):
                     return next(self.iterator)
 
         return iter(PushBackIterator(iterate()))
-
 
     def set_param_cb(self, func):
         self.func = func
@@ -392,7 +391,6 @@ class Execution(Executable):
                 #print dec.parent
         return func
 
-
     @memoize_default(default=[])
     def get_return_types(self):
         """
@@ -427,7 +425,6 @@ class Execution(Executable):
                 self.base.is_decorated = False
             else:
                 debug.warning("no execution possible", func)
-
 
         debug.dbg('exec results:', stmts, self.base, repr(self))
 
@@ -832,7 +829,7 @@ def follow_paths(path, results, position=None):
             if fp is not None:
                 results_new += fp
             else:
-                # this means stop iteration 
+                # this means stop iteration
                 return results
     return results_new
 

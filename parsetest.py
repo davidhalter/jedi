@@ -158,12 +158,11 @@ a = 3; b = ""
 b,a=a,b
 a.
 
-class C(object):
-    def c_a(self):
-        self.c_b = 1
+def gen():
+    yield 1
+    yield ""
 
-test = [1,2]
-
+gen_exe = gen()
 
 def dec(func):
     def wrapper(*args, **kwargs):
@@ -176,5 +175,6 @@ def fu(a, b, c, *args, **kwargs):
 
 exe = fu(list, c=set, d='')
 
-exe[0].
-exe[4]['d']
+#exe[0].
+#exe[4]['d']
+gen_exe.

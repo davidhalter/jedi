@@ -226,3 +226,15 @@ exe = fu(list, set, 3, '', d='')
 exe[3][0].upper
 #? []
 exe[3][0].real
+
+
+# -----------------
+# generators
+# -----------------
+
+def gen():
+    yield 1
+    yield ""
+
+exe = gen()
+exe.
