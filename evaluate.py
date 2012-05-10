@@ -7,7 +7,8 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 TODO nonlocal statement
 TODO doc
 TODO list comprehensions, priority?
-TODO annotations ? how ?
+TODO annotations ? how ? type evaluation and return?
+TODO evaluate asserts (type safety)
 TODO generators
 """
 from _compatibility import next
@@ -184,7 +185,12 @@ class Executable(object):
                     arrays = follow_call_list(self.scope, [var_arg[1:]])
                     for array in arrays:
                         for key, field in array.get_contents():
-                            yield key[0].name, field
+                            # take the first index
+                            if isinstance(key, parsing.Name):
+                                name = key
+                            else:
+                                name = key[0].name
+                            yield name, field
                     yield var_arg
                 # normal arguments (including key arguments)
                 else:
@@ -350,6 +356,40 @@ class Execution(Executable):
     """
     cache = {}
 
+    def process_decorators(self):
+        """ Returns the function, that is to be executed in the end """
+        func = self.base
+
+        # only enter it, if has not already been processed
+        if hasattr(func, 'is_decorated') and not func.is_decorated:
+            for dec in reversed(self.base.decorators):
+                print '\n\ndecorator:', dec, func
+                dec_results = follow_statement(dec)
+                if not len(dec_results):
+                    debug.warning('decorator func not found', self.base)
+                    return []
+                if len(dec_results) > 1:
+                    debug.warning('multiple decorators found', self.base,
+                                                            dec_results)
+                decorator = dec_results.pop()
+                # create param array
+                params = parsing.Array(parsing.Array.NOARRAY, func)
+                params.values = [[func]]
+                wrappers = Execution(decorator, params).get_return_types()
+                if not len(wrappers):
+                    debug.warning('no wrappers found', self.base)
+                    return []
+                if len(wrappers) > 1:
+                    debug.warning('multiple wrappers found', self.base,
+                                                                wrappers)
+                # this is here, that the wrapper gets executed
+                func = wrappers[0]
+
+                print 'dece\n\n'
+                #print dec.parent
+        return func
+
+
     @memoize_default(default=[])
     def get_return_types(self):
         """
@@ -361,12 +401,15 @@ class Execution(Executable):
             # there maybe executions of executions
             stmts = [Instance(self.base, self.var_args)]
         else:
+            func = self.process_decorators()
+
             # set the callback function to get the var_args
-            self.set_param_cb(self.base)
             # don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
-            if hasattr(self.base, 'returns'):
-                ret = self.base.returns
+            if hasattr(func, 'returns'):
+                self.set_param_cb(func)
+                self.base.is_decorated = True
+                ret = func.returns
                 for s in ret:
                     #temp, s.parent = s.parent, self
                     stmts += follow_statement(s)
@@ -375,12 +418,17 @@ class Execution(Executable):
                 # reset the callback function on exit
                 # TODO how can we deactivate this again?
                 #self.base.param_cb = None
+
+                # func could have changed because of decorators, so clear them
+                # again
+                self.base.is_decorated = False
             else:
-                debug.warning("no execution possible", self.base)
+                debug.warning("no execution possible", func)
 
-        debug.dbg('exec stmts=', stmts, self.base, repr(self))
 
-        return stmts
+        debug.dbg('exec results:', stmts, self.base, repr(self))
+
+        return strip_imports(stmts)
 
     def __repr__(self):
         return "<%s of %s>" % \
@@ -714,7 +762,10 @@ def follow_call_list(scope, call_list):
                 if parsing.Array.is_type(call, parsing.Array.NOARRAY):
                     result += follow_call_list(scope, call)
                 else:
-                    if not isinstance(call, str):
+                    # with things like params, these can also be functions, etc
+                    if isinstance(call, (parsing.Function, parsing.Class)):
+                        result.append(call)
+                    elif not isinstance(call, str):
                         # The string tokens are just operations (+, -, etc.)
                         result += follow_call(scope, call)
     return set(result)
@@ -793,10 +844,8 @@ def follow_path(path, scope, position=None):
             result = scope.get_index_types(current)
         elif current.type not in [parsing.Array.DICT]:
             # scope must be a class or func - make an instance or execution
-            debug.dbg('befexec', scope)
-            exe = Execution(scope, current)
-            result = strip_imports(exe.get_return_types())
-            debug.dbg('exec', result)
+            debug.dbg('exec', scope)
+            result = Execution(scope, current).get_return_types()
         else:
             # curly braces are not allowed, because they make no sense
             debug.warning('strange function call with {}', current, scope)

@@ -158,8 +158,6 @@ a = 3; b = ""
 b,a=a,b
 a.
 
-
-
 class C(object):
     def c_a(self):
         self.c_b = 1
@@ -167,16 +165,16 @@ class C(object):
 test = [1,2]
 
 
-def fu(a=1, b="", *args, **kwargs):
-    return a, b, args, kwargs
+def dec(func):
+    def wrapper(*args, **kwargs):
+        return func(dict, *args, **kwargs)
+    return wrapper
 
-exe = fu(arg2=1,arg1=set)
-exe = fu(list, 1, "", c=set)
-args_func() #1,"", a=list)[0].
-args_func(arg1=0, *test + [3], *[4,5], **{'a': 'b'}).
+@dec
+def fu(a, b, c, *args, **kwargs):
+    return a, b, c, args, kwargs
 
+exe = fu(list, c=set, d='')
 
-
-exe[2][0].
-exe[3]['c'].union
 exe[0].
+exe[4]['d']

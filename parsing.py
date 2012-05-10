@@ -104,6 +104,10 @@ class Scope(Simple):
         # print 'push scope: [%s@%s]' % (sub.line_nr, sub.indent)
         sub.parent = self
         sub.decorators = decorators
+        for d in decorators:
+            # the parent is the same, because the decorator has not the scope
+            # of the function
+            d.parent = sub.parent
         self.subscopes.append(sub)
         return sub
 
@@ -308,6 +312,9 @@ class Function(Scope):
         for p in params:
             p.parent = self
         self.decorators = []
+        # helper variable for the evaluator, maybe remove this, when
+        # evaluate.py is rewritten, fully functional.
+        self.is_decorated = False
         self.returns = []
         self.is_generator = False
 

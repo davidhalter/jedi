@@ -169,3 +169,60 @@ exe[3].items
 exe[3]['c'].union
 #? []
 exe[3]['c'].upper
+
+# -----------------
+# decorators
+# -----------------
+
+def decorator(func):
+    def wrapper(*args):
+        return func(1, *args)
+    return wrapper
+
+@decorator
+def decorated(a,b):
+    return a,b
+
+exe = decorated(set, '')
+
+#? []
+exe[0].union
+#? ['union']
+exe[1].union
+
+#? ['real']
+exe[0].real
+#? []
+exe[1].real
+
+# more complicated with args/kwargs
+def dec(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@dec
+def fu(a, b, c, *args, **kwargs):
+    return a, b, c, args, kwargs
+
+exe = fu(list, c=set, b=3, d='')
+
+#? ['append']
+exe[0].append
+#? ['real']
+exe[1].real
+#? ['union']
+exe[2].union
+
+#? []
+exe[4]['d'].union
+#? ['upper']
+exe[4]['d'].upper
+
+
+exe = fu(list, set, 3, '', d='')
+
+#? ['upper']
+exe[3][0].upper
+#? []
+exe[3][0].real
