@@ -363,7 +363,7 @@ class Execution(Executable):
         # only enter it, if has not already been processed
         if hasattr(func, 'is_decorated') and not func.is_decorated:
             for dec in reversed(self.base.decorators):
-                print '\n\ndecorator:', dec, func
+                debug.dbg('decorator:', dec, func)
                 dec_results = follow_statement(dec)
                 if not len(dec_results):
                     debug.warning('decorator func not found', self.base)
@@ -385,7 +385,7 @@ class Execution(Executable):
                 # this is here, that the wrapper gets executed
                 func = wrappers[0]
 
-                print 'dece\n\n'
+                debug.dbg('decorator end')
                 #print dec.parent
         return func
 
