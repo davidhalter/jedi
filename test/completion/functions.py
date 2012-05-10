@@ -237,4 +237,5 @@ def gen():
     yield ""
 
 exe = gen()
-exe.
+#? ['upper']
+exe.upper

@@ -7,7 +7,6 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 TODO doc
 TODO list comprehensions, priority?
 TODO evaluate asserts (type safety)
-TODO generators
 
 python 3 stuff:
 TODO class decorators
@@ -392,7 +391,7 @@ class Execution(Executable):
         return func
 
     @memoize_default(default=[])
-    def get_return_types(self):
+    def get_return_types(self, evaluate_generator=False):
         """
         Get the return vars of a function.
         """
@@ -408,21 +407,24 @@ class Execution(Executable):
             # don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
             if hasattr(func, 'returns'):
-                self.set_param_cb(func)
-                self.base.is_decorated = True
-                ret = func.returns
-                for s in ret:
-                    #temp, s.parent = s.parent, self
-                    stmts += follow_statement(s)
-                    #s.parent = temp
+                if func.is_generator:
+                    return [Generator(func)]
+                else:
+                    self.set_param_cb(func)
+                    self.base.is_decorated = True
+                    ret = func.returns
+                    for s in ret:
+                        #temp, s.parent = s.parent, self
+                        stmts += follow_statement(s)
+                        #s.parent = temp
 
-                # reset the callback function on exit
-                # TODO how can we deactivate this again?
-                #self.base.param_cb = None
+                    # reset the callback function on exit
+                    # TODO how can we deactivate this again?
+                    #self.base.param_cb = None
 
-                # func could have changed because of decorators, so clear them
-                # again
-                self.base.is_decorated = False
+                    # func could have changed because of decorators, so clear them
+                    # again
+                    self.base.is_decorated = False
             else:
                 debug.warning("no execution possible", func)
 
@@ -433,6 +435,17 @@ class Execution(Executable):
     def __repr__(self):
         return "<%s of %s>" % \
                 (self.__class__.__name__, self.base)
+
+
+class Generator(object):
+    def __init__(self, execution):
+        super(Generator, self).__init__()
+        self.execution = execution
+
+    def get_defined_names(self):
+        return []
+        # TODO add generator names (__next__, send, close, throw, next?)
+        #self.execution.get_return_types()
 
 
 class Array(object):
