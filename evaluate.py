@@ -852,7 +852,6 @@ def follow_path(path, scope, position=None):
     if isinstance(current, parsing.Array):
         # this must be an execution, either () or []
         if current.type == parsing.Array.LIST:
-            print 'cur', current, scope
             result = scope.get_index_types(current)
         elif current.type not in [parsing.Array.DICT]:
             # scope must be a class or func - make an instance or execution
