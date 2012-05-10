@@ -20,39 +20,25 @@ class Module(builtin.CachedModule):
     Manages all files, that are parsed and caches them.
 
     :param source: The source code of the file.
-    :param module_path: The module path of the file.
+    :param path: The module path of the file.
     """
     module_cache = {}
 
-    def __init__(self, module_path, source):
+    def __init__(self, path, source):
+        super(Module, self).__init__(path=path)
         self.source = source
-        self.module_path = module_path
         self._line_cache = None
-        self._parser = None
-
-    @property
-    def parser(self):
-        if not self._parser:
-            # check the cache
-            try:
-                timestamp, _parser = Module.module_cache[self.module_path]
-                if timestamp == os.path.getmtime(self.module_path):
-                    debug.dbg('hit module cache')
-                    return _parser
-            except KeyError:
-                self._load_module()
-        return self._parser
 
     def _get_source(self):
         return self.source
 
     def _load_module(self):
-        self._parser = parsing.PyFuzzyParser(self.source, self.module_path)
+        self._parser = parsing.PyFuzzyParser(self.source, self.path)
         del self.source  # efficiency
 
         # insert into cache
-        to_cache = (os.path.getmtime(self.module_path), self._parser)
-        Module.module_cache[self.module_path] = to_cache
+        to_cache = (os.path.getmtime(self.path), self._parser)
+        Module.module_cache[self.path] = to_cache
 
 
 def find_module(current_module, point_path):
@@ -73,7 +59,7 @@ def find_module(current_module, point_path):
         else:
             path = None
             debug.dbg('search_module', string, path,
-                                            current_module.module_path)
+                                            current_module.path)
         try:
             i = imp.find_module(string, path)
         except ImportError:
@@ -83,7 +69,7 @@ def find_module(current_module, point_path):
 
     # TODO handle relative paths - they are included in the import object
     current_namespace = None
-    module_find_path.insert(0, os.path.dirname(current_module.module_path))
+    module_find_path.insert(0, os.path.dirname(current_module.path))
     # now execute those paths
     rest = []
     for i, s in enumerate(point_path):

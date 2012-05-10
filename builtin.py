@@ -8,19 +8,10 @@ import parsing
 class CachedModule(object):
     cache = {}
 
-    def __init__(self, name=None, path=None, sys_path=sys.path):
+    def __init__(self, path=None, name=None):
         self.path = path
-        if name:
-            self.name = name
-        else:
-            name = os.path.basename(self.path)
-            self.name = name.rpartition('.')[0]  # cut file type (normally .so)
-            self.path = os.path.dirname(self.path)
-            #print self.name, self.path
-        self._content = {}
+        self.name = name
         self._parser = None
-        self._module = None
-        self.sys_path = sys_path
 
     @property
     def parser(self):
@@ -79,21 +70,17 @@ class Parser(CachedModule):
     }
     module_cache = {}
 
-    def __init__(self, name=None, path=None, sys_path=sys.path):
-        super(Parser, self).__init__(name, path)
-
-        self.path = path
-        if name:
-            self.name = name
-        else:
-            name = os.path.basename(self.path)
-            self.name = name.rpartition('.')[0]  # cut file type (normally .so)
-            self.path = os.path.dirname(self.path)
+    def __init__(self, path=None, name=None, sys_path=sys.path):
+        if not name:
+            name = os.path.basename(path)
+            name = name.rpartition('.')[0]  # cut file type (normally .so)
+            path = os.path.dirname(path)
             #print self.name, self.path
-        self._content = {}
-        self._parser = None
-        self._module = None
+        super(Parser, self).__init__(path=path, name=name)
+
         self.sys_path = sys_path
+        self._content = {}
+        self._module = None
 
     @property
     def module(self):

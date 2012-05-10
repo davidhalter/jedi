@@ -12,23 +12,23 @@ __all__ = ['complete', 'get_completion_parts', 'set_debug_function']
 class FileWithCursor(modules.Module):
     """
     Manages all files, that are parsed and caches them.
-    Important are the params source and module_path, one of them has to
+    Important are the params source and path, one of them has to
     be there.
 
     :param source: The source code of the file.
-    :param module_path: The module name of the file.
+    :param path: The module path of the file.
     :param row: The row, the user is currently in. Only important for the \
     main file.
     """
-    def __init__(self, module_path, source, row):
-        super(FileWithCursor, self).__init__(module_path, source)
+    def __init__(self, path, source, row):
+        super(FileWithCursor, self).__init__(path, source)
         self.row = row
 
         # this two are only used, because there is no nonlocal in Python 2
         self._row_temp = None
         self._relevant_temp = None
 
-        self._parser = parsing.PyFuzzyParser(source, module_path, row)
+        self._parser = parsing.PyFuzzyParser(source, path, row)
 
     def get_row_path(self, column):
         """ Get the path under the cursor. """

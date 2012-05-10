@@ -218,7 +218,7 @@ class Scope(Simple):
             try:
                 name = self.command
             except AttributeError:
-                name = self.module_path
+                name = self.path
 
         return "<%s: %s@%s-%s>" % \
                 (self.__class__.__name__, name, self.line_nr, self.line_end)
@@ -226,12 +226,12 @@ class Scope(Simple):
 
 class GlobalScope(Scope):
     """
-    The top scope, which is a module.
+    The top scope, which is always a module.
     I don't know why I didn't name it Module :-)
     """
-    def __init__(self, module_path, docstr=''):
-        super(GlobalScope, self).__init__(module_path, docstr)
-        self.module_path = module_path
+    def __init__(self, path, docstr=''):
+        super(GlobalScope, self).__init__(path, docstr)
+        self.path = path
         self.global_vars = []
 
     def add_global(self, name):
