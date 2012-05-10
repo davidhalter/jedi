@@ -617,7 +617,7 @@ class Statement(Simple):
                     next(tok_iter)
                     continue
 
-            brackets = {'(': Array.NOARRAY, '[': Array.LIST, '{': Array.SET}
+            brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
             is_call = lambda: result.__class__ == Call
             is_call_or_close = lambda: is_call() or close_brackets
 
@@ -818,7 +818,10 @@ class Array(Call):
     def add_to_current_field(self, tok):
         """ Adds a token to the latest field (in content). """
         if not self.values:
-            # add the first field, this is done here, because if nothing
+            # An empty round brace is just a tuple, filled it is unnecessary.
+            if self.type == Array.TUPLE:
+                self.type = Array.NOARRAY
+            # Add the first field, this is done here, because if nothing
             # gets added, the list is empty, which is also needed sometimes.
             self.values.append([])
         self.values[-1].append(tok)
