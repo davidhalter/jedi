@@ -101,6 +101,32 @@ class Parser(CachedModule):
     def _get_source(self):
         return self._generate_code(self.module)
 
+    def _load_mixins(self):
+        self.mixin_funcs = {}
+        if not self.path:
+            try:
+                f = open(os.path.sep.join(['mixin', self.name]) + '.py')
+            except IOError:
+                pass
+            else:
+                code = f.read()
+                # TODO implement classes, how? not used yet
+                regex = r'^(def|class)\s+([\w\d]+)'
+                matches = list(re.finditer(regex, code, re.MULTILINE))
+                positions = [m.start() for m in matches]
+                for i, pos in enumerate(positions):
+                    try:
+                        code_block = code[pos:positions[i+1]]
+                    except IndexError:
+                        code_block = code[pos:len(code)]
+                    structure_name = matches[i].group(1)
+                    name = matches[i].group(2)
+                    if structure_name == 'def':
+                        self.mixin_funcs[name] = code_block
+                    else:
+                        raise NotImplementedError
+                    print code_block
+
     def _generate_code(self, scope, depth=0):
         """
         Generate a string, which uses python syntax as an input to the
@@ -126,6 +152,9 @@ class Parser(CachedModule):
                 else:
                     stmts[n] = exe
             return classes, funcs, stmts, members
+
+        if depth == 0:
+            self._load_mixins()
 
         code = ''
         try:
@@ -154,10 +183,21 @@ class Parser(CachedModule):
         # functions
         for name, func in funcs.iteritems():
             params, ret = parse_function_doc(func)
-            code += 'def %s(%s):\n' % (name, params)
-            block = '"""\n%s\n"""\n' % func.__doc__
-            block += '%s\n\n' % ret
-            code += parsing.indent_block(block)
+            doc_str = parsing.indent_block('"""\n%s\n"""\n' % func.__doc__)
+            try:
+                mixin = self.mixin_funcs[name]
+            except:
+                # normal code generation
+                code += 'def %s(%s):\n' % (name, params)
+                code += doc_str
+                code += parsing.indent_block('%s\n\n' % ret)
+            else:
+                # generation of code with mixins
+                # find doc_str place
+                pos = re.search(r'\):\s*\n', mixin).end()
+                if pos is None:
+                    raise Exception("Builtin function not parsed correctly")
+                code += mixin[:pos] + doc_str + mixin[pos:]
 
         # class members (functions)
         for name, func in members.iteritems():
