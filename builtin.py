@@ -193,6 +193,8 @@ class Parser(CachedModule):
                 code += parsing.indent_block('%s\n\n' % ret)
             else:
                 # generation of code with mixins
+                # the parser only supports basic functions with a newline after
+                # the double dots
                 # find doc_str place
                 pos = re.search(r'\):\s*\n', mixin).end()
                 if pos is None:

@@ -601,8 +601,8 @@ class Statement(Simple):
                 if tok in ['return', 'yield'] or level == 0 and \
                         '=' in tok and not tok in ['>=', '<=', '==', '!=']:
                     # This means, there is an assignment here.
-                    # TODO there may be multiple assignments: a = b = 1
 
+                    # Add assignments, which can be more than one
                     self._assignment_details.append((tok, top))
                     # All these calls wouldn't be important if nonlocal would
                     # exist. -> Initialize the first item again.
@@ -668,7 +668,7 @@ class Statement(Simple):
                     close_brackets = False
                 is_chain = True
             elif tok == ',':
-                if is_call_or_close():
+                while is_call_or_close():
                     result = result.parent
                     close_brackets = False
                 result.add_field()
@@ -687,7 +687,7 @@ class Statement(Simple):
                 #result = result.parent
                 close_brackets = True
             else:
-                if is_call_or_close():
+                while is_call_or_close():
                     result = result.parent
                     close_brackets = False
                 result.add_to_current_field(tok)
