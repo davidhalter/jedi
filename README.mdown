@@ -1,8 +1,7 @@
-Jedi
+Jedi - a clever Python auto-completion
 ============================
 
-** This is just a work-in-progress README. The auto-completion is not yet
-finished (and the README neither :-)) **
+** This is just a work-in-progress README. The auto-completion is not yet finished (and the README neither :-)) **
 
 Jedi is an autocompletion tool for Python. It should always work as good as
 possible. It should provide completion wherever it is possible.
@@ -13,7 +12,7 @@ is a VIM implementation, which uses Jedi's autocompletion. However, I encourage
 you to use Jedi in your IDEs. If there is some problem with licensing, just
 contact me.
 
-Get the latest from [github](http://github.com/davidhalter/jedi)
+Get the latest from [github](http://github.com/davidhalter/jedi).
 
 Support
 -------
