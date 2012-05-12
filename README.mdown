@@ -1,0 +1,72 @@
+Jedi
+============================
+
+** This is just a work-in-progress README. The auto-completion is not yet
+finished (and the README neither :-)) **
+
+Jedi is an autocompletion tool for Python. It should always work as good as
+possible. It should provide completion wherever it is possible.
+In a later stage of the project, it should also provide renaming.
+
+Jedi uses a very simple interface to connect with IDE's. As an example, there
+is a VIM implementation, which uses Jedi's autocompletion. However, I encourage
+you to use Jedi in your IDEs. If there is some problem with licensing, just
+contact me.
+
+Get the latest from [github](http://github.com/davidhalter/jedi)
+
+Support
+-------
+
+There is support for Python 2/3 (3 untested TODO).
+Jedi supports many of the widely used Python features:
+
+ - builtin functions/classes support
+ - complex module / function / class structures
+ - multiple 
+ - tuple assignments / array indexing / dictionary indexing
+ - exceptions / with-statement / 
+ - \*args / \*\*args
+ - decorators
+ - generators (yield statement)
+
+Caveats
+-------
+
+This framework should work for both Python 2/3. However, some things where not
+nice in Python 2. To keep things simple, some things have been held back:
+
+ - Classes: Always Python 3, therefore all classes inherit from `object`.
+ - Generators: No `next` method. The `__next__` method is there instead.
+
+Syntax Errors and other strange stuff, that is defined differently in the
+Python language, may lead to undefined behaviour of the completion. If you
+
+Importing `numpy` can be quite slow sometimes, as well as loading the builtins
+the first time. If you want to speed it up, you could write import hooks in
+jedi, which preload this stuff. However, once loaded, this is not a problem
+anymore.
+
+From time to time Jedi might feel terribly slow. This behaviour is known, when
+the process was swapped to disk.
+
+
+A little history
+----------------
+
+Jedi...
+
+Contents
+--------
+
+`.`
+>    text block
+
+
+API Design
+-----------------
+
+blabla
+    SRC Box TODO 
+
+
