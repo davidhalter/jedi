@@ -1,4 +1,3 @@
-import tokenize
 import re
 
 import parsing
@@ -7,98 +6,6 @@ import modules
 import debug
 
 __all__ = ['complete', 'get_completion_parts', 'set_debug_function']
-
-
-class FileWithCursor(modules.Module):
-    """
-    Manages all files, that are parsed and caches them.
-    Important are the params source and path, one of them has to
-    be there.
-
-    :param source: The source code of the file.
-    :param path: The module path of the file.
-    :param row: The row, the user is currently in. Only important for the \
-    main file.
-    """
-    def __init__(self, path, source, row):
-        super(FileWithCursor, self).__init__(path, source)
-        self.row = row
-
-        # this two are only used, because there is no nonlocal in Python 2
-        self._row_temp = None
-        self._relevant_temp = None
-
-        self._parser = parsing.PyFuzzyParser(source, path, row)
-
-    def get_row_path(self, column):
-        """ Get the path under the cursor. """
-        self._is_first = True
-
-        def fetch_line():
-            line = self.get_line(self._row_temp)
-            if self._is_first:
-                self._is_first = False
-                line = line[:column]
-            else:
-                line = line + '\n'
-            # add lines with a backslash at the end
-            while self._row_temp > 1:
-                self._row_temp -= 1
-                last_line = self.get_line(self._row_temp)
-                if last_line and last_line[-1] == '\\':
-                    line = last_line[:-1] + ' ' + line
-                else:
-                    break
-            return line[::-1]
-
-        self._row_temp = self.row
-
-        force_point = False
-        open_brackets = ['(', '[', '{']
-        close_brackets = [')', ']', '}']
-
-        gen = tokenize.generate_tokens(fetch_line)
-        string = ''
-        level = 0
-        for token_type, tok, start, end, line in gen:
-            #print token_type, tok, force_point
-            if level > 0:
-                if tok in close_brackets:
-                    level += 1
-                if tok in open_brackets:
-                    level -= 1
-            elif tok == '.':
-                force_point = False
-            elif force_point:
-                # it is reversed, therefore a number is getting recognized
-                # as a floating point number
-                if token_type == tokenize.NUMBER and tok[0] == '.':
-                    force_point = False
-                else:
-                    #print 'break2', token_type, tok
-                    break
-            elif tok in close_brackets:
-                level += 1
-            elif token_type in [tokenize.NAME, tokenize.STRING]:
-                force_point = True
-            elif token_type == tokenize.NUMBER:
-                pass
-            else:
-                #print 'break', token_type, tok
-                break
-
-            string += tok
-
-        return string[::-1]
-
-    def get_line(self, line):
-        if not self._line_cache:
-            self._line_cache = self.source.split('\n')
-
-        try:
-            return self._line_cache[line - 1]
-        except IndexError:
-            raise StopIteration()
 
 
 class Completion(object):
@@ -176,7 +83,7 @@ def complete(source, row, column, source_path):
     :return: list of completion objects
     :rtype: list
     """
-    f = FileWithCursor(source_path, source=source, row=row)
+    f = modules.ModuleWithCursor(source_path, source=source, row=row)
     scope = f.parser.user_scope
     path = f.get_row_path(column)
     debug.dbg('completion_start: %s in %s' % (path, scope))
