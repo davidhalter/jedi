@@ -5,6 +5,9 @@ import os
 import debug
 import parsing
 
+module_find_path = sys.path[1:]
+
+
 class CachedModule(object):
     cache = {}
 
@@ -32,7 +35,7 @@ class CachedModule(object):
 
     def _load_module(self):
         source = self._get_source()
-        self._parser = parsing.PyFuzzyParser(source, self.name)
+        self._parser = parsing.PyFuzzyParser(source, self.path or self.name)
         #except:
         #    debug.warning('not possible to resolve', self.name, source)
             #open('builtin_fail', 'w').write(code)
@@ -70,7 +73,7 @@ class Parser(CachedModule):
     }
     module_cache = {}
 
-    def __init__(self, path=None, name=None, sys_path=sys.path):
+    def __init__(self, path=None, name=None, sys_path=module_find_path):
         if not name:
             name = os.path.basename(path)
             name = name.rpartition('.')[0]  # cut file type (normally .so)
@@ -116,7 +119,7 @@ class Parser(CachedModule):
                 positions = [m.start() for m in matches]
                 for i, pos in enumerate(positions):
                     try:
-                        code_block = code[pos:positions[i+1]]
+                        code_block = code[pos:positions[i + 1]]
                     except IndexError:
                         code_block = code[pos:len(code)]
                     structure_name = matches[i].group(1)
@@ -125,7 +128,7 @@ class Parser(CachedModule):
                         self.mixin_funcs[name] = code_block
                     else:
                         raise NotImplementedError
-                    print code_block
+                    #print code_block
 
     def _generate_code(self, scope, depth=0):
         """

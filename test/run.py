@@ -5,7 +5,8 @@ import re
 import StringIO
 import traceback
 
-sys.path.append('../')
+os.chdir('../')
+sys.path.append('.')
 import functions
 
 #functions.set_debug_function(functions.debug.print_to_stdout)
@@ -58,10 +59,14 @@ def completion_test(source):
                 # reset the test, if only one specific test is wanted
                 if len(sys.argv) > 2 and line_nr != int(sys.argv[2]):
                     correct = None
+                    import debug
+                    debug.debug_function = \
+                                functions.debug.print_to_stdout
+                    debug.ignored_modules = ['parsing', 'builtin']
     return tests, fails
 
 # completion tests:
-completion_test_dir = 'completion'
+completion_test_dir = 'test/completion'
 summary = []
 for f_name in os.listdir(completion_test_dir):
     if len(sys.argv) == 1 or [a for a in sys.argv[1:] if a in f_name]:

@@ -5,7 +5,7 @@ import functions
 functions.debug.debug_function = functions.debug.print_to_stdout
 functions.debug.ignored_modules = ['parsing', 'builtin']
 #functions.debug.ignored_modules = ['parsing', 'builtin', 'evaluate', 'modules']
-functions.modules.module_find_path.insert(0, '.')
+functions.modules.builtin.module_find_path.insert(0, '.')
 
 f_name = 'parsetest.py'
 #f_name = 'test/completion/classes.py'

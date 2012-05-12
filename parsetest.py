@@ -164,17 +164,17 @@ def gen():
 
 gen_exe =  gen()
 
-def dec(func):
-    def wrapper(*args, **kwargs):
-        return func(dict, *args, **kwargs)
-    return wrapper
+def nexti(iterator, default=list):
+    if hasattr("next"):
+        #return iterator.next()
+    else:
+        return iterator.__next__()
+    #return default
 
-@dec
-def fu(a, b, c, *args, **kwargs):
-    return a, b, c, args, kwargs
 
-exe = fu(list, c=set, d='')
+#from temp import *
+
 
 #exe[0].
 #exe[4]['d']
-gen_exe.
+next(gen_exe).

@@ -1,5 +1,4 @@
 import imp
-import sys
 import os
 
 import debug
@@ -8,7 +7,6 @@ import builtin
 
 files = {}
 load_module_cb = None
-module_find_path = sys.path[1:]
 
 
 class ModuleNotFound(Exception):
@@ -64,12 +62,12 @@ def find_module(current_module, point_path):
             i = imp.find_module(string, path)
         except ImportError:
             # find builtins (ommit path):
-            i = imp.find_module(string, module_find_path)
+            i = imp.find_module(string, builtin.module_find_path)
         return i
 
     # TODO handle relative paths - they are included in the import object
     current_namespace = None
-    module_find_path.insert(0, os.path.dirname(current_module.path))
+    builtin.module_find_path.insert(0, os.path.dirname(current_module.path))
     # now execute those paths
     rest = []
     for i, s in enumerate(point_path):
@@ -82,7 +80,7 @@ def find_module(current_module, point_path):
                 raise ModuleNotFound(
                         'The module you searched has not been found')
 
-    module_find_path.pop(0)
+    builtin.module_find_path.pop(0)
     path = current_namespace[1]
     is_package_directory = current_namespace[2][2] == imp.PKG_DIRECTORY
 

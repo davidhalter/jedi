@@ -99,6 +99,7 @@ class Executable(object):
             calls.keys = keys
             calls.type = array_type
             new_param = copy.copy(param)
+            new_param.parent = self.var_args.parent_stmt
             new_param._assignment_calls_calculated = True
             new_param._assignment_calls = calls
             name = copy.copy(param.get_name())
@@ -400,6 +401,9 @@ class Execution(Executable):
         if isinstance(self.base, Class):
             # there maybe executions of executions
             stmts = [Instance(self.base, self.var_args)]
+        elif isinstance(self.base, Generator):
+            return Execution(self.base.func).get_return_types(True)
+            pass
         else:
             func = self.process_decorators()
 
@@ -407,7 +411,7 @@ class Execution(Executable):
             # don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
             if hasattr(func, 'returns'):
-                if func.is_generator:
+                if func.is_generator and not evaluate_generator:
                     return [Generator(func)]
                 else:
                     self.set_param_cb(func)
@@ -438,13 +442,27 @@ class Execution(Executable):
 
 
 class Generator(object):
-    def __init__(self, execution):
+    def __init__(self, func):
         super(Generator, self).__init__()
-        self.execution = execution
+        self.func = func
 
     def get_defined_names(self):
-        return []
+        """
+        Returns a list of GeneratorObject, which can return the content of a
+        generator
+        """
+        names = []
+        for n in ['__next__', 'send']:
+            # the name for the `next` function
+            name = parsing.Name([n], 0, 0, 0)
+            name.parent = self
+            names.append(name)
+        return names
+
+    @property
+    def parent(self):
         # TODO add generator names (__next__, send, close, throw, next?)
+        return self.func.parent
         #self.execution.get_return_types()
 
 
@@ -525,10 +543,6 @@ class ArrayElement(object):
     @property
     def parent(self):
         raise NotImplementedError("This shouldn't happen")
-
-    @property
-    def returns(self):
-        return self.name.parent.returns
 
     @property
     def names(self):
@@ -822,7 +836,7 @@ def follow_call(scope, call):
             # reset the position, when imports where stripped
             position = None
 
-    debug.dbg('call before result %s, current %s, scope %s'
+    debug.dbg('call before result %s, current "%s", scope %s'
                                 % (result, current, scope))
     result = follow_paths(path, result, position=position)
 
