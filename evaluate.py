@@ -403,7 +403,6 @@ class Execution(Executable):
             stmts = [Instance(self.base, self.var_args)]
         elif isinstance(self.base, Generator):
             return Execution(self.base.func).get_return_types(True)
-            pass
         else:
             func = self.process_decorators()
 
@@ -457,14 +456,20 @@ class Generator(object):
             name = parsing.Name([n], 0, 0, 0)
             name.parent = self
             names.append(name)
+        for n in ['close', 'throw']:
+            # the name for the `next` function
+            name = parsing.Name([n], 0, 0, 0)
+            name.parent = None
+            names.append(name)
         return names
 
     @property
     def parent(self):
-        # TODO add generator names (__next__, send, close, throw, next?)
         return self.func.parent
         #self.execution.get_return_types()
 
+    def __repr__(self):
+        return "<%s of %s>" % (self.__class__.__name__, self.func)
 
 class Array(object):
     """
@@ -667,7 +672,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     #print name, name.parent.parent, scope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
-                    if name.parent.parent == scope:
+                    if not name.parent or name.parent.parent == scope:
                         break
             # if there are results, ignore the other scopes
             if result:
