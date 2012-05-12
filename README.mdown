@@ -1,7 +1,8 @@
 Jedi - a clever Python auto-completion
 ============================
 
-** This is just a work-in-progress README. The auto-completion is not yet finished (and the README neither :-)) **
+** This is just a work-in-progress README. The auto-completion is not yet
+finished (and the README neither :-)) **
 
 Jedi is an autocompletion tool for Python. It should always work as good as
 possible. It should provide completion wherever it is possible.
@@ -22,7 +23,8 @@ Jedi supports many of the widely used Python features:
 
  - builtin functions/classes support
  - complex module / function / class structures
- - multiple 
+ - ignores syntax and indentation errors
+ - multiple returns / yields
  - tuple assignments / array indexing / dictionary indexing
  - exceptions / with-statement / 
  - \*args / \*\*args
