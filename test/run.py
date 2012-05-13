@@ -11,6 +11,59 @@ import functions
 
 #functions.set_debug_function(functions.debug.print_to_stdout)
 
+def run_completion_test(correct, source, line_nr, line):
+    """
+    Runs tests for completions.
+    Return if the test was a fail or not, with 1 for fail and 0 for success.
+    """
+    # lines start with 1 and column is just the last (makes no
+    # difference for testing)
+    try:
+        completions = functions.complete(source, line_nr, 999,
+                                            completion_test_dir)
+    except Exception:
+        print('test @%s: %s' % (line_nr-1, line))
+        print(traceback.format_exc())
+        return 1
+    else:
+        # TODO remove sorted? completions should be sorted?
+        # TODO remove set! duplicates should not be normal
+        comp_str = str(sorted(set([str(c) for c in completions])))
+        if comp_str != correct:
+            print('Solution @%s not right, received %s, wanted %s'\
+                        % (line_nr - 1, comp_str, correct))
+            return 1
+    return 0
+
+
+def run_definition_test(correct, source, line_nr, line):
+    """
+    Runs tests for definitions.
+    Return if the test was a fail or not, with 1 for fail and 0 for success.
+    """
+    def defs(line_nr, indent):
+        return set(functions.get_definitions(source, line_nr, indent,
+                                            completion_test_dir))
+    try:
+        result = defs(line_nr, 999)
+    except Exception:
+        print('test @%s: %s' % (line_nr-1, line))
+        print(traceback.format_exc())
+        return 1
+    else:
+        should_be = set()
+        for index in re.finditer('(?: +|$)', correct):
+            # -1 for the comment, +3 because of the comment start `#? `
+            should_be |= defs(line_nr-1, index.start() + 3)
+        # because the objects have different ids, `repr` it, then compare it.
+        should_str = sorted(str(r) for r in should_be)
+        is_str = sorted(str(r) for r in result)
+        if is_str != should_str:
+            print('Solution @%s not right, received %s, wanted %s' \
+                        % (line_nr - 1, is_str, should_str))
+            return 1
+    return 0
+
 
 def completion_test(source):
     """
@@ -30,24 +83,13 @@ def completion_test(source):
     for line_nr, line in enumerate(StringIO.StringIO(source)):
         line_nr += 1
         if correct:
-            # lines start with 1 and column is just the last (makes no
-            # difference for testing)
-            try:
-                completions = functions.complete(source, line_nr, 999,
-                                                    completion_test_dir)
-            except Exception:
-                print 'test @%s: %s' % (line_nr-1, line)
-                print traceback.format_exc()
-                fails += 1
+            # if a list is wanted, use the completion test, otherwise the
+            # get_definition test
+            if correct.startswith('['):
+                fails += run_completion_test(correct, source, line_nr, line)
             else:
-                # TODO remove sorted? completions should be sorted?
-                # TODO remove set! duplicates should not be normal
-                comp_str = str(sorted(set([str(c) for c in completions])))
-                if comp_str != correct:
-                    print 'Solution @%s not right, received %s, wanted %s'\
-                                % (line_nr - 1, comp_str, correct)
-                    #print [(c.name, c.name.parent) for c in completions]
-                    fails += 1
+                fails += run_definition_test(correct, source, line_nr, line)
+
             correct = None
             tests += 1
         else:
@@ -75,9 +117,9 @@ for f_name in os.listdir(completion_test_dir):
             f = open(path)
             num_tests, fails = completion_test(f.read())
             s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
-            print s
+            print(s)
             summary.append(s)
 
-print '\nSummary:'
+print('\nSummary:')
 for s in summary:
-    print s
+    print(s)

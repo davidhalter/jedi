@@ -162,7 +162,7 @@ def gen():
     yield 1
     yield ""
 
-gen_exe =  gen()
+gen_exe = gen()
 
 def nexti(iterator, default=list):
     if hasattr("next"):
