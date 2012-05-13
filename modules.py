@@ -1,3 +1,4 @@
+import re
 import tokenize
 import imp
 import os
@@ -61,7 +62,7 @@ class ModuleWithCursor(Module):
 
         self._parser = parsing.PyFuzzyParser(source, path, row)
 
-    def get_row_path(self, column):
+    def get_path_until_cursor(self, column):
         """ Get the path under the cursor. """
         self._is_first = True
 
@@ -121,6 +122,15 @@ class ModuleWithCursor(Module):
             string += tok
 
         return string[::-1]
+
+    def get_path_under_cursor(self, column):
+        """
+        Return the path under the cursor. If there is a rest of the path left,
+        it will be added to the stuff before it.
+        """
+        line = self.get_line(self.row)
+        after = re.search("[\w\d]*", line[column:]).group(0)
+        return self.get_path_until_cursor(column) + after
 
     def get_line(self, line):
         if not self._line_cache:

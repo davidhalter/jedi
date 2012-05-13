@@ -5,7 +5,12 @@ import evaluate
 import modules
 import debug
 
-__all__ = ['complete', 'get_completion_parts', 'set_debug_function']
+__all__ = ['complete', 'goto', 'get_completion_parts', 'set_debug_function']
+
+
+class NotFoundError(Exception):
+    """ A custom error to avoid catching the wrong errors """
+    pass
 
 
 class Completion(object):
@@ -85,7 +90,7 @@ def complete(source, row, column, source_path):
     """
     f = modules.ModuleWithCursor(source_path, source=source, row=row)
     scope = f.parser.user_scope
-    path = f.get_row_path(column)
+    path = f.get_path_until_cursor(column)
     debug.dbg('completion_start: %s in %s' % (path, scope))
 
     # just parse one statement, take it and evaluate it
@@ -122,6 +127,39 @@ def complete(source, row, column, source_path):
 
     needs_dot = not dot and path
     return [Completion(c, needs_dot, len(like)) for c in set(completions)]
+
+
+def prepare_goto(source, row, column, source_path, is_like_search):
+    f = modules.ModuleWithCursor(source_path, source=source, row=row)
+    scope = f.parser.user_scope
+
+    if is_like_search:
+        path = f.get_path_until_cursor(column)
+        path, dot, like = get_completion_parts(path)
+    else:
+        path = f.get_path_under_cursor(column)
+
+    debug.dbg('start: %s in %s' % (path, scope))
+
+    # just parse one statement, take it and evaluate it
+    r = parsing.PyFuzzyParser(path, source_path)
+    try:
+        stmt = r.top.statements[0]
+    except IndexError:
+        raise NotFoundError()
+    else:
+        stmt.line_nr = row
+        stmt.indent = column
+        stmt.parent = scope
+        scopes = evaluate.follow_statement(stmt, scope=scope)
+    return scope, scopes
+
+
+def goto(source, row, column, source_path):
+    dummy, scopes = prepare_goto(source, row, column, source_path, False)
+
+    _clear_caches()
+    return scopes
 
 
 def set_debug_function(func_cb):

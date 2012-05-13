@@ -27,7 +27,7 @@ Jedi supports many of the widely used Python features:
  - multiple returns / yields
  - tuple assignments / array indexing / dictionary indexing
  - exceptions / with-statement / 
- - \*args / \*\*args
+ - \*args / \*\*kwargs
  - decorators
  - generators (yield statement)
 
