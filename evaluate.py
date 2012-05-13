@@ -837,13 +837,10 @@ def follow_call(scope, call):
     if isinstance(current, parsing.Array):
         result = [Array(current)]
     else:
-        # TODO add better care for int/unicode, now str/float are just used
-        # instead
         if not isinstance(current, parsing.NamePart):
-            if current.type == parsing.Call.STRING:
-                scopes = get_scopes_for_name(builtin.Builtin.scope, 'str')
-            elif current.type == parsing.Call.NUMBER:
-                scopes = get_scopes_for_name(builtin.Builtin.scope, 'float')
+            if current.type in (parsing.Call.STRING, parsing.Call.NUMBER):
+                t = type(current.name).__name__
+                scopes = get_scopes_for_name(builtin.Builtin.scope, t)
             else:
                 debug.warning('unknown type:', current.type, current)
             # make instances of those number/string objects

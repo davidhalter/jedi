@@ -241,5 +241,5 @@ gen_exe = gen()
 next(gen_exe).upper
 #? ['real']
 next(gen_exe).real
-#? float() str()
+#? int() str()
 next(gen_exe)

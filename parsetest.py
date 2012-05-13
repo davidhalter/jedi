@@ -160,7 +160,7 @@ a.
 
 def gen():
     yield 1
-    yield ""
+    yield u""
 
 gen_exe = gen()
 
