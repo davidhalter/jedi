@@ -286,11 +286,24 @@ class Instance(Executable):
 
         return names
 
+    @property
     def parent(self):
         return self.base.parent
 
+    @property
+    def line_nr(self):
+        return self.base.line_nr
+
+    @property
+    def indent(self):
+        return self.base.indent
+
+    @property
+    def name(self):
+        return self.base.name
+
     def __repr__(self):
-        return "<p%s of %s (var_args: %s)>" % \
+        return "<e%s of %s (var_args: %s)>" % \
                 (self.__class__.__name__, self.base, len(self.var_args or []))
 
 
@@ -345,11 +358,15 @@ class Class(object):
                         names.append(i)
         return names
 
+    @property
+    def name(self):
+        return self.base.name
+
     def __getattr__(self, name):
         return getattr(self.base, name)
 
     def __repr__(self):
-        return "<p%s of %s>" % (self.__class__.__name__, self.base)
+        return "<e%s of %s>" % (self.__class__.__name__, self.base)
 
 
 class Execution(Executable):
@@ -537,7 +554,7 @@ class Array(object):
         return self._array
 
     def __repr__(self):
-        return "<p%s of %s>" % (self.__class__.__name__, self._array)
+        return "<e%s of %s>" % (self.__class__.__name__, self._array)
 
 
 class ArrayElement(object):

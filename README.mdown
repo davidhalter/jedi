@@ -39,6 +39,7 @@ nice in Python 2. To keep things simple, some things have been held back:
 
  - Classes: Always Python 3, therefore all classes inherit from `object`.
  - Generators: No `next` method. The `__next__` method is there instead.
+ - Exceptions are only looked at in the form of `Exception as e`, no comma!
 
 Syntax Errors and other strange stuff, that is defined differently in the
 Python language, may lead to undefined behaviour of the completion. If you
