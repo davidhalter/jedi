@@ -52,6 +52,34 @@ endfunction
 
 
 " ------------------------------------------------------------------------
+" get_definition
+" ------------------------------------------------------------------------
+"
+function! jedi#show_definition()
+python << PYTHONEOF
+if 1:
+    row, column = vim.current.window.cursor
+    buf_path = vim.current.buffer.name
+    source = '\n'.join(vim.current.buffer)
+    try:
+        definitions = functions.get_definitions(source, row, column, buf_path)
+    except functions.NotFoundError:
+        msg = 'There is no useful expression under the cursor'
+    except Exception:
+        # print to stdout, will be in :messages
+        print(traceback.format_exc())
+        msg = "Some different eror, this shouldn't happen"
+    else:
+        msg = ', '.join(sorted(str(d) for d in definitions))
+        if not msg:
+            msg = "No definitions found!"
+    vim.command('''echomsg "%s"''' % msg)
+
+    #print 'end', strout
+PYTHONEOF
+endfunction
+
+" ------------------------------------------------------------------------
 " Initialization of Jedi
 " ------------------------------------------------------------------------
 

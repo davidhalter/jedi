@@ -177,4 +177,5 @@ def nexti(iterator, default=list):
 
 #exe[0].
 #exe[4]['d']
-next(gen_exe).
+a = next(gen_exe)
+a

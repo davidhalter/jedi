@@ -82,7 +82,12 @@ class Definition(object):
                 par = par.parent
             else:
                 break
-        return par.path
+
+        path = str(par.path)
+        try:
+            return path[path.rindex('/')+1:]
+        except ValueError:
+            return path
 
     def get_line(self):
         return self.scope.line_nr
@@ -97,8 +102,7 @@ class Definition(object):
         else:
             # no path - is a builtin
             position = ''
-
-        return "%s.%s%s" % (module, self.get_name(), position)
+        return "%s:%s%s" % (module, self.get_name(), position)
 
     def __repr__(self):
         return "<%s %s>" % (self.__class__.__name__, self)
@@ -177,10 +181,16 @@ def prepare_goto(source, row, column, source_path, is_like_search):
     try:
         stmt = r.top.statements[0]
     except IndexError:
-        path_tuple = path, dot, like
+        if is_like_search:
+            path_tuple = path, dot, like
+        else:
+            path_tuple = ()
         raise NotFoundError(scope, path_tuple)
     else:
-        stmt.line_nr = row
+        if is_like_search:
+            stmt.line_nr = row
+        else:
+            stmt.line_nr = row+1
         stmt.indent = column
         stmt.parent = scope
         scopes = evaluate.follow_statement(stmt, scope=scope)
