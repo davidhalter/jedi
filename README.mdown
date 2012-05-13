@@ -42,7 +42,9 @@ nice in Python 2. To keep things simple, some things have been held back:
  - Exceptions are only looked at in the form of `Exception as e`, no comma!
 
 Syntax Errors and other strange stuff, that is defined differently in the
-Python language, may lead to undefined behaviour of the completion. If you
+Python language, may lead to undefined behaviour of the completion. Jedi is **NOT**
+a Python compiler, that tries to correct you. It is a tool that wants to help
+you. But **YOU** have to know Python, not Jedi.
 
 Importing `numpy` can be quite slow sometimes, as well as loading the builtins
 the first time. If you want to speed it up, you could write import hooks in
