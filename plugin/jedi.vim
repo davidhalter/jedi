@@ -30,7 +30,9 @@ if 1:
             for c in completions:
                 d = dict(word=c.complete,
                          abbr=str(c),
-                         menu=c.description,  # stuff directly behind the completion
+                         # stuff directly behind the completion
+                         # TODO change it so that ' are allowed (not used now, because of repr)
+                         menu=c.description.replace("'", '"'),
                          info=c.help,  # docstr and similar stuff
                          kind=c.get_vim_type(),  # completion type
                          icase=1,  # case insensitive

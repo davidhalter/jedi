@@ -2,7 +2,7 @@
 
 # test comment
 
-import datetime, os, sys
+import datetime, os, sys, tokenize
 #from token import *
 from time import sleep
 from token import OP as OP_TEST, INDENT as INDENT_TEST
