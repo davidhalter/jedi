@@ -2,7 +2,7 @@
 
 # test comment
 
-import datetime, os, sys, tokenize
+import datetime, os, sys, tokenize, re
 #from token import *
 from time import sleep
 from token import OP as OP_TEST, INDENT as INDENT_TEST
@@ -172,10 +172,9 @@ def nexti(iterator, default=list):
     #return default
 
 
-#from temp import *
-
-
 #exe[0].
 #exe[4]['d']
 a = next(gen_exe)
-a
+def ret():
+    r = []
+    return r.

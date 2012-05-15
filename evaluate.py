@@ -544,7 +544,10 @@ class Array(object):
         return follow_call_list(scope, values)
 
     def get_defined_names(self):
-        """ This method generates all ArrayElements for one parsing.Array. """
+        """
+        This method generates all ArrayElements for one parsing.Array.
+        It returns e.g. for a list: append, pop, ...
+        """
         # array.type is a string with the type, e.g. 'list'
         scope = get_scopes_for_name(builtin.Builtin.scope, self._array.type)[0]
         names = scope.get_defined_names()
@@ -564,7 +567,7 @@ class ArrayElement(object):
 
     @property
     def parent(self):
-        raise NotImplementedError("This shouldn't happen")
+        return self.name.parent
 
     @property
     def names(self):
