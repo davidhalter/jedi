@@ -13,7 +13,7 @@ TODO class decorators
 TODO annotations ? how ? type evaluation and return?
 TODO nonlocal statement
 """
-from _compatibility import next
+from _compatibility import next, property
 
 import itertools
 import copy

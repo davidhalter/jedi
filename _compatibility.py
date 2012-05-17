@@ -24,3 +24,27 @@ try:
     from ast import literal_eval
 except ImportError:
     literal_eval = eval
+
+
+# properties in 2.5
+try:
+    property.setter
+except AttributeError:
+    import sys
+
+    class property(property):
+        def __init__(self, fget, *args, **kwargs):
+            self.__doc__ = fget.__doc__
+            super(property, self).__init__(fget, *args, **kwargs)
+
+        def setter(self, fset):
+            cls_ns = sys._getframe(1).f_locals
+            for k, v in cls_ns.iteritems():
+                if v == self:
+                    propname = k
+                    break
+            cls_ns[propname] = property(self.fget, fset,
+                                        self.fdel, self.__doc__)
+            return cls_ns[propname]
+else:
+    property = property
