@@ -1276,7 +1276,6 @@ class PyFuzzyParser(object):
                 # check again for unindented stuff. this is true for syntax
                 # errors. only check for names, because thats relevant here. If
                 # some docstrings are not indented, I don't care.
-                print(self.scope.indent, self.scope)
                 while indent <= self.scope.indent \
                         and (token_type == tokenize.NAME or tok in ['(', '['])\
                         and self.scope != self.top:

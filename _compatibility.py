@@ -50,6 +50,13 @@ except AttributeError:
 else:
     property = property
 
+# unicode function
+try:
+    unicode = unicode
+except NameError:
+    def unicode(s):
+        return s.decode("utf-8")
+
 # Borrowed from Ned Batchelder
 if sys.hexversion > 0x03000000:
     def exec_function(source, global_map):

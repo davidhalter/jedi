@@ -2,12 +2,13 @@
 import os
 import sys
 import re
-import StringIO
+from io import BytesIO
 import traceback
 
 os.chdir('../')
 sys.path.append('.')
 import functions
+from _compatibility import unicode
 
 #functions.set_debug_function(functions.debug.print_to_stdout)
 
@@ -80,7 +81,8 @@ def completion_test(source):
     fails = 0
     tests = 0
     correct = None
-    for line_nr, line in enumerate(StringIO.StringIO(source)):
+    for line_nr, line in enumerate(BytesIO(source.encode())):
+        line = unicode(line)
         line_nr += 1
         if correct:
             # if a list is wanted, use the completion test, otherwise the
@@ -95,7 +97,7 @@ def completion_test(source):
         else:
             try:
                 correct = re.search(r'(?:^|\s)#\?\s*([^\n]+)', line).group(1)
-            except:
+            except AttributeError:
                 correct = None
             else:
                 # reset the test, if only one specific test is wanted
