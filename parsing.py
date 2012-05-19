@@ -34,7 +34,7 @@ TODO check meta classes
 from _compatibility import next, literal_eval
 
 import tokenize
-import cStringIO
+from io import BytesIO
 import re
 
 import debug
@@ -229,7 +229,7 @@ class Module(Scope):
     The top scope, which is always a module.
     """
     def __init__(self, path, docstr=''):
-        super(Module, self).__init__(path, docstr)
+        super(Module, self).__init__(0, 0, docstr)
         self.path = path
         self.global_vars = []
 
@@ -1245,8 +1245,14 @@ class PyFuzzyParser(object):
 
         :raises: IndentationError
         """
-        buf = cStringIO.StringIO(self.code)
-        self.gen = tokenize.generate_tokens(buf.readline)
+        buf = BytesIO(self.code.encode())
+        #print(self.code.encode())
+        #print(list(tokenize.tokenize(BytesIO(self.code.encode()).readline))[:9])
+        import sys
+        if sys.hexversion > 0x03000000:
+            self.gen = tokenize.tokenize(buf.readline)
+        else:
+            self.gen = tokenize.generate_tokens(buf.readline)
         self.currentscope = self.scope
 
         extended_flow = ['else', 'elif', 'except', 'finally']
@@ -1270,6 +1276,7 @@ class PyFuzzyParser(object):
                 # check again for unindented stuff. this is true for syntax
                 # errors. only check for names, because thats relevant here. If
                 # some docstrings are not indented, I don't care.
+                print(self.scope.indent, self.scope)
                 while indent <= self.scope.indent \
                         and (token_type == tokenize.NAME or tok in ['(', '['])\
                         and self.scope != self.top:

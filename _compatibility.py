@@ -2,6 +2,8 @@
 This is a compatibility module, to make it possible to use jedi also with older
 python versions.
 """
+import sys
+
 # next was defined in python 2.6, in python 3 obj.next won't be possible
 # anymore
 try:
@@ -31,8 +33,6 @@ except ImportError:
 try:
     property.setter
 except AttributeError:
-    import sys
-
     class property(property):
         def __init__(self, fget, *args, **kwargs):
             self.__doc__ = fget.__doc__
@@ -49,3 +49,11 @@ except AttributeError:
             return cls_ns[propname]
 else:
     property = property
+
+# Borrowed from Ned Batchelder
+if sys.hexversion > 0x03000000:
+    def exec_function(source, global_map):
+        exec(source, global_map)
+else:
+    eval(compile("""def exec_function(source, global_map):
+                        exec source in global_map """, 'blub', 'exec'))

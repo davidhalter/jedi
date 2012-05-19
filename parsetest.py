@@ -132,8 +132,8 @@ class c1():
         self.acp = athefirst; self.bcp = 3
     def c3(self, daeparam):
         import os as c4 #from parsing import Scope as c4
-       c5 = 1
-        c5 = c4(
+        c5 = 1
+        c5 = c4()
         if 1:
             print 1
         #return c5+'asdf'
@@ -178,3 +178,4 @@ a = next(gen_exe)
 def ret():
     r = []
     return r.
+

@@ -5,6 +5,8 @@ import os
 import debug
 import parsing
 
+from _compatibility import exec_function
+
 module_find_path = sys.path[1:]
 
 
@@ -89,7 +91,8 @@ class Parser(CachedModule):
             temp, sys.path = sys.path, self.sys_path
             # TODO reenable and check (stackoverflow question - pylab builtins)
             #print 'sypa', sys.path
-            exec 'import %s as module' % self.name in self._content
+            exec_function('import %s as module' % self.name, self._content)
+
             self.sys_path, sys.path = sys.path, temp
 
             self.sys_path.pop(0)
@@ -171,7 +174,7 @@ class Parser(CachedModule):
         classes, funcs, stmts, members = get_types(names)
 
         # classes
-        for name, cl in classes.iteritems():
+        for name, cl in classes.items():
             bases = (c.__name__ for c in cl.__bases__)
             code += 'class %s(%s):\n' % (name, ','.join(bases))
             if depth == 0:
@@ -180,7 +183,7 @@ class Parser(CachedModule):
             code += '\n'
 
         # functions
-        for name, func in funcs.iteritems():
+        for name, func in funcs.items():
             params, ret = parse_function_doc(func)
             doc_str = parsing.indent_block('"""\n%s\n"""\n' % func.__doc__)
             try:
@@ -201,7 +204,7 @@ class Parser(CachedModule):
                 code += mixin[:pos] + doc_str + mixin[pos:]
 
         # class members (functions)
-        for name, func in members.iteritems():
+        for name, func in members.items():
             ret = 'pass'
             code += '@property\ndef %s(self):\n' % (name)
             block = '"""\n%s\n"""\n' % func.__doc__
@@ -209,8 +212,8 @@ class Parser(CachedModule):
             code += parsing.indent_block(block)
 
         # variables
-        for name, value in stmts.iteritems():
-            if type(value) == file:
+        for name, value in stmts.items():
+            if type(value).__name__ == 'file':
                 value = 'file'
             elif type(value).__name__ in ['int', 'bool', 'float',
                                           'dict', 'list', 'tuple']:
@@ -290,7 +293,12 @@ def parse_function_doc(func):
 
 
 class _Builtin(object):
-    _builtins = Parser(name='__builtin__')
+    # Python 3 compatibility
+    if sys.hexversion > 0x03000000:
+        name = 'builtins'
+    else:
+        name='__builtin__'
+    _builtins = Parser(name=name)
 
     @property
     def scope(self):

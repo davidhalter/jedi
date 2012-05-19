@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import re
 import tokenize
 import imp
@@ -60,6 +61,9 @@ class ModuleWithCursor(Module):
         self._row_temp = None
         self._relevant_temp = None
 
+        # Call the parser already here, because it will be used anyways.
+        # Also, the position is here important (which will not be used by
+        # default), therefore fill the cache here.
         self._parser = parsing.PyFuzzyParser(source, path, row)
 
     def get_path_until_cursor(self, column):
@@ -192,10 +196,8 @@ def find_module(current_module, point_path):
         # is a directory module
         if is_package_directory:
             path += '/__init__.py'
-            # python2.5 cannot cope with the `with` statement
-            #with open(path) as f:
-            #    source = f.read()
-            source = open(path).read()
+            with open(path) as f:
+                source = f.read()
         else:
             source = current_namespace[0].read()
         if path.endswith('.py'):
