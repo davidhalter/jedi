@@ -31,10 +31,9 @@ Ignored statements:
 TODO take special care for future imports
 TODO check meta classes
 """
-from _compatibility import next, literal_eval
+from _compatibility import next, literal_eval, tokenize_func, BytesIO
 
 import tokenize
-from io import BytesIO
 import re
 
 import debug
@@ -1246,13 +1245,7 @@ class PyFuzzyParser(object):
         :raises: IndentationError
         """
         buf = BytesIO(self.code.encode())
-        #print(self.code.encode())
-        #print(list(tokenize.tokenize(BytesIO(self.code.encode()).readline))[:9])
-        import sys
-        if sys.hexversion > 0x03000000:
-            self.gen = tokenize.tokenize(buf.readline)
-        else:
-            self.gen = tokenize.generate_tokens(buf.readline)
+        self.gen = tokenize_func(buf.readline)
         self.currentscope = self.scope
 
         extended_flow = ['else', 'elif', 'except', 'finally']

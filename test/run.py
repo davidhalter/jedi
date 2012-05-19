@@ -2,13 +2,12 @@
 import os
 import sys
 import re
-from io import BytesIO
 import traceback
 
 os.chdir('../')
 sys.path.append('.')
 import functions
-from _compatibility import unicode
+from _compatibility import unicode, BytesIO
 
 #functions.set_debug_function(functions.debug.print_to_stdout)
 

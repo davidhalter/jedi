@@ -214,7 +214,7 @@ class Parser(CachedModule):
         # variables
         for name, value in stmts.items():
             if type(value).__name__ == 'file':
-                value = 'file'
+                value = 'open()'
             elif type(value).__name__ in ['int', 'bool', 'float',
                                           'dict', 'list', 'tuple']:
                 value = repr(value)

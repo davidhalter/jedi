@@ -57,10 +57,23 @@ except NameError:
     def unicode(s):
         return s.decode("utf-8")
 
-# Borrowed from Ned Batchelder
+# exec function
 if sys.hexversion > 0x03000000:
     def exec_function(source, global_map):
         exec(source, global_map)
 else:
     eval(compile("""def exec_function(source, global_map):
                         exec source in global_map """, 'blub', 'exec'))
+
+# tokenize function
+import tokenize
+if sys.hexversion > 0x03000000:
+    tokenize_func = tokenize.tokenize
+else:
+    tokenize_func = tokenize.generate_tokens
+
+# BytesIO (Python 2.5 has no io module)
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
