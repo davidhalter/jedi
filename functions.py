@@ -85,7 +85,7 @@ class Definition(object):
 
         path = str(par.path)
         try:
-            return path[path.rindex('/')+1:]
+            return path[path.rindex('/') + 1:]
         except ValueError:
             return path
 
@@ -106,6 +106,7 @@ class Definition(object):
 
     def __repr__(self):
         return "<%s %s>" % (self.__class__.__name__, self)
+
 
 def get_completion_parts(path):
     """
@@ -133,7 +134,8 @@ def complete(source, row, column, source_path):
     :rtype: list
     """
     try:
-        scopes, path, dot, like = prepare_goto(source, row, column, source_path, True)
+        scopes, path, dot, like = prepare_goto(source, row, column,
+                                                source_path, True)
     except NotFoundError:
         # normally this would be used like this: `NotFoundError as exc`, but
         # this guarantues backwards compatibility with Python2.5.
@@ -190,7 +192,7 @@ def prepare_goto(source, row, column, source_path, is_like_search):
         if is_like_search:
             stmt.line_nr = row
         else:
-            stmt.line_nr = row+1
+            stmt.line_nr = row + 1
         stmt.indent = column
         stmt.parent = scope
         scopes = evaluate.follow_statement(stmt, scope=scope)
@@ -199,6 +201,7 @@ def prepare_goto(source, row, column, source_path, is_like_search):
         return scopes, path, dot, like
     else:
         return scopes
+
 
 def get_definitions(source, row, column, source_path):
     """

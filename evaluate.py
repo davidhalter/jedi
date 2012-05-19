@@ -251,7 +251,7 @@ class Instance(Executable):
         """
         try:
             return func.params[0].used_vars[0].names[0]
-        except:
+        except IndexError:
             return None
 
     def get_defined_names(self):
@@ -414,7 +414,7 @@ class Execution(Executable):
         Get the return vars of a function.
         """
         stmts = []
-        #print '\n\n', self.var_args, self.var_args.values, self.var_args.parent_stmt
+        #a = self.var_args; print '\n\n', a, a.values, a.parent_stmt
         if isinstance(self.base, Class):
             # there maybe executions of executions
             stmts = [Instance(self.base, self.var_args)]
@@ -442,8 +442,8 @@ class Execution(Executable):
                     # TODO how can we deactivate this again?
                     #self.base.param_cb = None
 
-                    # func could have changed because of decorators, so clear them
-                    # again
+                    # func could have changed because of decorators, so clear
+                    # them again
                     self.base.is_decorated = False
             else:
                 debug.warning("no execution possible", func)
@@ -487,6 +487,7 @@ class Generator(object):
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.func)
+
 
 class Array(object):
     """

@@ -8,11 +8,12 @@ try:
     next = next
 except NameError:
     _raiseStopIteration = object()
+
     def next(iterator, default=_raiseStopIteration):
         if not hasattr(iterator, 'next'):
-           raise TypeError("not an iterator")
+            raise TypeError("not an iterator")
         try:
-           return iterator.next()
+            return iterator.next()
         except StopIteration:
             if default is _raiseStopIteration:
                 raise

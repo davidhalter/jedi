@@ -36,10 +36,6 @@ class CachedModule(object):
     def _load_module(self):
         source = self._get_source()
         self._parser = parsing.PyFuzzyParser(source, self.path or self.name)
-        #except:
-        #    debug.warning('not possible to resolve', self.name, source)
-            #open('builtin_fail', 'w').write(code)
-        #    raise
         p_time = None if not self.path else os.path.getmtime(self.path)
 
         self.cache[self.path or self.name] = p_time, self._parser
@@ -163,10 +159,10 @@ class Parser(CachedModule):
         try:
             try:
                 path = scope.__file__
-            except:
+            except AttributeError:
                 path = '?'
             code += '# Generated module %s from %s\n' % (scope.__name__, path)
-        except:
+        except AttributeError:
             pass
         code += '"""\n%s\n"""\n' % scope.__doc__
 
@@ -189,7 +185,7 @@ class Parser(CachedModule):
             doc_str = parsing.indent_block('"""\n%s\n"""\n' % func.__doc__)
             try:
                 mixin = self.mixin_funcs[name]
-            except:
+            except KeyError:
                 # normal code generation
                 code += 'def %s(%s):\n' % (name, params)
                 code += doc_str
