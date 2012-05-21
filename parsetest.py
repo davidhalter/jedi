@@ -158,23 +158,23 @@ a = 3; b = ""
 b,a=a,b
 a.
 
-
-
-
-
-
-
-
-def decorator(func):
+def decorator2(func):
+    def wrapper(*args):
+        return func(*args)
+    return wrapper
+def decorator1(func):
     def wrapper(*args):
         return func(1, *args)
     return wrapper
-
-@decorator
+@decorator2
+@decorator1
 def decorated(a,b):
     return a,b
-
-exe = decorated(set, '')
-
-#? []
-exe[0].union
+exe = decorated(frozenset, '')
+exe[1].
+def gen():
+    yield 1
+    yield ""
+gen_exe = gen()
+#? ['upper']
+next(gen_exe).

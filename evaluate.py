@@ -68,7 +68,6 @@ class Executable(object):
         self.base = base
         # the param input array
         self.var_args = var_args
-        self.func = None
 
     def get_parent_until(self, *args):
         return self.base.get_parent_until(*args)
@@ -160,14 +159,6 @@ class InstanceElement(object):
     def parent(self):
         return InstanceElement(self.instance, self.var.parent)
 
-    @property
-    def param_cb(self):
-        return self.var.param_cb
-
-    @param_cb.setter
-    def param_cb(self, value):
-        self.var.param_cb = value
-
     def __getattr__(self, name):
         return getattr(self.var, name)
 
@@ -247,7 +238,7 @@ class Function(object):
                 # create param array
                 old_func = Function.create(func, is_decorated=True)
                 params = parsing.Array(parsing.Array.NOARRAY, old_func)
-                params.values = [[func]]
+                params.values = [[old_func]]
                 wrappers = Execution(decorator, params).get_return_types()
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
@@ -259,8 +250,10 @@ class Function(object):
                 func = wrappers[0]
 
                 debug.dbg('decorator end')
-                #print dec.parent
-        return func
+        if func != self.base_func:
+            return Function.create(func)
+        else:
+            return func
 
     def __repr__(self):
         return "<e%s of %s>" % (self.__class__.__name__, self.func)
@@ -273,6 +266,8 @@ class Execution(Executable):
     This is the most complicated class, because it contains the logic to
     transfer parameters. This is even more complicated, because there may be
     multiple call to functions and recursion has to be avoided.
+
+    TODO InstantElements ?
     """
     cache = {}
 
@@ -302,27 +297,14 @@ class Execution(Executable):
         return strip_imports(stmts)
 
     def _get_function_returns(self, evaluate_generator):
-        stmts = []
         func = self.base
         if func.is_generator and not evaluate_generator:
             return [Generator(func)]
         else:
-            self.set_param_cb(func)
-            func.is_decorated = True
-            ret = self.returns
-            for s in ret:
-                #temp, s.parent = s.parent, self
-                stmts += follow_statement(s)
-                #s.parent = temp
-
-            # reset the callback function on exit
-            # TODO how can we deactivate this again?
-            #func.param_cb = None
-
-            # func could have changed because of decorators, so clear
-            # them again
-            func.is_decorated = False
-        return stmts
+            stmts = []
+            for r in self.returns:
+                stmts += follow_statement(r)
+            return stmts
 
     @memoize_default(default=[])
     def get_params(self):
@@ -330,42 +312,42 @@ class Execution(Executable):
         This returns the params for an Execution/Instance and is injected as a
         'hack' into the parsing.Function class.
         This needs to be here, because Instance can have __init__ functions,
-        which act the same way as normal functions
+        which act the same way as normal functions.
         """
         def gen_param_name_copy(param, keys=[], values=[], array_type=None):
-            calls = parsing.Array(parsing.Array.NOARRAY,
-                                    self.var_args.parent_stmt)
+            """ Create a param with self as parent. """
+            calls = parsing.Array(parsing.Array.NOARRAY, parent_stmt=self)
             calls.values = values
             calls.keys = keys
             calls.type = array_type
             new_param = copy.copy(param)
-            new_param.parent = self.var_args.parent_stmt
+            new_param.parent = self
             new_param._assignment_calls_calculated = True
             new_param._assignment_calls = calls
             name = copy.copy(param.get_name())
             name.parent = new_param
-            #print 'insert', i, name, calls.values, value, self.func.params
+            #print 'insert', i, name, calls.values, value, self.base.params
             return name
 
         result = []
         start_offset = 0
-        #print '\n\nfunc_params', self.func, self.func.parent, self.func
-        if isinstance(self.func, InstanceElement):
+        #print '\n\nfunc_params', self.base, self.base.parent, self.base
+        if isinstance(self.base, InstanceElement):
             # care for self -> just exclude it and add the instance
             start_offset = 1
-            self_name = copy.copy(self.func.params[0].get_name())
-            self_name.parent = self.func.instance
+            self_name = copy.copy(self.base.params[0].get_name())
+            self_name.parent = self.base.instance
             result.append(self_name)
 
         param_dict = {}
-        for param in self.func.params:
+        for param in self.base.params:
             param_dict[str(param.get_name())] = param
         # There may be calls, which don't fit all the params, this just ignores
         # it.
         var_arg_iterator = self.get_var_args_iterator()
 
         non_matching_keys = []
-        for param in self.func.params[start_offset:]:
+        for param in self.base.params[start_offset:]:
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
             key, value = next(var_arg_iterator, (None, None))
@@ -466,8 +448,21 @@ class Execution(Executable):
 
         return iter(PushBackIterator(iterate()))
 
+    def get_set_vars(self):
+        raise NotImplementedError("This should never be called")
+
     def get_defined_names(self):
-        return []
+        """
+        Call the default method with the own instance (self implements all
+        the necessary functions). Add also the params.
+        """
+      #  result = self.get_params() + parsing.Scope._get_set_vars(self)
+      #  print '\n\ndef', result, 'par', self, self.parent
+      #  print 'set', parsing.Scope._get_set_vars(self)
+      #  print 'set', [r.parent for r in parsing.Scope._get_set_vars(self)]
+      #  print 'para', [r.parent.parent for r in self.get_params()]
+      #  return result
+        return self.get_params() + parsing.Scope._get_set_vars(self)
 
     @property
     def scope(self):
@@ -482,21 +477,20 @@ class Execution(Executable):
 
     def copy_properties(self, prop):
         # copy all these lists into this local function.
-        attr = getattr(self.func, prop)
+        attr = getattr(self.base, prop)
         objects = []
         for element in attr:
-            copied = copy.copy(element)
+            temp, element.parent = element.parent, None
+            copied = copy.deepcopy(element)
+            element.parent = temp
             copied.parent = self
+            if isinstance(copied, parsing.Function):
+                copied = Function.create(copied)
             objects.append(copied)
         return objects
 
-    @property
-    def param_cb(self):
-        return self.func.param_cb
-
-    @param_cb.setter
-    def param_cb(self, value):
-        self.func.param_cb = value
+    def __getattr__(self, name):
+        return getattr(self.base, name)
 
     @property
     @memoize_default()

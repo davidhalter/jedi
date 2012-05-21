@@ -183,6 +183,15 @@ class Scope(Simple):
         :return: list of Name
         :rtype: list
         """
+        return self._get_set_vars(self)
+
+    @staticmethod
+    def _get_set_vars(self):
+        """
+        This is a hack, because Python 2 has another understanding of methods,
+        than Python 3. In Python 2 it is not possible to use a method without
+        the `self` being an instance of the class.
+        """
         n = []
         for stmt in self.statements:
             try:
@@ -196,7 +205,6 @@ class Scope(Simple):
         for i in self.imports:
             if not i.star:
                 n += i.get_defined_names()
-
         return n
 
     def get_defined_names(self):
@@ -310,13 +318,8 @@ class Function(Scope):
         for p in params:
             p.parent = self
         self.decorators = []
-        # helper variable for the evaluator, maybe remove this, when
-        # evaluate.py is rewritten, fully functional.
         self.returns = []
         self.is_generator = False
-
-        # callback to set the function
-        self.param_cb = None
 
     def get_code(self, first_indent=False, indention="    "):
         str = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
@@ -329,18 +332,19 @@ class Function(Scope):
 
     def get_set_vars(self):
         n = super(Function, self).get_set_vars()
+        """
         if self.param_cb:
             # This is the really ugly part, where the functional style of this
             # get methods is broken, it executes a callback.
             # This is important, because something has to inject the params
             # into the functions, with the right values.
             n += self.param_cb()
-        else:
-            for p in self.params:
-                try:
-                    n.append(p.get_name())
-                except IndexError:
-                    debug.warning("multiple names in param %s" % n)
+        """
+        for p in self.params:
+            try:
+                n.append(p.get_name())
+            except IndexError:
+                debug.warning("multiple names in param %s" % n)
         return n
 
 
