@@ -63,7 +63,7 @@ def recursion(a, b):
     else:
         return recursion(a+".", b+1)
 
-##? int() float()
+#? int() float()
 recursion("a", 1.0)
 
 # -----------------
@@ -81,6 +81,16 @@ exe[0].index
 
 #? ['append']
 exe[1].append
+
+# -----------------
+# default arguments
+# -----------------
+
+##? int() str()
+func()
+
+##? float() str()
+func(1.0)
 
 # -----------------
 # closures
@@ -255,3 +265,6 @@ next(gen_exe).upper
 next(gen_exe).real
 #? int() str()
 next(gen_exe)
+
+#? int() str() list
+next(gen_exe, list)

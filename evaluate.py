@@ -284,7 +284,6 @@ class Execution(Executable):
         elif isinstance(self.base, Generator):
             return Execution(self.base.func).get_return_types(True)
         else:
-            # set the callback function to get the var_args
             # don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
             if hasattr(self.base, 'returns'):
@@ -315,13 +314,16 @@ class Execution(Executable):
         which act the same way as normal functions.
         """
         def gen_param_name_copy(param, keys=[], values=[], array_type=None):
-            """ Create a param with self as parent. """
-            calls = parsing.Array(parsing.Array.NOARRAY, parent_stmt=self)
+            """
+            Create a param with the original scope (of varargs) as parent.
+            """
+            calls = parsing.Array(parsing.Array.NOARRAY,
+                                            self.var_args.parent_stmt)
             calls.values = values
             calls.keys = keys
             calls.type = array_type
             new_param = copy.copy(param)
-            new_param.parent = self
+            new_param.parent = self.var_args.parent_stmt
             new_param._assignment_calls_calculated = True
             new_param._assignment_calls = calls
             name = copy.copy(param.get_name())
@@ -513,14 +515,15 @@ class Execution(Executable):
 
 
 class Generator(object):
+    # TODO bring next(iter, default) to work - default works not
     def __init__(self, func):
         super(Generator, self).__init__()
         self.func = func
 
     def get_defined_names(self):
         """
-        Returns a list of GeneratorObject, which can return the content of a
-        generator
+        Returns a list of names that define a generator, which can return the
+        content of a generator.
         """
         names = []
         for n in ['__next__', 'send']:
@@ -533,6 +536,7 @@ class Generator(object):
             name = parsing.Name([n], 0, 0, 0)
             name.parent = None
             names.append(name)
+        debug.dbg('generator names', names)
         return names
 
     @property

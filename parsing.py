@@ -332,14 +332,6 @@ class Function(Scope):
 
     def get_set_vars(self):
         n = super(Function, self).get_set_vars()
-        """
-        if self.param_cb:
-            # This is the really ugly part, where the functional style of this
-            # get methods is broken, it executes a callback.
-            # This is important, because something has to inject the params
-            # into the functions, with the right values.
-            n += self.param_cb()
-        """
         for p in self.params:
             try:
                 n.append(p.get_name())

@@ -1,5 +1,5 @@
 
-def next(iterator, default=1):
+def next(iterator, default=None):
     if hasattr("next"):
         return iterator.next()
     else:
