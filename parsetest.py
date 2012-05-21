@@ -158,24 +158,23 @@ a = 3; b = ""
 b,a=a,b
 a.
 
-def gen():
-    yield 1
-    yield u""
-
-gen_exe = gen()
-
-def nexti(iterator, default=list):
-    if hasattr("next"):
-        #return iterator.next()
-    else:
-        return iterator.__next__()
-    #return default
 
 
-#exe[0].
-#exe[4]['d']
-a = next(gen_exe)
-def ret():
-    r = []
-    return r.
 
+
+
+
+
+def decorator(func):
+    def wrapper(*args):
+        return func(1, *args)
+    return wrapper
+
+@decorator
+def decorated(a,b):
+    return a,b
+
+exe = decorated(set, '')
+
+#? []
+exe[0].union

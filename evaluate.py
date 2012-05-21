@@ -74,15 +74,255 @@ class Executable(object):
         return self.base.get_parent_until(*args)
 
     @property
-    def scope(self):
-        """ Just try through the whole param array to find the own scope """
-        for param in self.var_args:
-            for call in param:
-                try:
-                    return call.parent_stmt.parent
-                except AttributeError:  # if operators are there
-                    pass
-        raise IndexError('No params available')
+    def parent(self):
+        return self.base.parent
+
+
+class Instance(Executable):
+    """ This class is used to evaluate instances. """
+    def __init__(self, base, var_args=[]):
+        super(Instance, self).__init__(base, var_args)
+        if var_args:
+            self.set_init_params()
+
+    def set_init_params(self):
+        for sub in self.base.subscopes:
+            if isinstance(sub, parsing.Function) \
+                    and sub.name.get_code() == '__init__':
+                self.set_param_cb(InstanceElement(self, Function.create(sub)))
+
+    def get_func_self_name(self, func):
+        """
+        Returns the name of the first param in a class method (which is
+        normally self
+        """
+        try:
+            return func.params[0].used_vars[0].names[0]
+        except IndexError:
+            return None
+
+    def get_defined_names(self):
+        """
+        Get the instance vars of a class. This includes the vars of all
+        classes
+        """
+        def add_self_name(name):
+            n = copy.copy(name)
+            n.names = n.names[1:]
+            names.append(InstanceElement(self, n))
+
+        names = []
+        # this loop adds the names of the self object, copies them and removes
+        # the self.
+        for s in self.base.subscopes:
+            # get the self name, if there's one
+            self_name = self.get_func_self_name(s)
+            if self_name:
+                for n in s.get_set_vars():
+                    # Only names with the selfname are being added.
+                    # It is also important, that they have a len() of 2,
+                    # because otherwise, they are just something else
+                    if n.names[0] == self_name and len(n.names) == 2:
+                        add_self_name(n)
+
+        for var in self.base.get_defined_names(as_instance=True):
+            # functions are also instance elements
+            if isinstance(var.parent, (parsing.Function)):
+                var = InstanceElement(self, var)
+            names.append(var)
+
+        return names
+
+    @property
+    def line_nr(self):
+        return self.base.line_nr
+
+    @property
+    def indent(self):
+        return self.base.indent
+
+    @property
+    def name(self):
+        return self.base.name
+
+    def __repr__(self):
+        return "<e%s of %s (var_args: %s)>" % \
+                (self.__class__.__name__, self.base, len(self.var_args or []))
+
+
+class InstanceElement(object):
+    def __init__(self, instance, var):
+        super(InstanceElement, self).__init__()
+        self.instance = instance
+        self.var = var
+
+    @property
+    def parent(self):
+        return InstanceElement(self.instance, self.var.parent)
+
+    @property
+    def param_cb(self):
+        return self.var.param_cb
+
+    @param_cb.setter
+    def param_cb(self, value):
+        self.var.param_cb = value
+
+    def __getattr__(self, name):
+        return getattr(self.var, name)
+
+    def __repr__(self):
+        return "<%s of %s>" % (self.__class__.__name__, self.var)
+
+
+class Class(object):
+    def __init__(self, base):
+        self.base = base
+
+    def get_defined_names(self, as_instance=False):
+        def in_iterable(name, iterable):
+            for i in iterable:
+                # only the last name is important, because these names have a
+                # maximal length of 2, with the first one being `self`.
+                if i.names[-1] == name.names[-1]:
+                    return True
+            return False
+
+        names = self.base.get_defined_names()
+
+        # check super classes:
+        for s in self.base.supers:
+            for cls in follow_statement(s):
+                # get the inherited names
+                if as_instance:
+                    cls = Instance(cls)
+                for i in cls.get_defined_names():
+                    if not in_iterable(i, names):
+                        names.append(i)
+        return names
+
+    @property
+    def name(self):
+        return self.base.name
+
+    def __getattr__(self, name):
+        return getattr(self.base, name)
+
+    def __repr__(self):
+        return "<e%s of %s>" % (self.__class__.__name__, self.base)
+
+
+class Function(object):
+    """
+    """
+    def __init__(self, func, is_decorated):
+        """ This should not be called directly """
+        self.base_func = func
+        self.func = self.process_decorators(is_decorated)
+
+    @staticmethod
+    @memoize_default()
+    def create(func, is_decorated=False):
+        return Function(func, is_decorated)
+
+    def __getattr__(self, name):
+        return getattr(self.func, name)
+
+    def process_decorators(self, is_decorated):
+        """ Returns the function, that is to be executed in the end """
+        func = self.base_func
+
+        # only enter it, if has not already been processed
+        if not is_decorated:
+            for dec in reversed(self.base_func.decorators):
+                debug.dbg('decorator:', dec, func)
+                dec_results = follow_statement(dec)
+                if not len(dec_results):
+                    debug.warning('decorator func not found', self.base_func)
+                    return []
+                if len(dec_results) > 1:
+                    debug.warning('multiple decorators found', self.base_func,
+                                                            dec_results)
+                decorator = dec_results.pop()
+                # create param array
+                old_func = Function.create(func, is_decorated=True)
+                params = parsing.Array(parsing.Array.NOARRAY, old_func)
+                params.values = [[func]]
+                wrappers = Execution(decorator, params).get_return_types()
+                if not len(wrappers):
+                    debug.warning('no wrappers found', self.base_func)
+                    return []
+                if len(wrappers) > 1:
+                    debug.warning('multiple wrappers found', self.base_func,
+                                                                wrappers)
+                # this is here, that the wrapper gets executed
+                func = wrappers[0]
+
+                debug.dbg('decorator end')
+                #print dec.parent
+        return func
+
+    def __repr__(self):
+        return "<e%s of %s>" % (self.__class__.__name__, self.func)
+
+
+class Execution(Executable):
+    """
+    This class is used to evaluate functions and their returns.
+
+    This is the most complicated class, because it contains the logic to
+    transfer parameters. This is even more complicated, because there may be
+    multiple call to functions and recursion has to be avoided.
+    """
+    cache = {}
+
+    @memoize_default(default=[])
+    def get_return_types(self, evaluate_generator=False):
+        """
+        Get the return vars of a function.
+        """
+        #a = self.var_args; print '\n\n', a, a.values, a.parent_stmt
+        stmts = []
+        if isinstance(self.base, Class):
+            # there maybe executions of executions
+            stmts = [Instance(self.base, self.var_args)]
+        elif isinstance(self.base, Generator):
+            return Execution(self.base.func).get_return_types(True)
+        else:
+            # set the callback function to get the var_args
+            # don't do this with exceptions, as usual, because some deeper
+            # exceptions could be catched - and I wouldn't know what happened.
+            if hasattr(self.base, 'returns'):
+                stmts = self._get_function_returns(evaluate_generator)
+            else:
+                debug.warning("no execution possible", self.base)
+
+        debug.dbg('exec results:', stmts, self.base, repr(self))
+
+        return strip_imports(stmts)
+
+    def _get_function_returns(self, evaluate_generator):
+        stmts = []
+        func = self.base
+        if func.is_generator and not evaluate_generator:
+            return [Generator(func)]
+        else:
+            self.set_param_cb(func)
+            func.is_decorated = True
+            ret = self.returns
+            for s in ret:
+                #temp, s.parent = s.parent, self
+                stmts += follow_statement(s)
+                #s.parent = temp
+
+            # reset the callback function on exit
+            # TODO how can we deactivate this again?
+            #func.param_cb = None
+
+            # func could have changed because of decorators, so clear
+            # them again
+            func.is_decorated = False
+        return stmts
 
     @memoize_default(default=[])
     def get_params(self):
@@ -226,231 +466,52 @@ class Executable(object):
 
         return iter(PushBackIterator(iterate()))
 
-    def set_param_cb(self, func):
-        self.func = func
-        func.param_cb = self.get_params
-
-
-class Instance(Executable):
-    """ This class is used to evaluate instances. """
-    def __init__(self, base, var_args=[]):
-        super(Instance, self).__init__(base, var_args)
-        if var_args:
-            self.set_init_params()
-
-    def set_init_params(self):
-        for sub in self.base.subscopes:
-            if isinstance(sub, parsing.Function) \
-                    and sub.name.get_code() == '__init__':
-                self.set_param_cb(InstanceElement(self, sub))
-
-    def get_func_self_name(self, func):
-        """
-        Returns the name of the first param in a class method (which is
-        normally self
-        """
-        try:
-            return func.params[0].used_vars[0].names[0]
-        except IndexError:
-            return None
-
     def get_defined_names(self):
-        """
-        Get the instance vars of a class. This includes the vars of all
-        classes
-        """
-        def add_self_name(name):
-            n = copy.copy(name)
-            n.names = n.names[1:]
-            names.append(InstanceElement(self, n))
-
-        names = []
-        # this loop adds the names of the self object, copies them and removes
-        # the self.
-        for s in self.base.subscopes:
-            # get the self name, if there's one
-            self_name = self.get_func_self_name(s)
-            if self_name:
-                for n in s.get_set_vars():
-                    # Only names with the selfname are being added.
-                    # It is also important, that they have a len() of 2,
-                    # because otherwise, they are just something else
-                    if n.names[0] == self_name and len(n.names) == 2:
-                        add_self_name(n)
-
-        for var in self.base.get_defined_names(as_instance=True):
-            # functions are also instance elements
-            if isinstance(var.parent, (parsing.Function)):
-                var = InstanceElement(self, var)
-            names.append(var)
-
-        return names
+        return []
 
     @property
-    def parent(self):
-        return self.base.parent
+    def scope(self):
+        """ Just try through the whole param array to find the own scope """
+        for param in self.var_args:
+            for call in param:
+                try:
+                    return call.parent_stmt.parent
+                except AttributeError:  # if operators are there
+                    pass
+        raise IndexError('No params available')
 
-    @property
-    def line_nr(self):
-        return self.base.line_nr
-
-    @property
-    def indent(self):
-        return self.base.indent
-
-    @property
-    def name(self):
-        return self.base.name
-
-    def __repr__(self):
-        return "<e%s of %s (var_args: %s)>" % \
-                (self.__class__.__name__, self.base, len(self.var_args or []))
-
-
-class InstanceElement(object):
-    def __init__(self, instance, var):
-        super(InstanceElement, self).__init__()
-        self.instance = instance
-        self.var = var
-
-    @property
-    def parent(self):
-        return InstanceElement(self.instance, self.var.parent)
+    def copy_properties(self, prop):
+        # copy all these lists into this local function.
+        attr = getattr(self.func, prop)
+        objects = []
+        for element in attr:
+            copied = copy.copy(element)
+            copied.parent = self
+            objects.append(copied)
+        return objects
 
     @property
     def param_cb(self):
-        return self.var.param_cb
+        return self.func.param_cb
 
     @param_cb.setter
     def param_cb(self, value):
-        self.var.param_cb = value
-
-    def __getattr__(self, name):
-        return getattr(self.var, name)
-
-    def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self.var)
-
-
-class Class(object):
-    def __init__(self, base):
-        self.base = base
-
-    def get_defined_names(self, as_instance=False):
-        def in_iterable(name, iterable):
-            for i in iterable:
-                # only the last name is important, because these names have a
-                # maximal length of 2, with the first one being `self`.
-                if i.names[-1] == name.names[-1]:
-                    return True
-            return False
-
-        names = self.base.get_defined_names()
-
-        # check super classes:
-        for s in self.base.supers:
-            for cls in follow_statement(s):
-                # get the inherited names
-                if as_instance:
-                    cls = Instance(cls)
-                for i in cls.get_defined_names():
-                    if not in_iterable(i, names):
-                        names.append(i)
-        return names
+        self.func.param_cb = value
 
     @property
-    def name(self):
-        return self.base.name
+    @memoize_default()
+    def returns(self):
+        return self.copy_properties('returns')
 
-    def __getattr__(self, name):
-        return getattr(self.base, name)
+    @property
+    @memoize_default()
+    def statements(self):
+        return self.copy_properties('statements')
 
-    def __repr__(self):
-        return "<e%s of %s>" % (self.__class__.__name__, self.base)
-
-
-class Execution(Executable):
-    """
-    This class is used to evaluate functions and their returns.
-    """
-    cache = {}
-
-    def process_decorators(self):
-        """ Returns the function, that is to be executed in the end """
-        func = self.base
-
-        # only enter it, if has not already been processed
-        if hasattr(func, 'is_decorated') and not func.is_decorated:
-            for dec in reversed(self.base.decorators):
-                debug.dbg('decorator:', dec, func)
-                dec_results = follow_statement(dec)
-                if not len(dec_results):
-                    debug.warning('decorator func not found', self.base)
-                    return []
-                if len(dec_results) > 1:
-                    debug.warning('multiple decorators found', self.base,
-                                                            dec_results)
-                decorator = dec_results.pop()
-                # create param array
-                params = parsing.Array(parsing.Array.NOARRAY, func)
-                params.values = [[func]]
-                wrappers = Execution(decorator, params).get_return_types()
-                if not len(wrappers):
-                    debug.warning('no wrappers found', self.base)
-                    return []
-                if len(wrappers) > 1:
-                    debug.warning('multiple wrappers found', self.base,
-                                                                wrappers)
-                # this is here, that the wrapper gets executed
-                func = wrappers[0]
-
-                debug.dbg('decorator end')
-                #print dec.parent
-        return func
-
-    @memoize_default(default=[])
-    def get_return_types(self, evaluate_generator=False):
-        """
-        Get the return vars of a function.
-        """
-        stmts = []
-        #a = self.var_args; print '\n\n', a, a.values, a.parent_stmt
-        if isinstance(self.base, Class):
-            # there maybe executions of executions
-            stmts = [Instance(self.base, self.var_args)]
-        elif isinstance(self.base, Generator):
-            return Execution(self.base.func).get_return_types(True)
-        else:
-            func = self.process_decorators()
-
-            # set the callback function to get the var_args
-            # don't do this with exceptions, as usual, because some deeper
-            # exceptions could be catched - and I wouldn't know what happened.
-            if hasattr(func, 'returns'):
-                if func.is_generator and not evaluate_generator:
-                    return [Generator(func)]
-                else:
-                    self.set_param_cb(func)
-                    self.base.is_decorated = True
-                    ret = func.returns
-                    for s in ret:
-                        #temp, s.parent = s.parent, self
-                        stmts += follow_statement(s)
-                        #s.parent = temp
-
-                    # reset the callback function on exit
-                    # TODO how can we deactivate this again?
-                    #self.base.param_cb = None
-
-                    # func could have changed because of decorators, so clear
-                    # them again
-                    self.base.is_decorated = False
-            else:
-                debug.warning("no execution possible", func)
-
-        debug.dbg('exec results:', stmts, self.base, repr(self))
-
-        return strip_imports(stmts)
+    @property
+    @memoize_default()
+    def subscopes(self):
+        return self.copy_properties('subscopes')
 
     def __repr__(self):
         return "<%s of %s>" % \
@@ -647,6 +708,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             else:
                 if isinstance(r, parsing.Class):
                     r = Class(r)
+                elif isinstance(r, parsing.Function):
+                    r = Function.create(r)
                 res_new.append(r)
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
@@ -783,7 +846,7 @@ def follow_statement(stmt, scope=None, seek_name=None):
     :param scope: contains a scope. If not given, takes the parent of stmt.
     """
     if scope is None:
-        scope = stmt.get_parent_until(parsing.Function, Execution,
+        scope = stmt.get_parent_until(parsing.Function, Function, Execution,
                                         parsing.Class, Instance,
                                         InstanceElement)
     debug.dbg('follow_stmt', stmt, 'in', scope, seek_name)
@@ -824,7 +887,7 @@ def follow_call_list(scope, call_list):
                     result += follow_call_list(scope, call)
                 else:
                     # with things like params, these can also be functions, etc
-                    if isinstance(call, (parsing.Function, parsing.Class)):
+                    if isinstance(call, (Function, parsing.Class)):
                         result.append(call)
                     elif not isinstance(call, str):
                         # The string tokens are just operations (+, -, etc.)
@@ -908,7 +971,7 @@ def follow_path(path, scope, position=None):
             # curly braces are not allowed, because they make no sense
             debug.warning('strange function call with {}', current, scope)
     else:
-        if isinstance(scope, parsing.Function):
+        if isinstance(scope, Function):
             # TODO check default function methods and return them
             result = []
         else:

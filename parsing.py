@@ -312,7 +312,6 @@ class Function(Scope):
         self.decorators = []
         # helper variable for the evaluator, maybe remove this, when
         # evaluate.py is rewritten, fully functional.
-        self.is_decorated = False
         self.returns = []
         self.is_generator = False
 

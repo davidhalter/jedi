@@ -55,6 +55,18 @@ variable_rename(list())().
 variable_rename(1)().
 
 # -----------------
+# recursion (should ignore)
+# -----------------
+def recursion(a, b):
+    if a:
+        return b
+    else:
+        return recursion(a+".", b+1)
+
+#? int() float()
+recursion("a", 1.0)
+
+# -----------------
 # keyword arguments
 # -----------------
 
