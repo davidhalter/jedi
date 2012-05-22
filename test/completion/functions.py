@@ -63,7 +63,7 @@ def recursion(a, b):
     else:
         return recursion(a+".", b+1)
 
-#? int() float()
+##? int() float()
 recursion("a", 1.0)
 
 # -----------------
@@ -86,11 +86,12 @@ exe[1].append
 # default arguments
 # -----------------
 
-##? int() str()
-func()
-
-##? float() str()
-func(1.0)
+#? int()
+func()[0]
+#? float()
+func(1.0)[0]
+#? str()
+func(1.0)[1]
 
 # -----------------
 # closures
@@ -134,9 +135,9 @@ exe2[1].upper
 
 exe3 = args_func([1,""])[0]
 
-##? []
+#? []
 exe3[1].real
-##? ['upper']
+#? ['upper']
 exe3[1].upper
 
 def args_func(arg1, *args):

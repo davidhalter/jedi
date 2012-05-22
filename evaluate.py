@@ -352,6 +352,7 @@ class Execution(Executable):
         for param in self.base.params[start_offset:]:
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
+            keys_only = False
             key, value = next(var_arg_iterator, (None, None))
             while key:
                 try:
@@ -362,10 +363,12 @@ class Execution(Executable):
                     result.append(gen_param_name_copy(key_param,
                                                         values=[value]))
                 key, value = next(var_arg_iterator, (None, None))
+                keys_only = True
 
             #debug.warning('Too many arguments given.', value)
 
-            assignment = param.get_assignment_calls().values[0]
+            assignments = param.get_assignment_calls().values
+            assignment = assignments[0]
             keys = []
             values = []
             array_type = None
@@ -389,9 +392,16 @@ class Execution(Executable):
                 # normal param
                 if value:
                     values = [value]
+                else:
+                    # just give it the default values (if there's something
+                    # there)
+                    values = assignments
 
-            result.append(gen_param_name_copy(param, keys=keys, values=values,
-                                                array_type=array_type))
+            # just ignore all the params that are without a key, after one
+            # keyword argument was set.
+            if not keys_only or assignment[0] == '**':
+                result.append(gen_param_name_copy(param, keys=keys, values=values,
+                                                    array_type=array_type))
         return result
 
     def get_var_args_iterator(self):
