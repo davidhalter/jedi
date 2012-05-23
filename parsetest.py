@@ -172,9 +172,9 @@ def decorated(a,b):
     return a,b
 exe = decorated(frozenset, '')
 exe[1].
-def gen():
-    yield 1
-    yield ""
-gen_exe = gen()
-#? ['upper']
-next(gen_exe).
+
+def rev(a=1, b=""):
+    return a, b
+
+
+rev(b=list, a=set)[1].

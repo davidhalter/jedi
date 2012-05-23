@@ -351,10 +351,10 @@ class Execution(Executable):
         var_arg_iterator = self.get_var_args_iterator()
 
         non_matching_keys = []
+        keys_only = False
         for param in self.base.params[start_offset:]:
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
-            keys_only = False
             key, value = next(var_arg_iterator, (None, None))
             while key:
                 try:
@@ -637,13 +637,12 @@ class ArrayElement(object):
         super(ArrayElement, self).__init__()
         self.name = name
 
-    @property
-    def parent(self):
-        return self.name.parent
-
-    @property
-    def names(self):
-        return self.name.names
+    def __getattr__(self, name):
+        # set access rights:
+        if name in ['parent', 'names', 'line_nr', 'indent']:
+            return getattr(self.name, name)
+        else:
+            raise NotImplementedError("Strange access, shouldn't happen!")
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.name)
