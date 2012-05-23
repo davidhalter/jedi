@@ -55,10 +55,8 @@ TestClass().ret(1).real
 inst.ret(1).real
 
 myclass = TestClass(1, '')
-#? ['real']
-myclass.get_first().real
-#? []
-myclass.get_first().upper
+#? int()
+myclass.get_first()
 #? []
 myclass.get_first.real
 
@@ -67,20 +65,16 @@ myclass.get_first.real
 TestClass(1,1,1).var_inst.real
 
 # too few params
-#? ['real']
-TestClass(1).first.real
+#? int()
+TestClass(1).first
 #? []
-TestClass(1).second.real
+TestClass(1).second.
 
 # complicated variable settings in class
-#? ['upper']
-myclass.second.upper
-#? []
-myclass.second.real
-#? ['upper']
-myclass.second_new.upper
-#? []
-myclass.second_new.real
+#? str()
+myclass.second
+#? str()
+myclass.second_new
 
 # multiple classes / ordering
 ints = TestClass(1, 1.0)

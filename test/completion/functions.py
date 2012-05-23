@@ -74,13 +74,11 @@ def func(a=1, b=''):
     return a, b
 
 exe = func(b=list, a=tuple)
-#? []
-exe[0].real
-#? ['index']
-exe[0].index
+#? tuple()
+exe[0]
 
-#? ['append']
-exe[1].append
+#? list()
+exe[1]
 
 # -----------------
 # default arguments
@@ -115,49 +113,35 @@ def args_func(*args):
     return args
 
 exe = args_func(1, "")
-#? ['real']
-exe[0].real
-#? []
-exe[0].upper
+#? int()
+exe[0]
 
-#? []
-exe[1].real
-#? ['upper']
-exe[1].upper
+#? str()
+exe[1]
 
-lis = [1,""]
-exe2 = args_func(lis)[0]
+_list = [1,""]
+exe2 = args_func(_list)[0]
 
-#? []
-exe2[1].real
-#? ['upper']
-exe2[1].upper
+#? str()
+exe2[1]
 
 exe3 = args_func([1,""])[0]
 
-#? []
-exe3[1].real
-#? ['upper']
-exe3[1].upper
+#? str()
+exe3[1]
 
 def args_func(arg1, *args):
     return arg1, args
 
 exe = args_func(1, "", list)
-#? ['real']
-exe[0].real
-#? []
-exe[0].upper
+#? int()
+exe[0]
 
-#? []
-exe[1].real
-#? ['index']
+#? tuple()
 exe[1].index
 
-#? []
-exe[1][1].upper
-#? ['append']
-exe[1][1].append
+#? list()
+exe[1][1]
 
 # -----------------
 # ** kwargs
@@ -188,10 +172,8 @@ exe[2].index
 exe[2][0].upper
 #? ['items']
 exe[3].items
-#? ['union']
-exe[3]['c'].union
-#? []
-exe[3]['c'].upper
+#? set()
+exe[3]['c']
 
 # -----------------
 # decorators
@@ -208,15 +190,11 @@ def decorated(a,b):
 
 exe = decorated(set, '')
 
-#? []
-exe[0].union
-#? ['union']
-exe[1].union
+#? set
+exe[1]
 
-#? ['real']
-exe[0].real
-#? []
-exe[1].real
+#? int()
+exe[0]
 
 # more complicated with args/kwargs
 def dec(func):
@@ -237,18 +215,14 @@ exe[1].real
 #? ['union']
 exe[2].union
 
-#? []
-exe[4]['d'].union
-#? ['upper']
-exe[4]['d'].upper
+#? str()
+exe[4]['d']
 
 
 exe = fu(list, set, 3, '', d='')
 
-#? ['upper']
-exe[3][0].upper
-#? []
-exe[3][0].real
+#? str()
+exe[3][0]
 
 
 # -----------------

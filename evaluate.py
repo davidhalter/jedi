@@ -79,16 +79,15 @@ class Executable(object):
 
 class Instance(Executable):
     """ This class is used to evaluate instances. """
-    def __init__(self, base, var_args=[]):
-        super(Instance, self).__init__(base, var_args)
-        if var_args:
-            self.set_init_params()
 
-    def set_init_params(self):
-        for sub in self.base.subscopes:
-            if isinstance(sub, parsing.Function) \
-                    and sub.name.get_code() == '__init__':
-                self.set_param_cb(InstanceElement(self, Function.create(sub)))
+    @memoize_default()
+    def get_init_execution(self, func):
+        if isinstance(func, parsing.Function):
+            #self.set_param_cb(InstanceElement(self, Function.create(sub)))
+            instance_el = InstanceElement(self, Function.create(func))
+            return Execution(instance_el, self.var_args)
+        else:
+            return func
 
     def get_func_self_name(self, func):
         """
@@ -113,11 +112,14 @@ class Instance(Executable):
         names = []
         # this loop adds the names of the self object, copies them and removes
         # the self.
-        for s in self.base.subscopes:
+        for sub in self.base.subscopes:
             # get the self name, if there's one
-            self_name = self.get_func_self_name(s)
+            self_name = self.get_func_self_name(sub)
             if self_name:
-                for n in s.get_set_vars():
+                # check the __init__ function
+                if self.var_args and sub.name.get_code() == '__init__':
+                    sub = self.get_init_execution(sub)
+                for n in sub.get_set_vars():
                     # Only names with the selfname are being added.
                     # It is also important, that they have a len() of 2,
                     # because otherwise, they are just something else
@@ -461,7 +463,7 @@ class Execution(Executable):
         return iter(PushBackIterator(iterate()))
 
     def get_set_vars(self):
-        raise NotImplementedError("This should never be called")
+        return self.get_defined_names()
 
     def get_defined_names(self):
         """
