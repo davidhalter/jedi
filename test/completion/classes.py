@@ -126,3 +126,14 @@ SubClass.method_
 SubClass.var
 #? ['class_sub', 'class_super']
 SubClass.class_
+
+# -----------------
+# __call__
+# -----------------
+
+class CallClass():
+    def __call__(self):
+        return 1
+
+#? int()
+CallClass()()

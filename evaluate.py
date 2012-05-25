@@ -93,6 +93,12 @@ class Instance(Executable):
         else:
             return func
 
+    def get_subscope(self, name):
+        for sub in reversed(self.base.subscopes):
+            if sub.name.get_code() == name:
+                return sub
+        raise KeyError("Couldn't find subscope.")
+
     def get_func_self_name(self, func):
         """
         Returns the name of the first param in a class method (which is
@@ -299,7 +305,14 @@ class Execution(Executable):
             if hasattr(self.base, 'returns'):
                 stmts = self._get_function_returns(evaluate_generator)
             else:
-                debug.warning("no execution possible", self.base)
+                try:
+                    # if it is an instance, we try to execute the __call__().
+                    call_method = self.base.get_subscope('__call__')
+                except (AttributeError, KeyError):
+                    debug.warning("no execution possible", self.base)
+                else:
+                    exe = Execution(call_method, self.var_args)
+                    stmts = exe.get_return_types()
 
         debug.dbg('exec results:', stmts, self.base, repr(self))
 
