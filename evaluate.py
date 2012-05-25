@@ -12,6 +12,10 @@ python 3 stuff:
 TODO class decorators
 TODO annotations ? how ? type evaluation and return?
 TODO nonlocal statement
+
+TODO getattr / __getattr__ / __getattribute__ ?
+TODO descriptors
+TODO __call__
 """
 from _compatibility import next, property
 
@@ -126,7 +130,6 @@ class Instance(Executable):
                     if n.names[0] == self_name and len(n.names) == 2:
                         add_self_name(n)
 
-        #print names, [n.parent for n in names], [n.parent.parent for n in names]
         for var in self.base.get_defined_names(as_instance=True):
             # functions are also instance elements
             if isinstance(var.parent, (parsing.Function)):
@@ -407,8 +410,8 @@ class Execution(Executable):
             # just ignore all the params that are without a key, after one
             # keyword argument was set.
             if not keys_only or assignment[0] == '**':
-                result.append(gen_param_name_copy(param, keys=keys, values=values,
-                                                    array_type=array_type))
+                result.append(gen_param_name_copy(param, keys=keys,
+                                        values=values, array_type=array_type))
         return result
 
     def get_var_args_iterator(self):
