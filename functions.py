@@ -73,12 +73,14 @@ class Definition(object):
         self.scope = scope
 
     def get_name(self):
-        return self.scope.name
+        try:
+            return self.scope.name
+        except AttributeError:
+            return self.scope.type
 
     def get_module(self):
         par = self.scope
         while True:
-            # TODO what to do with `evaluate.Array` ?
             if par.parent is not None:
                 par = par.parent
             else:

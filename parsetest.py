@@ -158,23 +158,23 @@ a = 3; b = ""
 b,a=a,b
 a.
 
-def decorator2(func):
-    def wrapper(*args):
-        return func(*args)
-    return wrapper
-def decorator1(func):
-    def wrapper(*args):
-        return func(1, *args)
-    return wrapper
-@decorator2
-@decorator1
-def decorated(a,b):
-    return a,b
-exe = decorated(frozenset, '')
-exe[1].
-
-def rev(a=1, b=""):
-    return a, b
 
 
-rev(b=list, a=set)[1].
+class Ar():
+    def __init__(self, asd):
+        self.a = asd
+
+    def rename(self):
+        self.a2 = self.a
+        return self.a2
+
+
+
+
+
+
+
+
+
+
+Ar(1).rename()

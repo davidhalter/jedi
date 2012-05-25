@@ -126,6 +126,7 @@ class Instance(Executable):
                     if n.names[0] == self_name and len(n.names) == 2:
                         add_self_name(n)
 
+        #print names, [n.parent for n in names], [n.parent.parent for n in names]
         for var in self.base.get_defined_names(as_instance=True):
             # functions are also instance elements
             if isinstance(var.parent, (parsing.Function)):
@@ -160,6 +161,10 @@ class InstanceElement(object):
     @property
     def parent(self):
         return InstanceElement(self.instance, self.var.parent)
+
+    def get_parent_until(self, *classes):
+        scope = self.var.get_parent_until(*classes)
+        return InstanceElement(self.instance, scope)
 
     def __getattr__(self, name):
         return getattr(self.var, name)
@@ -504,6 +509,8 @@ class Execution(Executable):
         return objects
 
     def __getattr__(self, name):
+        if name not in ['indent', 'line_nr', 'imports']:
+            raise AttributeError('Tried to access %s. Why?' % name)
         return getattr(self.base, name)
 
     @property
@@ -628,6 +635,18 @@ class Array(object):
     def get_contents(self):
         return self._array
 
+    @property
+    def parent(self):
+        """
+        Return the builtin scope as parent, because the arrays are builtins
+        """
+        return builtin.Builtin.scope
+
+    def __getattr__(self, name):
+        if name not in ['type']:
+            raise AttributeError('Strange access: %s.' % name)
+        return getattr(self._array, name)
+
     def __repr__(self):
         return "<e%s of %s>" % (self.__class__.__name__, self._array)
 
@@ -639,10 +658,9 @@ class ArrayElement(object):
 
     def __getattr__(self, name):
         # set access rights:
-        if name in ['parent', 'names', 'line_nr', 'indent']:
-            return getattr(self.name, name)
-        else:
-            raise NotImplementedError("Strange access, shouldn't happen!")
+        if name not in ['parent', 'names', 'line_nr', 'indent']:
+            raise AttributeError('Strange access: %s.' % name)
+        return getattr(self.name, name)
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.name)
@@ -747,9 +765,13 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     and par.position == 0:
                 # this is where self gets added - this happens at another
                 # place, if the var_args are clear. But some times the class is
-                # not known. Therefore set self.
-                result.append(Instance(Class(par.parent.parent)))
-                result.append(par)
+                # not known. Therefore add a new instance for self. Otherwise
+                # take the existing.
+                if isinstance(scope, InstanceElement):
+                    inst = scope.instance
+                else:
+                    inst = Instance(Class(par.parent.parent))
+                result.append(inst)
             else:
                 result.append(par)
             return result
@@ -858,7 +880,7 @@ def follow_statement(stmt, scope=None, seek_name=None):
         scope = stmt.get_parent_until(parsing.Function, Function, Execution,
                                         parsing.Class, Instance,
                                         InstanceElement)
-    debug.dbg('follow_stmt', stmt, 'in', scope, seek_name)
+    debug.dbg('follow_stmt', stmt, stmt.parent, 'in', scope, seek_name)
 
     call_list = stmt.get_assignment_calls()
     debug.dbg('calls', call_list, call_list.values)

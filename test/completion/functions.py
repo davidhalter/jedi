@@ -136,10 +136,8 @@ def args_func(arg1, *args):
 exe = args_func(1, "", list)
 #? int()
 exe[0]
-
 #? tuple()
-exe[1].index
-
+exe[1]
 #? list()
 exe[1][1]
 
