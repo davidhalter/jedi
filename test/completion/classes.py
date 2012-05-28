@@ -26,6 +26,11 @@ class TestClass(object):
         self.var_
 
     def ret(self, a1):
+        # should not know any class functions!
+        #? []
+        values
+        #? []
+        ret
         return a1
 
 # should not work

@@ -93,7 +93,7 @@ class Instance(Executable):
         else:
             return func
 
-    def get_subscope(self, name):
+    def get_subscope_by_name(self, name):
         for sub in reversed(self.base.subscopes):
             if sub.name.get_code() == name:
                 return sub
@@ -307,7 +307,7 @@ class Execution(Executable):
             else:
                 try:
                     # if it is an instance, we try to execute the __call__().
-                    call_method = self.base.get_subscope('__call__')
+                    call_method = self.base.get_subscope_by_name('__call__')
                 except (AttributeError, KeyError):
                     debug.warning("no execution possible", self.base)
                 else:
@@ -701,9 +701,10 @@ def get_names_for_scope(scope, position=None, star_search=True):
     """
     start_scope = scope
     while scope:
-        # class variables/functions are only available
-        if (not isinstance(scope, Class) or scope == start_scope) \
-                and not isinstance(scope, parsing.Flow):
+        # `parsing.Class` is used, because the parent is never `Class`.
+        # ignore the Flows, because the classes and functions care for that.
+        if not (scope != start_scope and isinstance(scope, (parsing.Class))
+                or isinstance(scope, parsing.Flow)):
             try:
                 yield scope, get_defined_names_for_position(scope, position)
             except StopIteration:
