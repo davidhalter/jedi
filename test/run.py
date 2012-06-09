@@ -65,7 +65,6 @@ def run_definition_test(correct, source, line_nr, line):
             return 1
     return 0
 
-
 def completion_test(source):
     """
     This is the completion test for some cases. The tests are not unit test
@@ -112,6 +111,7 @@ def completion_test(source):
 # completion tests:
 completion_test_dir = 'test/completion'
 summary = []
+tests_pass = True
 for f_name in os.listdir(completion_test_dir):
     if len(sys.argv) == 1 or [a for a in sys.argv[1:] if a in f_name]:
         if f_name.endswith(".py"):
@@ -119,9 +119,14 @@ for f_name in os.listdir(completion_test_dir):
             f = open(path)
             num_tests, fails = completion_test(f.read())
             s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
-            print(s)
+            if fails:
+                tests_pass = False
+            print s
             summary.append(s)
 
 print('\nSummary:')
 for s in summary:
-    print(s)
+    print s
+
+exit_code = 0 if tests_pass else 1
+sys.exit(exit_code)
