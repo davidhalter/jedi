@@ -15,7 +15,6 @@ TODO nonlocal statement
 
 TODO getattr / __getattr__ / __getattribute__ ?
 TODO descriptors
-TODO __call__
 """
 from _compatibility import next, property
 
@@ -213,6 +212,9 @@ class Class(object):
         return self.base.name
 
     def __getattr__(self, name):
+        if name not in ['line_nr', 'indent', 'parent', 'subscopes',
+                            'get_imports']:
+            raise AttributeError("Don't touch this (%s)!" % name)
         return getattr(self.base, name)
 
     def __repr__(self):
