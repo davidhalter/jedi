@@ -4,7 +4,7 @@ import sys
 import re
 import traceback
 
-os.chdir('../')
+os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
 sys.path.append('.')
 import functions
 from _compatibility import unicode, BytesIO
