@@ -65,6 +65,17 @@ def memoize_default(default=None):
     return func
 
 
+class CachedMetaClass(type):
+    """
+    This is basically almost the same than the decorator above, it just caches
+    class initializations. I haven't found any other way, so I do it with meta
+    classes.
+    """
+    @memoize_default()
+    def __call__(self, *args, **kwargs):
+        return super(CachedMetaClass, self).__call__(*args, **kwargs)
+
+
 class Executable(object):
     """ An instance is also an executable - because __init__ is called """
     def __init__(self, base, var_args=[]):
@@ -86,8 +97,8 @@ class Instance(Executable):
     @memoize_default()
     def get_init_execution(self, func):
         if isinstance(func, parsing.Function):
-            #self.set_param_cb(InstanceElement(self, Function.create(sub)))
-            instance_el = InstanceElement(self, Function.create(func))
+            #self.set_param_cb(InstanceElement(self, Function(sub)))
+            instance_el = InstanceElement(self, Function(func))
             return Execution(instance_el, self.var_args)
         else:
             return func
@@ -182,6 +193,7 @@ class InstanceElement(object):
 
 
 class Class(object):
+    __metaclass__ = CachedMetaClass
     def __init__(self, base):
         self.base = base
 
@@ -197,7 +209,9 @@ class Class(object):
         names = self.base.get_defined_names()
 
         # check super classes:
+        # TODO care for mro stuff (multiple super classes)
         for s in self.base.supers:
+            # super classes are statements
             for cls in follow_statement(s):
                 # get the inherited names
                 if as_instance:
@@ -205,7 +219,17 @@ class Class(object):
                 for i in cls.get_defined_names():
                     if not in_iterable(i, names):
                         names.append(i)
+        print names
+        print
+        print
+        print self.get_dict()
+        exit()
         return names
+
+    def get_dict(self):
+        names = self.base.get_defined_names()
+        print names
+        return {}
 
     @property
     def name(self):
@@ -224,15 +248,11 @@ class Class(object):
 class Function(object):
     """
     """
-    def __init__(self, func, is_decorated):
+    __metaclass__ = CachedMetaClass
+    def __init__(self, func, is_decorated=False):
         """ This should not be called directly """
         self.base_func = func
         self.func = self.process_decorators(is_decorated)
-
-    @staticmethod
-    @memoize_default()
-    def create(func, is_decorated=False):
-        return Function(func, is_decorated)
 
     def __getattr__(self, name):
         return getattr(self.func, name)
@@ -254,7 +274,7 @@ class Function(object):
                                                             dec_results)
                 decorator = dec_results.pop()
                 # create param array
-                old_func = Function.create(func, is_decorated=True)
+                old_func = Function(func, is_decorated=True)
                 params = parsing.Array(parsing.Array.NOARRAY, old_func)
                 params.values = [[old_func]]
                 wrappers = Execution(decorator, params).get_return_types()
@@ -269,7 +289,7 @@ class Function(object):
 
                 debug.dbg('decorator end')
         if func != self.base_func:
-            return Function.create(func)
+            return Function(func)
         else:
             return func
 
@@ -522,7 +542,7 @@ class Execution(Executable):
             element.parent = temp
             copied.parent = self
             if isinstance(copied, parsing.Function):
-                copied = Function.create(copied)
+                copied = Function(copied)
             objects.append(copied)
         return objects
 
@@ -705,7 +725,7 @@ def get_names_for_scope(scope, position=None, star_search=True):
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # ignore the Flows, because the classes and functions care for that.
-        if not (scope != start_scope and isinstance(scope, (parsing.Class))
+        if not (scope != start_scope and isinstance(scope, parsing.Class)
                 or isinstance(scope, parsing.Flow)):
             try:
                 yield scope, get_defined_names_for_position(scope, position)
@@ -755,7 +775,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 if isinstance(r, parsing.Class):
                     r = Class(r)
                 elif isinstance(r, parsing.Function):
-                    r = Function.create(r)
+                    r = Function(r)
                 res_new.append(r)
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
