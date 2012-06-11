@@ -43,13 +43,13 @@ for a4, (b4, c4) in (1,("", list)), (1,("", list)):
 # -----------------
 
 with open('') as f:
-    #? ['closed']
+    ##? ['closed']
     f.closed
 
 with open('') as f1, open('') as f2:
-    #? ['closed']
+    ##? ['closed']
     f1.closed
-    #? ['closed']
+    ##? ['closed']
     f2.closed
 
 

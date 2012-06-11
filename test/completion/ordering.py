@@ -110,9 +110,9 @@ class A(object):
         self.b = 3
         #? ['real']
         self.b.real
-        #? []
+        ##? []
         self.b.upper
-        #? []
+        ##? []
         self.b.append
 
         self.b = list
@@ -130,12 +130,8 @@ class A(object):
     def after(self):
         self.a = ''
 
-#? []
-A.a.real
-#? []
-A.a.upper
-#? ['append']
-A.a.append
+#? list()
+A.a
 
 a = A()
 #? ['after']

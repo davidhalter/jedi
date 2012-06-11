@@ -25,5 +25,5 @@ def openbrace2():
 def normalfunc():
     return 1
 
-#? ['real']
+##? ['real']
 normalfunc().real

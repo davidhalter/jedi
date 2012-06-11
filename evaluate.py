@@ -119,11 +119,7 @@ class Instance(Executable):
         except IndexError:
             return None
 
-    def get_defined_names(self):
-        """
-        Get the instance vars of a class. This includes the vars of all
-        classes
-        """
+    def get_self_properties(self):
         def add_self_name(name):
             n = copy.copy(name)
             n.names = n.names[1:]
@@ -146,9 +142,22 @@ class Instance(Executable):
                     if n.names[0] == self_name and len(n.names) == 2:
                         add_self_name(n)
 
-        for var in self.base.get_defined_names(as_instance=True):
+        for s in self.base.get_super_classes():
+            names += Instance(s).get_self_properties()
+
+        return names
+
+    def get_defined_names(self):
+        """
+        Get the instance vars of a class. This includes the vars of all
+        classes
+        """
+        names = self.get_self_properties()
+
+        class_names = get_defined_names_for_position(self.base)
+        for var in class_names:
             # functions are also instance elements
-            if isinstance(var.parent, (parsing.Function)):
+            if isinstance(var.parent, (parsing.Function, Function)):
                 var = InstanceElement(self, var)
             names.append(var)
 
@@ -197,38 +206,21 @@ class Class(object):
     def __init__(self, base):
         self.base = base
 
-    def get_defined_names(self, as_instance=False):
-        def in_iterable(name, iterable):
-            for i in iterable:
-                # only the last name is important, because these names have a
-                # maximal length of 2, with the first one being `self`.
-                if i.names[-1] == name.names[-1]:
-                    return True
-            return False
-
-        names = self.base.get_defined_names()
-
-        # check super classes:
+    @memoize_default(default=[])
+    def get_super_classes(self):
+        supers = []
         # TODO care for mro stuff (multiple super classes)
-        print 'supers', self, self.base
         for s in self.base.supers:
             # super classes are statements
             for cls in follow_statement(s):
-                # get the inherited names
-                if as_instance:
-                    cls = Instance(cls)
-                for i in cls.get_defined_names():
-                    if not in_iterable(i, names):
-                        names.append(i)
-        print names
-        print
-        print
-        print self._get_defined_names()
-        return names
+                if not isinstance(cls, Class):
+                    debug.warning('Received non class, as a super class')
+                    continue  # just ignore other stuff (user input error)
+                supers.append(cls)
+        return supers
 
     @memoize_default(default=[])
-    def _get_defined_names(self, as_instance=False):
-        print "  Class", self
+    def get_defined_names(self):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
             for i in iterable:
@@ -238,31 +230,31 @@ class Class(object):
                     return True
             return False
 
+        """
         result = []
         unique_vars = {} #set([n.names[-1] for n in names])
         for n in self.base.get_defined_names():
             unique_vars[n.names[-1]] = n
 
         for key, name in unique_vars.items():
-            for s in get_scopes_for_name(self.base, key):
+            scopes = get_scopes_for_name(self.base, key)
+            for s in scopes:
                 n = copy.copy(name)
                 n.parent = s
                 result.append(n)
+            if not scopes:
+                result.append(n)
+        """
 
-        # TODO care for mro stuff (multiple super classes)
+        result = self.base.get_defined_names()
+
         super_result = []
-        for s in self.base.supers:
-            # super classes are statements
-            for cls in follow_statement(s):
-                if not isinstance(cls, Class):
-                    debug.dbg('Received non class, as a super class')
-                    continue  # just ignore other stuff (user input error)
-                # get the inherited names
-                for i in cls.get_defined_names():
-                    if not in_iterable(i, result):
-                        super_result.append(i)
+        for cls in self.get_super_classes():
+            # get the inherited names
+            for i in cls.get_defined_names():
+                if not in_iterable(i, result):
+                    super_result.append(i)
         result += super_result
-        print result
         return result
 
     @property
@@ -738,7 +730,10 @@ class ArrayElement(object):
         return "<%s of %s>" % (self.__class__.__name__, self.name)
 
 
-def get_defined_names_for_position(obj, position):
+def get_defined_names_for_position(obj, position=(float('inf'), float('inf'))):
+    """
+    :param position: the position as a row/column tuple, default is infinity.
+    """
     names = obj.get_defined_names()
     if not position:
         return names
@@ -806,7 +801,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     scopes = follow_statement(r, seek_name=name_str)
                     res_new += remove_statements(scopes)
             else:
-                print '       add', scope, result
                 if isinstance(r, parsing.Class):
                     r = Class(r)
                 elif isinstance(r, parsing.Function):
@@ -858,10 +852,11 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             for name in sorted(name_list, key=comparison_func, reverse=True):
                 if name_str == name.get_code():
                     result += handle_non_arrays(name)
-                    #print name, name.parent.parent, scope
+                    # for comparison we need the raw class
+                    s = scope.base if isinstance(scope, Class) else scope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
-                    if not name.parent or name.parent.parent == scope:
+                    if not name.parent or name.parent.parent == s:
                         break
             # if there are results, ignore the other scopes
             if result:

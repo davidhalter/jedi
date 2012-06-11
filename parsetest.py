@@ -167,8 +167,9 @@ class Ar():
     def rename(self):
         self.a2 = self.a
         return self.a2
+    st = str
     st = 1
-    st = st
+    asfd = sasdf
 
 
 
@@ -176,5 +177,5 @@ class Ar():
 
 
 
-
+Ar(1).
 Ar(1).rename()

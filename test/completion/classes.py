@@ -97,7 +97,11 @@ TestClass.var_class.var_class.var_class.var_class
 # inheritance
 # -----------------
 
-class SuperClass(object):
+class Base(object):
+    def method_base(self):
+        return 1
+
+class SuperClass(Base):
     class_super = 3
     def __init__(self):
         self.var_super = ''
@@ -105,7 +109,7 @@ class SuperClass(object):
         self.var2_super = list
 
 class Mixin(SuperClass):
-    def method_super(self):
+    def method_mixin(self):
         return int
 
 class SubClass(SuperClass):
@@ -118,14 +122,14 @@ class SubClass(SuperClass):
 
 instance = SubClass()
 
-#? ['method_sub', 'method_super']
+#? ['method_base', 'method_sub', 'method_super']
 instance.method_
 #? ['var2_super', 'var_sub', 'var_super']
 instance.var
 #? ['class_sub', 'class_super']
 instance.class_
 
-#? ['method_sub', 'method_super']
+#? ['method_base', 'method_sub', 'method_super']
 SubClass.method_
 #? []
 SubClass.var
@@ -142,3 +146,46 @@ class CallClass():
 
 #? int()
 CallClass()()
+
+# -----------------
+# properties
+# -----------------
+class Property(object):
+    def __init__(self, fget, fset = None, fdel = None, doc = None):
+        self.fget = fget
+        self.fset = fset
+        self.fdel = fdel
+        self.__doc__ = doc
+
+    def __get__(self, obj, cls):
+        return self.fget(obj)
+
+    def __set__(self, obj, value):
+        self.fset(obj, value)
+
+    def __delete__(self, obj):
+        self.fdel(obj)
+
+    def setter(self, func):
+        self.fset = func
+        return self
+
+    def getter(self, func):
+        self.fget = func
+        return self
+
+    def deleter(self, func):
+        self.fdel = func
+        return self
+
+class B():
+    @Property
+    def r(self):
+        return 1
+
+    @r.setter
+    def r(self, value):
+        pass
+
+##? []
+B().r()
