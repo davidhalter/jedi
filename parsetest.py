@@ -167,8 +167,8 @@ class Ar():
     def rename(self):
         self.a2 = self.a
         return self.a2
-
-
+    st = 1
+    st = st
 
 
 

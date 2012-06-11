@@ -210,6 +210,7 @@ class Class(object):
 
         # check super classes:
         # TODO care for mro stuff (multiple super classes)
+        print 'supers', self, self.base
         for s in self.base.supers:
             # super classes are statements
             for cls in follow_statement(s):
@@ -222,14 +223,47 @@ class Class(object):
         print names
         print
         print
-        print self.get_dict()
-        exit()
+        print self._get_defined_names()
         return names
 
-    def get_dict(self):
-        names = self.base.get_defined_names()
-        print names
-        return {}
+    @memoize_default(default=[])
+    def _get_defined_names(self, as_instance=False):
+        print "  Class", self
+        def in_iterable(name, iterable):
+            """ checks if the name is in the variable 'iterable'. """
+            for i in iterable:
+                # only the last name is important, because these names have a
+                # maximal length of 2, with the first one being `self`.
+                if i.names[-1] == name.names[-1]:
+                    return True
+            return False
+
+        result = []
+        unique_vars = {} #set([n.names[-1] for n in names])
+        for n in self.base.get_defined_names():
+            unique_vars[n.names[-1]] = n
+
+        for key, name in unique_vars.items():
+            for s in get_scopes_for_name(self.base, key):
+                n = copy.copy(name)
+                n.parent = s
+                result.append(n)
+
+        # TODO care for mro stuff (multiple super classes)
+        super_result = []
+        for s in self.base.supers:
+            # super classes are statements
+            for cls in follow_statement(s):
+                if not isinstance(cls, Class):
+                    debug.dbg('Received non class, as a super class')
+                    continue  # just ignore other stuff (user input error)
+                # get the inherited names
+                for i in cls.get_defined_names():
+                    if not in_iterable(i, result):
+                        super_result.append(i)
+        result += super_result
+        print result
+        return result
 
     @property
     def name(self):
@@ -772,6 +806,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     scopes = follow_statement(r, seek_name=name_str)
                     res_new += remove_statements(scopes)
             else:
+                print '       add', scope, result
                 if isinstance(r, parsing.Class):
                     r = Class(r)
                 elif isinstance(r, parsing.Function):
@@ -917,7 +952,7 @@ def follow_statement(stmt, scope=None, seek_name=None):
     """
     if scope is None:
         scope = stmt.get_parent_until(parsing.Function, Function, Execution,
-                                        parsing.Class, Instance,
+                                        parsing.Class, Class, Instance,
                                         InstanceElement)
     debug.dbg('follow_stmt', stmt, stmt.parent, 'in', scope, seek_name)
 
