@@ -187,5 +187,5 @@ class B():
     def r(self, value):
         pass
 
-##? []
+#? []
 B().r()

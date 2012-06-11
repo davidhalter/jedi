@@ -154,7 +154,7 @@ class Instance(Executable):
         """
         names = self.get_self_properties()
 
-        class_names = get_defined_names_for_position(self.base)
+        class_names = self.base.get_defined_names()
         for var in class_names:
             # functions are also instance elements
             if isinstance(var.parent, (parsing.Function, Function)):
@@ -230,24 +230,7 @@ class Class(object):
                     return True
             return False
 
-        """
-        result = []
-        unique_vars = {} #set([n.names[-1] for n in names])
-        for n in self.base.get_defined_names():
-            unique_vars[n.names[-1]] = n
-
-        for key, name in unique_vars.items():
-            scopes = get_scopes_for_name(self.base, key)
-            for s in scopes:
-                n = copy.copy(name)
-                n.parent = s
-                result.append(n)
-            if not scopes:
-                result.append(n)
-        """
-
         result = self.base.get_defined_names()
-
         super_result = []
         for cls in self.get_super_classes():
             # get the inherited names
