@@ -15,6 +15,7 @@ TODO nonlocal statement
 
 TODO getattr / __getattr__ / __getattribute__ ?
 TODO descriptors
+TODO @staticmethod @classmethod
 """
 from _compatibility import next, property
 
@@ -157,7 +158,7 @@ class Instance(Executable):
         class_names = self.base.get_defined_names()
         for var in class_names:
             # functions are also instance elements
-            if isinstance(var.parent, (parsing.Function, Function)):
+            if isinstance(var.parent, (Function, parsing.Function)):
                 var = InstanceElement(self, var)
             names.append(var)
 
@@ -187,8 +188,12 @@ class InstanceElement(object):
         self.var = var
 
     @property
+    @memoize_default()
     def parent(self):
-        return InstanceElement(self.instance, self.var.parent)
+        par = self.var.parent
+        if isinstance(par, parsing.Function):
+            par = Function(par)
+        return InstanceElement(self.instance, par)
 
     def get_parent_until(self, *classes):
         scope = self.var.get_parent_until(*classes)
@@ -261,19 +266,21 @@ class Function(object):
     def __init__(self, func, is_decorated=False):
         """ This should not be called directly """
         self.base_func = func
-        self.func = self.process_decorators(is_decorated)
+        self.is_decorated = is_decorated
 
-    def __getattr__(self, name):
-        return getattr(self.func, name)
-
-    def process_decorators(self, is_decorated):
-        """ Returns the function, that is to be executed in the end """
-        func = self.base_func
+    @property
+    @memoize_default()
+    def func(self):
+        """
+        Returns the function, that is to be executed in the end.
+        This is also the places where the decorators are processed.
+        """
+        f = self.base_func
 
         # only enter it, if has not already been processed
-        if not is_decorated:
+        if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
-                debug.dbg('decorator:', dec, func)
+                debug.dbg('decorator:', dec, f)
                 dec_results = follow_statement(dec)
                 if not len(dec_results):
                     debug.warning('decorator func not found', self.base_func)
@@ -283,7 +290,7 @@ class Function(object):
                                                             dec_results)
                 decorator = dec_results.pop()
                 # create param array
-                old_func = Function(func, is_decorated=True)
+                old_func = Function(f, is_decorated=True)
                 params = parsing.Array(parsing.Array.NOARRAY, old_func)
                 params.values = [[old_func]]
                 wrappers = Execution(decorator, params).get_return_types()
@@ -294,16 +301,18 @@ class Function(object):
                     debug.warning('multiple wrappers found', self.base_func,
                                                                 wrappers)
                 # this is here, that the wrapper gets executed
-                func = wrappers[0]
+                f = wrappers[0]
 
                 debug.dbg('decorator end')
-        if func != self.base_func:
-            return Function(func)
-        else:
-            return func
+        if f != self.base_func and isinstance(f, parsing.Function):
+            f = Function(f)
+        return f
+
+    def __getattr__(self, name):
+        return getattr(self.func, name)
 
     def __repr__(self):
-        return "<e%s of %s>" % (self.__class__.__name__, self.func)
+        return "<e%s of %s>" % (self.__class__.__name__, self.base_func)
 
 
 class Execution(Executable):
@@ -313,8 +322,6 @@ class Execution(Executable):
     This is the most complicated class, because it contains the logic to
     transfer parameters. This is even more complicated, because there may be
     multiple call to functions and recursion has to be avoided.
-
-    TODO InstantElements ?
     """
     cache = {}
 
@@ -342,10 +349,15 @@ class Execution(Executable):
                 except (AttributeError, KeyError):
                     debug.warning("no execution possible", self.base)
                 else:
+                    debug.dbg('__call__', call_method, self.base)
+                    base = self.base
+                    if isinstance(self.base, Function):
+                        base = self.base.func
+                    call_method = InstanceElement(base, call_method)
                     exe = Execution(call_method, self.var_args)
                     stmts = exe.get_return_types()
 
-        debug.dbg('exec results:', stmts, self.base, repr(self))
+        debug.dbg('exec result: %s in %s' % (stmts, self))
 
         return strip_imports(stmts)
 
@@ -844,7 +856,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             # if there are results, ignore the other scopes
             if result:
                 break
-        debug.dbg('sfn filter', name_str, result)
+        debug.dbg('sfn filter "%s" in %s: %s' % (name_str, scope, result))
         return result
 
     if search_global:
@@ -932,10 +944,9 @@ def follow_statement(stmt, scope=None, seek_name=None):
         scope = stmt.get_parent_until(parsing.Function, Function, Execution,
                                         parsing.Class, Class, Instance,
                                         InstanceElement)
-    debug.dbg('follow_stmt', stmt, stmt.parent, 'in', scope, seek_name)
-
+    debug.dbg('follow_stmt %s in %s (%s)' % (stmt, scope, seek_name))
     call_list = stmt.get_assignment_calls()
-    debug.dbg('calls', call_list, call_list.values)
+    debug.dbg('calls: %s' % call_list)
     result = follow_call_list(scope, call_list)
 
     # assignment checking is only important if the statement defines multiple
@@ -1039,7 +1050,7 @@ def follow_path(path, scope, position=None):
         current = next(path)
     except StopIteration:
         return None
-    debug.dbg('follow', current, scope)
+    debug.dbg('follow %s in scope %s' % (current, scope))
 
     result = []
     if isinstance(current, parsing.Array):
@@ -1048,7 +1059,7 @@ def follow_path(path, scope, position=None):
             result = scope.get_index_types(current)
         elif current.type not in [parsing.Array.DICT]:
             # scope must be a class or func - make an instance or execution
-            debug.dbg('exec', scope)
+            debug.dbg('exe', scope)
             result = Execution(scope, current).get_return_types()
         else:
             # curly braces are not allowed, because they make no sense

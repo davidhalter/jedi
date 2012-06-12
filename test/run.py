@@ -54,12 +54,15 @@ def run_definition_test(correct, source, line_nr, line):
     else:
         should_be = set()
         for index in re.finditer('(?: +|$)', correct):
+            if correct == ' ':
+                continue
             # -1 for the comment, +3 because of the comment start `#? `
             start = index.start() + 3
             try:
                 should_be |= defs(line_nr-1, start)
             except Exception:
-                print 'could not resolve %s indent %' % (line_nr - 1, start)
+                print 'could not resolve %s indent %s' % (line_nr - 1, start)
+                return 1
         # because the objects have different ids, `repr` it, then compare it.
         should_str = sorted(str(r) for r in should_be)
         is_str = sorted(str(r) for r in result)
