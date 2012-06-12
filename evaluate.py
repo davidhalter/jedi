@@ -283,8 +283,9 @@ class Function(object):
                 debug.dbg('decorator:', dec, f)
                 dec_results = follow_statement(dec)
                 if not len(dec_results):
-                    debug.warning('decorator func not found', self.base_func)
-                    return []
+                    debug.warning('decorator func not found: %s in stmt %s' % 
+                                                        (self.base_func, dec))
+                    return None
                 if len(dec_results) > 1:
                     debug.warning('multiple decorators found', self.base_func,
                                                             dec_results)
@@ -296,7 +297,7 @@ class Function(object):
                 wrappers = Execution(decorator, params).get_return_types()
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
-                    return []
+                    return None
                 if len(wrappers) > 1:
                     debug.warning('multiple wrappers found', self.base_func,
                                                                 wrappers)
@@ -1065,9 +1066,11 @@ def follow_path(path, scope, position=None):
             # curly braces are not allowed, because they make no sense
             debug.warning('strange function call with {}', current, scope)
     else:
-        if isinstance(scope, Function):
+        # the function must not be decorated with something else
+        if isinstance(scope, Function) and isinstance(scope.func, Function):
             # TODO check default function methods and return them
             result = []
+            print 'la'
         else:
             # TODO check magic class methods and return them also
             # this is the typical lookup while chaining things

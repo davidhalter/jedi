@@ -183,9 +183,9 @@ class B():
     def r(self):
         return 1
 
-    #@r.setter
-    #def r(self, value):
-    #    pass
+    @r.setter
+    def r(self, value):
+        pass
 
 #? []
 B().r.
