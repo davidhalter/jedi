@@ -28,11 +28,30 @@ import debug
 import builtin
 
 
+
+import sys, traceback
 memoize_caches = []
 
 
 class MultiLevelStopIteration(Exception):
     pass
+
+
+class MultiLevelAttributeError(BaseException):
+    """
+    Important, because `__getattr__` and `hasattr` catch AttributeErrors
+    implicitly. This is really evil (mainly because of `__getattr__`).
+    `hasattr` in Python 2 is even more evil, because it catches ALL exceptions.
+    Therefore this class has to be `BaseException` and not `Exception`.
+    """
+    def __init__(self, base):
+        self.base = base
+
+    def __repr__(self):
+        return '%s: %s' % (self.base.__class__.__name__, self.base)
+
+    def __str__(self):
+        return self.__repr__()
 
 
 def clear_caches():
@@ -164,17 +183,32 @@ class Instance(Executable):
 
         return names
 
-    @property
-    def line_nr(self):
-        return self.base.line_nr
+    def get_descriptor_return(self, obj):
+        """ Throws an error if there's no method. """
+        print '\n\nis_desc'
+        method = self.get_subscope_by_name('__get__')
+        print 'yessa'
+        # args in __set__ descriptors are obj, class.
+        args = [[obj], [obj.base]]
+        method = InstanceElement(self, method)
+        print 'la'
+        try:
+            res = Execution(method, args).get_return_types()
+        except Exception,e :
+            traceback.print_stack(file=sys.stdout)
+            print e, type(e)
+            print '\n'
+            #raise AttributeError('dini mueter')
+            raise e
 
-    @property
-    def indent(self):
-        return self.base.indent
+        print res
+        print '\n\n'
+        return res
 
-    @property
-    def name(self):
-        return self.base.name
+    def __getattr__(self, name):
+        if name not in ['line_nr', 'indent', 'name']:
+            raise AttributeError("Don't touch this (%s)!" % name)
+        return getattr(self.base, name)
 
     def __repr__(self):
         return "<e%s of %s (var_args: %s)>" % \
@@ -190,17 +224,36 @@ class InstanceElement(object):
     @property
     @memoize_default()
     def parent(self):
-        par = self.var.parent
-        if isinstance(par, parsing.Function):
-            par = Function(par)
-        return InstanceElement(self.instance, par)
+        try:
+            par = self.var.parent
+            if isinstance(par, parsing.Function):
+                par = Function(par)
+            return InstanceElement(self.instance, par)
+        except Exception, e:
+            traceback.print_stack(file=sys.stdout)
+            print e
+            print '\n'
+            raise
+
 
     def get_parent_until(self, *classes):
         scope = self.var.get_parent_until(*classes)
         return InstanceElement(self.instance, scope)
 
-    def __getattr__(self, name):
-        return getattr(self.var, name)
+    def __getattribute__(self, name):
+        try:
+            a = object.__getattribute__(self, name)
+        except AttributeError:
+            try:
+                return getattr(self.var, name)
+            except AttributeError:
+                if name == '__get__':
+                    raise
+                raise MultiLevelAttributeError(sys.exc_info()[1])
+        else:
+            if hasattr(a, '__get__'):
+                return a.__get__(self, self.__class__)
+            return a
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.var)
@@ -268,9 +321,8 @@ class Function(object):
         self.base_func = func
         self.is_decorated = is_decorated
 
-    @property
     @memoize_default()
-    def func(self):
+    def decorated_func(self):
         """
         Returns the function, that is to be executed in the end.
         This is also the places where the decorators are processed.
@@ -283,7 +335,7 @@ class Function(object):
                 debug.dbg('decorator:', dec, f)
                 dec_results = follow_statement(dec)
                 if not len(dec_results):
-                    debug.warning('decorator func not found: %s in stmt %s' % 
+                    debug.warning('decorator func not found: %s in stmt %s' %
                                                         (self.base_func, dec))
                     return None
                 if len(dec_results) > 1:
@@ -294,6 +346,13 @@ class Function(object):
                 old_func = Function(f, is_decorated=True)
                 params = parsing.Array(parsing.Array.NOARRAY, old_func)
                 params.values = [[old_func]]
+                try:
+                    wrappers = Execution(decorator, params).get_return_types()
+                except Exception, e:
+                    traceback.print_stack(file=sys.stdout)
+                    print e
+                    print '\n'
+                    raise
                 wrappers = Execution(decorator, params).get_return_types()
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
@@ -309,8 +368,20 @@ class Function(object):
             f = Function(f)
         return f
 
-    def __getattr__(self, name):
-        return getattr(self.func, name)
+    def __getattribute__(self, name):
+        try:
+            a = object.__getattribute__(self, name)
+        except AttributeError:
+            try:
+                return getattr(self.decorated_func(), name)
+            except AttributeError:
+                if name == '__get__':
+                    raise
+                raise MultiLevelAttributeError(sys.exc_info()[1])
+        else:
+            if hasattr(a, '__get__'):
+                return a.__get__(self, self.__class__)
+            return a
 
     def __repr__(self):
         return "<e%s of %s>" % (self.__class__.__name__, self.base_func)
@@ -337,7 +408,7 @@ class Execution(Executable):
             # there maybe executions of executions
             stmts = [Instance(self.base, self.var_args)]
         elif isinstance(self.base, Generator):
-            return Execution(self.base.func).get_return_types(True)
+            return Execution(self.base.decorated_func()).get_return_types(True)
         else:
             # don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
@@ -348,12 +419,13 @@ class Execution(Executable):
                     # if it is an instance, we try to execute the __call__().
                     call_method = self.base.get_subscope_by_name('__call__')
                 except (AttributeError, KeyError):
+                    print '\n\n\n\n\n\nfuuuuuuu'
                     debug.warning("no execution possible", self.base)
                 else:
                     debug.dbg('__call__', call_method, self.base)
                     base = self.base
                     if isinstance(self.base, Function):
-                        base = self.base.func
+                        base = self.base.decorated_func()
                     call_method = InstanceElement(base, call_method)
                     exe = Execution(call_method, self.var_args)
                     stmts = exe.get_return_types()
@@ -551,6 +623,7 @@ class Execution(Executable):
                 try:
                     return call.parent_stmt.parent
                 except AttributeError:  # if operators are there
+                    print '\n\n\n\n\n\nfuuuuuuu'
                     pass
         raise IndexError('No params available')
 
@@ -647,6 +720,7 @@ class Array(object):
                     # multiple elements in the array
                     i = index.get_only_subelement().name
                 except AttributeError:
+                    print '\n\n\n\n\n\nfuuuuuuu'
                     pass
                 else:
                     try:
@@ -665,9 +739,11 @@ class Array(object):
                     try:
                         str_key = key_elements.get_code()
                     except AttributeError:
+                        print '\n\n\n\n\n\nfuuuuuuu'
                         try:
                             str_key = key_elements[0].name
                         except AttributeError:
+                            print '\n\n\n\n\n\nfuuuuuuu'
                             str_key = None
                     if old_index == str_key:
                         index = i
@@ -836,6 +912,13 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 else:
                     inst = Instance(Class(par.parent.parent))
                 result.append(inst)
+            elif isinstance(par, Instance) \
+                                and hasattr(par, 'get_descriptor_return'):
+                try:
+                    result += par.get_descriptor_return(scope)
+                except KeyError:
+                    result.append(par)
+                    pass
             else:
                 result.append(par)
             return result
@@ -852,6 +935,10 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     s = scope.base if isinstance(scope, Class) else scope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
+                    print 'dini mueter1', name, name.parent, result
+                    a = name.parent.parent
+                    print 'dini mueter2', a
+                    print 'end dini m'
                     if not name.parent or name.parent.parent == s:
                         break
             # if there are results, ignore the other scopes
@@ -948,7 +1035,12 @@ def follow_statement(stmt, scope=None, seek_name=None):
     debug.dbg('follow_stmt %s in %s (%s)' % (stmt, scope, seek_name))
     call_list = stmt.get_assignment_calls()
     debug.dbg('calls: %s' % call_list)
-    result = follow_call_list(scope, call_list)
+
+    try:
+        result = follow_call_list(scope, call_list)
+    except AttributeError:
+        # This is so evil! But necessary to propagate errors.
+        raise MultiLevelAttributeError(sys.exc_info()[1])
 
     # assignment checking is only important if the statement defines multiple
     # variables
@@ -1067,7 +1159,8 @@ def follow_path(path, scope, position=None):
             debug.warning('strange function call with {}', current, scope)
     else:
         # the function must not be decorated with something else
-        if isinstance(scope, Function) and isinstance(scope.func, Function):
+        if isinstance(scope, Function) and \
+                            isinstance(scope.decorated_func(), Function):
             # TODO check default function methods and return them
             result = []
             print 'la'

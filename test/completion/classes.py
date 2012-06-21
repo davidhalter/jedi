@@ -150,7 +150,7 @@ CallClass()()
 # -----------------
 # properties
 # -----------------
-class Property(object):
+class Property():
     def __init__(self, fget, fset = None, fdel = None, doc = None):
         self.fget = fget
         self.fset = fset
