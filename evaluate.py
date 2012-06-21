@@ -192,14 +192,7 @@ class Instance(Executable):
         args = [[obj], [obj.base]]
         method = InstanceElement(self, method)
         print 'la'
-        try:
-            res = Execution(method, args).get_return_types()
-        except Exception,e :
-            traceback.print_stack(file=sys.stdout)
-            print e, type(e)
-            print '\n'
-            #raise AttributeError('dini mueter')
-            raise e
+        res = Execution(method, args).get_return_types()
 
         print res
         print '\n\n'
@@ -224,36 +217,18 @@ class InstanceElement(object):
     @property
     @memoize_default()
     def parent(self):
-        try:
-            par = self.var.parent
-            if isinstance(par, parsing.Function):
-                par = Function(par)
-            return InstanceElement(self.instance, par)
-        except Exception, e:
-            traceback.print_stack(file=sys.stdout)
-            print e
-            print '\n'
-            raise
+        par = self.var.parent
+        if isinstance(par, parsing.Function):
+            par = Function(par)
+        return InstanceElement(self.instance, par)
 
 
     def get_parent_until(self, *classes):
         scope = self.var.get_parent_until(*classes)
         return InstanceElement(self.instance, scope)
 
-    def __getattribute__(self, name):
-        try:
-            a = object.__getattribute__(self, name)
-        except AttributeError:
-            try:
-                return getattr(self.var, name)
-            except AttributeError:
-                if name == '__get__':
-                    raise
-                raise MultiLevelAttributeError(sys.exc_info()[1])
-        else:
-            if hasattr(a, '__get__'):
-                return a.__get__(self, self.__class__)
-            return a
+    def __getattr__(self, name):
+        return getattr(self.var, name)
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.var)
@@ -346,13 +321,7 @@ class Function(object):
                 old_func = Function(f, is_decorated=True)
                 params = parsing.Array(parsing.Array.NOARRAY, old_func)
                 params.values = [[old_func]]
-                try:
-                    wrappers = Execution(decorator, params).get_return_types()
-                except Exception, e:
-                    traceback.print_stack(file=sys.stdout)
-                    print e
-                    print '\n'
-                    raise
+
                 wrappers = Execution(decorator, params).get_return_types()
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
@@ -368,20 +337,8 @@ class Function(object):
             f = Function(f)
         return f
 
-    def __getattribute__(self, name):
-        try:
-            a = object.__getattribute__(self, name)
-        except AttributeError:
-            try:
-                return getattr(self.decorated_func(), name)
-            except AttributeError:
-                if name == '__get__':
-                    raise
-                raise MultiLevelAttributeError(sys.exc_info()[1])
-        else:
-            if hasattr(a, '__get__'):
-                return a.__get__(self, self.__class__)
-            return a
+    def __getattr__(self, name):
+        return getattr(self.decorated_func(), name)
 
     def __repr__(self):
         return "<e%s of %s>" % (self.__class__.__name__, self.base_func)
@@ -623,7 +580,6 @@ class Execution(Executable):
                 try:
                     return call.parent_stmt.parent
                 except AttributeError:  # if operators are there
-                    print '\n\n\n\n\n\nfuuuuuuu'
                     pass
         raise IndexError('No params available')
 
@@ -720,7 +676,6 @@ class Array(object):
                     # multiple elements in the array
                     i = index.get_only_subelement().name
                 except AttributeError:
-                    print '\n\n\n\n\n\nfuuuuuuu'
                     pass
                 else:
                     try:
@@ -739,11 +694,9 @@ class Array(object):
                     try:
                         str_key = key_elements.get_code()
                     except AttributeError:
-                        print '\n\n\n\n\n\nfuuuuuuu'
                         try:
                             str_key = key_elements[0].name
                         except AttributeError:
-                            print '\n\n\n\n\n\nfuuuuuuu'
                             str_key = None
                     if old_index == str_key:
                         index = i
@@ -935,10 +888,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     s = scope.base if isinstance(scope, Class) else scope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
-                    print 'dini mueter1', name, name.parent, result
                     a = name.parent.parent
-                    print 'dini mueter2', a
-                    print 'end dini m'
                     if not name.parent or name.parent.parent == s:
                         break
             # if there are results, ignore the other scopes
@@ -1039,7 +989,8 @@ def follow_statement(stmt, scope=None, seek_name=None):
     try:
         result = follow_call_list(scope, call_list)
     except AttributeError:
-        # This is so evil! But necessary to propagate errors.
+        # This is so evil! But necessary to propagate errors. The attribute
+        # errors here must not be catched, because they shouldn't exist.
         raise MultiLevelAttributeError(sys.exc_info()[1])
 
     # assignment checking is only important if the statement defines multiple
