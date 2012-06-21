@@ -188,9 +188,9 @@ class B():
         pass
 
 #? []
-B().r.
-#? []
 B().r()
+#? int()
+B().r
 
 class Decorator(object):
     def __init__(self, func):

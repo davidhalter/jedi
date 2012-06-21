@@ -184,16 +184,12 @@ class Instance(Executable):
 
     def get_descriptor_return(self, obj):
         """ Throws an error if there's no method. """
-        print '\n\nis_desc'
         method = self.get_subscope_by_name('__get__')
-        print 'yessa'
         # args in __set__ descriptors are obj, class.
         args = parsing.Array([[obj], [obj.base]], None)
         method = InstanceElement(self, method)
-        print 'la'
         res = Execution(method, args).get_return_types()
 
-        print res
         print '\n\n'
         return res
 
@@ -295,6 +291,7 @@ class Function(object):
         self.base_func = func
         self.is_decorated = is_decorated
 
+    @property
     @memoize_default()
     def decorated_func(self):
         """
@@ -336,11 +333,22 @@ class Function(object):
             f = Function(f)
         return f
 
+    @property
+    def base_instance(self):
+        """ Return the instance, which is created by the decorator """
+        if isinstance(self.decorated_func, Instance):
+            return self.decorated_func
+        else:
+            raise AttributeError('There is no base instance')
+
     def __getattr__(self, name):
-        return getattr(self.decorated_func(), name)
+        return getattr(self.decorated_func, name)
 
     def __repr__(self):
-        return "<e%s of %s>" % (self.__class__.__name__, self.base_func)
+        dec = ''
+        if self.decorated_func != self.base_func:
+            dec = " is " + repr(self.decorated_func)
+        return "<e%s of %s%s>" % (self.__class__.__name__, self.base_func, dec)
 
 
 class Execution(Executable):
@@ -380,7 +388,7 @@ class Execution(Executable):
                     debug.dbg('__call__', call_method, self.base)
                     base = self.base
                     if isinstance(self.base, Function):
-                        base = self.base.decorated_func()
+                        base = self.base.decorated_func
                     call_method = InstanceElement(base, call_method)
                     exe = Execution(call_method, self.var_args)
                     stmts = exe.get_return_types()
@@ -863,10 +871,9 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 else:
                     inst = Instance(Class(par.parent.parent))
                 result.append(inst)
-            elif isinstance(par, Instance) \
+            elif isinstance(par, InstanceElement) \
                                 and hasattr(par, 'get_descriptor_return'):
                 try:
-                    raise KeyError()
                     result += par.get_descriptor_return(scope)
                 except KeyError:
                     result.append(par)
@@ -904,7 +911,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         else:
             names = scope.get_defined_names()
         scope_generator = iter([(scope, names)])
-    #print ' ln', position
 
     return remove_statements(filter_name(scope_generator))
 
@@ -1001,7 +1007,7 @@ def follow_statement(stmt, scope=None, seek_name=None):
         for op, set_vars in stmt.assignment_details:
             new_result += assign_tuples(set_vars, result, seek_name)
         result = new_result
-    return result
+    return set(result)
 
 
 def follow_call_list(scope, call_list):
@@ -1038,7 +1044,7 @@ def follow_call(scope, call):
 
     position = (call.parent_stmt.line_nr, call.parent_stmt.indent)
     current = next(path)
-    print scope, call, call.parent_stmt, current
+
     if isinstance(current, parsing.Array):
         result = [Array(current)]
     else:
@@ -1111,10 +1117,9 @@ def follow_path(path, scope, position=None):
     else:
         # the function must not be decorated with something else
         if isinstance(scope, Function) and \
-                            isinstance(scope.decorated_func(), Function):
+                            isinstance(scope.decorated_func, Function):
             # TODO check default function methods and return them
             result = []
-            print 'la'
         else:
             # TODO check magic class methods and return them also
             # this is the typical lookup while chaining things
