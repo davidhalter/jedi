@@ -190,7 +190,6 @@ class Instance(Executable):
         method = InstanceElement(self, method)
         res = Execution(method, args).get_return_types()
 
-        print '\n\n'
         return res
 
     def __getattr__(self, name):
@@ -215,7 +214,9 @@ class InstanceElement(object):
         par = self.var.parent
         if isinstance(par, parsing.Function):
             par = Function(par)
-        return InstanceElement(self.instance, par)
+        if not isinstance(par, parsing.Module):
+            par = InstanceElement(self.instance, par)
+        return par
 
 
     def get_parent_until(self, *classes):
@@ -332,14 +333,6 @@ class Function(object):
         if f != self.base_func and isinstance(f, parsing.Function):
             f = Function(f)
         return f
-
-    @property
-    def base_instance(self):
-        """ Return the instance, which is created by the decorator """
-        if isinstance(self.decorated_func, Instance):
-            return self.decorated_func
-        else:
-            raise AttributeError('There is no base instance')
 
     def __getattr__(self, name):
         return getattr(self.decorated_func, name)
@@ -877,7 +870,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     result += par.get_descriptor_return(scope)
                 except KeyError:
                     result.append(par)
-                    pass
             else:
                 result.append(par)
             return result
@@ -886,17 +878,19 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         # compare func uses the tuple of line/indent = row/column
         comparison_func = lambda name: (name.line_nr, name.indent)
         for scope, name_list in scope_generator:
+            break_scopes = []
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):
-                if name_str == name.get_code():
+                p = name.parent.parent if name.parent else None
+                if name_str == name.get_code() and p not in break_scopes:
                     result += handle_non_arrays(name)
                     # for comparison we need the raw class
                     s = scope.base if isinstance(scope, Class) else scope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
-                    a = name.parent.parent
-                    if not name.parent or name.parent.parent == s:
+                    if not name.parent or p == s:
                         break
+                    break_scopes.append(p)
             # if there are results, ignore the other scopes
             if result:
                 break
