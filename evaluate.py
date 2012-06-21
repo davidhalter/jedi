@@ -18,6 +18,7 @@ TODO descriptors
 TODO @staticmethod @classmethod
 """
 from _compatibility import next, property
+import sys
 
 import itertools
 import copy
@@ -27,9 +28,6 @@ import modules
 import debug
 import builtin
 
-
-
-import sys, traceback
 memoize_caches = []
 
 
@@ -43,15 +41,16 @@ class MultiLevelAttributeError(BaseException):
     implicitly. This is really evil (mainly because of `__getattr__`).
     `hasattr` in Python 2 is even more evil, because it catches ALL exceptions.
     Therefore this class has to be `BaseException` and not `Exception`.
+
+    :param base: return values of sys.exc_info().
     """
     def __init__(self, base):
         self.base = base
 
-    def __repr__(self):
-        return '%s: %s' % (self.base.__class__.__name__, self.base)
-
     def __str__(self):
-        return self.__repr__()
+        import traceback
+        tb = traceback.format_exception(*self.base)
+        return 'Original:\n\n' + ''.join(tb)
 
 
 def clear_caches():
@@ -189,7 +188,7 @@ class Instance(Executable):
         method = self.get_subscope_by_name('__get__')
         print 'yessa'
         # args in __set__ descriptors are obj, class.
-        args = [[obj], [obj.base]]
+        args = parsing.Array([[obj], [obj.base]], None)
         method = InstanceElement(self, method)
         print 'la'
         res = Execution(method, args).get_return_types()
@@ -365,7 +364,7 @@ class Execution(Executable):
             # there maybe executions of executions
             stmts = [Instance(self.base, self.var_args)]
         elif isinstance(self.base, Generator):
-            return Execution(self.base.decorated_func()).get_return_types(True)
+            return Execution(self.base.func).get_return_types(True)
         else:
             # don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
@@ -376,7 +375,6 @@ class Execution(Executable):
                     # if it is an instance, we try to execute the __call__().
                     call_method = self.base.get_subscope_by_name('__call__')
                 except (AttributeError, KeyError):
-                    print '\n\n\n\n\n\nfuuuuuuu'
                     debug.warning("no execution possible", self.base)
                 else:
                     debug.dbg('__call__', call_method, self.base)
@@ -868,6 +866,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             elif isinstance(par, Instance) \
                                 and hasattr(par, 'get_descriptor_return'):
                 try:
+                    raise KeyError()
                     result += par.get_descriptor_return(scope)
                 except KeyError:
                     result.append(par)
@@ -991,7 +990,7 @@ def follow_statement(stmt, scope=None, seek_name=None):
     except AttributeError:
         # This is so evil! But necessary to propagate errors. The attribute
         # errors here must not be catched, because they shouldn't exist.
-        raise MultiLevelAttributeError(sys.exc_info()[1])
+        raise MultiLevelAttributeError(sys.exc_info())
 
     # assignment checking is only important if the statement defines multiple
     # variables
@@ -1039,6 +1038,7 @@ def follow_call(scope, call):
 
     position = (call.parent_stmt.line_nr, call.parent_stmt.indent)
     current = next(path)
+    print scope, call, call.parent_stmt, current
     if isinstance(current, parsing.Array):
         result = [Array(current)]
     else:
