@@ -37,7 +37,7 @@ def run_completion_test(correct, source, line_nr, line):
     return 0
 
 
-def run_definition_test(correct, source, line_nr, line):
+def run_definition_test(correct, source, line_nr, line, correct_start):
     """
     Runs tests for definitions.
     Return if the test was a fail or not, with 1 for fail and 0 for success.
@@ -59,9 +59,10 @@ def run_definition_test(correct, source, line_nr, line):
             # -1 for the comment, +3 because of the comment start `#? `
             start = index.start() + 3
             try:
-                should_be |= defs(line_nr-1, start)
+                should_be |= defs(line_nr-1, start+correct_start)
             except Exception:
-                print 'could not resolve %s indent %s' % (line_nr - 1, start)
+                print('could not resolve %s indent %s' % (line_nr - 1, start))
+                print(traceback.format_exc())
                 return 1
         # because the objects have different ids, `repr` it, then compare it.
         should_str = sorted(str(r) for r in should_be)
@@ -72,7 +73,7 @@ def run_definition_test(correct, source, line_nr, line):
             return 1
     return 0
 
-def completion_test(source):
+def run_test(source):
     """
     This is the completion test for some cases. The tests are not unit test
     like, they are rather integration tests.
@@ -96,13 +97,15 @@ def completion_test(source):
             if correct.startswith('['):
                 fails += run_completion_test(correct, source, line_nr, line)
             else:
-                fails += run_definition_test(correct, source, line_nr, line)
-
+                fails += run_definition_test(correct, source, line_nr, line,
+                                                                        start)
             correct = None
             tests += 1
         else:
             try:
-                correct = re.search(r'(?:^|\s)#\?\s*([^\n]+)', line).group(1)
+                r = re.search(r'(?:^|(?<=\s))#\?\s*([^\n]+)', line)
+                correct = r.group(1)
+                start = r.start()
             except AttributeError:
                 correct = None
             else:
@@ -124,16 +127,16 @@ for f_name in os.listdir(completion_test_dir):
         if f_name.endswith(".py"):
             path = os.path.join(completion_test_dir, f_name)
             f = open(path)
-            num_tests, fails = completion_test(f.read())
+            num_tests, fails = run_test(f.read())
             s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
             if fails:
                 tests_pass = False
-            print s
+            print(s)
             summary.append(s)
 
 print('\nSummary:')
 for s in summary:
-    print s
+    print(s)
 
 exit_code = 0 if tests_pass else 1
 sys.exit(exit_code)

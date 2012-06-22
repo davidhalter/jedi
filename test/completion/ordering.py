@@ -119,10 +119,8 @@ class A(object):
 
     def before(self):
         self.a = 1
-        #? ['real']
-        self.a.real
-        #? ['upper']
-        self.a.upper
+        #? int() str()
+        self.a
 
         #? ['after']
         self.after
