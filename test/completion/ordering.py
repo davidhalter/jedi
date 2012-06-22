@@ -104,7 +104,7 @@ class A(object):
     a.upper
     #? []
     a.append
-    a = list
+    a = list()
     def __init__(self):
         self.b = ""
         self.b = 3
@@ -119,14 +119,20 @@ class A(object):
 
     def before(self):
         self.a = 1
-        #? int() str()
+        #? list() str() int()
         self.a
 
         #? ['after']
         self.after
 
+        self.c = 3
+        #? set() int()
+        self.c
+
     def after(self):
         self.a = ''
+
+    c = set()
 
 #? list()
 A.a

@@ -759,7 +759,9 @@ def get_defined_names_for_position(obj, position=(float('inf'), float('inf'))):
     :param position: the position as a row/column tuple, default is infinity.
     """
     names = obj.get_defined_names()
-    if not position:
+    # instances have special rules, always return all the possible completions,
+    # because class variables are always valid and the `self.` variables, too.
+    if not position or isinstance(obj, Instance):
         return names
     names_new = []
     for n in names:
