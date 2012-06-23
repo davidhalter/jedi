@@ -189,13 +189,13 @@ class B():
         return ''
     p = Property(t)
 
-##? str()
-B().p
 #? []
 B().r()
 #? int()
 B().r
 
+##? str()
+B().p
 ##? []
 B().p()
 
