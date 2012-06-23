@@ -182,16 +182,26 @@ class B():
     @Property
     def r(self):
         return 1
-
     @r.setter
     def r(self, value):
         pass
+    def t(self):
+        return ''
+    p = Property(t)
 
+##? str()
+B().p
 #? []
 B().r()
 #? int()
 B().r
 
+##? []
+B().p()
+
+# -----------------
+# class decorators
+# -----------------
 class Decorator(object):
     def __init__(self, func):
         self.func = func
@@ -207,3 +217,19 @@ def nothing(a,b,c):
 nothing("")[0]
 #? str()
 nothing("")[1]
+
+# -----------------
+# variable assignments
+# -----------------
+
+class V:
+    def __init__(self):
+        self.a = 1
+
+    def ret(self):
+        return self.a
+
+    b = ret
+
+##? int()
+V().b()

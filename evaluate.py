@@ -16,6 +16,7 @@ TODO nonlocal statement
 TODO getattr / __getattr__ / __getattribute__ ?
 TODO descriptors
 TODO @staticmethod @classmethod
+TODO variable assignments in classes (see test/completion/classes @230)
 """
 from _compatibility import next, property
 import sys
@@ -866,9 +867,13 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 else:
                     inst = Instance(Class(par.parent.parent))
                 result.append(inst)
-            elif isinstance(par, InstanceElement) \
+            elif isinstance(par, (InstanceElement)) \
                                 and hasattr(par, 'get_descriptor_return'):
                 try:
+                    #print '\n\n'
+                    #print name, par
+                    #print par.get_descriptor_return(scope)
+                    #raise KeyError()
                     result += par.get_descriptor_return(scope)
                 except KeyError:
                     result.append(par)
