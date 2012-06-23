@@ -58,7 +58,7 @@ except NameError:
         return s.decode("utf-8")
 
 # exec function
-if sys.hexversion > 0x03000000:
+if sys.hexversion >= 0x03000000:
     def exec_function(source, global_map):
         exec(source, global_map)
 else:
@@ -67,7 +67,7 @@ else:
 
 # tokenize function
 import tokenize
-if sys.hexversion > 0x03000000:
+if sys.hexversion >= 0x03000000:
     tokenize_func = tokenize.tokenize
 else:
     tokenize_func = tokenize.generate_tokens

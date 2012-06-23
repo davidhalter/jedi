@@ -1,6 +1,7 @@
 import re
 import sys
 import os
+import types
 
 import debug
 import parsing
@@ -37,6 +38,7 @@ class CachedModule(object):
 
     def _load_module(self):
         source = self._get_source()
+        print source
         self._parser = parsing.PyFuzzyParser(source, self.path or self.name)
         p_time = None if not self.path else os.path.getmtime(self.path)
 
@@ -49,8 +51,6 @@ class Parser(CachedModule):
     C/C++. It should also work on third party modules.
     It can be instantiated with either a path or a name of the module. The path
     is important for third party modules.
-
-    TODO maybe remove some code and merge it with `modules`?
 
     :param name: The name of the module.
     :param path: The path of the module.
@@ -69,6 +69,10 @@ class Parser(CachedModule):
         'file object': 'file("")',
         # TODO things like dbg: ('not working', 'tuple of integers')
     }
+
+    if sys.hexversion >= 0x03000000:
+        map_types['file object'] = 'import io; return io.TextWrapper(file)'
+
     module_cache = {}
 
     def __init__(self, path=None, name=None, sys_path=module_find_path):
@@ -101,35 +105,52 @@ class Parser(CachedModule):
         return self._module
 
     def _get_source(self):
-        return self._generate_code(self.module)
+        return self._generate_code(self.module, self._load_mixins())
 
     def _load_mixins(self):
-        self.mixin_funcs = {}
+        """
+        Load functions that are mixed in to the standard library.
+        E.g. builtins are written in C (binaries), but my autocompletion only
+        understands Python code. By mixing in Python code, the autocompletion
+        should work much better for builtins.
+        """
+        regex = r'^(def|class)\s+([\w\d]+)'
+        def process_code(code, depth=0):
+            funcs = {}
+            matches = list(re.finditer(regex, code, re.MULTILINE))
+            positions = [m.start() for m in matches]
+            for i, pos in enumerate(positions):
+                try:
+                    code_block = code[pos:positions[i + 1]]
+                except IndexError:
+                    code_block = code[pos:len(code)]
+                structure_name = matches[i].group(1)
+                name = matches[i].group(2)
+                if structure_name == 'def':
+                    funcs[name] = code_block
+                elif structure_name == 'class':
+                    if depth > 0:
+                        raise NotImplementedError()
+
+                    # remove class line
+                    c = re.sub(r'^[^\n]+', '', code_block)
+                    # remove whitespace
+                    c = re.sub(r'^[ ]{4}', '', c, flags=re.MULTILINE)
+
+                    funcs[name] = process_code(c)
+                else:
+                    raise NotImplementedError()
+            return funcs
+
         if not self.path:
             try:
                 f = open(os.path.sep.join(['mixin', self.name]) + '.py')
             except IOError:
-                pass
+                return {}
             else:
-                code = f.read()
-                # TODO implement classes, how? not used yet
-                regex = r'^(def|class)\s+([\w\d]+)'
-                matches = list(re.finditer(regex, code, re.MULTILINE))
-                positions = [m.start() for m in matches]
-                for i, pos in enumerate(positions):
-                    try:
-                        code_block = code[pos:positions[i + 1]]
-                    except IndexError:
-                        code_block = code[pos:len(code)]
-                    structure_name = matches[i].group(1)
-                    name = matches[i].group(2)
-                    if structure_name == 'def':
-                        self.mixin_funcs[name] = code_block
-                    else:
-                        raise NotImplementedError
-                    #print code_block
+                return process_code(f.read())
 
-    def _generate_code(self, scope, depth=0):
+    def _generate_code(self, scope, mixin_funcs, depth=0):
         """
         Generate a string, which uses python syntax as an input to the
         PyFuzzyParser.
@@ -155,16 +176,14 @@ class Parser(CachedModule):
                     stmts[n] = exe
             return classes, funcs, stmts, members
 
-        if depth == 0:
-            self._load_mixins()
-
         code = ''
         try:
             try:
                 path = scope.__file__
             except AttributeError:
                 path = '?'
-            code += '# Generated module %s from %s\n' % (scope.__name__, path)
+            if type(scope) == types.ModuleType:
+                code += '# Generated module %s from %s\n' % (scope.__name__, path)
         except AttributeError:
             pass
         code += '"""\n%s\n"""\n' % scope.__doc__
@@ -178,7 +197,11 @@ class Parser(CachedModule):
             bases = (c.__name__ for c in cl.__bases__)
             code += 'class %s(%s):\n' % (name, ','.join(bases))
             if depth == 0:
-                cl_code = self._generate_code(cl, depth + 1)
+                try:
+                    mixin = mixin_funcs[name]
+                except KeyError:
+                    mixin = {}
+                cl_code = self._generate_code(cl, mixin, depth + 1)
                 code += parsing.indent_block(cl_code)
             code += '\n'
 
@@ -187,7 +210,7 @@ class Parser(CachedModule):
             params, ret = parse_function_doc(func)
             doc_str = parsing.indent_block('"""\n%s\n"""\n' % func.__doc__)
             try:
-                mixin = self.mixin_funcs[name]
+                mixin = mixin_funcs[name]
             except KeyError:
                 # normal code generation
                 code += 'def %s(%s):\n' % (name, params)
@@ -203,7 +226,7 @@ class Parser(CachedModule):
                     raise Exception("Builtin function not parsed correctly")
                 code += mixin[:pos] + doc_str + mixin[pos:]
 
-        # class members (functions)
+        # class members (functions) properties?
         for name, func in members.items():
             ret = 'pass'
             code += '@property\ndef %s(self):\n' % (name)
@@ -213,7 +236,7 @@ class Parser(CachedModule):
 
         # variables
         for name, value in stmts.items():
-            if type(value).__name__ == 'file':
+            if type(value) == types.FileType:
                 value = 'open()'
             elif type(value).__name__ in ['int', 'bool', 'float',
                                           'dict', 'list', 'tuple']:
@@ -288,13 +311,13 @@ def parse_function_doc(func):
         if ret == ret_str and ret not in ['None', 'object', 'tuple', 'set']:
             debug.dbg('not working', ret_str)
         if ret != 'pass':
-            ret = 'return ' + ret
+            ret = ('return ' if 'return' not in ret else '') + ret
     return param_str, ret
 
 
 class _Builtin(object):
     # Python 3 compatibility
-    if sys.hexversion > 0x03000000:
+    if sys.hexversion >= 0x03000000:
         name = 'builtins'
     else:
         name='__builtin__'
