@@ -5,7 +5,8 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 `get_names_for_scope` and `get_scopes_for_name` are search functions
 
 TODO doc
-TODO list comprehensions, priority?
+TODO list comprehensions, priority? +1
+TODO `a = b if b else None` expressions
 TODO evaluate asserts (type safety)
 
 python 3 stuff:
@@ -14,9 +15,10 @@ TODO annotations ? how ? type evaluation and return?
 TODO nonlocal statement
 
 TODO getattr / __getattr__ / __getattribute__ ?
+
 TODO descriptors (also for classes, for instances it should work)
 TODO @staticmethod @classmethod (implement descriptors, builtins are done)
-TODO variable assignments in classes (see test/completion/classes @230)
+TODO variable assignments in classes (see test/completion/classes @230) +1
 """
 from _compatibility import next, property
 import sys
@@ -219,7 +221,6 @@ class InstanceElement(object):
             par = InstanceElement(self.instance, par)
         return par
 
-
     def get_parent_until(self, *classes):
         scope = self.var.get_parent_until(*classes)
         return InstanceElement(self.instance, scope)
@@ -233,6 +234,7 @@ class InstanceElement(object):
 
 class Class(object):
     __metaclass__ = CachedMetaClass
+
     def __init__(self, base):
         self.base = base
 
@@ -288,6 +290,7 @@ class Function(object):
     """
     """
     __metaclass__ = CachedMetaClass
+
     def __init__(self, func, is_decorated=False):
         """ This should not be called directly """
         self.base_func = func
@@ -330,7 +333,7 @@ class Function(object):
                 # this is here, that the wrapper gets executed
                 f = wrappers[0]
 
-                debug.dbg('decorator end')
+                debug.dbg('decorator end', f)
         if f != self.base_func and isinstance(f, parsing.Function):
             f = Function(f)
         return f
@@ -564,12 +567,6 @@ class Execution(Executable):
         Call the default method with the own instance (self implements all
         the necessary functions). Add also the params.
         """
-      #  result = self.get_params() + parsing.Scope._get_set_vars(self)
-      #  print '\n\ndef', result, 'par', self, self.parent
-      #  print 'set', parsing.Scope._get_set_vars(self)
-      #  print 'set', [r.parent for r in parsing.Scope._get_set_vars(self)]
-      #  print 'para', [r.parent.parent for r in self.get_params()]
-      #  return result
         return self.get_params() + parsing.Scope._get_set_vars(self)
 
     @property
@@ -599,7 +596,7 @@ class Execution(Executable):
 
     def __getattr__(self, name):
         if name not in ['indent', 'line_nr', 'imports']:
-            raise AttributeError('Tried to access %s. Why?' % name)
+            raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
     @property
@@ -755,14 +752,15 @@ class ArrayElement(object):
         return "<%s of %s>" % (self.__class__.__name__, self.name)
 
 
-def get_defined_names_for_position(obj, position=(float('inf'), float('inf'))):
+def get_defined_names_for_position(obj, position=None):
     """
     :param position: the position as a row/column tuple, default is infinity.
     """
     names = obj.get_defined_names()
     # instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    if not position or isinstance(obj, Instance):
+    if not position or isinstance(obj, Instance) or isinstance(obj, Function) \
+                            and isinstance(obj.decorated_func, Instance):
         return names
     names_new = []
     for n in names:
@@ -907,10 +905,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
     if search_global:
         scope_generator = get_names_for_scope(scope, position=position)
     else:
-        if position:
-            names = get_defined_names_for_position(scope, position)
-        else:
-            names = scope.get_defined_names()
+        names = get_defined_names_for_position(scope, position)
         scope_generator = iter([(scope, names)])
 
     return remove_statements(filter_name(scope_generator))

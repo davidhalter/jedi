@@ -150,36 +150,9 @@ CallClass()()
 # -----------------
 # properties
 # -----------------
-class Property():
-    def __init__(self, fget, fset = None, fdel = None, doc = None):
-        self.fget = fget
-        self.fset = fset
-        self.fdel = fdel
-        self.__doc__ = doc
-
-    def __get__(self, obj, cls):
-        return self.fget(obj)
-
-    def __set__(self, obj, value):
-        self.fset(obj, value)
-
-    def __delete__(self, obj):
-        self.fdel(obj)
-
-    def setter(self, func):
-        self.fset = func
-        return self
-
-    def getter(self, func):
-        self.fget = func
-        return self
-
-    def deleter(self, func):
-        self.fdel = func
-        return self
 
 class B():
-    @Property
+    @property
     def r(self):
         return 1
     @r.setter
@@ -187,7 +160,7 @@ class B():
         pass
     def t(self):
         return ''
-    p = Property(t)
+    ##p = property(t)
 
 #? []
 B().r()

@@ -39,7 +39,6 @@ class CachedModule(object):
 
     def _load_module(self):
         source = self._get_source()
-        print source
         self._parser = parsing.PyFuzzyParser(source, self.path or self.name)
         p_time = None if not self.path else os.path.getmtime(self.path)
 
@@ -116,6 +115,7 @@ class Parser(CachedModule):
         should work much better for builtins.
         """
         regex = r'^(def|class)\s+([\w\d]+)'
+
         def process_code(code, depth=0):
             funcs = {}
             matches = list(re.finditer(regex, code, re.MULTILINE))
@@ -175,12 +175,11 @@ class Parser(CachedModule):
                     continue
                 # this has a builtin_function_or_method
                 exe = getattr(scope, n)
-                #print exe, inspect.isbuiltin(exe) or inspect.ismethoddescriptor(exe)
                 if inspect.isbuiltin(exe) or inspect.ismethoddescriptor(exe):
                     funcs[n] = exe
-                elif type(exe) == type:
+                elif inspect.isclass(exe):
                     classes[n] = exe
-                elif type(exe).__name__ == 'member_descriptor':
+                elif inspect.ismemberdescriptor(exe):
                     members[n] = exe
                 else:
                     stmts[n] = exe
@@ -237,10 +236,11 @@ class Parser(CachedModule):
 
         # class members (functions) properties?
         for name, func in members.items():
+            # recursion problem in properties TODO remove
+            if name in ['fget', 'fset', 'fdel']: continue
             ret = 'pass'
             code += '@property\ndef %s(self):\n' % (name)
-            block = get_doc(func, indent=True) + '%s\n\n' % ret
-            code += parsing.indent_block(block)
+            code += parsing.indent_block(get_doc(func) + '%s\n\n' % ret)
 
         # variables
         for name, value in stmts.items():
@@ -328,7 +328,7 @@ class _Builtin(object):
     if sys.hexversion >= 0x03000000:
         name = 'builtins'
     else:
-        name='__builtin__'
+        name = '__builtin__'
     _builtins = Parser(name=name)
 
     @property

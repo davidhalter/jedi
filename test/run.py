@@ -22,12 +22,11 @@ def run_completion_test(correct, source, line_nr, line):
     try:
         completions = functions.complete(source, line_nr, 999,
                                             completion_test_dir)
-    except Exception:
+    except (Exception, functions.evaluate.MultiLevelAttributeError):
         print('test @%s: %s' % (line_nr-1, line))
         print(traceback.format_exc())
         return 1
     else:
-        # TODO remove sorted? completions should be sorted?
         # TODO remove set! duplicates should not be normal
         comp_str = str(sorted(set([str(c) for c in completions])))
         if comp_str != correct:
@@ -47,7 +46,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start):
                                             completion_test_dir))
     try:
         result = defs(line_nr, 999)
-    except Exception:
+    except (Exception, functions.evaluate.MultiLevelAttributeError):
         print('test @%s: %s' % (line_nr-1, line))
         print(traceback.format_exc())
         return 1

@@ -43,9 +43,9 @@ class staticmethod():
 
 class classmethod():
     def __init__(self, func):
-        self.func = func
+        self._func = func
 
     def __get__(self, obj, cls):
-        def method(*args, **kwargs):
-            self.func(cls, *args, **kwargs)
-        return method
+        def _method(*args, **kwargs):
+            self._func(cls, *args, **kwargs)
+        return _method
