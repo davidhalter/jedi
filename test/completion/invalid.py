@@ -27,3 +27,19 @@ def normalfunc():
 
 ##? ['real']
 normalfunc().real
+
+
+# first part not complete (raised errors)
+if a
+    a
+else:
+    #? ['AttributeError']
+    AttributeError
+
+try
+#? ['AttributeError']
+except AttributeError
+    pass
+finally:
+    pass
+

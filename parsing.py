@@ -1370,9 +1370,14 @@ class PyFuzzyParser(object):
                             # the last statement has to be another part of
                             # the flow statement, because a dedent releases the
                             # main scope, so just take the last statement.
-                            self.scope = self.scope.statements[-1].set_next(f)
+                            try:
+                                s = self.scope.statements[-1].set_next(f)
+                            except AttributeError:
+                                # If set_next doesn't exist, just add it.
+                                s = self.scope.add_statement(f)
                         else:
-                            self.scope = self.scope.add_statement(f)
+                            s = self.scope.add_statement(f)
+                        self.scope = s
                     else:
                         debug.warning('syntax err, flow started @%s',
                                                             self.line_nr)
