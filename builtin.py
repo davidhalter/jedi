@@ -2,6 +2,7 @@ import re
 import sys
 import os
 import types
+import inspect
 
 import debug
 import parsing
@@ -155,18 +156,27 @@ class Parser(CachedModule):
         Generate a string, which uses python syntax as an input to the
         PyFuzzyParser.
         """
+        def get_doc(obj, indent=False):
+            doc = inspect.getdoc(obj)
+            if doc:
+                doc = ('"""\n%s\n"""\n' % doc)
+                if indent:
+                    doc = parsing.indent_block(doc)
+                return doc
+            return ''
+
         def get_types(names):
             classes = {}
             funcs = {}
             stmts = {}
             members = {}
             for n in names:
-                if '__' in n:
+                if '__' in n and n not in mixin_funcs:
                     continue
                 # this has a builtin_function_or_method
                 exe = getattr(scope, n)
-                if type(exe).__name__ in ['method_descriptor',
-                                            'builtin_function_or_method']:
+                #print exe, inspect.isbuiltin(exe) or inspect.ismethoddescriptor(exe)
+                if inspect.isbuiltin(exe) or inspect.ismethoddescriptor(exe):
                     funcs[n] = exe
                 elif type(exe) == type:
                     classes[n] = exe
@@ -177,19 +187,18 @@ class Parser(CachedModule):
             return classes, funcs, stmts, members
 
         code = ''
-        try:
+        if inspect.ismodule(scope):  # generate comment where the code's from.
             try:
                 path = scope.__file__
             except AttributeError:
                 path = '?'
-            if type(scope) == types.ModuleType:
-                code += '# Generated module %s from %s\n' % (scope.__name__, path)
-        except AttributeError:
-            pass
-        code += '"""\n%s\n"""\n' % scope.__doc__
+            code += '# Generated module %s from %s\n' % (scope.__name__, path)
+
+        code += get_doc(scope)
 
         names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
-                                    '__path__', '__package__'])
+                                                '__path__', '__package__'])
+
         classes, funcs, stmts, members = get_types(names)
 
         # classes
@@ -208,7 +217,7 @@ class Parser(CachedModule):
         # functions
         for name, func in funcs.items():
             params, ret = parse_function_doc(func)
-            doc_str = parsing.indent_block('"""\n%s\n"""\n' % func.__doc__)
+            doc_str = get_doc(func, indent=True)
             try:
                 mixin = mixin_funcs[name]
             except KeyError:
@@ -230,8 +239,7 @@ class Parser(CachedModule):
         for name, func in members.items():
             ret = 'pass'
             code += '@property\ndef %s(self):\n' % (name)
-            block = '"""\n%s\n"""\n' % func.__doc__
-            block += '%s\n\n' % ret
+            block = get_doc(func, indent=True) + '%s\n\n' % ret
             code += parsing.indent_block(block)
 
         # variables
@@ -265,7 +273,7 @@ def parse_function_doc(func):
     This is nothing more than a docstring parser.
     """
     # TODO: things like utime(path, (atime, mtime)) and a(b [, b]) -> None
-    doc = func.__doc__
+    doc = inspect.getdoc(func)
 
     # get full string, parse round parentheses: def func(a, (b,c))
     try:
