@@ -34,7 +34,17 @@ import builtin
 memoize_caches = []
 
 
+class DecoratorNotFound(LookupError):
+    """
+    Decorators are sometimes not found, if that happens, that error is raised.
+    """
+    pass
+
+
 class MultiLevelStopIteration(Exception):
+    """
+    StopIteration's get catched pretty easy by for loops, let errors propagate.
+    """
     pass
 
 
@@ -54,6 +64,7 @@ class MultiLevelAttributeError(BaseException):
         import traceback
         tb = traceback.format_exception(*self.base)
         return 'Original:\n\n' + ''.join(tb)
+
 
 
 def clear_caches():
@@ -339,6 +350,8 @@ class Function(object):
         return f
 
     def __getattr__(self, name):
+        if self.decorated_func == None:
+            raise DecoratorNotFound()
         return getattr(self.decorated_func, name)
 
     def __repr__(self):
@@ -379,7 +392,7 @@ class Execution(Executable):
                 try:
                     # if it is an instance, we try to execute the __call__().
                     call_method = self.base.get_subscope_by_name('__call__')
-                except (AttributeError, KeyError):
+                except (AttributeError, KeyError, DecoratorNotFound):
                     debug.warning("no execution possible", self.base)
                 else:
                     debug.dbg('__call__', call_method, self.base)
@@ -886,7 +899,12 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):
-                p = name.parent.parent if name.parent else None
+                try:
+                    p = name.parent.parent if name.parent else None
+                except DecoratorNotFound:
+                    debug.warning('catched DecoratorNotFound: %s in %s' \
+                                                            % (name, scope))
+                    continue
                 if name_str == name.get_code() and p not in break_scopes:
                     result += handle_non_arrays(name)
                     # for comparison we need the raw class

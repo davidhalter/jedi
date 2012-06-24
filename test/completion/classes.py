@@ -151,6 +151,31 @@ CallClass()()
 # properties
 # -----------------
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class B():
     @property
     def r(self):
@@ -171,6 +196,8 @@ B().r
 B().p
 ##? []
 B().p()
+
+property2 = property
 
 # -----------------
 # class decorators
