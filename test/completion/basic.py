@@ -39,6 +39,33 @@ for a4, (b4, c4) in (1,("", list)), (1,("", list)):
     c4.upper
 
 # -----------------
+# list comprehensions
+# -----------------
+
+a = ['' for abc in [1]]
+
+#? str()
+a[0]
+
+
+# -----------------
+# ternary operator
+# -----------------
+
+a = 3
+b = '' if a else set()
+#? str() set()
+b
+
+def ret(a):
+    return ['' if a else set()]
+
+#? str() set()
+ret(1)[0]
+#? str() set()
+ret()[0]
+
+# -----------------
 # with statements
 # -----------------
 
@@ -58,8 +85,8 @@ with open('') as f1, open('') as f2:
 # -----------------
 
 def global_define():
-    global glob
-    glob = 3
+    global global_var_in_func
+    global_var_in_func = 3
 
-#? ['real']
-glob.real
+#? int()
+global_var_in_func

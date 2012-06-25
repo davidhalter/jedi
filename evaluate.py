@@ -6,7 +6,7 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 
 TODO doc
 TODO list comprehensions, priority? +1
-TODO `a = b if b else None` expressions
+TODO magic methods: __mul__, __add__, etc.
 TODO evaluate asserts (type safety)
 
 python 3 stuff:
@@ -64,7 +64,6 @@ class MultiLevelAttributeError(BaseException):
         import traceback
         tb = traceback.format_exception(*self.base)
         return 'Original:\n\n' + ''.join(tb)
-
 
 
 def clear_caches():
@@ -1039,15 +1038,26 @@ def follow_call_list(scope, call_list):
     else:
         result = []
         for calls in call_list:
-            for call in calls:
+            calls_iterator = iter(calls)
+            for call in calls_iterator:
                 if parsing.Array.is_type(call, parsing.Array.NOARRAY):
                     result += follow_call_list(scope, call)
                 else:
                     # with things like params, these can also be functions, etc
                     if isinstance(call, (Function, parsing.Class)):
                         result.append(call)
+                    # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, str):
-                        # The string tokens are just operations (+, -, etc.)
+                        # ternary operators
+                        if str(call.name) == 'if':
+                            while True:
+                                call = next(calls_iterator)
+                                try:
+                                    if str(call.name) == 'else':
+                                        break
+                                except AttributeError:
+                                    pass
+                            continue
                         result += follow_call(scope, call)
     return set(result)
 

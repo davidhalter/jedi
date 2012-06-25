@@ -633,6 +633,9 @@ class Statement(Simple):
                     if close_brackets:
                         result = result.parent
                         close_brackets = False
+                    if result.__class__ ==  Call:
+                        result = result.parent
+                        close_brackets = False
                     call = Call(tok, c_type, self, result)
                     result.add_to_current_field(call)
                     result = call
