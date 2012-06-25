@@ -155,7 +155,7 @@ def complete(source, row, column, source_path):
         completions = []
         debug.dbg('possible scopes', scopes)
         for s in scopes:
-            # TODO is this reall the right way? just ignore the functions? \
+            # TODO is this really the right way? just ignore the functions? \
             # do the magic functions first? and then recheck here?
             if not isinstance(s, evaluate.Function):
                 completions += s.get_defined_names()

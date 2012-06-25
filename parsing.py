@@ -27,9 +27,6 @@ as input.
 Ignored statements:
  - print (no use for it, just slows down)
  - exec (dangerous - not controllable)
-
-TODO take special care for future imports
-TODO check meta classes
 """
 from _compatibility import next, literal_eval, tokenize_func, BytesIO
 
@@ -122,7 +119,7 @@ class Scope(Simple):
     def add_docstr(self, string):
         """ Clean up a docstring """
 
-        # TODO use prefixes, to format the doc strings
+        # TODO use prefixes, to format the doc strings -> inspect.cleandoc
         # scan for string prefixes like r, u, etc.
         index1 = string.find("'")
         index2 = string.find('"')
@@ -641,8 +638,6 @@ class Statement(Simple):
                     result = call
             elif tok in brackets.keys():  # brackets
                 level += 1
-                # TODO why is this not working, when the two statements ar not
-                # in the if/else clause (they are exactly the same!!!)
                 if is_call_or_close():
                     result = Array(brackets[tok], self, result)
                     result = result.parent.add_execution(result)
