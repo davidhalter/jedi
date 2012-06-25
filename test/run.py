@@ -121,17 +121,27 @@ def run_test(source):
 completion_test_dir = 'test/completion'
 summary = []
 tests_pass = True
-for f_name in os.listdir(completion_test_dir):
-    if len(sys.argv) == 1 or [a for a in sys.argv[1:] if a in f_name]:
-        if f_name.endswith(".py"):
-            path = os.path.join(completion_test_dir, f_name)
-            f = open(path)
-            num_tests, fails = run_test(f.read())
-            s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
-            if fails:
-                tests_pass = False
-            print(s)
-            summary.append(s)
+def test_dir(completion_test_dir, third_party=False):
+    global tests_pass
+    for f_name in os.listdir(completion_test_dir):
+        if len(sys.argv) == 1 or [a for a in sys.argv[1:] if a in f_name]:
+            if f_name.endswith(".py"):
+                if third_party:
+                    try:
+                        __import__(f_name.replace('.py', ''))
+                    except ImportError:
+                        summary.append('Thirdparty-Library %s not found.' % f_name)
+                path = os.path.join(completion_test_dir, f_name)
+                f = open(path)
+                num_tests, fails = run_test(f.read())
+                s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
+                if fails:
+                    tests_pass = False
+                print(s)
+                summary.append(s)
+
+test_dir(completion_test_dir)
+test_dir(completion_test_dir + '/thirdparty', third_party=True)
 
 print('\nSummary:')
 for s in summary:

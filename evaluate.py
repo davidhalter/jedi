@@ -207,7 +207,7 @@ class Instance(Executable):
         return res
 
     def __getattr__(self, name):
-        if name not in ['line_nr', 'indent', 'name']:
+        if name not in ['line_nr', 'indent', 'name', 'get_imports']:
             raise AttributeError("Don't touch this (%s)!" % name)
         return getattr(self.base, name)
 
