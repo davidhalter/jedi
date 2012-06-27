@@ -41,7 +41,7 @@ if 1:
                 out.append(d)
 
             strout = str(out)
-        except Exception:
+        except (Exception, evaluate.MultiLevelAttributeError):
             # print to stdout, will be in :messages
             print(traceback.format_exc())
             strout = ''
@@ -67,7 +67,7 @@ if 1:
         definitions = functions.get_definitions(source, row, column, buf_path)
     except functions.NotFoundError:
         msg = 'There is no useful expression under the cursor'
-    except Exception:
+    except (Exception, evaluate.MultiLevelAttributeError):
         # print to stdout, will be in :messages
         print(traceback.format_exc())
         msg = "Some different eror, this shouldn't happen"
@@ -99,6 +99,7 @@ sys.path.insert(0, dirname(dirname(vim.eval('s:current_file'))))
 import traceback  # for exception output
 
 import functions
+import evaluate
 PYTHONEOF
 
 " vim: set et ts=4:

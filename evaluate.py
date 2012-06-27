@@ -661,7 +661,7 @@ class Generator(object):
         return self.func.parent
         #self.execution.get_return_types()
 
-    def get_index_types(self, index):
+    def get_index_types(self, index=None):
         # TODO check if this method is right here, this means that Generators
         # can be indexed, which is not the Python way.
         return Execution(self.func).get_return_types(True)
