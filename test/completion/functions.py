@@ -173,21 +173,3 @@ exe[3].items
 #? set()
 exe[3]['c']
 
-# -----------------
-# generators
-# -----------------
-
-def gen():
-    yield 1
-    yield ""
-
-gen_exe = gen()
-#? ['upper']
-next(gen_exe).upper
-#? ['real']
-next(gen_exe).real
-#? int() str()
-next(gen_exe)
-
-#? int() str() list
-next(gen_exe, list)

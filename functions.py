@@ -160,6 +160,7 @@ def complete(source, row, column, source_path):
             if not isinstance(s, evaluate.Function):
                 completions += s.get_defined_names()
 
+    #completions[0].
     completions = [c for c in completions
                             if c.names[-1].lower().startswith(like.lower())]
 
