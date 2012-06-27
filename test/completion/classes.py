@@ -151,31 +151,6 @@ CallClass()()
 # properties
 # -----------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class B():
     @property
     def r(self):
@@ -196,27 +171,6 @@ B().r
 B().p
 ##? []
 B().p()
-
-property2 = property
-
-# -----------------
-# class decorators
-# -----------------
-class Decorator(object):
-    def __init__(self, func):
-        self.func = func
-
-    def __call__(self, *args, **kwargs):
-        return self.func(1, *args, **kwargs)
-
-@Decorator
-def nothing(a,b,c):
-    return a,b,c
-
-#? int()
-nothing("")[0]
-#? str()
-nothing("")[1]
 
 # -----------------
 # variable assignments

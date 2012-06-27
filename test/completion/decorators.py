@@ -1,4 +1,72 @@
 # -----------------
+# normal decorators
+# -----------------
+
+def decorator(func):
+    def wrapper(*args):
+        return func(1, *args)
+    return wrapper
+
+@decorator
+def decorated(a,b):
+    return a,b
+
+exe = decorated(set, '')
+
+#? set
+exe[1]
+
+#? int()
+exe[0]
+
+# more complicated with args/kwargs
+def dec(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@dec
+def fu(a, b, c, *args, **kwargs):
+    return a, b, c, args, kwargs
+
+exe = fu(list, c=set, b=3, d='')
+
+#? ['append']
+exe[0].append
+#? ['real']
+exe[1].real
+#? ['union']
+exe[2].union
+
+#? str()
+exe[4]['d']
+
+
+exe = fu(list, set, 3, '', d='')
+
+#? str()
+exe[3][0]
+
+# -----------------
+# class decorators
+# -----------------
+class Decorator(object):
+    def __init__(self, func):
+        self.func = func
+
+    def __call__(self, *args, **kwargs):
+        return self.func(1, *args, **kwargs)
+
+@Decorator
+def nothing(a,b,c):
+    return a,b,c
+
+#? int()
+nothing("")[0]
+#? str()
+nothing("")[1]
+
+# -----------------
 # not found decorators
 # -----------------
 @not_found_decorator

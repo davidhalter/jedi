@@ -1049,6 +1049,8 @@ def follow_call_list(scope, call_list):
                     # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, str):
                         # ternary operators
+                        #if str(call.name) == 'for':
+                        #    print '\n\ndini mueter'
                         if str(call.name) == 'if':
                             while True:
                                 call = next(calls_iterator)
