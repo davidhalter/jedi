@@ -1,4 +1,12 @@
 import inspect
+try:
+    from colorama import Fore, init
+    init()
+except ImportError:
+    class Fore(object):
+        RED = ''
+        GREEN = ''
+        RESET = ''
 
 NOTICE = object()
 WARNING = object()
@@ -25,8 +33,8 @@ def error(*args):
 
 def print_to_stdout(level, *args):
     """ The default debug function """
-    print(('dbg: ' if level == NOTICE else 'warning: ') +
-            ', '.join(str(a) for a in args))
+    msg = (Fore.GREEN + 'dbg: ' if level == NOTICE else Fore.RED + 'warning: ')
+    print(msg + ', '.join(str(a) for a in args) + Fore.RESET)
 
 
 debug_function = None
