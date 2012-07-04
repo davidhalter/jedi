@@ -133,7 +133,7 @@ def complete(source, row, column, source_path):
     :param source_path: The path in the os, the current module is in.
     :type source_path: int
 
-    :return: list of completion objects
+    :return: list of Completion objects.
     :rtype: list
     """
     try:

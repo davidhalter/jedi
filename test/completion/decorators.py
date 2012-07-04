@@ -93,3 +93,22 @@ JustAClass().a()
 JustAClass.a.
 #? []
 JustAClass().a()
+
+# -----------------
+# others
+# -----------------
+def memoize(function):
+        def wrapper(*args):
+            if 1:
+                pass
+            else:
+                rv = function(*args)
+                return rv
+        return wrapper
+
+@memoize
+def follow_statement(stmt):
+    return stmt
+
+#? int()
+follow_statement(1)
