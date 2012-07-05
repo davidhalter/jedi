@@ -2,16 +2,16 @@ def openbrace():
     asdf = 3
      asdf
     asdf(
-    #? ['real']
-    asdf.real
+    #? int()
+    asdf
     return 1
 
-#? ['real']
-openbrace().real
+#? int()
+openbrace()
 
 blub([
-#? ['real']
-openbrace().real
+#? int()
+openbrace()
 
 def indentfault():
     asd(
@@ -25,8 +25,8 @@ def openbrace2():
 def normalfunc():
     return 1
 
-##? ['real']
-normalfunc().real
+##? int()
+normalfunc()
 
 
 # first part not complete (raised errors)

@@ -3,40 +3,26 @@
 # -----------------
 
 for a in [1,2]:
-    #? ['real']
-    a.real
+    #? int() int()
+    a
 
 for a1 in 1,"":
-    #? ['real']
-    a1.real
-    #? ['upper']
-    a1.upper
+    #? int() str()
+    a1
 
 for a3, b3 in (1,""), (1,""), (1,""):
-    #? ['real']
-    a3.real
-    #? []
-    a3.upper
-    #? []
-    b3.real
-    #? ['upper']
-    b3.upper
+    #? int() int() int()
+    a3
+    #? str() str() str()
+    b3
 
 for a4, (b4, c4) in (1,("", list)), (1,("", list)):
-    #? ['real']
-    a4.real
-    #? []
-    a4.upper
-    #? []
-    b4.real
-    #? ['upper']
-    b4.upper
-    #? []
-    c4.real
-    #? ['append']
-    c4.append
-    #? []
-    c4.upper
+    #? int() int()
+    a4
+    #? str() str()
+    b4
+    #? list
+    c4
 
 # -----------------
 # list comprehensions
