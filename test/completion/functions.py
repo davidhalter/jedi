@@ -86,6 +86,8 @@ exe[1]
 
 #? int()
 func()[0]
+#? str()
+func()[1]
 #? float()
 func(1.0)[0]
 #? str()

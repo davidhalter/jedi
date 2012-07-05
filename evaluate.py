@@ -110,7 +110,9 @@ class CachedMetaClass(type):
 
 class Executable(object):
     """ An instance is also an executable - because __init__ is called """
-    def __init__(self, base, var_args=[]):
+    def __init__(self, base, var_args=parsing.Array(None, None)):
+        #if var_args == []:
+        #    raise NotImplementedError()
         self.base = base
         # the param input array
         self.var_args = var_args
@@ -428,13 +430,13 @@ class Execution(Executable):
             """
             Create a param with the original scope (of varargs) as parent.
             """
-            calls = parsing.Array(parsing.Array.NOARRAY,
-                                            self.var_args.parent_stmt)
+            parent_stmt = self.var_args.parent_stmt
+            calls = parsing.Array(parsing.Array.NOARRAY, parent_stmt)
             calls.values = values
             calls.keys = keys
             calls.type = array_type
             new_param = copy.copy(param)
-            new_param.parent = self.var_args.parent_stmt
+            new_param.parent = parent_stmt
             new_param._assignment_calls_calculated = True
             new_param._assignment_calls = calls
             name = copy.copy(param.get_name())

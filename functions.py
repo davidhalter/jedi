@@ -6,7 +6,8 @@ import evaluate
 import modules
 import debug
 
-__all__ = ['complete', 'goto', 'get_completion_parts', 'set_debug_function']
+__all__ = ['complete', 'get_completion_parts', 'get_definitions',
+            'set_debug_function']
 
 
 class NotFoundError(Exception):

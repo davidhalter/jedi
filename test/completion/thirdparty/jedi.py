@@ -1,5 +1,5 @@
 
-from jedi import functions
+from jedi import functions, evaluate
 
 el = functions.complete()[0]
 #? ['description']
@@ -14,5 +14,8 @@ scopes, path, dot, like = \
                             source_path, True)
 
 # has problems with that (sometimes) very deep nesting.
-#? str()
+#? set()
 el = scopes.
+
+##? str() <--- recursion
+el = evaluate.get_names_for_scope()[0].
