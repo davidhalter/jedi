@@ -771,7 +771,7 @@ class ArrayElement(object):
         return "<%s of %s>" % (self.__class__.__name__, self.name)
 
 
-def get_defined_names_for_position(obj, position=None):
+def get_defined_names_for_position(obj, position=None, start_scope=None):
     """
     :param position: the position as a row/column tuple, default is infinity.
     """
@@ -779,7 +779,9 @@ def get_defined_names_for_position(obj, position=None):
     # instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
     if not position or isinstance(obj, Instance) or isinstance(obj, Function) \
-                            and isinstance(obj.decorated_func, Instance):
+                            and isinstance(obj.decorated_func, Instance) \
+                or start_scope != obj and isinstance(start_scope,
+                                            (parsing.Function, Execution)):
         return names
     names_new = []
     for n in names:
@@ -799,9 +801,12 @@ def get_names_for_scope(scope, position=None, star_search=True):
         # `parsing.Class` is used, because the parent is never `Class`.
         # ignore the Flows, because the classes and functions care for that.
         if not (scope != start_scope and isinstance(scope, parsing.Class)
-                or isinstance(scope, parsing.Flow)):
+                or isinstance(scope, parsing.Flow)
+                or isinstance(scope, InstanceElement)
+                and isinstance(scope.var, parsing.Class)):
             try:
-                yield scope, get_defined_names_for_position(scope, position)
+                yield scope, get_defined_names_for_position(scope, position,
+                                                                start_scope)
             except StopIteration:
                 raise MultiLevelStopIteration('StopIteration raised somewhere')
         scope = scope.parent

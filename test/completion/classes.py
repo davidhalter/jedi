@@ -187,3 +187,25 @@ class V:
 
 ##? int()
 V().b()
+
+# -----------------
+# ordering
+# -----------------
+class A():
+    def b(self):
+        #? int()
+        a()
+        #? str()
+        self.a()
+        return a()
+
+    def a(self):
+        return ""
+
+def a():
+    return 1
+
+#? int()
+A().b()
+#? str()
+A().a()

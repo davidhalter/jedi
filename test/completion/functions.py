@@ -1,4 +1,3 @@
-
 def array(first_param):
     #? ['first_param']
     first_param
@@ -65,6 +64,24 @@ def recursion(a, b):
 
 ##? int() float()
 recursion("a", 1.0)
+
+# -----------------
+# ordering
+# -----------------
+
+#def b():
+    #return ""
+
+def a():
+    #? int()
+    b()
+    return b()
+
+def b():
+    return 1
+
+#? int()
+a()
 
 # -----------------
 # keyword arguments
