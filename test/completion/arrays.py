@@ -2,127 +2,103 @@
 # basic array lookups
 # -----------------
 
-#? ['imag']
-[1,""][0].imag
-#? []
-[1,""][1].imag
+#? int()
+[1,""][0]
+#? str()
+[1,""][1]
 
 a = list()
-#? ['append']
-[a][0].append
+#? list()
+[a][0]
 
-#? ['append']
-[[a,a,a]][2][100].append
+#? list()
+[[a,a,a]][2][100]
 
 c = [[a,""]]
-#? []
-c[0][1].append
-#? ['upper']
-c[0][1].upper
+#? str()
+c[0][1]
 
 b = [6,7]
 
-#? ['real']
-b[8-7].real
+#? int() int()
+b[8-7]
 
-#? ['append']
-b[8:].append
+#? list()
+b[8:]
 
 
 # -----------------
 # tuple assignments
 # -----------------
 a1, b1 = (1, "")
-#? ['real']
-a1.real
-#? ['lower']
-b1.lower
-#? []
-b1.real
+#? int()
+a1
+#? str()
+b1
 
 (a2, b2) = (1, "")
-#? ['imag']
-a2.imag
-#? ['upper']
-b2.upper
+#? int()
+a2
+#? str()
+b2
 
 # list assignment
 [list1, list2] = (1, "")
-#? []
-list1.index
-#? ['real']
-list1.real
-#? []
-list1.lower
-#? ['lower']
-list2.lower
-#? []
-list2.real
+#? int()
+list1
+#? str()
+list2
 
 [list3, list4] = [1, ""]
-#? ['real']
-list3.real
-#? ['lower']
-list4.lower
-#? []
-list4.real
+#? int()
+list3
+#? str()
+list4
 
 # -----------------
 # subtuple assignment
 # -----------------
 (a3, (b3, c3)) = (1, ("", list))
-#? ['append']
-c3.append
-#? []
-c3.upper
-#? []
-c3.real
+#? list
+c3
 
 a4, (b4, c4) = (1, ("", list))
-#? ['append']
-c4.append
-#? []
-c4.upper
-#? []
-c4.real
-#? ['real']
-a4.real
-#? ['upper']
-b4.upper
+#? list
+c4
+#? int()
+a4
+#? str()
+b4
 
 
 # -----------------
 # unnessecary braces
 # -----------------
-#? ['real']
-(1).real
-#? ['real']
-((1)).real
-#? ['real']
-((1)+1).real
+#? int()
+(1)
+#? int()
+((1))
+#? int() int()
+((1)+1)
 
 u, v = 1, ""
-#? ['real']
-u.real
-#? []
-u.upper
+#? int()
+u
 
 ((u1, v1)) = 1, ""
-#? ['real']
-u1.real
-#? ['real']
-(u1).real
-#? []
-u1.upper
+#? int()
+u1
+#? int()
+(u1)
 
 # -----------------
 # should fail (return nothing)
 # -----------------
 (f, g) = (1,)
-#? ['imag']
-f.imag
+#? int()
+f
 #? []
-g.upper
+g.
 
 (f1, g1) = 1
 #? []
@@ -134,12 +110,11 @@ g1.
 # dicts
 # -----------------
 dic2 = {'asdf': 3, 'b': 'str'}
-#? ['real']
-dic2['asdf'].real
-#? []
-dic2['asdf'].upper
+#? int()
+dic2['asdf']
+
 # string literal
-#? ['real']
-dic2[r'asdf'].real
-#? []
-dic2[r'asdf'].upper
+#? int()
+dic2[r'asdf']
+#? int()
+dic2[r'asdf']

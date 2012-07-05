@@ -31,12 +31,12 @@ def fu(a, b, c, *args, **kwargs):
 
 exe = fu(list, c=set, b=3, d='')
 
-#? ['append']
-exe[0].append
-#? ['real']
-exe[1].real
-#? ['union']
-exe[2].union
+#? list()
+exe[0]
+#? int()
+exe[1]
+#? set
+exe[2]
 
 #? str()
 exe[4]['d']

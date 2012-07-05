@@ -11,8 +11,8 @@ func = array
 #? []
 func.first_param
 
-#? ['append']
-array().append
+#? list()
+array()
 
 #? ['array']
 arr
@@ -21,22 +21,22 @@ arr
 def inputs(param):
     return param
 
-#? ['append']
-inputs(list).append
+#? list()
+inputs(list)
 
 def variable_middle():
     var = 3
     return var
 
-#? ['real']
-variable_middle().real
+#? int()
+variable_middle()
 
 def variable_rename(param):
     var = param
     return var
 
-#? ['imag']
-variable_rename(1).imag
+#? int()
+variable_rename(1)
 
 # -----------------
 # double execution
@@ -44,8 +44,8 @@ variable_rename(1).imag
 def double_exe(param):
     return param
 
-#? ['upper']
-variable_rename(double_exe)("").upper
+#? str()
+variable_rename(double_exe)("")
 
 # -> shouldn't work (and throw no error)
 #? []
@@ -116,13 +116,12 @@ func(1.0)[1]
 def a():
     l = 3
     def func_b():
-        #? ['real']
-        l.real
+        #? str()
         l = ''
     #? ['func_b']
     func_b
-    #? ['real']
-    l.real
+    #? int()
+    l
 
 # -----------------
 # *args
@@ -167,8 +166,8 @@ def kwargs_func(**kwargs):
     return kwargs
 
 exe = kwargs_func(a=3,b=4)
-#? ['items']
-exe.items
+#? dict()
+exe
 
 # -----------------
 # *args / ** kwargs
@@ -179,16 +178,16 @@ def fu(a=1, b="", *args, **kwargs):
 
 exe = fu(list, 1, "", c=set, d="")
 
-#? ['append']
-exe[0].append
-#? ['real']
-exe[1].real
-#? ['index']
-exe[2].index
-#? ['upper']
-exe[2][0].upper
-#? ['items']
-exe[3].items
+#? list()
+exe[0]
+#? int()
+exe[1]
+#? tuple()
+exe[2]
+#? str()
+exe[2][0]
+#? dict()
+exe[3]
 #? set()
 exe[3]['c']
 
