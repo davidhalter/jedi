@@ -363,6 +363,8 @@ class Flow(Scope):
     :type set_vars: list
     """
     def __init__(self, command, inits, indent, line_nr, set_vars=None):
+        self._parent = None
+        self.next = None
         super(Flow, self).__init__(indent, line_nr, '')
         self.command = command
         # These have to be statements, because of with, which takes multiple.
@@ -375,7 +377,16 @@ class Flow(Scope):
             self.set_vars = set_vars
             for s in self.set_vars:
                 s.parent = self
-        self.next = None
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, value):
+        self._parent = value
+        if self.next:
+            self.next.parent = value
 
     def get_code(self, first_indent=False, indention="    "):
         if self.set_vars:

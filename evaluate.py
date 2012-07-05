@@ -314,7 +314,6 @@ class Function(object):
         This is also the places where the decorators are processed.
         """
         f = self.base_func
-        print 'dec', f
 
         # only enter it, if has not already been processed
         if not self.is_decorated:
@@ -347,7 +346,6 @@ class Function(object):
                 debug.dbg('decorator end', f)
         if f != self.base_func and isinstance(f, parsing.Function):
             f = Function(f)
-        print 'enddec', f
         return f
 
     def __getattr__(self, name):
@@ -455,7 +453,6 @@ class Execution(Executable):
             result.append(self_name)
 
         param_dict = {}
-        print 'base', self.base, self.base.params
         for param in self.base.params:
             param_dict[str(param.get_name())] = param
         # There may be calls, which don't fit all the params, this just ignores
@@ -582,8 +579,6 @@ class Execution(Executable):
         Call the default method with the own instance (self implements all
         the necessary functions). Add also the params.
         """
-        a = self.get_params()
-        print 'params', a
         return self.get_params() + parsing.Scope._get_set_vars(self)
 
     @property
