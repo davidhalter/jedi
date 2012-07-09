@@ -54,7 +54,7 @@ variable_rename(list())().
 variable_rename(1)().
 
 # -----------------
-# recursion (should ignore)
+# recursions (should ignore)
 # -----------------
 def recursion(a, b):
     if a:
@@ -62,8 +62,21 @@ def recursion(a, b):
     else:
         return recursion(a+".", b+1)
 
-##? int() float()
+#? int() float()
 recursion("a", 1.0)
+
+def other(a):
+    return recursion2(a)
+
+def recursion2(a):
+    if a:
+        return other(a)
+    else:
+        return recursion2("")
+    return a
+
+#? int() str() str()
+recursion2(1)
 
 # -----------------
 # ordering

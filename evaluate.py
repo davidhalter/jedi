@@ -30,6 +30,7 @@ import parsing
 import modules
 import debug
 import builtin
+import helpers
 
 memoize_caches = []
 
@@ -69,6 +70,8 @@ class MultiLevelAttributeError(BaseException):
 def clear_caches():
     for m in memoize_caches:
         m.clear()
+
+    #follow_statement.reset()
 
 
 def memoize_default(default=None):
@@ -209,7 +212,8 @@ class Instance(Executable):
 
     def __getattr__(self, name):
         if name not in ['line_nr', 'indent', 'name', 'get_imports']:
-            raise AttributeError("Don't touch this (%s)!" % name)
+            raise AttributeError("Instance %s: Don't touch this (%s)!"
+                                    % (self, name))
         return getattr(self.base, name)
 
     def __repr__(self):
@@ -976,7 +980,9 @@ def assign_tuples(tup, results, seek_name):
             if hasattr(r, "get_exact_index_types"):
                 types += r.get_exact_index_types(index)
             else:
-                debug.warning("assign tuples: invalid tuple lookup")
+                debug.warning("invalid tuple lookup %s of result %s in %s"
+                                    % (tup, results, seek_name))
+
         return types
 
     result = []
@@ -1002,6 +1008,7 @@ def assign_tuples(tup, results, seek_name):
     return result
 
 
+@helpers.RecursionDecorator
 @memoize_default(default=[])
 def follow_statement(stmt, scope=None, seek_name=None):
     """
