@@ -211,6 +211,9 @@ class Instance(Executable):
         return res
 
     def __getattr__(self, name):
+        if name == 'get_index_types':
+            # todo call __getitem__ in such cases?
+            return lambda: []
         if name not in ['line_nr', 'indent', 'name', 'get_imports']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                     % (self, name))
@@ -387,7 +390,8 @@ class Execution(Executable):
             # there maybe executions of executions
             stmts = [Instance(self.base, self.var_args)]
         elif isinstance(self.base, Generator):
-            return Execution(self.base.func).get_return_types(True)
+            print 'blubedi', self.base
+            return self.base.execute()
         else:
             # don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
@@ -415,7 +419,7 @@ class Execution(Executable):
     def _get_function_returns(self, evaluate_generator):
         func = self.base
         if func.is_generator and not evaluate_generator:
-            return [Generator(func)]
+            return [Generator(func, self.var_args)]
         else:
             stmts = []
             for r in self.returns:
@@ -638,10 +642,10 @@ class Execution(Executable):
 
 
 class Generator(object):
-    # TODO bring next(iter, default) to work - default works not
-    def __init__(self, func):
+    def __init__(self, func, var_args):
         super(Generator, self).__init__()
         self.func = func
+        self.var_args = var_args
 
     def get_defined_names(self):
         """
@@ -662,15 +666,17 @@ class Generator(object):
         debug.dbg('generator names', names)
         return names
 
+    def execute(self):
+        return Execution(self.func, self.var_args).get_return_types(True)
+
     @property
     def parent(self):
         return self.func.parent
-        #self.execution.get_return_types()
 
     def get_index_types(self, index=None):
         # TODO check if this method is right here, this means that Generators
         # can be indexed, which is not the Python way.
-        return Execution(self.func).get_return_types(True)
+        return self.execute()
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.func)
@@ -866,6 +872,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         def handle_non_arrays(name):
             result = []
             par = name.parent
+            print name, par, par.parent
             if isinstance(par, parsing.Flow):
                 if par.command == 'for':
                     # take the first statement (for has always only

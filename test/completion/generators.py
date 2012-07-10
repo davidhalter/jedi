@@ -7,18 +7,23 @@ def gen():
     yield ""
 
 gen_exe = gen()
-#? ['upper']
-next(gen_exe).upper
-#? ['real']
-next(gen_exe).real
 #? int() str()
 next(gen_exe)
 
 #? int() str() list
 next(gen_exe, list)
 
+def gen_ret(value):
+    yield value
+
+#? int()
+next(gen_ret(1))
+
+#? []
+next(gen_ret())
+
 # -----------------
-# generators should be indexable?
+# generators should be indexable!???
 # -----------------
 def get(self):
     yield 1

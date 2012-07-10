@@ -17,5 +17,9 @@ scopes, path, dot, like = \
 #? set()
 el = scopes.
 
-#? str() <--- recursion
-el = evaluate.get_names_for_scope()[0].
+# get_names_for_scope is also recursion stuff
+#? tuple()
+el = evaluate.get_names_for_scope()[0]
+
+#? tuple()
+el = evaluate.get_names_for_scope(1,2)[0][0]
