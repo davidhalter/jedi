@@ -1,4 +1,5 @@
 import parsing
+import debug
 
 class RecursionDecorator(object):
     """ A decorator to detect recursions in statements """
@@ -14,6 +15,7 @@ class RecursionDecorator(object):
 
         r = RecursionNode(stmt, self.current)
         if self.check_recursion(r):
+            debug.warning('catched recursion', stmt, args, kwargs)
             return []
         parent, self.current = self.current, r
         result = self.func(stmt, *args, **kwargs)

@@ -203,8 +203,9 @@ class Instance(Executable):
     def get_descriptor_return(self, obj):
         """ Throws an error if there's no method. """
         method = self.get_subscope_by_name('__get__')
-        # args in __set__ descriptors are obj, class.
-        args = parsing.Array([[obj], [obj.base]], None)
+        # arguments in __set__ descriptors are obj, class.
+        # `method` is the new parent of the array, don't know if that's good.
+        args = parsing.Array('tuple', method, values=[[obj], [obj.base]])
         method = InstanceElement(self, method)
         res = Execution(method, args).get_return_types()
 
@@ -390,7 +391,6 @@ class Execution(Executable):
             # there maybe executions of executions
             stmts = [Instance(self.base, self.var_args)]
         elif isinstance(self.base, Generator):
-            print 'blubedi', self.base
             return self.base.execute()
         else:
             # don't do this with exceptions, as usual, because some deeper
@@ -872,7 +872,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         def handle_non_arrays(name):
             result = []
             par = name.parent
-            print name, par, par.parent
             if isinstance(par, parsing.Flow):
                 if par.command == 'for':
                     # take the first statement (for has always only
@@ -1070,7 +1069,7 @@ def follow_call_list(scope, call_list):
                     result += follow_call_list(scope, call)
                 else:
                     # with things like params, these can also be functions, etc
-                    if isinstance(call, (Function, parsing.Class)):
+                    if isinstance(call, (Function, parsing.Class, Instance)):
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, str):

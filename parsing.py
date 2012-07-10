@@ -802,10 +802,10 @@ class Array(Call):
     DICT = 'dict'
     SET = 'set'
 
-    def __init__(self, arr_type, parent_stmt, parent=None):
+    def __init__(self, arr_type, parent_stmt, parent=None, values=None):
         super(Array, self).__init__(None, arr_type, parent_stmt, parent)
 
-        self.values = []
+        self.values = values if values else []
         self.keys = []
 
     def add_field(self):
@@ -874,7 +874,6 @@ class Array(Call):
             type = 'noarray'
         else:
             type = self.type
-        #parent_str = " of %s" % self.parent if self.parent else ""
         return "<%s: %s%s>" % (self.__class__.__name__, type, self.values)
 
 
