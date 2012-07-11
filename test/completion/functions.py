@@ -188,14 +188,6 @@ exe['b']
 #? int() float()
 exe['c']
 
-exe = kwargs_func(3, a=3)
-#? dict()
-exe
-#? int()
-exe['a']
-#? []
-exe['b']
-
 # -----------------
 # *args / ** kwargs
 # -----------------
@@ -252,9 +244,9 @@ def nested_kw2(**kwargs2):
 #? int()
 nested_kw(b=1, c=1.0, list)
 #? int()
-nested_kw('', b=1)
+nested_kw(b=1)
 #? int()
-nested_kw('', d=1.0, b=1, list)
+nested_kw(d=1.0, b=1, list)
 #? int()
 nested_kw(b=1)
 #? int()
@@ -269,13 +261,15 @@ nested_kw(a='')
 #? int()
 nested_kw2(b=1)
 #? int()
-nested_kw2('', b=1, c=1.0)
+nested_kw2(b=1, c=1.0)
 #? int()
-nested_kw2('', c=1.0, b=1)
+nested_kw2(c=1.0, b=1)
 #? []
 nested_kw2('')
 #? []
 nested_kw2(a='')
+#? []
+nested_kw2('', b=1).
 
 # -----------------
 # nested *args/**kwargs
