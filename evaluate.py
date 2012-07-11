@@ -549,7 +549,6 @@ class Execution(Executable):
                             else:
                                 name = key[0].name
                             yield name, field
-                    yield var_arg
                 # normal arguments (including key arguments)
                 else:
                     if len(var_arg) > 1 and var_arg[1] == '=':
@@ -1117,7 +1116,7 @@ def follow_call(scope, call):
             # reset the position, when imports where stripped
             position = None
 
-    debug.dbg('call before result %s, current "%s", scope %s'
+    debug.dbg('before next follow %s, current "%s", scope %s'
                                 % (result, current, scope))
     result = follow_paths(path, result, position=position)
 
