@@ -293,3 +293,21 @@ nested_both2('', b=1, c=1.0)
 nested_both2('', c=1.0, b=1)
 #? []
 nested_both2('')
+
+# -----------------
+# nested *args/**kwargs with a default arg
+# -----------------
+def nested_def(a, *args, **kwargs):
+    return function_args(a, *args, **kwargs)
+
+def nested_def2(*args, **kwargs):
+    return nested_def(*args, **kwargs)
+
+#? int()
+nested_def2('', 1, 1.0)
+#? int()
+nested_def2('', b=1, c=1.0)
+#? int()
+nested_def2('', c=1.0, b=1)
+#? []
+nested_def2('')
