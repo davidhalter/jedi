@@ -204,3 +204,84 @@ exe[3]
 #? set()
 exe[3]['c']
 
+# -----------------
+# nested *args
+# -----------------
+def function_args(a, b, c):
+    return b
+
+def nested_args(*args):
+    return function_args(*args)
+
+def nested_args2(*args, **kwargs):
+    return nested_args(*args)
+
+#? int()
+nested_args('', 1, 1.0, list)
+#? []
+nested_args('')
+
+#? int()
+nested_args2('', 1, 1.0)
+#? []
+nested_args2('')
+
+# -----------------
+# nested **kwargs
+# -----------------
+def nested_kw(**kwargs1):
+    return function_args(**kwargs1)
+
+def nested_kw2(**kwargs2):
+    return nested_kw(**kwargs2)
+
+#? int()
+nested_kw(b=1, c=1.0, list)
+#? int()
+nested_kw('', b=1, c=1.0, list)
+#? int()
+nested_kw('', d=1.0, b=1, list)
+#? int()
+nested_kw(b=1)
+#? int()
+nested_kw(a=3.0, b=1)
+#? int()
+nested_kw(b=1, a=r"")
+#? []
+nested_kw('')
+#? []
+nested_kw(a='')
+
+#? int()
+nested_kw2(b=1)
+#? int()
+nested_kw2('', b=1, c=1.0)
+#? int()
+nested_kw2('', c=1.0, b=1)
+#? []
+nested_kw2('')
+#? []
+nested_kw2(a='')
+
+# -----------------
+# nested *args/**kwargs
+# -----------------
+def nested_both(*args, **kwargs):
+    return function_args(*args, **kwargs)
+
+def nested_both2(*args, **kwargs):
+    return nested_both(*args, **kwargs)
+
+#? int()
+nested_both('', b=1, c=1.0, list)
+#? int()
+nested_both('', c=1.0, b=1, list)
+#? []
+nested_both('')
+
+#? int()
+nested_both2('', b=1, c=1.0)
+#? int()
+nested_both2('', c=1.0, b=1)
+#? []
+nested_both2('')
