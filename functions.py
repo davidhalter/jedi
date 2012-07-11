@@ -200,7 +200,7 @@ def prepare_goto(source, row, column, source_path, is_like_search):
             stmt.line_nr = row + 1
         stmt.indent = column
         stmt.parent = scope
-        scopes = evaluate.follow_statement(stmt, scope=scope)
+        scopes = evaluate.follow_statement(stmt)
 
     if is_like_search:
         return scopes, path, dot, like

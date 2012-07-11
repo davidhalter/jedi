@@ -71,7 +71,7 @@ def clear_caches():
     for m in memoize_caches:
         m.clear()
 
-    #follow_statement.reset()
+    follow_statement.reset()
 
 
 def memoize_default(default=None):
@@ -543,13 +543,13 @@ class Execution(Executable):
             for var_arg in self.var_args:
                 # *args
                 if var_arg[0] == '*':
-                    arrays = follow_call_list(self.scope, [var_arg[1:]])
+                    arrays = follow_call_list([var_arg[1:]])
                     for array in arrays:
                         for field in array.get_contents():
                             yield None, field
                 # **kwargs
                 elif var_arg[0] == '**':
-                    arrays = follow_call_list(self.scope, [var_arg[1:]])
+                    arrays = follow_call_list([var_arg[1:]])
                     for array in arrays:
                         for key, field in array.get_contents():
                             # take the first index
@@ -599,17 +599,6 @@ class Execution(Executable):
         the necessary functions). Add also the params.
         """
         return self.get_params() + parsing.Scope._get_set_vars(self)
-
-    @property
-    def scope(self):
-        """ Just try through the whole param array to find the own scope """
-        for param in self.var_args:
-            for call in param:
-                try:
-                    return call.parent_stmt.parent
-                except AttributeError:  # if operators are there
-                    pass
-        raise IndexError('No params available')
 
     def copy_properties(self, prop):
         # copy all these lists into this local function.
@@ -743,8 +732,7 @@ class Array(object):
 
     def follow_values(self, values):
         """ helper function for the index getters """
-        scope = self._array.parent_stmt.parent
-        return follow_call_list(scope, values)
+        return follow_call_list(values)
 
     def get_defined_names(self):
         """
@@ -1026,22 +1014,17 @@ def assign_tuples(tup, results, seek_name):
 
 @helpers.RecursionDecorator
 @memoize_default(default=[])
-def follow_statement(stmt, scope=None, seek_name=None):
+def follow_statement(stmt, seek_name=None):
     """
     :param stmt: contains a statement
     :param scope: contains a scope. If not given, takes the parent of stmt.
     """
-    if scope is None:
-        scope = stmt.get_parent_until(parsing.Function, Function, Execution,
-                                        parsing.Class, Class, Instance,
-                                        InstanceElement)
-    debug.dbg('follow_stmt %s in %s (%s)' % (stmt, scope, seek_name))
+    debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))
     call_list = stmt.get_assignment_calls()
-    debug.dbg('calls: %s' % call_list, scope)
-    #if isinstance(scope, InstanceElement): print 'callinst', scope.instance
+    debug.dbg('calls: %s' % call_list)
 
     try:
-        result = follow_call_list(scope, call_list)
+        result = follow_call_list(call_list)
     except AttributeError:
         # This is so evil! But necessary to propagate errors. The attribute
         # errors here must not be catched, because they shouldn't exist.
@@ -1059,7 +1042,7 @@ def follow_statement(stmt, scope=None, seek_name=None):
     return set(result)
 
 
-def follow_call_list(scope, call_list):
+def follow_call_list(call_list):
     """
     The call_list has a special structure.
     This can be either `parsing.Array` or `list of list`.
@@ -1070,14 +1053,14 @@ def follow_call_list(scope, call_list):
                                         parsing.Array.DICT):
         # Tuples can stand just alone without any braces. These would be
         # recognized as separate calls, but actually are a tuple.
-        result = follow_call(scope, call_list)
+        result = follow_call(call_list)
     else:
         result = []
         for calls in call_list:
             calls_iterator = iter(calls)
             for call in calls_iterator:
                 if parsing.Array.is_type(call, parsing.Array.NOARRAY):
-                    result += follow_call_list(scope, call)
+                    result += follow_call_list(call)
                 else:
                     # with things like params, these can also be functions, etc
                     if isinstance(call, (Function, parsing.Class, Instance)):
@@ -1096,11 +1079,11 @@ def follow_call_list(scope, call_list):
                                 except AttributeError:
                                     pass
                             continue
-                        result += follow_call(scope, call)
+                        result += follow_call(call)
     return set(result)
 
 
-def follow_call(scope, call):
+def follow_call(call):
     """ Follow a call is following a function, variable, string, etc. """
     scope = call.parent_stmt.parent
     path = call.generate_call_list()
