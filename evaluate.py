@@ -197,7 +197,6 @@ class Instance(Executable):
             if isinstance(var.parent, (Function, parsing.Function)):
                 var = InstanceElement(self, var)
             names.append(var)
-
         return names
 
     def get_descriptor_return(self, obj):
@@ -244,6 +243,16 @@ class InstanceElement(object):
     def get_parent_until(self, *classes):
         scope = self.var.get_parent_until(*classes)
         return InstanceElement(self.instance, scope)
+
+    def get_assignment_calls(self):
+        # copy and modify the array
+        origin = self.var.get_assignment_calls()
+        origin.parent_stmt, temp = None, origin.parent_stmt
+        new = copy.deepcopy(origin)
+        origin.parent_stmt = temp
+        new.parent_stmt = InstanceElement(self.instance, temp)
+        #print 'gac', new, new.parent_stmt, new.parent_stmt.instance
+        return new
 
     def __getattr__(self, name):
         return getattr(self.var, name)
@@ -547,12 +556,13 @@ class Execution(Executable):
                             if isinstance(key, parsing.Name):
                                 name = key
                             else:
+                                # parsing.[Call|Function|Class] lookup
                                 name = key[0].name
                             yield name, field
                 # normal arguments (including key arguments)
                 else:
                     if len(var_arg) > 1 and var_arg[1] == '=':
-                        # this is a named parameter
+                        # this is a named parameter (var_arg[0] is a Call)
                         yield var_arg[0].name, var_arg[2:]
                     else:
                         yield None, var_arg
@@ -916,6 +926,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         # compare func uses the tuple of line/indent = row/column
         comparison_func = lambda name: (name.line_nr, name.indent)
         for scope, name_list in scope_generator:
+            #print scope, name_list[:9]
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):
@@ -1026,7 +1037,8 @@ def follow_statement(stmt, scope=None, seek_name=None):
                                         InstanceElement)
     debug.dbg('follow_stmt %s in %s (%s)' % (stmt, scope, seek_name))
     call_list = stmt.get_assignment_calls()
-    debug.dbg('calls: %s' % call_list)
+    debug.dbg('calls: %s' % call_list, scope)
+    #if isinstance(scope, InstanceElement): print 'callinst', scope.instance
 
     try:
         result = follow_call_list(scope, call_list)
@@ -1090,6 +1102,7 @@ def follow_call_list(scope, call_list):
 
 def follow_call(scope, call):
     """ Follow a call is following a function, variable, string, etc. """
+    scope = call.parent_stmt.parent
     path = call.generate_call_list()
 
     position = (call.parent_stmt.line_nr, call.parent_stmt.indent)
@@ -1104,6 +1117,7 @@ def follow_call(scope, call):
                 scopes = get_scopes_for_name(builtin.Builtin.scope, t)
             else:
                 debug.warning('unknown type:', current.type, current)
+                scopes = []
             # make instances of those number/string objects
             scopes = [Instance(s) for s in scopes]
         else:
@@ -1210,7 +1224,6 @@ def follow_import(_import):
 
 def remove_star_imports(scope):
     """
-    TODO doc
     """
     modules = strip_imports(i for i in scope.get_imports() if i.star)
     new = []

@@ -633,7 +633,7 @@ class Statement(Simple):
                         c_type = Call.NUMBER
 
                 if is_chain:
-                    call = Call(tok, c_type, self, result)
+                    call = Call(tok, c_type, parent=result)
                     result = result.set_next_chain_call(call)
                     is_chain = False
                     close_brackets = False
@@ -644,17 +644,17 @@ class Statement(Simple):
                     if result.__class__ ==  Call:
                         result = result.parent
                         close_brackets = False
-                    call = Call(tok, c_type, self, result)
+                    call = Call(tok, c_type, parent=result)
                     result.add_to_current_field(call)
                     result = call
             elif tok in brackets.keys():  # brackets
                 level += 1
                 if is_call_or_close():
-                    result = Array(brackets[tok], self, result)
+                    result = Array(brackets[tok], parent=result)
                     result = result.parent.add_execution(result)
                     close_brackets = False
                 else:
-                    result = Array(brackets[tok], self, result)
+                    result = Array(brackets[tok], parent=result)
                     result.parent.add_to_current_field(result)
             elif tok == ':':
                 if is_call_or_close():
@@ -730,12 +730,12 @@ class Call(object):
     """
     TODO doc
     """
-    NAME = object()
-    NUMBER = object()
-    STRING = object()
+    NAME = 1
+    NUMBER = 2
+    STRING = 3
 
     """ The statement object of functions, to  """
-    def __init__(self, name, type, parent_stmt, parent=None):
+    def __init__(self, name, type, parent_stmt=None, parent=None):
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
@@ -744,7 +744,18 @@ class Call(object):
 
         self.next = None
         self.execution = None
-        self.parent_stmt = parent_stmt
+        self._parent_stmt = parent_stmt
+
+    @property
+    def parent_stmt(self):
+        if self._parent_stmt:
+            return self._parent_stmt
+        else:
+            return self.parent.parent_stmt
+
+    @parent_stmt.setter
+    def parent_stmt(self, value):
+        self._parent_stmt = value
 
     def set_next_chain_call(self, call):
         """ Adds another part of the statement"""
@@ -802,7 +813,7 @@ class Array(Call):
     DICT = 'dict'
     SET = 'set'
 
-    def __init__(self, arr_type, parent_stmt, parent=None, values=None):
+    def __init__(self, arr_type, parent_stmt=None, parent=None, values=None):
         super(Array, self).__init__(None, arr_type, parent_stmt, parent)
 
         self.values = values if values else []

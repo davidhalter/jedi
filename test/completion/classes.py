@@ -60,7 +60,7 @@ TestClass().ret(1).real
 #? ['real']
 inst.ret(1).real
 
-myclass = TestClass(1, '')
+myclass = TestClass(1, '', 3.0)
 #? int()
 myclass.get_first()
 #? []

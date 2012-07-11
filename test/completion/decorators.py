@@ -37,7 +37,8 @@ exe[0]
 exe[1]
 #? set
 exe[2]
-
+#? []
+exe[3][0]
 #? str()
 exe[4]['d']
 
@@ -50,10 +51,10 @@ exe[3][0]
 # -----------------
 # multiple decorators
 # -----------------
-def dec2(func):
-    def wrapper(first_arg, *args, **kwargs):
-        return func(first_arg, *args, **kwargs)
-    return wrapper
+def dec2(func2):
+    def wrapper2(first_arg, *args2, **kwargs2):
+        return func2(first_arg, *args2, **kwargs2)
+    return wrapper2
 
 @dec2
 @dec
@@ -68,7 +69,8 @@ exe[0]
 exe[1]
 #? set
 exe[2]
-
+#? []
+exe[3][0]
 #? str()
 exe[4]['d']
 
