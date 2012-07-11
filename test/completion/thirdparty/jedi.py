@@ -21,5 +21,15 @@ el = scopes.
 #? tuple()
 el = evaluate.get_names_for_scope()[0]
 
-##? tuple()
-el = evaluate.get_names_for_scope(1,2)[0][0]
+#? int()
+el = evaluate.get_names_for_scope(1)[0][0]
+#? []
+el = evaluate.get_names_for_scope()[0][0]
+
+#? list()
+el = evaluate.get_names_for_scope(1)[0][1]
+#? list()
+el = evaluate.get_names_for_scope()[0][1]
+
+#? evaluate.Instance()
+el = evaluate.get_names_for_scope()[0][1][0]
