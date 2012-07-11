@@ -297,17 +297,26 @@ nested_both2('')
 # -----------------
 # nested *args/**kwargs with a default arg
 # -----------------
+def function_def(a, b, c):
+    return a, b
+
 def nested_def(a, *args, **kwargs):
-    return function_args(a, *args, **kwargs)
+    return function_def(a, *args, **kwargs)
 
 def nested_def2(*args, **kwargs):
     return nested_def(*args, **kwargs)
 
+#? str()
+nested_def2('', 1, 1.0)[0]
+#? str()
+nested_def2('', b=1, c=1.0)[0]
+#? str()
+nested_def2('', c=1.0, b=1)[0]
 #? int()
-nested_def2('', 1, 1.0)
+nested_def2('', 1, 1.0)[1]
 #? int()
-nested_def2('', b=1, c=1.0)
+nested_def2('', b=1, c=1.0)[1]
 #? int()
-nested_def2('', c=1.0, b=1)
+nested_def2('', c=1.0, b=1)[1]
 #? []
-nested_def2('')
+nested_def2('')[1]
