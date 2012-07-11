@@ -48,6 +48,32 @@ exe = fu(list, set, 3, '', d='')
 exe[3][0]
 
 # -----------------
+# multiple decorators
+# -----------------
+def dec2(func):
+    def wrapper(first_arg, *args, **kwargs):
+        return func(first_arg, *args, **kwargs)
+    return wrapper
+
+@dec2
+@dec
+def fu2(a, b, c, *args, **kwargs):
+    return a, b, c, args, kwargs
+
+exe = fu2(list, c=set, b=3, d='str')
+
+#? list()
+exe[0]
+#? int()
+exe[1]
+#? set
+exe[2]
+
+#? str()
+exe[4]['d']
+
+
+# -----------------
 # class decorators
 # -----------------
 class Decorator(object):
