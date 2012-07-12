@@ -2,6 +2,7 @@ import re
 import sys
 import os
 import types
+import io
 import inspect
 
 import debug
@@ -71,7 +72,7 @@ class Parser(CachedModule):
     }
 
     if sys.hexversion >= 0x03000000:
-        map_types['file object'] = 'import io; return io.TextWrapper(file)'
+        map_types['file object'] = 'import io; return io.TextIOWrapper(file)'
 
     module_cache = {}
 
@@ -244,7 +245,11 @@ class Parser(CachedModule):
 
         # variables
         for name, value in stmts.items():
-            if type(value) == types.FileType:
+            if sys.hexversion >= 0x03000000:
+                file_type = io.TextIOWrapper
+            else:
+                file_type = types.FileType
+            if type(value) == file_type:
                 value = 'open()'
             elif type(value).__name__ in ['int', 'bool', 'float',
                                           'dict', 'list', 'tuple']:

@@ -14,6 +14,23 @@ import os
 #? ['dirname']
 os.path.dirname
 
+from itertools import (tee,
+                       islice)
+#? ['islice']
+islice
+
+from functools import (partial, wraps)
+#? ['wraps']
+wraps
+
+from keyword import kwlist, \
+                    iskeyword
+#? ['kwlist']
+kwlist
+
+from tokenize import io
+tokenize.generate_tokens
+
 # -----------------
 # builtins
 # -----------------

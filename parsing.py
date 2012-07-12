@@ -32,6 +32,7 @@ from _compatibility import next, literal_eval, tokenize_func, BytesIO
 
 import tokenize
 import re
+import keyword
 
 import debug
 
@@ -1007,9 +1008,18 @@ class PyFuzzyParser(object):
         :rtype: list
         """
         imports = []
+        brackets = False
+        continue_kw = [",", ";", "\n", ')'] \
+                        + list(set(keyword.kwlist) - set(['as']))
         while True:
+            token_type, tok, indent = self.next()
+            if brackets and tok == '\n':
+                self.next()
+            if tok == '(':  # python allows only one `(` in the statement.
+                brackets = True
+                self.next()
             name, token_type, tok, start_indent, start_line = \
-                self._parsedotname()
+                self._parsedotname(self.current)
             if not name:
                 break
             name2 = None
@@ -1019,9 +1029,9 @@ class PyFuzzyParser(object):
                 name2 = Name(name2, start_indent2, start_line, self.line_nr)
             i = Name(name, start_indent, start_line, self.line_nr)
             imports.append((i, name2))
-            while tok not in [",", ";", "\n"]:
+            while tok not in continue_kw:
                 token_type, tok, indent = self.next()
-            if tok != ",":
+            if not (tok == "," or brackets and tok == '\n'):
                 break
         return imports
 

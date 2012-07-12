@@ -1,3 +1,6 @@
+from a import (b
+def blub():
+    return 0
 def openbrace():
     asdf = 3
      asdf
