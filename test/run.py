@@ -131,6 +131,7 @@ def test_dir(completion_test_dir, third_party=False):
                         __import__(f_name.replace('.py', ''))
                     except ImportError:
                         summary.append('Thirdparty-Library %s not found.' % f_name)
+                        continue
                 path = os.path.join(completion_test_dir, f_name)
                 f = open(path)
                 num_tests, fails = run_test(f.read())
