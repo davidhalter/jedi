@@ -3,7 +3,7 @@
 # -----------------
 
 for a in [1,2]:
-    #? int() int()
+    #? int()
     a
 
 for a1 in 1,"":
@@ -11,15 +11,15 @@ for a1 in 1,"":
     a1
 
 for a3, b3 in (1,""), (1,""), (1,""):
-    #? int() int() int()
+    #? int()
     a3
-    #? str() str() str()
+    #? str()
     b3
 
 for a4, (b4, c4) in (1,("", list)), (1,("", list)):
-    #? int() int()
+    #? int()
     a4
-    #? str() str()
+    #? str()
     b4
     #? list
     c4
