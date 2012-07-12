@@ -400,9 +400,9 @@ class Execution(Executable):
         else:
             # Don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
-            if hasattr(self.base, 'returns'):
-                stmts = self._get_function_returns(evaluate_generator)
-            else:
+            try:
+                self.base.returns
+            except (AttributeError, DecoratorNotFound):
                 try:
                     # If it is an instance, we try to execute the __call__().
                     call_method = self.base.get_subscope_by_name('__call__')
@@ -416,6 +416,8 @@ class Execution(Executable):
                     call_method = InstanceElement(base, call_method)
                     exe = Execution(call_method, self.var_args)
                     stmts = exe.get_return_types()
+            else:
+                stmts = self._get_function_returns(evaluate_generator)
 
         debug.dbg('exec result: %s in %s' % (stmts, self))
 
