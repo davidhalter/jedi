@@ -43,3 +43,10 @@ except AttributeError
 finally:
     pass
 
+#? ['isinstance']
+if isi
+try:
+    except TypeError:
+        #? str()
+        ""
+

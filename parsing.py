@@ -1391,7 +1391,7 @@ class PyFuzzyParser(object):
                             # main scope, so just take the last statement.
                             try:
                                 s = self.scope.statements[-1].set_next(f)
-                            except AttributeError:
+                            except (AttributeError, IndexError):
                                 # If set_next doesn't exist, just add it.
                                 s = self.scope.add_statement(f)
                         else:
