@@ -245,7 +245,8 @@ class InstanceElement(object):
         # Copy and modify the array.
         origin = self.var.get_assignment_calls()
         origin.parent_stmt, temp = None, origin.parent_stmt
-        new = copy.deepcopy(origin)
+        # Delete parent, because it isn't used anymore.
+        new = helpers.fast_parent_copy(origin)
         origin.parent_stmt = temp
         new.parent_stmt = InstanceElement(self.instance, temp)
         return new
