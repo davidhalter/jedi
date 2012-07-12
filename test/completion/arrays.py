@@ -6,6 +6,10 @@
 [1,""][0]
 #? str()
 [1,""][1]
+#? int() str()
+[1,""][2]
+#? int() str()
+[1,""][20]
 
 a = list()
 #? list()
@@ -92,7 +96,7 @@ u1
 (u1)
 
 # -----------------
-# should fail (return nothing)
+# imbalanced sides
 # -----------------
 (f, g) = (1,)
 #? int()
@@ -100,11 +104,25 @@ f
 #? []
 g.
 
+(f, g, h) = (1,'')
+#? int()
+f
+#? str()
+g
+#? []
+h.
+
 (f1, g1) = 1
 #? []
 f1.
 #? []
 g1.
+
+(f, g) = (1,'',1.0)
+#? int()
+f
+#? str()
+g
 
 # -----------------
 # dicts
@@ -118,3 +136,5 @@ dic2['asdf']
 dic2[r'asdf']
 #? int()
 dic2[r'asdf']
+#? int() str()
+dic2['just_something']

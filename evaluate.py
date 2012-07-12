@@ -969,7 +969,10 @@ def assign_tuples(tup, results, seek_name):
         types = []
         for r in results:
             if hasattr(r, "get_exact_index_types"):
-                types += r.get_exact_index_types(index)
+                try:
+                    types += r.get_exact_index_types(index)
+                except IndexError:
+                    pass
             else:
                 debug.warning("invalid tuple lookup %s of result %s in %s"
                                     % (tup, results, seek_name))
