@@ -77,3 +77,14 @@ try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
+
+# hasattr function used because python 
+if sys.hexversion >= 0x03000000:
+    hasattr = hasattr
+else:
+    def hasattr(obj, name):
+        try:
+            getattr(obj, name)
+            return True
+        except AttributeError:
+            return False
