@@ -146,7 +146,10 @@ class Parser(CachedModule):
 
         if not self.path:
             try:
-                f = open(os.path.sep.join(['mixin', self.name]) + '.py')
+                name = self.name
+                if name == '__builtin__' and sys.hexversion < 0x03000000:
+                    name = 'builtins'
+                f = open(os.path.sep.join(['mixin', name]) + '.py')
             except IOError:
                 return {}
             else:
