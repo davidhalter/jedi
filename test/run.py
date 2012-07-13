@@ -126,6 +126,9 @@ def test_dir(completion_test_dir, third_party=False):
     global tests_pass
     for f_name in os.listdir(completion_test_dir):
         if len(sys.argv) == 1 or [a for a in sys.argv[1:] if a in f_name]:
+            if sys.hexversion < 0x02060000 \
+                    and f_name in ['generators.py', 'types.py']:
+                continue
             if f_name.endswith(".py"):
                 if third_party:
                     try:

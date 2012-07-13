@@ -50,15 +50,15 @@ inst.var
 #? ['var_class', 'var_func']
 TestClass.var
 
-#? ['real']
-inst.var_local.real
+#? int()
+inst.var_local
 #? []
-TestClass.var_local.real
+TestClass.var_local.
 
-#? ['real']
-TestClass().ret(1).real
-#? ['real']
-inst.ret(1).real
+#? int()
+TestClass().ret(1)
+#? int()
+inst.ret(1)
 
 myclass = TestClass(1, '', 3.0)
 #? int()
@@ -67,8 +67,8 @@ myclass.get_first()
 myclass.get_first.real
 
 # too many params
-#? ['real']
-TestClass(1,1,1).var_inst.real
+#? int()
+TestClass(1,1,1).var_inst
 
 # too few params
 #? int()
@@ -85,10 +85,10 @@ myclass.second_new
 # multiple classes / ordering
 ints = TestClass(1, 1.0)
 strs = TestClass("", '')
-#? ['real']
-ints.second.real
-#? ['upper']
-strs.second.upper
+#? float()
+ints.second
+#? str()
+strs.second
 
 #? ['var_class']
 TestClass.var_class.var_class.var_class.var_class

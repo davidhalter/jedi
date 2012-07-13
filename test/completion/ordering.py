@@ -4,33 +4,27 @@
 a = ""
 a = 1
 
-#? ['real']
-a.real
-#? []
-a.upper
+#? int()
+a
 #? []
 a.append
 
 a = list
 
 b = 1; b = ""
-#? ['upper']
-b.upper
-#? []
-b.real
+#? str()
+b
 
 a = 1
 temp = b;
 b = a
 a = temp
-#? ['real']
-b.real
-#? []
-b.upper
-#? []
-a.real
-#? ['upper']
-a.upper
+#? int()
+b
+#? int()
+b
+#? str()
+a
 
 a = tuple
 if 1:
@@ -45,51 +39,35 @@ a.index
 # tuples exchanges
 # -----------------
 a, b = 1, ""
-#? ['real']
-a.real
-#? []
-a.upper
-#? []
-b.real
-#? ['upper']
-b.upper
+#? int()
+a
+#? str()
+b
 
 b, a = a, b
-#? ['real']
-b.real
-#? []
-b.upper
-#? []
-a.real
-#? ['upper']
-a.upper
+#? int()
+b
+#? str()
+a
 
 b, a = a, b
-#? ['real']
-a.real
-#? []
-a.upper
-#? []
-b.real
-#? ['upper']
-b.upper
+#? int()
+a
+#? str()
+b
 
 # -----------------
 # function stuff
 # -----------------
 def a(a=3):
-    #? ['real']
-    a.real
-    #? []
-    a.upper
+    #? int()
+    a
     #? []
     a.func
     return a
 
-#? ['real']
-a(2).real
-#? []
-a(2).upper
+#? int()
+a(2)
 #? []
 a(2).func
 # -----------------
@@ -98,22 +76,16 @@ a(2).func
 class A(object):
     a = ""
     a = 3
-    #? ['real']
-    a.real
-    #? []
-    a.upper
-    #? []
-    a.append
+    #? int()
+    a
+    # TODO remove this line!!
     a = list()
     def __init__(self):
         self.b = ""
         self.b = 3
-        #? ['real']
-        self.b.real
-        ##? []
-        self.b.upper
-        ##? []
-        self.b.append
+        # TODO should this be so?
+        #? int() str() list()
+        self.b
 
         self.b = list
 
@@ -147,12 +119,8 @@ a.append
 #? []
 a.real
 
-#? ['append']
-a.a.append
-#? ['real']
-a.a.real
-#? ['upper']
-a.a.upper
+#? list() str() int()
+a.a
 
 # -----------------
 # class stuff
@@ -166,8 +134,8 @@ math.cosh
 math.real
 
 math = 3
-#? ['real']
-math.real
+#? int()
+math
 #? []
 math.cos
 
@@ -180,5 +148,5 @@ from math import *
 cosh.real
 
 cosh = 3
-#? ['real']
-cosh.real
+#? int()
+cosh

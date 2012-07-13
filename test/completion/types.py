@@ -54,8 +54,8 @@ dic2 = {'asdf': 3}
 #? ['popitem']
 dic2.popitem
 
-#? ['real']
-dic2['asdf'].real
+#? int()
+dic2['asdf']
 
 # -----------------
 # set
