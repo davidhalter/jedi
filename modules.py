@@ -53,9 +53,9 @@ class ModuleWithCursor(Module):
     :param row: The row, the user is currently in. Only important for the \
     main file.
     """
-    def __init__(self, path, source, row):
+    def __init__(self, path, source, position):
         super(ModuleWithCursor, self).__init__(path, source)
-        self.row = row
+        self.position = position
 
         # this two are only used, because there is no nonlocal in Python 2
         self._row_temp = None
@@ -64,9 +64,9 @@ class ModuleWithCursor(Module):
         # Call the parser already here, because it will be used anyways.
         # Also, the position is here important (which will not be used by
         # default), therefore fill the cache here.
-        self._parser = parsing.PyFuzzyParser(source, path, row)
+        self._parser = parsing.PyFuzzyParser(source, path, position)
 
-    def get_path_until_cursor(self, column):
+    def get_path_until_cursor(self):
         """ Get the path under the cursor. """
         self._is_first = True
 
@@ -74,7 +74,7 @@ class ModuleWithCursor(Module):
             line = self.get_line(self._row_temp)
             if self._is_first:
                 self._is_first = False
-                line = line[:column]
+                line = line[:self.position[1]]
             else:
                 line = line + '\n'
             # add lines with a backslash at the end
@@ -87,7 +87,7 @@ class ModuleWithCursor(Module):
                     break
             return line[::-1]
 
-        self._row_temp = self.row
+        self._row_temp = self.position[0]
 
         force_point = False
         open_brackets = ['(', '[', '{']
@@ -127,14 +127,14 @@ class ModuleWithCursor(Module):
 
         return string[::-1]
 
-    def get_path_under_cursor(self, column):
+    def get_path_under_cursor(self):
         """
         Return the path under the cursor. If there is a rest of the path left,
         it will be added to the stuff before it.
         """
-        line = self.get_line(self.row)
-        after = re.search("[\w\d]*", line[column:]).group(0)
-        return self.get_path_until_cursor(column) + after
+        line = self.get_line(self.position[0])
+        after = re.search("[\w\d]*", line[self.position[1]:]).group(0)
+        return self.get_path_until_cursor() + after
 
     def get_line(self, line):
         if not self._line_cache:

@@ -937,11 +937,11 @@ class PyFuzzyParser(object):
 
     :param code: The codebase for the parser.
     :type code: str
-    :param user_line: The line, the user is currently on.
-    :type user_line: int
+    :param user_position: The line/column, the user is currently on.
+    :type user_position: tuple(line, column)
     """
-    def __init__(self, code, module_path=None, user_line=None):
-        self.user_line = user_line
+    def __init__(self, code, module_path=None, user_position=(None,None)):
+        self.user_position = user_position
         self.code = code + '\n'  # end with \n, because the parser needs it
 
         # initialize global Scope
@@ -1252,7 +1252,7 @@ class PyFuzzyParser(object):
         """ Generate the next tokenize pattern. """
         type, tok, position, dummy, self.parserline = next(self.gen)
         (self._tokenize_line_nr, indent) = position
-        if self.line_nr == self.user_line:
+        if self.line_nr == self.user_position[0]:
             debug.dbg('user scope found [%s] =%s' % \
                     (self.parserline.replace('\n', ''), repr(self.scope)))
             self.user_scope = self.scope

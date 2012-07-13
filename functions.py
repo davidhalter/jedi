@@ -138,7 +138,7 @@ def complete(source, row, column, source_path):
     :rtype: list
     """
     try:
-        scopes, path, dot, like = prepare_goto(source, row, column,
+        scopes, path, dot, like = prepare_goto(source, (row, column),
                                                 source_path, True)
     except NotFoundError:
         # normally this would be used like this: `NotFoundError as exc`, but
@@ -171,15 +171,16 @@ def complete(source, row, column, source_path):
     return [Completion(c, needs_dot, len(like)) for c in set(completions)]
 
 
-def prepare_goto(source, row, column, source_path, is_like_search):
-    f = modules.ModuleWithCursor(source_path, source=source, row=row)
+def prepare_goto(source, position, source_path, is_like_search):
+    f = modules.ModuleWithCursor(source_path, source=source, position=position)
     scope = f.parser.user_scope
+    print scope
 
     if is_like_search:
-        path = f.get_path_until_cursor(column)
+        path = f.get_path_until_cursor()
         path, dot, like = get_completion_parts(path)
     else:
-        path = f.get_path_under_cursor(column)
+        path = f.get_path_under_cursor()
 
     debug.dbg('start: %s in %s' % (path, scope))
 
@@ -194,8 +195,8 @@ def prepare_goto(source, row, column, source_path, is_like_search):
             path_tuple = ()
         raise NotFoundError(scope, path_tuple)
     else:
-        stmt.line_nr = row
-        stmt.indent = column
+        stmt.line_nr = position[0]
+        stmt.indent = position[1]
         stmt.parent = scope
         scopes = evaluate.follow_statement(stmt)
 
@@ -223,7 +224,7 @@ def get_definitions(source, row, column, source_path):
     :return: list of Definition objects, which are basically scopes.
     :rtype: list
     """
-    scopes = prepare_goto(source, row, column, source_path, False)
+    scopes = prepare_goto(source, (row, column), source_path, False)
     _clear_caches()
     return [Definition(s) for s in set(scopes)]
 
