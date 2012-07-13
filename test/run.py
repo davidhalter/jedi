@@ -17,6 +17,7 @@ if only_line is not None:
     debug.ignored_modules = ['parsing', 'builtin']
 #functions.set_debug_function(functions.debug.print_to_stdout)
 
+
 def run_completion_test(correct, source, line_nr, line):
     """
     Runs tests for completions.
@@ -28,7 +29,7 @@ def run_completion_test(correct, source, line_nr, line):
         completions = functions.complete(source, line_nr, 999,
                                             completion_test_dir)
     except (Exception, functions.evaluate.MultiLevelAttributeError):
-        print('test @%s: %s' % (line_nr-1, line))
+        print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())
         return 1
     else:
@@ -52,7 +53,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start):
     try:
         result = defs(line_nr, 999)
     except (Exception, functions.evaluate.MultiLevelAttributeError):
-        print('test @%s: %s' % (line_nr-1, line))
+        print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())
         return 1
     else:
@@ -63,7 +64,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start):
             # -1 for the comment, +3 because of the comment start `#? `
             start = index.start() + 3
             try:
-                should_be |= defs(line_nr-1, start+correct_start)
+                should_be |= defs(line_nr - 1, start + correct_start)
             except Exception:
                 print('could not resolve %s indent %s' % (line_nr - 1, start))
                 print(traceback.format_exc())
@@ -76,6 +77,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start):
                         % (line_nr - 1, is_str, should_str))
             return 1
     return 0
+
 
 def run_test(source):
     """
@@ -118,10 +120,7 @@ def run_test(source):
                     correct = None
     return tests, fails
 
-# completion tests:
-completion_test_dir = 'test/completion'
-summary = []
-tests_pass = True
+
 def test_dir(completion_test_dir, third_party=False):
     global tests_pass
     for f_name in os.listdir(completion_test_dir):
@@ -134,16 +133,23 @@ def test_dir(completion_test_dir, third_party=False):
                     try:
                         __import__(f_name.replace('.py', ''))
                     except ImportError:
-                        summary.append('Thirdparty-Library %s not found.' % f_name)
+                        summary.append('Thirdparty-Library %s not found.' %
+                                                                        f_name)
                         continue
                 path = os.path.join(completion_test_dir, f_name)
                 f = open(path)
                 num_tests, fails = run_test(f.read())
-                s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
+                s = 'run %s tests with %s fails (%s)' % (num_tests, fails,
+                                                                        f_name)
                 if fails:
                     tests_pass = False
                 print(s)
                 summary.append(s)
+
+# completion tests:
+completion_test_dir = 'test/completion'
+summary = []
+tests_pass = True
 
 test_dir(completion_test_dir)
 test_dir(completion_test_dir + '/thirdparty', third_party=True)

@@ -642,7 +642,7 @@ class Statement(Simple):
                     if close_brackets:
                         result = result.parent
                         close_brackets = False
-                    if result.__class__ ==  Call:
+                    if result.__class__ == Call:
                         result = result.parent
                         close_brackets = False
                     call = Call(tok, c_type, parent=result)
