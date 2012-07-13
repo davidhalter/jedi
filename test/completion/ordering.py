@@ -78,7 +78,6 @@ class A(object):
     a = 3
     #? int()
     a
-    # TODO remove this line!!
     a = list()
     def __init__(self):
         self.b = ""

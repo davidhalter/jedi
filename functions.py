@@ -194,10 +194,7 @@ def prepare_goto(source, row, column, source_path, is_like_search):
             path_tuple = ()
         raise NotFoundError(scope, path_tuple)
     else:
-        if is_like_search:
-            stmt.line_nr = row
-        else:
-            stmt.line_nr = row + 1
+        stmt.line_nr = row
         stmt.indent = column
         stmt.parent = scope
         scopes = evaluate.follow_statement(stmt)
