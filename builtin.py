@@ -81,8 +81,6 @@ class Parser(CachedModule):
         if not name:
             name = os.path.basename(path)
             name = name.rpartition('.')[0]  # cut file type (normally .so)
-            path = os.path.dirname(path)
-            #print self.name, self.path
         super(Parser, self).__init__(path=path, name=name)
 
         self.sys_path = sys_path
@@ -138,23 +136,22 @@ class Parser(CachedModule):
                     # remove class line
                     c = re.sub(r'^[^\n]+', '', code_block)
                     # remove whitespace
-                    c = re.sub(r'^[ ]{4}', '', c, flags=re.MULTILINE)
+                    c = re.compile(r'^[ ]{4}', re.MULTILINE).sub('', c)
 
                     funcs[name] = process_code(c)
                 else:
                     raise NotImplementedError()
             return funcs
 
-        if not self.path:
-            try:
-                name = self.name
-                if name == '__builtin__' and sys.hexversion < 0x03000000:
-                    name = 'builtins'
-                f = open(os.path.sep.join(['mixin', name]) + '.py')
-            except IOError:
-                return {}
-            else:
-                return process_code(f.read())
+        try:
+            name = self.name
+            if name == '__builtin__' and sys.hexversion < 0x03000000:
+                name = 'builtins'
+            f = open(os.path.sep.join(['mixin', name]) + '.py')
+        except IOError:
+            return {}
+        else:
+            return process_code(f.read())
 
     def _generate_code(self, scope, mixin_funcs, depth=0):
         """

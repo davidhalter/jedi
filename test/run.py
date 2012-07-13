@@ -10,6 +10,11 @@ import functions
 from _compatibility import unicode, BytesIO
 
 only_line = int(sys.argv[2]) if len(sys.argv) > 2 else None
+if only_line is not None:
+    import debug
+    debug.debug_function = \
+                functions.debug.print_to_stdout
+    debug.ignored_modules = ['parsing', 'builtin']
 #functions.set_debug_function(functions.debug.print_to_stdout)
 
 def run_completion_test(correct, source, line_nr, line):
@@ -109,12 +114,8 @@ def run_test(source):
                 correct = None
             else:
                 # reset the test, if only one specific test is wanted
-                if only_line is not None and line_nr != only_line:
+                if only_line and line_nr != only_line:
                     correct = None
-                    import debug
-                    debug.debug_function = \
-                                functions.debug.print_to_stdout
-                    debug.ignored_modules = ['parsing', 'builtin']
     return tests, fails
 
 # completion tests:

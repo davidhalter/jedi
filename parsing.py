@@ -957,6 +957,9 @@ class PyFuzzyParser(object):
         # delete code again, only the parser needs it
         del self.code
 
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, self.top)
+
     @property
     def line_nr(self):
         return self._line_of_tokenize_restart + self._tokenize_line_nr
