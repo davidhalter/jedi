@@ -28,7 +28,7 @@ Ignored statements:
  - print (no use for it, just slows down)
  - exec (dangerous - not controllable)
 """
-from _compatibility import next, literal_eval, tokenize_func, BytesIO
+from _compatibility import next, literal_eval, tokenize_func, BytesIO, property
 
 import tokenize
 import re
