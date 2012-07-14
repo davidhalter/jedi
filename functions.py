@@ -94,7 +94,7 @@ class Definition(object):
             return path
 
     def get_line(self):
-        return self.scope.line_nr
+        return self.scope.start_pos[0]
 
     def get_indent(self):
         return self.scope.indent
@@ -194,8 +194,7 @@ def prepare_goto(source, position, source_path, is_like_search):
             path_tuple = ()
         raise NotFoundError(scope, path_tuple)
     else:
-        stmt.line_nr = position[0]
-        stmt.indent = position[1]
+        stmt.start_pos = position
         stmt.parent = scope
         scopes = evaluate.follow_statement(stmt)
 

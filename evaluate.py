@@ -647,14 +647,14 @@ class Generator(object):
         content of a generator.
         """
         names = []
-        for n in ['__next__', 'send']:
-            # The name for the `next` function.
-            name = parsing.Name([n], 0, 0, 0)
-            name.parent = self
-            names.append(name)
-        for n in ['close', 'throw']:
-            name = parsing.Name([n], 0, 0, 0)
-            name.parent = None
+        none_pos = (None,None)
+        executes_generator = ('__next__', 'send')
+        for n in ('close', 'throw') + executes_generator:
+            name = parsing.Name([n], none_pos, none_pos)
+            if n in executes_generator:
+                name.parent = self
+            else:
+                name.parent = None
             names.append(name)
         debug.dbg('generator names', names)
         return names
