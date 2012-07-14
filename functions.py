@@ -121,14 +121,14 @@ def get_completion_parts(path):
     return match.groups()
 
 
-def complete(source, row, column, source_path):
+def complete(source, line, column, source_path):
     """
     An auto completer for python files.
 
     :param source: The source code of the current file
     :type source: string
-    :param row: The row to complete in.
-    :type row: int
+    :param line: The line to complete in.
+    :type line: int
     :param col: The column to complete in.
     :type col: int
     :param source_path: The path in the os, the current module is in.
@@ -138,7 +138,7 @@ def complete(source, row, column, source_path):
     :rtype: list
     """
     try:
-        scopes, path, dot, like = prepare_goto(source, (row, column),
+        scopes, path, dot, like = prepare_goto(source, (line, column),
                                                 source_path, True)
     except NotFoundError:
         # normally this would be used like this: `NotFoundError as exc`, but
@@ -174,7 +174,6 @@ def complete(source, row, column, source_path):
 def prepare_goto(source, position, source_path, is_like_search):
     f = modules.ModuleWithCursor(source_path, source=source, position=position)
     scope = f.parser.user_scope
-    print scope
 
     if is_like_search:
         path = f.get_path_until_cursor()
@@ -206,7 +205,7 @@ def prepare_goto(source, position, source_path, is_like_search):
         return scopes
 
 
-def get_definitions(source, row, column, source_path):
+def get_definitions(source, line, column, source_path):
     """
     Returns the definitions of a the path under the cursor.
     This is not a goto function! This follows complicated paths and returns the
@@ -214,8 +213,8 @@ def get_definitions(source, row, column, source_path):
 
     :param source: The source code of the current file
     :type source: string
-    :param row: The row to complete in.
-    :type row: int
+    :param line: The line to complete in.
+    :type line: int
     :param col: The column to complete in.
     :type col: int
     :param source_path: The path in the os, the current module is in.
@@ -224,7 +223,7 @@ def get_definitions(source, row, column, source_path):
     :return: list of Definition objects, which are basically scopes.
     :rtype: list
     """
-    scopes = prepare_goto(source, (row, column), source_path, False)
+    scopes = prepare_goto(source, (line, column), source_path, False)
     _clear_caches()
     return [Definition(s) for s in set(scopes)]
 

@@ -211,7 +211,7 @@ class Instance(Executable):
         if name == 'get_index_types':
             # TODO Call __getitem__ in such cases?
             return lambda: []
-        if name not in ['line_nr', 'indent', 'name', 'get_imports']:
+        if name not in ['start_pos', 'end_pos', 'name', 'get_imports']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                     % (self, name))
         return getattr(self.base, name)
@@ -303,7 +303,7 @@ class Class(object):
         return self.base.name
 
     def __getattr__(self, name):
-        if name not in ['line_nr', 'indent', 'parent', 'subscopes',
+        if name not in ['start_pos', 'end_pos', 'parent', 'subscopes',
                             'get_imports']:
             raise AttributeError("Don't touch this (%s)!" % name)
         return getattr(self.base, name)
@@ -611,7 +611,7 @@ class Execution(Executable):
         return objects
 
     def __getattr__(self, name):
-        if name not in ['indent', 'line_nr', 'imports']:
+        if name not in ['start_pos', 'end_pos', 'imports']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
@@ -765,7 +765,7 @@ class ArrayElement(object):
 
     def __getattr__(self, name):
         # Set access privileges:
-        if name not in ['parent', 'names', 'line_nr', 'indent']:
+        if name not in ['parent', 'names', 'start_pos', 'end_pos']:
             raise AttributeError('Strange access: %s.' % name)
         return getattr(self.name, name)
 
@@ -775,7 +775,7 @@ class ArrayElement(object):
 
 def get_defined_names_for_position(obj, position=None, start_scope=None):
     """
-    :param position: the position as a row/column tuple, default is infinity.
+    :param position: the position as a line/column tuple, default is infinity.
     """
     names = obj.get_defined_names()
     # Instances have special rules, always return all the possible completions,
@@ -787,7 +787,7 @@ def get_defined_names_for_position(obj, position=None, start_scope=None):
         return names
     names_new = []
     for n in names:
-        if (n.line_nr, n.indent) < position:
+        if (n.start_pos) < position:
             names_new.append(n)
     return names_new
 
@@ -826,7 +826,7 @@ def get_names_for_scope(scope, position=None, star_search=True):
 
 def get_scopes_for_name(scope, name_str, position=None, search_global=False):
     """
-    :param position: Position of the last statement ->tuple of line, indent
+    :param position: Position of the last statement -> tuple of line, column
     :return: List of Names. Their parents are the scopes, they are defined in.
     :rtype: list
     """
@@ -902,8 +902,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             return result
 
         result = []
-        # compare func uses the tuple of line/indent = row/column
-        comparison_func = lambda name: (name.line_nr, name.indent)
+        # compare func uses the tuple of line/indent = line/column
+        comparison_func = lambda name: (name.start_pos)
         for scope, name_list in scope_generator:
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
@@ -1080,7 +1080,7 @@ def follow_call(call):
     scope = call.parent_stmt.parent
     path = call.generate_call_list()
 
-    position = (call.parent_stmt.line_nr, call.parent_stmt.indent)
+    position = call.parent_stmt.start_pos
     current = next(path)
 
     if isinstance(current, parsing.Array):

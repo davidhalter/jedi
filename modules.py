@@ -50,15 +50,15 @@ class ModuleWithCursor(Module):
 
     :param source: The source code of the file.
     :param path: The module path of the file.
-    :param row: The row, the user is currently in. Only important for the \
-    main file.
+    :param position: The position, the user is currently in. Only important \
+    for the main file.
     """
     def __init__(self, path, source, position):
         super(ModuleWithCursor, self).__init__(path, source)
         self.position = position
 
         # this two are only used, because there is no nonlocal in Python 2
-        self._row_temp = None
+        self._line_temp = None
         self._relevant_temp = None
 
         # Call the parser already here, because it will be used anyways.
@@ -71,23 +71,23 @@ class ModuleWithCursor(Module):
         self._is_first = True
 
         def fetch_line():
-            line = self.get_line(self._row_temp)
+            line = self.get_line(self._line_temp)
             if self._is_first:
                 self._is_first = False
                 line = line[:self.position[1]]
             else:
                 line = line + '\n'
             # add lines with a backslash at the end
-            while self._row_temp > 1:
-                self._row_temp -= 1
-                last_line = self.get_line(self._row_temp)
+            while self._line_temp > 1:
+                self._line_temp -= 1
+                last_line = self.get_line(self._line_temp)
                 if last_line and last_line[-1] == '\\':
                     line = last_line[:-1] + ' ' + line
                 else:
                     break
             return line[::-1]
 
-        self._row_temp = self.position[0]
+        self._line_temp = self.position[0]
 
         force_point = False
         open_brackets = ['(', '[', '{']

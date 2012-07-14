@@ -39,7 +39,7 @@ class RecursionDecorator(object):
 class RecursionNode(object):
     def __init__(self, stmt, parent):
         self.script = stmt.get_parent_until()
-        self.position = (stmt.line_nr, stmt.indent)
+        self.position = stmt.start_pos
         self.parent = parent
 
     def __eq__(self, other):
