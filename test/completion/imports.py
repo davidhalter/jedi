@@ -64,7 +64,13 @@ import sqlite
 import classes
 
 #? ['timedelta']
-from datetime import timedelta
+from datetime import timedel
+
+# should not be possible, because names can only be looked up 1 level deep.
+#? []
+from datetime.timedelta import resolution
+#? []
+from datetime.timedelta import 
 
 #? ['Cursor']
 from sqlite3 import Cursor

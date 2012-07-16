@@ -934,7 +934,7 @@ class PyFuzzyParser(object):
     :param user_position: The line/column, the user is currently on.
     :type user_position: tuple(int, int)
     """
-    def __init__(self, code, module_path=None, user_position=(None,None)):
+    def __init__(self, code, module_path=None, user_position=None):
         self.user_position = user_position
         self.user_stmt = None
         self.code = code + '\n'  # end with \n, because the parser needs it
@@ -969,18 +969,19 @@ class PyFuzzyParser(object):
         return (self._line_of_tokenize_restart + self._tokenize_end_pos[0],
                                                 self._tokenize_end_pos[1])
 
-    def check_user_stmt(self, i):
+    def check_user_stmt(self, simple):
+        if not self.user_position:
+            return
         # the position is right
-        if i.start_pos < self.user_position <= i.end_pos:
+        if simple.start_pos < self.user_position <= simple.end_pos:
             if self.user_stmt is not None:
                 # if there is already a user position (another import, because
                 # imports are splitted) the names are checked.
-                for n in i.get_defined_names():
+                for n in simple.get_defined_names():
                     if n.start_pos < self.user_position <= n.end_pos:
-                        self.user_stmt = i
+                        self.user_stmt = simple
             else:
-                self.user_stmt = i
-            #print 'up', self.user_stmt
+                self.user_stmt = simple
 
 
     def _parsedotname(self, pre_used_token=None):
@@ -1246,6 +1247,7 @@ class PyFuzzyParser(object):
         if self.freshscope and len(tok_list) > 1 \
                     and self.last_token[1] == tokenize.STRING:
             self.scope.add_docstr(self.last_token[1])
+            print('i want to see you')
         else:
             stmt = stmt_class(string, set_vars, used_funcs, used_vars, \
                                 tok_list, first_pos, self.end_pos)
@@ -1265,7 +1267,7 @@ class PyFuzzyParser(object):
         """ Generate the next tokenize pattern. """
         type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
                             self.parserline = next(self.gen)
-        if self.start_pos[0] == self.user_position[0]:
+        if self.user_position and self.start_pos[0] == self.user_position[0]:
             debug.dbg('user scope found [%s] =%s' % \
                     (self.parserline.replace('\n', ''), repr(self.scope)))
             self.user_scope = self.scope
@@ -1344,7 +1346,6 @@ class PyFuzzyParser(object):
                         i = Import(first_pos, self.end_pos, m, alias,
                                                             defunct=defunct)
                         self.check_user_stmt(i)
-                        self.user_stmt = i
                         self.scope.add_import(i)
                         debug.dbg("new import: %s" % (i), self.current)
                     if not imports:

@@ -14,7 +14,9 @@ class ModuleNotFound(Exception):
 
 
 class ImportPath(object):
-    global_namespace = object()
+    class GlobalNamespace(object):
+        pass
+
     def __init__(self, import_stmt, is_like_search=False):
         """ replace """
         #print import_stmt
@@ -24,6 +26,7 @@ class ImportPath(object):
         if import_stmt.namespace:
             self.import_path += import_stmt.namespace.names
 
+        self.is_like_search = is_like_search
         if is_like_search:
             # drop one path part, because that is used by the like search
             self.import_path.pop()
@@ -33,7 +36,7 @@ class ImportPath(object):
     def get_defined_names(self):
         names = []
         for scope in self.follow():
-            if scope is ImportPath.global_namespace:
+            if scope is ImportPath.GlobalNamespace:
                 names += self.get_module_names()
                 names += self.get_module_names([self.file_path])
             else:
@@ -49,8 +52,8 @@ class ImportPath(object):
     def get_module_names(self, search_path=None):
         names = []
         for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
-            names.append(parsing.Name([name], (float('inf'), float('inf')),
-                                                (float('inf'), float('inf'))))
+            inf = float('inf')
+            names.append(parsing.Name([name], (inf, inf), (inf, inf)))
         return names
 
     def follow(self):
@@ -58,7 +61,9 @@ class ImportPath(object):
         """
         if self.import_path:
             scope, rest = self.follow_file_system()
-            if rest:
+            if len(rest) > 1 or rest and self.is_like_search:
+                scopes = []
+            elif rest:
                 scopes = evaluate.follow_path(iter(rest), scope)
             else:
                 scopes = [scope]
@@ -68,7 +73,7 @@ class ImportPath(object):
                 new += remove_star_imports(scope)
             scopes += new
         else:
-            scopes = [ImportPath.global_namespace]
+            scopes = [ImportPath.GlobalNamespace]
         debug.dbg('after import', scopes)
         return scopes
 

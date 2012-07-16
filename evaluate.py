@@ -647,7 +647,7 @@ class Generator(object):
         content of a generator.
         """
         names = []
-        none_pos = (None,None)
+        none_pos = (0, 0)
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
             name = parsing.Name([n], none_pos, none_pos)
