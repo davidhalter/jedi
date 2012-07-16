@@ -60,5 +60,11 @@ func_with_import().sleep
 #? ['sqlite3']
 import sqlite
 
-#? ['time']
-from datetime import 
+#? ['classes']
+import classes
+
+#? ['timedelta']
+from datetime import timedelta
+
+#? ['Cursor']
+from sqlite3 import Cursor

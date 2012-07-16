@@ -18,7 +18,7 @@ if only_line is not None:
 #functions.set_debug_function(functions.debug.print_to_stdout)
 
 
-def run_completion_test(correct, source, line_nr, line):
+def run_completion_test(correct, source, line_nr, line, path):
     """
     Runs tests for completions.
     Return if the test was a fail or not, with 1 for fail and 0 for success.
@@ -26,8 +26,7 @@ def run_completion_test(correct, source, line_nr, line):
     # lines start with 1 and column is just the last (makes no
     # difference for testing)
     try:
-        completions = functions.complete(source, line_nr, len(line),
-                                            completion_test_dir)
+        completions = functions.complete(source, line_nr, len(line), path)
     except (Exception, functions.evaluate.MultiLevelAttributeError):
         print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())
@@ -42,14 +41,13 @@ def run_completion_test(correct, source, line_nr, line):
     return 0
 
 
-def run_definition_test(correct, source, line_nr, line, correct_start):
+def run_definition_test(correct, source, line_nr, line, correct_start, path):
     """
     Runs tests for definitions.
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
     def defs(line_nr, indent):
-        return set(functions.get_definitions(source, line_nr, indent,
-                                            completion_test_dir))
+        return set(functions.get_definitions(source, line_nr, indent, path))
     try:
         result = defs(line_nr, len(line))
     except (Exception, functions.evaluate.MultiLevelAttributeError):
@@ -79,7 +77,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start):
     return 0
 
 
-def run_test(source):
+def run_test(source, f_name):
     """
     This is the completion test for some cases. The tests are not unit test
     like, they are rather integration tests.
@@ -88,8 +86,11 @@ def run_test(source):
     row symbolizes the cursor.
 
     For example:
-    #? ['ab']
-    ab = 3; a
+    >>> #? ['ab']
+    >>> ab = 3; a
+
+    >>> #? int()
+    >>> ab = 3; ab
     """
     fails = 0
     tests = 0
@@ -100,11 +101,13 @@ def run_test(source):
         if correct:
             # if a list is wanted, use the completion test, otherwise the
             # get_definition test
+            path = completion_test_dir + os.path.sep + f_name
             if correct.startswith('['):
-                fails += run_completion_test(correct, source, line_nr, line)
+                fails += run_completion_test(correct, source, line_nr, line,
+                                                                        path)
             else:
                 fails += run_definition_test(correct, source, line_nr, line,
-                                                                        start)
+                                                                start, path)
             correct = None
             tests += 1
         else:
@@ -138,7 +141,7 @@ def test_dir(completion_test_dir, third_party=False):
                         continue
                 path = os.path.join(completion_test_dir, f_name)
                 f = open(path)
-                num_tests, fails = run_test(f.read())
+                num_tests, fails = run_test(f.read(), f_name)
                 s = 'run %s tests with %s fails (%s)' % (num_tests, fails,
                                                                         f_name)
                 if fails:
@@ -152,7 +155,8 @@ summary = []
 tests_pass = True
 
 test_dir(completion_test_dir)
-test_dir(completion_test_dir + '/thirdparty', third_party=True)
+completion_test_dir += '/thirdparty'
+test_dir(completion_test_dir, third_party=True)
 
 print('\nSummary:')
 for s in summary:

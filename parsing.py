@@ -28,7 +28,8 @@ Ignored statements:
  - print (no use for it, just slows down)
  - exec (dangerous - not controllable)
 """
-from _compatibility import next, literal_eval, tokenize_func, BytesIO, property
+from _compatibility import (next, literal_eval, tokenize_func, BytesIO,
+                            property, is_py3k)
 
 import tokenize
 import re
@@ -937,6 +938,8 @@ class PyFuzzyParser(object):
         self.user_position = user_position
         self.user_stmt = None
         self.code = code + '\n'  # end with \n, because the parser needs it
+        if is_py3k():
+            self.code = self.code.encode()
 
         # initialize global Scope
         self.top = Module(module_path)
@@ -977,7 +980,7 @@ class PyFuzzyParser(object):
                         self.user_stmt = i
             else:
                 self.user_stmt = i
-            print 'up', self.user_stmt
+            #print 'up', self.user_stmt
 
 
     def _parsedotname(self, pre_used_token=None):
@@ -1281,7 +1284,7 @@ class PyFuzzyParser(object):
 
         :raises: IndentationError
         """
-        buf = BytesIO(self.code.encode())
+        buf = BytesIO(self.code)
         self.gen = tokenize_func(buf.readline)
         self.currentscope = self.scope
 

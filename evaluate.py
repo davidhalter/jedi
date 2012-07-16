@@ -27,7 +27,6 @@ import itertools
 import copy
 
 import parsing
-import modules
 import debug
 import builtin
 import imports
@@ -793,7 +792,8 @@ def get_defined_names_for_position(obj, position=None, start_scope=None):
     return names_new
 
 
-def get_names_for_scope(scope, position=None, star_search=True):
+def get_names_for_scope(scope, position=None, star_search=True,
+                                                        include_builtin=True):
     """
     Get all completions possible for the current scope.
     The star search option is only here to provide an optimization. Otherwise
@@ -820,9 +820,10 @@ def get_names_for_scope(scope, position=None, star_search=True):
             for g in get_names_for_scope(s, star_search=False):
                 yield g
 
-    # Add builtins to the global scope.
-    builtin_scope = builtin.Builtin.scope
-    yield builtin_scope, builtin_scope.get_defined_names()
+        # Add builtins to the global scope.
+        if include_builtin:
+            builtin_scope = builtin.Builtin.scope
+            yield builtin_scope, builtin_scope.get_defined_names()
 
 
 def get_scopes_for_name(scope, name_str, position=None, search_global=False):

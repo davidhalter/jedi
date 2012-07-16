@@ -1,19 +1,13 @@
 from __future__ import with_statement
 import re
 import tokenize
-import imp
 import os
 
-import debug
 import parsing
 import builtin
 
 files = {}
 load_module_cb = None
-
-
-class ModuleNotFound(Exception):
-    pass
 
 
 class Module(builtin.CachedModule):

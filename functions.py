@@ -133,7 +133,7 @@ def complete(source, line, column, source_path):
     :param col: The column to complete in.
     :type col: int
     :param source_path: The path in the os, the current module is in.
-    :type source_path: int
+    :type source_path: str
 
     :return: list of Completion objects.
     :rtype: list
@@ -186,8 +186,7 @@ def prepare_goto(source, position, source_path, is_like_search):
 
     user_stmt = f.parser.user_stmt
     if isinstance(user_stmt, parsing.Import):
-        scopes = [imports.ImportPath(user_stmt, is_like_search,
-                                                    evaluate.follow_path)]
+        scopes = [imports.ImportPath(user_stmt, is_like_search)]
     else:
         # just parse one statement, take it and evaluate it
         r = parsing.PyFuzzyParser(path, source_path)

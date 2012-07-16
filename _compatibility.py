@@ -2,6 +2,8 @@
 This is a compatibility module, to make it possible to use jedi also with older
 python versions.
 """
+def is_py3k():
+    return sys.hexversion >= 0x03000000
 import sys
 
 # next was defined in python 2.6, in python 3 obj.next won't be possible
@@ -58,7 +60,7 @@ except NameError:
         return s.decode("utf-8")
 
 # exec function
-if sys.hexversion >= 0x03000000:
+if is_py3k():
     def exec_function(source, global_map):
         exec(source, global_map)
 else:
@@ -67,7 +69,7 @@ else:
 
 # tokenize function
 import tokenize
-if sys.hexversion >= 0x03000000:
+if is_py3k():
     tokenize_func = tokenize.tokenize
 else:
     tokenize_func = tokenize.generate_tokens
@@ -79,7 +81,7 @@ except ImportError:
     from io import BytesIO
 
 # hasattr function used because python 
-if sys.hexversion >= 0x03000000:
+if is_py3k():
     hasattr = hasattr
 else:
     def hasattr(obj, name):
