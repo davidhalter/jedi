@@ -52,3 +52,13 @@ def func_with_import():
 
 #? ['sleep']
 func_with_import().sleep
+
+# -----------------
+# completions within imports
+# -----------------
+
+#? ['sqlite3']
+import sqlite
+
+#? ['time']
+from datetime import 

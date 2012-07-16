@@ -30,6 +30,7 @@ import parsing
 import modules
 import debug
 import builtin
+import imports
 import helpers
 
 memoize_caches = []
@@ -421,7 +422,7 @@ class Execution(Executable):
 
         debug.dbg('exec result: %s in %s' % (stmts, self))
 
-        return strip_imports(stmts)
+        return imports.strip_imports(stmts)
 
     def _get_function_returns(self, evaluate_generator):
         func = self.base
@@ -815,7 +816,7 @@ def get_names_for_scope(scope, position=None, star_search=True):
 
     # Add star imports.
     if star_search:
-        for s in remove_star_imports(start_scope.get_parent_until()):
+        for s in imports.remove_star_imports(start_scope.get_parent_until()):
             for g in get_names_for_scope(s, star_search=False):
                 yield g
 
@@ -936,23 +937,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         scope_generator = iter([(scope, names)])
 
     return remove_statements(filter_name(scope_generator))
-
-
-def strip_imports(scopes):
-    """
-    Here we strip the imports - they don't get resolved necessarily.
-    Really used anymore?
-    """
-    result = []
-    for s in scopes:
-        if isinstance(s, parsing.Import):
-            try:
-                result += follow_import(s)
-            except modules.ModuleNotFound:
-                debug.warning('Module not found: ' + str(s))
-        else:
-            result.append(s)
-    return result
 
 
 def assign_tuples(tup, results, seek_name):
@@ -1099,7 +1083,7 @@ def follow_call(call):
             # This is the first global lookup.
             scopes = get_scopes_for_name(scope, current, position=position,
                                             search_global=True)
-        result = strip_imports(scopes)
+        result = imports.strip_imports(scopes)
 
         if result != scopes:
             # Reset the position, when imports where stripped.
@@ -1162,49 +1146,8 @@ def follow_path(path, scope, position=None):
         else:
             # TODO Check magic class methods and return them also.
             # This is the typical lookup while chaining things.
-            result = strip_imports(get_scopes_for_name(scope, current,
+            result = imports.strip_imports(get_scopes_for_name(scope, current,
                                                         position=position))
     return follow_paths(path, result, position=position)
 
 
-def follow_import(_import):
-    """
-    follows a module name and returns the parser.
-    :param _import: The import statement.
-    :type _import: parsing.Import
-    """
-    # Set path together.
-    ns_list = []
-    if _import.from_ns:
-        ns_list += _import.from_ns.names
-    if _import.namespace:
-        ns_list += _import.namespace.names
-
-    loaded_in = _import.get_parent_until()
-
-    scope, rest = modules.find_module(loaded_in, ns_list)
-    if rest:
-        scopes = follow_path(iter(rest), scope)
-    else:
-        scopes = [scope]
-
-    new = []
-    for scope in scopes:
-        new += remove_star_imports(scope)
-    scopes += new
-
-    debug.dbg('after import', scopes, rest)
-    return scopes
-
-
-def remove_star_imports(scope):
-    """
-    """
-    modules = strip_imports(i for i in scope.get_imports() if i.star)
-    new = []
-    for m in modules:
-        new += remove_star_imports(m)
-    modules += new
-
-    # Filter duplicate modules.
-    return set(modules)

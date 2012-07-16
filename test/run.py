@@ -26,7 +26,7 @@ def run_completion_test(correct, source, line_nr, line):
     # lines start with 1 and column is just the last (makes no
     # difference for testing)
     try:
-        completions = functions.complete(source, line_nr, 999,
+        completions = functions.complete(source, line_nr, len(line),
                                             completion_test_dir)
     except (Exception, functions.evaluate.MultiLevelAttributeError):
         print('test @%s: %s' % (line_nr - 1, line))
@@ -51,7 +51,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start):
         return set(functions.get_definitions(source, line_nr, indent,
                                             completion_test_dir))
     try:
-        result = defs(line_nr, 999)
+        result = defs(line_nr, len(line))
     except (Exception, functions.evaluate.MultiLevelAttributeError):
         print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())

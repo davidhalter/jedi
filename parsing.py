@@ -458,9 +458,11 @@ class Import(Simple):
     :type from_ns: Name
     :param star: If a star is used -> from time import *.
     :type star: bool
+    :param defunct: An Import is valid or not.
+    :type defunct: bool
     """
-    def __init__(self, start_pos, end_pos, namespace, alias='', \
-                    from_ns='', star=False, relative_count=None):
+    def __init__(self, start_pos, end_pos, namespace, alias='', from_ns='', \
+                    star=False, relative_count=None, defunct=False):
         super(Import, self).__init__(start_pos, end_pos)
 
         self.namespace = namespace
@@ -477,6 +479,7 @@ class Import(Simple):
 
         self.star = star
         self.relative_count = relative_count
+        self.defunct = defunct
 
     def get_code(self):
         if self.alias:
@@ -491,6 +494,8 @@ class Import(Simple):
             return "import " + ns_str + '\n'
 
     def get_defined_names(self):
+        if self.defunct:
+            return []
         if self.star:
             return [self]
         return [self.alias] if self.alias else [self.namespace]
@@ -930,6 +935,7 @@ class PyFuzzyParser(object):
     """
     def __init__(self, code, module_path=None, user_position=(None,None)):
         self.user_position = user_position
+        self.user_stmt = None
         self.code = code + '\n'  # end with \n, because the parser needs it
 
         # initialize global Scope
@@ -959,6 +965,20 @@ class PyFuzzyParser(object):
     def end_pos(self):
         return (self._line_of_tokenize_restart + self._tokenize_end_pos[0],
                                                 self._tokenize_end_pos[1])
+
+    def check_user_stmt(self, i):
+        # the position is right
+        if i.start_pos < self.user_position <= i.end_pos:
+            if self.user_stmt is not None:
+                # if there is already a user position (another import, because
+                # imports are splitted) the names are checked.
+                for n in i.get_defined_names():
+                    if n.start_pos < self.user_position <= n.end_pos:
+                        self.user_stmt = i
+            else:
+                self.user_stmt = i
+            print 'up', self.user_stmt
+
 
     def _parsedotname(self, pre_used_token=None):
         """
@@ -1011,6 +1031,7 @@ class PyFuzzyParser(object):
         continue_kw = [",", ";", "\n", ')'] \
                         + list(set(keyword.kwlist) - set(['as']))
         while True:
+            defunct = False
             token_type, tok = self.next()
             if brackets and tok == '\n':
                 self.next()
@@ -1019,11 +1040,11 @@ class PyFuzzyParser(object):
                 self.next()
             i, token_type, tok = self._parsedotname(self.current)
             if not i:
-                break
+                defunct = True
             name2 = None
             if tok == 'as':
                 name2, token_type, tok = self._parsedotname()
-            imports.append((i, name2))
+            imports.append((i, name2, defunct))
             while tok not in continue_kw:
                 token_type, tok = self.next()
             if not (tok == "," or brackets and tok == '\n'):
@@ -1316,12 +1337,19 @@ class PyFuzzyParser(object):
                 # import stuff
                 elif tok == 'import':
                     imports = self._parseimportlist()
-                    for m, alias in imports:
-                        i = Import(first_pos, self.end_pos, m, alias)
+                    for m, alias, defunct in imports:
+                        i = Import(first_pos, self.end_pos, m, alias,
+                                                            defunct=defunct)
+                        self.check_user_stmt(i)
+                        self.user_stmt = i
                         self.scope.add_import(i)
                         debug.dbg("new import: %s" % (i), self.current)
+                    if not imports:
+                        i = Import(first_pos, self.end_pos, None, defunct=True)
+                        self.check_user_stmt(i)
                     self.freshscope = False
                 elif tok == 'from':
+                    defunct = False
                     # take care for relative imports
                     relative_count = 0
                     while 1:
@@ -1334,16 +1362,21 @@ class PyFuzzyParser(object):
                     if not mod or tok != "import":
                         debug.warning("from: syntax error@%s" %
                                                             self.start_pos[0])
-                        continue
+                        defunct = True
                     names = self._parseimportlist()
-                    for name, alias in names:
+                    for name, alias, defunct2 in names:
                         star = name.names[0] == '*'
                         if star:
                             name = None
-                        i = Import(first_pos, self.end_pos, name,
-                                    alias, mod, star, relative_count)
+                        i = Import(first_pos, self.end_pos, name, alias, mod,
+                            star, relative_count, defunct=defunct or defunct2)
+                        self.check_user_stmt(i)
                         self.scope.add_import(i)
                         debug.dbg("new from: %s" % (i))
+                    if not names:
+                        i = Import(first_pos, self.end_pos, mod, defunct=True,
+                                    relative_count=relative_count)
+                        self.check_user_stmt(i)
                     self.freshscope = False
                 #loops
                 elif tok == 'for':

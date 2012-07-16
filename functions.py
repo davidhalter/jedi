@@ -5,6 +5,7 @@ import parsing
 import evaluate
 import modules
 import debug
+import imports
 
 __all__ = ['complete', 'get_completion_parts', 'get_definitions',
             'set_debug_function']
@@ -183,20 +184,25 @@ def prepare_goto(source, position, source_path, is_like_search):
 
     debug.dbg('start: %s in %s' % (path, scope))
 
-    # just parse one statement, take it and evaluate it
-    r = parsing.PyFuzzyParser(path, source_path)
-    try:
-        stmt = r.top.statements[0]
-    except IndexError:
-        if is_like_search:
-            path_tuple = path, dot, like
-        else:
-            path_tuple = ()
-        raise NotFoundError(scope, path_tuple)
+    user_stmt = f.parser.user_stmt
+    if isinstance(user_stmt, parsing.Import):
+        scopes = [imports.ImportPath(user_stmt, is_like_search,
+                                                    evaluate.follow_path)]
     else:
-        stmt.start_pos = position
-        stmt.parent = scope
-        scopes = evaluate.follow_statement(stmt)
+        # just parse one statement, take it and evaluate it
+        r = parsing.PyFuzzyParser(path, source_path)
+        try:
+            stmt = r.top.statements[0]
+        except IndexError:
+            if is_like_search:
+                path_tuple = path, dot, like
+            else:
+                path_tuple = ()
+            raise NotFoundError(scope, path_tuple)
+        else:
+            stmt.start_pos = position
+            stmt.parent = scope
+            scopes = evaluate.follow_statement(stmt)
 
     if is_like_search:
         return scopes, path, dot, like
