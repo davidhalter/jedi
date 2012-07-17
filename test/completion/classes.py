@@ -209,3 +209,25 @@ def a():
 A().b()
 #? str()
 A().a()
+
+# -----------------
+# nested classes
+# -----------------
+class A():
+    class B():
+        pass
+    def b(self):
+        return 1.0
+
+#? float()
+A().b()
+
+class A():
+    def b(self):
+        class B():
+            def b(self):
+                return []
+        return B().b()
+
+#? list()
+A().b()

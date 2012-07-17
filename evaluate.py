@@ -163,6 +163,8 @@ class Instance(Executable):
         # This loop adds the names of the self object, copies them and removes
         # the self.
         for sub in self.base.subscopes:
+            if isinstance(sub, parsing.Class):
+                continue
             # Get the self name, if there's one.
             self_name = self.get_func_self_name(sub)
             if self_name:
