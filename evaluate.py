@@ -236,6 +236,10 @@ class InstanceElement(object):
             par = InstanceElement(self.instance, par)
         return par
 
+    def get_var(self):
+        pass
+        #if self.var
+
     def get_parent_until(self, *classes):
         scope = self.var.get_parent_until(*classes)
         return InstanceElement(self.instance, scope)
@@ -859,12 +863,16 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 elif isinstance(r, parsing.Function):
                     r = Function(r)
                 res_new.append(r)
-        debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
+        print scope
+        debug.dbg(a+'sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
 
     def filter_name(scope_generator):
         def handle_non_arrays(name):
             result = []
+            if isinstance(scope, InstanceElement) \
+                        and scope.var == name.parent.parent:
+                name = InstanceElement(scope.instance, name)
             par = name.parent
             if isinstance(par, parsing.Flow):
                 if par.command == 'for':
@@ -893,16 +901,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 else:
                     inst = Instance(Class(par.parent.parent))
                 result.append(inst)
-            elif isinstance(par, (InstanceElement)) \
-                                and hasattr(par, 'get_descriptor_return'):
-                # handle descriptors
-                try:
-                    result += par.get_descriptor_return(scope)
-                except KeyError:
-                    result.append(par)
-            elif (isinstance(scope, InstanceElement)
-                        and scope.var == par.parent):
-                result.append(InstanceElement(scope.instance, par))
             else:
                 result.append(par)
             return result
@@ -932,16 +930,32 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             # if there are results, ignore the other scopes
             if result:
                 break
-        debug.dbg('sfn filter "%s" in %s: %s' % (name_str, scope, result))
+        debug.dbg(a+'sfn filter "%s" in %s: %s' % (name_str, scope, result))
         return result
 
+    def descriptor_check(result):
+        res_new = []
+        print 'descc', scope, result, name_str
+        for r in result:
+            if isinstance(scope, (Instance)) \
+                                and hasattr(r, 'get_descriptor_return'):
+                # handle descriptors
+                try:
+                    res_new += r.get_descriptor_return(scope)
+                    continue
+                except KeyError:
+                    pass
+            res_new.append(r)
+        return res_new
+
+    import random; a = str(random.randint(0,99))
     if search_global:
         scope_generator = get_names_for_scope(scope, position=position)
     else:
         names = get_defined_names_for_position(scope, position)
         scope_generator = iter([(scope, names)])
 
-    return remove_statements(filter_name(scope_generator))
+    return descriptor_check(remove_statements(filter_name(scope_generator)))
 
 
 def assign_tuples(tup, results, seek_name):
