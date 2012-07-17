@@ -7,7 +7,7 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 TODO doc
 TODO list comprehensions, priority? +1
 TODO magic methods: __mul__, __add__, etc.
-TODO evaluate asserts (type safety)
+TODO evaluate asserts/isinstance (type safety)
 
 python 3 stuff:
 TODO class decorators
@@ -192,10 +192,7 @@ class Instance(Executable):
 
         class_names = self.base.get_defined_names()
         for var in class_names:
-            # Functions are also instance elements.
-            if isinstance(var.parent, (Function, parsing.Function)):
-                var = InstanceElement(self, var)
-            names.append(var)
+            names.append(InstanceElement(self, var))
         return names
 
     def get_descriptor_return(self, obj):
@@ -805,10 +802,11 @@ def get_names_for_scope(scope, position=None, star_search=True,
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
+        # InstanceElement of Class is ignored, if it is not the start scope.
         if not (scope != start_scope and isinstance(scope, parsing.Class)
                 or isinstance(scope, parsing.Flow)
-                or isinstance(scope, InstanceElement)
-                and isinstance(scope.var, parsing.Class)):
+                or scope != start_scope and isinstance(scope, InstanceElement)
+                    and isinstance(scope.var, parsing.Class)):
             try:
                 yield scope, get_defined_names_for_position(scope, position,
                                                                 start_scope)
@@ -897,10 +895,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 result.append(inst)
             elif isinstance(par, (InstanceElement)) \
                                 and hasattr(par, 'get_descriptor_return'):
+                # handle descriptors
                 try:
                     result += par.get_descriptor_return(scope)
                 except KeyError:
                     result.append(par)
+            elif (isinstance(scope, InstanceElement)
+                        and scope.var == par.parent):
+                result.append(InstanceElement(scope.instance, par))
             else:
                 result.append(par)
             return result

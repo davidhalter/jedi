@@ -160,16 +160,16 @@ class B():
         pass
     def t(self):
         return ''
-    ##p = property(t)
+    p = property(t)
 
 #? []
 B().r()
 #? int()
 B().r
 
-##? str()
+#? str()
 B().p
-##? []
+#? []
 B().p()
 
 # -----------------
@@ -177,16 +177,23 @@ B().p()
 # -----------------
 
 class V:
-    def __init__(self):
-        self.a = 1
+    def __init__(self, a):
+        self.a = a
 
     def ret(self):
         return self.a
 
+    d = b
     b = ret
+    c = b
 
-##? int()
-V().b()
+#? int()
+V(1).b()
+#? int()
+V(1).c()
+#? []
+V(1).d()
+
 
 # -----------------
 # ordering
