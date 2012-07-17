@@ -148,31 +148,6 @@ class CallClass():
 CallClass()()
 
 # -----------------
-# properties
-# -----------------
-
-class B():
-    @property
-    def r(self):
-        return 1
-    @r.setter
-    def r(self, value):
-        pass
-    def t(self):
-        return ''
-    p = property(t)
-
-#? []
-B().r()
-#? int()
-B().r
-
-#? str()
-B().p
-#? []
-B().p()
-
-# -----------------
 # variable assignments
 # -----------------
 
@@ -238,3 +213,133 @@ class A():
 
 #? list()
 A().b()
+
+# -----------------
+# descriptors
+# -----------------
+class RevealAccess(object):
+    """
+    A data descriptor that sets and returns values
+    normally and prints a message logging their access.
+    """
+    def __init__(self, initval=None, name='var'):
+        self.val = initval
+        self.name = name
+
+    def __get__(self, obj, objtype):
+        print('Retrieving', self.name)
+        return self.val
+
+    def __set__(self, obj, val):
+        print('Updating', self.name)
+        self.val = val
+
+class C(object):
+    x = RevealAccess(10, 'var "x"')
+    y = 5.0
+
+m = C()
+#? int()
+m.x
+#? float()
+m.y
+#? int()
+C.x
+
+# -----------------
+# properties
+# -----------------
+class B():
+    @property
+    def r(self):
+        return 1
+    @r.setter
+    def r(self, value):
+        pass
+    def t(self):
+        return ''
+    p = property(t)
+
+#? []
+B().r()
+#? int()
+B().r
+
+#? str()
+B().p
+#? []
+B().p()
+
+class PropClass():
+    def __init__(self, a):
+        self.a = a
+    @property
+    def ret(self):
+        return self.a
+
+    @property
+    def nested(self):
+        return self.ret
+
+#? str()
+PropClass("").ret
+#? []
+PropClass().ret.
+
+#? str()
+PropClass(1).nested
+#? []
+PropClass().nested.
+
+# -----------------
+# staticmethod/classmethod
+# -----------------
+
+class E(object):
+    a = ''
+    def __init__(self, a):
+        self.a = a
+
+    def f(x):
+        return x
+    f = staticmethod(f)
+
+    @staticmethod
+    def g(x):
+        return x
+
+    def s(cls, x):
+        return x
+    s = classmethod(s)
+
+    @classmethod
+    def t(cls, x):
+        return x
+
+    @classmethod
+    def u(cls, x):
+        return cls.a
+
+e = E(1)
+#? int()
+e.f(1)
+#? int()
+E.f(1)
+#? int()
+e.g(1)
+#? int()
+E.g(1)
+
+#? int()
+e.s(1)
+#? int()
+E.s(1)
+#? int()
+e.t(1)
+#? int()
+E.t(1)
+
+#? str()
+e.u(1)
+#? str()
+E.u(1)

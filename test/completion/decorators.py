@@ -95,23 +95,6 @@ nothing("")[0]
 nothing("")[1]
 
 # -----------------
-# properties
-# -----------------
-
-class PropClass():
-    def __init__(self, a):
-        self.a = a
-    @property
-    def ret(self):
-        return self.a
-
-#? str()
-PropClass("").ret
-
-#? []
-PropClass().ret.
-
-# -----------------
 # not found decorators
 # -----------------
 @not_found_decorator
