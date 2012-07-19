@@ -6,7 +6,7 @@ second = ""
 class TestClass(object):
     var_class = TestClass(1)
 
-    def __init__(self2, first_param, second_param):
+    def __init__(self2, first_param, second_param, third=1.0):
         self2.var_inst = first_param
         self2.second = second_param
         self2.first = first_param

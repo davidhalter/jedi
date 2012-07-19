@@ -746,8 +746,10 @@ class Call(object):
     def parent_stmt(self):
         if self._parent_stmt:
             return self._parent_stmt
-        else:
+        elif self.parent:
             return self.parent.parent_stmt
+        else:
+            return None
 
     @parent_stmt.setter
     def parent_stmt(self, value):
