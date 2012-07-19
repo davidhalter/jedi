@@ -15,11 +15,9 @@ class RecursionDecorator(object):
             return self.func(stmt, *args, **kwargs)
 
         r = RecursionNode(stmt, self.current)
-        """
         if self.check_recursion(r):
             debug.warning('catched recursion', stmt, args, kwargs)
             return []
-        """
         parent, self.current = self.current, r
         result = self.func(stmt, *args, **kwargs)
         self.current = parent
