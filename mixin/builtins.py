@@ -47,5 +47,5 @@ class classmethod():
 
     def __get__(self, obj, cls):
         def _method(*args, **kwargs):
-            self._func(cls, *args, **kwargs)
+            return self._func(cls, *args, **kwargs)
         return _method

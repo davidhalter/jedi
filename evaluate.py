@@ -558,8 +558,11 @@ class Execution(Executable):
         def iterate():
             # `var_args` is typically an Array, and not a list.
             for var_arg in self.var_args:
+                # empty var_arg
+                if len(var_arg) == 0:
+                    yield None, None
                 # *args
-                if var_arg[0] == '*':
+                elif var_arg[0] == '*':
                     arrays = follow_call_list([var_arg[1:]])
                     for array in arrays:
                         for field in array.get_contents():
@@ -958,7 +961,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         res_new = []
         #print 'descc', scope, result, name_str
         for r in result:
-            if isinstance(scope, (Instance)) \
+            if isinstance(scope, (Instance, Class)) \
                                 and hasattr(r, 'get_descriptor_return'):
                 # handle descriptors
                 try:
@@ -1079,7 +1082,7 @@ def follow_call_list(call_list):
                     result += follow_call_list(call)
                 else:
                     # With things like params, these can also be functions...
-                    if isinstance(call, (Function, parsing.Class, Instance)):
+                    if isinstance(call, (Function, Class, Instance)):
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, str):

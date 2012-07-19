@@ -236,6 +236,10 @@ class RevealAccess(object):
 
 class C(object):
     x = RevealAccess(10, 'var "x"')
+    #? RevealAccess()
+    x
+    #? ['__get__']
+    x.__get__
     y = 5.0
 
 m = C()
@@ -243,7 +247,7 @@ m = C()
 m.x
 #? float()
 m.y
-##? int()
+#? int()
 C.x
 
 # -----------------
@@ -335,25 +339,25 @@ class E(object):
         return cls.a
 
 e = E(1)
-##? int()
+#? int()
 e.f(1)
-##? int()
+#? int()
 E.f(1)
-##? int()
+#? int()
 e.g(1)
-##? int()
+#? int()
 E.g(1)
 
-##? int()
+#? int()
 e.s(1)
-##? int()
+#? int()
 E.s(1)
-##? int()
+#? int()
 e.t(1)
-##? int()
+#? int()
 E.t(1)
 
-##? str()
+#? str()
 e.u(1)
-##? str()
+#? str()
 E.u(1)
