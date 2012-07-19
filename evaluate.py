@@ -49,12 +49,13 @@ class MultiLevelStopIteration(Exception):
     pass
 
 
-class MultiLevelAttributeError(BaseException):
+class MultiLevelAttributeError(Exception):
     """
     Important, because `__getattr__` and `hasattr` catch AttributeErrors
     implicitly. This is really evil (mainly because of `__getattr__`).
     `hasattr` in Python 2 is even more evil, because it catches ALL exceptions.
-    Therefore this class has to be `BaseException` and not `Exception`.
+    Therefore this class has to be a `BaseException` and not an `Exception`.
+    But because I rewrote hasattr, we can now switch back to `Exception`.
 
     :param base: return values of sys.exc_info().
     """
@@ -137,12 +138,6 @@ class Instance(Executable):
         else:
             return func
 
-    def get_subscope_by_name(self, name):
-        for sub in reversed(self.base.subscopes):
-            if sub.name.get_code() == name:
-                return sub
-        raise KeyError("Couldn't find subscope.")
-
     def get_func_self_name(self, func):
         """
         Returns the name of the first param in a class method (which is
@@ -183,6 +178,23 @@ class Instance(Executable):
 
         return names
 
+    def get_subscope_by_name(self, name):
+        for sub in reversed(self.base.subscopes):
+            if sub.name.get_code() == name:
+                return sub
+        raise KeyError("Couldn't find subscope.")
+
+    def get_descriptor_return(self, obj):
+        """ Throws a KeyError if there's no method. """
+        method = self.get_subscope_by_name('__get__')
+        # Arguments in __get__ descriptors are obj, class.
+        # `method` is the new parent of the array, don't know if that's good.
+        v = [[obj], [obj.base]] if isinstance(obj, Instance) else [[], [obj]]
+        args = parsing.Array('tuple', method, values=v)
+        method = InstanceElement(self, method)
+        res = Execution(method, args).get_return_types()
+        return res
+
     def get_defined_names(self):
         """
         Get the instance vars of a class. This includes the vars of all
@@ -194,17 +206,6 @@ class Instance(Executable):
         for var in class_names:
             names.append(InstanceElement(self, var))
         return names
-
-    def get_descriptor_return(self, obj):
-        """ Throws an error if there's no method. """
-        method = self.get_subscope_by_name('__get__')
-        # Arguments in __set__ descriptors are obj, class.
-        # `method` is the new parent of the array, don't know if that's good.
-        args = parsing.Array('tuple', method, values=[[obj], [obj.base]])
-        method = InstanceElement(self, method)
-        res = Execution(method, args).get_return_types()
-
-        return res
 
     def __getattr__(self, name):
         if name == 'get_index_types':
@@ -222,7 +223,8 @@ class Instance(Executable):
 
 class InstanceElement(object):
     def __init__(self, instance, var):
-        super(InstanceElement, self).__init__()
+        if isinstance(var, parsing.Function):
+            var = Function(var)
         self.instance = instance
         self.var = var
 
@@ -230,8 +232,6 @@ class InstanceElement(object):
     @memoize_default()
     def parent(self):
         par = self.var.parent
-        if isinstance(par, parsing.Function):
-            par = Function(par)
         if not isinstance(par, parsing.Module):
             par = InstanceElement(self.instance, par)
         return par
@@ -243,6 +243,13 @@ class InstanceElement(object):
     def get_parent_until(self, *classes):
         scope = self.var.get_parent_until(*classes)
         return InstanceElement(self.instance, scope)
+
+    def get_decorated_func(self):
+        """ Needed because the InstanceElement should not be stripped """
+        func = self.var.get_decorated_func()
+        if func == self.var:
+            return self
+        return func
 
     def get_assignment_calls(self):
         # Copy and modify the array.
@@ -293,6 +300,7 @@ class Class(object):
 
         result = self.base.get_defined_names()
         super_result = []
+        # TODO mro!
         for cls in self.get_super_classes():
             # Get the inherited names.
             for i in cls.get_defined_names():
@@ -365,12 +373,25 @@ class Function(object):
                 debug.dbg('decorator end', f)
         if f != self.base_func and isinstance(f, parsing.Function):
             f = Function(f)
+        if f == None:
+            raise DecoratorNotFound('Accessed returns in function')
         return f
 
-    def __getattr__(self, name):
+    def get_decorated_func(self):
         if self.decorated_func == None:
-            raise DecoratorNotFound('Accessed name %s in function' % name)
-        return getattr(self.decorated_func, name)
+            raise DecoratorNotFound('Accessed returns in function')
+        if self.decorated_func == self.base_func:
+            return self
+        return self.decorated_func
+
+    def __getattr__(self, name):
+        if name in ['get_defined_names', 'returns', 'params', 'statements',
+                    'subscopes', 'imports', 'name', 'is_generator',
+                    'get_parent_until']:
+            return getattr(self.decorated_func, name)
+        if name not in ['start_pos', 'end_pos', 'parent']:
+            raise AttributeError('Accessed name "%s" in function.' % name)
+        return getattr(self.base_func, name)
 
     def __repr__(self):
         dec = ''
@@ -409,7 +430,7 @@ class Execution(Executable):
                 try:
                     # If it is an instance, we try to execute the __call__().
                     call_method = self.base.get_subscope_by_name('__call__')
-                except (AttributeError, KeyError, DecoratorNotFound):
+                except (AttributeError, KeyError):
                     debug.warning("no execution possible", self.base)
                 else:
                     debug.dbg('__call__', call_method, self.base)
@@ -427,7 +448,8 @@ class Execution(Executable):
         return imports.strip_imports(stmts)
 
     def _get_function_returns(self, evaluate_generator):
-        func = self.base
+        """ A normal Function execution """
+        func = self.base.get_decorated_func()
         if func.is_generator and not evaluate_generator:
             return [Generator(func, self.var_args)]
         else:
@@ -811,6 +833,7 @@ def get_names_for_scope(scope, position=None, star_search=True,
                 or isinstance(scope, parsing.Flow)
                 or scope != start_scope and isinstance(scope, InstanceElement)
                     and isinstance(scope.var, parsing.Class)):
+
             try:
                 yield scope, get_defined_names_for_position(scope, position,
                                                                 start_scope)
@@ -862,8 +885,13 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     r = Class(r)
                 elif isinstance(r, parsing.Function):
                     r = Function(r)
+                if isinstance(r, Function) or isinstance(r, InstanceElement)\
+                        and isinstance(r.var, Function):
+                    try:
+                        r = r.get_decorated_func()
+                    except DecoratorNotFound:
+                        continue
                 res_new.append(r)
-        print scope
         debug.dbg(a+'sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
 
@@ -935,7 +963,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
 
     def descriptor_check(result):
         res_new = []
-        print 'descc', scope, result, name_str
+        #print 'descc', scope, result, name_str
         for r in result:
             if isinstance(scope, (Instance)) \
                                 and hasattr(r, 'get_descriptor_return'):

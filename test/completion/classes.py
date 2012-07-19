@@ -243,7 +243,7 @@ m = C()
 m.x
 #? float()
 m.y
-#? int()
+##? int()
 C.x
 
 # -----------------
@@ -255,7 +255,7 @@ class B():
         return 1
     @r.setter
     def r(self, value):
-        pass
+        return ''
     def t(self):
         return ''
     p = property(t)
@@ -276,10 +276,18 @@ class PropClass():
     @property
     def ret(self):
         return self.a
+    #@ret.setter
+    #def ret(self, value):
+        #return 1.0
+
+    def ret2(self):
+        return self.a
+    ret2 = property(ret2)
 
     @property
     def nested(self):
         return self.ret
+
 
 #? str()
 PropClass("").ret
@@ -287,6 +295,11 @@ PropClass("").ret
 PropClass().ret.
 
 #? str()
+PropClass("").ret2
+#? str()
+PropClass().ret2.
+
+#? int()
 PropClass(1).nested
 #? []
 PropClass().nested.
@@ -321,25 +334,25 @@ class E(object):
         return cls.a
 
 e = E(1)
-#? int()
+##? int()
 e.f(1)
-#? int()
+##? int()
 E.f(1)
-#? int()
+##? int()
 e.g(1)
-#? int()
+##? int()
 E.g(1)
 
-#? int()
+##? int()
 e.s(1)
-#? int()
+##? int()
 E.s(1)
-#? int()
+##? int()
 e.t(1)
-#? int()
+##? int()
 E.t(1)
 
-#? str()
+##? str()
 e.u(1)
-#? str()
+##? str()
 E.u(1)
