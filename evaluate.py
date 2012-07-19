@@ -335,7 +335,7 @@ class Function(object):
 
     @property
     @memoize_default()
-    def decorated_func(self):
+    def _decorated_func(self):
         """
         Returns the function, that is to be executed in the end.
         This is also the places where the decorators are processed.
@@ -378,25 +378,25 @@ class Function(object):
         return f
 
     def get_decorated_func(self):
-        if self.decorated_func == None:
+        if self._decorated_func == None:
             raise DecoratorNotFound('Accessed returns in function')
-        if self.decorated_func == self.base_func:
+        if self._decorated_func == self.base_func:
             return self
-        return self.decorated_func
+        return self._decorated_func
 
     def __getattr__(self, name):
         if name in ['get_defined_names', 'returns', 'params', 'statements',
                     'subscopes', 'imports', 'name', 'is_generator',
                     'get_parent_until']:
-            return getattr(self.decorated_func, name)
+            return getattr(self._decorated_func, name)
         if name not in ['start_pos', 'end_pos', 'parent']:
             raise AttributeError('Accessed name "%s" in function.' % name)
         return getattr(self.base_func, name)
 
     def __repr__(self):
         dec = ''
-        if self.decorated_func != self.base_func:
-            dec = " is " + repr(self.decorated_func)
+        if self._decorated_func != self.base_func:
+            dec = " is " + repr(self._decorated_func)
         return "<e%s of %s%s>" % (self.__class__.__name__, self.base_func, dec)
 
 
@@ -435,8 +435,6 @@ class Execution(Executable):
                 else:
                     debug.dbg('__call__', call_method, self.base)
                     base = self.base
-                    if isinstance(self.base, Function):
-                        base = self.base.decorated_func
                     call_method = InstanceElement(base, call_method)
                     exe = Execution(call_method, self.var_args)
                     stmts = exe.get_return_types()
@@ -805,10 +803,8 @@ def get_defined_names_for_position(obj, position=None, start_scope=None):
     names = obj.get_defined_names()
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    if not position or isinstance(obj, Instance) or isinstance(obj, Function) \
-                            and isinstance(obj.decorated_func, Instance) \
-                or start_scope != obj and isinstance(start_scope,
-                                            (parsing.Function, Execution)):
+    if not position or isinstance(obj, Instance) or start_scope != obj \
+                    and isinstance(start_scope, (parsing.Function, Execution)):
         return names
     names_new = []
     for n in names:
@@ -1186,8 +1182,7 @@ def follow_path(path, scope, position=None):
             debug.warning('strange function call with {}', current, scope)
     else:
         # The function must not be decorated with something else.
-        if isinstance(scope, Function) and \
-                            isinstance(scope.decorated_func, Function):
+        if isinstance(scope, Function):
             # TODO Check default function methods and return them.
             result = []
         else:
