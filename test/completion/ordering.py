@@ -57,7 +57,7 @@ a
 b
 
 # -----------------
-# function stuff
+# function
 # -----------------
 def a(a=3):
     #? int()
@@ -71,7 +71,7 @@ a(2)
 #? []
 a(2).func
 # -----------------
-# class stuff
+# class
 # -----------------
 class A(object):
     a = ""
@@ -121,8 +121,18 @@ a.real
 #? list() str() int()
 a.a
 
+a = 3
+class a():
+    def __init__(self, a):
+        self.a = a
+
+#? float()
+a(1.0).a
+#? 
+a().a
+
 # -----------------
-# class stuff
+# imports
 # -----------------
 
 math = 3
