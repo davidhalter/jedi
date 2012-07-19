@@ -373,24 +373,16 @@ class Function(object):
                 debug.dbg('decorator end', f)
         if f != self.base_func and isinstance(f, parsing.Function):
             f = Function(f)
-        if f == None:
-            raise DecoratorNotFound('Accessed returns in function')
         return f
 
     def get_decorated_func(self):
         if self._decorated_func == None:
-            raise DecoratorNotFound('Accessed returns in function')
+            raise DecoratorNotFound()
         if self._decorated_func == self.base_func:
             return self
         return self._decorated_func
 
     def __getattr__(self, name):
-        if name in ['get_defined_names', 'returns', 'params', 'statements',
-                    'subscopes', 'imports', 'name', 'is_generator',
-                    'get_parent_until']:
-            return getattr(self._decorated_func, name)
-        if name not in ['start_pos', 'end_pos', 'parent']:
-            raise AttributeError('Accessed name "%s" in function.' % name)
         return getattr(self.base_func, name)
 
     def __repr__(self):
@@ -936,12 +928,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):
-                try:
-                    p = name.parent.parent if name.parent else None
-                except DecoratorNotFound:
-                    debug.warning('catched DecoratorNotFound: %s in %s' \
-                                                            % (name, scope))
-                    continue
+                p = name.parent.parent if name.parent else None
                 if name_str == name.get_code() and p not in break_scopes:
                     result += handle_non_arrays(name)
                     # for comparison we need the raw class
