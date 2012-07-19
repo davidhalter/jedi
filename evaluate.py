@@ -164,7 +164,7 @@ class Instance(Executable):
             self_name = self.get_func_self_name(sub)
             if self_name:
                 # Check the __init__ function.
-                if self.var_args and sub.name.get_code() == '__init__':
+                if sub.name.get_code() == '__init__':
                     sub = self.get_init_execution(sub)
                 for n in sub.get_set_vars():
                     # Only names with the selfname are being added.
@@ -232,7 +232,7 @@ class InstanceElement(object):
     @memoize_default()
     def parent(self):
         par = self.var.parent
-        if not isinstance(par, parsing.Module):
+        if not isinstance(par, (parsing.Module, Class)):
             par = InstanceElement(self.instance, par)
         return par
 
@@ -535,8 +535,14 @@ class Execution(Executable):
                 if value:
                     values = [value]
                 else:
-                    # No value: return the default values.
-                    values = assignments
+                    if param.assignment_details:
+                        # No value: return the default values.
+                        values = assignments
+                    else:
+                        # If there is no assignment detail, that means there is
+                        # no assignment, just the result. Therefore nothing has
+                        # to be returned.
+                        values = []
 
             # Just ignore all the params that are without a key, after one
             # keyword argument was set.
@@ -929,8 +935,12 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):
                 p = name.parent.parent if name.parent else None
+                if isinstance(p, InstanceElement) \
+                            and isinstance(p.var, parsing.Class):
+                    p = p.var
                 if name_str == name.get_code() and p not in break_scopes:
                     result += handle_non_arrays(name)
+                    #print result, p
                     # for comparison we need the raw class
                     s = scope.base if isinstance(scope, Class) else scope
                     # this means that a definition was found and is not e.g.

@@ -276,9 +276,10 @@ class PropClass():
     @property
     def ret(self):
         return self.a
-    #@ret.setter
-    #def ret(self, value):
-        #return 1.0
+
+    @ret.setter
+    def ret(self, value):
+        return 1.0
 
     def ret2(self):
         return self.a
@@ -296,8 +297,8 @@ PropClass().ret.
 
 #? str()
 PropClass("").ret2
-#? str()
-PropClass().ret2.
+#? 
+PropClass().ret2
 
 #? int()
 PropClass(1).nested
