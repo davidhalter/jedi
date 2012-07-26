@@ -15,20 +15,34 @@ endif
 " ------------------------------------------------------------------------
 
 function! jedi#Complete(findstart, base)
-    if a:findstart == 1
-        return col('.')
-    else
 python << PYTHONEOF
 if 1:
-        # TODO change the finstart column, to switch cases, if they are not right.
-        row, column = vim.current.window.cursor
+    row, column = vim.current.window.cursor
+    print 
+    if vim.eval('a:findstart') == '1':
+        count = 0
+        for char in reversed(vim.current.line[:column-1]):
+            if not re.match('[\w\d]', char):
+                break
+            count += 1
+        vim.command('return %i' % (column - 1 - count))
+    else:
         buf_path = vim.current.buffer.name
-        source = '\n'.join(vim.current.buffer)
+        base = vim.eval('a:base')
+        source = ''
+        for i, line in enumerate(vim.current.buffer):
+            source += line
+            # enter this path again, otherwise source would be incomplete
+            if i == row - 1:
+                source += base
+            source += '\n'
+        # here again, the hacks, because jedi has a different interface than vim
+        column += len(base)
         try:
             completions = functions.complete(source, row, column, buf_path)
             out = []
             for c in completions:
-                d = dict(word=c.complete,
+                d = dict(word=str(c),
                          abbr=str(c),
                          # stuff directly behind the completion
                          # TODO change it so that ' are allowed (not used now, because of repr)
@@ -97,6 +111,7 @@ from os.path import dirname
 sys.path.insert(0, dirname(dirname(vim.eval('s:current_file'))))
 
 import traceback  # for exception output
+import re
 
 import functions
 import evaluate
