@@ -31,10 +31,11 @@ if 1:
         base = vim.eval('a:base')
         source = ''
         for i, line in enumerate(vim.current.buffer):
-            source += line
             # enter this path again, otherwise source would be incomplete
             if i == row - 1:
-                source += base
+                source += line[:column] + base + line[column:]
+            else:
+                source += line
             source += '\n'
         # here again, the hacks, because jedi has a different interface than vim
         column += len(base)
