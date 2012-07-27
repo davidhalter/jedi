@@ -21,11 +21,11 @@ if 1:
     print 
     if vim.eval('a:findstart') == '1':
         count = 0
-        for char in reversed(vim.current.line[:column-1]):
+        for char in reversed(vim.current.line[:column]):
             if not re.match('[\w\d]', char):
                 break
             count += 1
-        vim.command('return %i' % (column - 1 - count))
+        vim.command('return %i' % (column - count))
     else:
         buf_path = vim.current.buffer.name
         base = vim.eval('a:base')
