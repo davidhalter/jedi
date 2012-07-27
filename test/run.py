@@ -7,6 +7,7 @@ import traceback
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
 sys.path.append('.')
 import functions
+import evaluate
 from _compatibility import unicode, BytesIO
 
 only_line = int(sys.argv[2]) if len(sys.argv) > 2 else None
@@ -77,6 +78,56 @@ def run_definition_test(correct, source, line_nr, line, correct_start, path):
     return 0
 
 
+def run_goto_test(correct, source, line_nr, line, path):
+    """
+    Runs tests for gotos.
+    Tests look like this:
+    >>> abc = 1
+    >>> #! ['abc=1']
+    >>> abc
+
+    Additionally it is possible to add a number which describes to position of
+    the test (otherwise it's just end of line.
+    >>> #! 2 ['abc=1']
+    >>> abc
+
+    For the tests the important things in the end are the positions.
+
+    Return if the test was a fail or not, with 1 for fail and 0 for success.
+    """
+    r = re.match('^(\d+)\s*(.*)$', correct)
+    if r:
+        index = int(r.group(1))
+        correct = r.group(2)
+    else:
+        index = len(line)
+    try:
+        result = functions.goto(source, line_nr, index, path)
+    except Exception:
+        print('test @%s: %s' % (line_nr - 1, line))
+        print(traceback.format_exc())
+        return 1
+    else:
+        lst = []
+        for r in result:
+            if isinstance(r, evaluate.InstanceElement):
+                r = r.var
+            if isinstance(r, (evaluate.Class, evaluate.Instance)):
+                r = 'class ' + str(r.name)
+            elif isinstance(r, (evaluate.Function, evaluate.parsing.Function)):
+                r = 'def ' + str(r.name)
+            else:
+                r = r.get_code().replace('\n', '')
+            lst.append(r)
+        comp_str = str(sorted(lst))
+        if comp_str != correct:
+            print('Solution @%s not right, received %s, wanted %s'\
+                        % (line_nr - 1, comp_str, correct))
+            print result
+            return 1
+    return 0
+
+
 def run_test(source, f_name):
     """
     This is the completion test for some cases. The tests are not unit test
@@ -102,7 +153,9 @@ def run_test(source, f_name):
             # if a list is wanted, use the completion test, otherwise the
             # get_definition test
             path = completion_test_dir + os.path.sep + f_name
-            if correct.startswith('['):
+            if test_type == '!':
+                fails += run_goto_test(correct, source, line_nr, line, path)
+            elif correct.startswith('['):
                 fails += run_completion_test(correct, source, line_nr, line,
                                                                         path)
             else:
@@ -112,8 +165,10 @@ def run_test(source, f_name):
             tests += 1
         else:
             try:
-                r = re.search(r'(?:^|(?<=\s))#\?\s*([^\n]+)', line)
-                correct = r.group(1)
+                r = re.search(r'(?:^|(?<=\s))#([?!])\s*([^\n]+)', line)
+                # test_type is ? for completion and ! for goto
+                test_type = r.group(1)
+                correct = r.group(2)
                 start = r.start()
             except AttributeError:
                 correct = None

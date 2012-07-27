@@ -33,6 +33,7 @@ import imports
 import helpers
 
 memoize_caches = []
+statement_path = []
 
 
 class DecoratorNotFound(LookupError):
@@ -69,8 +70,14 @@ class MultiLevelAttributeError(Exception):
 
 
 def clear_caches():
+    global memoize_caches
+    global statement_path
+
     for m in memoize_caches:
         m.clear()
+
+    memoize_caches = []
+    statement_path = []
 
     follow_statement.reset()
 
@@ -1038,6 +1045,8 @@ def follow_statement(stmt, seek_name=None):
     :param stmt: contains a statement
     :param scope: contains a scope. If not given, takes the parent of stmt.
     """
+    statement_path.append(stmt)  # important to know for the goto function
+
     debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))
     call_list = stmt.get_assignment_calls()
     debug.dbg('calls: %s' % call_list)
@@ -1086,10 +1095,10 @@ def follow_call_list(call_list):
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, str):
-                        # Ternary operators.
                         #if str(call.name) == 'for':  <--- list comprehensions
                         #    print '\n\ndini mueter'
                         if str(call.name) == 'if':
+                            # Ternary operators.
                             while True:
                                 call = next(calls_iterator)
                                 try:

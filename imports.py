@@ -132,6 +132,7 @@ class ImportPath(object):
             f = builtin.Parser(name=path)
 
         return f.parser.top, rest
+ImportPath2 = ImportPath
 
 def strip_imports(scopes):
     """
@@ -141,6 +142,8 @@ def strip_imports(scopes):
     result = []
     for s in scopes:
         if isinstance(s, parsing.Import):
+            # this is something like a statement following.
+            evaluate.statement_path.append(s)
             try:
                 result += ImportPath(s).follow()
             except ModuleNotFound:

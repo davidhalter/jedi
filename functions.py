@@ -7,16 +7,10 @@ import modules
 import debug
 import imports
 
-__all__ = ['complete', 'get_completion_parts', 'get_definitions',
-            'set_debug_function']
-
 
 class NotFoundError(Exception):
-    """ A custom error to avoid catching the wrong errors """
-    def __init__(self, scope, path_tuple, message=None):
-        super(NotFoundError, self).__init__(message)
-        self.scope = scope
-        self.path_tuple = path_tuple
+    """ A custom error to avoid catching the wrong exceptions """
+    pass
 
 
 class Completion(object):
@@ -175,14 +169,14 @@ def prepare_goto(source, position, source_path, module, goto_path,
 
     user_stmt = module.parser.user_stmt
     if isinstance(user_stmt, parsing.Import):
-        scopes = [imports.ImportPath(user_stmt, is_like_search)]
+        scopes = [imports.ImportPath2(user_stmt, is_like_search)]
     else:
         # just parse one statement, take it and evaluate it
         r = parsing.PyFuzzyParser(goto_path, source_path)
         try:
             stmt = r.top.statements[0]
         except IndexError:
-            raise NotFoundError(scope, goto_path)
+            raise NotFoundError()
         else:
             stmt.start_pos = position
             stmt.parent = scope
@@ -215,6 +209,36 @@ def get_definitions(source, line, column, source_path):
     scopes = prepare_goto(source, pos, source_path, f, goto_path)
     _clear_caches()
     return [Definition(s) for s in set(scopes)]
+
+
+def goto(source, line, column, source_path):
+    pos = (line, column)
+    f = modules.ModuleWithCursor(source_path, source=source, position=pos)
+
+    goto_path = f.get_path_under_cursor()
+    goto_path, dot, search_name = get_completion_parts(goto_path)
+
+    # define goto path the right way
+    if not dot:
+        goto_path = search_name
+        search_name = None
+
+    scopes = prepare_goto(source, pos, source_path, f, goto_path)
+    if not dot:
+        try:
+            definitions = [evaluate.statement_path[1]]
+        except IndexError:
+            definitions = scopes
+    else:
+        names = []
+        #print 's', scopes
+        for s in scopes:
+            names += s.get_defined_names()
+        definitions = [n.parent for n in names if n.names[-1] == search_name]
+    #print evaluate.statement_path
+    #print scopes, definitions
+    _clear_caches()
+    return definitions
 
 
 def set_debug_function(func_cb):
