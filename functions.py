@@ -138,21 +138,18 @@ def complete(source, line, column, source_path):
     :return: list of Completion objects.
     :rtype: list
     """
+    pos = (line, column)
+    f = modules.ModuleWithCursor(source_path, source=source, position=pos)
+    path = f.get_path_until_cursor()
+    path, dot, like = get_completion_parts(path)
+
     try:
-        scopes, path, dot, like = prepare_goto(source, (line, column),
-                                                source_path, True)
+        scopes = prepare_goto(source, pos, source_path, f, path, True)
     except NotFoundError:
-        # normally this would be used like this: `NotFoundError as exc`, but
-        # this guarantues backwards compatibility with Python2.5.
-        exc = sys.exc_info()[1]
-        path, dot, like = exc.path_tuple
-        scope_generator = evaluate.get_names_for_scope(exc.scope)
+        scope_generator = evaluate.get_names_for_scope(f.parser.user_scope)
         completions = []
         for dummy, name_list in scope_generator:
             completions += name_list
-        #for c in completions:
-        #    if isinstance(, parsing.Function):
-        #        print c.parent
     else:
         completions = []
         debug.dbg('possible scopes', scopes)
@@ -171,41 +168,26 @@ def complete(source, line, column, source_path):
     return [Completion(c, needs_dot, len(like)) for c in set(completions)]
 
 
-def prepare_goto(source, position, source_path, is_like_search):
-    f = modules.ModuleWithCursor(source_path, source=source, position=position)
-    scope = f.parser.user_scope
+def prepare_goto(source, position, source_path, module, goto_path,
+                                                        is_like_search=False):
+    scope = module.parser.user_scope
+    debug.dbg('start: %s in %s' % (goto_path, scope))
 
-    if is_like_search:
-        path = f.get_path_until_cursor()
-        path, dot, like = get_completion_parts(path)
-    else:
-        path = f.get_path_under_cursor()
-
-    debug.dbg('start: %s in %s' % (path, scope))
-
-    user_stmt = f.parser.user_stmt
+    user_stmt = module.parser.user_stmt
     if isinstance(user_stmt, parsing.Import):
         scopes = [imports.ImportPath(user_stmt, is_like_search)]
     else:
         # just parse one statement, take it and evaluate it
-        r = parsing.PyFuzzyParser(path, source_path)
+        r = parsing.PyFuzzyParser(goto_path, source_path)
         try:
             stmt = r.top.statements[0]
         except IndexError:
-            if is_like_search:
-                path_tuple = path, dot, like
-            else:
-                path_tuple = ()
-            raise NotFoundError(scope, path_tuple)
+            raise NotFoundError(scope, goto_path)
         else:
             stmt.start_pos = position
             stmt.parent = scope
             scopes = evaluate.follow_statement(stmt)
-
-    if is_like_search:
-        return scopes, path, dot, like
-    else:
-        return scopes
+    return scopes
 
 
 def get_definitions(source, line, column, source_path):
@@ -226,7 +208,11 @@ def get_definitions(source, line, column, source_path):
     :return: list of Definition objects, which are basically scopes.
     :rtype: list
     """
-    scopes = prepare_goto(source, (line, column), source_path, False)
+    pos = (line, column)
+    f = modules.ModuleWithCursor(source_path, source=source, position=pos)
+    goto_path = f.get_path_under_cursor()
+
+    scopes = prepare_goto(source, pos, source_path, f, goto_path)
     _clear_caches()
     return [Definition(s) for s in set(scopes)]
 
