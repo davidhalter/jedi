@@ -99,7 +99,10 @@ if 1:
 
             d = definitions[0]
             if d.module_path != vim.current.buffer.name:
-                vim.command('edit ' + d.module_path)
+                if vim.eval('g:jedi#use_tabs_not_buffers') == '1':
+                    vim.command('call jedi#tabnew("%s")' % d.module_path)
+                else:
+                    vim.command('edit ' + d.module_path)
             vim.current.window.cursor = d.line_nr, d.column
         else:
             # multiple solutions
@@ -109,8 +112,25 @@ if 1:
 PYTHONEOF
 endfunction
 
-function! jedi#tab()
-    
+function! jedi#tabnew(path)
+python << PYTHONEOF
+if 1:
+    path = vim.eval('a:path')
+    for tab_nr in range(int(vim.eval("tabpagenr('$')"))):
+        for buf_nr in vim.eval("tabpagebuflist(%i + 1)" % tab_nr):
+            buf_nr = int(buf_nr) - 1
+            buf_path = vim.buffers[buf_nr].name
+            if buf_path == path:
+                # tab exists, just switch to that tab
+                vim.command('tabfirst | tabnext %i' % (tab_nr + 1))
+                break
+        else:
+            continue
+        break
+    else:
+        # tab doesn't exist, add a new one.
+        vim.command('tabnew %s' % path)
+PYTHONEOF
 endfunction
 
 " ------------------------------------------------------------------------
