@@ -93,6 +93,11 @@ if 1:
         if not definitions:
             echo_highlight("Couldn't find any definitions for this.")
         elif len(definitions) == 1:
+            # just add some mark to add the current position to the jumplist.
+            # this is ugly, because it overrides the mark for '`', so if anyone
+            # has a better idea, let me know.
+            vim.command('normal! m`')
+
             d = definitions[0]
             if d.module_path != vim.current.buffer.name:
                 vim.command('edit ' + d.module_path)
@@ -113,7 +118,7 @@ endfunction
 " Initialization of jedi-vim
 " ------------------------------------------------------------------------
 
-" default for jedi-vim
+" defaults for jedi-vim
 let g:jedi#use_tabs_not_buffers = 0
 
 let s:current_file=expand("<sfile>")
