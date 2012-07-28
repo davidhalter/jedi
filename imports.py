@@ -134,6 +134,7 @@ class ImportPath(object):
         return f.parser.top, rest
 ImportPath2 = ImportPath
 
+
 def strip_imports(scopes):
     """
     Here we strip the imports - they don't get resolved necessarily.
@@ -151,6 +152,7 @@ def strip_imports(scopes):
         else:
             result.append(s)
     return result
+
 
 def remove_star_imports(scope):
     """

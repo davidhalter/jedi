@@ -75,33 +75,46 @@ endfunction
 function! jedi#goto()
 python << PYTHONEOF
 if 1:
+    def echo_highlight(msg):
+        vim.command('echohl WarningMsg | echo "%s" | echohl None' % msg)
+
     row, column = vim.current.window.cursor
     buf_path = vim.current.buffer.name
     source = '\n'.join(vim.current.buffer)
     try:
         definitions = functions.goto(source, row, column, buf_path)
     except functions.NotFoundError:
-        msg = 'There is no useful expression under the cursor'
+        echo_highlight("Couldn't find a place to goto.")
     except Exception:
         # print to stdout, will be in :messages
+        echo_highlight("Some different eror, this shouldn't happen.")
         print(traceback.format_exc())
-        msg = "Some different eror, this shouldn't happen"
     else:
-        msg = ', '.join(sorted(str(d) for d in definitions))
-        if not msg:
-            msg = "No definitions found!"
-    vim.command('''echomsg "%s"''' % msg)
+        if not definitions:
+            echo_highlight("Couldn't find any definitions for this.")
+        elif len(definitions) == 1:
+            d = definitions[0]
+            if d.module_path != vim.current.buffer.name:
+                vim.command('edit ' + d.module_path)
+            vim.current.window.cursor = d.line_nr, d.column
+        else:
+            # multiple solutions
+            echo_highlight("Multiple solutions: Not implemented yet.")
 
     #print 'end', strout
 PYTHONEOF
 endfunction
 
+function! jedi#tab()
+    
+endfunction
+
 " ------------------------------------------------------------------------
-" Initialization of Jedi
+" Initialization of jedi-vim
 " ------------------------------------------------------------------------
 
-" defaults for jedi
-let g:use_tabs_not_buffers = 0
+" default for jedi-vim
+let g:jedi#use_tabs_not_buffers = 0
 
 let s:current_file=expand("<sfile>")
 
