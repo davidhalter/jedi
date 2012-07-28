@@ -98,6 +98,9 @@ class Definition(object):
 
         return str(par.path)
 
+    def in_builtin_module(self):
+        return not self.module_path.endswith('.py')
+
     @property
     def line_nr(self):
         return self.definition.start_pos[0]

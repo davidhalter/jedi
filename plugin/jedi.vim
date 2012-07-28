@@ -98,12 +98,15 @@ if 1:
             vim.command('normal! m`')
 
             d = definitions[0]
-            if d.module_path != vim.current.buffer.name:
-                if vim.eval('g:jedi#use_tabs_not_buffers') == '1':
-                    vim.command('call jedi#tabnew("%s")' % d.module_path)
-                else:
-                    vim.command('edit ' + d.module_path)
-            vim.current.window.cursor = d.line_nr, d.column
+            if d.in_builtin_module():
+                echo_highlight("Builtin modules cannot be displayed.")
+            else:
+                if d.module_path != vim.current.buffer.name:
+                    if vim.eval('g:jedi#use_tabs_not_buffers') == '1':
+                        vim.command('call jedi#tabnew("%s")' % d.module_path)
+                    else:
+                        vim.command('edit ' + d.module_path)
+                vim.current.window.cursor = d.line_nr, d.column
         else:
             # multiple solutions
             echo_highlight("Multiple solutions: Not implemented yet.")
