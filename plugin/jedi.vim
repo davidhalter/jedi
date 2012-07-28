@@ -11,7 +11,7 @@ if !has('python')
 endif
 
 " ------------------------------------------------------------------------
-" Completion
+" completion
 " ------------------------------------------------------------------------
 
 function! jedi#Complete(findstart, base)
@@ -69,17 +69,17 @@ endfunction
 
 
 " ------------------------------------------------------------------------
-" get_definition
+" goto
 " ------------------------------------------------------------------------
-"
-function! jedi#show_definition()
+
+function! jedi#goto()
 python << PYTHONEOF
 if 1:
     row, column = vim.current.window.cursor
     buf_path = vim.current.buffer.name
     source = '\n'.join(vim.current.buffer)
     try:
-        definitions = functions.get_definitions(source, row, column, buf_path)
+        definitions = functions.goto(source, row, column, buf_path)
     except functions.NotFoundError:
         msg = 'There is no useful expression under the cursor'
     except Exception:
@@ -99,6 +99,9 @@ endfunction
 " ------------------------------------------------------------------------
 " Initialization of Jedi
 " ------------------------------------------------------------------------
+
+" defaults for jedi
+let g:use_tabs_not_buffers = 0
 
 let s:current_file=expand("<sfile>")
 
