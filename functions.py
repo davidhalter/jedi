@@ -180,7 +180,7 @@ def prepare_goto(source, position, source_path, module, goto_path,
 
     user_stmt = module.parser.user_stmt
     if isinstance(user_stmt, parsing.Import):
-        scopes = [imports.ImportPath2(user_stmt, is_like_search)]
+        scopes = [imports.ImportPath(user_stmt, is_like_search)]
     else:
         # just parse one statement, take it and evaluate it
         r = parsing.PyFuzzyParser(goto_path, source_path)
@@ -239,13 +239,18 @@ def goto(source, line, column, source_path):
         try:
             definitions = [evaluate.statement_path[1]]
         except IndexError:
-            definitions = scopes
+            definitions = []
+            for s in scopes:
+                if isinstance(s, imports.ImportPath):
+                    definitions += s.follow()
+                else:
+                    definitions.append(s)
     else:
         names = []
         #print 's', scopes
         for s in scopes:
             names += s.get_defined_names()
-        definitions = [n.parent for n in names if n.names[-1] == search_name]
+        definitions = [n for n in names if n.names[-1] == search_name]
     #print evaluate.statement_path
     #print scopes, definitions
     _clear_caches()

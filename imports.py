@@ -132,7 +132,6 @@ class ImportPath(object):
             f = builtin.Parser(name=path)
 
         return f.parser.top, rest
-ImportPath2 = ImportPath
 
 
 def strip_imports(scopes):

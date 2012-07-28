@@ -231,7 +231,7 @@ class Module(Scope):
     The top scope, which is always a module.
     """
     def __init__(self, path, docstr=''):
-        super(Module, self).__init__((0, 0), docstr)
+        super(Module, self).__init__((1, 0), docstr)
         self.path = path
         self.global_vars = []
 
@@ -1253,6 +1253,7 @@ class PyFuzzyParser(object):
         else:
             stmt = stmt_class(string, set_vars, used_funcs, used_vars, \
                                 tok_list, first_pos, self.end_pos)
+            self.check_user_stmt(stmt)
         if is_return:
             # add returns to the scope
             func = self.scope.get_parent_until(Function)

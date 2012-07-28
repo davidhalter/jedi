@@ -18,7 +18,6 @@ function! jedi#complete(findstart, base)
 python << PYTHONEOF
 if 1:
     row, column = vim.current.window.cursor
-    print 
     if vim.eval('a:findstart') == '1':
         count = 0
         for char in reversed(vim.current.line[:column]):
