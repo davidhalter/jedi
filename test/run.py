@@ -110,6 +110,7 @@ def run_goto_test(correct, source, line_nr, line, path):
     else:
         lst = []
         for r in result:
+            r = r.definition
             if isinstance(r, evaluate.InstanceElement):
                 r = r.var
             if isinstance(r, (evaluate.Class, evaluate.Instance)):

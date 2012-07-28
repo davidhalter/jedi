@@ -1,5 +1,4 @@
 import re
-import sys
 
 import parsing
 import evaluate
@@ -64,47 +63,59 @@ class Completion(object):
 
 
 class Definition(object):
-    def __init__(self, scope):
+    def __init__(self, definition):
         """ The definition of a function """
-        self.scope = scope
+        self.definition = definition
 
     def get_name(self):
         try:
-            return self.scope.name
+            # is a func / class
+            return self.definition.name
         except AttributeError:
-            return self.scope.type
+            try:
+                # is an array
+                return self.definition.type
+            except:
+                # is a statement
+                return self.definition.get_code()
 
-    def get_module(self):
-        par = self.scope
+    @property
+    def module_name(self):
+        path = self.module_path
+        try:
+            return path[path.rindex('/') + 1:]
+        except ValueError:
+            return path
+
+    @property
+    def module_path(self):
+        par = self.definition
         while True:
             if par.parent is not None:
                 par = par.parent
             else:
                 break
 
-        path = str(par.path)
-        try:
-            return path[path.rindex('/') + 1:]
-        except ValueError:
-            return path
+        return str(par.path)
 
-    def get_line(self):
-        return self.scope.start_pos[0]
+    @property
+    def line_nr(self):
+        return self.definition.start_pos[0]
 
-    def get_indent(self):
-        return self.scope.indent
+    @property
+    def column(self):
+        return self.definition.start_pos[1]
 
     def __str__(self):
-        module = self.get_module()
-        if module[0] == '/':
-            position = '@%s' % (self.get_line())
+        if self.module_path[0] == '/':
+            position = '@%s' % (self.line_nr)
         else:
             # no path - is a builtin
             position = ''
-        return "%s:%s%s" % (module, self.get_name(), position)
+        return "%s:%s%s" % (self.module_name, self.get_name(), position)
 
     def __repr__(self):
-        return "<%s %s>" % (self.__class__.__name__, self)
+        return "<%s %s>" % (self.__class__.__name__, self.definition)
 
 
 def get_completion_parts(path):
@@ -238,7 +249,7 @@ def goto(source, line, column, source_path):
     #print evaluate.statement_path
     #print scopes, definitions
     _clear_caches()
-    return definitions
+    return [Definition(d) for d in definitions]
 
 
 def set_debug_function(func_cb):
