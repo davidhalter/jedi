@@ -14,7 +14,7 @@ endif
 " completion
 " ------------------------------------------------------------------------
 
-function! jedi#Complete(findstart, base)
+function! jedi#complete(findstart, base)
 python << PYTHONEOF
 if 1:
     row, column = vim.current.window.cursor
