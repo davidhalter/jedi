@@ -7,7 +7,6 @@ import traceback
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
 sys.path.append('.')
 import functions
-import evaluate
 from _compatibility import unicode, BytesIO
 
 only_line = int(sys.argv[2]) if len(sys.argv) > 2 else None
@@ -28,7 +27,7 @@ def run_completion_test(correct, source, line_nr, line, path):
     # difference for testing)
     try:
         completions = functions.complete(source, line_nr, len(line), path)
-    except (Exception, functions.evaluate.MultiLevelAttributeError):
+    except Exception:
         print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())
         return 1
@@ -51,7 +50,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start, path):
         return set(functions.get_definitions(source, line_nr, indent, path))
     try:
         result = defs(line_nr, len(line))
-    except (Exception, functions.evaluate.MultiLevelAttributeError):
+    except Exception:
         print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())
         return 1
