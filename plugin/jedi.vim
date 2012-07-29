@@ -10,6 +10,12 @@ if !has('python')
     finish
 endif
 
+" load plugin only once
+if exists("g:loaded_jedi") || &cp
+    finish
+endif
+let g:loaded_jedi = 1
+
 " ------------------------------------------------------------------------
 " completion
 " ------------------------------------------------------------------------
@@ -109,7 +115,14 @@ if 1:
                 vim.current.window.cursor = d.line_nr, d.column
         else:
             # multiple solutions
-            echo_highlight("Multiple solutions: Not implemented yet.")
+            lst = []
+            for d in definitions:
+                if d.in_builtin_module():
+                    lst.append(dict(text='Builtin ' + d.description))
+                else:
+                    lst.append(dict(filename=d.module_path, lnum=d.line_nr, col=d.column, text=d.description))
+            vim.command('call setqflist(%s)' % str(lst))
+            vim.command('call <sid>add_goto_window()')
 
     #print 'end', strout
 PYTHONEOF
@@ -122,11 +135,16 @@ if 1:
     for tab_nr in range(int(vim.eval("tabpagenr('$')"))):
         for buf_nr in vim.eval("tabpagebuflist(%i + 1)" % tab_nr):
             buf_nr = int(buf_nr) - 1
-            buf_path = vim.buffers[buf_nr].name
-            if buf_path == path:
-                # tab exists, just switch to that tab
-                vim.command('tabfirst | tabnext %i' % (tab_nr + 1))
-                break
+            try:
+                buf_path = vim.buffers[buf_nr].name
+            except IndexError:
+                # just do good old asking for forgiveness. don't know why this happens :-)
+                pass
+            else:
+                if buf_path == path:
+                    # tab exists, just switch to that tab
+                    vim.command('tabfirst | tabnext %i' % (tab_nr + 1))
+                    break
         else:
             continue
         break
@@ -136,6 +154,28 @@ if 1:
 PYTHONEOF
 endfunction
 
+function! s:add_goto_window()
+    set lazyredraw
+    cclose
+    execute 'belowright copen 3'
+    set nolazyredraw
+    if g:jedi#use_tabs_not_buffers == 1
+        map <buffer> <CR> :call jedi#goto_window_on_enter()<CR>
+    endif
+    au WinLeave <buffer> q  " automatically leave, if an option is chosen
+    redraw!
+endfunction
+
+function! jedi#goto_window_on_enter()
+    let l:list = getqflist()
+    let l:data = l:list[line('.') - 1]
+    if l:data.bufnr
+        call jedi#tabnew(bufname(l:data.bufnr))
+        call cursor(l:data.lnum, l:data.col)
+    else
+        echohl WarningMsg | echo "Builtin module cannot be opened." | echohl None
+    endif
+endfunction
 " ------------------------------------------------------------------------
 " Initialization of jedi-vim
 " ------------------------------------------------------------------------

@@ -109,6 +109,24 @@ class Definition(object):
     def column(self):
         return self.definition.start_pos[1]
 
+    @property
+    def description(self):
+        d = self.definition
+        if isinstance(d, evaluate.InstanceElement):
+            d = d.var
+        if isinstance(d, evaluate.parsing.Name):
+            d = d.parent
+
+        if isinstance(d, (evaluate.Class, evaluate.Instance)):
+            d = 'class ' + str(d.name)
+        elif isinstance(d, (evaluate.Function, evaluate.parsing.Function)):
+            d = 'def ' + str(d.name)
+        elif isinstance(d, evaluate.parsing.Module):
+            d = 'module ' + str(d.path)
+        else:
+            d = d.get_code().replace('\n', '')
+        return d
+
     def __str__(self):
         if self.module_path[0] == '/':
             position = '@%s' % (self.line_nr)

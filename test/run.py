@@ -108,24 +108,7 @@ def run_goto_test(correct, source, line_nr, line, path):
         print(traceback.format_exc())
         return 1
     else:
-        lst = []
-        for r in result:
-            r = r.definition
-            if isinstance(r, evaluate.InstanceElement):
-                r = r.var
-            if isinstance(r, evaluate.parsing.Name):
-                r = r.parent
-
-            if isinstance(r, (evaluate.Class, evaluate.Instance)):
-                r = 'class ' + str(r.name)
-            elif isinstance(r, (evaluate.Function, evaluate.parsing.Function)):
-                r = 'def ' + str(r.name)
-            elif isinstance(r, evaluate.parsing.Module):
-                r = 'module ' + str(r.path)
-            else:
-                r = r.get_code().replace('\n', '')
-            lst.append(r)
-        comp_str = str(sorted(lst))
+        comp_str = str(sorted(r.description for r in result))
         if comp_str != correct:
             print('Solution @%s not right, received %s, wanted %s'\
                         % (line_nr - 1, comp_str, correct))
