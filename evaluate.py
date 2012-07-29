@@ -896,7 +896,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     except DecoratorNotFound:
                         continue
                 res_new.append(r)
-        debug.dbg(a+'sfn remove, new: %s, old: %s' % (res_new, result))
+        debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
 
     def filter_name(scope_generator):
@@ -961,7 +961,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             # if there are results, ignore the other scopes
             if result:
                 break
-        debug.dbg(a+'sfn filter "%s" in %s: %s' % (name_str, scope, result))
+        debug.dbg('sfn filter "%s" in %s: %s' % (name_str, scope, result))
         return result
 
     def descriptor_check(result):
@@ -979,7 +979,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             res_new.append(r)
         return res_new
 
-    import random; a = str(random.randint(0,99))
     if search_global:
         scope_generator = get_names_for_scope(scope, position=position)
     else:
@@ -1200,5 +1199,3 @@ def follow_path(path, scope, position=None):
             result = imports.strip_imports(get_scopes_for_name(scope, current,
                                                         position=position))
     return follow_paths(path, result, position=position)
-
-

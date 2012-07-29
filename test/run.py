@@ -27,6 +27,9 @@ def run_completion_test(correct, source, line_nr, line, path):
     # difference for testing)
     try:
         completions = functions.complete(source, line_nr, len(line), path)
+        #import cProfile as profile
+        #profile.run('functions.complete("""%s""", %i, %i, "%s")'
+        #                            % (source, line_nr, len(line), path))
     except Exception:
         print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())

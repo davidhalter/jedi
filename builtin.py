@@ -1,9 +1,10 @@
 import re
 import sys
 import os
-import types
 if sys.hexversion >= 0x03000000:
     import io
+else:
+    import types
 import inspect
 
 import debug
@@ -31,7 +32,7 @@ class CachedModule(object):
                 if not self.path or timestamp == os.path.getmtime(self.path):
                     self._parser = parser
                 else:
-                    raise KeyError
+                    raise KeyError()
             except KeyError:
                 self._load_module()
         return self._parser
@@ -243,7 +244,8 @@ class Parser(CachedModule):
         # class members (functions) properties?
         for name, func in members.items():
             # recursion problem in properties TODO remove
-            if name in ['fget', 'fset', 'fdel']: continue
+            if name in ['fget', 'fset', 'fdel']:
+                continue
             ret = 'pass'
             code += '@property\ndef %s(self):\n' % (name)
             code += parsing.indent_block(get_doc(func) + '%s\n\n' % ret)

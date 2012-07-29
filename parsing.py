@@ -913,7 +913,7 @@ class Name(Simple):
         return self.get_code()
 
     def __eq__(self, other):
-        return self.names == other.names and self.start_pos == other.end_pos 
+        return self.names == other.names and self.start_pos == other.end_pos
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -984,7 +984,6 @@ class PyFuzzyParser(object):
                         self.user_stmt = simple
             else:
                 self.user_stmt = simple
-
 
     def _parsedotname(self, pre_used_token=None):
         """
@@ -1484,8 +1483,8 @@ class PyFuzzyParser(object):
                 # (This is a rather unlikely error message, for normal code,
                 # tokenize seems to be pretty tolerant)
                 self._line_of_tokenize_restart = self.start_pos[0] + 1
-                self._tokenize_start_pos = (0,0)
-                self._tokenize_end_pos = (0,0)
+                self._tokenize_start_pos = (0, 0)
+                self._tokenize_end_pos = (0, 0)
                 debug.warning('indentation error on line %s, ignoring it' %
                                                         (self.start_pos[0]))
                 self.gen = tokenize.generate_tokens(buf.readline)
