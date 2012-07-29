@@ -90,7 +90,9 @@ class Parser(CachedModule):
     @property
     def module(self):
         if not self._module:
-            self.sys_path.insert(0, self.path)
+            if self.path:
+                dir = os.path.dirname(self.path)
+                self.sys_path.insert(0, dir)
 
             temp, sys.path = sys.path, self.sys_path
             # TODO reenable and check (stackoverflow question - pylab builtins)
@@ -99,7 +101,9 @@ class Parser(CachedModule):
 
             self.sys_path, sys.path = sys.path, temp
 
-            self.sys_path.pop(0)
+            if self.path:
+                self.sys_path.pop(0)
+
             self._module = self._content['module']
             #print 'mod', self._content['module']
         return self._module
