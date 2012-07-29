@@ -1,7 +1,6 @@
 from __future__ import with_statement
 import re
 import tokenize
-import os
 
 import parsing
 import builtin
@@ -17,23 +16,15 @@ class Module(builtin.CachedModule):
     :param source: The source code of the file.
     :param path: The module path of the file.
     """
-    module_cache = {}
-
     def __init__(self, path, source):
         super(Module, self).__init__(path=path)
         self.source = source
         self._line_cache = None
 
     def _get_source(self):
-        return self.source
-
-    def _load_module(self):
-        self._parser = parsing.PyFuzzyParser(self.source, self.path)
-        del self.source  # efficiency
-
-        # insert into cache
-        to_cache = (os.path.getmtime(self.path), self._parser)
-        Module.module_cache[self.path] = to_cache
+        s = self.source
+        del self.source  # memory efficiency
+        return s
 
 
 class ModuleWithCursor(Module):
