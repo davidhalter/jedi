@@ -85,28 +85,64 @@ class Parser(CachedModule):
         super(Parser, self).__init__(path=path, name=name)
 
         self.sys_path = sys_path
-        self._content = {}
         self._module = None
 
     @property
     def module(self):
-        if not self._module:
-            if self.path:
-                dir = os.path.dirname(self.path)
-                self.sys_path.insert(0, dir)
+        def possible_python_path(path, offset=0):
+            dot_path = []
+            p = self.path
+            while p not in sys.path[offset:]:
+                p, sep, mod = p.rpartition(os.path.sep)
+                dot_path.append(mod.partition('.')[0])
+            return ".".join(reversed(dot_path))
+
+        def load_module(name, path=None):
+            """ Returns True if it is successful. """
+            if path:
+                self.sys_path.insert(0, path)
 
             temp, sys.path = sys.path, self.sys_path
             # TODO reenable and check (stackoverflow question - pylab builtins)
-            #print 'sypa', sys.path
-            exec_function('import %s as module' % self.name, self._content)
+            self.content = {}
+            try:
+                exec_function('import %s as module' % name, self.content)
+            except SystemError:
+                # this happens e.g. when loading PyQt4.QtCore. Somehow it needs
+                # the full path
+                if not self.path:
+                    raise  # this case is not covered
+                try:
+                    # in the case of PyQt, the module is loaded anyway...
+                    self._module = sys.modules[possible_python_path(path, 1)]
+                    debug.warning('Loaded a module with SystemError.')
+                    entries = True
+                except KeyError:
+                    entries = False
+            else:
+                # entries may not be defined:
+                # http://stackoverflow.com/questions/10182743\
+                #                       /python-import-internals-difference
+                self._module = self.content['module']
+                entries = [e for e in dir(self._module)
+                                                if not e.startswith('__')]
 
             self.sys_path, sys.path = sys.path, temp
-
-            if self.path:
+            if path:
                 self.sys_path.pop(0)
 
-            self._module = self._content['module']
-            #print 'mod', self._content['module']
+            return bool(entries)
+
+        if not self._module:
+            path = self.path
+            if self.path:
+                path = os.path.dirname(self.path)
+
+            if not load_module(self.name, path):
+                if not load_module(possible_python_path(path)):
+                    raise ImportError('Import problems with builtins?')
+
+
         return self._module
 
     def _get_source(self):
@@ -180,16 +216,24 @@ class Parser(CachedModule):
             for n in names:
                 if '__' in n and n not in mixin_funcs:
                     continue
-                # this has a builtin_function_or_method
-                exe = getattr(scope, n)
-                if inspect.isbuiltin(exe) or inspect.ismethoddescriptor(exe):
-                    funcs[n] = exe
-                elif inspect.isclass(exe):
-                    classes[n] = exe
-                elif inspect.ismemberdescriptor(exe):
-                    members[n] = exe
+                try:
+                    # this has a builtin_function_or_method
+                    exe = getattr(scope, n)
+                except AttributeError:
+                    # happens e.g. in properties of
+                    # PyQt4.QtGui.QStyleOptionComboBox.currentText
+                    # -> just set it to None
+                    members[n] = None
                 else:
-                    stmts[n] = exe
+                    if inspect.isbuiltin(exe) \
+                                or inspect.ismethoddescriptor(exe):
+                        funcs[n] = exe
+                    elif inspect.isclass(exe):
+                        classes[n] = exe
+                    elif inspect.ismemberdescriptor(exe):
+                        members[n] = exe
+                    else:
+                        stmts[n] = exe
             return classes, funcs, stmts, members
 
         code = ''
