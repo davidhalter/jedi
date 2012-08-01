@@ -263,9 +263,8 @@ def goto(source, line, column, source_path):
             definitions = []
             for s in scopes:
                 if isinstance(s, imports.ImportPath):
-                    definitions += s.follow()
-                else:
-                    definitions.append(s)
+                    s = s.follow()[0]
+                definitions.append(s)
     else:
         names = []
         #print 's', scopes
