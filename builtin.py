@@ -89,58 +89,37 @@ class Parser(CachedModule):
 
     @property
     def module(self):
-        def possible_python_path(path, offset=0):
-            dot_path = []
-            p = self.path
-            while p not in sys.path[offset:]:
-                p, sep, mod = p.rpartition(os.path.sep)
-                dot_path.append(mod.partition('.')[0])
-            return ".".join(reversed(dot_path))
-
-        def load_module(name, path=None):
-            """ Returns True if it is successful. """
+        def load_module(name, path):
             if path:
                 self.sys_path.insert(0, path)
 
             temp, sys.path = sys.path, self.sys_path
-            # TODO reenable and check (stackoverflow question - pylab builtins)
-            self.content = {}
-            try:
-                exec_function('import %s as module' % name, self.content)
-            except SystemError:
-                # this happens e.g. when loading PyQt4.QtCore. Somehow it needs
-                # the full path
-                if not self.path:
-                    raise  # this case is not covered
-                try:
-                    # in the case of PyQt, the module is loaded anyway...
-                    self._module = sys.modules[possible_python_path(path, 1)]
-                    debug.warning('Loaded a module with SystemError.')
-                    entries = True
-                except KeyError:
-                    entries = False
-            else:
-                # entries may not be defined:
-                # http://stackoverflow.com/questions/10182743\
-                #                       /python-import-internals-difference
-                self._module = self.content['module']
-                entries = [e for e in dir(self._module)
-                                                if not e.startswith('__')]
-
+            content = {}
+            exec_function('import %s as module' % name, content)
+            self._module = content['module']
             self.sys_path, sys.path = sys.path, temp
+
             if path:
                 self.sys_path.pop(0)
 
-            return bool(entries)
-
         if not self._module:
             path = self.path
+            name = self.name
             if self.path:
-                path = os.path.dirname(self.path)
 
-            if not load_module(self.name, path):
-                if not load_module(possible_python_path(path)):
-                    raise ImportError('Import problems with builtins?')
+                dot_path = []
+                p = self.path
+                # search for the builtin with the correct path
+                while p and p not in sys.path:
+                    p, sep, mod = p.rpartition(os.path.sep)
+                    dot_path.append(mod.partition('.')[0])
+                if p:
+                    name = ".".join(reversed(dot_path))
+                    path = p
+                else:
+                    path = os.path.dirname(self.path)
+
+            load_module(name, path)
 
 
         return self._module

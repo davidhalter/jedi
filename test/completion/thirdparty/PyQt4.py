@@ -17,4 +17,3 @@ QtGui.QStyleOptionComboBox().currentText
 
 #? []
 QtGui.QStyleOptionComboBox().currentText.
-
