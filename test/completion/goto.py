@@ -79,6 +79,9 @@ import import_tree
 import import_tree.mod1
 
 #! ['module mod1']
+import import_tree.pkg.mod1
+
+#! ['module mod1']
 from import_tree import mod1
 
 

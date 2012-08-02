@@ -22,7 +22,7 @@ def scope_basic():
     #? []
     import_tree.mod1
 
-def scope_nested():
+def scope_pkg():
     import import_tree.mod1
 
     #? str()
@@ -33,6 +33,24 @@ def scope_nested():
 
     #? int()
     import_tree.mod1.a
+
+def scope_nested():
+    import import_tree.pkg.mod1
+
+    #? str()
+    import_tree.a
+
+    #? list
+    import_tree.pkg.a
+
+    #? ['a', 'pkg']
+    import_tree.
+
+    #? float()
+    import_tree.pkg.mod1.a
+
+    #? ['a', 'pkg']
+    import_tree.
 
 # -----------------
 # std lib modules

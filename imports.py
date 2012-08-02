@@ -18,13 +18,15 @@ class ImportPath(object):
         pass
 
     def __init__(self, import_stmt, is_like_search=False):
-        """ replace """
-        #print import_stmt
+        self.import_stmt = import_stmt
         self.import_path = []
         if import_stmt.from_ns:
             self.import_path += import_stmt.from_ns.names
         if import_stmt.namespace:
-            self.import_path += import_stmt.namespace.names
+            if self.is_nested_import():
+                self.import_path.append(import_stmt.namespace.names[0])
+            else:
+                self.import_path += import_stmt.namespace.names
 
         self.is_like_search = is_like_search
         if is_like_search:
@@ -32,6 +34,27 @@ class ImportPath(object):
             self.import_path.pop()
 
         self.file_path = os.path.dirname(import_stmt.get_parent_until().path)
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self.import_stmt)
+
+    def is_nested_import(self):
+        """
+        This checks for the special case of nested imports, without aliases and
+        from statement:
+        >>> import foo.bar
+        """
+        return not self.import_stmt.alias and not self.import_stmt.from_ns \
+                and len(self.import_stmt.namespace.names) > 1
+
+    def get_nested_import(self, parent):
+        i = self.import_stmt
+        zero = (1,0)
+        n = parsing.Name(i.namespace.names[1:], zero, zero)
+        new = parsing.Import(zero, zero, n)
+        new.parent = parent
+        debug.dbg('Generated a nested import: %s' % new)
+        return new
 
     def get_defined_names(self):
         names = []
@@ -43,10 +66,12 @@ class ImportPath(object):
                 for s, n in evaluate.get_names_for_scope(scope,
                                                     include_builtin=False):
                     names += n
-                if isinstance(scope, parsing.Module) \
-                        and scope.path.endswith('__init__.py'):
-                    names += \
-                        self.get_module_names([os.path.dirname(scope.path)])
+                    #print s, n, n[0].parent
+                #if isinstance(scope, parsing.Module) \
+                #        and scope.path.endswith('__init__.py'):
+                #    names += \
+                #        self.get_module_names([os.path.dirname(scope.path)])
+                #    print names
         return names
 
     def get_module_names(self, search_path=None):
@@ -72,6 +97,9 @@ class ImportPath(object):
             for scope in scopes:
                 new += remove_star_imports(scope)
             scopes += new
+
+            if self.is_nested_import():
+                scopes.append(self.get_nested_import(scope))
         else:
             scopes = [ImportPath.GlobalNamespace]
         debug.dbg('after import', scopes)

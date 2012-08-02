@@ -499,7 +499,14 @@ class Import(Simple):
             return []
         if self.star:
             return [self]
-        return [self.alias] if self.alias else [self.namespace]
+        if self.alias:
+            return [self.alias]
+        if len(self.namespace) > 1:
+            o = self.namespace
+            n = Name([o.names[0]], o.start_pos, o.end_pos, parent=o.parent)
+            return [n]
+        else:
+            return [self.namespace]
 
 
 class Statement(Simple):
@@ -901,9 +908,10 @@ class Name(Simple):
     So a name like "module.class.function"
     would result in an array of [module, class, function]
     """
-    def __init__(self, names, start_pos, end_pos):
+    def __init__(self, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(start_pos, end_pos)
         self.names = tuple(NamePart(n) for n in names)
+        self.parent = parent
 
     def get_code(self):
         """ Returns the names in a full string format """
