@@ -68,12 +68,6 @@ class ImportPath(object):
                 for s, n in evaluate.get_names_for_scope(scope,
                                                     include_builtin=False):
                     names += n
-                    #print s, n, n[0].parent
-                #if isinstance(scope, parsing.Module) \
-                #        and scope.path.endswith('__init__.py'):
-                #    names += \
-                #        self.get_module_names([os.path.dirname(scope.path)])
-                #    print names
         return names
 
     def get_module_names(self, search_path=None):
