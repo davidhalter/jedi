@@ -2,8 +2,9 @@ import pylab
 pylab.
 
 # two gotos
-#! ['module /usr/lib/python2.7/dist-packages/numpy/__init__.py']
+#! ['module numpy']
 import numpy
+
 #! ['module random']
 import numpy.random
 

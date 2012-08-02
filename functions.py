@@ -5,6 +5,7 @@ import evaluate
 import modules
 import debug
 import imports
+import os
 
 
 class NotFoundError(Exception):
@@ -122,7 +123,10 @@ class Definition(object):
         elif isinstance(d, (evaluate.Function, evaluate.parsing.Function)):
             d = 'def ' + str(d.name)
         elif isinstance(d, evaluate.parsing.Module):
-            d = 'module ' + str(d.path)
+            p = str(d.path)
+            # only show module name
+            p = re.sub(r'^.*?([\w\d]+)(/__init__)?.py$', r'\1', p)
+            d = 'module ' + p
         else:
             d = d.get_code().replace('\n', '')
         return d

@@ -1,4 +1,40 @@
 # -----------------
+# own structure
+# -----------------
+
+# do separate scopes
+def scope_basic():
+    from import_tree import mod1
+
+    #? int()
+    mod1.a
+
+    #? []
+    import_tree.a
+
+    #? []
+    import_tree.mod1
+
+    import import_tree
+    #? str()
+    import_tree.a
+
+    #? []
+    import_tree.mod1
+
+def scope_nested():
+    import import_tree.mod1
+
+    #? str()
+    import_tree.a
+
+    #? ['mod1']
+    import_tree.mod1
+
+    #? int()
+    import_tree.mod1.a
+
+# -----------------
 # std lib modules
 # -----------------
 import tokenize

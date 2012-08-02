@@ -67,3 +67,18 @@ def c():
 c
 #! 0 ['def c']
 c()
+
+# -----------------
+# imports
+# -----------------
+
+#! ['module import_tree']
+import import_tree
+
+#! ['module mod1']
+import import_tree.mod1
+
+#! ['module mod1']
+from import_tree import mod1
+
+
