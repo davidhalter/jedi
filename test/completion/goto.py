@@ -74,14 +74,32 @@ c()
 
 #! ['module import_tree']
 import import_tree
+#! ['a=""']
+import_tree.a
 
 #! ['module mod1']
 import import_tree.mod1
+#! ['a=1']
+import_tree.mod1.a
+
+#! ['module pkg']
+import import_tree.pkg
+#! ['a=list']
+import_tree.pkg.a
 
 #! ['module mod1']
 import import_tree.pkg.mod1
+#! ['a=1.0']
+import_tree.pkg.mod1.a
+#! ['a=""']
+import_tree.a
+
+#! ['module mod1']
+from import_tree.pkg import mod1
+#! ['a=1.0']
+mod1.a
 
 #! ['module mod1']
 from import_tree import mod1
-
-
+#! ['a=1']
+mod1.a
