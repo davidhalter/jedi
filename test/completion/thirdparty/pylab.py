@@ -5,7 +5,7 @@ pylab.
 #! ['module numpy']
 import numpy
 
-#! ['module random']
+#! ['import random', 'module random']
 import numpy.random
 
 #? ['array2string']

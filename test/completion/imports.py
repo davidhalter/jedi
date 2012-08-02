@@ -49,9 +49,6 @@ def scope_nested():
     #? float()
     import_tree.pkg.mod1.a
 
-    #? ['a', 'pkg']
-    import_tree.
-
 # -----------------
 # std lib modules
 # -----------------

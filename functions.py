@@ -270,15 +270,32 @@ def goto(source, line, column, source_path):
                     s = s.follow()[0]
                 definitions.append(s)
     else:
+        def remove_unreal_imports(names):
+            """
+            These imports are only virtual, because of multi-line imports.
+            """
+            new_names = []
+            for n in names:
+                par = n.parent
+                if isinstance(par, parsing.Import) and not par.start_pos[0]:
+                    # this is a special case: If
+                    for scope in imports.ImportPath(par).follow():
+                        if isinstance(scope, parsing.Import):
+                            temp = scope.get_defined_names()
+                            new_names += remove_unreal_imports(temp)
+                        elif isinstance(scope, parsing.Module):
+                            new_names.append(scope.get_module_name(n.names))
+                else:
+                    new_names.append(n)
+            return new_names
+
         names = []
-        #print 's', scopes
         for s in scopes:
             names += s.get_defined_names()
+        names = remove_unreal_imports(names)
         definitions = [n for n in names if n.names[-1] == search_name]
-    #print evaluate.statement_path
-    #print scopes, definitions
     _clear_caches()
-    return [Definition(d) for d in definitions]
+    return [Definition(d) for d in set(definitions)]
 
 
 def set_debug_function(func_cb):

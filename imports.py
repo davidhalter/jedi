@@ -49,7 +49,9 @@ class ImportPath(object):
 
     def get_nested_import(self, parent):
         i = self.import_stmt
-        zero = (1,0)
+        # This is not an existing Import statement. Therefore, set position to
+        # None.
+        zero = (None, None)
         n = parsing.Name(i.namespace.names[1:], zero, zero)
         new = parsing.Import(zero, zero, n)
         new.parent = parent

@@ -234,6 +234,7 @@ class Module(Scope):
         super(Module, self).__init__((1, 0), docstr)
         self.path = path
         self.global_vars = []
+        self._name = None
 
     def add_global(self, name):
         """
@@ -251,6 +252,12 @@ class Module(Scope):
         n = super(Module, self).get_set_vars()
         n += self.global_vars
         return n
+
+    def get_module_name(self, names):
+        """ This is used for the goto function. """
+        if not self._name:
+            self._name = Name(names, self.start_pos, self.end_pos, self)
+        return self._name
 
 
 class Class(Scope):
