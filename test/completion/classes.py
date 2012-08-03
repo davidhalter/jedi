@@ -1,3 +1,24 @@
+def find_class():
+    """ This scope is special, because its in front of TestClass """
+    #? ['ret']
+    TestClass.ret
+    if 1:
+        #? ['ret']
+        TestClass.ret
+
+class FindClass():
+    #? []
+    TestClass.ret
+    if a:
+        #? []
+        TestClass.ret
+
+    def find_class(self):
+        #? ['ret']
+        TestClass.ret
+        if 1:
+            #? ['ret']
+            TestClass.ret
 
 # set variables, which should not be included, because they don't belong to the
 # class

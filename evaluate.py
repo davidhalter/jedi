@@ -829,6 +829,7 @@ def get_names_for_scope(scope, position=None, star_search=True,
     the whole thing would probably start a little recursive madness.
     """
     start_scope = scope
+    in_scope = scope
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
@@ -840,10 +841,14 @@ def get_names_for_scope(scope, position=None, star_search=True,
 
             try:
                 yield scope, get_defined_names_for_position(scope, position,
-                                                                start_scope)
+                                                                in_scope)
             except StopIteration:
                 raise MultiLevelStopIteration('StopIteration raised somewhere')
         scope = scope.parent
+        # This is used, because subscopes (Flow scopes) would distort the
+        # results.
+        if isinstance(scope, (Function, parsing.Function, Execution)):
+            in_scope = scope
 
     # Add star imports.
     if star_search:
