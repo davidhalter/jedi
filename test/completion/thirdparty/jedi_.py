@@ -14,7 +14,7 @@ scopes, path, dot, like = \
                             source_path, True)
 
 # has problems with that (sometimes) very deep nesting.
-#? set() list()
+#? set()
 el = scopes.
 
 # get_names_for_scope is also recursion stuff

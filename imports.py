@@ -115,21 +115,15 @@ class ImportPath(object):
         def follow_str(ns, string):
             debug.dbg('follow_module', ns, string)
             if ns:
-                try:
-                    return imp.find_module(string, [ns[1]])
-                except ImportError:
-                    return imp.find_module(string, builtin.module_find_path)
+                return imp.find_module(string, [ns[1]])
             else:
                 path = None
                 debug.dbg('search_module', string, path, self.file_path)
-                #sys.path, temp = builtin.module_find_path, sys.path
-                try:
-                    i = imp.find_module(string, builtin.module_find_path)
-                except ImportError:
-                    # find builtins (ommit path):
-                    #i = imp.find_module(string)
-                    raise
-                #sys.path = temp
+                # Override the sys.path. It works only good that way.
+                # Injecting the path directly into `find_module` did not work.
+                sys.path, temp = builtin.module_find_path, sys.path
+                i = imp.find_module(string)
+                sys.path = temp
                 return i
 
         # TODO handle relative paths - they are included in the import object

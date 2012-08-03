@@ -179,7 +179,9 @@ def test_dir(completion_test_dir, third_party=False):
             if f_name.endswith(".py"):
                 if third_party:
                     try:
-                        __import__(f_name.replace('.py', ''))
+                        # there is always an underline at the end.
+                        # It looks like: completion/thirdparty/pylab_.py
+                        __import__(f_name.replace('_.py', ''))
                     except ImportError:
                         summary.append('Thirdparty-Library %s not found.' %
                                                                         f_name)

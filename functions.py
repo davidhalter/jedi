@@ -277,13 +277,18 @@ def goto(source, line, column, source_path):
             new_names = []
             for n in names:
                 par = n.parent
+                # This is a special case: If the Import is "virtual" (which
+                # means the position is not defined), follow those modules.
                 if isinstance(par, parsing.Import) and not par.start_pos[0]:
-                    # this is a special case: If
+                    module_count = 0
                     for scope in imports.ImportPath(par).follow():
                         if isinstance(scope, parsing.Import):
                             temp = scope.get_defined_names()
                             new_names += remove_unreal_imports(temp)
-                        elif isinstance(scope, parsing.Module):
+                        elif isinstance(scope, parsing.Module) \
+                                                        and not module_count:
+                            # only first module (others are star imports)
+                            module_count += 1
                             new_names.append(scope.get_module_name(n.names))
                 else:
                     new_names.append(n)
