@@ -22,3 +22,5 @@ numpy.random_integers
 
 #? ['random_integers']
 numpy.random.random_integers
+#? ['sample']
+numpy.random.sample

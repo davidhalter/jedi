@@ -1,6 +1,7 @@
 import os
 import pkgutil
 import imp
+import sys
 
 import builtin
 import modules
@@ -48,6 +49,10 @@ class ImportPath(object):
                 and len(self.import_stmt.namespace.names) > 1
 
     def get_nested_import(self, parent):
+        """
+        See documentation of `self.is_nested_import`.
+        Generates an Import statement, that can be used to fake nested imports.
+        """
         i = self.import_stmt
         # This is not an existing Import statement. Therefore, set position to
         # None.
@@ -79,6 +84,7 @@ class ImportPath(object):
 
     def follow(self):
         """
+        Returns the imported modules.
         """
         if self.import_path:
             scope, rest = self.follow_file_system()
@@ -109,16 +115,22 @@ class ImportPath(object):
         def follow_str(ns, string):
             debug.dbg('follow_module', ns, string)
             if ns:
-                path = [ns[1]]
+                try:
+                    return imp.find_module(string, [ns[1]])
+                except ImportError:
+                    return imp.find_module(string, builtin.module_find_path)
             else:
                 path = None
                 debug.dbg('search_module', string, path, self.file_path)
-            try:
-                i = imp.find_module(string, path)
-            except ImportError:
-                # find builtins (ommit path):
-                i = imp.find_module(string, builtin.module_find_path)
-            return i
+                #sys.path, temp = builtin.module_find_path, sys.path
+                try:
+                    i = imp.find_module(string, builtin.module_find_path)
+                except ImportError:
+                    # find builtins (ommit path):
+                    #i = imp.find_module(string)
+                    raise
+                #sys.path = temp
+                return i
 
         # TODO handle relative paths - they are included in the import object
         current_namespace = None
@@ -175,7 +187,6 @@ def strip_imports(scopes):
         else:
             result.append(s)
     return result
-
 
 def remove_star_imports(scope):
     """

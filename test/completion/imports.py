@@ -43,11 +43,18 @@ def scope_nested():
     #? list
     import_tree.pkg.a
 
+    #? ['sqrt']
+    import_tree.pkg.sqrt
+
     #? ['a', 'pkg']
     import_tree.
 
     #? float()
     import_tree.pkg.mod1.a
+
+    import import_tree.random
+    #? set
+    import_tree.random.a
 
 # -----------------
 # std lib modules
