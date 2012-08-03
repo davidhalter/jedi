@@ -187,6 +187,22 @@ class Parser(CachedModule):
                 return doc
             return ''
 
+        def is_in_base_classes(cls, name, comparison):
+            """ Base classes may contain the exact same object """
+            try:
+                mro = cls.mro()
+            except TypeError:
+                # this happens, if cls == type
+                return False
+            for base in mro[1:]:
+                try:
+                    attr = getattr(base, name)
+                except AttributeError:
+                    continue
+                if attr == comparison:
+                    return True
+            return False
+
         def get_types(names):
             classes = {}
             funcs = {}
@@ -204,6 +220,9 @@ class Parser(CachedModule):
                     # -> just set it to None
                     members[n] = None
                 else:
+                    if inspect.isclass(scope):
+                        if is_in_base_classes(scope, n, exe):
+                            continue
                     if inspect.isbuiltin(exe) \
                                 or inspect.ismethoddescriptor(exe):
                         funcs[n] = exe
