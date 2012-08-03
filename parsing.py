@@ -235,6 +235,8 @@ class Module(Scope):
         self.path = path
         self.global_vars = []
         self._name = None
+        self.used_names = {}
+        self.temp_used_names = []
 
     def add_global(self, name):
         """
@@ -959,8 +961,8 @@ class PyFuzzyParser(object):
             self.code = self.code.encode()
 
         # initialize global Scope
-        self.top = Module(module_path)
-        self.scope = self.top
+        self.module = Module(module_path)
+        self.scope = self.module
         self.current = (None, None, None)
 
         # Stuff to fix tokenize errors. The parser is pretty good in tolerating
@@ -974,7 +976,7 @@ class PyFuzzyParser(object):
         del self.code
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.top)
+        return "<%s: %s>" % (self.__class__.__name__, self.module)
 
     @property
     def start_pos(self):
@@ -986,7 +988,7 @@ class PyFuzzyParser(object):
         return (self._line_of_tokenize_restart + self._tokenize_end_pos[0],
                                                 self._tokenize_end_pos[1])
 
-    def check_user_stmt(self, simple):
+    def _check_user_stmt(self, simple):
         if not self.user_position:
             return
         # the position is right
@@ -1008,6 +1010,10 @@ class PyFuzzyParser(object):
         :return: Tuple of Name, token_type, nexttoken.
         :rtype: tuple(Name, int, str)
         """
+        def append(el):
+            names.append(el)
+            self.module.temp_used_names.append(el)
+
         names = []
         if pre_used_token is None:
             token_type, tok = self.next()
@@ -1016,7 +1022,7 @@ class PyFuzzyParser(object):
         else:
             token_type, tok = pre_used_token
 
-        names.append(tok)
+        append(tok)
         first_pos = self.start_pos
         while True:
             token_type, tok = self.next()
@@ -1025,7 +1031,7 @@ class PyFuzzyParser(object):
             token_type, tok = self.next()
             if token_type != tokenize.NAME:
                 break
-            names.append(tok)
+            append(tok)
 
         n = Name(names, first_pos, self.end_pos) if names else None
         return (n, token_type, tok)
@@ -1267,7 +1273,11 @@ class PyFuzzyParser(object):
         else:
             stmt = stmt_class(string, set_vars, used_funcs, used_vars, \
                                 tok_list, first_pos, self.end_pos)
-            self.check_user_stmt(stmt)
+            self._check_user_stmt(stmt)
+            if not isinstance(stmt, Param):
+                for tok_name in self.module.temp_used_names:
+                    self.module.used_names[tok_name] = stmt
+            self.module.temp_used_names = []
         if is_return:
             # add returns to the scope
             func = self.scope.get_parent_until(Function)
@@ -1318,7 +1328,8 @@ class PyFuzzyParser(object):
                 #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
                 #    % (tok, token_type, start_position[0]))
 
-                while token_type == tokenize.DEDENT and self.scope != self.top:
+                while token_type == tokenize.DEDENT \
+                                                and self.scope != self.module:
                     debug.dbg('dedent', self.scope)
                     token_type, tok = self.next()
                     if self.start_pos[1] <= self.scope.start_pos[1]:
@@ -1330,7 +1341,7 @@ class PyFuzzyParser(object):
                 # some docstrings are not indented, I don't care.
                 while self.start_pos[1] <= self.scope.start_pos[1] \
                         and (token_type == tokenize.NAME or tok in ['(', '['])\
-                        and self.scope != self.top:
+                        and self.scope != self.module:
                     debug.dbg('syntax: dedent @%s - %s<=%s', self.start_pos)
                     self.scope.end_pos = self.start_pos
                     self.scope = self.scope.parent
@@ -1362,12 +1373,12 @@ class PyFuzzyParser(object):
                     for m, alias, defunct in imports:
                         i = Import(first_pos, self.end_pos, m, alias,
                                                             defunct=defunct)
-                        self.check_user_stmt(i)
+                        self._check_user_stmt(i)
                         self.scope.add_import(i)
                         debug.dbg("new import: %s" % (i), self.current)
                     if not imports:
                         i = Import(first_pos, self.end_pos, None, defunct=True)
-                        self.check_user_stmt(i)
+                        self._check_user_stmt(i)
                     self.freshscope = False
                 elif tok == 'from':
                     defunct = False
@@ -1391,13 +1402,13 @@ class PyFuzzyParser(object):
                             name = None
                         i = Import(first_pos, self.end_pos, name, alias, mod,
                             star, relative_count, defunct=defunct or defunct2)
-                        self.check_user_stmt(i)
+                        self._check_user_stmt(i)
                         self.scope.add_import(i)
                         debug.dbg("new from: %s" % (i))
                     if not names:
                         i = Import(first_pos, self.end_pos, mod, defunct=True,
                                     relative_count=relative_count)
-                        self.check_user_stmt(i)
+                        self._check_user_stmt(i)
                     self.freshscope = False
                 #loops
                 elif tok == 'for':
@@ -1460,7 +1471,7 @@ class PyFuzzyParser(object):
                         for name in stmt.used_vars:
                             # add the global to the top, because there it is
                             # important.
-                            self.top.add_global(name)
+                            self.module.add_global(name)
                 # decorator
                 elif tok == '@':
                     stmt, tok = self._parse_statement()
@@ -1503,4 +1514,4 @@ class PyFuzzyParser(object):
                 debug.warning('indentation error on line %s, ignoring it' %
                                                         (self.start_pos[0]))
                 self.gen = tokenize.generate_tokens(buf.readline)
-        return self.top
+        return self.module

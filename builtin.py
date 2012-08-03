@@ -387,7 +387,7 @@ class _Builtin(object):
 
     @property
     def scope(self):
-        return self._builtins.parser.top
+        return self._builtins.parser.module
 
     def get_defined_names(self):
         return self.scope.get_defined_names()

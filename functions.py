@@ -210,7 +210,7 @@ def prepare_goto(source, position, source_path, module, goto_path,
         # just parse one statement, take it and evaluate it
         r = parsing.PyFuzzyParser(goto_path, source_path)
         try:
-            stmt = r.top.statements[0]
+            stmt = r.module.statements[0]
         except IndexError:
             raise NotFoundError()
         else:
