@@ -31,6 +31,7 @@ import debug
 import builtin
 import imports
 import helpers
+import dynamic
 
 memoize_caches = []
 statement_path = []
@@ -476,6 +477,7 @@ class Execution(Executable):
             new_param.parent = parent_stmt
             new_param._assignment_calls_calculated = True
             new_param._assignment_calls = calls
+            new_param.is_generated = True
             name = copy.copy(param.get_name())
             name.parent = new_param
             return name
@@ -887,6 +889,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                             res_new += get_scopes_for_name(r.parent,
                                                             str(token_name))
                 else:
+                    # generated objects are used within executions, where
+                    if isinstance(r, parsing.Param) and not r.is_generated:
+                        res_new += dynamic.search_params(r)
+                        if not r.assignment_details:
+                            # this means that there are no default params, so
+                            # just ignore it.
+                            continue
+
                     scopes = follow_statement(r, seek_name=name_str)
                     res_new += remove_statements(scopes)
             else:

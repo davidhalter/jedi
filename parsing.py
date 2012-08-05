@@ -712,6 +712,7 @@ class Statement(Simple):
             raise ParserError("Brackets don't match: %s. This is not normal "
                                 "behaviour. Please submit a bug" % level)
 
+        self._assignment_calls_calculated = True
         self._assignment_calls = top
         return top
 
@@ -729,6 +730,7 @@ class Param(Statement):
         # this is defined by the parser later on, not at the initialization
         # it is the position in the call (first argument, second...)
         self.position = None
+        self.is_generated = False
 
     def get_name(self):
         """ get the name of the param """
@@ -928,16 +930,6 @@ class Name(Simple):
 
     def __str__(self):
         return self.get_code()
-
-    def __eq__(self, other):
-        return self.names == other.names and self.start_pos == other.end_pos
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        return hash(self.names) + hash(self.start_pos[0]) \
-                                        + hash(self.start_pos[1])
 
     def __len__(self):
         return len(self.names)
@@ -1276,7 +1268,10 @@ class PyFuzzyParser(object):
             self._check_user_stmt(stmt)
             if not isinstance(stmt, Param):
                 for tok_name in self.module.temp_used_names:
-                    self.module.used_names[tok_name] = stmt
+                    try:
+                        self.module.used_names[tok_name].append(stmt)
+                    except KeyError:
+                        self.module.used_names[tok_name] = [stmt]
             self.module.temp_used_names = []
         if is_return:
             # add returns to the scope

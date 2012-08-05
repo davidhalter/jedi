@@ -70,6 +70,12 @@ def a(a=3):
 a(2)
 #? []
 a(2).func
+
+a_param = 3
+def func(a_param):
+    # should not be int
+    #? []
+    a_param.
 # -----------------
 # class
 # -----------------

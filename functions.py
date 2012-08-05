@@ -5,6 +5,7 @@ import evaluate
 import modules
 import debug
 import imports
+# TODO use os.path.sep and similar things
 import os
 
 
