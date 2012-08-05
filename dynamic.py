@@ -8,61 +8,58 @@ import evaluate
 # that this is the order in which Jedi searches params.
 search_param_modules = ['.']
 
-def search_params(param):
-    def scan_array(arr):
-        """ Returns the function Calls that match func_name """
-        result = []
-        for sub in arr:
-            for s in sub:
-                if isinstance(s, parsing.Array):
-                    result += scan_array(s)
-                elif isinstance(s, parsing.Call):
-                    if str(s.name) == func_name:
-                        result.append(s)
-        return result
 
+class ParamListener(object):
+    """
+    This listener is used to get the params for a function.
+    """
+    def __init__(self):
+        self.param_possibilities = []
+
+    def execute(self, params):
+        self.param_possibilities.append(params)
+
+
+def search_params(param):
     def get_params_for_module(module):
-        result = []
         try:
             possible_stmts = current_module.used_names[func_name]
         except KeyError:
             return []
 
-        calls = []
         for stmt in possible_stmts:
-            calls += scan_array(stmt.get_assignment_calls())
+            evaluate.follow_statement(stmt)
 
-        for c in calls:
-            if not c.execution:
-                continue
+        result = []
+        for params in listener.param_possibilities:
+            for p in params:
+                if str(p) == param_name:
+                    result += evaluate.follow_statement(p.parent)
+        #print listener.param_possibilities, param, result
 
-            # now check if the call is actually the same method
-            c.execution, temp = None, c.execution
-            possible_executions = evaluate.follow_call(c)
-            is_same_method = False
-            for e in possible_executions:
-                is_same_method = e == func \
-                    or isinstance(e, evaluate.Function) and e.base_func == func
-            if not is_same_method:
-                continue
-            c.execution = temp
-
-            try:
-                p = c.execution[param_nr]
-            except IndexError:
-                pass
-            else:
-                result += evaluate.follow_call_list([p])
         return result
 
     func = param.get_parent_until(parsing.Function)
+
+    # add the listener
+    listener = ParamListener()
+    func.listeners.add(listener)
+
     func_name = str(func.name)
 
+    # get the param name
+    if param.assignment_details:
+        arr = param.assignment_details[0][1]
+    else:
+        arr = param.get_assignment_calls()
+    param_name = str(arr[0][0].name)
+
     current_module = param.get_parent_until()
-    for i, p in enumerate(func.params):
-        param_nr = i
 
     result = get_params_for_module(current_module)
 
     # TODO check other modules
+    # cleanup: remove the listener
+    func.listeners.remove(listener)
+
     return result

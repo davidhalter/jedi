@@ -320,6 +320,7 @@ class Function(Scope):
         self.decorators = []
         self.returns = []
         self.is_generator = False
+        self.listeners = set()  # not used here, but in evaluation.
 
     def get_code(self, first_indent=False, indention="    "):
         str = "\n".join('@' + stmt.get_code() for stmt in self.decorators)

@@ -447,6 +447,8 @@ class Execution(Executable):
 
     def _get_function_returns(self, evaluate_generator):
         """ A normal Function execution """
+        for listener in self.base.listeners:
+            listener.execute(self.get_params())
         func = self.base.get_decorated_func()
         if func.is_generator and not evaluate_generator:
             return [Generator(func, self.var_args)]
