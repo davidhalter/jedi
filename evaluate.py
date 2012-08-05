@@ -447,6 +447,7 @@ class Execution(Executable):
 
     def _get_function_returns(self, evaluate_generator):
         """ A normal Function execution """
+        # Feed the listeners, with the params.
         for listener in self.base.listeners:
             listener.execute(self.get_params())
         func = self.base.get_decorated_func()

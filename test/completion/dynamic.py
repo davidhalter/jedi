@@ -30,9 +30,9 @@ def func(a):
 # *args, **args
 # -----------------
 def arg(*args):
-    ##? tuple()
+    #? tuple()
     args
-    ##? int()
+    #? int()
     args[0]
 
 arg(1,"")

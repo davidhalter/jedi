@@ -21,7 +21,22 @@ class ParamListener(object):
 
 
 def search_params(param):
+    """
+    This is a dynamic search for params. If you try to complete a type:
+    >>> def func(foo):
+    >>>     # here is the completion
+    >>>     foo
+    >>> func(1)
+    >>> func("")
+
+    It is not known what the type is, because it cannot be guessed with
+    recursive madness. Therefore one has to analyse the statements that are
+    calling the function, as well as analyzing the incoming params.
+    """
     def get_params_for_module(module):
+        """
+        Returns the values of a param, or an empty array.
+        """
         try:
             possible_stmts = current_module.used_names[func_name]
         except KeyError:
@@ -52,7 +67,8 @@ def search_params(param):
         arr = param.assignment_details[0][1]
     else:
         arr = param.get_assignment_calls()
-    param_name = str(arr[0][0].name)
+    offset = 1 if arr[0][0] in ['*', '**'] else 0
+    param_name = str(arr[0][offset].name)
 
     current_module = param.get_parent_until()
 
