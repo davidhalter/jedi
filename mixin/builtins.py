@@ -109,6 +109,18 @@ class set():
         return self
 
 
+class frozenset():
+    def __init__(self, iterable=[]):
+        self.iterable = iterable
+
+    def __iter__(self):
+        for i in self.iterable:
+            yield i
+
+    def copy(self):
+        return self
+
+
 #--------------------------------------------------------
 # basic types
 #--------------------------------------------------------
