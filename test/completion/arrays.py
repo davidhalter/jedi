@@ -187,7 +187,7 @@ GetItem("")[1]
 # conversions
 # -----------------
 
-#? str()
+#? int() str()
 list([1,""])[1]
 
 #? str()

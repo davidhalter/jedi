@@ -24,6 +24,21 @@ for a4, (b4, c4) in (1,("", list)), (1,("", list)):
     #? list
     c4
 
+a = []
+for i in [1,'']:
+    a += [i]
+
+#? int() str()
+a[0]
+
+a = []
+b = [1.0,'']
+for i in b:
+    a += [i]
+
+#? float() str()
+a[0]
+
 # -----------------
 # list comprehensions
 # -----------------

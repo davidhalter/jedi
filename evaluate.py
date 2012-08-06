@@ -937,7 +937,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                         and scope.var == name.parent.parent:
                 name = InstanceElement(scope.instance, name)
             par = name.parent
-            if isinstance(par, parsing.Flow):
+            if isinstance(par, parsing.Flow) or isinstance(par,
+                    InstanceElement) and isinstance(par.var, parsing.Flow) :
                 if par.command == 'for':
                     # Take the first statement (for has always only
                     # one, remember `in`). And follow it. After that,
