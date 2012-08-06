@@ -15,10 +15,6 @@ TODO annotations ? how ? type evaluation and return?
 TODO nonlocal statement
 
 TODO getattr / __getattr__ / __getattribute__ ?
-
-TODO descriptors (also for classes, for instances it should work)
-TODO @staticmethod @classmethod (implement descriptors, builtins are done)
-TODO variable assignments in classes (see test/completion/classes @230) +1
 """
 from _compatibility import next, property, hasattr
 import sys
