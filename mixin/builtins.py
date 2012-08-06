@@ -1,4 +1,9 @@
-
+"""
+Pure Python implementation of some builtins.
+This code is not going to be executed anywhere.
+These implementations are not always correct, but should work as good as
+possible for the auto completion.
+"""
 def next(iterator, default=None):
     if hasattr("next"):
         return iterator.next()
@@ -6,8 +11,9 @@ def next(iterator, default=None):
         return iterator.__next__()
     return default
 
+
 class property():
-    def __init__(self, fget, fset = None, fdel = None, doc = None):
+    def __init__(self, fget, fset=None, fdel=None, doc=None):
         self.fget = fget
         self.fset = fset
         self.fdel = fdel
@@ -34,12 +40,14 @@ class property():
         self.fdel = func
         return self
 
+
 class staticmethod():
     def __init__(self, func):
         self.func = func
 
     def __get__(self, obj, cls):
         return self.func
+
 
 class classmethod():
     def __init__(self, func):
@@ -49,3 +57,45 @@ class classmethod():
         def _method(*args, **kwargs):
             return self._func(cls, *args, **kwargs)
         return _method
+
+
+class list():
+    def __init__(self, iterable=[]):
+        self.iterable = []
+        for i in iterable:
+            self.iterable += [i]
+
+    def __iter__(self):
+        for i in self.iterable:
+            yield i
+
+    def __getitem__(self, y):
+        return self.iterable[y]
+
+    def pop(self):
+        return self.iterable[-1]
+
+
+class set():
+    def __init__(self, iterable=[]):
+        self.iterable = iterable
+
+    def __iter__(self):
+        for i in self.iterable:
+            yield i
+
+    def add(self, elem):
+        self.iterable += [elem]
+
+    def pop(self):
+        return self.iterable.pop()
+
+    def copy(self):
+        return self
+
+
+def iter(collection, sentinel=None):
+    if sentinel:
+        yield collection()
+    else:
+        yield next(collection)

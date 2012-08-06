@@ -139,16 +139,14 @@ class Instance(Executable):
         # need to execute the __init__ function, because the dynamic param
         # searching needs it.
         try:
-            init_func = self.get_subscope_by_name('__init__')
+            self.execute_subscope_by_name('__init__', self.var_args)
         except KeyError:
             pass
-        else:
-            self.get_init_execution(init_func).get_return_types()
 
     @memoize_default()
     def get_init_execution(self, func):
-        instance_el = InstanceElement(self, Function(func))
-        return Execution(instance_el, self.var_args)
+        func = InstanceElement(self, func)
+        return Execution(func, self.var_args)
 
     def get_func_self_name(self, func):
         """
@@ -193,19 +191,22 @@ class Instance(Executable):
     def get_subscope_by_name(self, name):
         for sub in reversed(self.base.subscopes):
             if sub.name.get_code() == name:
-                return sub
+                return InstanceElement(self, sub)
         raise KeyError("Couldn't find subscope.")
+
+    def execute_subscope_by_name(self, name, args):
+        method = self.get_subscope_by_name(name)
+        if args.parent_stmt is None:
+            args.parent_stmt = method
+        return Execution(method, args).get_return_types()
 
     def get_descriptor_return(self, obj):
         """ Throws a KeyError if there's no method. """
-        method = self.get_subscope_by_name('__get__')
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
         v = [[obj], [obj.base]] if isinstance(obj, Instance) else [[], [obj]]
-        args = parsing.Array('tuple', method, values=v)
-        method = InstanceElement(self, method)
-        res = Execution(method, args).get_return_types()
-        return res
+        args = parsing.Array(parsing.Array.TUPLE, None, values=v)
+        return self.execute_subscope_by_name('__get__', args)
 
     def get_defined_names(self):
         """
@@ -219,10 +220,16 @@ class Instance(Executable):
             names.append(InstanceElement(self, var))
         return names
 
+    def get_index_types(self, index=None):
+        v = [[index]] if index is not None else []
+        args = parsing.Array(parsing.Array.NOARRAY, None, values=v)
+        try:
+            return self.execute_subscope_by_name('__getitem__', args)
+        except KeyError:
+            debug.warning('No __getitem__, cannot access the array.')
+            return []
+
     def __getattr__(self, name):
-        if name == 'get_index_types':
-            # TODO Call __getitem__ in such cases?
-            return lambda: []
         if name not in ['start_pos', 'end_pos', 'name', 'get_imports']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                     % (self, name))
@@ -431,17 +438,14 @@ class Execution(Executable):
             try:
                 self.base.returns
             except (AttributeError, DecoratorNotFound):
-                try:
-                    # If it is an instance, we try to execute the __call__().
-                    call_method = self.base.get_subscope_by_name('__call__')
-                except (AttributeError, KeyError):
-                    debug.warning("no execution possible", self.base)
+                if hasattr(self.base, 'execute_subscope_by_name'):
+                    try:
+                        stmts = self.base.execute_subscope_by_name('__call__',
+                                                                self.var_args)
+                    except KeyError:
+                        debug.warning("no __call__ func available", self.base)
                 else:
-                    debug.dbg('__call__', call_method, self.base)
-                    base = self.base
-                    call_method = InstanceElement(base, call_method)
-                    exe = Execution(call_method, self.var_args)
-                    stmts = exe.get_return_types()
+                    debug.warning("no execution possible", self.base)
             else:
                 stmts = self._get_function_returns(evaluate_generator)
 

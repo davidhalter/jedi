@@ -138,3 +138,34 @@ dic2[r'asdf']
 dic2[r'asdf']
 #? int() str()
 dic2['just_something']
+
+# -----------------
+# __getitem__
+# -----------------
+
+class GetItem():
+    def __getitem__(self, index):
+        return 1.0
+
+#? float()
+GetItem()[0]
+
+class GetItem():
+    def __init__(self, el):
+        self.el = el
+
+    def __getitem__(self, index):
+        return self.el
+
+#? str()
+GetItem("")[1]
+
+# -----------------
+# conversions
+# -----------------
+
+#? str()
+list([1,""])[1]
+
+#? str()
+list(set([1,""]))[1]
