@@ -54,3 +54,11 @@ for a in Get():
 b
 #? int() str()
 b[0]
+
+g = iter(Get())
+#? int() str()
+next(g)
+
+g = iter([1.0])
+#? float()
+next(g)

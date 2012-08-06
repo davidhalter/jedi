@@ -26,10 +26,16 @@ for a4, (b4, c4) in (1,("", list)), (1,("", list)):
 
 a = []
 for i in [1,'']:
+    #? int() str()
+    i
     a += [i]
 
 #? int() str()
 a[0]
+
+for i in list([1,'']):
+    #? int() str()
+    i
 
 a = []
 b = [1.0,'']
