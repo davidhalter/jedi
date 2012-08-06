@@ -116,7 +116,7 @@ class CachedMetaClass(type):
         return super(CachedMetaClass, self).__call__(*args, **kwargs)
 
 
-class Executable(object):
+class Executable(parsing.Base):
     """ An instance is also an executable - because __init__ is called """
     def __init__(self, base, var_args=parsing.Array(None, None)):
         self.base = base
@@ -240,7 +240,7 @@ class Instance(Executable):
                 (self.__class__.__name__, self.base, len(self.var_args or []))
 
 
-class InstanceElement(object):
+class InstanceElement():
     def __init__(self, instance, var):
         if isinstance(var, parsing.Function):
             var = Function(var)
@@ -283,11 +283,14 @@ class InstanceElement(object):
     def __getattr__(self, name):
         return getattr(self.var, name)
 
+    def isinstance(self, *cls):
+        return isinstance(self.var, cls)
+
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.var)
 
 
-class Class(object):
+class Class(parsing.Base):
     __metaclass__ = CachedMetaClass
 
     def __init__(self, base):
@@ -342,7 +345,7 @@ class Class(object):
         return "<e%s of %s>" % (self.__class__.__name__, self.base)
 
 
-class Function(object):
+class Function(parsing.Base):
     """
     """
     __metaclass__ = CachedMetaClass
@@ -679,7 +682,7 @@ class Execution(Executable):
                 (self.__class__.__name__, self.base)
 
 
-class Generator(object):
+class Generator(parsing.Base):
     def __init__(self, func, var_args):
         super(Generator, self).__init__()
         self.func = func
@@ -719,7 +722,7 @@ class Generator(object):
         return "<%s of %s>" % (self.__class__.__name__, self.func)
 
 
-class Array(object):
+class Array(parsing.Base):
     """
     Used as a mirror to parsing.Array, if needed. It defines some getter
     methods which are important in this module.
@@ -852,11 +855,8 @@ def get_names_for_scope(scope, position=None, star_search=True,
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
-        if not (scope != start_scope and isinstance(scope, parsing.Class)
-                or isinstance(scope, parsing.Flow)
-                or scope != start_scope and isinstance(scope, InstanceElement)
-                    and isinstance(scope.var, parsing.Class)):
-
+        if not (scope != start_scope and scope.isinstance(parsing.Class)
+                    or isinstance(scope, parsing.Flow)):
             try:
                 yield scope, get_defined_names_for_position(scope, position,
                                                                 in_scope)
@@ -895,9 +895,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         """
         res_new = []
         for r in result:
-            if isinstance(r, parsing.Statement) \
-                    or isinstance(r, InstanceElement) \
-                    and isinstance(r.var, parsing.Statement):
+            if r.isinstance(parsing.Statement):
                 # Global variables handling.
                 if r.is_global():
                     for token_name in r.token_list[1:]:
@@ -920,8 +918,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     r = Class(r)
                 elif isinstance(r, parsing.Function):
                     r = Function(r)
-                if isinstance(r, Function) or isinstance(r, InstanceElement)\
-                        and isinstance(r.var, Function):
+                if r.isinstance(Function):
                     try:
                         r = r.get_decorated_func()
                     except DecoratorNotFound:
@@ -937,8 +934,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                         and scope.var == name.parent.parent:
                 name = InstanceElement(scope.instance, name)
             par = name.parent
-            if isinstance(par, parsing.Flow) or isinstance(par,
-                    InstanceElement) and isinstance(par.var, parsing.Flow) :
+            if par.isinstance(parsing.Flow):
                 if par.command == 'for':
                     # Take the first statement (for has always only
                     # one, remember `in`). And follow it. After that,

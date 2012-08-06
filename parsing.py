@@ -52,7 +52,19 @@ def indent_block(text, indention="    "):
     return '\n'.join(map(lambda s: indention + s, lines)) + temp
 
 
-class Simple(object):
+class Base(object):
+    """
+    This is just here to have an isinstance check, which is also used on
+    evaluate classes. But since they have sometimes a special type of
+    delegation, it is important for those classes to override this method.
+
+    I know that there is a chance to do such things with __instancecheck__, but
+    since Python 2.5 doesn't support it, I decided to do it this way.
+    """
+    def isinstance(self, *cls):
+        return isinstance(self, cls)
+
+class Simple(Base):
     """
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
