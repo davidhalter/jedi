@@ -56,19 +56,19 @@ class property():
 
 class staticmethod():
     def __init__(self, func):
-        self.func = func
+        self.__func = func
 
     def __get__(self, obj, cls):
-        return self.func
+        return self.__func
 
 
 class classmethod():
     def __init__(self, func):
-        self._func = func
+        self.__func = func
 
     def __get__(self, obj, cls):
         def _method(*args, **kwargs):
-            return self._func(cls, *args, **kwargs)
+            return self.__func(cls, *args, **kwargs)
         return _method
 
 
@@ -77,47 +77,47 @@ class classmethod():
 #--------------------------------------------------------
 class list():
     def __init__(self, iterable=[]):
-        self.iterable = []
+        self.__iterable = []
         for i in iterable:
-            self.iterable += [i]
+            self.__iterable += [i]
 
     def __iter__(self):
-        for i in self.iterable:
+        for i in self.__iterable:
             yield i
 
     def __getitem__(self, y):
-        return self.iterable[y]
+        return self.__iterable[y]
 
     def pop(self):
-        return self.iterable[-1]
+        return self.__iterable[-1]
 
 class tuple():
     def __init__(self, iterable=[]):
-        self.iterable = []
+        self.__iterable = []
         for i in iterable:
-            self.iterable += [i]
+            self.__iterable += [i]
 
     def __iter__(self):
-        for i in self.iterable:
+        for i in self.__iterable:
             yield i
 
     def __getitem__(self, y):
-        return self.iterable[y]
+        return self.__iterable[y]
 
 
 class set():
     def __init__(self, iterable=[]):
-        self.iterable = iterable
+        self.__iterable = iterable
 
     def __iter__(self):
-        for i in self.iterable:
+        for i in self.__iterable:
             yield i
 
     def add(self, elem):
-        self.iterable += [elem]
+        self.__iterable += [elem]
 
     def pop(self):
-        return self.iterable.pop()
+        return self.__iterable.pop()
 
     def copy(self):
         return self
@@ -125,10 +125,10 @@ class set():
 
 class frozenset():
     def __init__(self, iterable=[]):
-        self.iterable = iterable
+        self.__iterable = iterable
 
     def __iter__(self):
-        for i in self.iterable:
+        for i in self.__iterable:
             yield i
 
     def copy(self):
@@ -140,9 +140,9 @@ class frozenset():
 #--------------------------------------------------------
 class int():
     def __init__(self, x, base=None):
-        self.x = x
+        self.__x = x
 
 
 class str():
     def __init__(self, obj):
-        self.obj = obj
+        self.__obj = obj

@@ -53,3 +53,5 @@ try:
         #? str()
         ""
 
+#? ['lala']
+isinstance())
