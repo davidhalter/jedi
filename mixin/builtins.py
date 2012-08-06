@@ -4,6 +4,8 @@ This code is not going to be executed anywhere.
 These implementations are not always correct, but should work as good as
 possible for the auto completion.
 """
+
+
 def next(iterator, default=None):
     if hasattr("next"):
         return iterator.next()
@@ -12,6 +14,16 @@ def next(iterator, default=None):
     return default
 
 
+def iter(collection, sentinel=None):
+    if sentinel:
+        yield collection()
+    else:
+        yield next(collection)
+
+
+#--------------------------------------------------------
+# descriptors
+#--------------------------------------------------------
 class property():
     def __init__(self, fget, fset=None, fdel=None, doc=None):
         self.fget = fget
@@ -59,6 +71,9 @@ class classmethod():
         return _method
 
 
+#--------------------------------------------------------
+# array stuff
+#--------------------------------------------------------
 class list():
     def __init__(self, iterable=[]):
         self.iterable = []
@@ -94,16 +109,13 @@ class set():
         return self
 
 
-def iter(collection, sentinel=None):
-    if sentinel:
-        yield collection()
-    else:
-        yield next(collection)
-
+#--------------------------------------------------------
 # basic types
+#--------------------------------------------------------
 class int():
     def __init__(self, x, base=None):
         self.x = x
+
 
 class str():
     def __init__(self, obj):
