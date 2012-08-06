@@ -18,7 +18,8 @@ def iter(collection, sentinel=None):
     if sentinel:
         yield collection()
     else:
-        yield next(collection)
+        for c in collection:
+            yield c
 
 
 #--------------------------------------------------------
@@ -89,6 +90,19 @@ class list():
 
     def pop(self):
         return self.iterable[-1]
+
+class tuple():
+    def __init__(self, iterable=[]):
+        self.iterable = []
+        for i in iterable:
+            self.iterable += [i]
+
+    def __iter__(self):
+        for i in self.iterable:
+            yield i
+
+    def __getitem__(self, y):
+        return self.iterable[y]
 
 
 class set():

@@ -193,6 +193,8 @@ list(a)[1]
 
 #? int() str()
 list(a)[0]
+#? 
+set(a)[0]
 
 #? int() str()
 list(set(a))[1]
@@ -205,5 +207,25 @@ list(set(list(set(a))))[1]
 ##? int() str()
 list(set(set(a)))[1]
 
+# frozenset
 #? int() str()
 list(frozenset(a))[1]
+#? int() str()
+list(set(frozenset(a)))[1]
+
+# iter
+#? int() str()
+list(iter(a))[1]
+#? int() str()
+list(iter(list(set(a))))[1]
+
+# tuple
+#? int() str()
+tuple(a)[1]
+#? int() str()
+tuple(list(set(a)))[1]
+
+#? int()
+tuple({1})[0]
+#? int()
+tuple((1,))[0]
