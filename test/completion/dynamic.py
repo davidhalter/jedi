@@ -58,3 +58,24 @@ def func(c=1):
     return c
 
 func(1.0)
+
+# -----------------
+# classes
+# -----------------
+
+class A():
+    def __init__(self, a):
+        #? str()
+        a
+
+A("s")
+
+class A():
+    def __init__(self, a):
+        #? int()
+        a
+    def test(self, a):
+        #? float()
+        a
+
+A(3).test(2.0)

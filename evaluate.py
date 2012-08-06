@@ -137,14 +137,22 @@ class Executable(object):
 
 class Instance(Executable):
     """ This class is used to evaluate instances. """
+    def __init__(self, base, var_args=parsing.Array(None, None)):
+        super(Instance, self).__init__(base, var_args)
+
+        # need to execute the __init__ function, because the dynamic param
+        # searching needs it.
+        try:
+            init_func = self.get_subscope_by_name('__init__')
+        except KeyError:
+            pass
+        else:
+            self.get_init_execution(init_func).get_return_types()
 
     @memoize_default()
     def get_init_execution(self, func):
-        if isinstance(func, parsing.Function):
-            instance_el = InstanceElement(self, Function(func))
-            return Execution(instance_el, self.var_args)
-        else:
-            return func
+        instance_el = InstanceElement(self, Function(func))
+        return Execution(instance_el, self.var_args)
 
     def get_func_self_name(self, func):
         """

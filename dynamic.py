@@ -55,12 +55,10 @@ def search_params(param):
         return result
 
     func = param.get_parent_until(parsing.Function)
-
-    # add the listener
-    listener = ParamListener()
-    func.listeners.add(listener)
-
+    current_module = param.get_parent_until()
     func_name = str(func.name)
+    if func_name == '__init__' and isinstance(func.parent, parsing.Class):
+        func_name = str(func.parent.name)
 
     # get the param name
     if param.assignment_details:
@@ -70,7 +68,9 @@ def search_params(param):
     offset = 1 if arr[0][0] in ['*', '**'] else 0
     param_name = str(arr[0][offset].name)
 
-    current_module = param.get_parent_until()
+    # add the listener
+    listener = ParamListener()
+    func.listeners.add(listener)
 
     result = get_params_for_module(current_module)
 
