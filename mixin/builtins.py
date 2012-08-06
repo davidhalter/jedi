@@ -99,3 +99,12 @@ def iter(collection, sentinel=None):
         yield collection()
     else:
         yield next(collection)
+
+# basic types
+class int():
+    def __init__(self, x, base=None):
+        self.x = x
+
+class str():
+    def __init__(self, obj):
+        self.obj = obj

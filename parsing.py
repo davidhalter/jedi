@@ -830,7 +830,8 @@ class Array(Call):
     DICT = 'dict'
     SET = 'set'
 
-    def __init__(self, arr_type, parent_stmt=None, parent=None, values=None):
+    def __init__(self, arr_type=NOARRAY, parent_stmt=None, parent=None,
+                                                                values=None):
         super(Array, self).__init__(None, arr_type, parent_stmt, parent)
 
         self.values = values if values else []

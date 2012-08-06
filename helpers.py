@@ -77,3 +77,10 @@ def fast_parent_copy(obj):
                 copied_list[i] = list_rec(el)
         return copied_list
     return recursion(obj)
+
+def generate_param_array(args_tuple, parent_stmt=None):
+    """ This generates an array, that can be used as a param """
+    values = []
+    for arg in args_tuple:
+        values.append([arg])
+    return parsing.Array(parsing.Array.TUPLE, parent_stmt, values=values)

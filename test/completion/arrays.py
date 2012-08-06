@@ -140,6 +140,29 @@ dic2[r'asdf']
 dic2['just_something']
 
 # -----------------
+# with variable as index
+# -----------------
+a = (1, "")
+index = 1
+#? str()
+a[index]
+
+# these should just ouput the whole array
+index = int
+#? int() str()
+a[index]
+index = int()
+#? int() str()
+a[index]
+
+# dicts
+index = 'asdf'
+
+dic2 = {'asdf': 3, 'b': 'str'}
+#? int()
+dic2[index]
+
+# -----------------
 # __getitem__
 # -----------------
 

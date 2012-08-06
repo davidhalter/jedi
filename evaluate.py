@@ -727,17 +727,21 @@ class Array(object):
     def __init__(self, array):
         self._array = array
 
-    def get_index_types(self, index=None):
-        values = self._array.values
-        if index is not None:
-            if [x for x in index if ':' in x]:
+    def get_index_types(self, index_call_list=None):
+        """ Tries to get the only element (key) of a TODO doc"""
+        # array slicing
+        if index_call_list is not None:
+            if index_call_list and [x for x in index_call_list if ':' in x]:
                 return [self]
-            else:
+
+            index_possibilities = list(follow_call_list(index_call_list))
+            if len(index_possibilities) == 1:
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
                 try:
-                    # Multiple elements in the array.
-                    i = index.get_only_subelement().name
+                    # Multiple elements in the array are not wanted. var_args
+                    # and get_only_subelement can raise AttributeErrors.
+                    i = index_possibilities[0].var_args.get_only_subelement()
                 except AttributeError:
                     pass
                 else:
@@ -745,9 +749,10 @@ class Array(object):
                         return self.get_exact_index_types(i)
                     except (IndexError, KeyError):
                         pass
-        return self.follow_values(values)
+        return self.follow_values(self._array.values)
 
     def get_exact_index_types(self, index):
+        """ Here the index is an int. Raises IndexError/KeyError """
         if self._array.type == parsing.Array.DICT:
             old_index = index
             index = None
@@ -1155,7 +1160,8 @@ def follow_call(call):
                 debug.warning('unknown type:', current.type, current)
                 scopes = []
             # Make instances of those number/string objects.
-            scopes = [Instance(s) for s in scopes]
+            arr = helpers.generate_param_array([current.name])
+            scopes = [Instance(s, arr) for s in scopes]
         else:
             # This is the first global lookup.
             scopes = get_scopes_for_name(scope, current, position=position,
