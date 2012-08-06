@@ -189,6 +189,8 @@ class Parser(CachedModule):
 
         def is_in_base_classes(cls, name, comparison):
             """ Base classes may contain the exact same object """
+            if name in mixin_funcs:
+                return False
             try:
                 mro = cls.mro()
             except TypeError:
