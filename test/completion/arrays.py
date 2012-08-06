@@ -190,5 +190,5 @@ GetItem("")[1]
 #? int() str()
 list([1,""])[1]
 
-#? str()
+#? int() str()
 list(set([1,""]))[1]

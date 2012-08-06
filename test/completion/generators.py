@@ -23,15 +23,34 @@ next(gen_ret(1))
 next(gen_ret())
 
 # -----------------
-# generators should be indexable!???
+# generators should not be indexable
 # -----------------
-def get(self):
+def get(param):
     yield 1
     yield ""
 
-arr = []
-for a in arr:
-    arr += get()
+#? []
+get()[0]
 
+# -----------------
+# __iter__
+# -----------------
+for a in get():
+    #? int() str()
+    a
+
+class Get():
+    def __iter__(self):
+        yield 1
+        yield ""
+
+b = []
+for a in Get():
+    #? int() str()
+    a
+    b += [a]
+
+#? list()
+b
 #? int() str()
-arr[0].
+b[0]

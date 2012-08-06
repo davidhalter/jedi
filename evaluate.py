@@ -434,7 +434,7 @@ class Execution(Executable):
             # There maybe executions of executions.
             stmts = [Instance(self.base, self.var_args)]
         elif isinstance(self.base, Generator):
-            return self.base.execute()
+            return self.base.get_content()
         else:
             # Don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
@@ -706,17 +706,16 @@ class Generator(parsing.Base):
         debug.dbg('generator names', names)
         return names
 
-    def execute(self):
+    def get_content(self):
         return Execution(self.func, self.var_args).get_return_types(True)
+
+    def get_index_types(self, index=None):
+        debug.warning('Tried to get array access on a generator', self)
+        return []
 
     @property
     def parent(self):
         return self.func.parent
-
-    def get_index_types(self, index=None):
-        # TODO check if this method is right here, this means that Generators
-        # can be indexed, which is not the Python way.
-        return self.execute()
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.func)
@@ -928,6 +927,39 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         return res_new
 
     def filter_name(scope_generator):
+        def handle_iterators(par):
+            generators = []
+            # Take the first statement (for has always only
+            # one, remember `in`). And follow it.
+            for it in follow_statement(par.inits[0]):
+                if isinstance(it, (Generator, Array)):
+                    generators.append(it)
+                else:
+                    try:
+                        # TODO remove
+                        args = parsing.Array(parsing.Array.TUPLE, None, values=[])
+                        generators += \
+                            it.execute_subscope_by_name('__iter__', args)
+                    except KeyError:
+                        pass
+
+            result = []
+            for gen in generators:
+                if isinstance(gen, Array):
+                    # Array is a little bit special, since this is an internal
+                    # array, but there's also the list builtin, which is
+                    # another thing.
+                    in_vars = gen.get_index_types()
+                else:
+                    # is a generator
+                    in_vars = gen.get_content()
+                if len(par.set_vars) > 1:
+                    var_arr = par.set_stmt.get_assignment_calls()
+                    result += assign_tuples(var_arr, in_vars, name_str)
+                else:
+                    result += in_vars
+            return result
+
         def handle_non_arrays(name):
             result = []
             if isinstance(scope, InstanceElement) \
@@ -936,17 +968,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             par = name.parent
             if par.isinstance(parsing.Flow):
                 if par.command == 'for':
-                    # Take the first statement (for has always only
-                    # one, remember `in`). And follow it. After that,
-                    # get the types which are in the array.
-                    arrays = follow_statement(par.inits[0])
-                    for array in arrays:
-                        in_vars = array.get_index_types()
-                        if len(par.set_vars) > 1:
-                            var_arr = par.set_stmt.get_assignment_calls()
-                            result += assign_tuples(var_arr, in_vars, name_str)
-                        else:
-                            result += in_vars
+                    result += handle_iterators(par)
                 else:
                     debug.warning('Flow: Why are you here? %s' % par.command)
             elif isinstance(par, parsing.Param) \
