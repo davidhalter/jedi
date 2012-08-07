@@ -205,6 +205,12 @@ def prepare_goto(source, position, source_path, module, goto_path,
     debug.dbg('start: %s in %s' % (goto_path, scope))
 
     user_stmt = module.parser.user_stmt
+    if not user_stmt and len(goto_path.split('\n')) > 1:
+        # If the user_stmt is not defined and the goto_path is multi line,
+        # something's strange. Most probably the backwards tokenizer matched to
+        # much.
+        return []
+
     if isinstance(user_stmt, parsing.Import):
         scopes = [imports.ImportPath(user_stmt, is_like_search)]
     else:

@@ -1,9 +1,11 @@
 from __future__ import with_statement
 import re
 import tokenize
+import sys
 
 import parsing
 import builtin
+import debug
 
 files = {}
 load_module_cb = None
@@ -63,7 +65,7 @@ class ModuleWithCursor(Module):
             else:
                 line = line + '\n'
             # add lines with a backslash at the end
-            while self._line_temp > 1:
+            while 1:
                 self._line_temp -= 1
                 last_line = self.get_line(self._line_temp)
                 if last_line and last_line[-1] == '\\':
@@ -81,34 +83,37 @@ class ModuleWithCursor(Module):
         gen = tokenize.generate_tokens(fetch_line)
         string = ''
         level = 0
-        for token_type, tok, start, end, line in gen:
-            #print token_type, tok, force_point
-            if level > 0:
-                if tok in close_brackets:
-                    level += 1
-                if tok in open_brackets:
-                    level -= 1
-            elif tok == '.':
-                force_point = False
-            elif force_point:
-                # it is reversed, therefore a number is getting recognized
-                # as a floating point number
-                if token_type == tokenize.NUMBER and tok[0] == '.':
+        try:
+            for token_type, tok, start, end, line in gen:
+                #print token_type, tok, force_point
+                if level > 0:
+                    if tok in close_brackets:
+                        level += 1
+                    if tok in open_brackets:
+                        level -= 1
+                elif tok == '.':
                     force_point = False
+                elif force_point:
+                    # it is reversed, therefore a number is getting recognized
+                    # as a floating point number
+                    if token_type == tokenize.NUMBER and tok[0] == '.':
+                        force_point = False
+                    else:
+                        #print 'break2', token_type, tok
+                        break
+                elif tok in close_brackets:
+                    level += 1
+                elif token_type in [tokenize.NAME, tokenize.STRING]:
+                    force_point = True
+                elif token_type == tokenize.NUMBER:
+                    pass
                 else:
-                    #print 'break2', token_type, tok
+                    #print 'break', token_type, tok
                     break
-            elif tok in close_brackets:
-                level += 1
-            elif token_type in [tokenize.NAME, tokenize.STRING]:
-                force_point = True
-            elif token_type == tokenize.NUMBER:
-                pass
-            else:
-                #print 'break', token_type, tok
-                break
 
-            string += tok
+                string += tok
+        except tokenize.TokenError:
+            debug.warning("Tokenize couldn't finish", sys.exc_info)
 
         return string[::-1]
 
@@ -125,6 +130,8 @@ class ModuleWithCursor(Module):
         if not self._line_cache:
             self._line_cache = self.source.split('\n')
 
+        if line < 1:
+            raise StopIteration()
         try:
             return self._line_cache[line - 1]
         except IndexError:

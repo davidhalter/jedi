@@ -1,3 +1,6 @@
+#? ['message']
+AttributeError()).message
+
 from a import (b
 def blub():
     return 0
@@ -53,5 +56,5 @@ try:
         #? str()
         ""
 
-#? ['lala']
-isinstance())
+#? []
+int()).
