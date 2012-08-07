@@ -14,11 +14,12 @@ TODO class decorators
 TODO annotations ? how ? type evaluation and return?
 TODO nonlocal statement
 
+TODO __ instance attributes should not be visible outside of the class.
 TODO getattr / __getattr__ / __getattribute__ ?
 """
 from _compatibility import next, property, hasattr
-import sys
 
+import sys
 import itertools
 import copy
 
@@ -194,7 +195,9 @@ class Instance(Executable):
                 return InstanceElement(self, sub)
         raise KeyError("Couldn't find subscope.")
 
-    def execute_subscope_by_name(self, name, args):
+    def execute_subscope_by_name(self, name, args=None):
+        if args is None:
+            args = helpers.generate_param_array([])
         method = self.get_subscope_by_name(name)
         if args.parent_stmt is None:
             args.parent_stmt = method
@@ -204,8 +207,8 @@ class Instance(Executable):
         """ Throws a KeyError if there's no method. """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        v = [[obj], [obj.base]] if isinstance(obj, Instance) else [[], [obj]]
-        args = parsing.Array(parsing.Array.TUPLE, None, values=v)
+        v = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
+        args = helpers.generate_param_array(v)
         return self.execute_subscope_by_name('__get__', args)
 
     def get_defined_names(self):
@@ -221,8 +224,7 @@ class Instance(Executable):
         return names
 
     def get_index_types(self, index=None):
-        v = [[index]] if index is not None else []
-        args = parsing.Array(parsing.Array.NOARRAY, None, values=v)
+        args = helpers.generate_param_array([] if index is None else [index])
         try:
             return self.execute_subscope_by_name('__getitem__', args)
         except KeyError:
@@ -379,8 +381,7 @@ class Function(parsing.Base):
                 decorator = dec_results.pop()
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
-                params = parsing.Array(parsing.Array.NOARRAY, old_func)
-                params.values = [[old_func]]
+                params = helpers.generate_param_array([old_func], old_func)
 
                 wrappers = Execution(decorator, params).get_return_types()
                 if not len(wrappers):
@@ -730,7 +731,7 @@ class Array(parsing.Base):
         self._array = array
 
     def get_index_types(self, index_call_list=None):
-        """ Tries to get the only element (key) of a TODO doc"""
+        """ Get the types of a specific index or all, if not given """
         # array slicing
         if index_call_list is not None:
             if index_call_list and [x for x in index_call_list if ':' in x]:
@@ -936,10 +937,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     generators.append(it)
                 else:
                     try:
-                        # TODO remove
-                        args = parsing.Array(parsing.Array.TUPLE, None, values=[])
-                        generators += \
-                            it.execute_subscope_by_name('__iter__', args)
+                        generators += it.execute_subscope_by_name('__iter__')
                     except KeyError:
                         pass
 
