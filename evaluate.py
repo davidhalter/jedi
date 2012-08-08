@@ -936,6 +936,9 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 if isinstance(it, (Generator, Array)):
                     generators.append(it)
                 else:
+                    if not hasattr(it, 'execute_subscope_by_name'):
+                        debug.warning('for loop input wrong', it)
+                        continue
                     try:
                         generators += it.execute_subscope_by_name('__iter__')
                     except KeyError:

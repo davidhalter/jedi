@@ -21,6 +21,9 @@ def iter(collection, sentinel=None):
         for c in collection:
             yield c
 
+def range(start, stop=None, step=1):
+    return [0]
+
 
 #--------------------------------------------------------
 # descriptors
