@@ -62,3 +62,30 @@ next(g)
 g = iter([1.0])
 #? float()
 next(g)
+
+# -----------------
+# __next__
+# -----------------
+class Counter:
+    def __init__(self, low, high):
+        self.current = low
+        self.high = high
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        """ need to have both __next__ and next, because of py2/3 testing """
+        return self.__next__()
+
+    def __next__(self):
+        if self.current > self.high:
+            raise StopIteration
+        else:
+            self.current += 1
+            return self.current - 1
+
+
+for c in Counter(3, 8):
+    #? int()
+    print c
