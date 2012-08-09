@@ -84,7 +84,7 @@ def search_params(param):
 
 
 @evaluate.memoize_default([])
-def check_array_additions(array, is_list=True):
+def check_array_additions(array):
     """
     Checks if a `parsing.Array` has "add" statements:
     >>> a = [""]
@@ -115,19 +115,29 @@ def check_array_additions(array, is_list=True):
 
             position = c.parent_stmt.start_pos
             scope = c.parent_stmt.parent
-            print 'd', call_path
             e = evaluate.follow_call_path(backtrack_path, scope, position)
-            print 'e', e
             if not array in e:
                 # the `append`, etc. belong to other arrays
                 continue
 
+            params = call_path[separate_index + 1]
+            if not params.values:
+                continue  # no params: just ignore it
             if add_name in ['append', 'add']:
-                result += evaluate.follow_call_list(call_path[separate_index + 1])
+                result += evaluate.follow_call_list(params)
+            elif add_name in ['insert']:
+                try:
+                    second_param = params[1]
+                except IndexError:
+                    continue
+                else:
+                    result += evaluate.follow_call_list([second_param])
             elif add_name in ['extend', 'update']:
-                result += evaluate.follow_call_list(call_path[separate_index + 1])
+                # TODO needs extensive work, because this are iterables
+                result += evaluate.follow_call_list(params)
         return result
 
+    is_list = array._array.type == 'list'
     stmt = array._array.parent_stmt
     current_module = stmt.get_parent_until()
     search_names = ['append', 'extend', 'insert'] if is_list else \

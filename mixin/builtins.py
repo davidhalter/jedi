@@ -21,6 +21,7 @@ def iter(collection, sentinel=None):
         for c in collection:
             yield c
 
+
 def range(start, stop=None, step=1):
     return [0]
 
@@ -94,6 +95,7 @@ class list():
     def pop(self):
         return self.__iterable[-1]
 
+
 class tuple():
     def __init__(self, iterable=[]):
         self.__iterable = []
@@ -106,6 +108,12 @@ class tuple():
 
     def __getitem__(self, y):
         return self.__iterable[y]
+
+    def index(self):
+        return 1
+
+    def count(self):
+        return 1
 
 
 class set():
@@ -137,12 +145,6 @@ class frozenset():
     def copy(self):
         return self
 
-class tuple():
-    def index(self):
-        return 1
-
-    def count(self):
-        return 1
 
 #--------------------------------------------------------
 # basic types

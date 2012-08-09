@@ -752,7 +752,10 @@ class Array(parsing.Base):
                         return self.get_exact_index_types(i)
                     except (IndexError, KeyError):
                         pass
-        return self.follow_values(self._array.values)
+
+        result = list(self.follow_values(self._array.values))
+        result += dynamic.check_array_additions(self)
+        return set(result)
 
     def get_exact_index_types(self, index):
         """ Here the index is an int. Raises IndexError/KeyError """
@@ -1244,9 +1247,7 @@ def follow_path(path, scope, position=None):
     if isinstance(current, parsing.Array):
         # This must be an execution, either () or [].
         if current.type == parsing.Array.LIST:
-            result = list(scope.get_index_types(current))
-            if isinstance(scope, Array):
-                result += dynamic.check_array_additions(scope)
+            result = scope.get_index_types(current)
         elif current.type not in [parsing.Array.DICT]:
             # Scope must be a class or func - make an instance or execution.
             debug.dbg('exe', scope)
@@ -1264,4 +1265,4 @@ def follow_path(path, scope, position=None):
             # This is the typical lookup while chaining things.
             result = imports.strip_imports(get_scopes_for_name(scope, current,
                                                         position=position))
-    return follow_paths(path, result, position=position)
+    return follow_paths(path, set(result), position=position)

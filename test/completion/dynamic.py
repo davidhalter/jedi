@@ -95,6 +95,7 @@ for a in [1,2]:
     arr.append(a);
 
 arr.append  # should not cause an exception
+arr.append()  # should not cause an exception
 
 #? int()
 arr[10]
@@ -110,10 +111,48 @@ arr[10].index()
 
 arr = [""]
 arr.insert(0, 1.0)
+
+# on exception due to this, please!
+arr.insert(0)
+arr.insert()
+
 #? float() str()
 arr[10]
 
+for a in arr:
+    #? float() str()
+    a
+
+for a in list(arr):
+    #? float() str()
+    a
+
+for a in set(arr):
+    #? float() str()
+    a
 
 # -----------------
-# set.append
+# set.add
 # -----------------
+st = {1.0}
+for a in [1,2]:
+    st.add(a);
+
+st.add  # should not cause an exception
+st.add()
+
+for s in st:
+    #? float() int()
+    s
+
+# -----------------
+# list.extend / set.update
+# -----------------
+
+arr = [1.0]
+arr.extend([1,2,3])
+arr.extend([])
+arr.extend("")  # should ignore
+
+##? float() int()
+arr[0]

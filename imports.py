@@ -91,7 +91,7 @@ class ImportPath(object):
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []
             elif rest:
-                scopes = evaluate.follow_path(iter(rest), scope)
+                scopes = list(evaluate.follow_path(iter(rest), scope))
             else:
                 scopes = [scope]
 
