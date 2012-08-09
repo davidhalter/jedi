@@ -74,8 +74,46 @@ class A():
     def __init__(self, a):
         #? int()
         a
+        self.a = a
+
     def test(self, a):
         #? float()
         a
 
+    def test2(self):
+        ##? int()
+        self.a
+
 A(3).test(2.0)
+A(3).test2()
+
+# -----------------
+# list.append/insert
+# -----------------
+arr = []
+for a in [1,2]:
+    arr.append(a);
+
+arr.append  # should not cause an exception
+
+#? int()
+arr[10]
+
+arr = [tuple()]
+for a in [1,2]:
+    arr.append(a);
+
+#? int() tuple()
+arr[10]
+#? int()
+arr[10].index()
+
+arr = [""]
+arr.insert(0, 1.0)
+#? float() str()
+arr[10]
+
+
+# -----------------
+# set.append
+# -----------------

@@ -1,6 +1,8 @@
 """
 For dynamic completion.
 """
+import copy
+
 import parsing
 import evaluate
 
@@ -77,5 +79,67 @@ def search_params(param):
     # TODO check other modules
     # cleanup: remove the listener
     func.listeners.remove(listener)
+
+    return result
+
+
+@evaluate.memoize_default([])
+def check_array_additions(array, is_list=True):
+    """
+    Checks if a `parsing.Array` has "add" statements:
+    >>> a = [""]
+    >>> a.append(1)
+    """
+    def scan_array(arr, search_name):
+        """ Returns the function Calls that match func_name """
+        result = []
+        for sub in arr:
+            for s in sub:
+                if isinstance(s, parsing.Array):
+                    result += scan_array(s, search_name)
+                elif isinstance(s, parsing.Call):
+                    n = s.name
+                    if isinstance(n, parsing.Name) and search_name in n.names:
+                        result.append(s)
+        return result
+
+    def check_calls(calls, add_name):
+        result = []
+        for c in calls:
+            call_path = list(c.generate_call_path())
+            separate_index = call_path.index(add_name)
+            if not len(call_path) > separate_index + 1:
+                # this means that there is no execution -> [].append
+                continue
+            backtrack_path = iter(call_path[:separate_index])
+
+            position = c.parent_stmt.start_pos
+            scope = c.parent_stmt.parent
+            print 'd', call_path
+            e = evaluate.follow_call_path(backtrack_path, scope, position)
+            print 'e', e
+            if not array in e:
+                # the `append`, etc. belong to other arrays
+                continue
+
+            if add_name in ['append', 'add']:
+                result += evaluate.follow_call_list(call_path[separate_index + 1])
+            elif add_name in ['extend', 'update']:
+                result += evaluate.follow_call_list(call_path[separate_index + 1])
+        return result
+
+    stmt = array._array.parent_stmt
+    current_module = stmt.get_parent_until()
+    search_names = ['append', 'extend', 'insert'] if is_list else \
+                                                            ['add', 'update']
+    possible_stmts = []
+    result = []
+    for n in search_names:
+        try:
+            possible_stmts += current_module.used_names[n]
+        except KeyError:
+            continue
+        for stmt in possible_stmts:
+            result += check_calls(scan_array(stmt.get_assignment_calls(), n), n)
 
     return result

@@ -1,6 +1,7 @@
 import re
 
 import parsing
+import dynamic  # must be before evaluate, because it needs to be loaded first.
 import evaluate
 import modules
 import debug

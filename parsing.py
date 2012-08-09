@@ -657,6 +657,7 @@ class Statement(Simple):
                         c_type = Call.NUMBER
 
                 if is_chain:
+                    #print 'chain', self, tok, result
                     call = Call(tok, c_type, parent=result)
                     result = result.set_next_chain_call(call)
                     is_chain = False
@@ -807,17 +808,17 @@ class Call(object):
             call.parent = self
         return call
 
-    def generate_call_list(self):
+    def generate_call_path(self):
         try:
             for name_part in self.name.names:
                 yield name_part
         except AttributeError:
             yield self
         if self.execution is not None:
-            for y in self.execution.generate_call_list():
+            for y in self.execution.generate_call_path():
                 yield y
         if self.next is not None:
-            for y in self.next.generate_call_list():
+            for y in self.next.generate_call_path():
                 yield y
 
     def __repr__(self):

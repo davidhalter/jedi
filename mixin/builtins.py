@@ -137,6 +137,12 @@ class frozenset():
     def copy(self):
         return self
 
+class tuple():
+    def index(self):
+        return 1
+
+    def count(self):
+        return 1
 
 #--------------------------------------------------------
 # basic types
