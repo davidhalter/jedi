@@ -123,27 +123,20 @@ for a in arr:
     #? float() str()
     a
 
-for a in list(arr):
-    #? float() str()
-    a
-
-for a in set(arr):
-    #? float() str()
-    a
+#? float() str()
+list(arr)[10]
 
 # -----------------
 # set.add
 # -----------------
 st = {1.0}
 for a in [1,2]:
-    st.add(a);
+    st.add(a)
+
+st.append('')  # lists should not have an influence
 
 st.add  # should not cause an exception
 st.add()
-
-for s in st:
-    #? float() int()
-    s
 
 # -----------------
 # list.extend / set.update
@@ -156,3 +149,22 @@ arr.extend("")  # should ignore
 
 ##? float() int()
 arr[0]
+
+# -----------------
+# renames / type changes
+# -----------------
+arr = []
+arr2 = arr
+arr2.append('')
+#? str()
+arr2[0]
+
+
+st = {}
+st.add(1)
+lst = list(st)
+
+lst.append('')
+
+#? int() str()
+lst[0]
