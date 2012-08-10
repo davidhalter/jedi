@@ -137,7 +137,7 @@ class Instance(Executable):
     def __init__(self, base, var_args=parsing.Array(None, None)):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
-                    and builtin.Builtin.name == base.get_parent_until().path:
+                    and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = dynamic.check_array_instances(self)
         else:

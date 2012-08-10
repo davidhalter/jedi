@@ -1,6 +1,9 @@
+import copy
+
 import parsing
 import debug
-import copy
+import builtin
+
 
 class RecursionDecorator(object):
     """ A decorator to detect recursions in statements """
@@ -10,11 +13,14 @@ class RecursionDecorator(object):
         self.current = None
 
     def __call__(self, stmt, *args, **kwargs):
-        # don't check param instances, they are not causing recursions
-        if isinstance(stmt, parsing.Param):
+        r = RecursionNode(stmt, self.current)
+
+        # Don't check param instances, they are not causing recursions
+        # The same's true for the builtins, because the builtins are really
+        # simple.
+        if isinstance(stmt, parsing.Param) or r.script == builtin.Builtin.scope:
             return self.func(stmt, *args, **kwargs)
 
-        r = RecursionNode(stmt, self.current)
         if self.check_recursion(r):
             debug.warning('catched recursion', stmt, args, kwargs)
             return []
