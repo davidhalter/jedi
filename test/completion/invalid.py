@@ -1,5 +1,5 @@
-#? ['message']
-AttributeError()).message
+#? ['upper']
+str()).upper
 
 from a import (b
 def blub():
