@@ -18,7 +18,8 @@ class RecursionDecorator(object):
         # Don't check param instances, they are not causing recursions
         # The same's true for the builtins, because the builtins are really
         # simple.
-        if isinstance(stmt, parsing.Param) or r.script == builtin.Builtin.scope:
+        if isinstance(stmt, parsing.Param) \
+                                       or r.script == builtin.Builtin.scope:
             return self.func(stmt, *args, **kwargs)
 
         if self.check_recursion(r):
@@ -42,6 +43,7 @@ class RecursionDecorator(object):
         self.top = None
         self.current = None
 
+
 class RecursionNode(object):
     def __init__(self, stmt, parent):
         self.script = stmt.get_parent_until()
@@ -60,6 +62,7 @@ def fast_parent_copy(obj):
     """
     new_elements = {}
     classes = (parsing.Call, parsing.Scope)
+
     def recursion(obj):
         new_obj = copy.copy(obj)
         new_elements[obj] = new_obj
@@ -83,6 +86,7 @@ def fast_parent_copy(obj):
                 copied_list[i] = list_rec(el)
         return copied_list
     return recursion(obj)
+
 
 def generate_param_array(args_tuple, parent_stmt=None):
     """ This generates an array, that can be used as a param """

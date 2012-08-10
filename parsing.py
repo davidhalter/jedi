@@ -64,6 +64,7 @@ class Base(object):
     def isinstance(self, *cls):
         return isinstance(self, cls)
 
+
 class Simple(Base):
     """
     The super class for Scope, Import, Name and Statement. Every object in

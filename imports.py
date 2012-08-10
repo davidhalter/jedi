@@ -182,6 +182,7 @@ def strip_imports(scopes):
             result.append(s)
     return result
 
+
 def remove_star_imports(scope):
     """
     """

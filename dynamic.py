@@ -191,7 +191,7 @@ class ArrayInstance(parsing.Base):
                 if isinstance(temp, ArrayInstance):
                     items += temp.iter_content()
                     continue
-            items += evaluate.handle_iterators([array])#array.get_index_types()
+            items += evaluate.handle_iterators([array])
 
         module = self.var_args.parent_stmt.get_parent_until()
         is_list = str(self.instance.name) == 'list'

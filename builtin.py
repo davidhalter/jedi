@@ -120,8 +120,6 @@ class Parser(CachedModule):
                     path = os.path.dirname(self.path)
 
             load_module(name, path)
-
-
         return self._module
 
     def _get_source(self):
