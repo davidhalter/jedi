@@ -202,3 +202,11 @@ lst.append({})
 
 #? dict() int() float() str()
 lst[0]
+
+# should work with tuple conversion, too.
+#? dict() int() float() str()
+tuple(lst)[0]
+
+# but not with an iterator
+#? 
+iter(lst)[0]

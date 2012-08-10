@@ -439,7 +439,7 @@ class Execution(Executable):
             # There maybe executions of executions.
             stmts = [Instance(self.base, self.var_args)]
         elif isinstance(self.base, Generator):
-            return self.base.get_content()
+            return self.base.iter_content()
         else:
             # Don't do this with exceptions, as usual, because some deeper
             # exceptions could be catched - and I wouldn't know what happened.
@@ -1053,6 +1053,42 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         scope_generator = iter([(scope, names)])
 
     return descriptor_check(remove_statements(filter_name(scope_generator)))
+
+
+def handle_iterators(inputs):
+    iterators = []
+    # Take the first statement (for has always only
+    # one, remember `in`). And follow it.
+    for it in inputs:
+        if isinstance(it, (Generator, Array, dynamic.ArrayInstance)):
+            iterators.append(it)
+        else:
+            if not hasattr(it, 'execute_subscope_by_name'):
+                debug.warning('iterator/for loop input wrong', it)
+                continue
+            try:
+                iterators += it.execute_subscope_by_name('__iter__')
+            except KeyError:
+                debug.warning('iterators: No __iter__ method found.')
+
+    result = []
+    for gen in iterators:
+        if isinstance(gen, Array):
+            # Array is a little bit special, since this is an internal
+            # array, but there's also the list builtin, which is
+            # another thing.
+            result += gen.get_index_types()
+        elif isinstance(gen, Instance):
+            # __iter__ returned an instance.
+            name = '__next__' if is_py3k() else 'next'
+            try:
+                result += it.execute_subscope_by_name(name)
+            except KeyError:
+                debug.warning('Instance has no __next__ function', gen)
+        else:
+            # is a generator
+            result += gen.iter_content()
+    return result
 
 
 def assign_tuples(tup, results, seek_name):

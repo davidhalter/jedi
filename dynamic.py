@@ -93,6 +93,7 @@ def check_array_additions(array):
     current_module = array._array.parent_stmt.get_parent_until()
     return _check_array_additions(array, current_module, is_list)
 
+
 @evaluate.memoize_default([])
 def _check_array_additions(compare_array, module, is_list):
     """
@@ -157,9 +158,11 @@ def _check_array_additions(compare_array, module, is_list):
         except KeyError:
             continue
         for stmt in possible_stmts:
-            result += check_calls(scan_array(stmt.get_assignment_calls(), n), n)
+            ass = stmt.get_assignment_calls()
+            result += check_calls(scan_array(ass, n), n)
 
     return result
+
 
 def check_array_instances(instance):
     ai = ArrayInstance(instance)
@@ -188,8 +191,9 @@ class ArrayInstance(parsing.Base):
                 if isinstance(temp, ArrayInstance):
                     items += temp.iter_content()
                     continue
-            items += array.get_index_types()
+            items += evaluate.handle_iterators([array])#array.get_index_types()
 
         module = self.var_args.parent_stmt.get_parent_until()
-        items += _check_array_additions(self.instance, module, str(self.instance.name) == 'list')
+        is_list = str(self.instance.name) == 'list'
+        items += _check_array_additions(self.instance, module, is_list)
         return items
