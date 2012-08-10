@@ -124,9 +124,6 @@ class set():
         for i in self.__iterable:
             yield i
 
-    def add(self, elem):
-        self.__iterable += [elem]
-
     def pop(self):
         return self.__iterable.pop()
 

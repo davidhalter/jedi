@@ -1,10 +1,14 @@
 """
 For dynamic completion.
+
+Sorry to everyone who is reading this code. Especially the array parts are
+really cryptic and not understandable. It's just a hack, that turned out to be
+working quite good.
 """
-import copy
 
 import parsing
 import evaluate
+import helpers
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -83,8 +87,14 @@ def search_params(param):
     return result
 
 
-@evaluate.memoize_default([])
 def check_array_additions(array):
+    """ Just a mapper function for the internal _check_array_additions """
+    is_list = array._array.type == 'list'
+    current_module = array._array.parent_stmt.get_parent_until()
+    return _check_array_additions(array, current_module, is_list)
+
+@evaluate.memoize_default([])
+def _check_array_additions(compare_array, module, is_list):
     """
     Checks if a `parsing.Array` has "add" statements:
     >>> a = [""]
@@ -116,7 +126,7 @@ def check_array_additions(array):
             position = c.parent_stmt.start_pos
             scope = c.parent_stmt.parent
             e = evaluate.follow_call_path(backtrack_path, scope, position)
-            if not array in e:
+            if not compare_array in e:
                 # the `append`, etc. belong to other arrays
                 continue
 
@@ -137,19 +147,48 @@ def check_array_additions(array):
                 result += evaluate.follow_call_list(params)
         return result
 
-    is_list = array._array.type == 'list'
-    stmt = array._array.parent_stmt
-    current_module = stmt.get_parent_until()
     search_names = ['append', 'extend', 'insert'] if is_list else \
                                                             ['add', 'update']
     possible_stmts = []
     result = []
     for n in search_names:
         try:
-            possible_stmts += current_module.used_names[n]
+            possible_stmts += module.used_names[n]
         except KeyError:
             continue
         for stmt in possible_stmts:
             result += check_calls(scan_array(stmt.get_assignment_calls(), n), n)
 
     return result
+
+def check_array_instances(instance):
+    ai = ArrayInstance(instance)
+    return helpers.generate_param_array([ai])
+
+
+class ArrayInstance(parsing.Base):
+    """
+    Used for the usage of set() and list().
+    At the moment this is not done lazy, maybe do that later on?
+    """
+    def __init__(self, instance):
+        self.instance = instance
+        self.var_args = instance.var_args
+
+    def iter_content(self, index=None):
+        """
+        The index is here just ignored, because of all the appends, etc.
+        lists/sets are too complicated too handle that.
+        """
+        items = []
+        for array in evaluate.follow_call_list(self.var_args):
+            items += array.get_index_types()
+
+        module = self.var_args.parent_stmt.get_parent_until()
+        items +=  _check_array_additions(self.instance, module, str(self.instance.name) == 'list')
+        return items
+
+    @property
+    def parent(self):
+        return None
+

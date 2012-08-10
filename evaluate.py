@@ -136,13 +136,17 @@ class Instance(Executable):
     """ This class is used to evaluate instances. """
     def __init__(self, base, var_args=parsing.Array(None, None)):
         super(Instance, self).__init__(base, var_args)
-
-        # need to execute the __init__ function, because the dynamic param
-        # searching needs it.
-        try:
-            self.execute_subscope_by_name('__init__', self.var_args)
-        except KeyError:
-            pass
+        if str(base.name) in ['list', 'set'] \
+                    and builtin.Builtin.name == base.get_parent_until().path:
+            # compare the module path with the builtin name.
+            self.var_args = dynamic.check_array_instances(self)
+        else:
+            # need to execute the __init__ function, because the dynamic param
+            # searching needs it.
+            try:
+                self.execute_subscope_by_name('__init__', self.var_args)
+            except KeyError:
+                pass
 
     @memoize_default()
     def get_init_execution(self, func):
@@ -339,7 +343,7 @@ class Class(parsing.Base):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'subscopes',
-                            'get_imports']:
+                            'get_imports', 'get_parent_until']:
             raise AttributeError("Don't touch this (%s)!" % name)
         return getattr(self.base, name)
 
@@ -707,7 +711,8 @@ class Generator(parsing.Base):
         debug.dbg('generator names', names)
         return names
 
-    def get_content(self):
+    def iter_content(self):
+        """ returns the content of __iter__ """
         return Execution(self.func, self.var_args).get_return_types(True)
 
     def get_index_types(self, index=None):
@@ -936,7 +941,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             # Take the first statement (for has always only
             # one, remember `in`). And follow it.
             for it in follow_statement(par.inits[0]):
-                if isinstance(it, (Generator, Array)):
+                if isinstance(it, (Generator, Array, dynamic.ArrayInstance)):
                     generators.append(it)
                 else:
                     if not hasattr(it, 'execute_subscope_by_name'):
@@ -963,7 +968,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                         debug.warning('Instance has no __next__ function', gen)
                 else:
                     # is a generator
-                    in_vars = gen.get_content()
+                    in_vars = gen.iter_content()
                 if len(par.set_vars) > 1:
                     var_arr = par.set_stmt.get_assignment_calls()
                     result += assign_tuples(var_arr, in_vars, name_str)
@@ -983,6 +988,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 else:
                     debug.warning('Flow: Why are you here? %s' % par.command)
             elif isinstance(par, parsing.Param) \
+                    and par.parent is not None \
                     and isinstance(par.parent.parent, parsing.Class) \
                     and par.position == 0:
                 # This is where self gets added - this happens at another
@@ -1151,7 +1157,8 @@ def follow_call_list(call_list):
                     result += follow_call_list(call)
                 else:
                     # With things like params, these can also be functions...
-                    if isinstance(call, (Function, Class, Instance)):
+                    if isinstance(call, (Function, Class, Instance,
+                                            dynamic.ArrayInstance)):
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, str):

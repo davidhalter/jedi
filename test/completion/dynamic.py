@@ -88,7 +88,7 @@ A(3).test(2.0)
 A(3).test2()
 
 # -----------------
-# list.append/insert
+# list.append
 # -----------------
 arr = []
 for a in [1,2]:
@@ -109,6 +109,14 @@ arr[10]
 #? int()
 arr[10].index()
 
+arr = list([])
+arr.append(1)
+#? int()
+arr[0]
+
+# -----------------
+# list.insert
+# -----------------
 arr = [""]
 arr.insert(0, 1.0)
 
@@ -166,5 +174,5 @@ lst = list(st)
 
 lst.append('')
 
-#? int() str()
+##? int() str()
 lst[0]
