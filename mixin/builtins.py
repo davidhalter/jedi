@@ -26,6 +26,18 @@ def range(start, stop=None, step=1):
     return [0]
 
 
+class xrange():
+    # Attention: this function doesn't exist in Py3k (there it is range).
+    def __iter__(self):
+        yield 1
+
+    def count(self):
+        return 1
+
+    def index(self):
+        return 1
+
+
 #--------------------------------------------------------
 # descriptors
 #--------------------------------------------------------
