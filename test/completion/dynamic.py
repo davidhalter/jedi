@@ -159,6 +159,22 @@ arr.extend("")  # should ignore
 arr[0]
 
 # -----------------
+# set/list initialized as functions
+# -----------------
+
+st = set()
+st.add(1)
+
+#? int()
+for s in st: s
+
+lst = list()
+lst.append(1)
+
+#? int()
+for i in lst: i
+
+# -----------------
 # renames / type changes
 # -----------------
 arr = []
@@ -174,5 +190,15 @@ lst = list(st)
 
 lst.append('')
 
-##? int() str()
+#? int() str()
+lst[0]
+
+lst = [1]
+lst.append(1.0)
+s = set(lst)
+s.add("")
+lst = list(s)
+lst.append({})
+
+#? dict() int() float() str()
 lst[0]

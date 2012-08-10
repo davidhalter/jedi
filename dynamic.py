@@ -169,26 +169,27 @@ def check_array_instances(instance):
 class ArrayInstance(parsing.Base):
     """
     Used for the usage of set() and list().
-    At the moment this is not done lazy, maybe do that later on?
+    This is definitely a hack, but a good one :-)
+    It makes it possible to use set/list conversions.
     """
     def __init__(self, instance):
         self.instance = instance
         self.var_args = instance.var_args
 
-    def iter_content(self, index=None):
+    def iter_content(self):
         """
         The index is here just ignored, because of all the appends, etc.
         lists/sets are too complicated too handle that.
         """
         items = []
         for array in evaluate.follow_call_list(self.var_args):
+            if isinstance(array, evaluate.Instance) and len(array.var_args):
+                temp = array.var_args[0][0]
+                if isinstance(temp, ArrayInstance):
+                    items += temp.iter_content()
+                    continue
             items += array.get_index_types()
 
         module = self.var_args.parent_stmt.get_parent_until()
-        items +=  _check_array_additions(self.instance, module, str(self.instance.name) == 'list')
+        items += _check_array_additions(self.instance, module, str(self.instance.name) == 'list')
         return items
-
-    @property
-    def parent(self):
-        return None
-
