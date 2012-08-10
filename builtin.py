@@ -1,7 +1,9 @@
+from _compatibility import exec_function, is_py3k
+
 import re
 import sys
 import os
-if sys.hexversion >= 0x03000000:
+if is_py3k():
     import io
 else:
     import types
@@ -10,7 +12,6 @@ import inspect
 import debug
 import parsing
 
-from _compatibility import exec_function
 
 module_find_path = sys.path[1:]
 
@@ -73,7 +74,7 @@ class Parser(CachedModule):
         # TODO things like dbg: ('not working', 'tuple of integers')
     }
 
-    if sys.hexversion >= 0x03000000:
+    if is_py3k():
         map_types['file object'] = 'import io; return io.TextIOWrapper(file)'
 
     module_cache = {}
@@ -163,13 +164,17 @@ class Parser(CachedModule):
 
         try:
             name = self.name
-            if name == '__builtin__' and sys.hexversion < 0x03000000:
+            if name == '__builtin__' and not is_py3k():
                 name = 'builtins'
             f = open(os.path.sep.join(['mixin', name]) + '.py')
         except IOError:
             return {}
         else:
-            return process_code(f.read())
+            mixin_dct = process_code(f.read())
+            if is_py3k():
+                # in the case of Py3k xrange is now range
+                mixin_dct['range'] = mixin_dct['xrange']
+            return mixin_dct
 
     def _generate_code(self, scope, mixin_funcs, depth=0):
         """
@@ -294,7 +299,7 @@ class Parser(CachedModule):
 
         # variables
         for name, value in stmts.items():
-            if sys.hexversion >= 0x03000000:
+            if is_py3k():
                 file_type = io.TextIOWrapper
             else:
                 file_type = types.FileType
@@ -379,7 +384,7 @@ def parse_function_doc(func):
 
 class _Builtin(object):
     # Python 3 compatibility
-    if sys.hexversion >= 0x03000000:
+    if is_py3k():
         name = 'builtins'
     else:
         name = '__builtin__'
