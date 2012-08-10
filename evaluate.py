@@ -936,44 +936,13 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         return res_new
 
     def filter_name(scope_generator):
-        def handle_iterators(par):
-            generators = []
+        def handle_for_loops(loop):
             # Take the first statement (for has always only
             # one, remember `in`). And follow it.
-            for it in follow_statement(par.inits[0]):
-                if isinstance(it, (Generator, Array, dynamic.ArrayInstance)):
-                    generators.append(it)
-                else:
-                    if not hasattr(it, 'execute_subscope_by_name'):
-                        debug.warning('for loop input wrong', it)
-                        continue
-                    try:
-                        generators += it.execute_subscope_by_name('__iter__')
-                    except KeyError:
-                        debug.warning('`for r in x`: x has no __iter__ method')
-
-            result = []
-            for gen in generators:
-                if isinstance(gen, Array):
-                    # Array is a little bit special, since this is an internal
-                    # array, but there's also the list builtin, which is
-                    # another thing.
-                    in_vars = gen.get_index_types()
-                elif isinstance(gen, Instance):
-                    # __iter__ returned an instance.
-                    name = '__next__' if is_py3k() else 'next'
-                    try:
-                        in_vars = it.execute_subscope_by_name(name)
-                    except KeyError:
-                        debug.warning('Instance has no __next__ function', gen)
-                else:
-                    # is a generator
-                    in_vars = gen.iter_content()
-                if len(par.set_vars) > 1:
-                    var_arr = par.set_stmt.get_assignment_calls()
-                    result += assign_tuples(var_arr, in_vars, name_str)
-                else:
-                    result += in_vars
+            result = handle_iterators(follow_statement(loop.inits[0]))
+            if len(loop.set_vars) > 1:
+                var_arr = loop.set_stmt.get_assignment_calls()
+                result = assign_tuples(var_arr, result, name_str)
             return result
 
         def handle_non_arrays(name):
@@ -984,7 +953,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             par = name.parent
             if par.isinstance(parsing.Flow):
                 if par.command == 'for':
-                    result += handle_iterators(par)
+                    result += handle_for_loops(par)
                 else:
                     debug.warning('Flow: Why are you here? %s' % par.command)
             elif isinstance(par, parsing.Param) \
