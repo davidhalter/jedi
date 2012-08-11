@@ -55,7 +55,7 @@ def search_params(param):
         for params in listener.param_possibilities:
             for p in params:
                 if str(p) == param_name:
-                    result += evaluate.follow_statement(p.parent)
+                    result += evaluate.follow_statement(p.parent())
         #print listener.param_possibilities, param, result
 
         return result
@@ -63,8 +63,8 @@ def search_params(param):
     func = param.get_parent_until(parsing.Function)
     current_module = param.get_parent_until()
     func_name = str(func.name)
-    if func_name == '__init__' and isinstance(func.parent, parsing.Class):
-        func_name = str(func.parent.name)
+    if func_name == '__init__' and isinstance(func.parent(), parsing.Class):
+        func_name = str(func.parent().name)
 
     # get the param name
     if param.assignment_details:
@@ -125,7 +125,7 @@ def _check_array_additions(compare_array, module, is_list):
             backtrack_path = iter(call_path[:separate_index])
 
             position = c.parent_stmt.start_pos
-            scope = c.parent_stmt.parent
+            scope = c.parent_stmt.parent()
             e = evaluate.follow_call_path(backtrack_path, scope, position)
             if not compare_array in e:
                 # the `append`, etc. belong to other arrays

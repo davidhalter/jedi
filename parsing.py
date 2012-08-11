@@ -110,7 +110,6 @@ class Scope(Simple):
         self.docstr = docstr
 
     def add_scope(self, sub, decorators):
-        print 'push scope @%s,%s' % sub.start_pos
         sub.parent = weakref.ref(self)
         sub.decorators = decorators
         for d in decorators:
@@ -460,7 +459,6 @@ class Flow(Scope):
         else:
             self.next = next
             self.next.parent = self.parent
-            print 'n', self.next
             #next.top_flow = self.top_flow
             return next
 
@@ -1349,8 +1347,8 @@ class PyFuzzyParser(object):
                 token_type, tok = self.next()
                 #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
                 #    % (tok, token_type, start_position[0]))
-                print('main: tok=[%s] type=[%s] indent=[%s]'
-                        % (tok, tokenize.tok_name[token_type], self.start_pos[0]))
+                #print('main: tok=[%s] type=[%s] indent=[%s]'
+                #        % (tok, tokenize.tok_name[token_type], self.start_pos[0]))
 
                 while token_type == tokenize.DEDENT \
                                                 and self.scope != self.module:

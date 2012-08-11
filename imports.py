@@ -61,7 +61,7 @@ class ImportPath(object):
         zero = (None, None)
         n = parsing.Name(i.namespace.names[1:], zero, zero)
         new = parsing.Import(zero, zero, n)
-        new.parent = parent
+        new.parent = lambda: parent
         debug.dbg('Generated a nested import: %s' % new)
         return new
 

@@ -946,6 +946,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                         and scope.var == name.parent().parent():
                 name = InstanceElement(scope.instance, name)
             par = name.parent()
+            print name, par
             if par.isinstance(parsing.Flow):
                 if par.command == 'for':
                     result += handle_for_loops(par)
