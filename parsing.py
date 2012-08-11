@@ -34,6 +34,7 @@ from _compatibility import (next, literal_eval, tokenize_func, BytesIO,
 import tokenize
 import re
 import keyword
+import weakref
 
 import debug
 
@@ -73,13 +74,13 @@ class Simple(Base):
     def __init__(self, start_pos, end_pos=(None, None)):
         self.start_pos = start_pos
         self.end_pos = end_pos
-        self.parent = None
+        self.parent = lambda: None
 
     def get_parent_until(self, *classes):
         """ Takes always the parent, until one class (not a Class) """
         scope = self
-        while not (scope.parent is None or scope.__class__ in classes):
-            scope = scope.parent
+        while not (scope.parent() is None or scope.__class__ in classes):
+            scope = scope.parent()
         return scope
 
     def __repr__(self):
@@ -109,8 +110,8 @@ class Scope(Simple):
         self.docstr = docstr
 
     def add_scope(self, sub, decorators):
-        # print 'push scope: [%s@%s]' % sub.start_pos
-        sub.parent = self
+        print 'push scope @%s,%s' % sub.start_pos
+        sub.parent = weakref.ref(self)
         sub.decorators = decorators
         for d in decorators:
             # the parent is the same, because the decorator has not the scope
@@ -124,7 +125,7 @@ class Scope(Simple):
         Used to add a Statement or a Scope.
         A statement would be a normal command (Statement) or a Scope (Flow).
         """
-        stmt.parent = self
+        stmt.parent = weakref.ref(self)
         self.statements.append(stmt)
         return stmt
 
@@ -154,7 +155,7 @@ class Scope(Simple):
 
     def add_import(self, imp):
         self.imports.append(imp)
-        imp.parent = self
+        imp.parent = weakref.ref(self)
 
     def get_imports(self):
         """ Gets also the imports within flow statements """
@@ -291,10 +292,10 @@ class Class(Scope):
     def __init__(self, name, supers, start_pos, docstr=''):
         super(Class, self).__init__(start_pos, docstr)
         self.name = name
-        name.parent = self
+        name.parent = weakref.ref(self)
         self.supers = supers
         for s in self.supers:
-            s.parent = self
+            s.parent = weakref.ref(self)
         self.decorators = []
 
     def get_code(self, first_indent=False, indention="    "):
@@ -326,10 +327,10 @@ class Function(Scope):
     def __init__(self, name, params, start_pos, docstr=''):
         Scope.__init__(self, start_pos, docstr)
         self.name = name
-        name.parent = self
+        name.parent = weakref.ref(self)
         self.params = params
         for p in params:
-            p.parent = self
+            p.parent = weakref.ref(self)
         self.decorators = []
         self.returns = []
         self.is_generator = False
@@ -378,30 +379,37 @@ class Flow(Scope):
     :type set_vars: list
     """
     def __init__(self, command, inits, start_pos, set_vars=None):
-        self._parent = None
-        self.next = None
         super(Flow, self).__init__(start_pos, '')
+        self.next = None
+        #self.top_flow = weakref.ref(self)
         self.command = command
         # These have to be statements, because of with, which takes multiple.
         self.inits = inits
         for s in inits:
-            s.parent = self
+            s.parent = weakref.ref(self)
         if set_vars == None:
             self.set_vars = []
         else:
             self.set_vars = set_vars
             for s in self.set_vars:
-                s.parent = self
+                s.parent = weakref.ref(self)
 
-    @property
+    """
     def parent(self):
-        return self._parent
+        if self._parent is None:
+            return self.top_flow().parent()
+        else:
+            return self._parent()
+        # TODO REMOVE
+    """
 
-    @parent.setter
-    def parent(self, value):
-        self._parent = value
-        if self.next:
-            self.next.parent = value
+    def set_parent(self, value):
+        """
+        Normally this would be a setter, but since parents are normally
+        weakrefs (and therefore require execution),
+        I use a java like setter here.
+        """
+        self._parent = weakref.ref(value)
 
     def get_code(self, first_indent=False, indention="    "):
         if self.set_vars:
@@ -451,7 +459,9 @@ class Flow(Scope):
             return self.next.set_next(next)
         else:
             self.next = next
-            next.parent = self.parent
+            self.next.parent = self.parent
+            print 'n', self.next
+            #next.top_flow = self.top_flow
             return next
 
 
@@ -491,15 +501,15 @@ class Import(Simple):
 
         self.namespace = namespace
         if namespace:
-            namespace.parent = self
+            namespace.parent = weakref.ref(self)
 
         self.alias = alias
         if alias:
-            alias.parent = self
+            alias.parent = weakref.ref(self)
 
         self.from_ns = from_ns
         if from_ns:
-            from_ns.parent = self
+            from_ns.parent = weakref.ref(self)
 
         self.star = star
         self.relative_count = relative_count
@@ -561,7 +571,7 @@ class Statement(Simple):
         self.used_vars = used_vars
         self.token_list = token_list
         for s in set_vars + used_funcs + used_vars:
-            s.parent = self
+            s.parent = weakref.ref(self)
 
         # cache
         self._assignment_calls = None
@@ -938,7 +948,8 @@ class Name(Simple):
     def __init__(self, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(start_pos, end_pos)
         self.names = tuple(NamePart(n) for n in names)
-        self.parent = parent
+        if parent is not None:
+            self.parent = weakref.ref(parent)
 
     def get_code(self):
         """ Returns the names in a full string format """
@@ -1326,7 +1337,7 @@ class PyFuzzyParser(object):
         """
         buf = BytesIO(self.code)
         self.gen = tokenize_func(buf.readline)
-        self.currentscope = self.scope
+        self.currentscope = self.scope # TODO remove?
 
         extended_flow = ['else', 'elif', 'except', 'finally']
         statement_toks = ['{', '[', '(', '`']
@@ -1338,6 +1349,8 @@ class PyFuzzyParser(object):
                 token_type, tok = self.next()
                 #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
                 #    % (tok, token_type, start_position[0]))
+                print('main: tok=[%s] type=[%s] indent=[%s]'
+                        % (tok, tokenize.tok_name[token_type], self.start_pos[0]))
 
                 while token_type == tokenize.DEDENT \
                                                 and self.scope != self.module:
@@ -1345,7 +1358,7 @@ class PyFuzzyParser(object):
                     token_type, tok = self.next()
                     if self.start_pos[1] <= self.scope.start_pos[1]:
                         self.scope.end_pos = self.start_pos
-                        self.scope = self.scope.parent
+                        self.scope = self.scope.parent()
 
                 # check again for unindented stuff. this is true for syntax
                 # errors. only check for names, because thats relevant here. If
@@ -1355,7 +1368,7 @@ class PyFuzzyParser(object):
                         and self.scope != self.module:
                     debug.dbg('syntax: dedent @%s - %s<=%s', self.start_pos)
                     self.scope.end_pos = self.start_pos
-                    self.scope = self.scope.parent
+                    self.scope = self.scope.parent()
 
                 first_pos = self.start_pos
                 if tok == 'def':

@@ -1,4 +1,5 @@
 import re
+import weakref
 
 import parsing
 import dynamic  # must be before evaluate, because it needs to be loaded first.
@@ -28,17 +29,17 @@ class Completion(object):
 
     @property
     def description(self):
-        return str(self.name.parent)
+        return str(self.name.parent())
 
     @property
     def help(self):
         try:
-            return str(self.name.parent.docstr)
+            return str(self.name.parent().docstr)
         except AttributeError:
             return ''
 
     def get_type(self):
-        return type(self.name.parent)
+        return type(self.name.parent())
 
     def get_vim_type(self):
         """
@@ -94,8 +95,8 @@ class Definition(object):
     def module_path(self):
         par = self.definition
         while True:
-            if par.parent is not None:
-                par = par.parent
+            if par.parent() is not None:
+                par = par.parent()
             else:
                 break
 
@@ -118,7 +119,7 @@ class Definition(object):
         if isinstance(d, evaluate.InstanceElement):
             d = d.var
         if isinstance(d, evaluate.parsing.Name):
-            d = d.parent
+            d = d.parent()
 
         if isinstance(d, (evaluate.Class, evaluate.Instance)):
             d = 'class ' + str(d.name)
@@ -223,7 +224,7 @@ def prepare_goto(source, position, source_path, module, goto_path,
             raise NotFoundError()
         else:
             stmt.start_pos = position
-            stmt.parent = scope
+            stmt.parent = weakref.ref(scope)
             scopes = evaluate.follow_statement(stmt)
     return scopes
 
@@ -284,7 +285,7 @@ def goto(source, line, column, source_path):
             """
             new_names = []
             for n in names:
-                par = n.parent
+                par = n.parent()
                 # This is a special case: If the Import is "virtual" (which
                 # means the position is not defined), follow those modules.
                 if isinstance(par, parsing.Import) and not par.start_pos[0]:
@@ -321,3 +322,14 @@ def set_debug_function(func_cb):
 
 def _clear_caches():
     evaluate.clear_caches()
+    import gc
+    #gc.set_debug(gc.DEBUG_STATS | gc.DEBUG_COLLECTABLE | gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_OBJECTS)
+    #gc.collect()
+    count = 0
+    for o in gc.get_objects():
+        if isinstance(o, parsing.Module):
+            pass
+            count += 1
+            #print o
+    print count
+    #exit()
