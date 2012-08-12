@@ -378,9 +378,9 @@ class Flow(Scope):
     :type set_vars: list
     """
     def __init__(self, command, inits, start_pos, set_vars=None):
-        super(Flow, self).__init__(start_pos, '')
         self.next = None
-        #self.top_flow = weakref.ref(self)
+        super(Flow, self).__init__(start_pos, '')
+        self._parent = None
         self.command = command
         # These have to be statements, because of with, which takes multiple.
         self.inits = inits
@@ -393,14 +393,15 @@ class Flow(Scope):
             for s in self.set_vars:
                 s.parent = weakref.ref(self)
 
-    """
+    @property
     def parent(self):
-        if self._parent is None:
-            return self.top_flow().parent()
-        else:
-            return self._parent()
-        # TODO REMOVE
-    """
+        return self._parent
+
+    @parent.setter
+    def parent(self, value):
+        self._parent = value
+        if self.next:
+            self.next.parent = value
 
     def set_parent(self, value):
         """
@@ -459,7 +460,6 @@ class Flow(Scope):
         else:
             self.next = next
             self.next.parent = self.parent
-            #next.top_flow = self.top_flow
             return next
 
 
@@ -534,7 +534,7 @@ class Import(Simple):
             return [self.alias]
         if len(self.namespace) > 1:
             o = self.namespace
-            n = Name([o.names[0]], o.start_pos, o.end_pos, parent=o.parent)
+            n = Name([o.names[0]], o.start_pos, o.end_pos, parent=o.parent())
             return [n]
         else:
             return [self.namespace]

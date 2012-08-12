@@ -71,6 +71,14 @@ class Definition(object):
         """ The definition of a function """
         self.definition = definition
 
+        par = self.definition
+        while True:
+            if par.parent() is not None:
+                par = par.parent()
+            else:
+                break
+        self.module_path = str(par.path)
+
     def get_name(self):
         try:
             # is a func / class
@@ -90,17 +98,6 @@ class Definition(object):
             return path[path.rindex('/') + 1:]
         except ValueError:
             return path
-
-    @property
-    def module_path(self):
-        par = self.definition
-        while True:
-            if par.parent() is not None:
-                par = par.parent()
-            else:
-                break
-
-        return str(par.path)
 
     def in_builtin_module(self):
         return not self.module_path.endswith('.py')

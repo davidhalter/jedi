@@ -1,4 +1,5 @@
 import copy
+import weakref
 
 import parsing
 import debug
@@ -84,6 +85,42 @@ def fast_parent_copy(obj):
                 copied_list[i] = recursion(el)
             elif isinstance(el, list):
                 copied_list[i] = list_rec(el)
+        return copied_list
+    return recursion(obj)
+
+def fast_parent_copy2(obj):
+    """
+    Much, much faster than deepcopy, but just for the elements in `classes`.
+    """
+    new_elements = {}
+    classes = (parsing.Simple)
+
+    def recursion(obj):
+        new_obj = copy.copy(obj)
+        new_elements[obj] = new_obj
+        if obj.parent is not None:
+            try:
+                new_obj.parent = weakref.ref(new_elements[obj.parent()])
+            except KeyError:
+                pass
+
+        #print new_obj.__dict__
+        for key, value in new_obj.__dict__.items():
+            if isinstance(value, list):
+                new_obj.__dict__[key] = list_rec(value)
+            elif isinstance(value, classes):
+                new_obj.__dict__[key] = recursion(value)
+        return new_obj
+
+    def list_rec(list_obj):
+        copied_list = list_obj[:]   # lists, tuples, strings, unicode
+        for i, el in enumerate(copied_list):
+            if isinstance(el, classes):
+                copied_list[i] = recursion(el)
+            elif isinstance(el, list):
+                copied_list[i] = list_rec(el)
+            elif isinstance(el, parsing.Call):
+                copied_list[i] = fast_parent_copy(el)
         return copied_list
     return recursion(obj)
 

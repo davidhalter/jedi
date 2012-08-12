@@ -165,7 +165,7 @@ class Instance(Executable):
             return None
 
     def get_self_properties(self):
-        def add_self_name(name):
+        def add_self_dot_name(name):
             n = copy.copy(name)
             n.names = n.names[1:]
             names.append(InstanceElement(self, n))
@@ -187,7 +187,7 @@ class Instance(Executable):
                     # It is also important, that they have a len() of 2,
                     # because otherwise, they are just something else
                     if n.names[0] == self_name and len(n.names) == 2:
-                        add_self_name(n)
+                        add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
             names += Instance(s).get_self_properties()
@@ -247,7 +247,7 @@ class Instance(Executable):
                 (self.__class__.__name__, self.base, len(self.var_args or []))
 
 
-class InstanceElement():
+class InstanceElement(object):
     def __init__(self, instance, var):
         if isinstance(var, parsing.Function):
             var = Function(var)
@@ -260,10 +260,6 @@ class InstanceElement():
         if not isinstance(par, (parsing.Module, Class)):
             par = InstanceElement(self.instance, par)
         return par
-
-    def get_var(self):
-        pass
-        #if self.var
 
     def get_parent_until(self, *classes):
         scope = self.var.get_parent_until(*classes)
@@ -656,12 +652,14 @@ class Execution(Executable):
         objects = []
         for element in attr:
             temp, element.parent = element.parent, None
-            copied = copy.deepcopy(element)
+            #copied = copy.deepcopy(element)
+            copied = helpers.fast_parent_copy2(element)
             element.parent = temp
             copied.parent = weakref.ref(self)
             if isinstance(copied, parsing.Function):
                 copied = Function(copied)
             objects.append(copied)
+            faked_scopes.append(copied)
         return objects
 
     def __getattr__(self, name):
@@ -1000,7 +998,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
 
     def descriptor_check(result):
         res_new = []
-        #print 'descc', scope, result, name_str
         for r in result:
             if isinstance(scope, (Instance, Class)) \
                                 and hasattr(r, 'get_descriptor_return'):
