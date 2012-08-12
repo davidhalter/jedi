@@ -210,3 +210,18 @@ tuple(lst)[0]
 # but not with an iterator
 #? 
 iter(lst)[0]
+
+# -----------------
+# functions
+# -----------------
+
+def arr_append(arr, a):
+    arr.append(a)
+
+def add_to_arr(arr, a):
+    arr.append(a)
+    return arr
+
+a = [1.0]
+#? int()
+add_to_arr(a, 1)[0]

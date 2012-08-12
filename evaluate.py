@@ -33,6 +33,7 @@ import dynamic
 
 memoize_caches = []
 statement_path = []
+faked_scopes = []
 
 
 class DecoratorNotFound(LookupError):
@@ -69,14 +70,14 @@ class MultiLevelAttributeError(Exception):
 
 
 def clear_caches():
-    global memoize_caches
-    global statement_path
+    global memoize_caches, statement_path, faked_scopes
 
     for m in memoize_caches:
         m.clear()
 
     memoize_caches = []
     statement_path = []
+    faked_scopes = []
 
     follow_statement.reset()
 
@@ -492,12 +493,14 @@ class Execution(Executable):
             calls.keys = keys
             calls.type = array_type
             new_param = copy.copy(param)
-            new_param.parent = parent_stmt
+            if parent_stmt is not None:
+                new_param.parent = weakref.ref(parent_stmt)
             new_param._assignment_calls_calculated = True
             new_param._assignment_calls = calls
             new_param.is_generated = True
             name = copy.copy(param.get_name())
             name.parent = weakref.ref(new_param)
+            faked_scopes.append(new_param)
             return name
 
         result = []
@@ -946,7 +949,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                         and scope.var == name.parent().parent():
                 name = InstanceElement(scope.instance, name)
             par = name.parent()
-            print name, par
             if par.isinstance(parsing.Flow):
                 if par.command == 'for':
                     result += handle_for_loops(par)
