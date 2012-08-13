@@ -70,6 +70,7 @@ class Definition(object):
     def __init__(self, definition):
         """ The definition of a function """
         self.definition = definition
+        self._def_parent = self.definition.parent()  # just here to limit gc
 
         par = self.definition
         while True:
@@ -319,15 +320,3 @@ def set_debug_function(func_cb):
 
 def _clear_caches():
     evaluate.clear_caches()
-    return
-    import gc
-    #gc.set_debug(gc.DEBUG_STATS | gc.DEBUG_COLLECTABLE | gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_OBJECTS)
-    #gc.collect()
-    count = 0
-    for o in gc.get_objects():
-        if isinstance(o, parsing.Module):
-            pass
-            count += 1
-            #print o
-    print count
-    #exit()

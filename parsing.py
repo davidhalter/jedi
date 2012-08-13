@@ -1334,7 +1334,6 @@ class PyFuzzyParser(object):
         """
         buf = BytesIO(self.code)
         self.gen = tokenize_func(buf.readline)
-        self.currentscope = self.scope # TODO remove?
 
         extended_flow = ['else', 'elif', 'except', 'finally']
         statement_toks = ['{', '[', '(', '`']
@@ -1346,8 +1345,6 @@ class PyFuzzyParser(object):
                 token_type, tok = self.next()
                 #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
                 #    % (tok, token_type, start_position[0]))
-                #print('main: tok=[%s] type=[%s] indent=[%s]'
-                #        % (tok, tokenize.tok_name[token_type], self.start_pos[0]))
 
                 while token_type == tokenize.DEDENT \
                                                 and self.scope != self.module:

@@ -7,9 +7,6 @@ import parsing
 import builtin
 import debug
 
-files = {}
-load_module_cb = None
-
 
 class Module(builtin.CachedModule):
     """

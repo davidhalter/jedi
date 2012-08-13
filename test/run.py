@@ -9,8 +9,8 @@ sys.path.append('.')
 import functions
 from _compatibility import unicode, BytesIO
 
-only_line = int(sys.argv[2]) if len(sys.argv) > 2 else None
-if only_line is not None:
+only_line = [int(o) for o in sys.argv[2:]]
+if only_line:
     import debug
     debug.debug_function = \
                 functions.debug.print_to_stdout
@@ -164,7 +164,7 @@ def run_test(source, f_name):
                 correct = None
             else:
                 # reset the test, if only one specific test is wanted
-                if only_line and line_nr != only_line:
+                if only_line and line_nr not in only_line:
                     correct = None
     return tests, fails
 
@@ -208,6 +208,7 @@ test_dir(completion_test_dir, third_party=True)
 print('\nSummary:')
 for s in summary:
     print(s)
+
 
 exit_code = 0 if tests_pass else 1
 sys.exit(exit_code)

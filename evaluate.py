@@ -75,7 +75,8 @@ def clear_caches():
     for m in memoize_caches:
         m.clear()
 
-    memoize_caches = []
+    # memorize_caches must never be deleted, because the dicts will get lost in
+    # the wrappers.
     statement_path = []
     faked_scopes = []
 
