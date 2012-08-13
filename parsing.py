@@ -37,6 +37,7 @@ import keyword
 import weakref
 
 import debug
+from inspect import cleandoc
 
 
 class ParserError(Exception):
@@ -130,27 +131,10 @@ class Scope(Simple):
 
     def add_docstr(self, string):
         """ Clean up a docstring """
-
-        # TODO use prefixes, to format the doc strings -> inspect.cleandoc
-        # scan for string prefixes like r, u, etc.
-        index1 = string.find("'")
-        index2 = string.find('"')
-        index = index1 if index1 < index2 and index1 > -1 else index2
-        prefix = string[:index]
-        d = string[index:]
-        debug.dbg('add_docstr', d, prefix)
-
-        # now clean docstr
-        d = d.replace('\n', ' ')
-        d = d.replace('\t', ' ')
-        while d.find('  ') > -1:
-            d = d.replace('  ', ' ')
-        while d[0] in '"\'\t ':
-            d = d[1:]
-        while d[-1] in '"\'\t ':
-            d = d[:-1]
-        debug.dbg("Scope(%s)::docstr = %s" % (self, d))
-        self.docstr = d
+        self.docstr = cleandoc(literal_eval(string))
+        debug.dbg("Scope(%s)::docstr = %s" % (self, self.docstr))
+        if self.get_parent_until().path != '__builtin__':
+            print self, self.docstr
 
     def add_import(self, imp):
         self.imports.append(imp)
@@ -618,7 +602,6 @@ class Statement(Simple):
         is_chain = False
         close_brackets = False
 
-        debug.dbg('tok_list', self.token_list)
         tok_iter = enumerate(self.token_list)
         for i, tok_temp in tok_iter:
             #print 'tok', tok_temp, result
@@ -1151,7 +1134,7 @@ class PyFuzzyParser(object):
         first_pos = self.start_pos
         token_type, cname = self.next()
         if token_type != tokenize.NAME:
-            debug.dbg("class: syntax error - token is not a name@%s (%s: %s)"
+            debug.warning("class: syntax err, token is not a name@%s (%s: %s)"
                 % (self.start_pos[0], tokenize.tok_name[token_type], cname))
             return None
 
@@ -1164,7 +1147,7 @@ class PyFuzzyParser(object):
             token_type, next = self.next()
 
         if next != ':':
-            debug.dbg("class syntax: %s@%s" % (cname, self.start_pos[0]))
+            debug.warning("class syntax: %s@%s" % (cname, self.start_pos[0]))
             return None
 
         return Class(cname, super, first_pos)
@@ -1282,10 +1265,12 @@ class PyFuzzyParser(object):
         if not string:
             return None, tok
         #print 'new_stat', string, set_vars, used_funcs, used_vars
-        if self.freshscope and len(tok_list) > 1 \
-                    and self.last_token[1] == tokenize.STRING:
+        #if self.freshscope and self.get_parent_until().path != '__builtin__':
+            #print self, self.docstr
+        if self.freshscope and len(tok_list) == 1 \
+                    and self.last_token[0] == tokenize.STRING:
             self.scope.add_docstr(self.last_token[1])
-            print('i want to see you')
+            return None, tok
         else:
             stmt = stmt_class(string, set_vars, used_funcs, used_vars, \
                                 tok_list, first_pos, self.end_pos)
@@ -1344,11 +1329,10 @@ class PyFuzzyParser(object):
             try:
                 token_type, tok = self.next()
                 #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
-                #    % (tok, token_type, start_position[0]))
+                #    % (tok, tokenize.tok_name[token_type], start_position[0]))
 
                 while token_type == tokenize.DEDENT \
                                                 and self.scope != self.module:
-                    debug.dbg('dedent', self.scope)
                     token_type, tok = self.next()
                     if self.start_pos[1] <= self.scope.start_pos[1]:
                         self.scope.end_pos = self.start_pos
@@ -1360,7 +1344,6 @@ class PyFuzzyParser(object):
                 while self.start_pos[1] <= self.scope.start_pos[1] \
                         and (token_type == tokenize.NAME or tok in ['(', '['])\
                         and self.scope != self.module:
-                    debug.dbg('syntax: dedent @%s - %s<=%s', self.start_pos)
                     self.scope.end_pos = self.start_pos
                     self.scope = self.scope.parent()
 
@@ -1371,7 +1354,6 @@ class PyFuzzyParser(object):
                         debug.warning("function: syntax error@%s" %
                                                             self.start_pos[0])
                         continue
-                    debug.dbg("new scope: function %s" % (func.name))
                     self.freshscope = True
                     self.scope = self.scope.add_scope(func, decorators)
                     decorators = []
@@ -1382,7 +1364,6 @@ class PyFuzzyParser(object):
                                                             self.start_pos[0])
                         continue
                     self.freshscope = True
-                    debug.dbg("new scope: class %s" % (cls.name))
                     self.scope = self.scope.add_scope(cls, decorators)
                     decorators = []
                 # import stuff
@@ -1393,7 +1374,6 @@ class PyFuzzyParser(object):
                                                             defunct=defunct)
                         self._check_user_stmt(i)
                         self.scope.add_import(i)
-                        debug.dbg("new import: %s" % (i), self.current)
                     if not imports:
                         i = Import(first_pos, self.end_pos, None, defunct=True)
                         self._check_user_stmt(i)
@@ -1422,7 +1402,6 @@ class PyFuzzyParser(object):
                             star, relative_count, defunct=defunct or defunct2)
                         self._check_user_stmt(i)
                         self.scope.add_import(i)
-                        debug.dbg("new from: %s" % (i))
                     if not names:
                         i = Import(first_pos, self.end_pos, mod, defunct=True,
                                     relative_count=relative_count)
@@ -1436,7 +1415,6 @@ class PyFuzzyParser(object):
                         if tok == ':':
                             f = ForFlow('for', [statement], first_pos,
                                                                 set_stmt)
-                            debug.dbg("new scope: forflow@%s" % f.start_pos[0])
                             self.scope = self.scope.add_statement(f)
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
@@ -1463,8 +1441,6 @@ class PyFuzzyParser(object):
 
                     if tok == ':':
                         f = Flow(command, inits, first_pos)
-                        debug.dbg("new scope: flow %s@%s"
-                                        % (command, self.start_pos[0]))
                         if command in extended_flow:
                             # the last statement has to be another part of
                             # the flow statement, because a dedent releases the
@@ -1485,7 +1461,6 @@ class PyFuzzyParser(object):
                     stmt, tok = self._parse_statement(self.current)
                     if stmt:
                         self.scope.add_statement(stmt)
-                        debug.dbg('global_vars', stmt.used_vars)
                         for name in stmt.used_vars:
                             # add the global to the top, because there it is
                             # important.
@@ -1505,7 +1480,6 @@ class PyFuzzyParser(object):
                     # by the statement parser.
                     stmt, tok = self._parse_statement(self.current)
                     if stmt:
-                        debug.dbg('new stmt', stmt)
                         self.scope.add_statement(stmt)
                     self.freshscope = False
                 else:

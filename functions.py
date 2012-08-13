@@ -21,6 +21,7 @@ class Completion(object):
         self.name = name
         self.needs_dot = needs_dot
         self.like_name_length = like_name_length
+        self._completion_parent = name.parent()  # limit gc
 
     @property
     def complete(self):
@@ -193,10 +194,11 @@ def complete(source, line, column, source_path):
     completions = [c for c in completions
                             if c.names[-1].lower().startswith(like.lower())]
 
-    _clear_caches()
-
     needs_dot = not dot and path
-    return [Completion(c, needs_dot, len(like)) for c in set(completions)]
+    c = [Completion(c, needs_dot, len(like)) for c in set(completions)]
+
+    _clear_caches()
+    return c
 
 
 def prepare_goto(source, position, source_path, module, goto_path,
