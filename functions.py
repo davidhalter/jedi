@@ -319,8 +319,8 @@ def set_debug_function(func_cb):
 
 def _clear_caches():
     evaluate.clear_caches()
-    import gc
     return
+    import gc
     #gc.set_debug(gc.DEBUG_STATS | gc.DEBUG_COLLECTABLE | gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_OBJECTS)
     #gc.collect()
     count = 0

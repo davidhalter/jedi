@@ -90,7 +90,7 @@ def search_params(param):
 def check_array_additions(array):
     """ Just a mapper function for the internal _check_array_additions """
     is_list = array._array.type == 'list'
-    current_module = array._array.parent_stmt.get_parent_until()
+    current_module = array._array.parent_stmt().get_parent_until()
     return _check_array_additions(array, current_module, is_list)
 
 
@@ -124,8 +124,8 @@ def _check_array_additions(compare_array, module, is_list):
                 continue
             backtrack_path = iter(call_path[:separate_index])
 
-            position = c.parent_stmt.start_pos
-            scope = c.parent_stmt.parent()
+            position = c.parent_stmt().start_pos
+            scope = c.parent_stmt().parent()
             e = evaluate.follow_call_path(backtrack_path, scope, position)
             if not compare_array in e:
                 # the `append`, etc. belong to other arrays
@@ -193,7 +193,7 @@ class ArrayInstance(parsing.Base):
                     continue
             items += evaluate.handle_iterators([array])
 
-        module = self.var_args.parent_stmt.get_parent_until()
+        module = self.var_args.parent_stmt().get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self.instance, module, is_list)
         return items

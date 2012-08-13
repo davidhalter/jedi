@@ -2,6 +2,7 @@ import copy
 import weakref
 
 import parsing
+import evaluate
 import debug
 import builtin
 
@@ -106,6 +107,9 @@ def fast_parent_copy2(obj):
 
         #print new_obj.__dict__
         for key, value in new_obj.__dict__.items():
+            #if key in ['_parent_stmt', 'parent_stmt', '_parent', 'parent']: print key, value
+            if key in ['parent', '_parent']:
+                continue
             if isinstance(value, list):
                 new_obj.__dict__[key] = list_rec(value)
             elif isinstance(value, classes):
@@ -133,4 +137,6 @@ def generate_param_array(args_tuple, parent_stmt=None):
             values.append([])
         else:
             values.append([arg])
-    return parsing.Array(parsing.Array.TUPLE, parent_stmt, values=values)
+    arr = parsing.Array(parsing.Array.TUPLE, parent_stmt, values=values)
+    evaluate.faked_scopes.append(arr)
+    return arr

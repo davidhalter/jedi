@@ -204,8 +204,8 @@ class Instance(Executable):
         if args is None:
             args = helpers.generate_param_array([])
         method = self.get_subscope_by_name(name)
-        if args.parent_stmt is None:
-            args.parent_stmt = method
+        if args.parent_stmt() is None:
+            args.parent_stmt = weakref.ref(method)
         return Execution(method, args).get_return_types()
 
     def get_descriptor_return(self, obj):
@@ -275,11 +275,12 @@ class InstanceElement(object):
     def get_assignment_calls(self):
         # Copy and modify the array.
         origin = self.var.get_assignment_calls()
-        origin.parent_stmt, temp = None, origin.parent_stmt
         # Delete parent, because it isn't used anymore.
         new = helpers.fast_parent_copy(origin)
-        origin.parent_stmt = temp
-        new.parent_stmt = InstanceElement(self.instance, temp)
+        par = InstanceElement(self.instance, origin.parent_stmt())
+        new.parent_stmt = weakref.ref(par)
+        faked_scopes.append(par)
+        faked_scopes.append(new)
         return new
 
     def __getattr__(self, name):
@@ -382,6 +383,7 @@ class Function(parsing.Base):
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
                 params = helpers.generate_param_array([old_func], old_func)
+                faked_scopes.append(old_func)
 
                 wrappers = Execution(decorator, params).get_return_types()
                 if not len(wrappers):
@@ -483,7 +485,7 @@ class Execution(Executable):
             """
             Create a param with the original scope (of varargs) as parent.
             """
-            parent_stmt = self.var_args.parent_stmt
+            parent_stmt = self.var_args.parent_stmt()
             calls = parsing.Array(parsing.Array.NOARRAY, parent_stmt)
             calls.values = values
             calls.keys = keys
@@ -1180,10 +1182,10 @@ def follow_call_list(call_list):
 
 def follow_call(call):
     """ Follow a call is following a function, variable, string, etc. """
-    scope = call.parent_stmt.parent()
+    scope = call.parent_stmt().parent()
     path = call.generate_call_path()
 
-    position = call.parent_stmt.start_pos
+    position = call.parent_stmt().start_pos
     return follow_call_path(path, scope, position)
 
 
