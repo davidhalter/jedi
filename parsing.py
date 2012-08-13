@@ -133,8 +133,6 @@ class Scope(Simple):
         """ Clean up a docstring """
         self.docstr = cleandoc(literal_eval(string))
         debug.dbg("Scope(%s)::docstr = %s" % (self, self.docstr))
-        if self.get_parent_until().path != '__builtin__':
-            print self, self.docstr
 
     def add_import(self, imp):
         self.imports.append(imp)
@@ -1265,8 +1263,6 @@ class PyFuzzyParser(object):
         if not string:
             return None, tok
         #print 'new_stat', string, set_vars, used_funcs, used_vars
-        #if self.freshscope and self.get_parent_until().path != '__builtin__':
-            #print self, self.docstr
         if self.freshscope and len(tok_list) == 1 \
                     and self.last_token[0] == tokenize.STRING:
             self.scope.add_docstr(self.last_token[1])

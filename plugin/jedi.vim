@@ -51,9 +51,8 @@ if 1:
                 d = dict(word=str(c),
                          abbr=str(c),
                          # stuff directly behind the completion
-                         # TODO change it so that ' are allowed (not used now, because of repr)
-                         menu=c.description.replace("'", '"'),
-                         info=c.help,  # docstr and similar stuff
+                         menu=PythonToVimStr(c.description),
+                         info=PythonToVimStr(c.help),  # docstr
                          kind=c.get_vim_type(),  # completion type
                          icase=1,  # case insensitive
                          dup=1,  # allow duplicates (maybe later remove this)
@@ -198,6 +197,12 @@ import traceback  # for exception output
 import re
 
 import functions
+
+class PythonToVimStr(str):
+    """ Vim has a different string implementation of single quotes """
+    __slots__ = []
+    def __repr__(self):
+        return '"%s"' % self.replace('"', r'\"')
 PYTHONEOF
 
 " vim: set et ts=4:
