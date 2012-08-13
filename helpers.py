@@ -68,10 +68,11 @@ def fast_parent_copy(obj):
     def recursion(obj):
         new_obj = copy.copy(obj)
         new_elements[obj] = new_obj
-        try:
-            new_obj.parent = new_elements[obj.parent]
-        except KeyError:
-            pass
+        if obj.parent is not None:
+            try:
+                new_obj.parent = weakref.ref(new_elements[obj.parent()])
+            except KeyError:
+                pass
 
         #print new_obj.__dict__
         for key, value in new_obj.__dict__.items():

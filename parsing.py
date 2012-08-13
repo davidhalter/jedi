@@ -673,10 +673,10 @@ class Statement(Simple):
                     close_brackets = False
                 else:
                     if close_brackets:
-                        result = result.parent
+                        result = result.parent()
                         close_brackets = False
                     if result.__class__ == Call:
-                        result = result.parent
+                        result = result.parent()
                         close_brackets = False
                     call = Call(tok, c_type, parent=result)
                     result.add_to_current_field(call)
@@ -685,28 +685,28 @@ class Statement(Simple):
                 level += 1
                 if is_call_or_close():
                     result = Array(brackets[tok], parent=result)
-                    result = result.parent.add_execution(result)
+                    result = result.parent().add_execution(result)
                     close_brackets = False
                 else:
                     result = Array(brackets[tok], parent=result)
-                    result.parent.add_to_current_field(result)
+                    result.parent().add_to_current_field(result)
             elif tok == ':':
                 if is_call_or_close():
-                    result = result.parent
+                    result = result.parent()
                     close_brackets = False
                 if result.type == Array.LIST:  # [:] lookups
                     result.add_to_current_field(tok)
                 else:
                     result.add_dictionary_key()
             elif tok == '.':
-                if close_brackets and result.parent != top:
+                if close_brackets and result.parent() != top:
                     # only get out of the array, if it is a array execution
-                    result = result.parent
+                    result = result.parent()
                     close_brackets = False
                 is_chain = True
             elif tok == ',':
                 while is_call_or_close():
-                    result = result.parent
+                    result = result.parent()
                     close_brackets = False
                 result.add_field()
                 # important - it cannot be empty anymore
@@ -714,18 +714,17 @@ class Statement(Simple):
                     result.type = Array.TUPLE
             elif tok in [')', '}', ']']:
                 while is_call_or_close():
-                    result = result.parent
+                    result = result.parent()
                     close_brackets = False
                 if tok == '}' and not len(result):
                     # this is a really special case - empty brackets {} are
                     # always dictionaries and not sets.
                     result.type = Array.DICT
                 level -= 1
-                #result = result.parent
                 close_brackets = True
             else:
                 while is_call_or_close():
-                    result = result.parent
+                    result = result.parent()
                     close_brackets = False
                 result.add_to_current_field(tok)
 
@@ -776,7 +775,7 @@ class Call(object):
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
-        self.parent = parent
+        self.parent = weakref.ref(parent) if parent is not None else None
         self.type = type
 
         self.next = None
@@ -788,7 +787,7 @@ class Call(object):
         if self._parent_stmt is not None:
             return self._parent_stmt
         elif self.parent:
-            return self.parent.parent_stmt
+            return self.parent().parent_stmt
         else:
             return lambda: None
 
@@ -799,7 +798,7 @@ class Call(object):
     def set_next_chain_call(self, call):
         """ Adds another part of the statement"""
         self.next = call
-        #print '\n\npar', call.parent, self.parent, type(call), type(self)
+        #print '\n\npar', call.parent(), self.parent(), type(call), type(self)
         call.parent = self.parent
         return call
 
@@ -811,10 +810,10 @@ class Call(object):
         self.execution = call
         # there might be multiple executions, like a()[0], in that case, they
         # have the same parent. Otherwise it's not possible to parse proper.
-        if self.parent.execution == self:
+        if self.parent().execution == self:
             call.parent = self.parent
         else:
-            call.parent = self
+            call.parent = weakref.ref(self)
         return call
 
     def generate_call_path(self):
