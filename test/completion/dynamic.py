@@ -162,9 +162,14 @@ arr.extend([1,2,3])
 arr.extend([])
 arr.extend("")  # should ignore
 
-##? float() int()
-arr[0]
+#? float() int()
+arr[100]
 
+a = set(arr)
+a.update(list(["", 1]))
+
+#? float() int() str()
+list(a)[0]
 # -----------------
 # set/list initialized as functions
 # -----------------

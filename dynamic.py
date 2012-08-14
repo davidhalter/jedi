@@ -144,8 +144,8 @@ def _check_array_additions(compare_array, module, is_list):
                 else:
                     result += evaluate.follow_call_list([second_param])
             elif add_name in ['extend', 'update']:
-                # TODO needs extensive work, because this are iterables
-                result += evaluate.follow_call_list(params)
+                iterators = evaluate.follow_call_list(params)
+                result += evaluate.handle_iterators(iterators)
         return result
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
