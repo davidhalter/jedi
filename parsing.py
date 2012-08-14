@@ -132,7 +132,6 @@ class Scope(Simple):
     def add_docstr(self, string):
         """ Clean up a docstring """
         self.docstr = cleandoc(literal_eval(string))
-        debug.dbg("Scope(%s)::docstr = %s" % (self, self.docstr))
 
     def add_import(self, imp):
         self.imports.append(imp)
@@ -1297,7 +1296,7 @@ class PyFuzzyParser(object):
         type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
                             self.parserline = next(self.gen)
         if self.user_position and self.start_pos[0] == self.user_position[0]:
-            debug.dbg('user scope found [%s] =%s' % \
+            debug.dbg('user scope found [%s] = %s' % \
                     (self.parserline.replace('\n', ''), repr(self.scope)))
             self.user_scope = self.scope
         self.last_token = self.current

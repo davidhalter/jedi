@@ -227,13 +227,29 @@ iter(lst)[0]
 # functions
 # -----------------
 
-def arr_append(arr, a):
-    arr.append(a)
+def arr_append(arr4, a):
+    arr4.append(a)
 
-def add_to_arr(arr, a):
-    arr.append(a)
-    return arr
+def add_to_arr(arr2, a):
+    arr2.append(a)
+    return arr2
 
-a = [1.0]
-##? float() int()
-add_to_arr(a, 1)[0]
+def app(a):
+    arr3.append(a)
+
+arr3 = [1.0]
+res = add_to_arr(arr3, 1)
+arr_append(arr3, 'str')
+app(set())
+
+#? float() str() int() set()
+arr3[10]
+
+#? float() str() int() set()
+res[10]
+
+def blub():
+    a = []
+    a.append(1.0)
+    #? float()
+    a[0]

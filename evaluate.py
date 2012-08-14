@@ -75,6 +75,8 @@ def clear_caches():
     for m in memoize_caches:
         m.clear()
 
+    dynamic.search_param_cache.clear()
+
     # memorize_caches must never be deleted, because the dicts will get lost in
     # the wrappers.
     statement_path = []
@@ -951,7 +953,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         def handle_for_loops(loop):
             # Take the first statement (for has always only
             # one, remember `in`). And follow it.
-            result = handle_iterators(follow_statement(loop.inits[0]))
+            result = get_iterator_types(follow_statement(loop.inits[0]))
             if len(loop.set_vars) > 1:
                 var_arr = loop.set_stmt.get_assignment_calls()
                 result = assign_tuples(var_arr, result, name_str)
@@ -1036,7 +1038,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
     return descriptor_check(remove_statements(filter_name(scope_generator)))
 
 
-def handle_iterators(inputs):
+def get_iterator_types(inputs):
     iterators = []
     # Take the first statement (for has always only
     # one, remember `in`). And follow it.

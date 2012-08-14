@@ -14,6 +14,23 @@ import helpers
 # that this is the order in which Jedi searches params.
 search_param_modules = ['.']
 
+search_param_cache = {}
+
+def search_param_memoize(func):
+    """
+    Is only good for search params memoize, respectively the closure,
+    because it just caches the input, not the func, like normal memoize does.
+    """
+    def wrapper(*args, **kwargs):
+        key = (args, frozenset(kwargs.items()))
+        if key in search_param_cache:
+            return search_param_cache[key]
+        else:
+            rv = func(*args, **kwargs)
+            search_param_cache[key] = rv
+            return rv
+    return wrapper
+
 
 class ParamListener(object):
     """
@@ -43,16 +60,19 @@ def search_params(param):
         """
         Returns the values of a param, or an empty array.
         """
-        try:
-            possible_stmts = current_module.used_names[func_name]
-        except KeyError:
-            return []
+        @search_param_memoize
+        def get_posibilities(module, func_name):
+            try:
+                possible_stmts = module.used_names[func_name]
+            except KeyError:
+                return []
 
-        for stmt in possible_stmts:
-            evaluate.follow_statement(stmt)
+            for stmt in possible_stmts:
+                evaluate.follow_statement(stmt)
+            return listener.param_possibilities
 
         result = []
-        for params in listener.param_possibilities:
+        for params in get_posibilities(module, func_name):
             for p in params:
                 if str(p) == param_name:
                     result += evaluate.follow_statement(p.parent())
@@ -81,7 +101,7 @@ def search_params(param):
     result = get_params_for_module(current_module)
 
     # TODO check other modules
-    # cleanup: remove the listener
+    # cleanup: remove the listener, important should not stick.
     func.listeners.remove(listener)
 
     return result
@@ -145,7 +165,7 @@ def _check_array_additions(compare_array, module, is_list):
                     result += evaluate.follow_call_list([second_param])
             elif add_name in ['extend', 'update']:
                 iterators = evaluate.follow_call_list(params)
-                result += evaluate.handle_iterators(iterators)
+                result += evaluate.get_iterator_types(iterators)
         return result
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
@@ -191,7 +211,7 @@ class ArrayInstance(parsing.Base):
                 if isinstance(temp, ArrayInstance):
                     items += temp.iter_content()
                     continue
-            items += evaluate.handle_iterators([array])
+            items += evaluate.get_iterator_types([array])
 
         module = self.var_args.parent_stmt().get_parent_until()
         is_list = str(self.instance.name) == 'list'
