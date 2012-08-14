@@ -950,10 +950,12 @@ class PyFuzzyParser(object):
     :param user_position: The line/column, the user is currently on.
     :type user_position: tuple(int, int)
     """
-    def __init__(self, code, module_path=None, user_position=None):
+    def __init__(self, code, module_path=None, user_position=None,
+                                                            no_docstr=False):
         self.user_position = user_position
         self.user_stmt = None
         self.code = code + '\n'  # end with \n, because the parser needs it
+        self.no_docstr = no_docstr
         if is_py3k():
             self.code = self.code.encode()
 
@@ -1263,7 +1265,7 @@ class PyFuzzyParser(object):
         if not string:
             return None, tok
         #print 'new_stat', string, set_vars, used_funcs, used_vars
-        if self.freshscope and len(tok_list) == 1 \
+        if self.freshscope and not self.no_docstr and len(tok_list) == 1 \
                     and self.last_token[0] == tokenize.STRING:
             self.scope.add_docstr(self.last_token[1])
             return None, tok

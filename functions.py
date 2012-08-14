@@ -217,15 +217,15 @@ def prepare_goto(source, position, source_path, module, goto_path,
         scopes = [imports.ImportPath(user_stmt, is_like_search)]
     else:
         # just parse one statement, take it and evaluate it
-        r = parsing.PyFuzzyParser(goto_path, source_path)
+        r = parsing.PyFuzzyParser(goto_path, source_path, no_docstr=True)
         try:
             stmt = r.module.statements[0]
         except IndexError:
             raise NotFoundError()
-        else:
-            stmt.start_pos = position
-            stmt.parent = weakref.ref(scope)
-            scopes = evaluate.follow_statement(stmt)
+
+        stmt.start_pos = position
+        stmt.parent = weakref.ref(scope)
+        scopes = evaluate.follow_statement(stmt)
     return scopes
 
 
