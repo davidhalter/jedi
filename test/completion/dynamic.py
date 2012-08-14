@@ -79,10 +79,17 @@ class A():
     def test(self, a):
         #? float()
         a
+        self.c = self.test2()
 
     def test2(self):
-        ##? int()
-        self.a
+        #? int()
+        return self.a
+
+    def test3(self):
+        #? int()
+        self.test2()
+        #? int()
+        self.c
 
 A(3).test(2.0)
 A(3).test2()
@@ -223,5 +230,5 @@ def add_to_arr(arr, a):
     return arr
 
 a = [1.0]
-#? float() int()
+##? float() int()
 add_to_arr(a, 1)[0]

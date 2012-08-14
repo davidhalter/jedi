@@ -732,7 +732,7 @@ class Param(Statement):
 
         # this is defined by the parser later on, not at the initialization
         # it is the position in the call (first argument, second...)
-        self.position = None
+        self.position_nr = None
         self.is_generated = False
 
     def get_name(self):
@@ -1091,7 +1091,7 @@ class PyFuzzyParser(object):
             stmt, tok = self._parse_statement(added_breaks=',',
                                               stmt_class=Param)
             if stmt:
-                stmt.position = pos
+                stmt.position_nr = pos
                 names.append(stmt)
                 pos += 1
 
