@@ -545,18 +545,49 @@ class Statement(Simple):
                     start_pos, end_pos):
         super(Statement, self).__init__(start_pos, end_pos)
         self.code = code
-        self.set_vars = set_vars
         self.used_funcs = used_funcs
         self.used_vars = used_vars
         self.token_list = token_list
         for s in set_vars + used_funcs + used_vars:
             s.parent = weakref.ref(self)
+        self.set_vars = self._remove_executions_from_set_vars(set_vars)
 
         # cache
         self._assignment_calls = None
         self._assignment_details = None
         # this is important for other scripts
         self._assignment_calls_calculated = False
+
+    def _remove_executions_from_set_vars(self, set_vars):
+        """
+        Important mainly for assosiative arrays:
+
+        >>> a = 3
+        >>> b = {}
+        >>> b[a] = 3
+
+        `a` is in this case not a set_var, it is used to index the dict.
+        """
+
+        if not set_vars:
+            return set_vars
+        result = set(set_vars)
+        last = None
+        in_execution = 0
+        for tok in self.token_list:
+            if isinstance(tok, Name):
+                if tok not in result:
+                    break
+                if in_execution:
+                    result.remove(tok)
+            elif isinstance(tok, tuple):
+                tok = tok[1]
+            if tok in ['(', '['] and isinstance(last, Name):
+                in_execution += 1
+            elif tok in [')', ']'] and in_execution > 0:
+                in_execution -= 1
+            last = tok
+        return list(result)
 
     def get_code(self, new_line=True):
         if new_line:
