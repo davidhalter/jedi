@@ -984,6 +984,26 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     inst = Instance(Class(par.parent().parent()))
                     inst.is_generated = True
                 result.append(inst)
+            elif isinstance(par, parsing.Statement):
+                def is_execution(arr):
+                    for a in arr:
+                        a = a[0]  # rest is always empty with assignees
+                        if isinstance(a, parsing.Array):
+                            if is_execution(a):
+                                return True
+                        elif isinstance(a, parsing.Call):
+                            if a.name == name and a.execution:
+                                return True
+                    return False
+
+                is_exe = False
+                for op, assignee in par.assignment_details:
+                    is_exe |= is_execution(assignee)
+                if is_exe:
+                    # TODO: check executions for dict contents
+                    pass
+                else:
+                    result.append(par)
             else:
                 result.append(par)
             return result
@@ -1001,14 +1021,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     p = p.var
                 if name_str == name.get_code() and p not in break_scopes:
                     result += handle_non_arrays(name)
-                    #print result, p
                     # for comparison we need the raw class
                     s = scope.base if isinstance(scope, Class) else scope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
-                    if not name.parent() or p == s:
-                        break
-                    break_scopes.append(p)
+                    if result:
+                        if not name.parent() or p == s:
+                            break
+                        break_scopes.append(p)
             # if there are results, ignore the other scopes
             if result:
                 break
