@@ -9,6 +9,7 @@ working quite good.
 import parsing
 import evaluate
 import helpers
+import settings
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -56,6 +57,9 @@ def search_params(param):
     recursive madness. Therefore one has to analyse the statements that are
     calling the function, as well as analyzing the incoming params.
     """
+    if not settings.dynamic_params:
+        return []
+
     def get_params_for_module(module):
         """
         Returns the values of a param, or an empty array.
@@ -101,7 +105,7 @@ def search_params(param):
     result = get_params_for_module(current_module)
 
     # TODO check other modules
-    # cleanup: remove the listener, important should not stick.
+    # cleanup: remove the listener; important: should not stick.
     func.listeners.remove(listener)
 
     return result
@@ -121,6 +125,8 @@ def _check_array_additions(compare_array, module, is_list):
     >>> a = [""]
     >>> a.append(1)
     """
+    if not settings.dynamic_array_additions:
+        return []
     def scan_array(arr, search_name):
         """ Returns the function Calls that match func_name """
         result = []
@@ -185,6 +191,8 @@ def _check_array_additions(compare_array, module, is_list):
 
 
 def check_array_instances(instance):
+    if not settings.dynamic_arrays_instances:
+        return instance.var_args
     ai = ArrayInstance(instance)
     return helpers.generate_param_array([ai])
 
@@ -209,6 +217,7 @@ class ArrayInstance(parsing.Base):
             if isinstance(array, evaluate.Instance) and len(array.var_args):
                 temp = array.var_args[0][0]
                 if isinstance(temp, ArrayInstance):
+                    #print items, self, self.var_args, self.var_args.parent_stmt(), array
                     items += temp.iter_content()
                     continue
             items += evaluate.get_iterator_types([array])
