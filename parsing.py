@@ -29,7 +29,7 @@ Ignored statements:
  - exec (dangerous - not controllable)
 """
 from _compatibility import (next, literal_eval, tokenize_func, BytesIO,
-                            property, is_py3k)
+                            property, is_py3k, Python3Method)
 
 import tokenize
 import re
@@ -164,6 +164,7 @@ class Scope(Simple):
             string = indent_block(string, indention=indention)
         return string
 
+    @Python3Method
     def get_set_vars(self):
         """
         Get all the names, that are active and accessible in the current
@@ -171,15 +172,6 @@ class Scope(Simple):
 
         :return: list of Name
         :rtype: list
-        """
-        return self._get_set_vars(self)
-
-    @staticmethod
-    def _get_set_vars(self):
-        """
-        This is a hack, because Python 2 has another understanding of methods,
-        than Python 3. In Python 2 it is not possible to use a method without
-        the `self` being an instance of the class.
         """
         n = []
         for stmt in self.statements:
@@ -206,6 +198,17 @@ class Scope(Simple):
         :rtype: bool
         """
         return not (self.imports or self.subscopes or self.statements)
+
+    @Python3Method
+    def get_statement_for_position(self, pos):
+        for s in self.statements:
+            if s.start_pos <= pos < self.end_pos:
+                return s
+
+        for s in self.subscopes:
+            p = s.get_statement_for_position(pos)
+            if p:
+                return p
 
     def __repr__(self):
         try:

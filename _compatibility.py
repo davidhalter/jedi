@@ -90,3 +90,14 @@ else:
             return True
         except AttributeError:
             return False
+
+class Python3Method(object):
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, obj, objtype):
+        if obj is None:
+            return lambda *args, **kwargs: self.func(*args, **kwargs)
+        else:
+            return lambda *args, **kwargs: self.func(obj, *args, **kwargs)
+
