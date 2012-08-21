@@ -312,8 +312,23 @@ class PropClass():
 
     @property
     def nested(self):
+        """ causes recusions in properties, should work """
         return self.ret
 
+    @property
+    def nested2(self):
+        """ causes recusions in properties, should not work """
+        return self.nested2
+
+    @property
+    def join1(self):
+        """ mutual recusion """
+        return self.join2
+
+    @property
+    def join2(self):
+        """ mutual recusion """
+        return self.join1
 
 #? str()
 PropClass("").ret
@@ -330,6 +345,13 @@ PropClass(1).nested
 #? []
 PropClass().nested.
 
+#? 
+PropClass(1).nested2
+#? []
+PropClass().nested2.
+
+#? 
+PropClass(1).join1
 # -----------------
 # staticmethod/classmethod
 # -----------------
