@@ -492,7 +492,8 @@ class Execution(Executable):
             Create a param with the original scope (of varargs) as parent.
             """
             parent_stmt = self.var_args.parent_stmt()
-            calls = parsing.Array(parsing.Array.NOARRAY, parent_stmt)
+            pos = parent_stmt.start_pos if parent_stmt else None
+            calls = parsing.Array(pos, parsing.Array.NOARRAY, parent_stmt)
             calls.values = values
             calls.keys = keys
             calls.type = array_type
@@ -814,7 +815,7 @@ class Array(parsing.Base):
         return builtin.Builtin.scope
 
     def __getattr__(self, name):
-        if name not in ['type']:
+        if name not in ['type', 'start_pos']:
             raise AttributeError('Strange access: %s.' % name)
         return getattr(self._array, name)
 

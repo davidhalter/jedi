@@ -624,7 +624,7 @@ class Statement(Simple):
         if self._assignment_calls_calculated:
             return self._assignment_calls
         self._assignment_details = []
-        result = Array(Array.NOARRAY, self)
+        result = Array(self.start_pos, Array.NOARRAY, self)
         top = result
         level = 0
         is_chain = False
@@ -634,11 +634,12 @@ class Statement(Simple):
         for i, tok_temp in tok_iter:
             #print 'tok', tok_temp, result
             try:
-                token_type, tok = tok_temp
+                token_type, tok, start_pos = tok_temp
             except TypeError:
                 # the token is a Name, which has already been parsed
                 tok = tok_temp
                 token_type = None
+                start_pos = tok.start_pos
             except ValueError:
                 debug.warning("unkown value, shouldn't happen",
                                 tok_temp, type(tok_temp))
@@ -652,7 +653,7 @@ class Statement(Simple):
                     self._assignment_details.append((tok, top))
                     # All these calls wouldn't be important if nonlocal would
                     # exist. -> Initialize the first item again.
-                    result = Array(Array.NOARRAY, self)
+                    result = Array(start_pos, Array.NOARRAY, self)
                     top = result
                     level = 0
                     close_brackets = False
@@ -678,7 +679,7 @@ class Statement(Simple):
 
                 if is_chain:
                     #print 'chain', self, tok, result
-                    call = Call(tok, c_type, parent=result)
+                    call = Call(tok, c_type, start_pos, parent=result)
                     result = result.set_next_chain_call(call)
                     is_chain = False
                     close_brackets = False
@@ -689,17 +690,17 @@ class Statement(Simple):
                     if result.__class__ == Call:
                         result = result.parent()
                         close_brackets = False
-                    call = Call(tok, c_type, parent=result)
+                    call = Call(tok, c_type, start_pos, parent=result)
                     result.add_to_current_field(call)
                     result = call
             elif tok in brackets.keys():  # brackets
                 level += 1
                 if is_call_or_close():
-                    result = Array(brackets[tok], parent=result)
+                    result = Array(start_pos, brackets[tok], parent=result)
                     result = result.parent().add_execution(result)
                     close_brackets = False
                 else:
-                    result = Array(brackets[tok], parent=result)
+                    result = Array(start_pos, brackets[tok], parent=result)
                     result.parent().add_to_current_field(result)
             elif tok == ':':
                 if is_call_or_close():
@@ -782,12 +783,13 @@ class Call(object):
     STRING = 3
 
     """ The statement object of functions, to  """
-    def __init__(self, name, type, parent_stmt=None, parent=None):
+    def __init__(self, name, type, start_pos, parent_stmt=None, parent=None):
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
         self.parent = weakref.ref(parent) if parent is not None else None
         self.type = type
+        self.start_pos = start_pos
 
         self.next = None
         self.execution = None
@@ -862,9 +864,10 @@ class Array(Call):
     DICT = 'dict'
     SET = 'set'
 
-    def __init__(self, arr_type=NOARRAY, parent_stmt=None, parent=None,
-                                                                values=None):
-        super(Array, self).__init__(None, arr_type, parent_stmt, parent)
+    def __init__(self,  start_pos, arr_type=NOARRAY, parent_stmt=None,
+                                                   parent=None, values=None):
+        super(Array, self).__init__(None, arr_type, start_pos, parent_stmt,
+                                                                    parent)
 
         self.values = values if values else []
         self.keys = []
@@ -992,7 +995,7 @@ class PyFuzzyParser(object):
         # initialize global Scope
         self.module = Module(module_path)
         self.scope = self.module
-        self.current = (None, None, None)
+        self.current = (None, None)
 
         # Stuff to fix tokenize errors. The parser is pretty good in tolerating
         # any errors of tokenize and just parse ahead.
@@ -1228,7 +1231,7 @@ class PyFuzzyParser(object):
         while not (tok in always_break or tok in breaks and level <= 0):
             set_string = None
             #print 'parse_stmt', tok, tokenize.tok_name[token_type]
-            tok_list.append(self.current)
+            tok_list.append(self.current + (self.start_pos,))
             if tok == 'as':
                 string += " %s " % tok
                 token_type, tok = self.next()
@@ -1250,7 +1253,7 @@ class PyFuzzyParser(object):
                         # This is basically a reset of the statement.
                         debug.warning('keyword in statement %s@%s', tok_list,
                                                             self.start_pos[0])
-                        tok_list = [self.current]
+                        tok_list = [self.current + (self.start_pos,)]
                         set_vars = []
                         used_funcs = []
                         used_vars = []

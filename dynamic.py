@@ -8,6 +8,7 @@ working quite good.
 
 import parsing
 import evaluate
+import builtin
 import helpers
 import settings
 
@@ -213,15 +214,22 @@ class ArrayInstance(parsing.Base):
         lists/sets are too complicated too handle that.
         """
         items = []
+        #print 'ic', self.var_args, self.var_args.parent_stmt()
+        stmt = self.var_args.parent_stmt()
+        #if stmt.get_parent_until() == builtin.Builtin.scope:
+            #evaluate.follow_statement.push(stmt)
         for array in evaluate.follow_call_list(self.var_args):
             if isinstance(array, evaluate.Instance) and len(array.var_args):
                 temp = array.var_args[0][0]
                 if isinstance(temp, ArrayInstance):
-                    #print items, self, self.var_args, self.var_args.parent_stmt(), array
+                    #print items, self, id(self.var_args), id(self.var_args.parent_stmt()), array
                     items += temp.iter_content()
                     continue
             items += evaluate.get_iterator_types([array])
 
+        #if stmt.get_parent_until() == builtin.Builtin.scope:
+            #evaluate.follow_statement.pop()
+        #print 'ic finish', self.var_args
         module = self.var_args.parent_stmt().get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self.instance, module, is_list)

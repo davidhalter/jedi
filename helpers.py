@@ -21,10 +21,14 @@ class RecursionDecorator(object):
         # The same's true for the builtins, because the builtins are really
         # simple.
         if isinstance(stmt, parsing.Param) \
-                                       or r.script == builtin.Builtin.scope:
+                                       or (r.script == builtin.Builtin.scope and
+                                       stmt.start_pos[0] != 538000):
             return self.func(stmt, *args, **kwargs)
+        if r.script == builtin.Builtin.scope:
+            print 'rec_catch', stmt, stmt.parent().parent()
+        #print stmt
 
-        if self.check_recursion(r):
+        if self._check_recursion(r):
             debug.warning('catched recursion', stmt, args, kwargs)
             return []
         parent, self.current = self.current, r
@@ -32,7 +36,7 @@ class RecursionDecorator(object):
         self.current = parent
         return result
 
-    def check_recursion(self, new):
+    def _check_recursion(self, new):
         test = self.current
         while True:
             if new == test:
@@ -138,6 +142,7 @@ def generate_param_array(args_tuple, parent_stmt=None):
             values.append([])
         else:
             values.append([arg])
-    arr = parsing.Array(parsing.Array.TUPLE, parent_stmt, values=values)
+    pos = None
+    arr = parsing.Array(pos, parsing.Array.TUPLE, parent_stmt, values=values)
     evaluate.faked_scopes.append(arr)
     return arr
