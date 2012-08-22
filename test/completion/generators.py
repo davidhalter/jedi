@@ -89,3 +89,19 @@ class Counter:
 for c in Counter(3, 8):
     #? int()
     print c
+
+# -----------------
+# tuples
+# -----------------
+def gen():
+    if a:
+        yield 1, ""
+    else:
+        yield 2, 1.0
+
+
+a, b = next(gen())
+#? int()
+a
+#? str() float()
+b

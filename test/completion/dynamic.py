@@ -248,8 +248,81 @@ arr3[10]
 #? float() str() int() set()
 res[10]
 
+# -----------------
+# returns, special because the module dicts are not correct here.
+# -----------------
 def blub():
     a = []
     a.append(1.0)
     #? float()
     a[0]
+    return a
+
+#? float()
+blub()[0]
+
+# list with default
+def blub():
+    a = list([1])
+    a.append(1.0)
+    return a
+
+#? int() float()
+blub()[0]
+
+# empty list
+def blub():
+    a = list()
+    a.append(1.0)
+    return a
+#? float()
+blub()[0]
+
+# with if
+def blub():
+    if 1:
+        a = []
+        a.append(1.0)
+        return a
+
+#? float()
+blub()[0]
+
+# with else clause
+def blub():
+    if 1:
+        1
+    else:
+        a = []
+        a.append(1)
+        return a
+
+#? int()
+blub()[0]
+
+# -----------------
+# array recursions
+# -----------------
+
+a = set([1.0])
+a.update(a)
+a.update([1])
+
+#? float() int()
+list(a)[0]
+
+def first(a):
+    b = []
+    b.append(a)
+    #b.extend(second(a))
+    return b
+
+def second(a):
+    b = []
+    b.append(a)
+    b.extend(first(a))
+    b.extend(second(a))
+    return list(b)
+
+#? float()
+first(1.0)[0]

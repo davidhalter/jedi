@@ -202,7 +202,13 @@ class Scope(Simple):
     @Python3Method
     def get_statement_for_position(self, pos):
         for s in self.statements:
-            if s.start_pos <= pos < self.end_pos:
+            if isinstance(s, Flow):
+                p = s.get_statement_for_position(pos)
+                if s.next and not p:
+                    p = s.next.get_statement_for_position(pos)
+                if p:
+                    return p
+            elif s.start_pos <= pos < s.end_pos:
                 return s
 
         for s in self.subscopes:

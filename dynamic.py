@@ -8,15 +8,15 @@ working quite good.
 
 import parsing
 import evaluate
-import builtin
 import helpers
 import settings
+import debug
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
 search_param_modules = ['.']
-
 search_param_cache = {}
+
 
 def search_param_memoize(func):
     """
@@ -128,6 +128,7 @@ def _check_array_additions(compare_array, module, is_list):
     """
     if not settings.dynamic_array_additions:
         return []
+
     def scan_array(arr, search_name):
         """ Returns the function Calls that match func_name """
         result = []
@@ -153,9 +154,27 @@ def _check_array_additions(compare_array, module, is_list):
 
             position = c.parent_stmt().start_pos
             scope = c.parent_stmt().parent()
-            e = evaluate.follow_call_path(backtrack_path, scope, position)
-            if not compare_array in e:
+            found = evaluate.follow_call_path(backtrack_path, scope, position)
+            if not compare_array in found:
                 # the `append`, etc. belong to other arrays
+                if isinstance(comp_arr_parent, evaluate.Execution):
+                    found_bases = []
+                    for f in found:
+                        base = get_execution_parent(f, parsing.Function)
+                        found_bases.append(base)
+                    #for f in found_bases:
+                    #print 'adsf', c.start_pos, found, found_bases
+                    if comp_arr_parent.base.base_func in found_bases:
+                        stmt = comp_arr_parent.\
+                                        get_statement_for_position(c.start_pos)
+                        if stmt is not None:
+                            #print 'LA', stmt.parent(), stmt
+                            ass = stmt.get_assignment_calls()
+                            result += check_calls(scan_array(ass, add_name),
+                                                                    add_name)
+                    #print found_bases, comp_arr_parent.base.base_func
+                    #print found, found[0]._array.parent_stmt().parent()
+                    #print compare_array_parent.base
                 continue
 
             params = call_path[separate_index + 1]
@@ -175,8 +194,19 @@ def _check_array_additions(compare_array, module, is_list):
                 result += evaluate.get_iterator_types(iterators)
         return result
 
+    def get_execution_parent(element, *stop_classes):
+        if isinstance(element, evaluate.Array):
+            stmt = element._array.parent_stmt()
+        else:
+            # must be instance
+            stmt = element.var_args.parent_stmt()
+        return stmt.get_parent_until(*stop_classes)
+
     search_names = ['append', 'extend', 'insert'] if is_list else \
                                                             ['add', 'update']
+    #print compare_array
+    comp_arr_parent = get_execution_parent(compare_array, evaluate.Execution)
+    #print 'par', comp_arr_parent
     possible_stmts = []
     result = []
     for n in search_names:
@@ -195,7 +225,7 @@ def check_array_instances(instance):
     if not settings.dynamic_arrays_instances:
         return instance.var_args
     ai = ArrayInstance(instance)
-    return helpers.generate_param_array([ai])
+    return helpers.generate_param_array([ai], instance.var_args.parent_stmt())
 
 
 class ArrayInstance(parsing.Base):
@@ -223,7 +253,13 @@ class ArrayInstance(parsing.Base):
                 temp = array.var_args[0][0]
                 if isinstance(temp, ArrayInstance):
                     #print items, self, id(self.var_args), id(self.var_args.parent_stmt()), array
-                    items += temp.iter_content()
+                    # prevent recursions
+                    # TODO compare Modules
+                    if self.var_args.start_pos != temp.var_args.start_pos:
+                        items += temp.iter_content()
+                    else:
+                        debug.warning('ArrayInstance recursion', self.var_args)
+                        print 'yippie'
                     continue
             items += evaluate.get_iterator_types([array])
 

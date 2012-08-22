@@ -653,7 +653,7 @@ class Execution(Executable):
         Call the default method with the own instance (self implements all
         the necessary functions). Add also the params.
         """
-        return self.get_params() + parsing.Scope._get_set_vars(self)
+        return self.get_params() + parsing.Scope.get_set_vars(self)
 
     def copy_properties(self, prop):
         # Copy all these lists into this local function.
@@ -690,6 +690,9 @@ class Execution(Executable):
     @memoize_default()
     def subscopes(self):
         return self.copy_properties('subscopes')
+
+    def get_statement_for_position(self, pos):
+        return parsing.Scope.get_statement_for_position(self, pos)
 
     def __repr__(self):
         return "<%s of %s>" % \
