@@ -15,39 +15,44 @@ class RecursionDecorator(object):
         self.current = None
 
     def __call__(self, stmt, *args, **kwargs):
-        r = RecursionNode(stmt, self.current)
-
-        # Don't check param instances, they are not causing recursions
-        # The same's true for the builtins, because the builtins are really
-        # simple.
-        if isinstance(stmt, parsing.Param) \
-                                       or (r.script == builtin.Builtin.scope and
-                                       stmt.start_pos[0] != 538000):
-            return self.func(stmt, *args, **kwargs)
-        if r.script == builtin.Builtin.scope:
-            print 'rec_catch', stmt, stmt.parent().parent()
-        #print stmt
-
-        if self._check_recursion(r):
-            debug.warning('catched recursion', stmt, args, kwargs)
+        if self.push_stmt(stmt):
             return []
-        parent, self.current = self.current, r
-        result = self.func(stmt, *args, **kwargs)
-        self.current = parent
+        else:
+            result = self.func(stmt, *args, **kwargs)
+            self.pop_stmt()
         return result
 
-    def _check_recursion(self, new):
+    def push_stmt(self, stmt):
+        self.current = RecursionNode(stmt, self.current)
+        if self._check_recursion():
+            debug.warning('catched recursion', stmt)
+            self.pop_stmt()
+            return True
+        return False
+
+    def pop_stmt(self):
+        self.current = self.current.parent
+
+    def _check_recursion(self):
         test = self.current
         while True:
-            if new == test:
+            test = test.parent
+            if self.current == test:
                 return True
             if not test:
                 return False
-            test = test.parent
 
     def reset(self):
         self.top = None
         self.current = None
+
+    def node_statements(self):
+        result = []
+        n = self.current
+        while n:
+            result.append(n.stmt)
+            n = n.parent
+        return result
 
 
 class RecursionNode(object):
@@ -55,11 +60,19 @@ class RecursionNode(object):
         self.script = stmt.get_parent_until()
         self.position = stmt.start_pos
         self.parent = parent
+        self.stmt = stmt
+
+        # Don't check param instances, they are not causing recursions
+        # The same's true for the builtins, because the builtins are really
+        # simple.
+        self.is_ignored = isinstance(stmt, parsing.Param) \
+                                   or (self.script == builtin.Builtin.scope)
 
     def __eq__(self, other):
         if not other:
             return None
-        return self.script == other.script and self.position == other.position
+        return self.script == other.script \
+                    and self.position == other.position and not self.is_ignored
 
 
 def fast_parent_copy(obj):

@@ -156,25 +156,27 @@ def _check_array_additions(compare_array, module, is_list):
             scope = c.parent_stmt().parent()
             found = evaluate.follow_call_path(backtrack_path, scope, position)
             if not compare_array in found:
-                # the `append`, etc. belong to other arrays
+                # Check if the original scope is an execution. If it is, one
+                # can search for the same statement, that is in the module
+                # dict. Executions are somewhat special in jedi, since they
+                # literally copy the contents of a function.
                 if isinstance(comp_arr_parent, evaluate.Execution):
                     found_bases = []
                     for f in found:
                         base = get_execution_parent(f, parsing.Function)
                         found_bases.append(base)
-                    #for f in found_bases:
-                    #print 'adsf', c.start_pos, found, found_bases
                     if comp_arr_parent.base.base_func in found_bases:
-                        stmt = comp_arr_parent.\
+                        stmt = comp_arr_parent. \
                                         get_statement_for_position(c.start_pos)
                         if stmt is not None:
-                            #print 'LA', stmt.parent(), stmt
+                            if evaluate.follow_statement.push_stmt(stmt):
+                                # check recursion
+                                continue
                             ass = stmt.get_assignment_calls()
-                            result += check_calls(scan_array(ass, add_name),
-                                                                    add_name)
-                    #print found_bases, comp_arr_parent.base.base_func
-                    #print found, found[0]._array.parent_stmt().parent()
-                    #print compare_array_parent.base
+                            new_calls = scan_array(ass, add_name)
+                            #print [c.start_pos for c in new_calls], stmt.start_pos
+                            result += check_calls(new_calls, add_name)
+                            evaluate.follow_statement.pop_stmt()
                 continue
 
             params = call_path[separate_index + 1]
@@ -204,9 +206,7 @@ def _check_array_additions(compare_array, module, is_list):
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
                                                             ['add', 'update']
-    #print compare_array
     comp_arr_parent = get_execution_parent(compare_array, evaluate.Execution)
-    #print 'par', comp_arr_parent
     possible_stmts = []
     result = []
     for n in search_names:
@@ -246,6 +246,9 @@ class ArrayInstance(parsing.Base):
         items = []
         #print 'ic', self.var_args, self.var_args.parent_stmt()
         stmt = self.var_args.parent_stmt()
+        #if evaluate.follow_statement.push_stmt(stmt):
+            # check recursion
+            #return []
         #if stmt.get_parent_until() == builtin.Builtin.scope:
             #evaluate.follow_statement.push(stmt)
         for array in evaluate.follow_call_list(self.var_args):
@@ -255,11 +258,15 @@ class ArrayInstance(parsing.Base):
                     #print items, self, id(self.var_args), id(self.var_args.parent_stmt()), array
                     # prevent recursions
                     # TODO compare Modules
+                    #if evaluate.follow_statement.push_stmt(stmt):
+                        # check recursion
+                    #    continue
                     if self.var_args.start_pos != temp.var_args.start_pos:
                         items += temp.iter_content()
                     else:
                         debug.warning('ArrayInstance recursion', self.var_args)
                         print 'yippie'
+                    #evaluate.follow_statement.pop_stmt()
                     continue
             items += evaluate.get_iterator_types([array])
 
@@ -269,4 +276,5 @@ class ArrayInstance(parsing.Base):
         module = self.var_args.parent_stmt().get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self.instance, module, is_list)
+        #evaluate.follow_statement.pop_stmt()
         return items

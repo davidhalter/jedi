@@ -299,6 +299,28 @@ def blub():
 
 #? int()
 blub()[0]
+# -----------------
+# returns, the same for classes
+# -----------------
+class C():
+    def blub(self, b):
+        if 1:
+            a = []
+            a.append(b)
+            return a
+
+    def blub2(self):
+        """ mapper function """
+        a = self.blub(1.0)
+        #? float()
+        a[0]
+        return a
+
+#? int()
+C().blub(1)[0]
+
+#? float()
+C().blub2(1)[0]
 
 # -----------------
 # array recursions
@@ -314,15 +336,20 @@ list(a)[0]
 def first(a):
     b = []
     b.append(a)
-    #b.extend(second(a))
-    return b
+    b.extend(second(a))
+    return list(b)
 
 def second(a):
     b = []
-    b.append(a)
     b.extend(first(a))
-    b.extend(second(a))
     return list(b)
 
 #? float()
 first(1.0)[0]
+
+def third():
+    b = []
+    b.extend(first())
+    return list(b)
+#? 
+third()[0]
