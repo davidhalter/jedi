@@ -663,7 +663,7 @@ class Execution(Executable):
         for element in attr:
             temp, element.parent = element.parent, None
             #copied = copy.deepcopy(element)
-            copied = helpers.fast_parent_copy2(element)
+            copied = helpers.fast_parent_copy(element)
             element.parent = temp
             copied.parent = weakref.ref(self)
             if isinstance(copied, parsing.Function):

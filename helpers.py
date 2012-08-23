@@ -75,44 +75,11 @@ class RecursionNode(object):
                     and self.position == other.position and not self.is_ignored
 
 
-def fast_parent_copy_old(obj):
-    """
-    Much, much faster than deepcopy, but just for the elements in `classes`.
-    """
-    new_elements = {}
-    classes = (parsing.Call, parsing.Scope)
-
-    def recursion(obj):
-        new_obj = copy.copy(obj)
-        new_elements[obj] = new_obj
-        if obj.parent is not None:
-            try:
-                new_obj.parent = weakref.ref(new_elements[obj.parent()])
-            except KeyError:
-                pass
-
-        #print new_obj.__dict__
-        for key, value in new_obj.__dict__.items():
-            if isinstance(value, list):
-                new_obj.__dict__[key] = list_rec(value)
-        return new_obj
-
-    def list_rec(list_obj):
-        copied_list = list_obj[:]   # lists, tuples, strings, unicode
-        for i, el in enumerate(copied_list):
-            if isinstance(el, classes):
-                copied_list[i] = recursion(el)
-            elif isinstance(el, list):
-                copied_list[i] = list_rec(el)
-        return copied_list
-    return recursion(obj)
-
 def fast_parent_copy(obj):
     """
     Much, much faster than deepcopy, but just for the elements in `classes`.
     """
     new_elements = {}
-    classes = (parsing.Simple, parsing.Call)
 
     def recursion(obj):
         new_obj = copy.copy(obj)
@@ -130,20 +97,20 @@ def fast_parent_copy(obj):
                 continue
             if isinstance(value, list):
                 new_obj.__dict__[key] = list_rec(value)
-            elif isinstance(value, classes):
+            elif isinstance(value, parsing.Simple):
                 new_obj.__dict__[key] = recursion(value)
         return new_obj
 
     def list_rec(list_obj):
         copied_list = list_obj[:]   # lists, tuples, strings, unicode
         for i, el in enumerate(copied_list):
-            if isinstance(el, classes):
+            if isinstance(el, (parsing.Simple, parsing.Call)):
                 copied_list[i] = recursion(el)
             elif isinstance(el, list):
                 copied_list[i] = list_rec(el)
         return copied_list
     return recursion(obj)
-fast_parent_copy2 = fast_parent_copy
+
 
 def generate_param_array(args_tuple, parent_stmt=None):
     """ This generates an array, that can be used as a param """
