@@ -1217,7 +1217,10 @@ def follow_call_list(call_list):
                         if str(call.name) == 'if':
                             # Ternary operators.
                             while True:
-                                call = next(calls_iterator)
+                                try:
+                                    call = next(calls_iterator)
+                                except StopIteration:
+                                    break
                                 try:
                                     if str(call.name) == 'else':
                                         break

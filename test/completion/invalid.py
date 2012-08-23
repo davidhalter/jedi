@@ -56,5 +56,10 @@ try:
         #? str()
         ""
 
+# wrong ternary
+a = 1 if
+#? int()
+a
+
 #? []
 int()).
