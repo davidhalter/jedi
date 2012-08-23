@@ -111,6 +111,7 @@ def search_params(param):
 
     return result
 
+
 def check_array_additions(array):
     """ Just a mapper function for the internal _check_array_additions """
     if array._array.type not in ['list', 'set']:
@@ -187,7 +188,6 @@ def _check_array_additions(compare_array, module, is_list):
                                 continue
                             ass = stmt.get_assignment_calls()
                             new_calls = scan_array(ass, add_name)
-                            #print [c.start_pos for c in new_calls], stmt.start_pos
                             result += check_calls(new_calls, add_name)
                             evaluate.follow_statement.pop_stmt()
                 continue

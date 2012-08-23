@@ -160,9 +160,9 @@ class frozenset():
 #--------------------------------------------------------
 class int():
     def __init__(self, x, base=None):
-        self.__x = x
+        pass
 
 
 class str():
     def __init__(self, obj):
-        self.__obj = obj
+        pass

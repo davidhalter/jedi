@@ -927,7 +927,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                         func = r.parent()
                         # Instances are typically faked, if the instance is not
                         # called from outside. Here we check it for __init__
-                        # functions and return 
+                        # functions and return.
                         if isinstance(func, InstanceElement) \
                                     and func.instance.is_generated \
                                     and str(func.name) == '__init__' \
@@ -1177,8 +1177,6 @@ def follow_statement(stmt, seek_name=None):
     # Assignment checking is only important if the statement defines multiple
     # variables.
     if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
-        # TODO This should have its own call_list, because call_list can also
-        # return 3 results for 2 variables.
         new_result = []
         for op, set_vars in stmt.assignment_details:
             new_result += assign_tuples(set_vars, result, seek_name)

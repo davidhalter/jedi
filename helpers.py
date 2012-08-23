@@ -75,7 +75,7 @@ class RecursionNode(object):
                     and self.position == other.position and not self.is_ignored
 
 
-def fast_parent_copy(obj):
+def fast_parent_copy_old(obj):
     """
     Much, much faster than deepcopy, but just for the elements in `classes`.
     """
@@ -107,12 +107,12 @@ def fast_parent_copy(obj):
         return copied_list
     return recursion(obj)
 
-def fast_parent_copy2(obj):
+def fast_parent_copy(obj):
     """
     Much, much faster than deepcopy, but just for the elements in `classes`.
     """
     new_elements = {}
-    classes = (parsing.Simple)
+    classes = (parsing.Simple, parsing.Call)
 
     def recursion(obj):
         new_obj = copy.copy(obj)
@@ -141,11 +141,9 @@ def fast_parent_copy2(obj):
                 copied_list[i] = recursion(el)
             elif isinstance(el, list):
                 copied_list[i] = list_rec(el)
-            elif isinstance(el, parsing.Call):
-                copied_list[i] = fast_parent_copy(el)
         return copied_list
     return recursion(obj)
-
+fast_parent_copy2 = fast_parent_copy
 
 def generate_param_array(args_tuple, parent_stmt=None):
     """ This generates an array, that can be used as a param """

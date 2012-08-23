@@ -32,5 +32,6 @@ el = list(evaluate.get_names_for_scope(1))[0][1]
 el = list(evaluate.get_names_for_scope())[0][1]
 
 # TODO here should stand evaluate.Instance() and so on.
+# need to understand list comprehensions
 #? 
 el = list(evaluate.get_names_for_scope())[0][1][0]

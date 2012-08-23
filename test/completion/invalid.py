@@ -56,7 +56,7 @@ try:
         #? str()
         ""
 
-# wrong ternary
+# wrong ternary expression
 a = 1 if
 #? int()
 a

@@ -229,3 +229,7 @@ tuple(list(set(a)))[1]
 tuple({1})[0]
 #? int()
 tuple((1,))[0]
+
+# implementation detail for lists, should not be visible
+#? []
+list().__iterable
