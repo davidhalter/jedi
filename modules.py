@@ -96,7 +96,6 @@ class ModuleWithCursor(Module):
                     if token_type == tokenize.NUMBER and tok[0] == '.':
                         force_point = False
                     else:
-                        #print 'break2', token_type, tok
                         break
                 elif tok in close_brackets:
                     level += 1
@@ -105,7 +104,6 @@ class ModuleWithCursor(Module):
                 elif token_type == tokenize.NUMBER:
                     pass
                 else:
-                    #print 'break', token_type, tok
                     break
 
                 string += tok
@@ -127,7 +125,11 @@ class ModuleWithCursor(Module):
         if not self._line_cache:
             self._line_cache = self.source.split('\n')
 
-        if line < 1:
+        if line == 0:
+            # This is a fix for the zeroth line. We need a newline there, for
+            # the backwards parser.
+            return ''
+        if line < 0:
             raise StopIteration()
         try:
             return self._line_cache[line - 1]
