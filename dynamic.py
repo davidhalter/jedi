@@ -113,7 +113,7 @@ def search_params(param):
 
 def check_array_additions(array):
     """ Just a mapper function for the internal _check_array_additions """
-    if array._array.type not in ['list', 'tuple']:
+    if array._array.type not in ['list', 'set']:
         # TODO also check for dict updates
         return []
 

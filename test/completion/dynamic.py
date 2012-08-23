@@ -196,13 +196,13 @@ arr2.append('')
 arr2[0]
 
 
-st = {}
+st = {1.0}
 st.add(1)
 lst = list(st)
 
 lst.append('')
 
-#? int() str()
+#? float() int() str()
 lst[0]
 
 lst = [1]
