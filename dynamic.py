@@ -111,12 +111,16 @@ def search_params(param):
 
     return result
 
-
 def check_array_additions(array):
     """ Just a mapper function for the internal _check_array_additions """
+    if array._array.type not in ['list', 'tuple']:
+        # TODO also check for dict updates
+        return []
+
     is_list = array._array.type == 'list'
     current_module = array._array.parent_stmt().get_parent_until()
-    return _check_array_additions(array, current_module, is_list)
+    res = _check_array_additions(array, current_module, is_list)
+    return res
 
 
 @evaluate.memoize_default([])
@@ -154,7 +158,16 @@ def _check_array_additions(compare_array, module, is_list):
 
             position = c.parent_stmt().start_pos
             scope = c.parent_stmt().parent()
+
+            # Special assignments should not be evaluated in this case. This
+            # would cause big recursion problems, because in cases like the
+            # code of jedi itself, += something is called and this call leads
+            # to many other things including params, which are not defined.
+            # This would lead again to dynamic param completion, and so on.
+            # In the end the definition is needed, and that's not with `+=`.
+            settings.evaluate_special_assignments = False
             found = evaluate.follow_call_path(backtrack_path, scope, position)
+            settings.evaluate_special_assignments = True
             if not compare_array in found:
                 # Check if the original scope is an execution. If it is, one
                 # can search for the same statement, that is in the module
@@ -244,37 +257,20 @@ class ArrayInstance(parsing.Base):
         lists/sets are too complicated too handle that.
         """
         items = []
-        #print 'ic', self.var_args, self.var_args.parent_stmt()
-        stmt = self.var_args.parent_stmt()
-        #if evaluate.follow_statement.push_stmt(stmt):
-            # check recursion
-            #return []
-        #if stmt.get_parent_until() == builtin.Builtin.scope:
-            #evaluate.follow_statement.push(stmt)
         for array in evaluate.follow_call_list(self.var_args):
             if isinstance(array, evaluate.Instance) and len(array.var_args):
                 temp = array.var_args[0][0]
                 if isinstance(temp, ArrayInstance):
-                    #print items, self, id(self.var_args), id(self.var_args.parent_stmt()), array
                     # prevent recursions
                     # TODO compare Modules
-                    #if evaluate.follow_statement.push_stmt(stmt):
-                        # check recursion
-                    #    continue
                     if self.var_args.start_pos != temp.var_args.start_pos:
                         items += temp.iter_content()
                     else:
                         debug.warning('ArrayInstance recursion', self.var_args)
-                        print 'yippie'
-                    #evaluate.follow_statement.pop_stmt()
                     continue
             items += evaluate.get_iterator_types([array])
 
-        #if stmt.get_parent_until() == builtin.Builtin.scope:
-            #evaluate.follow_statement.pop()
-        #print 'ic finish', self.var_args
         module = self.var_args.parent_stmt().get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self.instance, module, is_list)
-        #evaluate.follow_statement.pop_stmt()
         return items

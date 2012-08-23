@@ -30,6 +30,7 @@ import builtin
 import imports
 import helpers
 import dynamic
+import settings
 
 memoize_caches = []
 statement_path = []
@@ -407,7 +408,7 @@ class Function(parsing.Base):
         return f
 
     def get_decorated_func(self):
-        if self._decorated_func == None:
+        if self._decorated_func is None:
             raise DecoratorNotFound()
         if self._decorated_func == self.base_func:
             return self
@@ -723,6 +724,7 @@ class Generator(parsing.Base):
 
     def iter_content(self):
         """ returns the content of __iter__ """
+        #print self, follow_statement.node_statements()
         return Execution(self.func, self.var_args).get_return_types(True)
 
     def get_index_types(self, index=None):
@@ -833,7 +835,7 @@ class ArrayElement(object):
 
     def __getattr__(self, name):
         # Set access privileges:
-        if name not in ['parent', 'names', 'start_pos', 'end_pos']:
+        if name not in ['parent', 'names', 'start_pos', 'end_pos', 'get_code']:
             raise AttributeError('Strange access: %s.' % name)
         return getattr(self.name, name)
 
@@ -848,12 +850,13 @@ def get_defined_names_for_position(obj, position=None, start_scope=None):
     names = obj.get_defined_names()
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    if not position or isinstance(obj, Instance) or start_scope != obj \
+    if not position or isinstance(obj, (Instance, Array)) \
+                or start_scope != obj \
                     and isinstance(start_scope, (parsing.Function, Execution)):
         return names
     names_new = []
     for n in names:
-        if (n.start_pos) < position:
+        if n.start_pos < position:
             names_new.append(n)
     return names_new
 
@@ -1089,7 +1092,7 @@ def get_iterator_types(inputs):
             # __iter__ returned an instance.
             name = '__next__' if is_py3k() else 'next'
             try:
-                result += it.execute_subscope_by_name(name)
+                result += gen.execute_subscope_by_name(name)
             except KeyError:
                 debug.warning('Instance has no __next__ function', gen)
         else:
@@ -1152,8 +1155,12 @@ def assign_tuples(tup, results, seek_name):
 def follow_statement(stmt, seek_name=None):
     """
     :param stmt: contains a statement
-    :param scope: contains a scope. If not given, takes the parent of stmt.
     """
+    if not settings.evaluate_special_assignments:
+        det = stmt.assignment_details
+        if det and det[0][0] != '=':
+            return []
+
     statement_path.append(stmt)  # important to know for the goto function
 
     debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))
@@ -1225,6 +1232,9 @@ def follow_call(call):
     """ Follow a call is following a function, variable, string, etc. """
     scope = call.parent_stmt().parent()
     path = call.generate_call_path()
+    path = list(path)
+    #print 'p', scope, path
+    path = iter(path)
 
     position = call.parent_stmt().start_pos
     return follow_call_path(path, scope, position)

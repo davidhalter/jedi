@@ -14,21 +14,21 @@ scopes, path, dot, like = \
                             source_path, True)
 
 # has problems with that (sometimes) very deep nesting.
-##? set()
+#? set()
 el = scopes
 
 # get_names_for_scope is also recursion stuff
-##? tuple()
+#? tuple()
 el = list(evaluate.get_names_for_scope())[0]
 
-##? int() parsing.Module()
+#? int() parsing.Module()
 el = list(evaluate.get_names_for_scope(1))[0][0]
 #? parsing.Module()
 el = list(evaluate.get_names_for_scope())[0][0]
 
-##? list()
+#? list()
 el = list(evaluate.get_names_for_scope(1))[0][1]
-##? list()
+#? list()
 el = list(evaluate.get_names_for_scope())[0][1]
 
 # TODO here should stand evaluate.Instance() and so on.
