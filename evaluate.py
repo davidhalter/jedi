@@ -270,7 +270,10 @@ class InstanceElement(object):
 
     def get_parent_until(self, *classes):
         scope = self.var.get_parent_until(*classes)
-        return InstanceElement(self.instance, scope)
+        if isinstance(scope, parsing.Module):
+            return scope
+        else:
+            return InstanceElement(self.instance, scope)
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
