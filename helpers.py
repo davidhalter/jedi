@@ -12,7 +12,6 @@ class RecursionDecorator(object):
     def __init__(self, func):
         self.func = func
         self.reset()
-        self.current = None
 
     def __call__(self, stmt, *args, **kwargs):
         if self.push_stmt(stmt):
@@ -72,7 +71,8 @@ class RecursionNode(object):
         if not other:
             return None
         return self.script == other.script \
-                    and self.position == other.position and not self.is_ignored
+                    and self.position == other.position \
+                    and not self.is_ignored and not other.is_ignored
 
 
 def fast_parent_copy(obj):
