@@ -255,6 +255,8 @@ class Instance(Executable):
 
 
 class InstanceElement(object):
+    __metaclass__ = CachedMetaClass
+
     def __init__(self, instance, var):
         if isinstance(var, parsing.Function):
             var = Function(var)
