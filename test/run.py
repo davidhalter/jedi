@@ -6,16 +6,12 @@ import traceback
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
 sys.path.append('.')
-import functions
-from _compatibility import unicode, BytesIO
 
-only_line = [int(o) for o in sys.argv[2:]]
-if only_line:
-    import debug
-    debug.debug_function = \
-                functions.debug.print_to_stdout
-    debug.ignored_modules = ['parsing', 'builtin']
-#functions.set_debug_function(functions.debug.print_to_stdout)
+from _compatibility import unicode, BytesIO, reduce
+
+import functions
+import debug
+debug.ignored_modules = ['parsing', 'builtin']
 
 
 def run_completion_test(correct, source, line_nr, line, path):
@@ -118,7 +114,7 @@ def run_goto_test(correct, source, line_nr, line, path):
     return 0
 
 
-def run_test(source, f_name):
+def run_test(source, f_name, lines_to_execute):
     """
     This is the completion test for some cases. The tests are not unit test
     like, they are rather integration tests.
@@ -164,46 +160,82 @@ def run_test(source, f_name):
                 correct = None
             else:
                 # reset the test, if only one specific test is wanted
-                if only_line and line_nr not in only_line:
+                if lines_to_execute and line_nr not in lines_to_execute:
                     correct = None
     return tests, fails
 
 
-def test_dir(completion_test_dir, third_party=False):
+def test_dir(completion_test_dir, thirdparty=False):
     global tests_pass
     for f_name in os.listdir(completion_test_dir):
-        if len(sys.argv) == 1 or [a for a in sys.argv[1:] if a in f_name]:
+        files_to_execute = [a for a in test_files.items() if a[0] in f_name]
+        lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
+        if f_name.endswith(".py") and (not test_files or files_to_execute):
+            # for python2.5 certain tests are not being done, because it
+            # only has these features partially.
             if sys.hexversion < 0x02060000 \
                     and f_name in ['generators.py', 'types.py']:
                 continue
-            if f_name.endswith(".py"):
-                if third_party:
-                    try:
-                        # there is always an underline at the end.
-                        # It looks like: completion/thirdparty/pylab_.py
-                        __import__(f_name.replace('_.py', ''))
-                    except ImportError:
-                        summary.append('Thirdparty-Library %s not found.' %
-                                                                        f_name)
-                        continue
-                path = os.path.join(completion_test_dir, f_name)
-                f = open(path)
-                num_tests, fails = run_test(f.read(), f_name)
-                s = 'run %s tests with %s fails (%s)' % (num_tests, fails,
-                                                                        f_name)
-                if fails:
-                    tests_pass = False
-                print(s)
-                summary.append(s)
+
+            if thirdparty:
+                try:
+                    # there is always an underline at the end.
+                    # It looks like: completion/thirdparty/pylab_.py
+                    __import__(f_name.replace('_.py', ''))
+                except ImportError:
+                    summary.append('Thirdparty-Library %s not found.' %
+                                                                    f_name)
+                    continue
+
+            path = os.path.join(completion_test_dir, f_name)
+            f = open(path)
+            num_tests, fails = run_test(f.read(), f_name, lines_to_execute)
+
+            s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
+            if fails:
+                tests_pass = False
+            print(s)
+            summary.append(s)
+
+
+args = sys.argv[1:]
+try:
+    i = args.index('--thirdparty')
+    thirdparty = True
+    args = args[:i] + args[i + 1:]
+except ValueError:
+    thirdparty = False
+
+try:
+    i = args.index('--debug')
+    args = args[:i] + args[i + 1:]
+except ValueError:
+    pass
+else:
+    functions.set_debug_function(debug.print_to_stdout)
+
+# get test list, that should be executed
+test_files = {}
+last = None
+for arg in args:
+    if arg.isdigit():
+        if last is None:
+            continue
+        test_files[last].append(int(arg))
+    else:
+        test_files[arg] = []
+        last = arg
 
 # completion tests:
 completion_test_dir = 'test/completion'
 summary = []
 tests_pass = True
 
+# execute tests
 test_dir(completion_test_dir)
-completion_test_dir += '/thirdparty'
-test_dir(completion_test_dir, third_party=True)
+if test_files or thirdparty:
+    completion_test_dir += '/thirdparty'
+    test_dir(completion_test_dir, thirdparty=True)
 
 print('\nSummary:')
 for s in summary:
