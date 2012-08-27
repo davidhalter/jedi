@@ -574,7 +574,7 @@ class Statement(Simple):
     :type start_pos: tuple(int, int)
     """
     def __init__(self, code, set_vars, used_funcs, used_vars, token_list,
-                    start_pos, end_pos):
+                                                        start_pos, end_pos):
         super(Statement, self).__init__(start_pos, end_pos)
         self.code = code
         self.used_funcs = used_funcs
@@ -1016,9 +1016,14 @@ class ListComprehension(object):
         self.input = input
 
     def __repr__(self):
-        return "<%s: %s for %s in %s>" % \
-                (self.__class__.__name__, self.stmt, self.middle, self.input)
+        return "<%s: %s>" % \
+                (self.__class__.__name__, self.get_code())
 
+    def get_code(self):
+        """ TODO return a valid representation """
+        statements = self.stmt, self.middle, self.input
+        code = [s.get_code().replace('\n', '') for s in statements]
+        return "%s for %s in %s" % tuple(code)
 
 
 class PyFuzzyParser(object):
@@ -1317,7 +1322,7 @@ class PyFuzzyParser(object):
                         debug.warning('list comprehension formatting @%s' %
                                                             self.start_pos[0])
                         continue
-                    #token_type, tok = self.next()
+
                     b = [')', ']']
                     in_clause, tok = self._parse_statement(added_breaks=b,
                                                             list_comp=True)
@@ -1326,6 +1331,7 @@ class PyFuzzyParser(object):
                                                     (tok, self.start_pos[0]))
                         continue
                     other_level = 0
+
                     for i, tok in enumerate(reversed(tok_list)):
                         if not isinstance(tok, Name):
                             tok = tok[1]
@@ -1339,12 +1345,20 @@ class PyFuzzyParser(object):
                         i = 0  # could not detect brackets -> nested list comp
 
                     tok_list, toks = tok_list[:-i], tok_list[-i:-1]
-                    st = Statement('', [], [], [], \
+                    src = ''
+                    for t in toks:
+                        src += t[1] if isinstance(t, tuple) else t.get_code()
+                    st = Statement(src, [], [], [], \
                                     toks, first_pos, self.end_pos)
+
                     for s in [st, middle, in_clause]:
                         s.parent = weakref.ref(self.scope)
-                    tok_list.append(ListComprehension(st, middle, in_clause))
-                    print tok_list
+                    tok = ListComprehension(st, middle, in_clause)
+                    tok_list.append(tok)
+                    if list_comp:
+                        string = ''
+                    string += tok.get_code()
+                    continue
                 elif tok in ['print', 'exec']:
                     # TODO they should be reinstated, since the goal of the
                     # parser is a different one.
