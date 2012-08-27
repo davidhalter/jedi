@@ -155,6 +155,15 @@ class frozenset():
         return self
 
 
+class dict():
+    def __init__(self, **elements):
+        self.__elements = elements
+
+    def clear(self):
+        # has a strange docstr
+        pass
+
+
 #--------------------------------------------------------
 # basic types
 #--------------------------------------------------------
