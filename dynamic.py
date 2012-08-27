@@ -203,6 +203,7 @@ def _check_array_additions(compare_array, module, is_list):
         return result
 
     def get_execution_parent(element, *stop_classes):
+        """ Used to get an Instance/Execution parent """
         if isinstance(element, evaluate.Array):
             stmt = element._array.parent_stmt()
         else:
@@ -243,6 +244,7 @@ def _check_array_additions(compare_array, module, is_list):
             res += check_calls(scan_array(stmt.get_assignment_calls(), n), n)
             evaluate.follow_statement.pop_stmt()
     return res
+
 
 def check_array_instances(instance):
     if not settings.dynamic_arrays_instances:

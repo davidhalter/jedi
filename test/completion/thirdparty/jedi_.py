@@ -33,5 +33,10 @@ el = list(evaluate.get_names_for_scope())[0][1]
 
 # TODO here should stand evaluate.Instance() and so on.
 # need to understand list comprehensions
-#? 
+##? 
 el = list(evaluate.get_names_for_scope())[0][1][0]
+
+#? list()
+parsing.Scope((0,0)).get_set_vars()
+#? 
+parsing.Scope((0,0)).get_set_vars()[0]
