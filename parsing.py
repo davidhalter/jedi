@@ -982,6 +982,19 @@ class Name(Simple):
         return len(self.names)
 
 
+class ListComprehension(object):
+    """ Helper class for list comprehensions """
+    def __init__(self, tok_list, middle, input):
+        self.tok_list = tok_list
+        self.middle = middle
+        self.input = input
+
+    def __repr__(self):
+        return "<%s: %s for in %s>" % \
+                (self.__class__.__name__, self.tok_list, self.input)
+
+
+
 class PyFuzzyParser(object):
     """
     This class is used to parse a Python file, it then divides them into a
@@ -1225,6 +1238,8 @@ class PyFuzzyParser(object):
             token_type, tok = self.next()
 
         first_pos = self.start_pos
+        opening_brackets = ['{', '(', '[']
+        closing_brackets = ['}', ')', ']']
 
         # the difference between "break" and "always break" is that the latter
         # will even break in parentheses. This is true for typical flow
@@ -1270,6 +1285,33 @@ class PyFuzzyParser(object):
                     set_string = tok + ' '
                     if tok in ['return', 'yield']:
                         is_return = tok
+                elif tok == 'for':
+                    middle, in_str = self._parse_statement(added_breaks=['in'])
+                    if in_str != 'in':
+                        debug.warning('list comprehension formatting @%s' %
+                                                            self.start_pos[0])
+                        continue
+                    #token_type, tok = self.next()
+                    b = [')', ']']
+                    in_clause, tok = self._parse_statement(added_breaks=b)
+                    if tok not in b:
+                        debug.warning('list comprehension brackets %s@%s' %
+                                                    (tok, self.start_pos[0]))
+                        continue
+                    other_level = 0
+                    for i, (d1, tok, d2) in enumerate(reversed(tok_list)):
+                        if tok in closing_brackets:
+                            other_level -= 1
+                        elif tok in opening_brackets:
+                            other_level += 1
+                        if other_level > 0:
+                            break
+                    else:
+                        i = 0  # could not detect brackets -> nested list comp
+
+                    tok_list, toks = tok_list[:-i], tok_list[-i:-1]
+                    tok_list.append(ListComprehension(toks, middle, in_clause))
+                    print tok_list
                 elif tok in ['print', 'exec']:
                     # TODO they should be reinstated, since the goal of the
                     # parser is a different one.
@@ -1294,9 +1336,9 @@ class PyFuzzyParser(object):
                 if level == 0:
                     set_vars = used_vars
                     used_vars = []
-            elif tok in ['{', '(', '[']:
+            elif tok in opening_brackets:
                 level += 1
-            elif tok in ['}', ')', ']']:
+            elif tok in closing_brackets:
                 level -= 1
 
             if set_string is not None:
