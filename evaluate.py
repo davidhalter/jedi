@@ -856,6 +856,8 @@ def get_names_for_scope(scope, position=None, star_search=True,
     """
     start_scope = scope
     in_scope = scope
+    if isinstance(start_scope, parsing.ForFlow) and start_scope.is_list_comp:
+        yield start_scope, start_scope.get_set_vars(is_internal_call=True)
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
@@ -1192,18 +1194,24 @@ def follow_call_list(call_list):
             for call in calls_iterator:
                 if parsing.Array.is_type(call, parsing.Array.NOARRAY):
                     result += follow_call_list(call)
+                elif isinstance(call, parsing.ListComprehension):
+                    stmt = call.stmt
+                    # create a for loop which does the same as list
+                    # comprehensions
+                    loop = parsing.ForFlow([call.input], stmt.start_pos,
+                                                            call.middle, True)
+                    loop.parent = weakref.ref(stmt.parent())
+                    stmt = copy.copy(stmt)
+                    stmt.parent = lambda: loop
+                    result += follow_statement(stmt)
                 else:
-                    # With things like params, these can also be functions...
                     if isinstance(call, (Function, Class, Instance,
                                             dynamic.ArrayInstance)):
+                    # With things like params, these can also be functions...
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, str):
-                        if str(call.name) == 'for':
-                            # list comprehensions
-                            print '\n\ndini mueter', call_list
-                            return []
-                        elif str(call.name) == 'if':
+                        if str(call.name) == 'if':
                             # Ternary operators.
                             while True:
                                 try:

@@ -56,11 +56,24 @@ for i in range(10):
 # list comprehensions
 # -----------------
 
-a = ['' for abc in [1]]
+# basics:
 
+a = ['' for a in [1]]
 #? str()
 a[0]
 
+a = [a for a in [1]]
+#? int()
+a[0]
+
+a = [a for a,b in [(1,'')]]
+#? int()
+a[0]
+
+arr = [1,'']
+a = [a for a in arr]
+#? int() str()
+a[0]
 
 # -----------------
 # ternary operator

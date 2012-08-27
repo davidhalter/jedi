@@ -479,10 +479,11 @@ class ForFlow(Flow):
     """
     Used for the for loop, because there are two statement parts.
     """
-    def __init__(self, command, inits, start_pos, set_stmt):
-        super(ForFlow, self).__init__(command, inits, start_pos,
+    def __init__(self, inits, start_pos, set_stmt, is_list_comp=False):
+        super(ForFlow, self).__init__('for', inits, start_pos,
                                         set_stmt.used_vars)
         self.set_stmt = set_stmt
+        self.is_list_comp = is_list_comp
 
 
 class Import(Simple):
@@ -664,6 +665,9 @@ class Statement(Simple):
         tok_iter = enumerate(self.token_list)
         for i, tok_temp in tok_iter:
             #print 'tok', tok_temp, result
+            if isinstance(tok_temp, ListComprehension):
+                result.add_to_current_field(tok_temp)
+                continue
             try:
                 token_type, tok, start_pos = tok_temp
             except TypeError:
@@ -1006,14 +1010,14 @@ class Name(Simple):
 
 class ListComprehension(object):
     """ Helper class for list comprehensions """
-    def __init__(self, tok_list, middle, input):
-        self.tok_list = tok_list
+    def __init__(self, stmt, middle, input):
+        self.stmt = stmt
         self.middle = middle
         self.input = input
 
     def __repr__(self):
-        return "<%s: %s for in %s>" % \
-                (self.__class__.__name__, self.tok_list, self.input)
+        return "<%s: %s for %s in %s>" % \
+                (self.__class__.__name__, self.stmt, self.middle, self.input)
 
 
 
@@ -1322,7 +1326,9 @@ class PyFuzzyParser(object):
                                                     (tok, self.start_pos[0]))
                         continue
                     other_level = 0
-                    for i, (d1, tok, d2) in enumerate(reversed(tok_list)):
+                    for i, tok in enumerate(reversed(tok_list)):
+                        if not isinstance(tok, Name):
+                            tok = tok[1]
                         if tok in closing_brackets:
                             other_level -= 1
                         elif tok in opening_brackets:
@@ -1333,7 +1339,11 @@ class PyFuzzyParser(object):
                         i = 0  # could not detect brackets -> nested list comp
 
                     tok_list, toks = tok_list[:-i], tok_list[-i:-1]
-                    tok_list.append(ListComprehension(toks, middle, in_clause))
+                    st = Statement('', [], [], [], \
+                                    toks, first_pos, self.end_pos)
+                    for s in [st, middle, in_clause]:
+                        s.parent = weakref.ref(self.scope)
+                    tok_list.append(ListComprehension(st, middle, in_clause))
                     print tok_list
                 elif tok in ['print', 'exec']:
                     # TODO they should be reinstated, since the goal of the
@@ -1399,7 +1409,6 @@ class PyFuzzyParser(object):
 
         if list_comp:
             self.gen.push_back(self._current_full)
-
         return stmt, tok
 
     def next(self):
@@ -1522,7 +1531,7 @@ class PyFuzzyParser(object):
                     if tok == 'in':
                         statement, tok = self._parse_statement()
                         if tok == ':':
-                            f = ForFlow('for', [statement], first_pos,
+                            f = ForFlow([statement], first_pos,
                                                                 set_stmt)
                             self.scope = self.scope.add_statement(f)
 
