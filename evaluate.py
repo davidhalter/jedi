@@ -565,7 +565,7 @@ class Execution(Executable):
                 for key, value in var_arg_iterator:
                     # Iterate until a key argument is found.
                     if key:
-                        var_arg_iterator.push_back(key, value)
+                        var_arg_iterator.push_back((key, value))
                         break
                     values.append(value)
             elif assignment[0] == '**':
@@ -630,28 +630,7 @@ class Execution(Executable):
                     else:
                         yield None, var_arg
 
-        class PushBackIterator(object):
-            def __init__(self, iterator):
-                self.pushes = []
-                self.iterator = iterator
-
-            def push_back(self, key, value):
-                self.pushes.append((key, value))
-
-            def __iter__(self):
-                return self
-
-            def next(self):
-                """ Python 2 Compatibility """
-                return self.__next__()
-
-            def __next__(self):
-                try:
-                    return self.pushes.pop()
-                except IndexError:
-                    return next(self.iterator)
-
-        return iter(PushBackIterator(iterate()))
+        return iter(parsing.PushBackIterator(iterate()))
 
     def get_set_vars(self):
         return self.get_defined_names()
@@ -1198,6 +1177,9 @@ def follow_call_list(call_list):
     It is used to evaluate a two dimensional object, that has calls, arrays and
     operators in it.
     """
+    def evaluate_list_comprehension(self, call_list):
+        for a in call_list:
+            pass
     if parsing.Array.is_type(call_list, parsing.Array.TUPLE,
                                         parsing.Array.DICT):
         # Tuples can stand just alone without any braces. These would be
@@ -1217,9 +1199,11 @@ def follow_call_list(call_list):
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, str):
-                        #if str(call.name) == 'for':  <--- list comprehensions
-                        #    print '\n\ndini mueter'
-                        if str(call.name) == 'if':
+                        if str(call.name) == 'for':
+                            # list comprehensions
+                            print '\n\ndini mueter', call_list
+                            return []
+                        elif str(call.name) == 'if':
                             # Ternary operators.
                             while True:
                                 try:

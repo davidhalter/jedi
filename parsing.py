@@ -54,6 +54,28 @@ def indent_block(text, indention="    "):
     return '\n'.join(map(lambda s: indention + s, lines)) + temp
 
 
+class PushBackIterator(object):
+    def __init__(self, iterator):
+        self.pushes = []
+        self.iterator = iterator
+
+    def push_back(self, value):
+        self.pushes.append(value)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        """ Python 2 Compatibility """
+        return self.__next__()
+
+    def __next__(self):
+        if self.pushes:
+            return self.pushes.pop()
+        else:
+            return next(self.iterator)
+
+
 class Base(object):
     """
     This is just here to have an isinstance check, which is also used on
@@ -1208,7 +1230,7 @@ class PyFuzzyParser(object):
         return Class(cname, super, first_pos)
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
-                            stmt_class=Statement):
+                            stmt_class=Statement, list_comp=False):
         """
         Parses statements like:
 
@@ -1293,7 +1315,8 @@ class PyFuzzyParser(object):
                         continue
                     #token_type, tok = self.next()
                     b = [')', ']']
-                    in_clause, tok = self._parse_statement(added_breaks=b)
+                    in_clause, tok = self._parse_statement(added_breaks=b,
+                                                            list_comp=True)
                     if tok not in b:
                         debug.warning('list comprehension brackets %s@%s' %
                                                     (tok, self.start_pos[0]))
@@ -1374,12 +1397,16 @@ class PyFuzzyParser(object):
             except AttributeError:
                 debug.warning('return in non-function')
 
+        if list_comp:
+            self.gen.push_back(self._current_full)
+
         return stmt, tok
 
     def next(self):
         """ Generate the next tokenize pattern. """
+        self._current_full = next(self.gen)
         type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
-                            self.parserline = next(self.gen)
+                            self.parserline = self._current_full
         if self.user_position and self.start_pos[0] == self.user_position[0]:
             debug.dbg('user scope found [%s] = %s' % \
                     (self.parserline.replace('\n', ''), repr(self.scope)))
@@ -1400,7 +1427,7 @@ class PyFuzzyParser(object):
         :raises: IndentationError
         """
         buf = BytesIO(self.code)
-        self.gen = tokenize_func(buf.readline)
+        self.gen = PushBackIterator(tokenize_func(buf.readline))
 
         extended_flow = ['else', 'elif', 'except', 'finally']
         statement_toks = ['{', '[', '(', '`']
