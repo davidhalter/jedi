@@ -856,8 +856,6 @@ def get_names_for_scope(scope, position=None, star_search=True,
     """
     start_scope = scope
     in_scope = scope
-    if isinstance(start_scope, parsing.ForFlow) and start_scope.is_list_comp:
-        yield start_scope, start_scope.get_set_vars(is_internal_call=True)
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
@@ -869,6 +867,9 @@ def get_names_for_scope(scope, position=None, star_search=True,
                                                                 in_scope)
             except StopIteration:
                 raise MultiLevelStopIteration('StopIteration raised somewhere')
+        if isinstance(scope, parsing.ForFlow) and scope.is_list_comp:
+            yield scope, scope.get_set_vars(is_internal_call=True)
+
         scope = scope.parent()
         # This is used, because subscopes (Flow scopes) would distort the
         # results.
@@ -1179,9 +1180,23 @@ def follow_call_list(call_list):
     It is used to evaluate a two dimensional object, that has calls, arrays and
     operators in it.
     """
-    def evaluate_list_comprehension(self, call_list):
-        for a in call_list:
-            pass
+    def evaluate_list_comprehension(lc, parent=None):
+        input = lc.input
+        nested_lc = lc.input.token_list[0]
+        if isinstance(nested_lc, parsing.ListComprehension):
+            # is nested LC
+            input = nested_lc.stmt
+        loop = parsing.ForFlow([input], lc.stmt.start_pos,
+                                                lc.middle, True)
+        if parent is None:
+            loop.parent = weakref.ref(lc.stmt.parent())
+        else:
+            loop.parent = lambda: parent
+
+        if isinstance(nested_lc, parsing.ListComprehension):
+            loop = evaluate_list_comprehension(nested_lc, loop)
+        return loop
+
     if parsing.Array.is_type(call_list, parsing.Array.TUPLE,
                                         parsing.Array.DICT):
         # Tuples can stand just alone without any braces. These would be
@@ -1195,14 +1210,11 @@ def follow_call_list(call_list):
                 if parsing.Array.is_type(call, parsing.Array.NOARRAY):
                     result += follow_call_list(call)
                 elif isinstance(call, parsing.ListComprehension):
-                    stmt = call.stmt
+                    loop = evaluate_list_comprehension(call)
+                    stmt = copy.copy(call.stmt)
+                    stmt.parent = lambda: loop
                     # create a for loop which does the same as list
                     # comprehensions
-                    loop = parsing.ForFlow([call.input], stmt.start_pos,
-                                                            call.middle, True)
-                    loop.parent = weakref.ref(stmt.parent())
-                    stmt = copy.copy(stmt)
-                    stmt.parent = lambda: loop
                     result += follow_statement(stmt)
                 else:
                     if isinstance(call, (Function, Class, Instance,
@@ -1267,11 +1279,7 @@ def follow_call_path(path, scope, position):
             # Reset the position, when imports where stripped.
             position = None
 
-    debug.dbg('before next follow %s, current "%s", scope %s'
-                                % (result, current, scope))
-    result = follow_paths(path, result, position=position)
-
-    return result
+    return follow_paths(path, result, position=position)
 
 
 def follow_paths(path, results, position=None):

@@ -66,6 +66,10 @@ a = [a for a in [1]]
 #? int()
 a[0]
 
+a = [a for a in 1,2]
+#? int()
+a[0]
+
 a = [a for a,b in [(1,'')]]
 #? int()
 a[0]
@@ -74,6 +78,26 @@ arr = [1,'']
 a = [a for a in arr]
 #? int() str()
 a[0]
+
+a = [a if 1.0 else '' for a in [1] if [1.0]]
+#? int() str()
+a[0]
+
+# -----------------
+# nested list comprehensions
+# -----------------
+
+b = [a for arr in [[1]] for a in arr]
+#? int()
+b[0]
+
+b = [a for arr in [[1]] if '' for a in arr if '']
+#? int()
+b[0]
+
+b = [b for arr in [[[1.0]]] for a in arr for b in a]
+#? float()
+b[0]
 
 # -----------------
 # ternary operator
