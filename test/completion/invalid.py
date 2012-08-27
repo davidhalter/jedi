@@ -1,3 +1,6 @@
+# This file is less about the results and much more about the fact, that no
+# exception should be thrown.
+
 #? ['upper']
 str()).upper
 
@@ -31,7 +34,7 @@ def openbrace2():
 def normalfunc():
     return 1
 
-##? int()
+#? int()
 normalfunc()
 
 
@@ -60,6 +63,33 @@ try:
 a = 1 if
 #? int()
 a
+
+a2 = [for a2 in [0]]
+#? 
+a2[0]
+
+a3 = [for xyz in]
+#? 
+a3[0]
+
+a3 = [a4 for in 'b']
+#? str()
+a3[0]
+
+a3 = [a4 for a in for x in y]
+#? 
+a3[0]
+
+a = [for a in
+def break(): pass
+
+#? 
+a[0]
+
+a = [a for a in [1,2]
+def break(): pass
+#? list()
+a[0]
 
 #? []
 int()).

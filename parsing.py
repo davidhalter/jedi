@@ -775,11 +775,9 @@ class Statement(Simple):
                     close_brackets = False
                 result.add_to_current_field(tok)
 
-            #print 'tok_end', tok_temp, result, close_brackets
-
         if level != 0:
-            raise ParserError("Brackets don't match: %s. This is not normal "
-                                "behaviour. Please submit a bug" % level)
+            debug.warning("Brackets don't match: %s."
+                         "This is not normal behaviour." % level)
 
         self._assignment_calls_calculated = True
         self._assignment_calls = top
@@ -1317,8 +1315,11 @@ class PyFuzzyParser(object):
                     if tok in ['return', 'yield']:
                         is_return = tok
                 elif tok == 'for':
-                    middle, in_str = self._parse_statement(added_breaks=['in'])
-                    if in_str != 'in':
+                    # list comprehensions!
+                    middle, tok = self._parse_statement(added_breaks=['in'])
+                    if tok != 'in' or middle is None:
+                        if middle is None:
+                            level -=1
                         debug.warning('list comprehension formatting @%s' %
                                                             self.start_pos[0])
                         continue
@@ -1326,8 +1327,10 @@ class PyFuzzyParser(object):
                     b = [')', ']']
                     in_clause, tok = self._parse_statement(added_breaks=b,
                                                             list_comp=True)
-                    if tok not in b:
-                        debug.warning('list comprehension brackets %s@%s' %
+                    if tok not in b or in_clause is None:
+                        if in_clause is None:
+                            self.gen.push_back(self._current_full)
+                        debug.warning('list comprehension in_clause %s@%s' %
                                                     (tok, self.start_pos[0]))
                         continue
                     other_level = 0
@@ -1421,7 +1424,7 @@ class PyFuzzyParser(object):
             except AttributeError:
                 debug.warning('return in non-function')
 
-        if list_comp:
+        if list_comp or tok in always_break:
             self.gen.push_back(self._current_full)
         return stmt, tok
 
