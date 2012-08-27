@@ -404,3 +404,17 @@ E.t(1)
 e.u(1)
 #? str()
 E.u(1)
+
+# -----------------
+# recursions
+# -----------------
+def Recursion():
+    def recurse(self):
+        self.a = self.a
+        self.b = self.b.recurse()
+
+#? 
+Recursion().a
+
+#? 
+Recursion().b

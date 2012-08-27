@@ -80,7 +80,7 @@ class Simple(Base):
     def get_parent_until(self, *classes):
         """ Takes always the parent, until one class (not a Class) """
         scope = self
-        while not (scope.parent() is None or scope.__class__ in classes):
+        while not (scope.parent() is None or scope.isinstance(*classes)):
             scope = scope.parent()
         return scope
 

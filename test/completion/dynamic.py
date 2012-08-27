@@ -316,11 +316,22 @@ class C():
         a[0]
         return a
 
+    def class_arr(self, el):
+        self.a = []
+        self.a.append(el)
+        #? int()
+        self.a[0]
+        return self.a
+
 #? int()
 C().blub(1)[0]
-
 #? float()
 C().blub2(1)[0]
+
+#? int()
+C().a[0]
+#? int()
+C().class_arr(1)[0]
 
 # -----------------
 # array recursions

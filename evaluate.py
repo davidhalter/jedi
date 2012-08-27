@@ -139,6 +139,8 @@ class Executable(parsing.Base):
 
 class Instance(Executable):
     """ This class is used to evaluate instances. """
+    __metaclass__ = CachedMetaClass
+
     def __init__(self, base, var_args=parsing.Array(None, None)):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \

@@ -45,6 +45,7 @@ class ParamListener(object):
         self.param_possibilities.append(params)
 
 
+@evaluate.memoize_default([])
 def search_params(param):
     """
     This is a dynamic search for params. If you try to complete a type:
@@ -123,6 +124,18 @@ def check_array_additions(array):
     res = _check_array_additions(array, current_module, is_list)
     return res
 
+counter = 0
+def dec(func):
+    def wrapper(*args, **kwargs):
+        global counter
+        a = args[0]._array.parent_stmt()
+        print '  '*counter + 'recursion,', a, id(a)
+        counter += 1
+        res = func(*args, **kwargs)
+        counter -= 1
+        print '  '*counter + 'end,', args[0]
+        return res
+    return wrapper
 
 @evaluate.memoize_default([])
 def _check_array_additions(compare_array, module, is_list):
@@ -170,26 +183,6 @@ def _check_array_additions(compare_array, module, is_list):
             found = evaluate.follow_call_path(backtrack_path, scope, position)
             settings.evaluate_special_assignments = True
             if not compare_array in found:
-                # Check if the original scope is an execution. If it is, one
-                # can search for the same statement, that is in the module
-                # dict. Executions are somewhat special in jedi, since they
-                # literally copy the contents of a function.
-                if isinstance(comp_arr_parent, evaluate.Execution):
-                    found_bases = []
-                    for f in found:
-                        base = get_execution_parent(f, parsing.Function)
-                        found_bases.append(base)
-                    if comp_arr_parent.base.base_func in found_bases:
-                        stmt = comp_arr_parent. \
-                                        get_statement_for_position(c.start_pos)
-                        if stmt is not None:
-                            if evaluate.follow_statement.push_stmt(stmt):
-                                # check recursion
-                                continue
-                            ass = stmt.get_assignment_calls()
-                            new_calls = scan_array(ass, add_name)
-                            result += check_calls(new_calls, add_name)
-                            evaluate.follow_statement.pop_stmt()
                 continue
 
             params = call_path[separate_index + 1]
@@ -215,24 +208,41 @@ def _check_array_additions(compare_array, module, is_list):
         else:
             # must be instance
             stmt = element.var_args.parent_stmt()
+        if isinstance(stmt, evaluate.InstanceElement):
+            stop_classes = list(stop_classes) + [parsing.Function]
         return stmt.get_parent_until(*stop_classes)
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
                                                             ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array, evaluate.Execution)
     possible_stmts = []
-    result = []
+    res = []
     for n in search_names:
         try:
             possible_stmts += module.used_names[n]
         except KeyError:
             continue
         for stmt in possible_stmts:
-            ass = stmt.get_assignment_calls()
-            result += check_calls(scan_array(ass, n), n)
+            # Check if the original scope is an execution. If it is, one
+            # can search for the same statement, that is in the module
+            # dict. Executions are somewhat special in jedi, since they
+            # literally copy the contents of a function.
+            if isinstance(comp_arr_parent, evaluate.Execution):
+                stmt = comp_arr_parent. \
+                                get_statement_for_position(stmt.start_pos)
+                if stmt is None:
+                    continue
+            # InstanceElements are special, because they don't get copied,
+            # but have this wrapper around them.
+            if isinstance(comp_arr_parent, evaluate.InstanceElement):
+                stmt = evaluate.InstanceElement(comp_arr_parent.instance, stmt)
 
-    return result
-
+            if evaluate.follow_statement.push_stmt(stmt):
+                # check recursion
+                continue
+            res += check_calls(scan_array(stmt.get_assignment_calls(), n), n)
+            evaluate.follow_statement.pop_stmt()
+    return res
 
 def check_array_instances(instance):
     if not settings.dynamic_arrays_instances:

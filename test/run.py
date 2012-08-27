@@ -198,6 +198,8 @@ def test_dir(completion_test_dir, thirdparty=False):
             summary.append(s)
 
 
+# Sorry I didn't use argparse here. It's because argparse is not in the 
+# stdlib in 2.5.
 args = sys.argv[1:]
 try:
     i = args.index('--thirdparty')
