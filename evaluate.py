@@ -439,8 +439,6 @@ class Execution(Executable):
     transfer parameters. This is even more complicated, because there may be
     multiple call to functions and recursion has to be avoided.
     """
-    cache = {}
-
     @memoize_default(default=[])
     def get_return_types(self, evaluate_generator=False):
         """
@@ -687,6 +685,7 @@ class Execution(Executable):
 
 
 class Generator(parsing.Base):
+    __metaclass__ = CachedMetaClass
     def __init__(self, func, var_args):
         super(Generator, self).__init__()
         self.func = func
@@ -729,6 +728,7 @@ class Array(parsing.Base):
     Used as a mirror to parsing.Array, if needed. It defines some getter
     methods which are important in this module.
     """
+    __metaclass__ = CachedMetaClass
     def __init__(self, array):
         self._array = array
 
