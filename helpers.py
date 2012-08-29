@@ -1,6 +1,7 @@
 import copy
 import weakref
 
+from _compatibility import hasattr
 import parsing
 import evaluate
 import debug
@@ -145,10 +146,9 @@ def fast_parent_copy(obj):
     def recursion(obj):
         new_obj = copy.copy(obj)
         new_elements[obj] = new_obj
-        #print new_obj.__dict__
+
         for key, value in new_obj.__dict__.items():
-            #if key in ['_parent_stmt', 'parent_stmt', '_parent', 'parent']: print key, value
-            if key in ['parent', '_parent']:
+            if key in ['parent', '_parent', '_parent_stmt', 'parent_stmt']:
                 continue
             if isinstance(value, list):
                 new_obj.__dict__[key] = list_rec(value)
@@ -158,6 +158,12 @@ def fast_parent_copy(obj):
         if obj.parent is not None:
             try:
                 new_obj.parent = weakref.ref(new_elements[obj.parent()])
+            except KeyError:
+                pass
+
+        if hasattr(obj, 'parent_stmt') and obj.parent_stmt is not None:
+            try:
+                new_obj.parent_stmt = weakref.ref(new_elements[obj.parent_stmt()])
             except KeyError:
                 pass
 
