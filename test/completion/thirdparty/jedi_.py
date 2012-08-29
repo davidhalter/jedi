@@ -45,5 +45,9 @@ el = list(evaluate.get_names_for_scope())[0][1][0]
 #? evaluate.Array() evaluate.Class() evaluate.Function() evaluate.Instance()
 list(evaluate.follow_call())[0]
 
-#? evaluate.Array() evaluate.Class() evaluate.Function() evaluate.Instance()
+# With the right recursion settings, this should be possible (and maybe more):
+# Array Class Function Generator Instance Module
+# However, this was produced with the recursion settings 10/350/10000, and
+# lasted 18.5 seconds. So we just have to be content with the results.
+#? evaluate.Class() evaluate.Function()
 evaluate.get_scopes_for_name()[0]

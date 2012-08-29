@@ -5,7 +5,6 @@ follow_statement -> follow_call -> follow_paths -> follow_path
 `get_names_for_scope` and `get_scopes_for_name` are search functions
 
 TODO doc
-TODO list comprehensions, priority? +1
 TODO magic methods: __mul__, __add__, etc.
 TODO evaluate asserts/isinstance (type safety)
 
@@ -199,6 +198,9 @@ class Instance(Executable):
                         add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
+            if s == self.base:
+                # I don't know how this could happen... But saw it once.
+                continue
             names += Instance(s).get_self_properties()
 
         return names

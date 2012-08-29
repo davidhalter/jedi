@@ -88,11 +88,8 @@ class ExecutionRecursionDecorator(object):
         self.reset()
 
     def __call__(self, execution, evaluate_generator=False):
-        #print execution, self.recursion_level, self.execution_count,
-        #print len(self.execution_funcs),
-        a= self.check_recursion(execution, evaluate_generator)
-        #print a
-        if a:
+        #print execution, self.recursion_level, self.execution_count, len(self.execution_funcs), a
+        if self.check_recursion(execution, evaluate_generator):
             result = []
         else:
             result = self.func(execution, evaluate_generator)
@@ -162,8 +159,9 @@ def fast_parent_copy(obj):
                 pass
 
         if hasattr(obj, 'parent_stmt') and obj.parent_stmt is not None:
+            p = obj.parent_stmt()
             try:
-                new_obj.parent_stmt = weakref.ref(new_elements[obj.parent_stmt()])
+                new_obj.parent_stmt = weakref.ref(new_elements[p])
             except KeyError:
                 pass
 
