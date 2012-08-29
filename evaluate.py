@@ -954,6 +954,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
 
         def handle_non_arrays(name):
             result = []
+            no_break_scope = False
             if isinstance(scope, InstanceElement) \
                         and scope.var == name.parent().parent():
                 name = InstanceElement(scope.instance, name)
@@ -993,13 +994,17 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 for op, assignee in par.assignment_details:
                     is_exe |= is_execution(assignee)
                 if is_exe:
+                    # filter array[3] = ...
                     # TODO: check executions for dict contents
                     pass
                 else:
+                    details = par.assignment_details
+                    if details and details[0][0] != '=':
+                        no_break_scope = True
                     result.append(par)
             else:
                 result.append(par)
-            return result
+            return result, no_break_scope
 
         result = []
         # compare func uses the tuple of line/indent = line/column
@@ -1013,12 +1018,13 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                             and isinstance(p.var, parsing.Class):
                     p = p.var
                 if name_str == name.get_code() and p not in break_scopes:
-                    result += handle_non_arrays(name)
+                    r, no_break_scope = handle_non_arrays(name)
+                    result += r
                     # for comparison we need the raw class
                     s = scope.base if isinstance(scope, Class) else scope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
-                    if result:
+                    if result and not no_break_scope:
                         if not name.parent() or p == s:
                             break
                         break_scopes.append(p)

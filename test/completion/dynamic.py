@@ -224,6 +224,25 @@ tuple(lst)[0]
 iter(lst)[0]
 
 # -----------------
+# complex including +=
+# -----------------
+class C(): pass
+class D(): pass
+class E(): pass
+lst = [1]
+lst.append(1.0)
+lst += [C]
+s = set(lst)
+s.add("")
+s += [D]
+lst = list(s)
+lst.append({})
+lst += [E]
+
+##? dict() int() float() str() C D E
+lst[0]
+
+# -----------------
 # functions
 # -----------------
 
