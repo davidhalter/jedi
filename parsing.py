@@ -391,9 +391,9 @@ class Flow(Scope):
     """
     def __init__(self, command, inits, start_pos, set_vars=None):
         self.next = None
+        self.command = command
         super(Flow, self).__init__(start_pos, '')
         self._parent = None
-        self.command = command
         # These have to be statements, because of with, which takes multiple.
         self.inits = inits
         for s in inits:
@@ -414,14 +414,6 @@ class Flow(Scope):
         self._parent = value
         if self.next:
             self.next.parent = value
-
-    def set_parent(self, value):
-        """
-        Normally this would be a setter, but since parents are normally
-        weakrefs (and therefore require execution),
-        I use a java like setter here.
-        """
-        self._parent = weakref.ref(value)
 
     def get_code(self, first_indent=False, indention="    "):
         if self.set_vars:

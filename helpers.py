@@ -5,6 +5,7 @@ import parsing
 import evaluate
 import debug
 import builtin
+import settings
 
 
 class RecursionDecorator(object):
@@ -14,6 +15,7 @@ class RecursionDecorator(object):
         self.reset()
 
     def __call__(self, stmt, *args, **kwargs):
+        #print stmt, len(self.node_statements())
         if self.push_stmt(stmt):
             return []
         else:
@@ -75,6 +77,65 @@ class RecursionNode(object):
                     and not self.is_ignored and not other.is_ignored
 
 
+class ExecutionRecursionDecorator(object):
+    """
+    Catches recursions of executions.
+    It is designed like a Singelton. Only one instance should exist.
+    """
+    def __init__(self, func):
+        self.func = func
+        self.reset()
+
+    def __call__(self, execution, evaluate_generator=False):
+        #print execution, self.recursion_level, self.execution_count,
+        #print len(self.execution_funcs),
+        a= self.check_recursion(execution, evaluate_generator)
+        #print a
+        if a:
+            result = []
+        else:
+            result = self.func(execution, evaluate_generator)
+        self.cleanup()
+        return result
+
+    @classmethod
+    def cleanup(cls):
+        cls.parent_execution_funcs.pop()
+        cls.recursion_level -= 1
+
+    @classmethod
+    def check_recursion(cls, execution, evaluate_generator):
+        in_par_execution_funcs = execution.base in cls.parent_execution_funcs
+        in_execution_funcs = execution.base in cls.execution_funcs
+        cls.recursion_level += 1
+        cls.execution_count += 1
+        cls.execution_funcs.add(execution.base)
+        cls.parent_execution_funcs.append(execution.base)
+
+        if isinstance(execution.base, (evaluate.Generator, evaluate.Array)):
+            return False
+        module = execution.get_parent_until()
+        if evaluate_generator or module == builtin.Builtin.scope:
+            return False
+
+        if in_par_execution_funcs:
+            if cls.recursion_level > settings.max_function_recursion_level:
+                return True
+        if in_execution_funcs and \
+                len(cls.execution_funcs) > settings.max_until_execution_unique:
+            return True
+        if cls.execution_count > settings.max_executions:
+            return True
+        return False
+
+    @classmethod
+    def reset(cls):
+        cls.recursion_level = 0
+        cls.parent_execution_funcs = []
+        cls.execution_funcs = set()
+        cls.execution_count = 0
+
+
 def fast_parent_copy(obj):
     """
     Much, much faster than deepcopy, but just for the elements in `classes`.
@@ -84,12 +145,6 @@ def fast_parent_copy(obj):
     def recursion(obj):
         new_obj = copy.copy(obj)
         new_elements[obj] = new_obj
-        if obj.parent is not None:
-            try:
-                new_obj.parent = weakref.ref(new_elements[obj.parent()])
-            except KeyError:
-                pass
-
         #print new_obj.__dict__
         for key, value in new_obj.__dict__.items():
             #if key in ['_parent_stmt', 'parent_stmt', '_parent', 'parent']: print key, value
@@ -99,6 +154,13 @@ def fast_parent_copy(obj):
                 new_obj.__dict__[key] = list_rec(value)
             elif isinstance(value, parsing.Simple):
                 new_obj.__dict__[key] = recursion(value)
+
+        if obj.parent is not None:
+            try:
+                new_obj.parent = weakref.ref(new_elements[obj.parent()])
+            except KeyError:
+                pass
+
         return new_obj
 
     def list_rec(list_obj):

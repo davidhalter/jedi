@@ -1,5 +1,5 @@
 # ----------------
-# global settings
+# dynamic stuff
 # ----------------
 
 dynamic_arrays_instances = True
@@ -7,8 +7,9 @@ dynamic_array_additions = True
 dynamic_params = True
 
 # ----------------
-# internally used:
+# recursions
 # ----------------
 
-# evaluation of +=, -=, /=, etc.
-evaluate_special_assignments = True
+max_function_recursion_level = 5
+max_until_execution_unique = 50
+max_executions = 5000

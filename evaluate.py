@@ -30,7 +30,6 @@ import builtin
 import imports
 import helpers
 import dynamic
-import settings
 
 memoize_caches = []
 statement_path = []
@@ -77,6 +76,7 @@ def clear_caches():
         m.clear()
 
     dynamic.search_param_cache.clear()
+    helpers.ExecutionRecursionDecorator.reset()
 
     # memorize_caches must never be deleted, because the dicts will get lost in
     # the wrappers.
@@ -440,6 +440,7 @@ class Execution(Executable):
     multiple call to functions and recursion has to be avoided.
     """
     @memoize_default(default=[])
+    @helpers.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """
         Get the return vars of a function.
@@ -645,10 +646,7 @@ class Execution(Executable):
         attr = getattr(self.base, prop)
         objects = []
         for element in attr:
-            temp, element.parent = element.parent, None
-            #copied = copy.deepcopy(element)
             copied = helpers.fast_parent_copy(element)
-            element.parent = temp
             copied.parent = weakref.ref(self)
             if isinstance(copied, parsing.Function):
                 copied = Function(copied)
@@ -709,7 +707,6 @@ class Generator(parsing.Base):
 
     def iter_content(self):
         """ returns the content of __iter__ """
-        #print self, follow_statement.node_statements()
         return Execution(self.func, self.var_args).get_return_types(True)
 
     def get_index_types(self, index=None):
@@ -1145,11 +1142,6 @@ def follow_statement(stmt, seek_name=None):
     """
     :param stmt: contains a statement
     """
-    if not settings.evaluate_special_assignments:
-        det = stmt.assignment_details
-        if det and det[0][0] != '=':
-            return []
-
     statement_path.append(stmt)  # important to know for the goto function
 
     debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))

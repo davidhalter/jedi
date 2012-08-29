@@ -128,15 +128,21 @@ counter = 0
 def dec(func):
     def wrapper(*args, **kwargs):
         global counter
-        a = args[0]._array.parent_stmt()
-        print '  '*counter + 'recursion,', a, id(a)
+        element = args[0]
+        if isinstance(element, evaluate.Array):
+            stmt = element._array.parent_stmt()
+        else:
+            # must be instance
+            stmt = element.var_args.parent_stmt()
+        print '  '*counter + 'recursion,', stmt
         counter += 1
         res = func(*args, **kwargs)
         counter -= 1
-        print '  '*counter + 'end,', args[0]
+        #print '  '*counter + 'end,'
         return res
     return wrapper
 
+#@dec
 @evaluate.memoize_default([])
 def _check_array_additions(compare_array, module, is_list):
     """
@@ -173,15 +179,7 @@ def _check_array_additions(compare_array, module, is_list):
             position = c.parent_stmt().start_pos
             scope = c.parent_stmt().parent()
 
-            # Special assignments should not be evaluated in this case. This
-            # would cause big recursion problems, because in cases like the
-            # code of jedi itself, += something is called and this call leads
-            # to many other things including params, which are not defined.
-            # This would lead again to dynamic param completion, and so on.
-            # In the end the definition is needed, and that's not with `+=`.
-            settings.evaluate_special_assignments = False
             found = evaluate.follow_call_path(backtrack_path, scope, position)
-            settings.evaluate_special_assignments = True
             if not compare_array in found:
                 continue
 

@@ -1,4 +1,28 @@
 # -----------------
+# if/else/elif
+# -----------------
+
+if 1:
+    1
+elif(3):
+    a = 3
+else:
+    a = ''
+#? int() str()
+a
+def func():
+    if 1:
+        1
+    elif(3):
+        a = 3
+    else:
+        a = ''
+    #? int() str()
+    return a
+#? int() str()
+func()
+
+# -----------------
 # for loops
 # -----------------
 

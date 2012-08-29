@@ -27,8 +27,8 @@ def run_completion_test(correct, source, line_nr, line, path):
         #profile.run('functions.complete("""%s""", %i, %i, "%s")'
         #                            % (source, line_nr, len(line), path))
     except Exception:
-        print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())
+        print('test @%s: %s' % (line_nr - 1, line))
         return 1
     else:
         # TODO remove set! duplicates should not be normal
@@ -63,8 +63,8 @@ def run_definition_test(correct, source, line_nr, line, correct_start, path):
             try:
                 should_be |= defs(line_nr - 1, start + correct_start)
             except Exception:
-                print('could not resolve %s indent %s' % (line_nr - 1, start))
                 print(traceback.format_exc())
+                print('could not resolve %s indent %s' % (line_nr - 1, start))
                 return 1
         # because the objects have different ids, `repr` it, then compare it.
         should_str = sorted(str(r) for r in should_be)
@@ -102,8 +102,8 @@ def run_goto_test(correct, source, line_nr, line, path):
     try:
         result = functions.goto(source, line_nr, index, path)
     except Exception:
-        print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())
+        print('test @%s: %s' % (line_nr - 1, line))
         return 1
     else:
         comp_str = str(sorted(r.description for r in result))
