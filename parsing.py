@@ -1026,6 +1026,7 @@ class PyFuzzyParser(object):
     def __init__(self, code, module_path=None, user_position=None,
                                                             no_docstr=False):
         self.user_position = user_position
+        self.user_scope = None
         self.user_stmt = None
         self.code = code + '\n'  # end with \n, because the parser needs it
         self.no_docstr = no_docstr
@@ -1413,7 +1414,9 @@ class PyFuzzyParser(object):
         self._current_full = next(self.gen)
         type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
                             self.parserline = self._current_full
-        if self.user_position and self.start_pos[0] == self.user_position[0]:
+        if self.user_position and (self.start_pos[0] == self.user_position[0]
+                        or self.user_scope is None
+                            and self.start_pos[0] >= self.user_position[0]):
             debug.dbg('user scope found [%s] = %s' % \
                     (self.parserline.replace('\n', ''), repr(self.scope)))
             self.user_scope = self.scope

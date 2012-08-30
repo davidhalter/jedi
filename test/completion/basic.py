@@ -165,3 +165,14 @@ def global_define():
 
 #? int()
 global_var_in_func
+
+# -----------------
+# within docstrs
+# -----------------
+
+def a():
+    """
+    #? ['global_define']
+    global_define
+    """
+    pass
