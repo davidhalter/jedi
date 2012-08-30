@@ -255,13 +255,24 @@ class RevealAccess(object):
         print('Updating', self.name)
         self.val = val
 
+    def just_a_method(self):
+        pass
+
 class C(object):
     x = RevealAccess(10, 'var "x"')
     #? RevealAccess()
     x
-    #? ['__get__']
-    x.__get__
+    #? ['just_a_method']
+    x.just_a_method
     y = 5.0
+    def __init__(self):
+        #? int()
+        self.x
+
+        #? []
+        self.just_a_method
+        #? []
+        C.just_a_method
 
 m = C()
 #? int()
@@ -270,6 +281,11 @@ m.x
 m.y
 #? int()
 C.x
+
+#? []
+m.just_a_method
+#? []
+C.just_a_method
 
 # -----------------
 # properties
