@@ -7,11 +7,11 @@ import evaluate
 import modules
 import debug
 import imports
-# TODO use os.path.sep and similar things
 import os
 
 __all__ = ['complete', 'goto', 'get_definitions',
            'NotFoundError', 'set_debug_function']
+
 
 class NotFoundError(Exception):
     """ A custom error to avoid catching the wrong exceptions """
@@ -99,7 +99,7 @@ class Definition(object):
     def module_name(self):
         path = self.module_path
         try:
-            return path[path.rindex('/') + 1:]
+            return path[path.rindex(os.path.sep) + 1:]
         except ValueError:
             return path
 
@@ -129,14 +129,15 @@ class Definition(object):
         elif isinstance(d, evaluate.parsing.Module):
             p = str(d.path)
             # only show module name
-            p = re.sub(r'^.*?([\w\d]+)(/__init__)?.py$', r'\1', p)
+            sep = os.path.sep
+            p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', p)
             d = 'module ' + p
         else:
             d = d.get_code().replace('\n', '')
         return d
 
     def __str__(self):
-        if self.module_path[0] == '/':
+        if self.module_path[0] == os.path.sep:
             position = '@%s' % (self.line_nr)
         else:
             # no path - is a builtin
