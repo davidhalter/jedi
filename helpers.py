@@ -10,7 +10,10 @@ import settings
 
 
 class RecursionDecorator(object):
-    """ A decorator to detect recursions in statements """
+    """
+    A decorator to detect recursions in statements. In a recursion a statement
+    at the same place, in the same module may not be executed two times.
+    """
     def __init__(self, func):
         self.func = func
         self.reset()
@@ -58,6 +61,7 @@ class RecursionDecorator(object):
 
 
 class RecursionNode(object):
+    """ A node of the RecursionDecorator. """
     def __init__(self, stmt, parent):
         self.script = stmt.get_parent_until()
         self.position = stmt.start_pos
@@ -136,7 +140,7 @@ class ExecutionRecursionDecorator(object):
 
 def fast_parent_copy(obj):
     """
-    Much, much faster than deepcopy, but just for the elements in `classes`.
+    Much, much faster than copy.deepcopy, but just for certain elements.
     """
     new_elements = {}
 
@@ -179,7 +183,7 @@ def fast_parent_copy(obj):
 
 
 def generate_param_array(args_tuple, parent_stmt=None):
-    """ This generates an array, that can be used as a param """
+    """ This generates an array, that can be used as a param. """
     values = []
     for arg in args_tuple:
         if arg is None:

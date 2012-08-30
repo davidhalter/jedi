@@ -126,6 +126,7 @@ def check_array_additions(array):
 
 counter = 0
 def dec(func):
+    """ TODO delete this """
     def wrapper(*args, **kwargs):
         global counter
         element = args[0]
@@ -134,13 +135,14 @@ def dec(func):
         else:
             # must be instance
             stmt = element.var_args.parent_stmt()
-        print '  '*counter + 'recursion,', stmt
+        print '  ' * counter + 'recursion,', stmt
         counter += 1
         res = func(*args, **kwargs)
         counter -= 1
         #print '  '*counter + 'end,'
         return res
     return wrapper
+
 
 #@dec
 @evaluate.memoize_default([])
@@ -167,6 +169,10 @@ def _check_array_additions(compare_array, module, is_list):
         return result
 
     def check_calls(calls, add_name):
+        """
+        Calls are processed here. The part before the call is searched and
+        compared with the original Array.
+        """
         result = []
         for c in calls:
             call_path = list(c.generate_call_path())
@@ -245,6 +251,7 @@ def _check_array_additions(compare_array, module, is_list):
 
 
 def check_array_instances(instance):
+    """ Used for set() and list() instances. """
     if not settings.dynamic_arrays_instances:
         return instance.var_args
     ai = ArrayInstance(instance)

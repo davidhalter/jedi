@@ -121,17 +121,17 @@ class ModuleWithCursor(Module):
         after = re.search("[\w\d]*", line[self.position[1]:]).group(0)
         return self.get_path_until_cursor() + after
 
-    def get_line(self, line):
+    def get_line(self, line_nr):
         if not self._line_cache:
             self._line_cache = self.source.split('\n')
 
-        if line == 0:
+        if line_nr == 0:
             # This is a fix for the zeroth line. We need a newline there, for
             # the backwards parser.
             return ''
-        if line < 0:
+        if line_nr < 0:
             raise StopIteration()
         try:
-            return self._line_cache[line - 1]
+            return self._line_cache[line_nr - 1]
         except IndexError:
             raise StopIteration()

@@ -17,6 +17,10 @@ module_find_path = sys.path[1:]
 
 
 class CachedModule(object):
+    """
+    The base type for all modules, which is not to be confused with
+    `parsing.Module`. Caching happens here.
+    """
     cache = {}
 
     def __init__(self, path=None, name=None):
@@ -103,6 +107,7 @@ class Parser(CachedModule):
             if path:
                 self.sys_path.pop(0)
 
+        # module might already be defined
         if not self._module:
             path = self.path
             name = self.name
@@ -124,6 +129,7 @@ class Parser(CachedModule):
         return self._module
 
     def _get_source(self):
+        """ Override this abstract method """
         return self._generate_code(self.module, self._load_mixins())
 
     def _load_mixins(self):
@@ -208,7 +214,11 @@ class Parser(CachedModule):
                     return True
             return False
 
-        def get_types(names):
+        def get_scope_objects(names):
+            """
+            Looks for the names defined with dir() in an objects and divides
+            them into different object types.
+            """
             classes = {}
             funcs = {}
             stmts = {}
@@ -252,7 +262,7 @@ class Parser(CachedModule):
         names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
                                                 '__path__', '__package__'])
 
-        classes, funcs, stmts, members = get_types(names)
+        classes, funcs, stmts, members = get_scope_objects(names)
 
         # classes
         for name, cl in classes.items():
@@ -383,6 +393,7 @@ def parse_function_doc(func):
 
 
 class _Builtin(object):
+    """ The builtin scope / module """
     # Python 3 compatibility
     if is_py3k():
         name = 'builtins'

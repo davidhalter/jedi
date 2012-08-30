@@ -18,6 +18,9 @@ class ModuleNotFound(Exception):
 
 
 class ImportPath(object):
+    """
+    An ImportPath is the path of a `parsing.Import` object.
+    """
     class GlobalNamespace(object):
         pass
 
@@ -80,6 +83,10 @@ class ImportPath(object):
         return names
 
     def get_module_names(self, search_path=None):
+        """
+        Get the names of all modules in the search_path. This means file names
+        and not names defined in the files.
+        """
         names = []
         for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
             inf = float('inf')
@@ -171,7 +178,7 @@ class ImportPath(object):
 def strip_imports(scopes):
     """
     Here we strip the imports - they don't get resolved necessarily.
-    Really used anymore?
+    Really used anymore? Merge with remove_star_imports?
     """
     result = []
     for s in scopes:
@@ -189,6 +196,10 @@ def strip_imports(scopes):
 
 def remove_star_imports(scope):
     """
+    Check a module for star imports:
+    >>> from module import *
+
+    and follow these modules.
     """
     modules = strip_imports(i for i in scope.get_imports() if i.star)
     new = []

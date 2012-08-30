@@ -706,6 +706,7 @@ class Execution(Executable):
 class Generator(parsing.Base):
     """ Cares for `yield` statements. """
     __metaclass__ = CachedMetaClass
+
     def __init__(self, func, var_args):
         super(Generator, self).__init__()
         self.func = func
@@ -748,6 +749,7 @@ class Array(parsing.Base):
     methods which are important in this module.
     """
     __metaclass__ = CachedMetaClass
+
     def __init__(self, array):
         self._array = array
 
@@ -1194,7 +1196,7 @@ def follow_statement(stmt, seek_name=None):
     the result for this name.
 
     :param stmt: A `parsing.Statement`.
-    :param seek_name: 
+    :param seek_name: A string.
     """
     statement_path.append(stmt)  # important to know for the goto function
 
