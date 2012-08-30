@@ -69,6 +69,11 @@ class MultiLevelAttributeError(Exception):
 
 
 def clear_caches():
+    """
+    Clears all caches of this and related modules. Jedi caches many things,
+    that should be completed after each completion finishes. The only things
+    that stays is the module cache (which is not deleted here).
+    """
     global memoize_caches, statement_path, faked_scopes
 
     for m in memoize_caches:
@@ -259,6 +264,10 @@ class Instance(Executable):
 
 
 class InstanceElement(object):
+    """
+    InstanceElement is a wrapper for any object, that is used as an instance
+    variable (e.g. self.variable or class methods).
+    """
     __metaclass__ = CachedMetaClass
 
     def __init__(self, instance, var):
@@ -310,6 +319,10 @@ class InstanceElement(object):
 
 
 class Class(parsing.Base):
+    """
+    This class is not only important to extend `parsing.Class`, it is also a
+    important for descriptors (if the descriptor methods are evaluated or not).
+    """
     __metaclass__ = CachedMetaClass
 
     def __init__(self, base):
@@ -366,6 +379,7 @@ class Class(parsing.Base):
 
 class Function(parsing.Base):
     """
+    Needed because of decorators. Decorators are evaluated here.
     """
     __metaclass__ = CachedMetaClass
 
@@ -438,15 +452,14 @@ class Execution(Executable):
     This class is used to evaluate functions and their returns.
 
     This is the most complicated class, because it contains the logic to
-    transfer parameters. This is even more complicated, because there may be
-    multiple call to functions and recursion has to be avoided.
+    transfer parameters. It is even more complicated, because there may be
+    multiple calls to functions and recursion has to be avoided. But this is
+    responsibility of the decorators.
     """
     @memoize_default(default=[])
     @helpers.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
-        """
-        Get the return vars of a function.
-        """
+        """ Get the return types of a function. """
         stmts = []
         if isinstance(self.base, Class):
             # There maybe executions of executions.
@@ -644,6 +657,12 @@ class Execution(Executable):
         return self.get_params() + parsing.Scope.get_set_vars(self)
 
     def copy_properties(self, prop):
+        """
+        Literally copies a property of a Function. Copying is very expensive,
+        because it is something like `copy.deepcopy`. However, these copied
+        objects can be used for the executions, as if they were in the
+        execution.
+        """
         # Copy all these lists into this local function.
         attr = getattr(self.base, prop)
         objects = []
@@ -685,6 +704,7 @@ class Execution(Executable):
 
 
 class Generator(parsing.Base):
+    """ Cares for `yield` statements. """
     __metaclass__ = CachedMetaClass
     def __init__(self, func, var_args):
         super(Generator, self).__init__()
@@ -814,6 +834,9 @@ class Array(parsing.Base):
 
 
 class ArrayElement(object):
+    """
+    A name, e.g. `list.append`, it is used to access to original array methods.
+    """
     def __init__(self, name):
         super(ArrayElement, self).__init__()
         self.name = name
@@ -828,15 +851,18 @@ class ArrayElement(object):
         return "<%s of %s>" % (self.__class__.__name__, self.name)
 
 
-def get_defined_names_for_position(obj, position=None, start_scope=None):
+def get_defined_names_for_position(scope, position=None, start_scope=None):
     """
+    Deletes all names that are ahead of the position, except for some special
+    objects like instances, where the position doesn't matter.
+
     :param position: the position as a line/column tuple, default is infinity.
     """
-    names = obj.get_defined_names()
+    names = scope.get_defined_names()
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    if not position or isinstance(obj, (Instance, Array)) \
-                or start_scope != obj \
+    if not position or isinstance(scope, (Instance, Array)) \
+                or start_scope != scope \
                     and isinstance(start_scope, (parsing.Function, Execution)):
         return names
     names_new = []
@@ -889,6 +915,10 @@ def get_names_for_scope(scope, position=None, star_search=True,
 
 def get_scopes_for_name(scope, name_str, position=None, search_global=False):
     """
+    This is the search function. The most important part to debug.
+    `remove_statements` and `filter_statements` really are the core part of
+    this completion.
+
     :param position: Position of the last statement -> tuple of line, column
     :return: List of Names. Their parents are the scopes, they are defined in.
     :rtype: list
@@ -945,6 +975,10 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         return res_new
 
     def filter_name(scope_generator):
+        """
+        Filters all variables of a scope (which are defined in the
+        `scope_generator`), until the name fits.
+        """
         def handle_for_loops(loop):
             # Take the first statement (for has always only
             # one, remember `in`). And follow it.
@@ -954,7 +988,11 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 result = assign_tuples(var_arr, result, name_str)
             return result
 
-        def handle_non_arrays(name):
+        def process(name):
+            """
+            Returns the parent of a name, which means the element which stands
+            behind a name.
+            """
             result = []
             no_break_scope = False
             if isinstance(scope, InstanceElement) \
@@ -1020,7 +1058,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                             and isinstance(p.var, parsing.Class):
                     p = p.var
                 if name_str == name.get_code() and p not in break_scopes:
-                    r, no_break_scope = handle_non_arrays(name)
+                    r, no_break_scope = process(name)
                     result += r
                     # for comparison we need the raw class
                     s = scope.base if isinstance(scope, Class) else scope
@@ -1037,6 +1075,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         return result
 
     def descriptor_check(result):
+        """ Processes descriptors """
         res_new = []
         for r in result:
             if isinstance(scope, (Instance, Class)) \
@@ -1060,6 +1099,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
 
 
 def get_iterator_types(inputs):
+    """ Returns the types of any iterator (arrays, yields, __iter__, etc). """
     iterators = []
     # Take the first statement (for has always only
     # one, remember `in`). And follow it.
@@ -1148,7 +1188,13 @@ def assign_tuples(tup, results, seek_name):
 @memoize_default(default=[])
 def follow_statement(stmt, seek_name=None):
     """
-    :param stmt: contains a statement
+    The starting point of the completion. A statement always owns a call list,
+    which are the calls, that a statement does.
+    In case multiple names are defined in the statement, `seek_name` returns
+    the result for this name.
+
+    :param stmt: A `parsing.Statement`.
+    :param seek_name: 
     """
     statement_path.append(stmt)  # important to know for the goto function
 
@@ -1283,6 +1329,9 @@ def follow_call_path(path, scope, position):
 
 
 def follow_paths(path, results, position=None):
+    """
+    In each result, `path` must be followed. Copies the path iterator.
+    """
     results_new = []
     if results:
         if len(results) > 1:
@@ -1302,7 +1351,11 @@ def follow_paths(path, results, position=None):
 
 def follow_path(path, scope, position=None):
     """
-    Takes a generator and tries to complete the path.
+    Uses a generator and tries to complete the path, e.g.
+    >>> foo.bar.baz
+
+    `follow_path` is only responsible for completing `.bar.baz`, the rest is
+    done in the `follow_call` function.
     """
     # Current is either an Array or a Scope.
     try:
