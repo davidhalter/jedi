@@ -1,8 +1,12 @@
 """
-follow_statement -> follow_call -> follow_paths -> follow_path
-'follow_import'
+This is the core part of jedi. Most of the logic, how to evaluate certain
+objects (imports, etc.) is here.
 
-`get_names_for_scope` and `get_scopes_for_name` are search functions
+The functions should be described in their docstrings. However, there are some
+classes, which are used to store the values. After those classes, there are the
+search functions `get_names_for_scope` and `get_scopes_for_name`. At the end
+there are the `follow_` functions, which evaluate a statement, or parts of a
+statement.
 
 TODO doc
 TODO magic methods: __mul__, __add__, etc.
