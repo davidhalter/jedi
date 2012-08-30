@@ -88,14 +88,14 @@ class A(object):
     a = list()
     def __init__(self):
         self.b = ""
+
+    def before(self):
         self.b = 3
         # TODO should this be so?
         #? int() str() list()
         self.b
-
         self.b = list
 
-    def before(self):
         self.a = 1
         #? list() str() int()
         self.a

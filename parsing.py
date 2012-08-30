@@ -798,7 +798,7 @@ class Param(Statement):
         return n[0]
 
 
-class Call(object):
+class Call(Base):
     """
     `Call` contains a call, e.g. `foo.bar` and owns the executions of those
     calls, which are `Array`s.

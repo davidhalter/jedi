@@ -1005,14 +1005,15 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                         and scope.var == name.parent().parent():
                 name = InstanceElement(scope.instance, name)
             par = name.parent()
+
             if par.isinstance(parsing.Flow):
                 if par.command == 'for':
                     result += handle_for_loops(par)
                 else:
                     debug.warning('Flow: Why are you here? %s' % par.command)
-            elif isinstance(par, parsing.Param) \
+            elif par.isinstance(parsing.Param) \
                     and par.parent() is not None \
-                    and isinstance(par.parent().parent(), parsing.Class) \
+                    and par.parent().parent().isinstance(parsing.Class) \
                     and par.position_nr == 0:
                 # This is where self gets added - this happens at another
                 # place, if the var_args are clear. But sometimes the class is
@@ -1024,14 +1025,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     inst = Instance(Class(par.parent().parent()))
                     inst.is_generated = True
                 result.append(inst)
-            elif isinstance(par, parsing.Statement):
+            elif par.isinstance(parsing.Statement):
                 def is_execution(arr):
                     for a in arr:
                         a = a[0]  # rest is always empty with assignees
-                        if isinstance(a, parsing.Array):
+                        if a.isinstance(parsing.Array):
                             if is_execution(a):
                                 return True
-                        elif isinstance(a, parsing.Call):
+                        elif a.isinstance(parsing.Call):
                             if a.name == name and a.execution:
                                 return True
                     return False
@@ -1046,6 +1047,11 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 else:
                     details = par.assignment_details
                     if details and details[0][0] != '=':
+                        no_break_scope = True
+                    # TODO this makes self variables non-breakable. wanted?
+                    r = [n for n in par.get_set_vars()
+                            if len(n) > 1 and str(n.names[-1] == name)]
+                    if isinstance(name, InstanceElement) and r:
                         no_break_scope = True
                     result.append(par)
             else:
