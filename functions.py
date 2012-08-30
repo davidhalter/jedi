@@ -10,6 +10,8 @@ import imports
 # TODO use os.path.sep and similar things
 import os
 
+__all__ = ['complete', 'goto', 'get_definitions',
+           'NotFoundError', 'set_debug_function']
 
 class NotFoundError(Exception):
     """ A custom error to avoid catching the wrong exceptions """
@@ -145,7 +147,7 @@ class Definition(object):
         return "<%s %s>" % (self.__class__.__name__, self.definition)
 
 
-def get_completion_parts(path):
+def _get_completion_parts(path):
     """
     Returns the parts for the completion
     :return: tuple - (path, dot, like)
@@ -173,10 +175,10 @@ def complete(source, line, column, source_path):
     pos = (line, column)
     f = modules.ModuleWithCursor(source_path, source=source, position=pos)
     path = f.get_path_until_cursor()
-    path, dot, like = get_completion_parts(path)
+    path, dot, like = _get_completion_parts(path)
 
     try:
-        scopes = prepare_goto(source, pos, source_path, f, path, True)
+        scopes = _prepare_goto(source, pos, source_path, f, path, True)
     except NotFoundError:
         scope_generator = evaluate.get_names_for_scope(f.parser.user_scope)
         completions = []
@@ -201,7 +203,7 @@ def complete(source, line, column, source_path):
     return c
 
 
-def prepare_goto(source, position, source_path, module, goto_path,
+def _prepare_goto(source, position, source_path, module, goto_path,
                                                         is_like_search=False):
     scope = module.parser.user_scope
     debug.dbg('start: %s in %s' % (goto_path, scope))
@@ -251,7 +253,7 @@ def get_definitions(source, line, column, source_path):
     f = modules.ModuleWithCursor(source_path, source=source, position=pos)
     goto_path = f.get_path_under_cursor()
 
-    scopes = prepare_goto(source, pos, source_path, f, goto_path)
+    scopes = _prepare_goto(source, pos, source_path, f, goto_path)
     _clear_caches()
     return [Definition(s) for s in set(scopes)]
 
@@ -261,14 +263,14 @@ def goto(source, line, column, source_path):
     f = modules.ModuleWithCursor(source_path, source=source, position=pos)
 
     goto_path = f.get_path_under_cursor()
-    goto_path, dot, search_name = get_completion_parts(goto_path)
+    goto_path, dot, search_name = _get_completion_parts(goto_path)
 
     # define goto path the right way
     if not dot:
         goto_path = search_name
         search_name = None
 
-    scopes = prepare_goto(source, pos, source_path, f, goto_path)
+    scopes = _prepare_goto(source, pos, source_path, f, goto_path)
     if not dot:
         try:
             definitions = [evaluate.statement_path[1]]
