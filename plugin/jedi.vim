@@ -180,7 +180,23 @@ endfunction
 " ------------------------------------------------------------------------
 
 " defaults for jedi-vim
-let g:jedi#use_tabs_not_buffers = 0
+if !exists("g:jedi#use_tabs_not_buffers ")
+    let g:jedi#use_tabs_not_buffers = 0
+endif
+if !exists("g:jedi#auto_initialization")
+    let g:jedi#auto_initialization = 1
+endif
+if !exists("g:jedi#goto_command")
+    let g:jedi#goto_command = "<leader>g"
+endif
+
+if g:jedi#auto_initialization
+    autocmd FileType python set omnifunc=jedi#complete
+    " map ctrl+space for autocompletion
+    imap <Nul> <C-X><C-O>
+
+    execute "map ".g:jedi#goto_command." :call jedi#goto()<CR>"
+end
 
 let s:current_file=expand("<sfile>")
 
