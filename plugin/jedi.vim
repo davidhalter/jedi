@@ -48,7 +48,7 @@ if 1:
             completions = functions.complete(source, row, column, buf_path)
             out = []
             for c in completions:
-                d = dict(word=base + c.complete,
+                d = dict(word=c.word[:len(base)] + c.complete,
                          abbr=c.word,
                          # stuff directly behind the completion
                          menu=PythonToVimStr(c.description),
