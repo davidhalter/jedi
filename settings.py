@@ -1,4 +1,10 @@
 # ----------------
+# completion output settings
+# ----------------
+
+case_insensitive_completion = True
+
+# ----------------
 # dynamic stuff
 # ----------------
 

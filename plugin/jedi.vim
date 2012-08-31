@@ -53,7 +53,6 @@ if 1:
                          # stuff directly behind the completion
                          menu=PythonToVimStr(c.description),
                          info=PythonToVimStr(c.doc),  # docstr
-                         kind=c.get_vim_type(),  # completion type
                          icase=1,  # case insensitive
                          dup=1  # allow duplicates (maybe later remove this)
                 )

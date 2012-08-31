@@ -1,5 +1,6 @@
 import re
 import weakref
+import os
 
 import parsing
 import dynamic  # must be before evaluate, because it needs to be loaded first.
@@ -7,7 +8,7 @@ import evaluate
 import modules
 import debug
 import imports
-import os
+import settings
 
 __all__ = ['complete', 'goto', 'get_definitions',
            'NotFoundError', 'set_debug_function']
@@ -47,27 +48,6 @@ class Completion(object):
 
     def get_type(self):
         return type(self.name.parent())
-
-    def get_vim_type(self):
-        """
-        This is the only function, which is vim specific, it returns the vim
-        type, see help(complete-items)
-        """
-        typ = self.get_type()
-        if typ == parsing.Statement:
-            return 'v'  # variable
-        elif typ == parsing.Function:
-            return 'f'  # function / method
-        elif typ in [parsing.Class, evaluate.Instance]:
-            return 't'  # typedef -> abused as class
-        elif typ == parsing.Import:
-            return 'd'  # define -> abused as import
-        if typ == parsing.Param:
-            return 'm'  # member -> abused as param
-        else:
-            debug.dbg('other python type: ', typ)
-
-        return ''
 
 
 class Definition(object):
@@ -197,7 +177,9 @@ def complete(source, line, column, source_path):
                 completions += s.get_defined_names()
 
     completions = [c for c in completions
-                            if c.names[-1].lower().startswith(like.lower())]
+                        if settings.case_insensitive_completion
+                            and c.names[-1].lower().startswith(like.lower())
+                            or c.names[-1].startswith(like)]
 
     needs_dot = not dot and path
     c = [Completion(c, needs_dot, len(like)) for c in set(completions)]
