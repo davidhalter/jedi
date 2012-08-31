@@ -1,27 +1,34 @@
 Jedi - a clever Python auto-completion
 ============================
 
-** This is just a work-in-progress README. The auto-completion is not yet
-finished (and the README neither :-)) The completion is currently in a
-pre-alpha state and needs serious testing, as well as some features. If you
-really want to try it, you can, but I won't be very supportive, just wait 1-2
-months more. **
+** now in alpha testing phase **
+*If you have any comments or feature request, please tell me! I really want to
+know, what you think of Jedi.*
 
-Jedi is an autocompletion tool for Python. It should always work as good as
-possible. It should provide completion wherever it is possible.
-In a later stage of the project, it should also provide renaming.
+Jedi is an autocompletion tool for Python. It should work as good as possible
+and just ignore syntax errors. Most Python auto-completions really suck,
+because they don't understand things like decorators, generators and list
+comprehensions. Jedi just sucks less, because it at least understand those
+features.
+
+Jedi suports goto and will support some refactorings in the future.
+Auto-completion is the core.
 
 Jedi uses a very simple interface to connect with IDE's. As an example, there
 is a VIM implementation, which uses Jedi's autocompletion. However, I encourage
-you to use Jedi in your IDEs. If there is some problem with licensing, just
-contact me.
+you to use Jedi in your IDEs, as soon as a stable version arrives. If there are
+problems with licensing, just contact me.
+
+At the moment Jedi can be used as a **VIM-Plugin**. So, if you want to test
+Jedi for now, you'll have to use VIM. Just check the chapter on VIM bellow.
 
 Get the latest from [github](http://github.com/davidhalter/jedi).
 
 Support
 -------
 
-There is support for Python 2/3 (3 untested TODO).
+Jedi supports Python 2.5 up to 3.x. There is just one code base, for both
+Python 2 and 3.
 Jedi supports many of the widely used Python features:
 
  - builtin functions/classes support
@@ -29,10 +36,35 @@ Jedi supports many of the widely used Python features:
  - ignores syntax and indentation errors
  - multiple returns / yields
  - tuple assignments / array indexing / dictionary indexing
- - exceptions / with-statement / 
+ - exceptions / with-statement
  - \*args / \*\*kwargs
  - decorators
- - generators (yield statement)
+ - descriptors -> property / staticmethod / classmethod
+ - closures
+ - generators (yield statement) / iterators
+ - support for some magic methods: `__call__`, `__iter__`, `__next__`,
+   `__get__`, `__getitem__`, `__init__`
+ - support for list.append, set.add, list.extend, etc.
+ - (nested) list comprehensions / ternary expressions
+
+However, it does not yet support (and probably will in future versions, because
+they are on my todo list):
+
+ - function annotations (py3k feature)
+ - class decorators (py3k feature)
+ - getattr() / __getattr__ / __getattribute__
+ - sys.path modifications
+ - manipulations of instances outside the instance variables, without using
+   functions
+ - mro
+ - relative imports
+ - operation support -> \_\_mul\_\_, \_\_add\_\_, etc.
+ - assert / isinstance
+
+It does not support (and most probably will not in future versions): 
+ - metaclasses (how could an auto-completion ever support this)
+ - setattr()
+ - evaluate if / while
 
 Caveats
 -------
@@ -40,8 +72,8 @@ Caveats
 This framework should work for both Python 2/3. However, some things where not
 nice in Python 2. To keep things simple, some things have been held back:
 
- - Classes: Always Python 3, therefore all classes inherit from `object`.
- - Generators: No `next` method. The `__next__` method is there instead.
+ - Classes: Always Python 3 like, therefore all classes inherit from `object`.
+ - Generators: No `next` method. The `__next__` method is used instead.
  - Exceptions are only looked at in the form of `Exception as e`, no comma!
 
 Syntax Errors and other strange stuff, that is defined differently in the
@@ -52,28 +84,85 @@ to help you. But **YOU** have to know Python, not Jedi.
 Importing `numpy` can be quite slow sometimes, as well as loading the builtins
 the first time. If you want to speed it up, you could write import hooks in
 jedi, which preloads this stuff. However, once loaded, this is not a problem
-anymore.
-
-From time to time Jedi might feel terribly slow. This behaviour is known, when
-the process was swapped to disk.
-
+anymore. The same is true for huge modules like `PySide`, `wx`, etc.
 
 A little history
 ----------------
 
-Jedi...
+The Star Wars Jedi are awesome. My Jedi Software tries to imitate a little bit
+of the precognition the Jedi have.
 
-Contents
---------
+But actually the name hasn't so much to do with Star Wars. It's part of my
+second name.
 
-`.`
->    text block
+After I explained Guido van Rossum, how some parts of my auto-completion work,
+he said (we drank a beer or two):
 
+*Oh, that worries me*
 
-API Design
------------------
+When it's finished, I hope he'll like it :-)
 
-blabla
-    SRC Box TODO 
+I actually started Jedi, because there were no good solutions available for
+VIM. Most auto-completions just didn't work well. The only good solution was
+PyCharm. I just like my good old VIM. Rope was never really intended to be an
+auto-completion (and also I really hate project folders for my Python scripts).
+It's more of a refactoring suite. So I decided to do my own version of a
+completion, which would execute non-dangerous code. But I soon realized, that
+this wouldn't work. So I built an extremely recursive thing, that understands
+many of Python's key features.
 
+By the way, I really tried to program it as understandable as possible. But I
+think understanding it might need some time, because of its recursive nature.
+
+API-Design for IDEs
+-------------------
+
+If you want to set up an IDE with Jedi, you need to `import jedi`. You should
+have the following objects available:
+
+`complete`
+>    Returns `functions.Completion` objects. Those objects have got
+>    informations about the completions. More than just names.
+
+`goto`
+>    Similar to complete. The returned `functions.Definition` objects contain
+>    information about the definitions found.
+
+`get_definitions`
+>    A mostly for tests used function. Like goto, but follows statements and
+>    imports and doesn't break there. You probably don't want to use this
+>    function. It's mostly for testing.
+
+`set_debug_function`
+>    Sets a callback function for `debug.py`. This function is called with
+>    multiple text objects, in python 3 you could insert `print`.
+
+`settings`
+>    Access to the `settings.py` module. The settings are described there.
+
+VIM Plugin
+-------------------
+
+At the moment jedi is also a VIM plugin. Maybe that will change in the future.
+The VIM plugin is located at `plugin/jedi.vim`.
+
+You might want to use [pathogen](https://github.com/tpope/vim-pathogen) to
+install jedi in VIM. Also you need a VIM version that was compiled with
+`+python`, which is typical for most distributions on Linux.
+
+Jedi is automatically initialized. If you don't want that, I suggest you
+disable the auto-initialization in your `.vimrc`:
+
+    let g:jedi#auto_initialization = 0
+
+The autocompletion can be used with \<ctrl+space\>, if you want it to work with
+\<tab\> you can use [supertab](https://github.com/ervandew/supertab).
+The goto is by default on \<leader g\>. If you want to change that:
+
+    let g:jedi#goto_command = <leader>g
+
+If you are a person who likes to use VIM-tabs not buffers, you might want to
+put that in your `.vimrc`:
+
+    let g:jedi#use_tabs_not_buffers = 1
 

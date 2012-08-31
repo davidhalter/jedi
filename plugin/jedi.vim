@@ -196,6 +196,8 @@ sys.path.insert(0, dirname(dirname(vim.eval('s:current_file'))))
 import traceback  # for exception output
 import re
 
+# normally you should import jedi. jedi-vim is an exception, because you can
+# copy that directly into the .vim directory.
 import functions
 
 class PythonToVimStr(str):

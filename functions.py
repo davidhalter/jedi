@@ -9,6 +9,7 @@ import debug
 import imports
 import os
 
+# TODO remove NotFoundError, should not be exposed
 __all__ = ['complete', 'goto', 'get_definitions',
            'NotFoundError', 'set_debug_function']
 
