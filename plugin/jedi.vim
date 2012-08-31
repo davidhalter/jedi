@@ -48,14 +48,14 @@ if 1:
             completions = functions.complete(source, row, column, buf_path)
             out = []
             for c in completions:
-                d = dict(word=str(c),
-                         abbr=str(c),
+                d = dict(word=base + c.complete,
+                         abbr=c.word,
                          # stuff directly behind the completion
                          menu=PythonToVimStr(c.description),
-                         info=PythonToVimStr(c.help),  # docstr
+                         info=PythonToVimStr(c.doc),  # docstr
                          kind=c.get_vim_type(),  # completion type
                          icase=1,  # case insensitive
-                         dup=1,  # allow duplicates (maybe later remove this)
+                         dup=1  # allow duplicates (maybe later remove this)
                 )
                 out.append(d)
 

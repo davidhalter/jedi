@@ -31,11 +31,15 @@ class Completion(object):
         return dot + self.name.names[-1][self.like_name_length:]
 
     @property
+    def word(self):
+        return str(self.name.names[-1])
+
+    @property
     def description(self):
         return str(self.name.parent())
 
     @property
-    def help(self):
+    def doc(self):
         try:
             return str(self.name.parent().docstr)
         except AttributeError:
@@ -64,9 +68,6 @@ class Completion(object):
             debug.dbg('other python type: ', typ)
 
         return ''
-
-    def __str__(self):
-        return self.name.names[-1]
 
 
 class Definition(object):
