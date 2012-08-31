@@ -88,7 +88,7 @@ if 1:
     try:
         definitions = functions.goto(source, row, column, buf_path)
     except functions.NotFoundError:
-        echo_highlight("Couldn't find a place to goto.")
+        echo_highlight("Cannot follow nothing. Put your cursor on a valid name.")
     except Exception:
         # print to stdout, will be in :messages
         echo_highlight("Some different eror, this shouldn't happen.")

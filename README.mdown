@@ -133,6 +133,10 @@ have the following objects available:
 >    imports and doesn't break there. You probably don't want to use this
 >    function. It's mostly for testing.
 
+`NotFoundError`
+>    If you use the goto function and no valid identifier (name) is at the
+>    place of the cursor (position). It will raise this exception.
+
 `set_debug_function`
 >    Sets a callback function for `debug.py`. This function is called with
 >    multiple text objects, in python 3 you could insert `print`.
