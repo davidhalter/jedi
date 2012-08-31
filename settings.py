@@ -2,7 +2,16 @@
 # completion output settings
 # ----------------
 
+# The completion is by default case insensitive.
 case_insensitive_completion = True
+
+# Adds a dot after a module, because a module that is not accessed this way is
+# definitely not the normal case.
+add_dot_after_module = True
+
+# Adds an opening bracket after a function, because that's normal behaviour.
+add_bracket_after_function = True
+
 
 # ----------------
 # dynamic stuff

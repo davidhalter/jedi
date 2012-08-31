@@ -20,16 +20,26 @@ class NotFoundError(Exception):
 
 
 class Completion(object):
-    def __init__(self, name, needs_dot, like_name_length):
+    def __init__(self, name, needs_dot, like_name_length, base):
         self.name = name
         self.needs_dot = needs_dot
         self.like_name_length = like_name_length
         self._completion_parent = name.parent()  # limit gc
+        self.base = base
 
     @property
     def complete(self):
         dot = '.' if self.needs_dot else ''
-        return dot + self.name.names[-1][self.like_name_length:]
+        append = ''
+        funcs = (parsing.Function, evaluate.Function)
+        if settings.add_bracket_after_function \
+                    and isinstance( self._completion_parent, funcs):
+            append = '('
+
+        if settings.add_dot_after_module:
+            if isinstance(self.base, parsing.Module):
+                append += '.'
+        return dot + self.name.names[-1][self.like_name_length:] + append
 
     @property
     def word(self):
@@ -165,8 +175,9 @@ def complete(source, line, column, source_path):
         scope_generator = evaluate.get_names_for_scope(f.parser.user_scope,
                                                                         pos)
         completions = []
-        for dummy, name_list in scope_generator:
-            completions += name_list
+        for scope, name_list in scope_generator:
+            for c in name_list:
+                completions.append((c, scope))
     else:
         completions = []
         debug.dbg('possible scopes', scopes)
@@ -174,15 +185,16 @@ def complete(source, line, column, source_path):
             # TODO is this really the right way? just ignore the functions? \
             # do the magic functions first? and then recheck here?
             if not isinstance(s, evaluate.Function):
-                completions += s.get_defined_names()
+                for c in s.get_defined_names():
+                    completions.append((c, s))
 
-    completions = [c for c in completions
+    completions = [(c, s) for c, s in completions
                         if settings.case_insensitive_completion
                             and c.names[-1].lower().startswith(like.lower())
                             or c.names[-1].startswith(like)]
 
     needs_dot = not dot and path
-    c = [Completion(c, needs_dot, len(like)) for c in set(completions)]
+    c = [Completion(c, needs_dot, len(like), s) for c, s in set(completions)]
 
     _clear_caches()
     return c
