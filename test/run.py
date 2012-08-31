@@ -7,7 +7,7 @@ import traceback
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
 sys.path.append('.')
 
-from _compatibility import unicode, BytesIO, reduce
+from _compatibility import unicode, BytesIO, reduce, literal_eval
 
 import functions
 import debug
@@ -32,8 +32,8 @@ def run_completion_test(correct, source, line_nr, line, path):
         return 1
     else:
         # TODO remove set! duplicates should not be normal
-        comp_str = str(sorted(set([c.word for c in completions])))
-        if comp_str != correct:
+        comp_str = set([c.word for c in completions])
+        if comp_str != set(literal_eval(correct)):
             print('Solution @%s not right, received %s, wanted %s'\
                         % (line_nr - 1, comp_str, correct))
             return 1

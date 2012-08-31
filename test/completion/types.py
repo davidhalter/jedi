@@ -44,7 +44,7 @@ arr.count(1)
 # -----------------
 dic = {}
 
-#? ['clear', 'copy']
+#? ['copy', 'clear']
 dic.c
 
 dic2 = dict(a=1, b=2)
