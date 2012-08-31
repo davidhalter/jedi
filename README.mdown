@@ -170,3 +170,7 @@ put that in your `.vimrc`:
 
     let g:jedi#use_tabs_not_buffers = 1
 
+Jedi automatically starts the completion, if you type a dot, e.g. `str.`, if
+you don't want this:
+
+    let g:jedi#popup_on_dot = 0

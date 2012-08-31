@@ -6,8 +6,9 @@
 case_insensitive_completion = True
 
 # Adds a dot after a module, because a module that is not accessed this way is
-# definitely not the normal case.
-add_dot_after_module = True
+# definitely not the normal case. However, in VIM this doesn't work, that's why
+# it isn't used at the moment.
+add_dot_after_module = False
 
 # Adds an opening bracket after a function, because that's normal behaviour.
 add_bracket_after_function = True

@@ -174,6 +174,26 @@ function! jedi#goto_window_on_enter()
         echohl WarningMsg | echo "Builtin module cannot be opened." | echohl None
     endif
 endfunction
+
+function! jedi#syn_stack()
+    if !exists("*synstack")
+        return []
+    endif
+    return map(synstack(line('.'), col('.') - 1), 'synIDattr(v:val, "name")')
+endfunc
+
+function! jedi#do_popup_on_dot()
+    let highlight_groups = jedi#syn_stack()
+    for a in highlight_groups
+        for b in ['pythonString', 'pythonComment']
+            if a == b
+                return 0 
+            endif
+        endfor
+    endfor
+    return 1
+endfunc
+
 " ------------------------------------------------------------------------
 " Initialization of jedi-vim
 " ------------------------------------------------------------------------
@@ -188,6 +208,9 @@ endif
 if !exists("g:jedi#goto_command")
     let g:jedi#goto_command = "<leader>g"
 endif
+if !exists("g:jedi#popup_on_dot")
+    let g:jedi#popup_on_dot = 1
+endif
 
 if g:jedi#auto_initialization
     autocmd FileType python set omnifunc=jedi#complete
@@ -195,6 +218,10 @@ if g:jedi#auto_initialization
     imap <Nul> <C-X><C-O>
 
     execute "map ".g:jedi#goto_command." :call jedi#goto()<CR>"
+end
+
+if g:jedi#popup_on_dot
+    autocmd FileType python imap . .<C-R>=jedi#do_popup_on_dot() ? "\<lt>C-X>\<lt>C-O>" : ""<CR>
 end
 
 let s:current_file=expand("<sfile>")
