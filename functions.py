@@ -182,7 +182,8 @@ def complete(source, line, column, source_path):
     try:
         scopes = _prepare_goto(source, pos, source_path, f, path, True)
     except NotFoundError:
-        scope_generator = evaluate.get_names_for_scope(f.parser.user_scope)
+        scope_generator = evaluate.get_names_for_scope(f.parser.user_scope,
+                                                                        pos)
         completions = []
         for dummy, name_list in scope_generator:
             completions += name_list

@@ -15,6 +15,10 @@ b = 1; b = ""
 #? str()
 b
 
+# temp should not be accessible before definition
+#? []
+temp
+
 a = 1
 temp = b;
 b = a

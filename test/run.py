@@ -32,7 +32,7 @@ def run_completion_test(correct, source, line_nr, line, path):
         return 1
     else:
         # TODO remove set! duplicates should not be normal
-        comp_str = str(sorted(set([str(c) for c in completions])))
+        comp_str = str(sorted(set([c.word for c in completions])))
         if comp_str != correct:
             print('Solution @%s not right, received %s, wanted %s'\
                         % (line_nr - 1, comp_str, correct))
