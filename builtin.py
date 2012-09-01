@@ -238,7 +238,7 @@ class Parser(CachedModule):
                     if inspect.isclass(scope):
                         if is_in_base_classes(scope, n, exe):
                             continue
-                    if inspect.isbuiltin(exe) \
+                    if inspect.isbuiltin(exe) or inspect.ismethod(exe) \
                                 or inspect.ismethoddescriptor(exe):
                         funcs[n] = exe
                     elif inspect.isclass(exe):
@@ -315,6 +315,8 @@ class Parser(CachedModule):
                 file_type = types.FileType
             if type(value) == file_type:
                 value = 'open()'
+            elif name == 'None':
+                value = ''
             elif type(value).__name__ in ['int', 'bool', 'float',
                                           'dict', 'list', 'tuple']:
                 value = repr(value)
