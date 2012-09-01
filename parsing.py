@@ -154,6 +154,8 @@ class Scope(Simple):
     def add_docstr(self, string):
         """ Clean up a docstring """
         self.docstr = cleandoc(literal_eval(string))
+        # TODO raises a SystemError here, report:
+        #literal_eval(r"'\U'")
 
     def add_import(self, imp):
         self.imports.append(imp)

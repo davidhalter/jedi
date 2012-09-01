@@ -190,7 +190,7 @@ class Parser(CachedModule):
         def get_doc(obj, indent=False):
             doc = inspect.getdoc(obj)
             if doc:
-                doc = ('"""\n%s\n"""\n' % doc)
+                doc = ('r"""\n%s\n"""\n' % doc)
                 if indent:
                     doc = parsing.indent_block(doc)
                 return doc
