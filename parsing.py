@@ -29,7 +29,7 @@ as input and ignores just all the non-python stuff. Basically you could feed it
 a perl script, and it should still work (which means throw no error.
 """
 from _compatibility import (next, literal_eval, tokenize_func, BytesIO,
-                            property, is_py3k, Python3Method)
+                            property, is_py3k, cleandoc, Python3Method)
 
 import tokenize
 import re
@@ -37,7 +37,6 @@ import keyword
 import weakref
 
 import debug
-from inspect import cleandoc
 
 
 class ParserError(Exception):

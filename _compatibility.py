@@ -112,3 +112,37 @@ def use_metaclass(meta, *bases):
     if not bases:
         bases = (object,)
     return meta("HackClass", bases, {})
+
+try:
+    from inspect import cleandoc
+except ImportError:
+    # python 2.5 doesn't have this method
+    import string
+    def cleandoc(doc):
+        """Clean up indentation from docstrings.
+
+        Any whitespace that can be uniformly removed from the second line
+        onwards is removed."""
+        try:
+            lines = string.split(string.expandtabs(doc), '\n')
+        except UnicodeError:
+            return None
+        else:
+            # Find minimum indentation of any non-blank lines after first line.
+            margin = sys.maxint
+            for line in lines[1:]:
+                content = len(string.lstrip(line))
+                if content:
+                    indent = len(line) - content
+                    margin = min(margin, indent)
+            # Remove indentation.
+            if lines:
+                lines[0] = lines[0].lstrip()
+            if margin < sys.maxint:
+                for i in range(1, len(lines)): lines[i] = lines[i][margin:]
+            # Remove any trailing or leading blank lines.
+            while lines and not lines[-1]:
+                lines.pop()
+            while lines and not lines[0]:
+                lines.pop(0)
+            return string.join(lines, '\n')
