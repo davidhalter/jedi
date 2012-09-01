@@ -144,10 +144,8 @@ class Executable(parsing.Base):
         return self.base.parent()
 
 
-class Instance(Executable):
+class Instance(use_metaclass(CachedMetaClass, Executable)):
     """ This class is used to evaluate instances. """
-    __metaclass__ = CachedMetaClass
-
     def __init__(self, base, var_args=parsing.Array(None, None)):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
@@ -319,13 +317,11 @@ class InstanceElement(use_metaclass(CachedMetaClass)):
         return "<%s of %s>" % (self.__class__.__name__, self.var)
 
 
-class Class(parsing.Base):
+class Class(use_metaclass(CachedMetaClass, parsing.Base)):
     """
     This class is not only important to extend `parsing.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
     """
-    __metaclass__ = CachedMetaClass
-
     def __init__(self, base):
         self.base = base
 
@@ -378,11 +374,10 @@ class Class(parsing.Base):
         return "<e%s of %s>" % (self.__class__.__name__, self.base)
 
 
-class Function(parsing.Base):
+class Function(use_metaclass(CachedMetaClass, parsing.Base)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
-    __metaclass__ = CachedMetaClass
 
     def __init__(self, func, is_decorated=False):
         """ This should not be called directly """
@@ -704,10 +699,8 @@ class Execution(Executable):
                 (self.__class__.__name__, self.base)
 
 
-class Generator(parsing.Base):
+class Generator(use_metaclass(CachedMetaClass, parsing.Base)):
     """ Cares for `yield` statements. """
-    __metaclass__ = CachedMetaClass
-
     def __init__(self, func, var_args):
         super(Generator, self).__init__()
         self.func = func
@@ -744,13 +737,11 @@ class Generator(parsing.Base):
         return "<%s of %s>" % (self.__class__.__name__, self.func)
 
 
-class Array(parsing.Base):
+class Array(use_metaclass(CachedMetaClass, parsing.Base)):
     """
     Used as a mirror to parsing.Array, if needed. It defines some getter
     methods which are important in this module.
     """
-    __metaclass__ = CachedMetaClass
-
     def __init__(self, array):
         self._array = array
 
