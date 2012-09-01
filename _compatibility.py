@@ -106,3 +106,9 @@ try:
     from functools import reduce
 except ImportError:
     reduce = reduce
+
+def use_metaclass(meta, *bases):
+    """ Create a class with a metaclass. """
+    if not bases:
+        bases = (object,)
+    return meta("HackClass", bases, {})

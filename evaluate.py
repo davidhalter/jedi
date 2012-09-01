@@ -19,7 +19,7 @@ TODO nonlocal statement, needed or can be ignored?
 TODO __ instance attributes should not be visible outside of the class.
 TODO getattr / __getattr__ / __getattribute__ ?
 """
-from _compatibility import next, property, hasattr, is_py3k
+from _compatibility import next, property, hasattr, is_py3k, use_metaclass
 
 import sys
 import itertools
@@ -266,13 +266,11 @@ class Instance(Executable):
                 (self.__class__.__name__, self.base, len(self.var_args or []))
 
 
-class InstanceElement(object):
+class InstanceElement(use_metaclass(CachedMetaClass)):
     """
     InstanceElement is a wrapper for any object, that is used as an instance
     variable (e.g. self.variable or class methods).
     """
-    __metaclass__ = CachedMetaClass
-
     def __init__(self, instance, var):
         if isinstance(var, parsing.Function):
             var = Function(var)

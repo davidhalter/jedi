@@ -135,7 +135,7 @@ def dec(func):
         else:
             # must be instance
             stmt = element.var_args.parent_stmt()
-        print '  ' * counter + 'recursion,', stmt
+        print('  ' * counter + 'recursion,', stmt)
         counter += 1
         res = func(*args, **kwargs)
         counter -= 1
