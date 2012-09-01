@@ -174,3 +174,5 @@ Jedi automatically starts the completion, if you type a dot, e.g. `str.`, if
 you don't want this:
 
     let g:jedi#popup_on_dot = 0
+
+[![Build Status](https://secure.travis-ci.org/davidhalter/jedi.png?branch=master)](http://travis-ci.org/davidhalter/jedi)
