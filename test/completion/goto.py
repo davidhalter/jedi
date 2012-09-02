@@ -1,10 +1,12 @@
 # goto command test are a different in syntax
 
-a = 1
+definition = 3
+#! 0 ['a=definition']
+a = definition
 
 #! []
 b
-#! ['a=1']
+#! ['a=definition']
 a
 
 b = a
