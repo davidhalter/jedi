@@ -103,3 +103,6 @@ mod1.a
 from import_tree import mod1
 #! ['a=1']
 mod1.a
+
+#! ['a=1.0']
+from import_tree.pkg.mod1 import a

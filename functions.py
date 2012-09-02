@@ -276,6 +276,10 @@ def goto(source, line, column, source_path):
             for s in scopes:
                 if isinstance(s, imports.ImportPath):
                     s = s.follow()[0]
+                    try:
+                        s = evaluate.statement_path[0]
+                    except IndexError:
+                        pass
                 definitions.append(s)
     else:
         def remove_unreal_imports(names):
