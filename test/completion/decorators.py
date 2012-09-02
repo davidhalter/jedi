@@ -141,3 +141,12 @@ def follow_statement(stmt):
 # here we had problems with the else clause, because the parent was not right.
 #? int()
 follow_statement(1)
+
+# -----------------
+# class decorators
+# -----------------
+
+# class decorators should just be ignored
+@should_ignore
+class A(): pass
+

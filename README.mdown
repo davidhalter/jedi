@@ -48,11 +48,12 @@ Jedi supports many of the widely used Python features:
  - (nested) list comprehensions / ternary expressions
  - function annotations (py3k feature, are ignored right now, but being parsed.
    I don't know what to do with them.)
+ - class decorators (py3k feature, are being ignored too, until I find a use
+   case, that doesn't work with Jedi)
 
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
 
- - class decorators (py3k feature)
  - getattr() / __getattr__ / __getattribute__
  - sys.path modifications
  - manipulations of instances outside the instance variables, without using
