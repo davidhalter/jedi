@@ -1,7 +1,7 @@
 # goto command test are a different in syntax
 
 definition = 3
-#! 0 ['a=definition']
+##! 0 ['a=definition']
 a = definition
 
 #! []
