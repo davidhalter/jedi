@@ -46,11 +46,12 @@ Jedi supports many of the widely used Python features:
    `__get__`, `__getitem__`, `__init__`
  - support for list.append, set.add, list.extend, etc.
  - (nested) list comprehensions / ternary expressions
+ - function annotations (py3k feature, are ignored right now, but being parsed.
+   I don't know what to do with them.)
 
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
 
- - function annotations (py3k feature)
  - class decorators (py3k feature)
  - getattr() / __getattr__ / __getattribute__
  - sys.path modifications

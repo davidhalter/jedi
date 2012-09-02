@@ -13,7 +13,6 @@ TODO evaluate asserts/isinstance (type safety)
 
 python 3 stuff:
 TODO class decorators
-TODO annotations ? how ? type evaluation and return?
 TODO nonlocal statement, needed or can be ignored?
 
 TODO __ instance attributes should not be visible outside of the class.

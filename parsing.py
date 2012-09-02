@@ -336,8 +336,8 @@ class Function(Scope):
     :param docstr: The docstring for the current Scope.
     :type docstr: str
     """
-    def __init__(self, name, params, start_pos, docstr=''):
-        Scope.__init__(self, start_pos, docstr)
+    def __init__(self, name, params, start_pos, annotation):
+        Scope.__init__(self, start_pos)
         self.name = name
         name.parent = weakref.ref(self)
         self.params = params
@@ -347,6 +347,10 @@ class Function(Scope):
         self.returns = []
         self.is_generator = False
         self.listeners = set()  # not used here, but in evaluation.
+
+        if annotation is not None:
+            annotation.parent = weakref.ref(self)
+            self.annotation = annotation
 
     def get_code(self, first_indent=False, indention="    "):
         str = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
@@ -790,6 +794,11 @@ class Param(Statement):
         # it is the position in the call (first argument, second...)
         self.position_nr = None
         self.is_generated = False
+        self.annotation_stmt = None
+
+    def add_annotation(self, annotation_stmt):
+        annotation_stmt.parent = weakref.ref(self)
+        self.annotation_stmt = annotation_stmt
 
     def get_name(self):
         """ get the name of the param """
@@ -1162,12 +1171,18 @@ class PyFuzzyParser(object):
         names = []
         tok = None
         pos = 0
+        breaks = [',', ':']
         while tok not in [')', ':']:
-            stmt, tok = self._parse_statement(added_breaks=',',
+            param, tok = self._parse_statement(added_breaks=breaks,
                                               stmt_class=Param)
-            if stmt:
-                stmt.position_nr = pos
-                names.append(stmt)
+            if param and tok == ':':
+                # parse annotations
+                annotation, tok = self._parse_statement(added_breaks=breaks)
+                param.add_annotation(annotation)
+
+            if param:
+                param.position_nr = pos
+                names.append(param)
                 pos += 1
 
         return names
@@ -1193,10 +1208,20 @@ class PyFuzzyParser(object):
         params = self._parseparen()
 
         token_type, colon = self.next()
+        annotation = None
+        if colon in ['-', '->']:
+            # parse annotations
+            if colon == '-':
+                # The Python 2 tokenizer doesn't understand this
+                token_type, colon = self.next()
+                if colon != '>':
+                    return None
+            annotation, colon = self._parse_statement(added_breaks=[':'])
+
         if colon != ':':
             return None
 
-        return Function(fname, params, first_pos)
+        return Function(fname, params, first_pos, annotation)
 
     def _parseclass(self):
         """
