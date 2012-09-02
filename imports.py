@@ -121,15 +121,22 @@ class ImportPath(object):
     def follow_file_system(self):
         """
         Find a module with a path (of the module, like usb.backend.libusb10).
-        TODO: relative imports
         """
         def follow_str(ns, string):
             debug.dbg('follow_module', ns, string)
+            path = None
             if ns:
-                return imp.find_module(string, [ns[1]])
+                path = ns[1]
+            elif self.import_stmt.relative_count:
+                module = self.import_stmt.get_parent_until()
+                path = os.path.abspath(module.path)
+                for i in range(self.import_stmt.relative_count):
+                    path = os.path.dirname(path)
+
+            if path is not None:
+                return imp.find_module(string, [path])
             else:
-                path = None
-                debug.dbg('search_module', string, path, self.file_path)
+                debug.dbg('search_module', string, self.file_path)
                 # Override the sys.path. It works only good that way.
                 # Injecting the path directly into `find_module` did not work.
                 sys.path, temp = builtin.module_find_path, sys.path
@@ -137,7 +144,6 @@ class ImportPath(object):
                 sys.path = temp
                 return i
 
-        # TODO handle relative paths - they are included in the import object
         current_namespace = None
         builtin.module_find_path.insert(0, self.file_path)
         # now execute those paths

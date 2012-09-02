@@ -11,8 +11,7 @@ statement.
 TODO magic methods: __mul__, __add__, etc.
 TODO evaluate asserts/isinstance (type safety)
 
-python 3 stuff:
-TODO nonlocal statement, needed or can be ignored?
+TODO nonlocal statement, needed or can be ignored? (py3k)
 
 TODO __ instance attributes should not be visible outside of the class.
 TODO getattr / __getattr__ / __getattribute__ ?

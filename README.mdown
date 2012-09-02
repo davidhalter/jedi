@@ -46,6 +46,7 @@ Jedi supports many of the widely used Python features:
    `__get__`, `__getitem__`, `__init__`
  - support for list.append, set.add, list.extend, etc.
  - (nested) list comprehensions / ternary expressions
+ - relative imports
  - function annotations (py3k feature, are ignored right now, but being parsed.
    I don't know what to do with them.)
  - class decorators (py3k feature, are being ignored too, until I find a use
@@ -59,7 +60,6 @@ they are on my todo list):
  - manipulations of instances outside the instance variables, without using
    functions
  - mro
- - relative imports
  - operation support -> \_\_mul\_\_, \_\_add\_\_, etc.
  - assert / isinstance
 

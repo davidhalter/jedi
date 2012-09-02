@@ -503,37 +503,38 @@ class Import(Simple):
     :param defunct: An Import is valid or not.
     :type defunct: bool
     """
-    def __init__(self, start_pos, end_pos, namespace, alias='', from_ns='', \
-                    star=False, relative_count=None, defunct=False):
+    def __init__(self, start_pos, end_pos, namespace, alias=None, \
+                from_ns=None, star=False, relative_count=None, defunct=False):
         super(Import, self).__init__(start_pos, end_pos)
 
         self.namespace = namespace
-        if namespace:
-            namespace.parent = weakref.ref(self)
-
         self.alias = alias
-        if alias:
-            alias.parent = weakref.ref(self)
-
         self.from_ns = from_ns
-        if from_ns:
-            from_ns.parent = weakref.ref(self)
+        for n in [namespace, alias, from_ns]:
+            if n:
+                n.parent = weakref.ref(self)
 
         self.star = star
         self.relative_count = relative_count
         self.defunct = defunct
 
     def get_code(self):
+        # in case one thing is None
+        alias = self.alias or ''
+        namespace = self.namespace or ''
+        from_ns = self.from_ns or ''
+
         if self.alias:
-            ns_str = "%s as %s" % (self.namespace, self.alias)
+            ns_str = "%s as %s" % (namespace, alias)
         else:
-            ns_str = str(self.namespace)
-        if self.from_ns:
+            ns_str = str(namespace)
+        if self.from_ns or self.relative_count:
             if self.star:
                 ns_str = '*'
-            return "from %s import %s" % (self.from_ns, ns_str) + '\n'
+            dots = '.' * self.relative_count
+            return "from %s%s import %s\n" % (dots, from_ns, ns_str)
         else:
-            return "import " + ns_str + '\n'
+            return "import %s\n" % ns_str
 
     def get_defined_names(self):
         if self.defunct:
@@ -1533,7 +1534,11 @@ class PyFuzzyParser(object):
                         relative_count += 1
                     # the from import
                     mod, token_type, tok = self._parsedotname(self.current)
-                    if not mod or tok != "import":
+                    if str(mod) == 'import' and relative_count:
+                        self.gen.push_back(self._current_full)
+                        tok = 'import'
+                        mod = None
+                    if not mod and not relative_count or tok != "import":
                         debug.warning("from: syntax error@%s" %
                                                             self.start_pos[0])
                         defunct = True
@@ -1550,6 +1555,7 @@ class PyFuzzyParser(object):
                         i = Import(first_pos, self.end_pos, mod, defunct=True,
                                     relative_count=relative_count)
                         self._check_user_stmt(i)
+                        self.scope.add_import(i)
                     self.freshscope = False
                 #loops
                 elif tok == 'for':

@@ -132,3 +132,39 @@ from datetime.timedelta import
 
 #? ['Cursor']
 from sqlite3 import Cursor
+
+# -----------------
+# relative imports
+# -----------------
+
+from .import_tree import mod1
+#? int()
+mod1.a
+
+from ..import_tree import mod1
+#? 
+mod1.a
+
+from .......import_tree import mod1
+#? 
+mod1.a
+
+from .. import run
+#? int()
+run.tests_fail
+
+from ..run import tests_fail as f
+#? int()
+f
+
+from . import run
+#? []
+run.
+
+from . import import_tree as imp_tree
+#? str()
+imp_tree.a
+
+from . import datetime
+#? []
+mod1.
