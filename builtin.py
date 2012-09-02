@@ -386,6 +386,9 @@ def parse_function_doc(func):
         # get result type, which can contain newlines
         pattern = re.compile(r'(,\n|[^\n-])+')
         ret_str = pattern.match(doc, index + 3).group(0).strip()
+        # New object -> object()
+        ret_str = re.sub(r'[nN]ew (.*)', r'\1()', ret_str)
+
         ret = Parser.map_types.get(ret_str, ret_str)
         if ret == ret_str and ret not in ['None', 'object', 'tuple', 'set']:
             debug.dbg('not working', ret_str)
