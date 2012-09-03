@@ -379,7 +379,7 @@ def parse_function_doc(func):
         param_str = ''
 
     if doc is not None:
-        r = re.search('-[>-]* ', doc[end:end+7])
+        r = re.search('-[>-]* ', doc[end:end + 7])
     if doc is None or r is None:
         ret = 'pass'
     else:
@@ -407,12 +407,4 @@ class _Builtin(object):
         name = '__builtin__'
     _builtins = Parser(name=name)
 
-    @property
-    def scope(self):
-        return self._builtins.parser.module
-
-    def get_defined_names(self):
-        return self.scope.get_defined_names()
-
-
-Builtin = _Builtin()
+builtin_scope = _Builtin()._builtins.parser.module

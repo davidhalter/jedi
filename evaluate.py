@@ -146,7 +146,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
     def __init__(self, base, var_args=parsing.Array(None, None)):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
-                    and builtin.Builtin.scope == base.get_parent_until():
+                    and builtin.builtin_scope == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = dynamic.check_array_instances(self)
         else:
@@ -802,7 +802,7 @@ class Array(use_metaclass(CachedMetaClass, parsing.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = get_scopes_for_name(builtin.Builtin.scope, self._array.type)[0]
+        scope = get_scopes_for_name(builtin.builtin_scope, self._array.type)[0]
         names = scope.get_defined_names()
         return [ArrayElement(n) for n in names]
 
@@ -813,7 +813,7 @@ class Array(use_metaclass(CachedMetaClass, parsing.Base)):
         """
         Return the builtin scope as parent, because the arrays are builtins
         """
-        return builtin.Builtin.scope
+        return builtin.builtin_scope
 
     def __getattr__(self, name):
         if name not in ['type', 'start_pos']:
@@ -900,7 +900,7 @@ def get_names_for_scope(scope, position=None, star_search=True,
 
         # Add builtins to the global scope.
         if include_builtin:
-            builtin_scope = builtin.Builtin.scope
+            builtin_scope = builtin.builtin_scope
             yield builtin_scope, builtin_scope.get_defined_names()
 
 
@@ -1305,7 +1305,7 @@ def follow_call_path(path, scope, position):
         if not isinstance(current, parsing.NamePart):
             if current.type in (parsing.Call.STRING, parsing.Call.NUMBER):
                 t = type(current.name).__name__
-                scopes = get_scopes_for_name(builtin.Builtin.scope, t)
+                scopes = get_scopes_for_name(builtin.builtin_scope, t)
             else:
                 debug.warning('unknown type:', current.type, current)
                 scopes = []
