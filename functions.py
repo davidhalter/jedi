@@ -66,13 +66,7 @@ class Definition(object):
         self.definition = definition
         self._def_parent = self.definition.parent()  # just here to limit gc
 
-        par = self.definition
-        while True:
-            if par.parent() is not None:
-                par = par.parent()
-            else:
-                break
-        self.module_path = str(par.path)
+        self.module_path = str(self.definition.get_parent_until().path)
 
     def get_name(self):
         try:
@@ -251,8 +245,9 @@ def get_definitions(source, line, column, source_path):
     goto_path = f.get_path_under_cursor()
 
     scopes = _prepare_goto(source, pos, source_path, f, goto_path)
+    d = [Definition(s) for s in set(scopes)]
     _clear_caches()
-    return [Definition(s) for s in set(scopes)]
+    return d
 
 
 def goto(source, line, column, source_path):
@@ -311,8 +306,9 @@ def goto(source, line, column, source_path):
             names += s.get_defined_names()
         names = remove_unreal_imports(names)
         definitions = [n for n in names if n.names[-1] == search_name]
+    d = [Definition(d) for d in set(definitions)]
     _clear_caches()
-    return [Definition(d) for d in set(definitions)]
+    return d
 
 
 def set_debug_function(func_cb):

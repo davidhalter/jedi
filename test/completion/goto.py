@@ -108,3 +108,15 @@ mod1.a
 
 #! ['a=1.0']
 from import_tree.pkg.mod1 import a
+
+# -----------------
+# anonymous classes
+# -----------------
+def func():
+    class A():
+        def b(self):
+            return 1
+    return A()
+
+#! 8 ['def b']
+func().b()
