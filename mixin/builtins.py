@@ -163,6 +163,14 @@ class dict():
         # has a strange docstr
         pass
 
+    def get(self, k, d=None):
+        # TODO implement
+        try:
+            #return self.__elements[k]
+            pass
+        except KeyError:
+            return d
+
 
 #--------------------------------------------------------
 # basic types
