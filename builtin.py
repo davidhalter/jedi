@@ -378,14 +378,15 @@ def parse_function_doc(func):
         end = 0
         param_str = ''
 
-    try:
-        index = doc.index('-> ', end, end + 7)
-    except (ValueError, AttributeError):
+    if doc is not None:
+        r = re.search('-[>-]* ', doc[end:end+7])
+    if doc is None or r is None:
         ret = 'pass'
     else:
+        index = end + r.end()
         # get result type, which can contain newlines
         pattern = re.compile(r'(,\n|[^\n-])+')
-        ret_str = pattern.match(doc, index + 3).group(0).strip()
+        ret_str = pattern.match(doc, index).group(0).strip()
         # New object -> object()
         ret_str = re.sub(r'[nN]ew (.*)', r'\1()', ret_str)
 
