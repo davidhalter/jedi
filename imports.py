@@ -140,7 +140,11 @@ class ImportPath(object):
                 # Override the sys.path. It works only good that way.
                 # Injecting the path directly into `find_module` did not work.
                 sys.path, temp = builtin.module_find_path, sys.path
-                i = imp.find_module(string)
+                try:
+                    i = imp.find_module(string)
+                except:
+                    sys.path = temp
+                    raise
                 sys.path = temp
                 return i
 

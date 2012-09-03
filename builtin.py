@@ -102,7 +102,7 @@ class Parser(CachedModule):
             content = {}
             exec_function('import %s as module' % name, content)
             self._module = content['module']
-            self.sys_path, sys.path = sys.path, temp
+            sys.path = temp
 
             if path:
                 self.sys_path.pop(0)
