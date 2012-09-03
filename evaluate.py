@@ -454,7 +454,7 @@ class Execution(Executable):
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
         stmts = []
-        if isinstance(self.base, Class):
+        if self.base.isinstance(Class):
             # There maybe executions of executions.
             stmts = [Instance(self.base, self.var_args)]
         elif isinstance(self.base, Generator):
@@ -813,6 +813,9 @@ class Array(use_metaclass(CachedMetaClass, parsing.Base)):
         """
         Return the builtin scope as parent, because the arrays are builtins
         """
+        return builtin.builtin_scope
+
+    def get_parent_until(self):
         return builtin.builtin_scope
 
     def __getattr__(self, name):
