@@ -101,11 +101,11 @@ class Simple(Base):
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False):
         """ Takes always the parent, until one class (not a Class) """
-        if type(classes) != tuple:
+        if type(classes) not in (tuple, list):
             classes = (classes,)
         scope = self
         while not scope.parent() is None:
-            if reverse != scope.isinstance(*classes):
+            if classes and reverse != scope.isinstance(*classes):
                 break
             scope = scope.parent()
         return scope

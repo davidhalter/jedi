@@ -860,10 +860,8 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
     names = scope.get_defined_names()
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    print scope, start_scope
-    if (not position or isinstance(scope, Array)
-            or isinstance(scope, Instance)
-            or start_scope != scope
+    if (not position or isinstance(scope, (Array, Instance))
+                or start_scope != scope
                 and isinstance(start_scope, (parsing.Function, Execution))):
         return names
     names_new = []
@@ -880,20 +878,20 @@ def get_names_for_scope(scope, position=None, star_search=True,
     The star search option is only here to provide an optimization. Otherwise
     the whole thing would probably start a little recursive madness.
     """
-    start_scope = in_scope = scope
+    in_func_scope = scope
     non_flow = scope.get_parent_until(parsing.Flow, reverse=True)
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
-        #print scope, start_scope
-        if not (scope != start_scope and scope.isinstance(parsing.Class)
+        if not (scope != non_flow and scope.isinstance(parsing.Class)
                     or scope.isinstance(parsing.Flow)
-                    #or scope.isinstance(Instance) and scope != non_flow
+                    or scope.isinstance(Instance)
+                        and non_flow.isinstance(Function)
                     ):
             try:
                 yield scope, get_defined_names_for_position(scope, position,
-                                                                in_scope)
+                                                                in_func_scope)
             except StopIteration:
                 raise MultiLevelStopIteration('StopIteration raised somewhere')
         if scope.isinstance(parsing.ForFlow) and scope.is_list_comp:
@@ -904,11 +902,11 @@ def get_names_for_scope(scope, position=None, star_search=True,
         # This is used, because subscopes (Flow scopes) would distort the
         # results.
         if scope and scope.isinstance(Function, parsing.Function, Execution):
-            in_scope = scope
+            in_func_scope = scope
 
     # Add star imports.
     if star_search:
-        for s in imports.remove_star_imports(start_scope.get_parent_until()):
+        for s in imports.remove_star_imports(non_flow.get_parent_until()):
             for g in get_names_for_scope(s, star_search=False):
                 yield g
 
@@ -937,12 +935,18 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         """
         res_new = []
         for r in result:
+            add = []
             if r.isinstance(parsing.Statement):
+                check_instance = None
+                if isinstance(r, InstanceElement) and r.is_class_var:
+                    check_instance = r.instance
+                    r = r.var
+
                 # Global variables handling.
                 if r.is_global():
                     for token_name in r.token_list[1:]:
                         if isinstance(token_name, parsing.Name):
-                            res_new += get_scopes_for_name(r.parent(),
+                            add = get_scopes_for_name(r.parent(),
                                                             str(token_name))
                 else:
                     # generated objects are used within executions, where
@@ -964,7 +968,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                                 continue
 
                     scopes = follow_statement(r, seek_name=name_str)
-                    res_new += remove_statements(scopes)
+                    add += remove_statements(scopes)
+
+                if check_instance is not None:
+                    # class renames
+                    add = [InstanceElement(check_instance, a, True)
+                                if isinstance(a, (Function, parsing.Function))
+                                else a for a in add ]
+                res_new += add
             else:
                 if isinstance(r, parsing.Class):
                     r = Class(r)
@@ -1000,6 +1011,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             """
             result = []
             no_break_scope = False
+            #if isinstance(scope, InstanceElement) and scope.var == name.parent().parent():
+                #name = InstanceElement(scope.instance, name)
             par = name.parent()
 
             if par.isinstance(parsing.Flow):
@@ -1046,10 +1059,9 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                         no_break_scope = True
 
                     # TODO this makes self variables non-breakable. wanted?
-                    r = [n for n in par.get_set_vars()
-                            if len(n) > 1 and str(n.names[-1] == name)]
-                    if isinstance(name, InstanceElement) and r \
-                                and not name.is_class_var:
+                    #r = [n for n in par.get_set_vars()
+                    #        if len(n) > 1 and str(n.names[-1] == name)]
+                    if isinstance(name, InstanceElement):# and r:
                         no_break_scope = True
 
                     result.append(par)
@@ -1301,10 +1313,6 @@ def follow_call(call):
     """ Follow a call is following a function, variable, string, etc. """
     scope = call.parent_stmt().parent()
     path = call.generate_call_path()
-    path = list(path)
-    #print 'p', scope, path
-    path = iter(path)
-
     position = call.parent_stmt().start_pos
     return follow_call_path(path, scope, position)
 
