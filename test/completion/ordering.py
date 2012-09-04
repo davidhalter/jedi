@@ -101,14 +101,14 @@ class A(object):
         self.b = list
 
         self.a = 1
-        #? list() str() int()
+        #? str() int()
         self.a
 
         #? ['after']
         self.after
 
         self.c = 3
-        #? set() int()
+        #? int()
         self.c
 
     def after(self):
@@ -129,7 +129,7 @@ a.append
 #? []
 a.real
 
-#? list() str() int()
+#? str() int()
 a.a
 
 a = 3

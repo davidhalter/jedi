@@ -243,6 +243,19 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             names.append(InstanceElement(self, var, True))
         return names
 
+    def scope_generator(self):
+        """
+        An Instance has two scopes: The scope with self names and the class
+        scope. Instance variables have priority over the class scope.
+        """
+        yield self, self.get_self_properties()
+
+        names = []
+        class_names = self.base.get_defined_names()
+        for var in class_names:
+            names.append(InstanceElement(self, var, True))
+        yield self, names
+
     def get_index_types(self, index=None):
         args = helpers.generate_param_array([] if index is None else [index])
         try:
@@ -890,8 +903,12 @@ def get_names_for_scope(scope, position=None, star_search=True,
                         and non_flow.isinstance(Function)
                     ):
             try:
-                yield scope, get_defined_names_for_position(scope, position,
-                                                                in_func_scope)
+                if isinstance(scope, Instance):
+                    for g in scope.scope_generator():
+                        yield g
+                else:
+                    yield scope, get_defined_names_for_position(scope,
+                                                    position, in_func_scope)
             except StopIteration:
                 raise MultiLevelStopIteration('StopIteration raised somewhere')
         if scope.isinstance(parsing.ForFlow) and scope.is_list_comp:
@@ -1059,9 +1076,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                         no_break_scope = True
 
                     # TODO this makes self variables non-breakable. wanted?
-                    #r = [n for n in par.get_set_vars()
-                    #        if len(n) > 1 and str(n.names[-1] == name)]
-                    if isinstance(name, InstanceElement):# and r:
+                    if isinstance(name, InstanceElement) \
+                                                and not name.is_class_var:
                         no_break_scope = True
 
                     result.append(par)
@@ -1115,8 +1131,11 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
     if search_global:
         scope_generator = get_names_for_scope(scope, position=position)
     else:
-        names = get_defined_names_for_position(scope, position)
-        scope_generator = iter([(scope, names)])
+        if isinstance(scope, Instance):
+            scope_generator = scope.scope_generator()
+        else:
+            names = get_defined_names_for_position(scope, position)
+            scope_generator = iter([(scope, names)])
 
     return descriptor_check(remove_statements(filter_name(scope_generator)))
 
