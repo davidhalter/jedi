@@ -50,8 +50,8 @@ def run_definition_test(correct, source, line_nr, line, correct_start, path):
     try:
         result = defs(line_nr, len(line))
     except Exception:
-        print('test @%s: %s' % (line_nr - 1, line))
         print(traceback.format_exc())
+        print('test @%s: %s' % (line_nr - 1, line))
         return 1
     else:
         should_be = set()
