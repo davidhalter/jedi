@@ -198,21 +198,21 @@ V(1).d()
 class A():
     def b(self):
         #? int()
-        a()
+        a_func()
         #? str()
-        self.a()
-        return a()
+        self.a_func()
+        return a_func()
 
-    def a(self):
+    def a_func(self):
         return ""
 
-def a():
+def a_func():
     return 1
 
 #? int()
 A().b()
 #? str()
-A().a()
+A().a_func()
 
 # -----------------
 # nested classes
@@ -435,3 +435,32 @@ Recursion().a
 
 #? 
 Recursion().b
+
+# -----------------
+# ducktyping
+# -----------------
+
+def meth(self):
+    return self.a, self.b
+
+class WithoutMethod():
+    a = 1
+    def __init__(self):
+        self.b = 1.0
+    def blub(self):
+        return self.b
+    m = meth
+
+class B():
+    b = ''
+
+a = WithoutMethod().m()
+#? int()
+a[0]
+#? float()
+a[1]
+
+#? float()
+WithoutMethod.blub(WithoutMethod())
+#? str()
+WithoutMethod.blub(B())

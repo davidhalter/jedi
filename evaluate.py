@@ -892,7 +892,8 @@ def get_names_for_scope(scope, position=None, star_search=True,
     the whole thing would probably start a little recursive madness.
     """
     in_func_scope = scope
-    non_flow = scope.get_parent_until(parsing.Flow, reverse=True)
+    non_flow = scope.get_parent_until(parsing.Flow, reverse=True,
+                                                    include_current=True)
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
