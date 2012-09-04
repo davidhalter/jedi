@@ -13,8 +13,9 @@ c.match().start()
 #? int()
 re.match(r'a', 'a').start()
 
-#? int()
-next(re.finditer('a', 'a')).start()
+for a in re.finditer('a', 'a'):
+    #? int()
+    a.start()
 
 #? str()
 re.sub('a', 'a')
