@@ -46,7 +46,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start, path):
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
     def defs(line_nr, indent):
-        return set(functions.get_definitions(source, line_nr, indent, path))
+        return set(functions.get_definition(source, line_nr, indent, path))
     try:
         result = defs(line_nr, len(line))
     except Exception:

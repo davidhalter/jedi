@@ -10,7 +10,7 @@ import debug
 import imports
 import settings
 
-__all__ = ['complete', 'goto', 'get_definitions',
+__all__ = ['complete', 'goto', 'get_definition',
            'NotFoundError', 'set_debug_function']
 
 
@@ -222,7 +222,7 @@ def _prepare_goto(source, position, source_path, module, goto_path,
     return scopes
 
 
-def get_definitions(source, line, column, source_path):
+def get_definition(source, line, column, source_path):
     """
     Returns the definitions of a the path under the cursor.
     This is not a goto function! This follows complicated paths and returns the

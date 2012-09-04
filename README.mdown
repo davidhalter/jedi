@@ -130,7 +130,7 @@ have the following objects available:
 >    Similar to complete. The returned `functions.Definition` objects contain
 >    information about the definitions found.
 
-`get_definitions`
+`get_definition`
 >    A mostly for tests used function. Like goto, but follows statements and
 >    imports and doesn't break there. You probably don't want to use this
 >    function. It's mostly for testing.
