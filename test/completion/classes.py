@@ -181,7 +181,8 @@ class V:
 
     d = b
     b = ret
-    c = b
+    if 1:
+        c = b
 
 #? int()
 V(1).b()

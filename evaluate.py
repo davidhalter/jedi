@@ -269,22 +269,24 @@ class InstanceElement(use_metaclass(CachedMetaClass)):
     def __init__(self, instance, var):
         if isinstance(var, parsing.Function):
             var = Function(var)
+        elif isinstance(var, parsing.Class):
+            var = Class(var)
         self.instance = instance
         self.var = var
 
     @memoize_default()
     def parent(self):
         par = self.var.parent()
-        if not isinstance(par, (parsing.Module, Class)):
+        if isinstance(par, Class) and par == self.instance.base \
+                        or isinstance(par, parsing.Class) \
+                            and par == self.instance.base.base:
+            par = self.instance
+        elif not isinstance(par, parsing.Module):
             par = InstanceElement(self.instance, par)
         return par
 
     def get_parent_until(self, *classes):
-        scope = self.var.get_parent_until(*classes)
-        if isinstance(scope, parsing.Module):
-            return scope
-        else:
-            return InstanceElement(self.instance, scope)
+        return parsing.Simple.get_parent_until(self, *classes)
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
@@ -880,13 +882,13 @@ def get_names_for_scope(scope, position=None, star_search=True,
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
         if not (scope != start_scope and scope.isinstance(parsing.Class)
-                    or isinstance(scope, parsing.Flow)):
+                    or scope.isinstance(parsing.Flow)):
             try:
                 yield scope, get_defined_names_for_position(scope, position,
                                                                 in_scope)
             except StopIteration:
                 raise MultiLevelStopIteration('StopIteration raised somewhere')
-        if isinstance(scope, parsing.ForFlow) and scope.is_list_comp:
+        if scope.isinstance(parsing.ForFlow) and scope.is_list_comp:
             yield scope, scope.get_set_vars(is_internal_call=True)
 
         scope = scope.parent()
@@ -989,9 +991,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             """
             result = []
             no_break_scope = False
-            if isinstance(scope, InstanceElement) \
-                        and scope.var == name.parent().parent():
-                name = InstanceElement(scope.instance, name)
             par = name.parent()
 
             if par.isinstance(parsing.Flow):
@@ -1036,11 +1035,13 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     details = par.assignment_details
                     if details and details[0][0] != '=':
                         no_break_scope = True
+
                     # TODO this makes self variables non-breakable. wanted?
                     r = [n for n in par.get_set_vars()
                             if len(n) > 1 and str(n.names[-1] == name)]
                     if isinstance(name, InstanceElement) and r:
                         no_break_scope = True
+
                     result.append(par)
             else:
                 result.append(par)

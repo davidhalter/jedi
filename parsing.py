@@ -98,6 +98,7 @@ class Simple(Base):
         self.end_pos = end_pos
         self.parent = lambda: None
 
+    @Python3Method
     def get_parent_until(self, *classes):
         """ Takes always the parent, until one class (not a Class) """
         scope = self
