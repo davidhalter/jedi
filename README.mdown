@@ -167,6 +167,10 @@ The goto is by default on \<leader g\>. If you want to change that:
 
     let g:jedi#goto_command = <leader>g
 
+`get_definition` is by default on \<leader d\>. If you want to change that:
+
+    let g:jedi#get_definition_command = <leader>d
+
 If you are a person who likes to use VIM-tabs not buffers, you might want to
 put that in your `.vimrc`:
 

@@ -74,58 +74,20 @@ endfunction
 " ------------------------------------------------------------------------
 " goto
 " ------------------------------------------------------------------------
-
 function! jedi#goto()
-python << PYTHONEOF
-if 1:
-    def echo_highlight(msg):
-        vim.command('echohl WarningMsg | echo "%s" | echohl None' % msg)
-
-    row, column = vim.current.window.cursor
-    buf_path = vim.current.buffer.name
-    source = '\n'.join(vim.current.buffer)
-    try:
-        definitions = functions.goto(source, row, column, buf_path)
-    except functions.NotFoundError:
-        echo_highlight("Cannot follow nothing. Put your cursor on a valid name.")
-    except Exception:
-        # print to stdout, will be in :messages
-        echo_highlight("Some different eror, this shouldn't happen.")
-        print(traceback.format_exc())
-    else:
-        if not definitions:
-            echo_highlight("Couldn't find any definitions for this.")
-        elif len(definitions) == 1:
-            # just add some mark to add the current position to the jumplist.
-            # this is ugly, because it overrides the mark for '`', so if anyone
-            # has a better idea, let me know.
-            vim.command('normal! m`')
-
-            d = definitions[0]
-            if d.in_builtin_module():
-                echo_highlight("Builtin modules cannot be displayed.")
-            else:
-                if d.module_path != vim.current.buffer.name:
-                    if vim.eval('g:jedi#use_tabs_not_buffers') == '1':
-                        vim.command('call jedi#tabnew("%s")' % d.module_path)
-                    else:
-                        vim.command('edit ' + d.module_path)
-                vim.current.window.cursor = d.line_nr, d.column
-        else:
-            # multiple solutions
-            lst = []
-            for d in definitions:
-                if d.in_builtin_module():
-                    lst.append(dict(text='Builtin ' + d.description))
-                else:
-                    lst.append(dict(filename=d.module_path, lnum=d.line_nr, col=d.column, text=d.description))
-            vim.command('call setqflist(%s)' % str(lst))
-            vim.command('call <sid>add_goto_window()')
-
-    #print 'end', strout
-PYTHONEOF
+    python _goto(is_definition=False)
 endfunction
 
+" ------------------------------------------------------------------------
+" get_definition
+" ------------------------------------------------------------------------
+function! jedi#get_definition()
+    python _goto(is_definition=True)
+endfunction
+
+" ------------------------------------------------------------------------
+" helper functions
+" ------------------------------------------------------------------------
 function! jedi#tabnew(path)
 python << PYTHONEOF
 if 1:
@@ -208,6 +170,9 @@ endif
 if !exists("g:jedi#goto_command")
     let g:jedi#goto_command = "<leader>g"
 endif
+if !exists("g:jedi#get_definition_command")
+    let g:jedi#get_definition_command = "<leader>d"
+endif
 if !exists("g:jedi#popup_on_dot")
     let g:jedi#popup_on_dot = 1
 endif
@@ -218,6 +183,7 @@ if g:jedi#auto_initialization
     imap <Nul> <C-X><C-O>
 
     execute "map ".g:jedi#goto_command." :call jedi#goto()<CR>"
+    execute "map ".g:jedi#get_definition_command." :call jedi#get_definition()<CR>"
 end
 
 if g:jedi#popup_on_dot
@@ -247,6 +213,54 @@ class PythonToVimStr(str):
     __slots__ = []
     def __repr__(self):
         return '"%s"' % self.replace('"', r'\"')
+
+def _goto(is_definition=False):
+    def echo_highlight(msg):
+        vim.command('echohl WarningMsg | echo "%s" | echohl None' % msg)
+
+    row, column = vim.current.window.cursor
+    buf_path = vim.current.buffer.name
+    source = '\n'.join(vim.current.buffer)
+    try:
+        if is_definition:
+            definitions = functions.get_definition(source, row, column, buf_path)
+        else:
+            definitions = functions.goto(source, row, column, buf_path)
+    except functions.NotFoundError:
+        echo_highlight("Cannot follow nothing. Put your cursor on a valid name.")
+    except Exception:
+        # print to stdout, will be in :messages
+        echo_highlight("Some different eror, this shouldn't happen.")
+        print(traceback.format_exc())
+    else:
+        if not definitions:
+            echo_highlight("Couldn't find any definitions for this.")
+        elif len(definitions) == 1:
+            # just add some mark to add the current position to the jumplist.
+            # this is ugly, because it overrides the mark for '`', so if anyone
+            # has a better idea, let me know.
+            vim.command('normal! m`')
+
+            d = definitions[0]
+            if d.in_builtin_module():
+                echo_highlight("Builtin modules cannot be displayed.")
+            else:
+                if d.module_path != vim.current.buffer.name:
+                    if vim.eval('g:jedi#use_tabs_not_buffers') == '1':
+                        vim.command('call jedi#tabnew("%s")' % d.module_path)
+                    else:
+                        vim.command('edit ' + d.module_path)
+                vim.current.window.cursor = d.line_nr, d.column
+        else:
+            # multiple solutions
+            lst = []
+            for d in definitions:
+                if d.in_builtin_module():
+                    lst.append(dict(text='Builtin ' + d.description))
+                else:
+                    lst.append(dict(filename=d.module_path, lnum=d.line_nr, col=d.column, text=d.description))
+            vim.command('call setqflist(%s)' % str(lst))
+            vim.command('call <sid>add_goto_window()')
 PYTHONEOF
 
 " vim: set et ts=4:
