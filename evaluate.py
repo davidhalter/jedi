@@ -162,7 +162,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
 
     @memoize_default()
     def get_init_execution(self, func):
-        func = InstanceElement(self, func)
+        func = InstanceElement(self, func, True)
         return Execution(func, self.var_args)
 
     def get_func_self_name(self, func):
@@ -211,7 +211,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
     def get_subscope_by_name(self, name):
         for sub in reversed(self.base.subscopes):
             if sub.name.get_code() == name:
-                return InstanceElement(self, sub)
+                return InstanceElement(self, sub, True)
         raise KeyError("Couldn't find subscope.")
 
     def execute_subscope_by_name(self, name, args=None):
@@ -230,6 +230,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         args = helpers.generate_param_array(v)
         return self.execute_subscope_by_name('__get__', args)
 
+    @memoize_default([])
     def get_defined_names(self):
         """
         Get the instance vars of a class. This includes the vars of all
@@ -239,7 +240,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
 
         class_names = self.base.get_defined_names()
         for var in class_names:
-            names.append(InstanceElement(self, var))
+            names.append(InstanceElement(self, var, True))
         return names
 
     def get_index_types(self, index=None):
@@ -266,13 +267,14 @@ class InstanceElement(use_metaclass(CachedMetaClass)):
     InstanceElement is a wrapper for any object, that is used as an instance
     variable (e.g. self.variable or class methods).
     """
-    def __init__(self, instance, var):
+    def __init__(self, instance, var, is_class_var=False):
         if isinstance(var, parsing.Function):
             var = Function(var)
         elif isinstance(var, parsing.Class):
             var = Class(var)
         self.instance = instance
         self.var = var
+        self.is_class_var = is_class_var
 
     @memoize_default()
     def parent(self):
@@ -282,7 +284,7 @@ class InstanceElement(use_metaclass(CachedMetaClass)):
                             and par == self.instance.base.base:
             par = self.instance
         elif not isinstance(par, parsing.Module):
-            par = InstanceElement(self.instance, par)
+            par = InstanceElement(self.instance, par, self.is_class_var)
         return par
 
     def get_parent_until(self, *args, **kwargs):
@@ -300,7 +302,8 @@ class InstanceElement(use_metaclass(CachedMetaClass)):
         origin = self.var.get_assignment_calls()
         # Delete parent, because it isn't used anymore.
         new = helpers.fast_parent_copy(origin)
-        par = InstanceElement(self.instance, origin.parent_stmt())
+        par = InstanceElement(self.instance, origin.parent_stmt(),
+                                                    self.is_class_var)
         new.parent_stmt = weakref.ref(par)
         faked_scopes.append(par)
         faked_scopes.append(new)
@@ -857,9 +860,11 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
     names = scope.get_defined_names()
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    if not position or isinstance(scope, (Instance, Array)) \
-                or start_scope != scope \
-                    and isinstance(start_scope, (parsing.Function, Execution)):
+    print scope, start_scope
+    if (not position or isinstance(scope, Array)
+            or isinstance(scope, Instance)
+            or start_scope != scope
+                and isinstance(start_scope, (parsing.Function, Execution))):
         return names
     names_new = []
     for n in names:
@@ -876,13 +881,16 @@ def get_names_for_scope(scope, position=None, star_search=True,
     the whole thing would probably start a little recursive madness.
     """
     start_scope = in_scope = scope
+    non_flow = scope.get_parent_until(parsing.Flow, reverse=True)
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
+        #print scope, start_scope
         if not (scope != start_scope and scope.isinstance(parsing.Class)
                     or scope.isinstance(parsing.Flow)
-                    or scope.isinstance(Instance) and scope != in_scope):
+                    #or scope.isinstance(Instance) and scope != non_flow
+                    ):
             try:
                 yield scope, get_defined_names_for_position(scope, position,
                                                                 in_scope)
@@ -1040,7 +1048,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     # TODO this makes self variables non-breakable. wanted?
                     r = [n for n in par.get_set_vars()
                             if len(n) > 1 and str(n.names[-1] == name)]
-                    if isinstance(name, InstanceElement) and r:
+                    if isinstance(name, InstanceElement) and r \
+                                and not name.is_class_var:
                         no_break_scope = True
 
                     result.append(par)
