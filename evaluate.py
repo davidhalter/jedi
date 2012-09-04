@@ -134,8 +134,8 @@ class Executable(parsing.Base):
         # The param input array.
         self.var_args = var_args
 
-    def get_parent_until(self, *args):
-        return self.base.get_parent_until(*args)
+    def get_parent_until(self, *args, **kwargs):
+        return self.base.get_parent_until(*args, **kwargs)
 
     def parent(self):
         return self.base.parent()
@@ -285,8 +285,8 @@ class InstanceElement(use_metaclass(CachedMetaClass)):
             par = InstanceElement(self.instance, par)
         return par
 
-    def get_parent_until(self, *classes):
-        return parsing.Simple.get_parent_until(self, *classes)
+    def get_parent_until(self, *args, **kwargs):
+        return parsing.Simple.get_parent_until(self, *args, **kwargs)
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
@@ -817,7 +817,7 @@ class Array(use_metaclass(CachedMetaClass, parsing.Base)):
         """
         return builtin.builtin_scope
 
-    def get_parent_until(self):
+    def get_parent_until(self, *args, **kwargs):
         return builtin.builtin_scope
 
     def __getattr__(self, name):
@@ -875,26 +875,27 @@ def get_names_for_scope(scope, position=None, star_search=True,
     The star search option is only here to provide an optimization. Otherwise
     the whole thing would probably start a little recursive madness.
     """
-    start_scope = scope
-    in_scope = scope
+    start_scope = in_scope = scope
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
         if not (scope != start_scope and scope.isinstance(parsing.Class)
-                    or scope.isinstance(parsing.Flow)):
+                    or scope.isinstance(parsing.Flow)
+                    or scope.isinstance(Instance) and scope != in_scope):
             try:
                 yield scope, get_defined_names_for_position(scope, position,
                                                                 in_scope)
             except StopIteration:
                 raise MultiLevelStopIteration('StopIteration raised somewhere')
         if scope.isinstance(parsing.ForFlow) and scope.is_list_comp:
+            # is a list comprehension
             yield scope, scope.get_set_vars(is_internal_call=True)
 
         scope = scope.parent()
         # This is used, because subscopes (Flow scopes) would distort the
         # results.
-        if isinstance(scope, (Function, parsing.Function, Execution)):
+        if scope and scope.isinstance(Function, parsing.Function, Execution):
             in_scope = scope
 
     # Add star imports.

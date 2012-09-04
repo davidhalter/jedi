@@ -99,10 +99,14 @@ class Simple(Base):
         self.parent = lambda: None
 
     @Python3Method
-    def get_parent_until(self, *classes):
+    def get_parent_until(self, classes=(), reverse=False):
         """ Takes always the parent, until one class (not a Class) """
+        if type(classes) != tuple:
+            classes = (classes,)
         scope = self
-        while not (scope.parent() is None or scope.isinstance(*classes)):
+        while not scope.parent() is None:
+            if reverse != scope.isinstance(*classes):
+                break
             scope = scope.parent()
         return scope
 
@@ -455,7 +459,7 @@ class Flow(Scope):
             n += super(Flow, self).get_set_vars()
             return n
         else:
-            return self.get_parent_until(Class, Function).get_set_vars()
+            return self.get_parent_until((Class, Function)).get_set_vars()
 
     def get_imports(self):
         i = super(Flow, self).get_imports()
