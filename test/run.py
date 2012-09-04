@@ -60,12 +60,16 @@ def run_definition_test(correct, source, line_nr, line, correct_start, path):
                 continue
             # -1 for the comment, +3 because of the comment start `#? `
             start = index.start() + 3
+            if print_debug:
+                functions.set_debug_function(None)
             try:
                 should_be |= defs(line_nr - 1, start + correct_start)
             except Exception:
                 print(traceback.format_exc())
                 print('could not resolve %s indent %s' % (line_nr - 1, start))
                 return 1
+            if print_debug:
+                functions.set_debug_function(debug.print_to_stdout)
         # because the objects have different ids, `repr` it, then compare it.
         should_str = sorted(str(r) for r in should_be)
         is_str = sorted(set(str(r) for r in result))
@@ -207,12 +211,14 @@ try:
 except ValueError:
     thirdparty = False
 
+print_debug = False
 try:
     i = args.index('--debug')
     args = args[:i] + args[i + 1:]
 except ValueError:
     pass
 else:
+    print_debug = True
     functions.set_debug_function(debug.print_to_stdout)
 
 # get test list, that should be executed
