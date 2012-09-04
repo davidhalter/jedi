@@ -214,7 +214,7 @@ def _check_array_additions(compare_array, module, is_list):
             # must be instance
             stmt = element.var_args.parent_stmt()
         if isinstance(stmt, evaluate.InstanceElement):
-            stop_classes = list(stop_classes) + [parsing.Function]
+            stop_classes = list(stop_classes) + [evaluate.Function]
         return stmt.get_parent_until(stop_classes)
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
