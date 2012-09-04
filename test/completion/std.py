@@ -31,3 +31,34 @@ weakref.proxy(1)
 weakref.ref(1)
 #? int()
 weakref.ref(1)()
+
+# -----------------
+# functools
+# -----------------
+import functools
+
+basetwo = functools.partial(int, base=2)
+#? int()
+basetwo()
+
+def a(a, b):
+    return a, b
+a = functools.partial(a, 0)
+
+#? int()
+a('')[0]
+#? str()
+a('')[1]
+
+def my_decorator(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwds):
+        return f(*args, **kwds)
+    return wrapper
+
+@my_decorator
+def example(a):
+    return a
+
+#? str()
+example('')
