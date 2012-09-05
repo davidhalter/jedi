@@ -98,7 +98,7 @@ class Definition(object):
 
         if isinstance(d, evaluate.Array):
             d = 'class ' + d.type
-        elif isinstance(d, (evaluate.Class, evaluate.Instance)):
+        elif isinstance(d, (parsing.Class, evaluate.Class, evaluate.Instance)):
             d = 'class ' + str(d.name)
         elif isinstance(d, (evaluate.Function, evaluate.parsing.Function)):
             d = 'def ' + str(d.name)

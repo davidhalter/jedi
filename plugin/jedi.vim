@@ -117,7 +117,7 @@ if 1:
 PYTHONEOF
     if bufnr("__doc__") > 0
         " If the __doc__ buffer is open in the current window, jump to it
-        silent execute "sbuffer" bufnr("__doc__")
+        silent execute "sbuffer ".bufnr("__doc__")
     else
         split '__doc__'
     endif
@@ -137,9 +137,15 @@ PYTHONEOF
     endif
     execute "resize ".l:doc_lines
 
-    " TODO more highlightings
-    "highlight jedi_doc ctermbg=green guibg=green
-    "match jedi_doc /^|.*|\n/
+    nnoremap <buffer> q ZQ
+    unlet! b:current_syntax
+    let l:pythonpath = fnameescape(globpath(&rtp,"syntax/python.vim"))
+    exe "syn include @rstPythonScript ".l:pythonpath
+    " 4 spaces
+    syn region rstPythonRegion start=/^\v {4}/ end=/\v^( {4}|\n)@!/ contains=@rstPythonScript
+    " >>> python code
+    syn region rstPythonRegion matchgroup=pythonDoctest start=/^>>>\s*/ end=/\n/ contains=@rstPythonScript
+    let b:current_syntax = "rst"
 endfunction
 
 " ------------------------------------------------------------------------
@@ -253,6 +259,7 @@ if g:jedi#popup_on_dot
     autocmd FileType python imap . .<C-R>=jedi#do_popup_on_dot() ? "\<lt>C-X>\<lt>C-O>" : ""<CR>
 end
 
+setlocal switchbuf=useopen  " needed for pydoc
 let s:current_file=expand("<sfile>")
 
 python << PYTHONEOF
