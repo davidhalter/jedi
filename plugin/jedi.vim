@@ -137,7 +137,11 @@ PYTHONEOF
     endif
     execute "resize ".l:doc_lines
 
+    " quit comands
     nnoremap <buffer> q ZQ
+    nnoremap <buffer> K ZQ
+
+    " highlight python code within rst
     unlet! b:current_syntax
     let l:pythonpath = fnameescape(globpath(&rtp,"syntax/python.vim"))
     exe "syn include @rstPythonScript ".l:pythonpath
