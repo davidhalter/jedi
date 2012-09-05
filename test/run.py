@@ -11,7 +11,6 @@ from _compatibility import unicode, BytesIO, reduce, literal_eval
 
 import functions
 import debug
-debug.ignored_modules = ['parsing', 'builtin']
 
 
 def run_completion_test(correct, source, line_nr, index, line, path):
@@ -204,7 +203,7 @@ def test_dir(completion_test_dir, thirdparty=False):
             summary.append(s)
 
 
-# Sorry I didn't use argparse here. It's because argparse is not in the 
+# Sorry I didn't use argparse here. It's because argparse is not in the
 # stdlib in 2.5.
 args = sys.argv[1:]
 try:

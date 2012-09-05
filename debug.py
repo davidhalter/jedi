@@ -15,7 +15,7 @@ ERROR = object()
 
 debug_function = None
 #debug_function = print_to_stdout
-ignored_modules = []
+ignored_modules = ['parsing', 'builtin']
 
 
 def dbg(*args):
