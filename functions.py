@@ -70,25 +70,12 @@ class Definition(object):
 
         self.module_path = str(self.definition.get_parent_until().path)
 
-    def get_name(self):
-        try:
-            # is a func / class
-            return self.definition.name
-        except AttributeError:
-            try:
-                # is an array
-                return self.definition.type
-            except AttributeError:
-                # is a statement
-                return self.definition.get_code()
-
     @property
     def module_name(self):
         path = self.module_path
-        try:
-            return path[path.rindex(os.path.sep) + 1:]
-        except ValueError:
-            return path
+        sep = os.path.sep
+        p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', path)
+        return p
 
     def in_builtin_module(self):
         return not self.module_path.endswith('.py')
@@ -109,16 +96,15 @@ class Definition(object):
         if isinstance(d, evaluate.parsing.Name):
             d = d.parent()
 
-        if isinstance(d, (evaluate.Class, evaluate.Instance)):
+        if isinstance(d, evaluate.Array):
+            d = 'class ' + d.type
+        elif isinstance(d, (evaluate.Class, evaluate.Instance)):
             d = 'class ' + str(d.name)
         elif isinstance(d, (evaluate.Function, evaluate.parsing.Function)):
             d = 'def ' + str(d.name)
         elif isinstance(d, evaluate.parsing.Module):
-            p = str(d.path)
             # only show module name
-            sep = os.path.sep
-            p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', p)
-            d = 'module ' + p
+            d = 'module %s' % self.module_name
         else:
             d = d.get_code().replace('\n', '')
         return d
@@ -130,14 +116,15 @@ class Definition(object):
         except AttributeError:
             return ''
 
-
-    def __str__(self):
-        if self.module_path[0] == os.path.sep:
+    @property
+    def desc_with_module(self):
+        if self.module_path.endswith('.py') \
+                    and not isinstance(self.definition, parsing.Module):
             position = '@%s' % (self.line_nr)
         else:
-            # no path - is a builtin
+            # is a builtin or module
             position = ''
-        return "%s:%s%s" % (self.module_name, self.get_name(), position)
+        return "%s:%s%s" % (self.module_name, self.description, position)
 
     def __repr__(self):
         return "<%s %s>" % (self.__class__.__name__, self.definition)

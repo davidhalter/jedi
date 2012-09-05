@@ -72,8 +72,8 @@ def run_definition_test(correct, source, line_nr, index, line, correct_start,
             if print_debug:
                 functions.set_debug_function(debug.print_to_stdout)
         # because the objects have different ids, `repr` it, then compare it.
-        should_str = sorted(str(r) for r in should_be)
-        is_str = sorted(set(str(r) for r in result))
+        should_str = set(r.desc_with_module for r in should_be)
+        is_str = set(r.desc_with_module for r in result)
         if is_str != should_str:
             print('Solution @%s not right, received %s, wanted %s' \
                         % (line_nr - 1, is_str, should_str))

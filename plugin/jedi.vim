@@ -109,7 +109,7 @@ if 1:
         vim.command('normal! K')
         vim.command('return')
     else:
-        docs = ['|Docstring for %s|\n%s' % (d, d.doc) if d.doc
+        docs = ['Docstring for %s\n%s\n%s' % (d.desc_with_module, '='*40, d.doc) if d.doc
                     else '|No Docstring for %s|' % d for d in definitions]
         text = ('\n' + '-' * 79 + '\n').join(docs)
         vim.command('let l:doc = %s' % repr(PythonToVimStr(text)))
@@ -130,6 +130,7 @@ PYTHONEOF
     silent normal! 1Gdd
     setlocal nomodifiable
     setlocal nomodified
+    setlocal filetype=rst
 
     if l:doc_lines > 20  " max 20 lines for plugin
         let l:doc_lines = 20
@@ -137,8 +138,8 @@ PYTHONEOF
     execute "resize ".l:doc_lines
 
     " TODO more highlightings
-    highlight jedi_doc ctermbg=green guibg=green
-    match jedi_doc /^|.*|\n/
+    "highlight jedi_doc ctermbg=green guibg=green
+    "match jedi_doc /^|.*|\n/
 endfunction
 
 " ------------------------------------------------------------------------
