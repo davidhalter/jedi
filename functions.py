@@ -9,6 +9,7 @@ import modules
 import debug
 import imports
 import settings
+import keywords
 
 from _compatibility import next
 
@@ -105,6 +106,8 @@ class Definition(object):
         elif isinstance(d, evaluate.parsing.Module):
             # only show module name
             d = 'module %s' % self.module_name
+        elif isinstance(d, keywords.Keyword):
+            d = 'keyword %s' % d.name
         else:
             d = d.get_code().replace('\n', '')
         return d
@@ -243,10 +246,18 @@ def get_definition(source, line, column, source_path):
 
     context = f.get_context()
     if next(context) in ('class', 'def'):
-        scopes = [f.parser.user_scope]
+        scopes = set([f.parser.user_scope])
+    elif not goto_path:
+        op = f.get_operator_under_cursor()
+        scopes = set([keywords.get_operator(op)])
     else:
         scopes = _prepare_goto(source, pos, source_path, f, goto_path)
-    d = [Definition(s) for s in set(scopes)]
+
+    # add keywords
+    scopes |= keywords.get_keywords(string=goto_path)
+
+
+    d = set([Definition(s) for s in scopes])
     _clear_caches()
     return d
 

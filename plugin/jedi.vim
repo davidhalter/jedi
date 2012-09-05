@@ -132,8 +132,8 @@ PYTHONEOF
     setlocal nomodified
     setlocal filetype=rst
 
-    if l:doc_lines > 20  " max 20 lines for plugin
-        let l:doc_lines = 20
+    if l:doc_lines > 30  " max lines for plugin
+        let l:doc_lines = 30
     endif
     execute "resize ".l:doc_lines
 
@@ -315,7 +315,7 @@ def _goto(is_definition=False):
             # has a better idea, let me know.
             vim.command('normal! m`')
 
-            d = definitions[0]
+            d = list(definitions)[0]
             if d.in_builtin_module():
                 echo_highlight("Builtin modules cannot be displayed.")
             else:

@@ -50,6 +50,24 @@ class TestRegression(unittest.TestCase):
 
         self.assertRaises(functions.NotFoundError, get_def, cls)
 
+    def test_keyword_doc(self):
+        r = list(self.get_def("or", (1,1)))
+        assert len(r) == 1
+        assert len(r[0].doc) > 100
+
+        r = list(self.get_def("asfdasfd", (1,1)))
+        assert len(r) == 0
+
+    def test_operator_doc(self):
+        r = list(self.get_def("a == b", (1,3)))
+        assert len(r) == 1
+        assert len(r[0].doc) > 100
+
+    def test_get_definition_at_zero(self):
+        assert self.get_def("a", (1,1)) == set()
+        ##assert self.get_def("", (1,0)) == set()
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -132,16 +132,29 @@ class ModuleWithCursor(Module):
         after = re.search("[\w\d]*", line[self.position[1]:]).group(0)
         return self.get_path_until_cursor() + after
 
+    def get_operator_under_cursor(self):
+        line = self.get_line(self.position[0])
+        after = re.match("[^\w\s]+", line[self.position[1]:])
+        before = re.match("[^\w\s]+", line[:self.position[1]][::-1])
+        return (before.group(0) if before is not None else '') \
+                + (after.group(0) if after is not None else '')
+
     def get_context(self):
         pos = self._start_cursor_pos
-        while pos > (0, 0):
+        while pos > (1, 0):
             # remove non important white space
             line = self.get_line(pos[0])
             while pos > 0 and line[pos[1] - 1].isspace():
                 pos = pos[0], pos[1] - 1
 
-            yield self._get_path_until_cursor(start_pos=pos)
+            try:
+                yield self._get_path_until_cursor(start_pos=pos)
+            except StopIteration:
+                yield ''
             pos = self._line_temp, self._column_temp
+
+        while True:
+            yield ''
 
     def get_line(self, line_nr):
         if not self._line_cache:
