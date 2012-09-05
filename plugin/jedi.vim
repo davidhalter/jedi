@@ -244,22 +244,22 @@ if !exists("g:jedi#pydoc")
 endif
 
 if g:jedi#auto_initialization
-    autocmd FileType python set omnifunc=jedi#complete
+    autocmd FileType python setlocal omnifunc=jedi#complete
     " map ctrl+space for autocompletion
-    imap <Nul> <C-X><C-O>
+    autocmd FileType python inoremap <buffer> <Nul> <C-X><C-O>
 
     " goto / get_definition
-    execute "noremap ".g:jedi#goto_command." :call jedi#goto()<CR>"
-    execute "noremap ".g:jedi#get_definition_command." :call jedi#get_definition()<CR>"
+    autocmd FileType python execute "noremap <buffer>".g:jedi#goto_command." :call jedi#goto()<CR>"
+    autocmd FileType python execute "noremap <buffer>".g:jedi#get_definition_command." :call jedi#get_definition()<CR>"
 
-    execute "nnoremap <silent> <buffer> ".g:jedi#pydoc." :call jedi#show_pydoc()<CR>"
+    autocmd FileType python execute "nnoremap <silent> <buffer>".g:jedi#pydoc." :call jedi#show_pydoc()<CR>"
 end
 
 if g:jedi#popup_on_dot
-    autocmd FileType python imap . .<C-R>=jedi#do_popup_on_dot() ? "\<lt>C-X>\<lt>C-O>" : ""<CR>
+    autocmd FileType python inoremap <buffer> . .<C-R>=jedi#do_popup_on_dot() ? "\<lt>C-X>\<lt>C-O>" : ""<CR>
 end
 
-setlocal switchbuf=useopen  " needed for pydoc
+set switchbuf=useopen  " needed for pydoc
 let s:current_file=expand("<sfile>")
 
 python << PYTHONEOF
