@@ -1230,7 +1230,12 @@ class PyFuzzyParser(object):
         if colon != ':':
             return None
 
-        return Function(fname, params, first_pos, annotation)
+        # because of 2 line func param definitions
+        scope = Function(fname, params, first_pos, annotation)
+        if self.user_scope and scope != self.user_scope \
+                        and self.user_position > first_pos:
+            self.user_scope = scope
+        return scope
 
     def _parseclass(self):
         """
@@ -1259,7 +1264,12 @@ class PyFuzzyParser(object):
             debug.warning("class syntax: %s@%s" % (cname, self.start_pos[0]))
             return None
 
-        return Class(cname, super, first_pos)
+        # because of 2 line class initializations
+        scope = Class(cname, super, first_pos)
+        if self.user_scope and scope != self.user_scope \
+                        and self.user_position > first_pos:
+            self.user_scope = scope
+        return scope
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
                             stmt_class=Statement, list_comp=False):
