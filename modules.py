@@ -83,16 +83,16 @@ class ModuleWithCursor(Module):
         else:
             self._line_temp, self._column_temp = start_pos
 
-        force_point = False
         open_brackets = ['(', '[', '{']
         close_brackets = [')', ']', '}']
 
         gen = tokenize.generate_tokens(fetch_line)
         string = ''
         level = 0
+        force_point = False
         try:
             for token_type, tok, start, end, line in gen:
-                #print token_type, tok, force_point
+                #print 'tok', token_type, tok, force_point
                 if level > 0:
                     if tok in close_brackets:
                         level += 1
@@ -116,8 +116,8 @@ class ModuleWithCursor(Module):
                 else:
                     break
 
+                self._column_temp = self._line_length - end[1]
                 string += tok
-            self._column_temp = self._line_length - end[1]
         except tokenize.TokenError:
             debug.warning("Tokenize couldn't finish", sys.exc_info)
 
@@ -135,6 +135,11 @@ class ModuleWithCursor(Module):
     def get_context(self):
         pos = self._start_cursor_pos
         while pos > (0, 0):
+            # remove non important white space
+            line = self.get_line(pos[0])
+            while pos > 0 and line[pos[1] - 1].isspace():
+                pos = pos[0], pos[1] - 1
+
             yield self._get_path_until_cursor(start_pos=pos)
             pos = self._line_temp, self._column_temp
 
