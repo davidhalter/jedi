@@ -134,7 +134,7 @@ class ModuleWithCursor(Module):
 
     def get_context(self):
         pos = self._start_cursor_pos
-        while pos > 0:
+        while pos > (0, 0):
             yield self._get_path_until_cursor(start_pos=pos)
             pos = self._line_temp, self._column_temp
 
