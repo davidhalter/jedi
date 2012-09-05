@@ -120,3 +120,17 @@ def func():
 
 #! 8 ['def b']
 func().b()
+
+# -----------------    
+# get_definition       
+# -----------------    
+
+#! 7 ['class ClassDef']
+class ClassDef():
+    """ abc """
+    pass
+
+##? 6 ClassDef2()
+class ClassDef2():       
+    """ abc """
+    pass

@@ -52,14 +52,19 @@ class ModuleWithCursor(Module):
 
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
-        self._is_first = True
+        result = self._get_path_until_cursor()
+        self._start_cursor_pos = self._line_temp + 1, self._column_temp
+        return result
 
+    def _get_path_until_cursor(self, start_pos=None):
         def fetch_line():
             line = self.get_line(self._line_temp)
             if self._is_first:
                 self._is_first = False
-                line = line[:self.position[1]]
+                self._line_length = self._column_temp
+                line = line[:self._column_temp]
             else:
+                self._line_length = len(line)
                 line = line + '\n'
             # add lines with a backslash at the end
             while 1:
@@ -71,7 +76,12 @@ class ModuleWithCursor(Module):
                     break
             return line[::-1]
 
-        self._line_temp = self.position[0]
+        self._is_first = True
+        if start_pos is None:
+            self._line_temp = self.position[0]
+            self._column_temp = self.position[1]
+        else:
+            self._line_temp, self._column_temp = start_pos
 
         force_point = False
         open_brackets = ['(', '[', '{']
@@ -107,6 +117,7 @@ class ModuleWithCursor(Module):
                     break
 
                 string += tok
+            self._column_temp = self._line_length - end[1]
         except tokenize.TokenError:
             debug.warning("Tokenize couldn't finish", sys.exc_info)
 
@@ -120,6 +131,12 @@ class ModuleWithCursor(Module):
         line = self.get_line(self.position[0])
         after = re.search("[\w\d]*", line[self.position[1]:]).group(0)
         return self.get_path_until_cursor() + after
+
+    def get_context(self):
+        pos = self._start_cursor_pos
+        while pos > 0:
+            yield self._get_path_until_cursor(start_pos=pos)
+            pos = self._line_temp, self._column_temp
 
     def get_line(self, line_nr):
         if not self._line_cache:

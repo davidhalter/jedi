@@ -10,6 +10,8 @@ import debug
 import imports
 import settings
 
+from _compatibility import next
+
 __all__ = ['complete', 'goto', 'get_definition',
            'NotFoundError', 'set_debug_function']
 
@@ -76,7 +78,7 @@ class Definition(object):
             try:
                 # is an array
                 return self.definition.type
-            except:
+            except AttributeError:
                 # is a statement
                 return self.definition.get_code()
 
@@ -252,7 +254,11 @@ def get_definition(source, line, column, source_path):
     f = modules.ModuleWithCursor(source_path, source=source, position=pos)
     goto_path = f.get_path_under_cursor()
 
-    scopes = _prepare_goto(source, pos, source_path, f, goto_path)
+    context = f.get_context()
+    if next(context) in ('class', 'def'):
+        scopes = [f.parser.user_scope]
+    else:
+        scopes = _prepare_goto(source, pos, source_path, f, goto_path)
     d = [Definition(s) for s in set(scopes)]
     _clear_caches()
     return d

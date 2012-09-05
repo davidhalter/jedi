@@ -109,9 +109,11 @@ if 1:
         vim.command('normal! K')
         vim.command('return')
     else:
-        docs = ['|Docstring of %s|\n%s' % (d, d.doc) for d in definitions]
-        text = ('-' * 79).join(docs)
+        docs = ['|Docstring for %s|\n%s' % (d, d.doc) if d.doc
+                    else '|No Docstring for %s|' % d for d in definitions]
+        text = ('\n' + '-' * 79 + '\n').join(docs)
         vim.command('let l:doc = %s' % repr(PythonToVimStr(text)))
+        vim.command('let l:doc_lines = %s' % len(text.split('\n')))
 PYTHONEOF
     if bufnr("__doc__") > 0
         " If the __doc__ buffer is open in the current window, jump to it
@@ -119,6 +121,7 @@ PYTHONEOF
     else
         split '__doc__'
     endif
+
     setlocal modifiable
     setlocal noswapfile
     setlocal buftype=nofile
@@ -127,6 +130,11 @@ PYTHONEOF
     silent normal! 1Gdd
     setlocal nomodifiable
     setlocal nomodified
+
+    if l:doc_lines > 20  " max 20 lines for plugin
+        let l:doc_lines = 20
+    endif
+    execute "resize ".l:doc_lines
 
     " TODO more highlightings
     highlight jedi_doc ctermbg=green guibg=green
