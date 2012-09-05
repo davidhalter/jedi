@@ -121,6 +121,14 @@ class Definition(object):
             d = d.get_code().replace('\n', '')
         return d
 
+    @property
+    def doc(self):
+        try:
+            return str(self.definition.docstr)
+        except AttributeError:
+            return ''
+
+
     def __str__(self):
         if self.module_path[0] == os.path.sep:
             position = '@%s' % (self.line_nr)

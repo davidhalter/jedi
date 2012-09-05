@@ -171,6 +171,10 @@ The goto is by default on \<leader g\>. If you want to change that:
 
     let g:jedi#get_definition_command = <leader>d
 
+Showing the pydoc is by default on `K` If you want to change that:
+
+    let g:jedi#pydoc = "K"
+
 If you are a person who likes to use VIM-tabs not buffers, you might want to
 put that in your `.vimrc`:
 

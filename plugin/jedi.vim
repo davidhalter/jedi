@@ -86,6 +86,54 @@ function! jedi#get_definition()
 endfunction
 
 " ------------------------------------------------------------------------
+" show_pydoc
+" ------------------------------------------------------------------------
+function! jedi#show_pydoc()
+python << PYTHONEOF
+if 1:
+    row, column = vim.current.window.cursor
+    buf_path = vim.current.buffer.name
+    source = '\n'.join(vim.current.buffer)
+    try:
+        definitions = functions.get_definition(source, row, column, buf_path)
+    except functions.NotFoundError:
+        definitions = []
+    except Exception:
+        # print to stdout, will be in :messages
+        definitions = []
+        print("Exception, this shouldn't happen.")
+        print(traceback.format_exc())
+
+    if not definitions:
+        # just execute the default vim commands
+        vim.command('normal! K')
+        vim.command('return')
+    else:
+        docs = ['|Docstring of %s|\n%s' % (d, d.doc) for d in definitions]
+        text = ('-' * 79).join(docs)
+        vim.command('let l:doc = %s' % repr(PythonToVimStr(text)))
+PYTHONEOF
+    if bufnr("__doc__") > 0
+        " If the __doc__ buffer is open in the current window, jump to it
+        silent execute "sbuffer" bufnr("__doc__")
+    else
+        split '__doc__'
+    endif
+    setlocal modifiable
+    setlocal noswapfile
+    setlocal buftype=nofile
+    silent normal! ggdG
+    silent $put=l:doc
+    silent normal! 1Gdd
+    setlocal nomodifiable
+    setlocal nomodified
+
+    " TODO more highlightings
+    highlight jedi_doc ctermbg=green guibg=green
+    match jedi_doc /^|.*|\n/
+endfunction
+
+" ------------------------------------------------------------------------
 " helper functions
 " ------------------------------------------------------------------------
 function! jedi#tabnew(path)
@@ -176,14 +224,20 @@ endif
 if !exists("g:jedi#popup_on_dot")
     let g:jedi#popup_on_dot = 1
 endif
+if !exists("g:jedi#pydoc")
+    let g:jedi#pydoc = "K"
+endif
 
 if g:jedi#auto_initialization
     autocmd FileType python set omnifunc=jedi#complete
     " map ctrl+space for autocompletion
     imap <Nul> <C-X><C-O>
 
-    execute "map ".g:jedi#goto_command." :call jedi#goto()<CR>"
-    execute "map ".g:jedi#get_definition_command." :call jedi#get_definition()<CR>"
+    " goto / get_definition
+    execute "noremap ".g:jedi#goto_command." :call jedi#goto()<CR>"
+    execute "noremap ".g:jedi#get_definition_command." :call jedi#get_definition()<CR>"
+
+    execute "nnoremap <silent> <buffer> ".g:jedi#pydoc." :call jedi#show_pydoc()<CR>"
 end
 
 if g:jedi#popup_on_dot
