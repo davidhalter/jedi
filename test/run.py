@@ -55,6 +55,7 @@ def run_definition_test(correct, source, line_nr, index, line, correct_start,
         return 1
     else:
         should_be = set()
+        number = 0
         for index in re.finditer('(?: +|$)', correct):
             if correct == ' ':
                 continue
@@ -62,6 +63,7 @@ def run_definition_test(correct, source, line_nr, index, line, correct_start,
             start = index.start()
             if print_debug:
                 functions.set_debug_function(None)
+            number += 1
             try:
                 should_be |= defs(line_nr - 1, start + correct_start)
             except Exception:
@@ -72,6 +74,10 @@ def run_definition_test(correct, source, line_nr, index, line, correct_start,
                 functions.set_debug_function(debug.print_to_stdout)
         # because the objects have different ids, `repr` it, then compare it.
         should_str = set(r.desc_with_module for r in should_be)
+        if len(should_str) < number:
+            print('Solution @%s not right, too few test results: %s' \
+                        % (line_nr - 1, should_str))
+            return 1
         is_str = set(r.desc_with_module for r in result)
         if is_str != should_str:
             print('Solution @%s not right, received %s, wanted %s' \
