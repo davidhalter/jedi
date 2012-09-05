@@ -14,7 +14,7 @@ import debug
 debug.ignored_modules = ['parsing', 'builtin']
 
 
-def run_completion_test(correct, source, line_nr, line, path):
+def run_completion_test(correct, source, line_nr, index, line, path):
     """
     Runs tests for completions.
     Return if the test was a fail or not, with 1 for fail and 0 for success.
@@ -22,7 +22,7 @@ def run_completion_test(correct, source, line_nr, line, path):
     # lines start with 1 and column is just the last (makes no
     # difference for testing)
     try:
-        completions = functions.complete(source, line_nr, len(line), path)
+        completions = functions.complete(source, line_nr, index, path)
         #import cProfile as profile
         #profile.run('functions.complete("""%s""", %i, %i, "%s")'
         #                            % (source, line_nr, len(line), path))
@@ -40,7 +40,8 @@ def run_completion_test(correct, source, line_nr, line, path):
     return 0
 
 
-def run_definition_test(correct, source, line_nr, line, correct_start, path):
+def run_definition_test(correct, source, line_nr, index, line, correct_start,
+                                                                        path):
     """
     Runs tests for definitions.
     Return if the test was a fail or not, with 1 for fail and 0 for success.
@@ -48,7 +49,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start, path):
     def defs(line_nr, indent):
         return set(functions.get_definition(source, line_nr, indent, path))
     try:
-        result = defs(line_nr, len(line))
+        result = defs(line_nr, index)
     except Exception:
         print(traceback.format_exc())
         print('test @%s: %s' % (line_nr - 1, line))
@@ -59,7 +60,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start, path):
             if correct == ' ':
                 continue
             # -1 for the comment, +3 because of the comment start `#? `
-            start = index.start() + 3
+            start = index.start()
             if print_debug:
                 functions.set_debug_function(None)
             try:
@@ -80,7 +81,7 @@ def run_definition_test(correct, source, line_nr, line, correct_start, path):
     return 0
 
 
-def run_goto_test(correct, source, line_nr, line, path):
+def run_goto_test(correct, source, line_nr, index, line, path):
     """
     Runs tests for gotos.
     Tests look like this:
@@ -97,12 +98,6 @@ def run_goto_test(correct, source, line_nr, line, path):
 
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
-    r = re.match('^(\d+)\s*(.*)$', correct)
-    if r:
-        index = int(r.group(1))
-        correct = r.group(2)
-    else:
-        index = len(line)
     try:
         result = functions.goto(source, line_nr, index, path)
     except Exception:
@@ -140,17 +135,25 @@ def run_test(source, f_name, lines_to_execute):
         line = unicode(line)
         line_nr += 1
         if correct:
+            r = re.match('^(\d+)\s*(.*)$', correct)
+            if r:
+                index = int(r.group(1))
+                correct = r.group(2)
+                start += r.regs[2][0]  # second group, start index
+            else:
+                index = len(line)
             # if a list is wanted, use the completion test, otherwise the
             # get_definition test
             path = completion_test_dir + os.path.sep + f_name
             if test_type == '!':
-                fails += run_goto_test(correct, source, line_nr, line, path)
-            elif correct.startswith('['):
-                fails += run_completion_test(correct, source, line_nr, line,
+                fails += run_goto_test(correct, source, line_nr, index, line,
                                                                         path)
+            elif correct.startswith('['):
+                fails += run_completion_test(correct, source, line_nr, index,
+                                                                line, path)
             else:
-                fails += run_definition_test(correct, source, line_nr, line,
-                                                                start, path)
+                fails += run_definition_test(correct, source, line_nr, index,
+                                                            line, start, path)
             correct = None
             tests += 1
         else:
