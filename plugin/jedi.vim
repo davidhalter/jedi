@@ -105,8 +105,6 @@ if 1:
         print(traceback.format_exc())
 
     if not definitions:
-        # just execute the default vim commands
-        vim.command('normal! K')
         vim.command('return')
     else:
         docs = ['Docstring for %s\n%s\n%s' % (d.desc_with_module, '='*40, d.doc) if d.doc
