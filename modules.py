@@ -144,7 +144,7 @@ class ModuleWithCursor(Module):
         while pos > (1, 0):
             # remove non important white space
             line = self.get_line(pos[0])
-            while pos > 0 and line[pos[1] - 1].isspace():
+            while pos[1] > 0 and line[pos[1] - 1].isspace():
                 pos = pos[0], pos[1] - 1
 
             try:

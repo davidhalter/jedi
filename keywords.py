@@ -4,7 +4,11 @@ from _compatibility import is_py3k
 import builtin
 
 import pydoc
-import pydoc_data.topics
+try:
+    from pydoc_data import topics as pydoc_topics
+except ImportError:
+    # Python 2.5/2.6
+    import pydoc_topics
 
 if is_py3k():
     keys = keyword.kwlist
@@ -59,4 +63,4 @@ def imitate_pydoc(string):
     except TypeError:
         return ''
 
-    return pydoc_data.topics.topics[label]
+    return pydoc_topics.topics[label]
