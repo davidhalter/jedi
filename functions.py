@@ -62,6 +62,9 @@ class Completion(object):
     def get_type(self):
         return type(self.name.parent())
 
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self.name)
+
 
 class Definition(object):
     def __init__(self, definition):
@@ -249,13 +252,12 @@ def get_definition(source, line, column, source_path):
         scopes = set([f.parser.user_scope])
     elif not goto_path:
         op = f.get_operator_under_cursor()
-        scopes = set([keywords.get_operator(op)])
+        scopes = set([keywords.get_operator(op)] if op else [])
     else:
         scopes = _prepare_goto(source, pos, source_path, f, goto_path)
 
     # add keywords
     scopes |= keywords.get_keywords(string=goto_path)
-
 
     d = set([Definition(s) for s in scopes])
     _clear_caches()

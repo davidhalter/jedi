@@ -14,6 +14,9 @@ class TestRegression(unittest.TestCase):
     def get_def(self, src, pos):
         return functions.get_definition(src, pos[0], pos[1], '')
 
+    def complete(self, src, pos):
+        return functions.complete(src, pos[0], pos[1], '')
+
     def test_get_definition_cursor(self):
 
         s = ("class A():\n"
@@ -65,8 +68,18 @@ class TestRegression(unittest.TestCase):
 
     def test_get_definition_at_zero(self):
         assert self.get_def("a", (1,1)) == set()
-        ##assert self.get_def("", (1,0)) == set()
+        s = self.get_def("str", (1,1))
+        assert len(s) == 1
+        assert list(s)[0].description == 'class str'
+        assert self.get_def("", (1,0)) == set()
 
+    def test_complete_at_zero(self):
+        s = self.complete("str", (1,3))
+        assert len(s) == 1
+        assert list(s)[0].word == 'str'
+
+        s = self.complete("", (1,0))
+        assert len(s) > 0
 
 
 if __name__ == '__main__':
