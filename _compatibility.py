@@ -2,9 +2,12 @@
 This is a compatibility module, to make it possible to use jedi also with older
 python versions.
 """
+import sys
+
 def is_py3k():
     return sys.hexversion >= 0x03000000
-import sys
+
+is_py25 = sys.hexversion < 0x02060000
 
 # next was defined in python 2.6, in python 3 obj.next won't be possible
 # anymore

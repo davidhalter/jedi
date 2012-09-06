@@ -7,8 +7,12 @@ import pydoc
 try:
     from pydoc_data import topics as pydoc_topics
 except ImportError:
-    # Python 2.5/2.6
-    import pydoc_topics
+    # Python 2.6
+    try:
+        import pydoc_topics
+    except ImportError:
+        # Python 2.5
+        pydoc_topics = None
 
 if is_py3k():
     keys = keyword.kwlist
@@ -63,4 +67,4 @@ def imitate_pydoc(string):
     except TypeError:
         return ''
 
-    return pydoc_topics.topics[label]
+    return pydoc_topics.topics[label] if pydoc_topics else ''
