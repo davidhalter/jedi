@@ -993,7 +993,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                     # class renames
                     add = [InstanceElement(check_instance, a, True)
                                 if isinstance(a, (Function, parsing.Function))
-                                else a for a in add ]
+                                else a for a in add]
                 res_new += add
             else:
                 if isinstance(r, parsing.Class):
@@ -1030,8 +1030,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             """
             result = []
             no_break_scope = False
-            #if isinstance(scope, InstanceElement) and scope.var == name.parent().parent():
-                #name = InstanceElement(scope.instance, name)
             par = name.parent()
 
             if par.isinstance(parsing.Flow):

@@ -36,7 +36,7 @@ class Completion(object):
         append = ''
         funcs = (parsing.Function, evaluate.Function)
         if settings.add_bracket_after_function \
-                    and isinstance( self._completion_parent, funcs):
+                    and isinstance(self._completion_parent, funcs):
             append = '('
 
         if settings.add_dot_after_module:

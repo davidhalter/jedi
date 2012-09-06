@@ -7,7 +7,7 @@ import traceback
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
 sys.path.append('.')
 
-from _compatibility import unicode, BytesIO, reduce, literal_eval
+from _compatibility import unicode, BytesIO, reduce, literal_eval, is_py25
 
 import functions
 import debug
@@ -185,8 +185,7 @@ def test_dir(completion_test_dir, thirdparty=False):
         if f_name.endswith(".py") and (not test_files or files_to_execute):
             # for python2.5 certain tests are not being done, because it
             # only has these features partially.
-            if sys.hexversion < 0x02060000 \
-                    and f_name in ['generators.py', 'types.py']:
+            if is_py25 and f_name in ['generators.py', 'types.py']:
                 continue
 
             if thirdparty:

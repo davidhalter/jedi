@@ -92,7 +92,8 @@ class ExecutionRecursionDecorator(object):
         self.reset()
 
     def __call__(self, execution, evaluate_generator=False):
-        #print execution, self.recursion_level, self.execution_count, len(self.execution_funcs), a
+        debug.dbg('Execution recursions: ', execution, self.recursion_level,
+                            self.execution_count, len(self.execution_funcs))
         if self.check_recursion(execution, evaluate_generator):
             result = []
         else:

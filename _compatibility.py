@@ -4,7 +4,7 @@ python versions.
 """
 import sys
 
-is_py3k =  sys.hexversion >= 0x03000000
+is_py3k = sys.hexversion >= 0x03000000
 
 is_py25 = sys.hexversion < 0x02060000
 
@@ -82,7 +82,7 @@ try:
 except ImportError:
     from io import BytesIO
 
-# hasattr function used because python 
+# hasattr function used because python
 if is_py3k:
     hasattr = hasattr
 else:
@@ -92,6 +92,7 @@ else:
             return True
         except AttributeError:
             return False
+
 
 class Python3Method(object):
     def __init__(self, func):
@@ -109,6 +110,7 @@ try:
 except ImportError:
     reduce = reduce
 
+
 def use_metaclass(meta, *bases):
     """ Create a class with a metaclass. """
     if not bases:
@@ -120,6 +122,7 @@ try:
 except ImportError:
     # python 2.5 doesn't have this method
     import string
+
     def cleandoc(doc):
         """Clean up indentation from docstrings.
 
@@ -141,7 +144,8 @@ except ImportError:
             if lines:
                 lines[0] = lines[0].lstrip()
             if margin < sys.maxint:
-                for i in range(1, len(lines)): lines[i] = lines[i][margin:]
+                for i in range(1, len(lines)):
+                    lines[i] = lines[i][margin:]
             # Remove any trailing or leading blank lines.
             while lines and not lines[-1]:
                 lines.pop()
