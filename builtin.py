@@ -3,7 +3,7 @@ from _compatibility import exec_function, is_py3k
 import re
 import sys
 import os
-if is_py3k():
+if is_py3k:
     import io
 else:
     import types
@@ -78,7 +78,7 @@ class Parser(CachedModule):
         # TODO things like dbg: ('not working', 'tuple of integers')
     }
 
-    if is_py3k():
+    if is_py3k:
         map_types['file object'] = 'import io; return io.TextIOWrapper(file)'
 
     module_cache = {}
@@ -170,14 +170,14 @@ class Parser(CachedModule):
 
         try:
             name = self.name
-            if name == '__builtin__' and not is_py3k():
+            if name == '__builtin__' and not is_py3k:
                 name = 'builtins'
             f = open(os.path.sep.join(['mixin', name]) + '.py')
         except IOError:
             return {}
         else:
             mixin_dct = process_code(f.read())
-            if is_py3k() and self.name == _Builtin.name:
+            if is_py3k and self.name == _Builtin.name:
                 # in the case of Py3k xrange is now range
                 mixin_dct['range'] = mixin_dct['xrange']
             return mixin_dct
@@ -309,7 +309,7 @@ class Parser(CachedModule):
 
         # variables
         for name, value in stmts.items():
-            if is_py3k():
+            if is_py3k:
                 file_type = io.TextIOWrapper
             else:
                 file_type = types.FileType
@@ -401,7 +401,7 @@ def parse_function_doc(func):
 class _Builtin(object):
     """ The builtin scope / module """
     # Python 3 compatibility
-    if is_py3k():
+    if is_py3k:
         name = 'builtins'
     else:
         name = '__builtin__'

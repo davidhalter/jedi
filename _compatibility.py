@@ -4,8 +4,7 @@ python versions.
 """
 import sys
 
-def is_py3k():
-    return sys.hexversion >= 0x03000000
+is_py3k =  sys.hexversion >= 0x03000000
 
 is_py25 = sys.hexversion < 0x02060000
 
@@ -63,7 +62,7 @@ except NameError:
         return s.decode("utf-8")
 
 # exec function
-if is_py3k():
+if is_py3k:
     def exec_function(source, global_map):
         exec(source, global_map)
 else:
@@ -72,7 +71,7 @@ else:
 
 # tokenize function
 import tokenize
-if is_py3k():
+if is_py3k:
     tokenize_func = tokenize.tokenize
 else:
     tokenize_func = tokenize.generate_tokens
@@ -84,7 +83,7 @@ except ImportError:
     from io import BytesIO
 
 # hasattr function used because python 
-if is_py3k():
+if is_py3k:
     hasattr = hasattr
 else:
     def hasattr(obj, name):

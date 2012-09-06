@@ -1168,7 +1168,7 @@ def get_iterator_types(inputs):
             result += gen.get_index_types()
         elif isinstance(gen, Instance):
             # __iter__ returned an instance.
-            name = '__next__' if is_py3k() else 'next'
+            name = '__next__' if is_py3k else 'next'
             try:
                 result += gen.execute_subscope_by_name(name)
             except KeyError:

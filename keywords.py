@@ -14,7 +14,7 @@ except ImportError:
         # Python 2.5
         pydoc_topics = None
 
-if is_py3k():
+if is_py3k:
     keys = keyword.kwlist
 else:
     keys = keyword.kwlist + ['None', 'False', 'True']
