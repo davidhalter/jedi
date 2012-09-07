@@ -141,8 +141,7 @@ PYTHONEOF
 
     " highlight python code within rst
     unlet! b:current_syntax
-    let l:pythonpath = fnameescape(globpath(&rtp,"syntax/python.vim"))
-    exe "syn include @rstPythonScript ".l:pythonpath
+    syn include @rstPythonScript syntax/python.vim
     " 4 spaces
     syn region rstPythonRegion start=/^\v {4}/ end=/\v^( {4}|\n)@!/ contains=@rstPythonScript
     " >>> python code
