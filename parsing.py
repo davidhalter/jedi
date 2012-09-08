@@ -161,8 +161,6 @@ class Scope(Simple):
     def add_docstr(self, string):
         """ Clean up a docstring """
         self.docstr = cleandoc(literal_eval(string))
-        # TODO raises a SystemError here, report:
-        #literal_eval(r"'\U'")
 
     def add_import(self, imp):
         self.imports.append(imp)
@@ -872,6 +870,8 @@ class Call(Base):
         return call
 
     def generate_call_path(self):
+        """ Helps to get the order in which statements are executed. """
+        # TODO include previous nodes? As an option?
         try:
             for name_part in self.name.names:
                 yield name_part
