@@ -172,6 +172,21 @@ class dict():
             return d
 
 
+class reversed():
+    def __init__(self, sequence):
+        self.__sequence = sequence
+
+    def __iter__(self):
+        for i in self.__sequence:
+            yield i
+
+    def __next__(self):
+        return next(self.__iter__())
+
+    def next(self):
+        return self.__next__()
+
+
 #--------------------------------------------------------
 # basic types
 #--------------------------------------------------------
