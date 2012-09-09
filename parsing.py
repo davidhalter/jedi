@@ -551,7 +551,8 @@ class Import(Simple):
             return [self.alias]
         if len(self.namespace) > 1:
             o = self.namespace
-            n = Name([o.names[0]], o.start_pos, o.end_pos, parent=o.parent())
+            n = Name([(o.names[0], o.start_pos)], o.start_pos, o.end_pos,
+                                                            parent=o.parent())
             return [n]
         else:
             return [self.namespace]
@@ -988,7 +989,14 @@ class NamePart(str):
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
     """
-    pass
+    def __new__(cls, s, start_pos):
+        self = super(NamePart, cls).__new__(cls, s)
+        self.start_pos = start_pos
+        return self
+
+    @property
+    def end_pos(self):
+        return self.start_pos[0], self.start_pos[1] + len(self)
 
 
 class Name(Simple):
@@ -1000,7 +1008,8 @@ class Name(Simple):
     """
     def __init__(self, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(start_pos, end_pos)
-        self.names = tuple(NamePart(n) for n in names)
+        self.names = tuple(n if isinstance(n, NamePart) else NamePart(*n)
+                                                            for n in names)
         if parent is not None:
             self.parent = weakref.ref(parent)
 
@@ -1104,7 +1113,7 @@ class PyFuzzyParser(object):
         """
         def append(el):
             names.append(el)
-            self.module.temp_used_names.append(el)
+            self.module.temp_used_names.append(el[0])
 
         names = []
         if pre_used_token is None:
@@ -1114,7 +1123,7 @@ class PyFuzzyParser(object):
         else:
             token_type, tok = pre_used_token
 
-        append(tok)
+        append((tok, self.start_pos))
         first_pos = self.start_pos
         while True:
             token_type, tok = self.next()
@@ -1123,7 +1132,7 @@ class PyFuzzyParser(object):
             token_type, tok = self.next()
             if token_type != tokenize.NAME:
                 break
-            append(tok)
+            append((tok, self.start_pos))
 
         n = Name(names, first_pos, self.end_pos) if names else None
         return (n, token_type, tok)
@@ -1209,7 +1218,7 @@ class PyFuzzyParser(object):
         if token_type != tokenize.NAME:
             return None
 
-        fname = Name([fname], self.start_pos, self.end_pos)
+        fname = Name([(fname, self.start_pos)], self.start_pos, self.end_pos)
 
         token_type, open = self.next()
         if open != '(':
@@ -1252,7 +1261,7 @@ class PyFuzzyParser(object):
                 % (self.start_pos[0], tokenize.tok_name[token_type], cname))
             return None
 
-        cname = Name([cname], self.start_pos, self.end_pos)
+        cname = Name([(cname, self.start_pos)], self.start_pos, self.end_pos)
 
         super = []
         token_type, next = self.next()
@@ -1436,9 +1445,9 @@ class PyFuzzyParser(object):
             if not isinstance(stmt, Param):
                 for tok_name in self.module.temp_used_names:
                     try:
-                        self.module.used_names[tok_name].append(stmt)
+                        self.module.used_names[tok_name].add(stmt)
                     except KeyError:
-                        self.module.used_names[tok_name] = [stmt]
+                        self.module.used_names[tok_name] = set([stmt])
             self.module.temp_used_names = []
         if is_return:
             # add returns to the scope

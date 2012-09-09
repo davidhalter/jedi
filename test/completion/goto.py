@@ -122,15 +122,10 @@ def func():
 func().b()
 
 # -----------------    
-# get_definition       
+# on itself
 # -----------------    
 
 #! 7 ['class ClassDef']
 class ClassDef():
-    """ abc """
-    pass
-
-##? 6 ClassDef2()
-class ClassDef2():       
     """ abc """
     pass

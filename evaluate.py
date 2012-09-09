@@ -90,6 +90,13 @@ def clear_caches():
     follow_statement.reset()
 
 
+def statement_path_check(function):
+    def wrapper(stmt, *args, **kwargs):
+        statement_path.append(stmt)
+        return function(stmt, *args, **kwargs)
+    return wrapper
+
+
 def memoize_default(default=None):
     """
     This is a typical memoization decorator, BUT there is one difference:
@@ -731,7 +738,7 @@ class Generator(use_metaclass(CachedMetaClass, parsing.Base)):
         none_pos = (0, 0)
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
-            name = parsing.Name([n], none_pos, none_pos)
+            name = parsing.Name([n, none_pos], none_pos, none_pos)
             if n in executes_generator:
                 name.parent = weakref.ref(self)
             names.append(name)
@@ -1227,6 +1234,7 @@ def assign_tuples(tup, results, seek_name):
 
 
 @helpers.RecursionDecorator
+@statement_path_check
 @memoize_default(default=[])
 def follow_statement(stmt, seek_name=None):
     """
@@ -1238,8 +1246,6 @@ def follow_statement(stmt, seek_name=None):
     :param stmt: A `parsing.Statement`.
     :param seek_name: A string.
     """
-    statement_path.append(stmt)  # important to know for the goto function
-
     debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))
     call_list = stmt.get_assignment_calls()
     debug.dbg('calls: %s' % call_list)
@@ -1425,3 +1431,50 @@ def follow_path(path, scope, position=None):
             result = imports.strip_imports(get_scopes_for_name(scope, current,
                                                         position=position))
     return follow_paths(path, set(result), position=position)
+
+
+def goto(scopes, search_name=None, statement_path_offset=1):
+    if search_name is None:
+        try:
+            definitions = [statement_path[statement_path_offset]]
+        except IndexError:
+            definitions = []
+            for s in scopes:
+                if isinstance(s, imports.ImportPath):
+                    s = s.follow()[0]
+                    try:
+                        s = statement_path[0]
+                    except IndexError:
+                        pass
+                definitions.append(s)
+    else:
+        def remove_unreal_imports(names):
+            """
+            These imports are only virtual, because of multi-line imports.
+            """
+            new_names = []
+            for n in names:
+                par = n.parent()
+                # This is a special case: If the Import is "virtual" (which
+                # means the position is not defined), follow those modules.
+                if isinstance(par, parsing.Import) and not par.start_pos[0]:
+                    module_count = 0
+                    for scope in imports.ImportPath(par).follow():
+                        if isinstance(scope, parsing.Import):
+                            temp = scope.get_defined_names()
+                            new_names += remove_unreal_imports(temp)
+                        elif isinstance(scope, parsing.Module) \
+                                                        and not module_count:
+                            # only first module (others are star imports)
+                            module_count += 1
+                            new_names.append(scope.get_module_name(n.names))
+                else:
+                    new_names.append(n)
+            return new_names
+
+        names = []
+        for s in scopes:
+            names += s.get_defined_names()
+        names = remove_unreal_imports(names)
+        definitions = [n for n in names if n.names[-1] == search_name]
+    return definitions

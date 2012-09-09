@@ -14,7 +14,6 @@ WARNING = object()
 ERROR = object()
 
 debug_function = None
-#debug_function = print_to_stdout
 ignored_modules = ['parsing', 'builtin']
 
 
@@ -41,3 +40,6 @@ def print_to_stdout(level, *args):
     """ The default debug function """
     msg = (Fore.GREEN + 'dbg: ' if level == NOTICE else Fore.RED + 'warning: ')
     print(msg + ', '.join(str(a) for a in args) + Fore.RESET)
+
+
+#debug_function = print_to_stdout

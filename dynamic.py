@@ -144,6 +144,19 @@ def dec(func):
     return wrapper
 
 
+def _scan_array(arr, search_name):
+    """ Returns the function Call that match func_name in an Array. """
+    result = []
+    for sub in arr:
+        for s in sub:
+            if isinstance(s, parsing.Array):
+                result += _scan_array(s, search_name)
+            elif isinstance(s, parsing.Call):
+                n = s.name
+                if isinstance(n, parsing.Name) and search_name in n.names:
+                    result.append(s)
+    return result
+
 #@dec
 @evaluate.memoize_default([])
 def _check_array_additions(compare_array, module, is_list):
@@ -154,19 +167,6 @@ def _check_array_additions(compare_array, module, is_list):
     """
     if not settings.dynamic_array_additions:
         return []
-
-    def scan_array(arr, search_name):
-        """ Returns the function Calls that match func_name """
-        result = []
-        for sub in arr:
-            for s in sub:
-                if isinstance(s, parsing.Array):
-                    result += scan_array(s, search_name)
-                elif isinstance(s, parsing.Call):
-                    n = s.name
-                    if isinstance(n, parsing.Name) and search_name in n.names:
-                        result.append(s)
-        return result
 
     def check_calls(calls, add_name):
         """
@@ -245,7 +245,7 @@ def _check_array_additions(compare_array, module, is_list):
             if evaluate.follow_statement.push_stmt(stmt):
                 # check recursion
                 continue
-            res += check_calls(scan_array(stmt.get_assignment_calls(), n), n)
+            res += check_calls(_scan_array(stmt.get_assignment_calls(), n), n)
             evaluate.follow_statement.pop_stmt()
     return res
 
@@ -291,3 +291,45 @@ class ArrayInstance(parsing.Base):
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self.instance, module, is_list)
         return items
+
+
+def get_names(definitions, search_name, modules):
+    def check_call(call):
+        result = []
+        follow = []  # There might be multiple search_name's in one call_path
+        call_path = list(call.generate_call_path())
+        for i, name in enumerate(call_path):
+            if name == search_name:
+                follow.append(call_path[:i + 1])
+
+        for f in follow:
+            scope = call.parent_stmt().parent()
+            evaluate.statement_path = []
+            position = call.parent_stmt().start_pos
+            if len(f) > 1:
+                f, search = f[:-1], f[-1]
+            else:
+                search = None
+            scopes = evaluate.follow_call_path(iter(f), scope, position)
+            follow_res = evaluate.goto(scopes, search, statement_path_offset=0)
+
+            # compare to see if they match
+            if True in [r in definitions for r in follow_res]:
+                l = f[-1]  # the NamePart object
+                result.append((l, l.start_pos, l.end_pos))
+
+        return result
+
+    # TODO check modules in the same directoy
+    names = []
+    for m in modules:
+        try:
+            stmts = m.used_names[search_name]
+        except KeyError:
+            continue
+        #TODO check heritage of statements
+        for stmt in stmts:
+            for call in _scan_array(stmt.get_assignment_calls(), search_name):
+                names += check_call(call)
+    print 'n', names
+    return names

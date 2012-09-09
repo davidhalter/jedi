@@ -265,6 +265,10 @@ def get_definition(source, line, column, source_path):
 
 
 def goto(source, line, column, source_path):
+    return _goto(source, line, column, source_path)
+
+def _goto(source, line, column, source_path):
+    """ for internal use """
     pos = (line, column)
     f = modules.ModuleWithCursor(source_path, source=source, position=pos)
 
@@ -323,6 +327,30 @@ def goto(source, line, column, source_path):
     d = [Definition(d) for d in set(definitions)]
     _clear_caches()
     return d
+
+
+def get_related_names(source, line, column, source_path):
+    pos = (line, column)
+    f = modules.ModuleWithCursor(source_path, source=source, position=pos)
+
+    goto_path = f.get_path_under_cursor()
+    goto_path, dot, search_name = _get_completion_parts(goto_path)
+
+    # define goto path the right way
+    if not dot:
+        goto_path = search_name
+        search_name_new = None
+    else:
+        search_name_new = search_name
+
+    scopes = _prepare_goto(source, pos, source_path, f, goto_path)
+    print scopes, search_name
+    definitions = evaluate.goto(scopes, search_name_new)
+    module = set([d.get_parent_until() for d in definitions])
+    module.add(f.parser.module)
+    dynamic.get_names(definitions, search_name, module)
+    _clear_caches()
+    return 
 
 
 def set_debug_function(func_cb):
