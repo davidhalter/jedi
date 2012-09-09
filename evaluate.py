@@ -738,7 +738,7 @@ class Generator(use_metaclass(CachedMetaClass, parsing.Base)):
         none_pos = (0, 0)
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
-            name = parsing.Name([n, none_pos], none_pos, none_pos)
+            name = parsing.Name([(n, none_pos)], none_pos, none_pos)
             if n in executes_generator:
                 name.parent = weakref.ref(self)
             names.append(name)
