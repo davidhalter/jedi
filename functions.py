@@ -344,13 +344,12 @@ def get_related_names(source, line, column, source_path):
         search_name_new = search_name
 
     scopes = _prepare_goto(source, pos, source_path, f, goto_path)
-    print scopes, search_name
     definitions = evaluate.goto(scopes, search_name_new)
     module = set([d.get_parent_until() for d in definitions])
     module.add(f.parser.module)
-    dynamic.get_names(definitions, search_name, module)
+    names = dynamic.get_related_names(definitions, search_name, module)
     _clear_caches()
-    return 
+    return names
 
 
 def set_debug_function(func_cb):

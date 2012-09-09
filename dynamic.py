@@ -293,7 +293,7 @@ class ArrayInstance(parsing.Base):
         return items
 
 
-def get_names(definitions, search_name, modules):
+def get_related_names(definitions, search_name, modules):
     def check_call(call):
         result = []
         follow = []  # There might be multiple search_name's in one call_path
@@ -316,7 +316,8 @@ def get_names(definitions, search_name, modules):
             # compare to see if they match
             if True in [r in definitions for r in follow_res]:
                 l = f[-1]  # the NamePart object
-                result.append((l, l.start_pos, l.end_pos))
+                scope = call.parent_stmt().parent()
+                result.append(RelatedName(l, scope))
 
         return result
 
@@ -331,5 +332,17 @@ def get_names(definitions, search_name, modules):
         for stmt in stmts:
             for call in _scan_array(stmt.get_assignment_calls(), search_name):
                 names += check_call(call)
-    print 'n', names
     return names
+
+
+class RelatedName():
+    def __init__(self, name_part, scope):
+        self.text = str(name_part)
+        self.start_pos = name_part.start_pos
+        self.end_pos = name_part.end_pos
+        self.scope = scope
+        self.module = self.scope.get_parent_until()
+
+    def __repr__(self):
+        return "<%s: %s@%s,%s>" % (self.__class__.__name__, self.text,
+                                        self.start_pos[0], self.start_pos[1])
