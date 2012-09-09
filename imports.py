@@ -90,7 +90,8 @@ class ImportPath(object):
         names = []
         for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
             inf = float('inf')
-            names.append(parsing.Name([name], (inf, inf), (inf, inf)))
+            inf_pos = (inf, inf)
+            names.append(parsing.Name([(name, inf_pos)], inf_pos, inf_pos))
         return names
 
     def follow(self):
