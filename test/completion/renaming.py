@@ -10,3 +10,14 @@ def abc(): pass
 abc.d.a.abc.d
 
 abc
+
+
+
+
+
+
+
+abc = 
+
+#< abc@20,0 abc@23,0
+abc

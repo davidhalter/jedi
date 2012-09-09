@@ -145,7 +145,7 @@ def dec(func):
 
 
 def _scan_array(arr, search_name):
-    """ Returns the function Call that match func_name in an Array. """
+    """ Returns the function Call that match search_name in an Array. """
     result = []
     for sub in arr:
         for s in sub:
@@ -324,7 +324,12 @@ def get_related_names(definitions, search_name, modules):
     names = []
     for d in definitions:
         if isinstance(d, parsing.Statement):
-            pass
+            for op, arr in d.assignment_details:
+                calls = _scan_array(arr, search_name)
+                for call in calls:
+                    for n in call.name.names:
+                        if n == search_name:
+                            names.append(RelatedName(n, d.parent()))
         else:
             names.append(RelatedName(d.name.names[0], d))
 
