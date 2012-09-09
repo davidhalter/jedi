@@ -32,7 +32,7 @@ class C(object):
         self.b
         #! 14 ['def b']
         self.b()
-        #! 11 ['class C']
+        #! 11 ['self']
         self.b
         return 1
 
