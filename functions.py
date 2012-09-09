@@ -13,7 +13,7 @@ import keywords
 
 from _compatibility import next
 
-__all__ = ['complete', 'goto', 'get_definition',
+__all__ = ['complete', 'goto', 'get_definition', 'get_related_names',
            'NotFoundError', 'set_debug_function']
 
 
@@ -265,10 +265,6 @@ def get_definition(source, line, column, source_path):
 
 
 def goto(source, line, column, source_path):
-    return _goto(source, line, column, source_path)
-
-def _goto(source, line, column, source_path):
-    """ for internal use """
     pos = (line, column)
     f = modules.ModuleWithCursor(source_path, source=source, position=pos)
 
@@ -278,52 +274,12 @@ def _goto(source, line, column, source_path):
     # define goto path the right way
     if not dot:
         goto_path = search_name
-        search_name = None
+        search_name_new = None
+    else:
+        search_name_new = search_name
 
     scopes = _prepare_goto(source, pos, source_path, f, goto_path)
-    if not dot:
-        try:
-            definitions = [evaluate.statement_path[1]]
-        except IndexError:
-            definitions = []
-            for s in scopes:
-                if isinstance(s, imports.ImportPath):
-                    s = s.follow()[0]
-                    try:
-                        s = evaluate.statement_path[0]
-                    except IndexError:
-                        pass
-                definitions.append(s)
-    else:
-        def remove_unreal_imports(names):
-            """
-            These imports are only virtual, because of multi-line imports.
-            """
-            new_names = []
-            for n in names:
-                par = n.parent()
-                # This is a special case: If the Import is "virtual" (which
-                # means the position is not defined), follow those modules.
-                if isinstance(par, parsing.Import) and not par.start_pos[0]:
-                    module_count = 0
-                    for scope in imports.ImportPath(par).follow():
-                        if isinstance(scope, parsing.Import):
-                            temp = scope.get_defined_names()
-                            new_names += remove_unreal_imports(temp)
-                        elif isinstance(scope, parsing.Module) \
-                                                        and not module_count:
-                            # only first module (others are star imports)
-                            module_count += 1
-                            new_names.append(scope.get_module_name(n.names))
-                else:
-                    new_names.append(n)
-            return new_names
-
-        names = []
-        for s in scopes:
-            names += s.get_defined_names()
-        names = remove_unreal_imports(names)
-        definitions = [n for n in names if n.names[-1] == search_name]
+    definitions = evaluate.goto(scopes, search_name_new)
     d = [Definition(d) for d in set(definitions)]
     _clear_caches()
     return d
