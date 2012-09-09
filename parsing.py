@@ -1093,7 +1093,7 @@ class PyFuzzyParser(object):
         if not self.user_position:
             return
         # the position is right
-        if simple.start_pos < self.user_position <= simple.end_pos:
+        if simple.start_pos <= self.user_position <= simple.end_pos:
             if self.user_stmt is not None:
                 # if there is already a user position (another import, because
                 # imports are splitted) the names are checked.

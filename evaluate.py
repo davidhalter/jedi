@@ -987,6 +987,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                                     and r.position_nr > 0:  # 0 would be self
                             r = func.var.params[r.position_nr]
                         if not r.is_generated:
+                            statement_path.append(r)
                             res_new += dynamic.search_params(r)
                             if not r.assignment_details:
                                 # this means that there are no default params,
@@ -1052,6 +1053,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 # place, if the var_args are clear. But sometimes the class is
                 # not known. Therefore add a new instance for self. Otherwise
                 # take the existing.
+                statement_path.append(par)
                 if isinstance(scope, InstanceElement):
                     inst = scope.instance
                 else:

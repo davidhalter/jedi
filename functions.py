@@ -278,8 +278,13 @@ def goto(source, line, column, source_path):
     else:
         search_name_new = search_name
 
-    scopes = _prepare_goto(source, pos, source_path, f, goto_path)
-    definitions = evaluate.goto(scopes, search_name_new)
+    context = f.get_context()
+    if next(context) in ('class', 'def'):
+        definitions = set([f.parser.user_scope])
+    else:
+        scopes = _prepare_goto(source, pos, source_path, f, goto_path)
+        definitions = evaluate.goto(scopes, search_name_new)
+
     d = [Definition(d) for d in set(definitions)]
     _clear_caches()
     return d
@@ -299,8 +304,19 @@ def get_related_names(source, line, column, source_path):
     else:
         search_name_new = search_name
 
-    scopes = _prepare_goto(source, pos, source_path, f, goto_path)
-    definitions = evaluate.goto(scopes, search_name_new)
+    context = f.get_context()
+    if next(context) in ('class', 'def'):
+        if isinstance(f.parser.user_scope, parsing.Function):
+            e = evaluate.Function(f.parser.user_scope)
+        else:
+            e = evaluate.Class(f.parser.user_scope)
+        definitions = [e]
+    elif isinstance(f.parser.user_stmt, parsing.Param):
+        definitions = [f.parser.user_stmt]
+    else:
+        scopes = _prepare_goto(source, pos, source_path, f, goto_path)
+        definitions = evaluate.goto(scopes, search_name_new)
+
     module = set([d.get_parent_until() for d in definitions])
     module.add(f.parser.module)
     names = dynamic.get_related_names(definitions, search_name, module)

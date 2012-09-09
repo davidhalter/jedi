@@ -324,12 +324,16 @@ def get_related_names(definitions, search_name, modules):
     names = []
     for d in definitions:
         if isinstance(d, parsing.Statement):
-            for op, arr in d.assignment_details:
+            def add_array(arr):
                 calls = _scan_array(arr, search_name)
                 for call in calls:
                     for n in call.name.names:
                         if n == search_name:
                             names.append(RelatedName(n, d.parent()))
+            for op, arr in d.assignment_details:
+                add_array(arr)
+            if not d.assignment_details:
+                add_array(d.get_assignment_calls())
         else:
             names.append(RelatedName(d.name.names[0], d))
 

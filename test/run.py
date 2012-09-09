@@ -135,7 +135,7 @@ def run_related_name_test(correct, source, line_nr, index, line, path):
         print('test @%s: %s' % (line_nr - 1, line))
         return 1
     else:
-        comp_str = set(r.description for r in result)
+        comp_str = set('(%s,%s)' % r.start_pos for r in result)
         correct = set(correct.strip().split(' '))
         if comp_str != correct:
             print('Solution @%s not right, received %s, wanted %s'\
