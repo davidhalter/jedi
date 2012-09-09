@@ -321,8 +321,14 @@ def get_related_names(definitions, search_name, modules):
 
         return result
 
-    # TODO check modules in the same directoy
     names = []
+    for d in definitions:
+        if isinstance(d, parsing.Statement):
+            pass
+        else:
+            names.append(RelatedName(d.name.names[0], d))
+
+    # TODO check modules in the same directoy
     for m in modules:
         try:
             stmts = m.used_names[search_name]
@@ -343,6 +349,9 @@ class RelatedName():
         self.scope = scope
         self.module = self.scope.get_parent_until()
 
+    @property
+    def description(self):
+        return "%s@%s,%s" % (self.text, self.start_pos[0], self.start_pos[1])
+
     def __repr__(self):
-        return "<%s: %s@%s,%s>" % (self.__class__.__name__, self.text,
-                                        self.start_pos[0], self.start_pos[1])
+        return "<%s: %s>" % (self.__class__.__name__, self.description)

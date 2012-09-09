@@ -83,6 +83,13 @@ class TestRegression(unittest.TestCase):
         s = self.complete("", (1,0))
         assert len(s) > 0
 
+    def test_new(self):
+        """ This is just to try out things, removing or deleting it is ok. """
+        s = ("def abc(): pass\n"
+             "abc.d.a.abc.d"
+             )
+        functions.get_related_names(s, 2, 2, '/')
+
 
 if __name__ == '__main__':
     unittest.main()

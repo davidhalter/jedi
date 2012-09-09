@@ -118,6 +118,32 @@ def run_goto_test(correct, source, line_nr, index, line, path):
     return 0
 
 
+def run_related_name_test(correct, source, line_nr, index, line, path):
+    """
+    Runs tests for gotos.
+    Tests look like this:
+    >>> abc = 1
+    >>> #< abc@1,0 abc@3,0
+    >>> abc
+
+    Return if the test was a fail or not, with 1 for fail and 0 for success.
+    """
+    try:
+        result = functions.get_related_names(source, line_nr, index, path)
+    except Exception:
+        print(traceback.format_exc())
+        print('test @%s: %s' % (line_nr - 1, line))
+        return 1
+    else:
+        comp_str = set(r.description for r in result)
+        correct = set(correct.strip().split(' '))
+        if comp_str != correct:
+            print('Solution @%s not right, received %s, wanted %s'\
+                        % (line_nr - 1, comp_str, correct))
+            return 1
+    return 0
+
+
 def run_test(source, f_name, lines_to_execute):
     """
     This is the completion test for some cases. The tests are not unit test
@@ -150,12 +176,13 @@ def run_test(source, f_name, lines_to_execute):
             # if a list is wanted, use the completion test, otherwise the
             # get_definition test
             path = completion_test_dir + os.path.sep + f_name
+            args = (correct, source, line_nr, index, line, path)
             if test_type == '!':
-                fails += run_goto_test(correct, source, line_nr, index, line,
-                                                                        path)
+                fails += run_goto_test(*args)
+            elif test_type == '<':
+                fails += run_related_name_test(*args)
             elif correct.startswith('['):
-                fails += run_completion_test(correct, source, line_nr, index,
-                                                                line, path)
+                fails += run_completion_test(*args)
             else:
                 fails += run_definition_test(correct, source, line_nr, index,
                                                             line, start, path)
@@ -163,7 +190,7 @@ def run_test(source, f_name, lines_to_execute):
             tests += 1
         else:
             try:
-                r = re.search(r'(?:^|(?<=\s))#([?!])\s*([^\n]+)', line)
+                r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]+)', line)
                 # test_type is ? for completion and ! for goto
                 test_type = r.group(1)
                 correct = r.group(2)
