@@ -135,8 +135,9 @@ def run_related_name_test(correct, source, line_nr, index, line, path):
         print('test @%s: %s' % (line_nr - 1, line))
         return 1
     else:
+        correct = correct.strip()
         comp_str = set('(%s,%s)' % r.start_pos for r in result)
-        correct = set(correct.strip().split(' '))
+        correct = set(correct.split(' ')) if correct else set()
         if comp_str != correct:
             print('Solution @%s not right, received %s, wanted %s'\
                         % (line_nr - 1, comp_str, correct))
@@ -172,7 +173,7 @@ def run_test(source, f_name, lines_to_execute):
                 correct = r.group(2)
                 start += r.regs[2][0]  # second group, start index
             else:
-                index = len(line)
+                index = len(line) - 1  # -1 for the \n
             # if a list is wanted, use the completion test, otherwise the
             # get_definition test
             path = completion_test_dir + os.path.sep + f_name
