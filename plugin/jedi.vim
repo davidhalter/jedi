@@ -151,7 +151,7 @@ PYTHONEOF
     syn include @rstPythonScript syntax/python.vim
     " 4 spaces
     syn region rstPythonRegion start=/^\v {4}/ end=/\v^( {4}|\n)@!/ contains=@rstPythonScript
-    " >>> python code
+    " >>> python code -> (doctests)
     syn region rstPythonRegion matchgroup=pythonDoctest start=/^>>>\s*/ end=/\n/ contains=@rstPythonScript
     let b:current_syntax = "rst"
 endfunction
@@ -162,7 +162,7 @@ endfunction
 function! jedi#tabnew(path)
 python << PYTHONEOF
 if 1:
-    path = vim.eval('a:path')
+    path = os.path.abspath(vim.eval('a:path'))
     for tab_nr in range(int(vim.eval("tabpagenr('$')"))):
         for buf_nr in vim.eval("tabpagebuflist(%i + 1)" % tab_nr):
             buf_nr = int(buf_nr) - 1
@@ -172,6 +172,7 @@ if 1:
                 # just do good old asking for forgiveness. don't know why this happens :-)
                 pass
             else:
+                print buf_path, path
                 if buf_path == path:
                     # tab exists, just switch to that tab
                     vim.command('tabfirst | tabnext %i' % (tab_nr + 1))
@@ -201,6 +202,8 @@ function! jedi#goto_window_on_enter()
     let l:list = getqflist()
     let l:data = l:list[line('.') - 1]
     if l:data.bufnr
+        " close goto_window buffer
+        normal ZQ
         call jedi#tabnew(bufname(l:data.bufnr))
         call cursor(l:data.lnum, l:data.col)
     else
@@ -287,6 +290,7 @@ import vim
 
 # update the system path, to include the python scripts 
 import sys
+import os
 from os.path import dirname
 sys.path.insert(0, dirname(dirname(vim.eval('s:current_file'))))
 
@@ -326,7 +330,7 @@ def _goto(is_definition=False, is_related_name=False):
     else:
         if not definitions:
             echo_highlight("Couldn't find any definitions for this.")
-        elif len(definitions) == 1:
+        elif len(definitions) == 1 and not is_related_name:
             # just add some mark to add the current position to the jumplist.
             # this is ugly, because it overrides the mark for '`', so if anyone
             # has a better idea, let me know.

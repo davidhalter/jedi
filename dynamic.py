@@ -327,6 +327,9 @@ def related_names(definitions, search_name, modules):
     names = []
     # TODO check modules in the same directoy
     for m in modules:
+        if not m.path.endswith('.py'):
+            # don't search for names in builtin modules
+            continue
         try:
             stmts = m.used_names[search_name]
         except KeyError:

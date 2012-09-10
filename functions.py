@@ -231,7 +231,7 @@ def get_definition(source, line, column, source_path):
         op = f.get_operator_under_cursor()
         scopes = set([keywords.get_operator(op, pos)] if op else [])
     else:
-        scopes = _prepare_goto(source, pos, source_path, f, goto_path)
+        scopes = set(_prepare_goto(source, pos, source_path, f, goto_path))
 
     # add keywords
     scopes |= keywords.get_keywords(string=goto_path, pos=pos)
@@ -325,11 +325,13 @@ def related_names(source, line, column, source_path):
                     for n in name.names:
                         if n.start_pos <= pos <= n.end_pos or not is_user:
                             names.append(dynamic.RelatedName(n, d))
+        elif isinstance(d, parsing.Name):
+            names.append(dynamic.RelatedName(d.names[0], d))
         else:
             names.append(dynamic.RelatedName(d.name.names[0], d))
 
     _clear_caches()
-    return names
+    return sorted(names, key=lambda x: (x.module_path, x.start_pos))
 
 
 def set_debug_function(func_cb):
