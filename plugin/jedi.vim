@@ -102,6 +102,9 @@ if 1:
         temp_rename = _goto(is_related_name=True, no_output=True)
         _rename_cursor = vim.current.window.cursor
 
+        vim.command('normal A ')  # otherwise startinsert doesn't work well
+        vim.current.window.cursor = _rename_cursor
+
         vim.command('augroup jedi_rename')
         vim.command('autocmd InsertLeave * call jedi#rename()')
         vim.command('augroup END')
