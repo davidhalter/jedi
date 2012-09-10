@@ -112,22 +112,26 @@ if 1:
         vim.command('normal! diw')
         vim.command(':startinsert')
     else:
+        # reset autocommand
+        vim.command('autocmd! jedi_rename InsertLeave')
+
         current_buf = vim.current.buffer.name
         replace = vim.eval("expand('<cword>')")
         vim.command('normal! u')  # undo new word
         vim.command('normal! u')  # 2u didn't work...
 
-        for r in temp_rename:
-            start_pos = r.start_pos + (0, 1)  # vim cursor starts with 1 indent
-            # TODO switch modules
-            if vim.current.buffer.name == r.module_path:
-                vim.current.window.cursor = r.start_pos
-                vim.command('normal! cw%s' % replace)
+        if replace is None:
+            echo_highlight('No rename possible, if no name is given.')
+        else:
+            for r in temp_rename:
+                start_pos = r.start_pos + (0, 1)  # vim cursor starts with 1 indent
+                # TODO switch modules
+                if vim.current.buffer.name == r.module_path:
+                    vim.current.window.cursor = r.start_pos
+                    vim.command('normal! cw%s' % replace)
 
-        # reset autocommand
-        vim.command('autocmd! jedi_rename InsertLeave')
 
-        echo_highlight('Jedi did %s renames!' % len(temp_rename))
+            echo_highlight('Jedi did %s renames!' % len(temp_rename))
         # reset rename variables
         temp_rename = None
 PYTHONEOF
