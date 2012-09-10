@@ -268,6 +268,12 @@ def goto(source, line, column, source_path):
 
 
 def related_names(source, line, column, source_path):
+    """
+    Returns `dynamic.RelatedName` objects, which contain all names, that are
+    defined by the same variable, function, class or import.
+    This function can be used either to show all the usages of a variable or
+    for renaming purposes.
+    """
     pos = (line, column)
     f = modules.ModuleWithCursor(source_path, source=source, position=pos)
 
@@ -311,12 +317,14 @@ def related_names(source, line, column, source_path):
             if not d.assignment_details:
                 add_array(d.get_assignment_calls())
         elif isinstance(d, parsing.Import):
-            for name in [d.namespace, d.alias, d.from_ns]:
+            is_user = d == f.parser.user_stmt
+            check_names = [d.namespace, d.alias, d.from_ns] if is_user \
+                                                    else d.get_defined_names()
+            for name in check_names:
                 if name:
                     for n in name.names:
-                        print n.start_pos, pos, n.end_pos
-                        if n.start_pos <= pos <= n.end_pos:
-                            names.append(n, d)
+                        if n.start_pos <= pos <= n.end_pos or not is_user:
+                            names.append(dynamic.RelatedName(n, d))
         else:
             names.append(dynamic.RelatedName(d.name.names[0], d))
 
