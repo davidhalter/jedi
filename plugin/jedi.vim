@@ -125,11 +125,11 @@ if 1:
         else:
             for r in temp_rename:
                 start_pos = r.start_pos + (0, 1)  # vim cursor starts with 1 indent
-                # TODO switch modules
-                if vim.current.buffer.name == r.module_path:
-                    vim.current.window.cursor = r.start_pos
-                    vim.command('normal! cw%s' % replace)
+                if vim.current.buffer.name != r.module_path:
+                    vim.eval("jedi#new_buffer('%s')" % r.module_path)
 
+                vim.current.window.cursor = r.start_pos
+                vim.command('normal! cw%s' % replace)
 
             echo_highlight('Jedi did %s renames!' % len(temp_rename))
         # reset rename variables
@@ -204,6 +204,17 @@ endfunction
 " ------------------------------------------------------------------------
 " helper functions
 " ------------------------------------------------------------------------
+function! jedi#new_buffer(path)
+    if g:jedi#use_tabs_not_buffers
+        return jedi#tabnew(a:path)
+    else
+        if &modified
+            w
+        endif
+        edit! a:path
+    endif
+endfunction
+
 function! jedi#tabnew(path)
 python << PYTHONEOF
 if 1:
