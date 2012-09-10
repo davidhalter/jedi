@@ -297,7 +297,7 @@ endfunc
 
 " defaults for jedi-vim
 if !exists("g:jedi#use_tabs_not_buffers ")
-    let g:jedi#use_tabs_not_buffers = 0
+    let g:jedi#use_tabs_not_buffers = 1
 endif
 if !exists("g:jedi#auto_initialization")
     let g:jedi#auto_initialization = 1
