@@ -93,6 +93,44 @@ function! jedi#related_names()
 endfunction
 
 " ------------------------------------------------------------------------
+" rename
+" ------------------------------------------------------------------------
+function! jedi#rename()
+python << PYTHONEOF
+if 1:
+    if temp_rename is None:
+        temp_rename = _goto(is_related_name=True, no_output=True)
+        _rename_cursor = vim.current.window.cursor
+
+        vim.command('augroup jedi_rename')
+        vim.command('autocmd InsertLeave * call jedi#rename()')
+        vim.command('augroup END')
+
+        vim.command('normal! diw')
+        vim.command(':startinsert')
+    else:
+        current_buf = vim.current.buffer.name
+        replace = vim.eval("expand('<cword>')")
+        vim.command('normal! u')  # undo new word
+        vim.command('normal! u')  # 2u didn't work...
+
+        for r in temp_rename:
+            start_pos = r.start_pos + (0, 1)  # vim cursor starts with 1 indent
+            # TODO switch modules
+            if vim.current.buffer.name == r.module_path:
+                vim.current.window.cursor = r.start_pos
+                vim.command('normal! cw%s' % replace)
+
+        # reset autocommand
+        vim.command('autocmd! jedi_rename InsertLeave')
+
+        echo_highlight('Jedi did %s renames!' % len(temp_rename))
+        # reset rename variables
+        temp_rename = None
+PYTHONEOF
+endfunction
+
+" ------------------------------------------------------------------------
 " show_pydoc
 " ------------------------------------------------------------------------
 function! jedi#show_pydoc()
@@ -172,7 +210,6 @@ if 1:
                 # just do good old asking for forgiveness. don't know why this happens :-)
                 pass
             else:
-                print buf_path, path
                 if buf_path == path:
                     # tab exists, just switch to that tab
                     vim.command('tabfirst | tabnext %i' % (tab_nr + 1))
@@ -256,6 +293,9 @@ endif
 if !exists("g:jedi#related_names_command")
     let g:jedi#related_names_command = "<leader>n"
 endif
+if !exists("g:jedi#rename_command")
+    let g:jedi#rename_command = "<leader>r"
+endif
 if !exists("g:jedi#popup_on_dot")
     let g:jedi#popup_on_dot = 1
 endif
@@ -272,7 +312,8 @@ if g:jedi#auto_initialization
     autocmd FileType python execute "noremap <buffer>".g:jedi#goto_command." :call jedi#goto()<CR>"
     autocmd FileType python execute "noremap <buffer>".g:jedi#get_definition_command." :call jedi#get_definition()<CR>"
     autocmd FileType python execute "noremap <buffer>".g:jedi#related_names_command." :call jedi#related_names()<CR>"
-
+    " rename
+    autocmd FileType python execute "noremap <buffer>".g:jedi#rename_command." :call jedi#rename()<CR>"
     " pydoc
     autocmd FileType python execute "nnoremap <silent> <buffer>".g:jedi#pydoc." :call jedi#show_pydoc()<CR>"
 end
@@ -301,16 +342,19 @@ import re
 # copy that directly into the .vim directory.
 import functions
 
+temp_rename = None  # used for jedi#rename
+
 class PythonToVimStr(str):
     """ Vim has a different string implementation of single quotes """
     __slots__ = []
     def __repr__(self):
         return '"%s"' % self.replace('"', r'\"')
 
-def _goto(is_definition=False, is_related_name=False):
-    def echo_highlight(msg):
-        vim.command('echohl WarningMsg | echo "%s" | echohl None' % msg)
+def echo_highlight(msg):
+    vim.command('echohl WarningMsg | echo "%s" | echohl None' % msg)
 
+def _goto(is_definition=False, is_related_name=False, no_output=False):
+    definitions = []
     row, column = vim.current.window.cursor
     buf_path = vim.current.buffer.name
     source = '\n'.join(vim.current.buffer)
@@ -328,6 +372,8 @@ def _goto(is_definition=False, is_related_name=False):
         echo_highlight("Some different eror, this shouldn't happen.")
         print(traceback.format_exc())
     else:
+        if no_output:
+            return definitions
         if not definitions:
             echo_highlight("Couldn't find any definitions for this.")
         elif len(definitions) == 1 and not is_related_name:
@@ -356,6 +402,7 @@ def _goto(is_definition=False, is_related_name=False):
                     lst.append(dict(filename=d.module_path, lnum=d.line_nr, col=d.column+1, text=d.description))
             vim.command('call setqflist(%s)' % str(lst))
             vim.command('call <sid>add_goto_window()')
+    return definitions
 PYTHONEOF
 
 " vim: set et ts=4:
