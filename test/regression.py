@@ -69,11 +69,11 @@ class TestRegression(unittest.TestCase):
             assert len(r[0].doc) > 100
 
     def test_get_definition_at_zero(self):
-        assert self.get_def("a", (1, 1)) == set()
+        assert self.get_def("a", (1, 1)) == []
         s = self.get_def("str", (1, 1))
         assert len(s) == 1
         assert list(s)[0].description == 'class str'
-        assert self.get_def("", (1, 0)) == set()
+        assert self.get_def("", (1, 0)) == []
 
     def test_complete_at_zero(self):
         s = self.complete("str", (1, 3))

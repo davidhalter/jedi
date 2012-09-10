@@ -238,7 +238,7 @@ def get_definition(source, line, column, source_path):
 
     d = set([Definition(s) for s in scopes])
     _clear_caches()
-    return d
+    return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
 
 def goto(source, line, column, source_path):
@@ -264,7 +264,7 @@ def goto(source, line, column, source_path):
 
     d = [Definition(d) for d in set(definitions)]
     _clear_caches()
-    return d
+    return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
 
 def related_names(source, line, column, source_path):
