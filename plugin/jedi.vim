@@ -218,6 +218,12 @@ endfunc
 function! jedi#do_popup_on_dot()
     let highlight_groups = jedi#syn_stack()
     for a in highlight_groups
+        if a == 'pythonDoctest'
+            return 1
+        endif
+    endfor
+
+    for a in highlight_groups
         for b in ['pythonString', 'pythonComment']
             if a == b
                 return 0 
@@ -343,7 +349,7 @@ def _goto(is_definition=False, is_related_name=False):
                 if d.in_builtin_module():
                     lst.append(dict(text='Builtin ' + d.description))
                 else:
-                    lst.append(dict(filename=d.module_path, lnum=d.line_nr, col=d.column, text=d.description))
+                    lst.append(dict(filename=d.module_path, lnum=d.line_nr, col=d.column+1, text=d.description))
             vim.command('call setqflist(%s)' % str(lst))
             vim.command('call <sid>add_goto_window()')
 PYTHONEOF
