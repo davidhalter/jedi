@@ -83,6 +83,10 @@ class TestRegression(unittest.TestCase):
         s = self.complete("", (1,0))
         assert len(s) > 0
 
+    def test_get_definition_on_import(self):
+        assert self.get_def("import os_blabla", (1, 8)) == []
+        assert len(self.get_def("import os", (1, 8))) == 1
+
     def test_new(self):
         """ This is just to try out things, removing or deleting it is ok. """
         s = ("def abc(): pass\n"

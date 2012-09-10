@@ -233,6 +233,12 @@ def get_definition(source, line, column, source_path):
     else:
         scopes = set(_prepare_goto(source, pos, source_path, f, goto_path))
 
+    for s in scopes.copy():
+        if isinstance(s, imports.ImportPath):
+            scopes.remove(s)
+            evaluate.statement_path = []
+            scopes.update(evaluate.goto([s]))
+
     # add keywords
     scopes |= keywords.get_keywords(string=goto_path, pos=pos)
 
