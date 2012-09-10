@@ -325,21 +325,6 @@ def related_names(definitions, search_name, modules):
         return result
 
     names = []
-    for d in definitions:
-        if isinstance(d, parsing.Statement):
-            def add_array(arr):
-                calls = _scan_array(arr, search_name)
-                for call in calls:
-                    for n in call.name.names:
-                        if n == search_name:
-                            names.append(RelatedName(n, d))
-            for op, arr in d.assignment_details:
-                add_array(arr)
-            if not d.assignment_details:
-                add_array(d.get_assignment_calls())
-        else:
-            names.append(RelatedName(d.name.names[0], d))
-
     # TODO check modules in the same directoy
     for m in modules:
         try:

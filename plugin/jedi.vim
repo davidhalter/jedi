@@ -75,7 +75,7 @@ endfunction
 " goto
 " ------------------------------------------------------------------------
 function! jedi#goto()
-    python _goto(is_definition=False)
+    python _goto()
 endfunction
 
 " ------------------------------------------------------------------------
@@ -89,7 +89,7 @@ endfunction
 " related_names
 " ------------------------------------------------------------------------
 function! jedi#related_names()
-    python _goto(related_names=True)
+    python _goto(is_related_name=True)
 endfunction
 
 " ------------------------------------------------------------------------

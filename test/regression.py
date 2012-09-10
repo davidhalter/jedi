@@ -88,7 +88,7 @@ class TestRegression(unittest.TestCase):
         s = ("def abc(): pass\n"
              "abc.d.a.abc.d"
              )
-        functions.get_related_names(s, 2, 2, '/')
+        functions.related_names(s, 2, 2, '/')
 
 
 if __name__ == '__main__':

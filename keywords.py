@@ -20,22 +20,23 @@ else:
     keys = keyword.kwlist + ['None', 'False', 'True']
 
 
-def get_keywords(string='', all=False):
+def get_keywords(string='', pos=(0, 0), all=False):
     if all:
-        return set([Keyword(k) for k in keys])
+        return set([Keyword(k, pos) for k in keys])
     if string in keys:
-        return set([Keyword(string)])
+        return set([Keyword(string, pos)])
     return set()
 
 
-def get_operator(string):
-    return Keyword(string)
+def get_operator(string, pos):
+    return Keyword(string, pos)
 
 
 class Keyword(object):
-    def __init__(self, name):
+    def __init__(self, name, pos):
         self.name = name
         self.parent = lambda: None
+        self.start_pos = pos
 
     def get_parent_until(self):
         return builtin.builtin_scope
@@ -49,6 +50,10 @@ class Keyword(object):
 
 
 def imitate_pydoc(string):
+    """
+    It's not possible to get the pydoc's without starting the annoying pager
+    stuff.
+    """
     h = pydoc.help
     try:
         # try to access symbols

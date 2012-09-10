@@ -229,12 +229,12 @@ def get_definition(source, line, column, source_path):
         scopes = set([f.parser.user_scope])
     elif not goto_path:
         op = f.get_operator_under_cursor()
-        scopes = set([keywords.get_operator(op)] if op else [])
+        scopes = set([keywords.get_operator(op, pos)] if op else [])
     else:
         scopes = _prepare_goto(source, pos, source_path, f, goto_path)
 
     # add keywords
-    scopes |= keywords.get_keywords(string=goto_path)
+    scopes |= keywords.get_keywords(string=goto_path, pos=pos)
 
     d = set([Definition(s) for s in scopes])
     _clear_caches()
@@ -288,7 +288,7 @@ def related_names(source, line, column, source_path):
         else:
             e = evaluate.Class(f.parser.user_scope)
         definitions = [e]
-    elif isinstance(f.parser.user_stmt, parsing.Param):
+    elif isinstance(f.parser.user_stmt, (parsing.Param, parsing.Import)):
         definitions = [f.parser.user_stmt]
     else:
         scopes = _prepare_goto(source, pos, source_path, f, goto_path)
@@ -297,6 +297,29 @@ def related_names(source, line, column, source_path):
     module = set([d.get_parent_until() for d in definitions])
     module.add(f.parser.module)
     names = dynamic.related_names(definitions, search_name, module)
+
+    for d in definitions:
+        if isinstance(d, parsing.Statement):
+            def add_array(arr):
+                calls = dynamic._scan_array(arr, search_name)
+                for call in calls:
+                    for n in call.name.names:
+                        if n == search_name:
+                            names.append(dynamic.RelatedName(n, d))
+            for op, arr in d.assignment_details:
+                add_array(arr)
+            if not d.assignment_details:
+                add_array(d.get_assignment_calls())
+        elif isinstance(d, parsing.Import):
+            for name in [d.namespace, d.alias, d.from_ns]:
+                if name:
+                    for n in name.names:
+                        print n.start_pos, pos, n.end_pos
+                        if n.start_pos <= pos <= n.end_pos:
+                            names.append(n, d)
+        else:
+            names.append(dynamic.RelatedName(d.name.names[0], d))
+
     _clear_caches()
     return names
 

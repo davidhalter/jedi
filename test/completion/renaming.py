@@ -58,3 +58,14 @@ def blub():
 #< (55,4) (59,1)
 @blub
 def a(): pass
+
+
+
+#< (65,7) (68,0)
+import colorama
+
+#< (65,7) (68,0)
+colorama
+
+#< 3 
+import abc
