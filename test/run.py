@@ -129,7 +129,7 @@ def run_related_name_test(correct, source, line_nr, index, line, path):
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
     try:
-        result = functions.get_related_names(source, line_nr, index, path)
+        result = functions.related_names(source, line_nr, index, path)
     except Exception:
         print(traceback.format_exc())
         print('test @%s: %s' % (line_nr - 1, line))

@@ -6,6 +6,9 @@ really cryptic and not understandable. It's just a hack, that turned out to be
 working quite good.
 """
 
+import re
+import os
+
 import parsing
 import evaluate
 import helpers
@@ -293,7 +296,7 @@ class ArrayInstance(parsing.Base):
         return items
 
 
-def get_related_names(definitions, search_name, modules):
+def related_names(definitions, search_name, modules):
     def check_call(call):
         result = []
         follow = []  # There might be multiple search_name's in one call_path
@@ -316,7 +319,7 @@ def get_related_names(definitions, search_name, modules):
             # compare to see if they match
             if True in [r in definitions for r in follow_res]:
                 l = f[-1]  # the NamePart object
-                scope = call.parent_stmt().parent()
+                scope = call.parent_stmt()
                 result.append(RelatedName(l, scope))
 
         return result
@@ -329,7 +332,7 @@ def get_related_names(definitions, search_name, modules):
                 for call in calls:
                     for n in call.name.names:
                         if n == search_name:
-                            names.append(RelatedName(n, d.parent()))
+                            names.append(RelatedName(n, d))
             for op, arr in d.assignment_details:
                 add_array(arr)
             if not d.assignment_details:
@@ -350,17 +353,44 @@ def get_related_names(definitions, search_name, modules):
     return names
 
 
-class RelatedName():
+class BaseOutput(object):
+    def __init__(self, start_pos, definition):
+        self.module_path = str(definition.get_parent_until().path)
+        self.start_pos = start_pos
+        self.definition = definition
+
+    @property
+    def module_name(self):
+        path = self.module_path
+        sep = os.path.sep
+        p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', path)
+        return p
+
+    def in_builtin_module(self):
+        return not self.module_path.endswith('.py')
+
+    @property
+    def line_nr(self):
+        return self.start_pos[0]
+
+    @property
+    def column(self):
+        return self.start_pos[1]
+
+    @property
+    def description(self):
+        raise NotImplementedError('Base Class')
+
+    def __repr__(self):
+        return "<%s %s>" % (self.__class__.__name__, self.description)
+
+
+class RelatedName(BaseOutput):
     def __init__(self, name_part, scope):
+        super(RelatedName, self).__init__(name_part.start_pos, scope)
         self.text = str(name_part)
-        self.start_pos = name_part.start_pos
         self.end_pos = name_part.end_pos
-        self.scope = scope
-        self.module = self.scope.get_parent_until()
 
     @property
     def description(self):
         return "%s@%s,%s" % (self.text, self.start_pos[0], self.start_pos[1])
-
-    def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.description)

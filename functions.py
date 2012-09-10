@@ -13,7 +13,7 @@ import keywords
 
 from _compatibility import next
 
-__all__ = ['complete', 'goto', 'get_definition', 'get_related_names',
+__all__ = ['complete', 'goto', 'get_definition', 'related_names',
            'NotFoundError', 'set_debug_function']
 
 
@@ -66,31 +66,11 @@ class Completion(object):
         return '<%s: %s>' % (self.__class__.__name__, self.name)
 
 
-class Definition(object):
+class Definition(dynamic.BaseOutput):
     def __init__(self, definition):
         """ The definition of a function """
-        self.definition = definition
-        self._def_parent = self.definition.parent()  # just here to limit gc
-
-        self.module_path = str(self.definition.get_parent_until().path)
-
-    @property
-    def module_name(self):
-        path = self.module_path
-        sep = os.path.sep
-        p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', path)
-        return p
-
-    def in_builtin_module(self):
-        return not self.module_path.endswith('.py')
-
-    @property
-    def line_nr(self):
-        return self.definition.start_pos[0]
-
-    @property
-    def column(self):
-        return self.definition.start_pos[1]
+        super(Definition, self).__init__(definition.start_pos, definition)
+        self._def_parent = definition.parent()  # just here to limit gc
 
     @property
     def description(self):
@@ -131,9 +111,6 @@ class Definition(object):
             # is a builtin or module
             position = ''
         return "%s:%s%s" % (self.module_name, self.description, position)
-
-    def __repr__(self):
-        return "<%s %s>" % (self.__class__.__name__, self.definition)
 
 
 def _get_completion_parts(path):
@@ -290,7 +267,7 @@ def goto(source, line, column, source_path):
     return d
 
 
-def get_related_names(source, line, column, source_path):
+def related_names(source, line, column, source_path):
     pos = (line, column)
     f = modules.ModuleWithCursor(source_path, source=source, position=pos)
 
@@ -319,7 +296,7 @@ def get_related_names(source, line, column, source_path):
 
     module = set([d.get_parent_until() for d in definitions])
     module.add(f.parser.module)
-    names = dynamic.get_related_names(definitions, search_name, module)
+    names = dynamic.related_names(definitions, search_name, module)
     _clear_caches()
     return names
 

@@ -86,6 +86,13 @@ function! jedi#get_definition()
 endfunction
 
 " ------------------------------------------------------------------------
+" related_names
+" ------------------------------------------------------------------------
+function! jedi#related_names()
+    python _goto(related_names=True)
+endfunction
+
+" ------------------------------------------------------------------------
 " show_pydoc
 " ------------------------------------------------------------------------
 function! jedi#show_pydoc()
@@ -237,6 +244,9 @@ endif
 if !exists("g:jedi#get_definition_command")
     let g:jedi#get_definition_command = "<leader>d"
 endif
+if !exists("g:jedi#related_names_command")
+    let g:jedi#related_names_command = "<leader>n"
+endif
 if !exists("g:jedi#popup_on_dot")
     let g:jedi#popup_on_dot = 1
 endif
@@ -249,10 +259,12 @@ if g:jedi#auto_initialization
     " map ctrl+space for autocompletion
     autocmd FileType python inoremap <buffer> <Nul> <C-X><C-O>
 
-    " goto / get_definition
+    " goto / get_definition / related_names
     autocmd FileType python execute "noremap <buffer>".g:jedi#goto_command." :call jedi#goto()<CR>"
     autocmd FileType python execute "noremap <buffer>".g:jedi#get_definition_command." :call jedi#get_definition()<CR>"
+    autocmd FileType python execute "noremap <buffer>".g:jedi#related_names_command." :call jedi#related_names()<CR>"
 
+    " pydoc
     autocmd FileType python execute "nnoremap <silent> <buffer>".g:jedi#pydoc." :call jedi#show_pydoc()<CR>"
 end
 
@@ -285,7 +297,7 @@ class PythonToVimStr(str):
     def __repr__(self):
         return '"%s"' % self.replace('"', r'\"')
 
-def _goto(is_definition=False):
+def _goto(is_definition=False, is_related_name=False):
     def echo_highlight(msg):
         vim.command('echohl WarningMsg | echo "%s" | echohl None' % msg)
 
@@ -293,7 +305,9 @@ def _goto(is_definition=False):
     buf_path = vim.current.buffer.name
     source = '\n'.join(vim.current.buffer)
     try:
-        if is_definition:
+        if is_related_name:
+            definitions = functions.related_names(source, row, column, buf_path)
+        elif is_definition:
             definitions = functions.get_definition(source, row, column, buf_path)
         else:
             definitions = functions.goto(source, row, column, buf_path)
