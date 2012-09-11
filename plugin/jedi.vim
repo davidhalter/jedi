@@ -95,10 +95,13 @@ endfunction
 " ------------------------------------------------------------------------
 " rename
 " ------------------------------------------------------------------------
-function! jedi#rename(start_renaming)
+function! jedi#rename(...)
 python << PYTHONEOF
 if 1:
-    start_renaming = int(vim.eval('a:start_renaming'))
+    try:
+        start_renaming = int(vim.eval('a:0'))
+    except vim.error:
+        start_renaming = 0
     if start_renaming == 0:
         temp_rename = _goto(is_related_name=True, no_output=True)
         _rename_cursor = vim.current.window.cursor
@@ -209,8 +212,10 @@ function! jedi#new_buffer(path)
     if g:jedi#use_tabs_not_buffers
         return jedi#tabnew(a:path)
     else
-        if &modified
-            w
+        if &hidden == 0
+            if &modified
+                w
+            endif
         endif
         edit! a:path
     endif
@@ -332,7 +337,7 @@ if g:jedi#auto_initialization
     autocmd FileType python execute "noremap <buffer>".g:jedi#get_definition_command." :call jedi#get_definition()<CR>"
     autocmd FileType python execute "noremap <buffer>".g:jedi#related_names_command." :call jedi#related_names()<CR>"
     " rename
-    autocmd FileType python execute "noremap <buffer>".g:jedi#rename_command." :call jedi#rename(0)<CR>"
+    autocmd FileType python execute "noremap <buffer>".g:jedi#rename_command." :call jedi#rename()<CR>"
     " pydoc
     autocmd FileType python execute "nnoremap <silent> <buffer>".g:jedi#pydoc." :call jedi#show_pydoc()<CR>"
 end
