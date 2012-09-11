@@ -128,6 +128,8 @@ if 1:
             echo_highlight('No rename possible, if no name is given.')
         else:
             for r in temp_rename:
+                if r.in_builtin_module():
+                    continue
                 start_pos = r.start_pos + (0, 1)  # vim cursor starts with 1 indent
                 if vim.current.buffer.name != r.module_path:
                     vim.eval("jedi#new_buffer('%s')" % r.module_path)
