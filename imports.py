@@ -24,23 +24,27 @@ class ImportPath(object):
     class GlobalNamespace(object):
         pass
 
-    def __init__(self, import_stmt, is_like_search=False):
+    def __init__(self, import_stmt, is_like_search=False, kill_count=0,
+                                                    direct_resolve=False):
         self.import_stmt = import_stmt
+        self.is_like_search = is_like_search
+        self.direct_resolve = direct_resolve
+        self.is_partial_import = bool(kill_count)
+        self.file_path = os.path.dirname(import_stmt.get_parent_until().path)
+
+        # rest is import_path resolution
         self.import_path = []
         if import_stmt.from_ns:
             self.import_path += import_stmt.from_ns.names
         if import_stmt.namespace:
-            if self.is_nested_import():
+            if self.is_nested_import() and not direct_resolve:
                 self.import_path.append(import_stmt.namespace.names[0])
             else:
                 self.import_path += import_stmt.namespace.names
 
-        self.is_like_search = is_like_search
-        if is_like_search:
-            # drop one path part, because that is used by the like search
+        for i in range(kill_count + int(is_like_search)):
             self.import_path.pop()
 
-        self.file_path = os.path.dirname(import_stmt.get_parent_until().path)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.import_stmt)
@@ -52,7 +56,8 @@ class ImportPath(object):
         >>> import foo.bar
         """
         return not self.import_stmt.alias and not self.import_stmt.from_ns \
-                and len(self.import_stmt.namespace.names) > 1
+                and len(self.import_stmt.namespace.names) > 1 \
+                and not self.direct_resolve
 
     def get_nested_import(self, parent):
         """
@@ -70,16 +75,30 @@ class ImportPath(object):
         debug.dbg('Generated a nested import: %s' % new)
         return new
 
-    def get_defined_names(self):
+    def get_defined_names(self, on_import_stmt=False):
         names = []
         for scope in self.follow():
             if scope is ImportPath.GlobalNamespace:
                 names += self.get_module_names()
                 names += self.get_module_names([self.file_path])
             else:
-                for s, n in evaluate.get_names_for_scope(scope,
+                if on_import_stmt and isinstance(scope, parsing.Module) \
+                                        and scope.path.endswith('__init__.py'):
+                    pkg_path = os.path.dirname(scope.path)
+                    names += self.get_module_names([pkg_path])
+                for s, scope_names in evaluate.get_names_for_scope(scope,
                                                     include_builtin=False):
-                    names += n
+                    for n in scope_names:
+                        if not isinstance(n.parent(), parsing.Import) \
+                                and (self.import_stmt.from_ns is None \
+                                            or self.is_partial_import):
+                                # from_ns must be defined to access module
+                                # values plus a partial import means that there
+                                # is something after the import, which
+                                # automatically implies that there must not be
+                                # any non-module scope.
+                                continue
+                        names.append(n)
         return names
 
     def get_module_names(self, search_path=None):
@@ -99,7 +118,7 @@ class ImportPath(object):
         Returns the imported modules.
         """
         if self.import_path:
-            scope, rest = self.follow_file_system()
+            scope, rest = self._follow_file_system()
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []
             elif rest:
@@ -119,7 +138,7 @@ class ImportPath(object):
         debug.dbg('after import', scopes)
         return scopes
 
-    def follow_file_system(self):
+    def _follow_file_system(self):
         """
         Find a module with a path (of the module, like usb.backend.libusb10).
         """

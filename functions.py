@@ -144,7 +144,7 @@ def complete(source, line, column, source_path):
     path, dot, like = _get_completion_parts(path)
 
     try:
-        scopes = _prepare_goto(source, pos, source_path, f, path, True)
+        scopes = _prepare_goto(pos, source_path, f, path, True)
     except NotFoundError:
         scope_generator = evaluate.get_names_for_scope(f.parser.user_scope,
                                                                         pos)
@@ -159,7 +159,11 @@ def complete(source, line, column, source_path):
             # TODO is this really the right way? just ignore the functions? \
             # do the magic functions first? and then recheck here?
             if not isinstance(s, evaluate.Function):
-                for c in s.get_defined_names():
+                if isinstance(s, imports.ImportPath):
+                    names = s.get_defined_names(on_import_stmt=True)
+                else:
+                    names = s.get_defined_names()
+                for c in names:
                     completions.append((c, s))
 
     completions = [(c, s) for c, s in completions
@@ -174,7 +178,7 @@ def complete(source, line, column, source_path):
     return c
 
 
-def _prepare_goto(source, position, source_path, module, goto_path,
+def _prepare_goto(position, source_path, module, goto_path,
                                                         is_like_search=False):
     scope = module.parser.user_scope
     debug.dbg('start: %s in %s' % (goto_path, scope))
@@ -187,7 +191,23 @@ def _prepare_goto(source, position, source_path, module, goto_path,
         return []
 
     if isinstance(user_stmt, parsing.Import):
-        scopes = [imports.ImportPath(user_stmt, is_like_search)]
+        import_names = user_stmt.get_all_import_names()
+        count = 0
+        found_count = None
+        for i in import_names:
+            for name_part in i.names:
+                count += 1
+                if name_part.start_pos <= position <= name_part.end_pos:
+                    found_count = count
+        if found_count is None:
+            found_count = count
+            if is_like_search:
+                # is_like_search will decrease also one, so change this here.
+                found_count += 1
+            else:
+                return []
+        scopes = [imports.ImportPath(user_stmt, is_like_search,
+                        kill_count=(count - found_count), direct_resolve=True)]
     else:
         # just parse one statement, take it and evaluate it
         r = parsing.PyFuzzyParser(goto_path, source_path, no_docstr=True)
@@ -231,7 +251,7 @@ def get_definition(source, line, column, source_path):
         op = f.get_operator_under_cursor()
         scopes = set([keywords.get_operator(op, pos)] if op else [])
     else:
-        scopes = set(_prepare_goto(source, pos, source_path, f, goto_path))
+        scopes = set(_prepare_goto(pos, source_path, f, goto_path))
 
     for s in scopes.copy():
         if isinstance(s, imports.ImportPath):
@@ -265,7 +285,7 @@ def goto(source, line, column, source_path):
     if next(context) in ('class', 'def'):
         definitions = set([f.parser.user_scope])
     else:
-        scopes = _prepare_goto(source, pos, source_path, f, goto_path)
+        scopes = _prepare_goto(pos, source_path, f, goto_path)
         definitions = evaluate.goto(scopes, search_name_new)
 
     d = [Definition(d) for d in set(definitions)]
@@ -303,7 +323,7 @@ def related_names(source, line, column, source_path):
     elif isinstance(f.parser.user_stmt, (parsing.Param, parsing.Import)):
         definitions = [f.parser.user_stmt]
     else:
-        scopes = _prepare_goto(source, pos, source_path, f, goto_path)
+        scopes = _prepare_goto(pos, source_path, f, goto_path)
         definitions = evaluate.goto(scopes, search_name_new)
 
     module = set([d.get_parent_until() for d in definitions])

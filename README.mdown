@@ -1,7 +1,7 @@
 Jedi - a clever Python auto-completion
 ============================
 
-** now in alpha testing phase **
+**now in alpha testing phase**
 *If you have any comments or feature request, please tell me! I really want to
 know, what you think of Jedi.*
 
@@ -55,8 +55,8 @@ Jedi supports many of the widely used Python features:
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
 
- - getattr() / __getattr__ / __getattribute__
- - sys.path modifications
+ - `getattr()` / `__getattr__` / `__getattribute__`
+ - `sys.path` modifications
  - manipulations of instances outside the instance variables, without using
    functions
  - mro

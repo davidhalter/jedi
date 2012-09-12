@@ -165,6 +165,25 @@ from . import import_tree as imp_tree
 #? str()
 imp_tree.a
 
-from . import datetime
+from . import datetime as mod1
 #? []
 mod1.
+
+#? str()
+imp_tree.a
+
+import datetime
+
+#? 6 datetime
+from datetime.time import time
+
+#? []
+import datetime.
+#? []
+import datetime.date
+
+#? 18 ['mod1', 'random', 'pkg']
+from import_tree. import pkg
+
+#? 18 ['pkg']
+from import_tree.p import pkg

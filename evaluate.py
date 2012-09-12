@@ -1448,39 +1448,17 @@ def goto(scopes, search_name=None, statement_path_offset=1):
                     except imports.ModuleNotFound:
                         continue
                     else:
-                        try:
+                        if not isinstance(s, parsing.Module):
                             s = statement_path[0]
-                        except IndexError:
-                            pass
                 definitions.append(s)
     else:
-        def remove_unreal_imports(names):
-            """
-            These imports are only virtual, because of multi-line imports.
-            """
-            new_names = []
-            for n in names:
-                par = n.parent()
-                # This is a special case: If the Import is "virtual" (which
-                # means the position is not defined), follow those modules.
-                if isinstance(par, parsing.Import) and not par.start_pos[0]:
-                    module_count = 0
-                    for scope in imports.ImportPath(par).follow():
-                        if isinstance(scope, parsing.Import):
-                            temp = scope.get_defined_names()
-                            new_names += remove_unreal_imports(temp)
-                        elif isinstance(scope, parsing.Module) \
-                                                        and not module_count:
-                            # only first module (others are star imports)
-                            module_count += 1
-                            new_names.append(scope.get_module_name(n.names))
-                else:
-                    new_names.append(n)
-            return new_names
-
         names = []
         for s in scopes:
-            names += s.get_defined_names()
-        names = remove_unreal_imports(names)
+            if isinstance(s, imports.ImportPath):
+                modules = s.follow()
+                if modules:
+                    names.append(modules[0].get_module_name())
+            else:
+                names += s.get_defined_names()
         definitions = [n for n in names if n.names[-1] == search_name]
     return definitions

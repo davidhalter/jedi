@@ -35,6 +35,7 @@ import tokenize
 import re
 import keyword
 import weakref
+import os
 
 import debug
 
@@ -287,8 +288,12 @@ class Module(Scope):
         n += self.global_vars
         return n
 
-    def get_module_name(self, names):
+    def get_module_name(self):
         """ This is used for the goto function. """
+        sep = (os.path.sep,) * 2
+        r = re.search(r'([^%s]+?)(%s__init__)?(\.py)?$' % sep, self.path)
+        string = r.group(1)
+        names = [(string, (0, 0))]
         if not self._name:
             self._name = Name(names, self.start_pos, self.end_pos, self)
         return self._name
@@ -556,6 +561,16 @@ class Import(Simple):
             return [n]
         else:
             return [self.namespace]
+
+    def get_all_import_names(self):
+        n = []
+        if self.from_ns:
+            n.append(self.from_ns)
+        if self.namespace:
+            n.append(self.namespace)
+        if self.alias:
+            n.append(self.alias)
+        return n
 
 
 class Statement(Simple):
