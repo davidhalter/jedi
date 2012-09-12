@@ -3,7 +3,7 @@ Jedi - a clever Python auto-completion
 
 **now in alpha testing phase**
 *If you have any comments or feature request, please tell me! I really want to
-know, what you think of Jedi.*
+know, what you think about Jedi.*
 
 Jedi is an autocompletion tool for Python. It should work as good as possible
 and just ignore syntax errors. Most Python auto-completions really suck,
@@ -71,14 +71,15 @@ It does not support (and most probably will not in future versions):
 Caveats
 -------
 
-This framework should work for both Python 2/3. However, some things where not
-nice in Python 2. To keep things simple, some things have been held back:
+This framework should work for both Python 2/3. However, some things were just
+not as *pythonic* Python 2 as things should be. To keep things simple, some
+things have been held back:
 
  - Classes: Always Python 3 like, therefore all classes inherit from `object`.
  - Generators: No `next` method. The `__next__` method is used instead.
  - Exceptions are only looked at in the form of `Exception as e`, no comma!
 
-Syntax Errors and other strange stuff, that is defined differently in the
+Syntax errors and other strange stuff, that is defined differently in the
 Python language, may lead to undefined behaviour of the completion. Jedi is
 **NOT** a Python compiler, that tries to correct you. It is a tool that wants
 to help you. But **YOU** have to know Python, not Jedi.
@@ -91,7 +92,7 @@ anymore. The same is true for huge modules like `PySide`, `wx`, etc.
 A little history
 ----------------
 
-The Star Wars Jedi are awesome. My Jedi Software tries to imitate a little bit
+The Star Wars Jedi are awesome. My Jedi software tries to imitate a little bit
 of the precognition the Jedi have.
 
 But actually the name hasn't so much to do with Star Wars. It's part of my
