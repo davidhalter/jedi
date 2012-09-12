@@ -98,11 +98,7 @@ endfunction
 function! jedi#rename(...)
 python << PYTHONEOF
 if 1:
-    try:
-        start_renaming = int(vim.eval('a:0'))
-    except vim.error:
-        start_renaming = 0
-    if start_renaming == 0:
+    if not int(vim.eval('a:0')):
         temp_rename = _goto(is_related_name=True, no_output=True)
         _rename_cursor = vim.current.window.cursor
 
@@ -214,12 +210,10 @@ function! jedi#new_buffer(path)
     if g:jedi#use_tabs_not_buffers
         return jedi#tabnew(a:path)
     else
-        if &hidden == 0
-            if &modified
-                w
-            endif
+        if !&hidden && &modified
+            w
         endif
-        edit! a:path
+        execute 'edit '.a:path
     endif
 endfunction
 
