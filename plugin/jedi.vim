@@ -404,7 +404,10 @@ def _goto(is_definition=False, is_related_name=False, no_output=False):
 
             d = list(definitions)[0]
             if d.in_builtin_module():
-                echo_highlight("Builtin modules cannot be displayed.")
+                if isinstance(d.definition, functions.keywords.Keyword):
+                    echo_highlight("Cannot get the definition of Python keywords.")
+                else:
+                    echo_highlight("Builtin modules cannot be displayed.")
             else:
                 if d.module_path != vim.current.buffer.name:
                     if vim.eval('g:jedi#use_tabs_not_buffers') == '1':
