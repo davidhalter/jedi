@@ -244,7 +244,10 @@ def get_definition(source, line, column, source_path):
         for s in scopes.copy():
             if isinstance(s, imports.ImportPath):
                 scopes.remove(s)
-                scopes.update(resolve_import_paths(set(s.follow())))
+                try:
+                    scopes.update(resolve_import_paths(set(s.follow())))
+                except imports.ModuleNotFound:
+                    pass
         return scopes
 
     pos = (line, column)

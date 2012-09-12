@@ -84,8 +84,8 @@ class TestRegression(unittest.TestCase):
         assert len(s) > 0
 
     def test_get_definition_on_import(self):
-        assert self.get_def("import os_blabla", (1, 8)) == []
-        assert len(self.get_def("import os", (1, 8))) == 1
+        assert self.get_def("import sys_blabla", (1, 8)) == []
+        assert len(self.get_def("import sys", (1, 8))) == 1
 
     def test_new(self):
         """ This is just to try out things, removing or deleting it is ok. """
