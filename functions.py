@@ -240,6 +240,13 @@ def get_definition(source, line, column, source_path):
     :return: list of Definition objects, which are basically scopes.
     :rtype: list
     """
+    def resolve_import_paths(scopes):
+        for s in scopes.copy():
+            if isinstance(s, imports.ImportPath):
+                scopes.remove(s)
+                scopes.update(resolve_import_paths(set(s.follow())))
+        return scopes
+
     pos = (line, column)
     f = modules.ModuleWithCursor(source_path, source=source, position=pos)
     goto_path = f.get_path_under_cursor()
@@ -253,11 +260,7 @@ def get_definition(source, line, column, source_path):
     else:
         scopes = set(_prepare_goto(pos, source_path, f, goto_path))
 
-    for s in scopes.copy():
-        if isinstance(s, imports.ImportPath):
-            scopes.remove(s)
-            evaluate.statement_path = []
-            scopes.update(evaluate.goto([s]))
+    scopes = resolve_import_paths(scopes)
 
     # add keywords
     scopes |= keywords.get_keywords(string=goto_path, pos=pos)

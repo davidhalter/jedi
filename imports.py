@@ -89,9 +89,8 @@ class ImportPath(object):
                 for s, scope_names in evaluate.get_names_for_scope(scope,
                                                     include_builtin=False):
                     for n in scope_names:
-                        if not isinstance(n.parent(), parsing.Import) \
-                                and (self.import_stmt.from_ns is None \
-                                            or self.is_partial_import):
+                        if self.import_stmt.from_ns is None \
+                                            or self.is_partial_import:
                                 # from_ns must be defined to access module
                                 # values plus a partial import means that there
                                 # is something after the import, which
