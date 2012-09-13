@@ -87,6 +87,12 @@ class TestRegression(unittest.TestCase):
         assert self.get_def("import sys_blabla", (1, 8)) == []
         assert len(self.get_def("import sys", (1, 8))) == 1
 
+    def test_complete_on_empty_import(self):
+        # should just list the files in the directory
+        assert 10 < len(self.complete("from .", (1, 5))) < 30
+        assert 10 < len(self.complete("from . import", (1, 5))) < 30
+        assert 10 < len(self.complete("from . import classes", (1, 5))) < 30
+
     def test_new(self):
         """ This is just to try out things, removing or deleting it is ok. """
         s = ("def abc(): pass\n"

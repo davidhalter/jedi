@@ -1509,7 +1509,7 @@ def goto(scopes, search_name=None, statement_path_offset=1):
                 if isinstance(s, imports.ImportPath):
                     try:
                         s = s.follow()[0]
-                    except imports.ModuleNotFound:
+                    except IndexError:
                         continue
                     else:
                         if not isinstance(s, parsing.Module):

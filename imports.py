@@ -21,8 +21,14 @@ class ImportPath(object):
     """
     An ImportPath is the path of a `parsing.Import` object.
     """
-    class GlobalNamespace(object):
-        pass
+    class _GlobalNamespace(object):
+        def get_defined_names(self):
+            return []
+
+        def get_imports(self):
+            return []
+
+    GlobalNamespace = _GlobalNamespace()
 
     def __init__(self, import_stmt, is_like_search=False, kill_count=0,
                                                     direct_resolve=False):
@@ -44,7 +50,6 @@ class ImportPath(object):
 
         for i in range(kill_count + int(is_like_search)):
             self.import_path.pop()
-
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.import_stmt)
@@ -79,8 +84,13 @@ class ImportPath(object):
         names = []
         for scope in self.follow():
             if scope is ImportPath.GlobalNamespace:
-                names += self.get_module_names()
-                names += self.get_module_names([self.file_path])
+                if self.import_stmt.relative_count == 0:
+                    names += self.get_module_names()
+
+                path = os.path.abspath(self.file_path)
+                for i in range(self.import_stmt.relative_count - 1):
+                    path = os.path.dirname(path)
+                names += self.get_module_names([path])
             else:
                 if on_import_stmt and isinstance(scope, parsing.Module) \
                                         and scope.path.endswith('__init__.py'):
@@ -117,7 +127,13 @@ class ImportPath(object):
         Returns the imported modules.
         """
         if self.import_path:
-            scope, rest = self._follow_file_system()
+            try:
+                scope, rest = self._follow_file_system()
+            except ModuleNotFound:
+                debug.warning('Module not found: ' + str(self.import_stmt))
+                return []
+                return [ImportPath.GlobalNamespace]
+
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []
             elif rest:
@@ -214,10 +230,7 @@ def strip_imports(scopes):
         if isinstance(s, parsing.Import):
             # this is something like a statement following.
             evaluate.statement_path.append(s)
-            try:
-                result += ImportPath(s).follow()
-            except ModuleNotFound:
-                debug.warning('Module not found: ' + str(s))
+            result += ImportPath(s).follow()
         else:
             result.append(s)
     return result

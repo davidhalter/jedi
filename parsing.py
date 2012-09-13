@@ -515,7 +515,7 @@ class Import(Simple):
     :type defunct: bool
     """
     def __init__(self, start_pos, end_pos, namespace, alias=None, \
-                from_ns=None, star=False, relative_count=None, defunct=False):
+                from_ns=None, star=False, relative_count=0, defunct=False):
         super(Import, self).__init__(start_pos, end_pos)
 
         self.namespace = namespace
@@ -1138,6 +1138,10 @@ class PyFuzzyParser(object):
         else:
             token_type, tok = pre_used_token
 
+        if token_type != tokenize.NAME and tok != '*':
+            # token maybe a name or star
+            return (None, token_type, tok)
+
         append((tok, self.start_pos))
         first_pos = self.start_pos
         while True:
@@ -1175,6 +1179,8 @@ class PyFuzzyParser(object):
         while True:
             defunct = False
             token_type, tok = self.next()
+            if token_type == tokenize.ENDMARKER:
+                break
             if brackets and tok == '\n':
                 self.next()
             if tok == '(':  # python allows only one `(` in the statement.
@@ -1421,15 +1427,16 @@ class PyFuzzyParser(object):
                 else:
                     n, token_type, tok = self._parsedotname(self.current)
                     tok_list.pop()  # removed last entry, because we add Name
-                    tok_list.append(n)
-                    if tok == '(':
-                        # it must be a function
-                        used_funcs.append(n)
-                    else:
-                        used_vars.append(n)
-                    if string and re.match(r'[\w\d\'"]', string[-1]):
-                        string += ' '
-                    string += ".".join(n.names)
+                    if n:
+                        tok_list.append(n)
+                        if tok == '(':
+                            # it must be a function
+                            used_funcs.append(n)
+                        else:
+                            used_vars.append(n)
+                        if string and re.match(r'[\w\d\'"]', string[-1]):
+                            string += ' '
+                        string += ".".join(n.names)
                     continue
             elif '=' in tok and not tok in ['>=', '<=', '==', '!=']:
                 # there has been an assignement -> change vars
@@ -1474,7 +1481,7 @@ class PyFuzzyParser(object):
             except AttributeError:
                 debug.warning('return in non-function')
 
-        if list_comp or tok in always_break:
+        if tok in always_break:
             self.gen.push_back(self._current_full)
         return stmt, tok
 
@@ -1584,9 +1591,11 @@ class PyFuzzyParser(object):
                         debug.warning("from: syntax error@%s" %
                                                             self.start_pos[0])
                         defunct = True
+                        if tok != 'import':
+                            self.gen.push_back(self._current_full)
                     names = self._parseimportlist()
                     for name, alias, defunct2 in names:
-                        star = name.names[0] == '*'
+                        star = name is not None and name.names[0] == '*'
                         if star:
                             name = None
                         i = Import(first_pos, self.end_pos, name, alias, mod,
@@ -1596,6 +1605,7 @@ class PyFuzzyParser(object):
                     if not names:
                         i = Import(first_pos, self.end_pos, mod, defunct=True,
                                     relative_count=relative_count)
+                        print i, repr(mod)
                         self._check_user_stmt(i)
                         self.scope.add_import(i)
                     self.freshscope = False

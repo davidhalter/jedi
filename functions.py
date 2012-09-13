@@ -193,21 +193,14 @@ def _prepare_goto(position, source_path, module, goto_path,
     if isinstance(user_stmt, parsing.Import):
         import_names = user_stmt.get_all_import_names()
         count = 0
-        found_count = None
+        kill_count = -1
         for i in import_names:
             for name_part in i.names:
                 count += 1
-                if name_part.start_pos <= position <= name_part.end_pos:
-                    found_count = count
-        if found_count is None:
-            found_count = count
-            if is_like_search:
-                # is_like_search will decrease also one, so change this here.
-                found_count += 1
-            else:
-                return []
+                if position <= name_part.end_pos:
+                    kill_count += 1
         scopes = [imports.ImportPath(user_stmt, is_like_search,
-                        kill_count=(count - found_count), direct_resolve=True)]
+                        kill_count=kill_count, direct_resolve=True)]
     else:
         # just parse one statement, take it and evaluate it
         r = parsing.PyFuzzyParser(goto_path, source_path, no_docstr=True)
@@ -244,10 +237,7 @@ def get_definition(source, line, column, source_path):
         for s in scopes.copy():
             if isinstance(s, imports.ImportPath):
                 scopes.remove(s)
-                try:
-                    scopes.update(resolve_import_paths(set(s.follow())))
-                except imports.ModuleNotFound:
-                    pass
+                scopes.update(resolve_import_paths(set(s.follow())))
         return scopes
 
     pos = (line, column)

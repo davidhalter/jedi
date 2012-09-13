@@ -172,6 +172,10 @@ mod1.
 #? str()
 imp_tree.a
 
+
+# -----------------
+# special positions -> edge cases
+# -----------------
 import datetime
 
 #? 6 datetime
@@ -187,3 +191,13 @@ from import_tree. import pkg
 
 #? 18 ['pkg']
 from import_tree.p import pkg
+
+#? 17 ['import_tree']
+from .import_tree import 
+#? 10 ['run']
+from ..run import 
+#? ['run']
+from .. import run
+
+#? []
+from not_a_module import 
