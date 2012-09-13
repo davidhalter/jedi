@@ -1697,5 +1697,5 @@ class PyFuzzyParser(object):
                 self._tokenize_end_pos = (0, 0)
                 debug.warning('indentation error on line %s, ignoring it' %
                                                         (self.start_pos[0]))
-                self.gen = tokenize.generate_tokens(buf.readline)
+                self.gen = PushBackIterator(tokenize_func(buf.readline))
         return self.module
