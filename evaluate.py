@@ -216,10 +216,8 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         return names
 
     def get_subscope_by_name(self, name):
-        for sub in reversed(self.base.subscopes):
-            if sub.name.get_code() == name:
-                return InstanceElement(self, sub, True)
-        raise KeyError("Couldn't find subscope.")
+        sub = self.base.get_subscope_by_name(name)
+        return InstanceElement(self, sub, True)
 
     def execute_subscope_by_name(self, name, args=None):
         if args is None:
@@ -383,6 +381,12 @@ class Class(use_metaclass(CachedMetaClass, parsing.Base)):
         result += super_result
         return result
 
+    def get_subscope_by_name(self, name):
+        for sub in reversed(self.subscopes):
+            if sub.name.get_code() == name:
+                return sub
+        raise KeyError("Couldn't find subscope.")
+
     @property
     def name(self):
         return self.base.name
@@ -480,6 +484,37 @@ class Execution(Executable):
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
         stmts = []
+        if self.base.parent() == builtin.builtin_scope \
+                and not isinstance(self.base, (Generator, Array)):
+            func_name = str(self.base.name)
+
+            # some implementations of builtins:
+            if func_name == 'getattr':
+                # follow the first param
+                try:
+                    objects = follow_call_list([self.var_args[0]])
+                    names = follow_call_list([self.var_args[1]])
+                except IndexError:
+                    debug.warning('getattr() called with to few args.')
+                    return []
+
+                for obj in objects:
+                    if not isinstance(obj, (Instance, Class)):
+                        debug.warning('getattr called without instance')
+                        return []
+
+                    for name in names:
+                        key = name.var_args.get_only_subelement()
+                        try:
+                            stmts.append(obj.get_subscope_by_name(key))
+                        except KeyError:
+                            debug.warning('called getattr() without string')
+                #if not (isinstance(name, Instance) \
+                        #and name.var_args:
+                    #debug.warning('getattr called without instance')
+                    #return []
+                return stmts
+
         if self.base.isinstance(Class):
             # There maybe executions of executions.
             stmts = [Instance(self.base, self.var_args)]
@@ -1119,6 +1154,10 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             # if there are results, ignore the other scopes
             if result:
                 break
+
+        if not result and isinstance(scope, Instance):
+            # getattr() / __getattr__ / __getattribute__
+            result += check_getattr(scope, name_str)
         debug.dbg('sfn filter "%s" in %s: %s' % (name_str, scope, result))
         return result
 
@@ -1143,10 +1182,35 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
         if isinstance(scope, Instance):
             scope_generator = scope.scope_generator()
         else:
-            names = get_defined_names_for_position(scope, position)
+            if isinstance(scope, Class):
+                # classes are only available directly via chaining? 
+                # strange stuff...
+                names = scope.get_defined_names()
+            else:
+                names = get_defined_names_for_position(scope, position)
             scope_generator = iter([(scope, names)])
 
     return descriptor_check(remove_statements(filter_name(scope_generator)))
+
+def check_getattr(inst, name_str):
+    result = []
+    # str is important to lose the NamePart!
+    name = parsing.Call(str(name_str), parsing.Call.STRING, (0, 0), inst)
+    args = helpers.generate_param_array([name])
+    try:
+        result = inst.execute_subscope_by_name('__getattr__', args)
+    except KeyError:
+        pass
+    if not result:
+        # this is a little bit special. `__getattribute__` is executed
+        # before anything else. But: I know no use case, where this
+        # could be practical and the jedi would return wrong types. If
+        # you ever have something, let me know!
+        try:
+            result = inst.execute_subscope_by_name('__getattribute__', args)
+        except KeyError:
+            pass
+    return result
 
 
 def get_iterator_types(inputs):

@@ -464,3 +464,44 @@ a[1]
 WithoutMethod.blub(WithoutMethod())
 #? str()
 WithoutMethod.blub(B())
+
+# -----------------
+# __getattr__ / getattr() / __getattribute__
+# -----------------
+
+#? str().upper
+getattr(str(), 'upper')
+#? str.upper
+getattr(str, 'upper')
+
+# some strange getattr calls
+#? 
+getattr(str, 1)
+#? 
+getattr()
+#? 
+getattr(str)
+#? 
+getattr(getattr, 1)
+
+
+class Base():
+    def ret(self, b):
+        return b
+
+class Wrapper():
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __getattr__(self, name):
+        return getattr(self.obj, name)
+
+class Wrapper2():
+    def __getattribute__(self, name):
+        return getattr(Base(), name)
+
+#? int()
+Wrapper(Base()).ret(3)
+
+#? int()
+Wrapper2(Base()).ret(3)

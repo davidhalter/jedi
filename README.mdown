@@ -47,6 +47,7 @@ Jedi supports many of the widely used Python features:
  - support for list.append, set.add, list.extend, etc.
  - (nested) list comprehensions / ternary expressions
  - relative imports
+ - `getattr()` / `__getattr__` / `__getattribute__`
  - function annotations (py3k feature, are ignored right now, but being parsed.
    I don't know what to do with them.)
  - class decorators (py3k feature, are being ignored too, until I find a use
@@ -55,13 +56,11 @@ Jedi supports many of the widely used Python features:
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
 
- - `getattr()` / `__getattr__` / `__getattribute__`
  - `sys.path` modifications
+ - assert / isinstance
  - manipulations of instances outside the instance variables, without using
    functions
- - mro
  - operation support -> \_\_mul\_\_, \_\_add\_\_, etc.
- - assert / isinstance
 
 It does not support (and most probably will not in future versions): 
  - metaclasses (how could an auto-completion ever support this)
@@ -72,7 +71,7 @@ Caveats
 -------
 
 This framework should work for both Python 2/3. However, some things were just
-not as *pythonic* Python 2 as things should be. To keep things simple, some
+not as *pythonic* in Python 2 as things should be. To keep things simple, some
 things have been held back:
 
  - Classes: Always Python 3 like, therefore all classes inherit from `object`.
