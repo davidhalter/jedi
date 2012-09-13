@@ -352,8 +352,8 @@ import vim
 # update the system path, to include the python scripts 
 import sys
 import os
-from os.path import dirname
-sys.path.insert(0, dirname(dirname(vim.eval('s:current_file'))))
+from os.path import dirname, abspath
+sys.path.insert(0, dirname(dirname(abspath(vim.eval('s:current_file')))))
 
 import traceback  # for exception output
 import re
@@ -415,6 +415,7 @@ def _goto(is_definition=False, is_related_name=False, no_output=False):
                     else:
                         vim.command('edit ' + d.module_path)
                 vim.current.window.cursor = d.line_nr, d.column
+                vim.command('normal! zt')  # cursor at top of screen
         else:
             # multiple solutions
             lst = []
