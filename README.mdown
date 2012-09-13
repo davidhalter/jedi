@@ -2,6 +2,7 @@ Jedi - a clever Python auto-completion
 ============================
 
 **now in alpha testing phase**
+
 *If you have any comments or feature request, please tell me! I really want to
 know, what you think about Jedi.*
 
