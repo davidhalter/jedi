@@ -1602,12 +1602,6 @@ class PyFuzzyParser(object):
                             star, relative_count, defunct=defunct or defunct2)
                         self._check_user_stmt(i)
                         self.scope.add_import(i)
-                    if not names:
-                        i = Import(first_pos, self.end_pos, mod, defunct=True,
-                                    relative_count=relative_count)
-                        print i, repr(mod)
-                        self._check_user_stmt(i)
-                        self.scope.add_import(i)
                     self.freshscope = False
                 #loops
                 elif tok == 'for':
