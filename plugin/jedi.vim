@@ -63,11 +63,21 @@ if 1:
             # print to stdout, will be in :messages
             print(traceback.format_exc())
             strout = ''
+            completions = []
 
         #print 'end', strout
+        show_func_def(len(completions))
         vim.command('return ' + strout)
 PYTHONEOF
-    endif
+endfunction
+
+function jedi#clear_func_def()
+python << PYTHONEOF
+if 1:
+    cursor = vim.current.window.cursor
+    vim.command(r'try | %s/≡jedi=\([^≡]*\)≡.*≡jedi≡/\1/g | catch | endtry')
+    vim.current.window.cursor = cursor
+PYTHONEOF
 endfunction
 
 
@@ -322,6 +332,9 @@ endif
 if !exists("g:jedi#pydoc")
     let g:jedi#pydoc = "K"
 endif
+if !exists("g:jedi#show_function_definition")
+    let g:jedi#show_function_definition = 1
+endif
 
 if g:jedi#auto_initialization
     autocmd FileType python setlocal omnifunc=jedi#complete
@@ -336,6 +349,24 @@ if g:jedi#auto_initialization
     autocmd FileType python execute "noremap <buffer>".g:jedi#rename_command." :call jedi#rename()<CR>"
     " pydoc
     autocmd FileType python execute "nnoremap <silent> <buffer>".g:jedi#pydoc." :call jedi#show_pydoc()<CR>"
+
+    if g:jedi#show_function_definition == 1 && has('conceal')
+        " conceal is normal for vim >= 7.3
+        autocmd FileType python syn match jediIgnore "≡jedi=\?[^≡]*≡" contained conceal
+        autocmd FileType python syn match jediFatSymbol "*" contained conceal
+        autocmd FileType python setlocal conceallevel=2
+
+        autocmd FileType python syn match jediFat "\*[^*]\+\*" contained contains=jediFatSymbol
+        autocmd FileType python syn match jediFunction "≡jedi=[^≡]*≡[^≡]*≡jedi≡" contains=jediIgnore,jediFat
+
+        autocmd FileType python autocmd InsertLeave * call jedi#clear_func_def()
+
+        hi def link jediIgnore Ignore
+        hi def link jediFatSymbol Ignore
+        hi def link jediFat VisualNOS
+        hi jediFat term=bold,underline cterm=bold,underline gui=bold,underline ctermbg=0 guibg=Grey
+        hi jediFunction term=NONE cterm=NONE ctermfg=6 guifg=Cyan gui=NONE ctermbg=0 guibg=Grey
+    endif
 end
 
 if g:jedi#popup_on_dot
@@ -427,6 +458,27 @@ def _goto(is_definition=False, is_related_name=False, no_output=False):
             vim.command('call setqflist(%s)' % str(lst))
             vim.command('call <sid>add_goto_window()')
     return definitions
+
+def show_func_def(completion_lines=0):
+    row, column = vim.current.window.cursor
+    vim.eval('jedi#clear_func_def()')
+
+    if column < 2 or row == 0:
+        return  # edge cases, just ignore
+
+    row_to_replace = row - 1
+    line = vim.eval("getline(%s)" % row_to_replace)
+
+    insert_column = column - 2 # because it has stuff at the beginning
+    text = " (*asdf*, basdf) "
+    text = ' ' * (insert_column - len(line)) + text
+    end_column = insert_column + len(text) - 2  # -2 because of bold symbols
+    # replace line before with cursor
+    repl = "%s≡jedi=%s≡%s≡jedi≡%s" % (line[:insert_column],
+                    line[insert_column:end_column], text, line[end_column:])
+    vim.eval('setline(%s, "%s")' % (row_to_replace, repl))
+    #vim.command(r"%ss/^.\{%s\}/\1%s/g" % (row_to_replace, column, text))
+
 PYTHONEOF
 
 " vim: set et ts=4:
