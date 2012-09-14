@@ -18,5 +18,8 @@ import evaluate
 #? ['goto']
 evaluate.goto
 
-#? ['pylab_']
-import pylab_
+#? ['jedi_']
+import jedi_
+
+#? ['el']
+jedi_.el

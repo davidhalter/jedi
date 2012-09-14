@@ -179,17 +179,18 @@ class ImportPath(object):
                 debug.dbg('search_module', string, self.file_path)
                 # Override the sys.path. It works only good that way.
                 # Injecting the path directly into `find_module` did not work.
-                sys.path, temp = builtin.module_find_path, sys.path
+                sys.path, temp = sys_path_mod, sys.path
                 try:
                     i = imp.find_module(string)
-                except:
+                except ImportError:
                     sys.path = temp
                     raise
                 sys.path = temp
                 return i
 
+        sys_path_mod = self.sys_path_with_modifications()
         current_namespace = None
-        builtin.module_find_path.insert(0, self.file_path)
+        sys_path_mod.insert(0, self.file_path)
         # now execute those paths
         rest = []
         for i, s in enumerate(self.import_path):
@@ -202,7 +203,7 @@ class ImportPath(object):
                     raise ModuleNotFound(
                             'The module you searched has not been found')
 
-        builtin.module_find_path.pop(0)
+        sys_path_mod.pop(0)
         path = current_namespace[1]
         is_package_directory = current_namespace[2][2] == imp.PKG_DIRECTORY
 

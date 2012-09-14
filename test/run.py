@@ -3,9 +3,10 @@ import os
 import sys
 import re
 import traceback
+from os.path import abspath, dirname
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
-sys.path.append('.')
+sys.path.append(abspath(dirname(abspath(__file__)) + '/..'))
+os.chdir(dirname(abspath(__file__)) + '/..')
 
 from _compatibility import unicode, BytesIO, reduce, literal_eval, is_py25
 
