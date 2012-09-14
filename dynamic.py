@@ -156,9 +156,14 @@ def _scan_array(arr, search_name):
             if isinstance(s, parsing.Array):
                 result += _scan_array(s, search_name)
             elif isinstance(s, parsing.Call):
-                n = s.name
-                if isinstance(n, parsing.Name) and search_name in n.names:
-                    result.append(s)
+                while s is not None:
+                    n = s.name
+                    if isinstance(n, parsing.Name) and search_name in n.names:
+                        result.append(s)
+
+                    if s.execution is not None:
+                        result += _scan_array(s.execution, search_name)
+                    s = s.next
     return result
 
 #@dec
@@ -169,7 +174,7 @@ def _check_array_additions(compare_array, module, is_list):
     >>> a = [""]
     >>> a.append(1)
     """
-    if not settings.dynamic_array_additions:
+    if not settings.dynamic_array_additions or module.is_builtin():
         return []
 
     def check_calls(calls, add_name):
