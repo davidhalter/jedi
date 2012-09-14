@@ -1122,7 +1122,6 @@ class PyFuzzyParser(object):
 
         # Stuff to fix tokenize errors. The parser is pretty good in tolerating
         # any errors of tokenize and just parse ahead.
-        self._tokenize_start_pos = 0
         self._line_of_tokenize_restart = 0
 
         self.parse()
@@ -1384,114 +1383,123 @@ class PyFuzzyParser(object):
 
         tok_list = []
         while not (tok in always_break or tok in breaks and level <= 0):
-            set_string = None
-            #print 'parse_stmt', tok, tokenize.tok_name[token_type]
-            tok_list.append(self.current + (self.start_pos,))
-            if tok == 'as':
-                string += " %s " % tok
-                token_type, tok = self.next()
-                if token_type == tokenize.NAME:
-                    n, token_type, tok = self._parsedotname(self.current)
-                    if n:
-                        set_vars.append(n)
-                    tok_list.append(n)
-                    string += ".".join(n.names)
-                continue
-            elif token_type == tokenize.NAME:
-                if tok in ['return', 'yield', 'del', 'raise', 'assert']:
-                    if len(tok_list) > 1:
-                        # this happens, when a statement has opening brackets,
-                        # which are not closed again, here I just start a new
-                        # statement. This is a hack, but I could not come up
-                        # with a better solution.
-                        # This is basically a reset of the statement.
-                        debug.warning('keyword in statement %s@%s', tok_list,
-                                                            self.start_pos[0])
-                        tok_list = [self.current + (self.start_pos,)]
-                        set_vars = []
-                        used_funcs = []
-                        used_vars = []
-                        level = 0
-                    set_string = tok + ' '
-                    if tok in ['return', 'yield']:
-                        is_return = tok
-                elif tok == 'for':
-                    # list comprehensions!
-                    middle, tok = self._parse_statement(added_breaks=['in'])
-                    if tok != 'in' or middle is None:
-                        if middle is None:
-                            level -= 1
-                        debug.warning('list comprehension formatting @%s' %
-                                                            self.start_pos[0])
-                        continue
-
-                    b = [')', ']']
-                    in_clause, tok = self._parse_statement(added_breaks=b,
-                                                            list_comp=True)
-                    if tok not in b or in_clause is None:
-                        if in_clause is None:
-                            self.gen.push_back(self._current_full)
-                        debug.warning('list comprehension in_clause %s@%s' %
-                                                    (tok, self.start_pos[0]))
-                        continue
-                    other_level = 0
-
-                    for i, tok in enumerate(reversed(tok_list)):
-                        if not isinstance(tok, Name):
-                            tok = tok[1]
-                        if tok in closing_brackets:
-                            other_level -= 1
-                        elif tok in opening_brackets:
-                            other_level += 1
-                        if other_level > 0:
-                            break
-                    else:
-                        i = 0  # could not detect brackets -> nested list comp
-
-                    tok_list, toks = tok_list[:-i], tok_list[-i:-1]
-                    src = ''
-                    for t in toks:
-                        src += t[1] if isinstance(t, tuple) else t.get_code()
-                    st = Statement(src, [], [], [], \
-                                    toks, first_pos, self.end_pos)
-
-                    for s in [st, middle, in_clause]:
-                        s.parent = weakref.ref(self.scope)
-                    tok = ListComprehension(st, middle, in_clause)
-                    tok_list.append(tok)
-                    if list_comp:
-                        string = ''
-                    string += tok.get_code()
-                    continue
-                else:
-                    n, token_type, tok = self._parsedotname(self.current)
-                    tok_list.pop()  # removed last entry, because we add Name
-                    if n:
+            try:
+                set_string = None
+                #print 'parse_stmt', tok, tokenize.tok_name[token_type]
+                tok_list.append(self.current + (self.start_pos,))
+                if tok == 'as':
+                    string += " %s " % tok
+                    token_type, tok = self.next()
+                    if token_type == tokenize.NAME:
+                        n, token_type, tok = self._parsedotname(self.current)
+                        if n:
+                            set_vars.append(n)
                         tok_list.append(n)
-                        if tok == '(':
-                            # it must be a function
-                            used_funcs.append(n)
-                        else:
-                            used_vars.append(n)
-                        if string and re.match(r'[\w\d\'"]', string[-1]):
-                            string += ' '
                         string += ".".join(n.names)
                     continue
-            elif '=' in tok and not tok in ['>=', '<=', '==', '!=']:
-                # there has been an assignement -> change vars
-                if level == 0:
-                    set_vars = used_vars
-                    used_vars = []
-            elif tok in opening_brackets:
-                level += 1
-            elif tok in closing_brackets:
-                level -= 1
+                elif token_type == tokenize.NAME:
+                    if tok in ['return', 'yield', 'del', 'raise', 'assert']:
+                        if len(tok_list) > 1:
+                            # this happens, when a statement has opening
+                            # brackets, which are not closed again, here I just
+                            # start a new statement. This is a hack, but I
+                            # could not come up with a better solution.
+                            # This is basically a reset of the statement.
+                            debug.warning('keyword in statement %s@%s',
+                                            tok_list, self.start_pos[0])
+                            tok_list = [self.current + (self.start_pos,)]
+                            set_vars = []
+                            used_funcs = []
+                            used_vars = []
+                            level = 0
+                        set_string = tok + ' '
+                        if tok in ['return', 'yield']:
+                            is_return = tok
+                    elif tok == 'for':
+                        # list comprehensions!
+                        middle, tok = self._parse_statement(
+                                                        added_breaks=['in'])
+                        if tok != 'in' or middle is None:
+                            if middle is None:
+                                level -= 1
+                            debug.warning('list comprehension formatting @%s' %
+                                                            self.start_pos[0])
+                            continue
 
-            if set_string is not None:
-                string = set_string
-            else:
-                string += tok
-            token_type, tok = self.next()
+                        b = [')', ']']
+                        in_clause, tok = self._parse_statement(added_breaks=b,
+                                                                list_comp=True)
+                        if tok not in b or in_clause is None:
+                            if in_clause is None:
+                                self.gen.push_back(self._current_full)
+                            debug.warning('list comprehension in_clause %s@%s'
+                                                % (tok, self.start_pos[0]))
+                            continue
+                        other_level = 0
+
+                        for i, tok in enumerate(reversed(tok_list)):
+                            if not isinstance(tok, Name):
+                                tok = tok[1]
+                            if tok in closing_brackets:
+                                other_level -= 1
+                            elif tok in opening_brackets:
+                                other_level += 1
+                            if other_level > 0:
+                                break
+                        else:
+                            # could not detect brackets -> nested list comp
+                            i = 0
+
+                        tok_list, toks = tok_list[:-i], tok_list[-i:-1]
+                        src = ''
+                        for t in toks:
+                            src += t[1] if isinstance(t, tuple) \
+                                        else t.get_code()
+                        st = Statement(src, [], [], [], \
+                                        toks, first_pos, self.end_pos)
+
+                        for s in [st, middle, in_clause]:
+                            s.parent = weakref.ref(self.scope)
+                        tok = ListComprehension(st, middle, in_clause)
+                        tok_list.append(tok)
+                        if list_comp:
+                            string = ''
+                        string += tok.get_code()
+                        continue
+                    else:
+                        n, token_type, tok = self._parsedotname(self.current)
+                        # removed last entry, because we add Name
+                        tok_list.pop()
+                        if n:
+                            tok_list.append(n)
+                            if tok == '(':
+                                # it must be a function
+                                used_funcs.append(n)
+                            else:
+                                used_vars.append(n)
+                            if string and re.match(r'[\w\d\'"]', string[-1]):
+                                string += ' '
+                            string += ".".join(n.names)
+                        continue
+                elif '=' in tok and not tok in ['>=', '<=', '==', '!=']:
+                    # there has been an assignement -> change vars
+                    if level == 0:
+                        set_vars = used_vars
+                        used_vars = []
+                elif tok in opening_brackets:
+                    level += 1
+                elif tok in closing_brackets:
+                    level -= 1
+
+                if set_string is not None:
+                    string = set_string
+                else:
+                    string += tok
+                token_type, tok = self.next()
+            except StopIteration:
+                # comes from tokenizer
+                break
+
         if not string:
             return None, tok
         #print 'new_stat', string, set_vars, used_funcs, used_vars
@@ -1526,7 +1534,24 @@ class PyFuzzyParser(object):
 
     def next(self):
         """ Generate the next tokenize pattern. """
-        self._current_full = next(self.gen)
+        try:
+            self._current_full = next(self.gen)
+        except tokenize.TokenError:
+            # We just ignore this error, I try to handle it earlier - as
+            # good as possible
+            debug.warning('parentheses not closed error')
+        except IndentationError:
+            # This is an error, that tokenize may produce, because the code
+            # is not indented as it should. Here it just ignores this line
+            # and restarts the parser.
+            # (This is a rather unlikely error message, for normal code,
+            # tokenize seems to be pretty tolerant)
+            debug.warning('indentation error on line %s, ignoring it' %
+                                                    (self.start_pos[0]))
+            self._line_of_tokenize_restart = self.start_pos[0] + 1
+            self.gen = PushBackIterator(tokenize_func(self.buf.readline))
+            return self.next()
+
         type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
                             self.parserline = self._current_full
         if self.user_position and (self.start_pos[0] == self.user_position[0]
@@ -1550,8 +1575,8 @@ class PyFuzzyParser(object):
 
         :raises: IndentationError
         """
-        buf = BytesIO(self.code)
-        self.gen = PushBackIterator(tokenize_func(buf.readline))
+        self.buf = BytesIO(self.code)
+        self.gen = PushBackIterator(tokenize_func(self.buf.readline))
 
         extended_flow = ['else', 'elif', 'except', 'finally']
         statement_toks = ['{', '[', '(', '`']
@@ -1725,20 +1750,6 @@ class PyFuzzyParser(object):
                                                             self.start_pos[0])
             except StopIteration:  # thrown on EOF
                 break
-            except tokenize.TokenError:
-                # We just ignore this error, I try to handle it earlier - as
-                # good as possible
-                debug.warning('parentheses not closed error')
-            except IndentationError:
-                # This is an error, that tokenize may produce, because the code
-                # is not indented as it should. Here it just ignores this line
-                # and restarts the parser.
-                # (This is a rather unlikely error message, for normal code,
-                # tokenize seems to be pretty tolerant)
-                self._line_of_tokenize_restart = self.start_pos[0] + 1
-                self._tokenize_start_pos = (0, 0)
-                self._tokenize_end_pos = (0, 0)
-                debug.warning('indentation error on line %s, ignoring it' %
-                                                        (self.start_pos[0]))
-                self.gen = PushBackIterator(tokenize_func(buf.readline))
+
+        del self.buf
         return self.module
