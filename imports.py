@@ -115,12 +115,17 @@ class ImportPath(object):
         Get the names of all modules in the search_path. This means file names
         and not names defined in the files.
         """
+        if not search_path:
+            search_path = self.sys_path_with_modifications()
         names = []
         for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
-            inf = float('inf')
-            inf_pos = (inf, inf)
+            inf_pos = (float('inf'), float('inf'))
             names.append(parsing.Name([(name, inf_pos)], inf_pos, inf_pos))
         return names
+
+    def sys_path_with_modifications(self):
+        module = self.import_stmt.get_parent_until()
+        return modules.sys_path_with_modifications(module)
 
     def follow(self):
         """

@@ -1,13 +1,12 @@
 import re
 import weakref
-import os
 
 import parsing
-import dynamic  # must be before evaluate, because it needs to be loaded first.
+import dynamic
+import imports
 import evaluate
 import modules
 import debug
-import imports
 import settings
 import keywords
 

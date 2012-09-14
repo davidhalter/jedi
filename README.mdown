@@ -53,11 +53,11 @@ Jedi supports many of the widely used Python features:
    I don't know what to do with them.)
  - class decorators (py3k feature, are being ignored too, until I find a use
    case, that doesn't work with Jedi)
+ - simple/usual `sys.path` modifications
 
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
 
- - `sys.path` modifications
  - assert / isinstance
  - manipulations of instances outside the instance variables, without using
    functions

@@ -12,6 +12,8 @@ from _compatibility import unicode, BytesIO, reduce, literal_eval, is_py25
 import functions
 import debug
 
+sys.path.pop()  # pop again, because it might affect the completion
+
 
 def run_completion_test(correct, source, line_nr, index, line, path):
     """

@@ -900,6 +900,17 @@ class Call(Base):
             for y in self.next.generate_call_path():
                 yield y
 
+    def get_code(self):
+        if self.type == Call.NAME:
+            s = self.name.get_code()
+        else:
+            s = repr(self.name)
+        if self.execution is not None:
+            s += '(%s)' % self.execution.get_code()
+        if self.next is not None:
+            s += self.next.get_code()
+        return s
+
     def __repr__(self):
         return "<%s: %s>" % \
                 (self.__class__.__name__, self.name)
@@ -990,6 +1001,34 @@ class Array(Call):
             return iter(zip(self.keys, self.values))
         else:
             return iter(self.values)
+
+    def get_code(self):
+        def to_str(el):
+            try:
+                return el.get_code()
+            except AttributeError:
+                return str(el)
+
+        map = {Array.NOARRAY: '%s',
+               Array.TUPLE:   '(%s)',
+               Array.LIST:    '[%s]',
+               Array.DICT:    '{%s}',
+               Array.SET:     '{%s}'
+              }
+        inner = []
+        for i, value in enumerate(self.values):
+            s = ''
+            try:
+                key = self.keys[i]
+            except IndexError:
+                pass
+            else:
+                for el in key[i]:
+                    s += to_str(el)
+            for el in value:
+                s += to_str(el)
+            inner.append(s)
+        return map[self.type] % ', '.join(inner)
 
     def __repr__(self):
         if self.type == self.NOARRAY:

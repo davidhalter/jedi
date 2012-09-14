@@ -1,11 +1,16 @@
 from __future__ import with_statement
+
+from _compatibility import exec_function
+
 import re
 import tokenize
 import sys
+import os
 
 import parsing
 import builtin
 import debug
+import evaluate
 
 
 class Module(builtin.CachedModule):
@@ -170,3 +175,64 @@ class ModuleWithCursor(Module):
             return self._line_cache[line_nr - 1]
         except IndexError:
             raise StopIteration()
+
+
+@evaluate.memoize_default([])
+def sys_path_with_modifications(module):
+    def execute_code(code):
+        c = "import os; from os.path import *; result=%s"
+        variables = {}
+        try:
+            exec_function(c % code, variables)
+        except Exception:
+            return None
+        try:
+            return os.path.abspath(variables['result'])
+        except KeyError:
+            return None
+
+    curdir = os.path.abspath(os.curdir)
+    try:
+        os.chdir(os.path.dirname(module.path))
+    except OSError:
+        pass
+    sys_path = list(builtin.module_find_path)  # copy
+    try:
+        possible_stmts = module.used_names['path']
+    except KeyError:
+        return []
+
+    for p in possible_stmts:
+        try:
+            call = p.get_assignment_calls().get_only_subelement()
+        except AttributeError:
+            continue
+        n = call.name
+        if not isinstance(n, parsing.Name) or len(n.names) != 3:
+            continue
+        if n.names[:2] != ('sys', 'path'):
+            continue
+        array_cmd = n.names[2]
+        if call.execution is None:
+            continue
+        exe = call.execution
+        if not (array_cmd == 'insert' and len(exe) == 2 \
+                or array_cmd == 'append' and len(exe) == 1):
+            continue
+
+        if array_cmd == 'insert':
+            exe_type, exe.type = exe.type, parsing.Array.NOARRAY
+            exe_pop = exe.values.pop(0)
+            res = execute_code(exe.get_code())
+            if res:
+                sys_path.insert(0, res)
+            exe.type = exe_type
+            exe.values.insert(0, exe_pop)
+        elif array_cmd == 'append':
+            res = execute_code(exe.get_code())
+            if res:
+                sys_path.append(res)
+
+    # cleanup, back to old directory
+    os.chdir(curdir)
+    return sys_path

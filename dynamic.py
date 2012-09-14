@@ -10,6 +10,7 @@ import re
 import os
 
 import parsing
+import modules
 import evaluate
 import helpers
 import settings
