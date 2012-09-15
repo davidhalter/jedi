@@ -177,8 +177,8 @@ if 1:
     buf_path = vim.current.buffer.name
     source = '\n'.join(vim.current.buffer)
     try:
-        definitions = functions.get_definition(source, row, column, buf_path)
-    except functions.NotFoundError:
+        definitions = api.get_definition(source, row, column, buf_path)
+    except api.NotFoundError:
         definitions = []
     except Exception:
         # print to stdout, will be in :messages
@@ -431,7 +431,7 @@ import re
 
 # normally you should import jedi. jedi-vim is an exception, because you can
 # copy that directly into the .vim directory.
-import functions
+import api
 
 temp_rename = None  # used for jedi#rename
 
@@ -453,7 +453,7 @@ def get_script(source=None, column=None):
     if column is None:
         column = vim.current.window.cursor[1]
     buf_path = vim.current.buffer.name
-    return functions.Script(source, row, column, buf_path)
+    return api.Script(source, row, column, buf_path)
 
 
 def _goto(is_definition=False, is_related_name=False, no_output=False):
@@ -466,7 +466,7 @@ def _goto(is_definition=False, is_related_name=False, no_output=False):
             definitions = script.get_definition()
         else:
             definitions = script.goto()
-    except functions.NotFoundError:
+    except api.NotFoundError:
         echo_highlight("Cannot follow nothing. Put your cursor on a valid name.")
     except Exception:
         # print to stdout, will be in :messages
@@ -485,7 +485,7 @@ def _goto(is_definition=False, is_related_name=False, no_output=False):
 
             d = list(definitions)[0]
             if d.in_builtin_module():
-                if isinstance(d.definition, functions.keywords.Keyword):
+                if isinstance(d.definition, api.keywords.Keyword):
                     echo_highlight("Cannot get the definition of Python keywords.")
                 else:
                     echo_highlight("Builtin modules cannot be displayed.")

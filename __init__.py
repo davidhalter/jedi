@@ -1,2 +1,2 @@
-from functions import *
+from api import *
 import settings

@@ -10,7 +10,7 @@ os.chdir(dirname(abspath(__file__)) + '/..')
 
 from _compatibility import unicode, BytesIO, reduce, literal_eval, is_py25
 
-import functions
+import api
 import debug
 
 sys.path.pop()  # pop again, because it might affect the completion
@@ -110,7 +110,7 @@ def run_test(source, f_name, lines_to_execute):
     """
     def get_defs(correct, correct_start, path):
         def defs(line_nr, indent):
-            script = functions.Script(source, line_nr, indent, path)
+            script = api.Script(source, line_nr, indent, path)
             return set(script.get_definition())
 
         should_be = set()
@@ -121,7 +121,7 @@ def run_test(source, f_name, lines_to_execute):
             # -1 for the comment, +3 because of the comment start `#? `
             start = index.start()
             if print_debug:
-                functions.set_debug_function(None)
+                api.set_debug_function(None)
             number += 1
             try:
                 should_be |= defs(line_nr - 1, start + correct_start)
@@ -129,7 +129,7 @@ def run_test(source, f_name, lines_to_execute):
                 raise Exception('could not resolve %s indent %s'
                                                     % (line_nr - 1, start))
             if print_debug:
-                functions.set_debug_function(debug.print_to_stdout)
+                api.set_debug_function(debug.print_to_stdout)
         # because the objects have different ids, `repr` it, then compare it.
         should_str = set(r.desc_with_module for r in should_be)
         if len(should_str) < number:
@@ -157,7 +157,7 @@ def run_test(source, f_name, lines_to_execute):
             # get_definition test
             path = completion_test_dir + os.path.sep + f_name
             try:
-                script = functions.Script(source, line_nr, index, path)
+                script = api.Script(source, line_nr, index, path)
                 if test_type == '!':
                     fails += run_goto_test(script, correct, line_nr)
                 elif test_type == '<':
@@ -238,7 +238,7 @@ except ValueError:
     pass
 else:
     print_debug = True
-    functions.set_debug_function(debug.print_to_stdout)
+    api.set_debug_function(debug.print_to_stdout)
 
 # get test list, that should be executed
 test_files = {}

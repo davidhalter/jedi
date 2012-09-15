@@ -9,23 +9,23 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
 sys.path.append('.')
 
 from _compatibility import is_py25
-import functions
-#functions.set_debug_function(functions.debug.print_to_stdout)
+import api
+#api.set_debug_function(api.debug.print_to_stdout)
 
 
 class TestRegression(unittest.TestCase):
     def get_def(self, src, pos):
-        script = functions.Script(src, pos[0], pos[1], '')
+        script = api.Script(src, pos[0], pos[1], '')
         return script.get_definition()
 
     def complete(self, src, pos):
-        script = functions.Script(src, pos[0], pos[1], '')
+        script = api.Script(src, pos[0], pos[1], '')
         return script.complete()
 
     def get_in_function_call(self, src, pos=None):
         if pos is None:
             pos = 1, len(src)
-        script = functions.Script(src, pos[0], pos[1], '')
+        script = api.Script(src, pos[0], pos[1], '')
         return script.get_in_function_call()
 
     def test_get_definition_cursor(self):
@@ -61,7 +61,7 @@ class TestRegression(unittest.TestCase):
         #print should2, diff_line
         assert should2 == diff_line
 
-        self.assertRaises(functions.NotFoundError, get_def, cls)
+        self.assertRaises(api.NotFoundError, get_def, cls)
 
     def test_keyword_doc(self):
         r = list(self.get_def("or", (1, 1)))
@@ -108,7 +108,7 @@ class TestRegression(unittest.TestCase):
         s = ("def abc(): pass\n"
              "abc.d.a.abc.d"
              )
-        functions.Script(s, 2, 2, '/').related_names()
+        api.Script(s, 2, 2, '/').related_names()
 
     def test_get_in_function_call(self):
         s = "isinstance(a, abs("
