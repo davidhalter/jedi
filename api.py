@@ -119,7 +119,7 @@ class CallDef(object):
 
     @property
     def params(self):
-        if isinstance(self.executable, evaluate.Function):
+        if self.executable.isinstance(evaluate.Function):
             return self.executable.params
         else:
             try:
@@ -127,6 +127,10 @@ class CallDef(object):
                 return sub.params[1:]  # ignore self
             except KeyError:
                 return []
+
+    @property
+    def bracket_start(self):
+        return self.call.name.end_pos
 
     def __repr__(self):
         return '<%s: %s index %s>' % (self.__class__.__name__, self.executable,

@@ -511,16 +511,16 @@ def _goto(is_definition=False, is_related_name=False, no_output=False):
 
 
 def show_func_def(call_def, completion_lines=0):
-    row, column = vim.current.window.cursor
     vim.eval('jedi#clear_func_def()')
 
     if call_def is None:
         return
 
+    row, column = call_def.bracket_start
     if column < 2 or row == 0:
         return  # edge cases, just ignore
 
-    row_to_replace = row - 1
+    row_to_replace = row - 1  # TODO check if completion menu is above or below
     line = vim.eval("getline(%s)" % row_to_replace)
 
     insert_column = column - 2 # because it has stuff at the beginning
