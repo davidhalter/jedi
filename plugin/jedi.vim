@@ -72,11 +72,28 @@ if 1:
 PYTHONEOF
 endfunction
 
+" ------------------------------------------------------------------------
+" func_def
+" ------------------------------------------------------------------------
+function jedi#show_func_def()
+python << PYTHONEOF
+if 1:
+    row, column = vim.current.window.cursor
+    source = '\n'.join(vim.current.buffer)
+    buf_path = vim.current.buffer.name
+    call_def = functions.get_in_function_call(source, row, column, buf_path)
+    show_func_def(call_def)
+PYTHONEOF
+    return ''
+endfunction
+
 function jedi#clear_func_def()
 python << PYTHONEOF
 if 1:
     cursor = vim.current.window.cursor
-    vim.command(r'try | %s/≡jedi=\([^≡]*\)≡.*≡jedi≡/\1/g | catch | endtry')
+    e = vim.eval('g:jedi#function_definition_escape')
+    regex = r'%sjedi=\([^%s]*\)%s.*%sjedi%s'.replace('%s', e)
+    vim.command(r'try | %%s/%s/\1/g | catch | endtry' % regex)
     vim.current.window.cursor = cursor
 PYTHONEOF
 endfunction
@@ -336,6 +353,36 @@ endif
 if !exists("g:jedi#show_function_definition")
     let g:jedi#show_function_definition = 1
 endif
+if !exists("g:jedi#function_definition_escape")
+    let g:jedi#function_definition_escape = '≡'
+endif
+
+function! jedi#configure_function_definition()
+    " conceal is normal for vim >= 7.3
+
+    let e = g:jedi#function_definition_escape
+    let l1 = e.'jedi=[^'.e.']*'.e.'[^'.e.']*'.e.'jedi'.e
+    let l2 = e.'jedi=\?[^'.e.']*'.e
+    exe 'autocmd FileType python syn match jediIgnore "'.l2.'" contained conceal'
+    autocmd FileType python setlocal conceallevel=2
+    autocmd FileType python syn match jediFatSymbol "*" contained conceal
+    autocmd FileType python syn match jediFat "\*[^*]\+\*" contained contains=jediFatSymbol
+    autocmd FileType python syn match jediSpace "\v[ ]+( )@=" contained
+    exe 'autocmd FileType python syn match jediFunction "'.l1.'" contains=jediIgnore,jediFat,jediSpace'
+
+    autocmd FileType python autocmd InsertLeave * call jedi#clear_func_def()
+
+    " , and () mappings
+    autocmd FileType python inoremap <buffer> ( (<C-R>=jedi#show_func_def()<CR>
+    autocmd FileType python inoremap <buffer> ) )<C-R>=jedi#show_func_def()<CR>
+    autocmd FileType python inoremap <buffer> , ,<C-R>=jedi#show_func_def()<CR>
+
+    hi def link jediIgnore Ignore
+    hi def link jediFatSymbol Ignore
+    hi def link jediSpace Normal
+    hi jediFat term=bold,underline cterm=bold,underline gui=bold,underline ctermbg=0 guibg=Grey
+    hi jediFunction term=NONE cterm=NONE ctermfg=6 guifg=Cyan gui=NONE ctermbg=0 guibg=Grey
+endfunction
 
 if g:jedi#auto_initialization
     autocmd FileType python setlocal omnifunc=jedi#complete
@@ -352,21 +399,7 @@ if g:jedi#auto_initialization
     autocmd FileType python execute "nnoremap <silent> <buffer>".g:jedi#pydoc." :call jedi#show_pydoc()<CR>"
 
     if g:jedi#show_function_definition == 1 && has('conceal')
-        " conceal is normal for vim >= 7.3
-        autocmd FileType python syn match jediIgnore "≡jedi=\?[^≡]*≡" contained conceal
-        autocmd FileType python syn match jediFatSymbol "*" contained conceal
-        autocmd FileType python setlocal conceallevel=2
-
-        autocmd FileType python syn match jediFat "\*[^*]\+\*" contained contains=jediFatSymbol
-        autocmd FileType python syn match jediFunction "≡jedi=[^≡]*≡[^≡]*≡jedi≡" contains=jediIgnore,jediFat
-
-        autocmd FileType python autocmd InsertLeave * call jedi#clear_func_def()
-
-        hi def link jediIgnore Ignore
-        hi def link jediFatSymbol Ignore
-        hi def link jediFat VisualNOS
-        hi jediFat term=bold,underline cterm=bold,underline gui=bold,underline ctermbg=0 guibg=Grey
-        hi jediFunction term=NONE cterm=NONE ctermfg=6 guifg=Cyan gui=NONE ctermbg=0 guibg=Grey
+        call jedi#configure_function_definition()
     endif
 end
 
@@ -486,7 +519,9 @@ def show_func_def(call_def, completion_lines=0):
     text = ' ' * (insert_column - len(line)) + text
     end_column = insert_column + len(text) - 2  # -2 because of bold symbols
     # replace line before with cursor
-    repl = "%s≡jedi=%s≡%s≡jedi≡%s" % (line[:insert_column],
+    e = vim.eval('g:jedi#function_definition_escape')
+    regex = "xjedi=%sx%sxjedix".replace('x', e)
+    repl = ("%s" + regex + "%s") % (line[:insert_column],
                     line[insert_column:end_column], text, line[end_column:])
     vim.eval('setline(%s, "%s")' % (row_to_replace, repl))
     #vim.command(r"%ss/^.\{%s\}/\1%s/g" % (row_to_replace, column, text))

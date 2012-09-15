@@ -423,7 +423,7 @@ def _get_in_function_call(module, pos):
         return call, index
 
     user_stmt = module.parser.user_stmt
-    if user_stmt is None:
+    if user_stmt is None or not isinstance(user_stmt, parsing.Statement):
         return None
     ass = user_stmt.get_assignment_calls()
 

@@ -16,7 +16,7 @@ class TestRegression(unittest.TestCase):
         return functions.get_definition(src, pos[0], pos[1], '')
 
     def complete(self, src, pos):
-        return functions.complete(src, pos[0], pos[1], '')
+        return functions.complete(src, pos[0], pos[1], '')[0]
 
     def get_in_function_call(self, src, pos=None):
         if pos is None:
