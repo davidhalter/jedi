@@ -298,6 +298,9 @@ class Module(Scope):
             self._name = Name(names, self.start_pos, self.end_pos, self)
         return self._name
 
+    def is_builtin(self):
+        return not self.path.endswith('.py')
+
 
 class Class(Scope):
     """

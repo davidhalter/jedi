@@ -24,7 +24,8 @@ def run_completion_test(correct, source, line_nr, index, line, path):
     # lines start with 1 and column is just the last (makes no
     # difference for testing)
     try:
-        completions = functions.complete(source, line_nr, index, path)
+        completions, call_def = functions.complete(source, line_nr, index,
+                                                                        path)
         #import cProfile as profile
         #profile.run('functions.complete("""%s""", %i, %i, "%s")'
         #                            % (source, line_nr, len(line), path))

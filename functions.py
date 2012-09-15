@@ -13,7 +13,7 @@ import keywords
 from _compatibility import next
 
 __all__ = ['complete', 'goto', 'get_definition', 'related_names',
-           'NotFoundError', 'set_debug_function']
+           'NotFoundError', 'set_debug_function', 'get_in_function_call']
 
 
 class NotFoundError(Exception):
@@ -112,6 +112,29 @@ class Definition(dynamic.BaseOutput):
         return "%s:%s%s" % (self.module_name, self.description, position)
 
 
+class CallDef(object):
+    def __init__(self, executable, index):
+        self.executable = executable
+        self.index = index
+
+    @property
+    def params(self):
+        if isinstance(self.executable, evaluate.Function):
+            return self.executable.params
+        else:
+            try:
+                sub = self.executable.get_subscope_by_name('__init__')
+                return sub.params
+            except KeyError:
+                print self.executable.subscopes
+                print 'LALA'
+                return []
+
+    def __repr__(self):
+        return '<%s: %s index %s>' % (self.__class__.__name__, self.executable,
+                                    self.index)
+
+
 def _get_completion_parts(path):
     """
     Returns the parts for the completion
@@ -173,8 +196,10 @@ def complete(source, line, column, source_path):
     needs_dot = not dot and path
     c = [Completion(c, needs_dot, len(like), s) for c, s in set(completions)]
 
+    call_def = _get_in_function_call(f, pos)
+
     _clear_caches()
-    return c
+    return c, call_def
 
 
 def _prepare_goto(position, source_path, module, goto_path,
@@ -365,3 +390,54 @@ def set_debug_function(func_cb):
 
 def _clear_caches():
     evaluate.clear_caches()
+
+def get_in_function_call(source, line, column, source_path):
+    pos = (line, column)
+    f = modules.ModuleWithCursor(source_path, source=source, position=pos)
+
+    return _get_in_function_call(f, pos)
+
+def _get_in_function_call(module, pos):
+    def scan_array_for_pos(arr, pos):
+        """ Returns the function Call that match search_name in an Array. """
+        index = None
+        call = None
+        for index, sub in enumerate(arr):
+            call = None
+            for s in sub:
+                if isinstance(s, parsing.Array):
+                    new = scan_array_for_pos(s, pos)
+                    if new[0] is not None:
+                        call, index = new
+                elif isinstance(s, parsing.Call):
+                    while s is not None:
+                        if s.start_pos >= pos:
+                            return call, index
+                        if s.execution is not None:
+                            if s.execution.start_pos <= pos:
+                                call = s
+                            else:
+                                return call, index
+                            c, index = scan_array_for_pos(s.execution, pos)
+                            if c is not None:
+                                call = c
+                        s = s.next
+        return call, index
+
+    user_stmt = module.parser.user_stmt
+    if user_stmt is None:
+        return None
+    ass = user_stmt.get_assignment_calls()
+
+    call, index = scan_array_for_pos(ass, pos)
+    if call is None:
+        return None
+
+    call.execution, temp = None, call.execution
+    origins = evaluate.follow_call(call)
+    call.execution = temp
+
+    if len(origins) == 0:
+        return None
+    executable = origins[0]  # just take entry zero, because we need just one.
+    return CallDef(executable, index)

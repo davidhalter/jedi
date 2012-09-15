@@ -18,6 +18,11 @@ class TestRegression(unittest.TestCase):
     def complete(self, src, pos):
         return functions.complete(src, pos[0], pos[1], '')
 
+    def get_in_function_call(self, src, pos=None):
+        if pos is None:
+            pos = 1, len(src)
+        return functions.get_in_function_call(src, pos[0], pos[1], '')
+
     def test_get_definition_cursor(self):
 
         s = ("class A():\n"
@@ -100,6 +105,16 @@ class TestRegression(unittest.TestCase):
              )
         functions.related_names(s, 2, 2, '/')
 
+    def test_get_in_function_call(self):
+        s = "isinstance(a, abs("
+        s2 = "isinstance(), "
+        print
+        check = lambda call_def, index: call_def and call_def.index == index
+        assert check(self.get_in_function_call(s, (1,11)), 0)
+        assert check(self.get_in_function_call(s, (1,14)), 1)
+        assert check(self.get_in_function_call(s, (1,15)), 1)
+        assert check(self.get_in_function_call(s, (1,18)), 0)
+        assert self.get_in_function_call(s2) is None
 
 if __name__ == '__main__':
     unittest.main()

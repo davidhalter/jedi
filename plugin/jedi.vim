@@ -45,7 +45,7 @@ if 1:
         # here again, the hacks, because jedi has a different interface than vim
         column += len(base)
         try:
-            completions = functions.complete(source, row, column, buf_path)
+            completions, call_def = functions.complete(source, row, column, buf_path)
             out = []
             for c in completions:
                 d = dict(word=c.word[:len(base)] + c.complete,
@@ -64,9 +64,10 @@ if 1:
             print(traceback.format_exc())
             strout = ''
             completions = []
+            call_def = None
 
         #print 'end', strout
-        show_func_def(len(completions))
+        show_func_def(call_def, len(completions))
         vim.command('return ' + strout)
 PYTHONEOF
 endfunction
@@ -459,7 +460,8 @@ def _goto(is_definition=False, is_related_name=False, no_output=False):
             vim.command('call <sid>add_goto_window()')
     return definitions
 
-def show_func_def(completion_lines=0):
+
+def show_func_def(call_def, completion_lines=0):
     row, column = vim.current.window.cursor
     vim.eval('jedi#clear_func_def()')
 
@@ -470,6 +472,8 @@ def show_func_def(completion_lines=0):
     line = vim.eval("getline(%s)" % row_to_replace)
 
     insert_column = column - 2 # because it has stuff at the beginning
+
+    print call_def, call_def.params
     text = " (*asdf*, basdf) "
     text = ' ' * (insert_column - len(line)) + text
     end_column = insert_column + len(text) - 2  # -2 because of bold symbols

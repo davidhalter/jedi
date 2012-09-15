@@ -378,6 +378,8 @@ def parse_function_doc(func):
         end = 0
         param_str = ''
 
+    param_str = param_str.replace('-', '_')  # see: isinstance.__doc__
+
     if doc is not None:
         r = re.search('-[>-]* ', doc[end:end + 7])
     if doc is None or r is None:
