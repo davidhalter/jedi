@@ -124,10 +124,8 @@ class CallDef(object):
         else:
             try:
                 sub = self.executable.get_subscope_by_name('__init__')
-                return sub.params
+                return sub.params[1:]  # ignore self
             except KeyError:
-                print self.executable.subscopes
-                print 'LALA'
                 return []
 
     def __repr__(self):

@@ -465,6 +465,9 @@ def show_func_def(call_def, completion_lines=0):
     row, column = vim.current.window.cursor
     vim.eval('jedi#clear_func_def()')
 
+    if call_def is None:
+        return
+
     if column < 2 or row == 0:
         return  # edge cases, just ignore
 
@@ -473,8 +476,13 @@ def show_func_def(call_def, completion_lines=0):
 
     insert_column = column - 2 # because it has stuff at the beginning
 
-    print call_def, call_def.params
-    text = " (*asdf*, basdf) "
+    params = [p.get_code().replace('\n', '') for p in call_def.params]
+    try:
+        params[call_def.index] = '*%s*' % params[call_def.index]
+    except IndexError:
+        pass
+
+    text = " (%s) " % ', '.join(params)
     text = ' ' * (insert_column - len(line)) + text
     end_column = insert_column + len(text) - 2  # -2 because of bold symbols
     # replace line before with cursor
