@@ -194,7 +194,6 @@ class Script(object):
         completions = set(completions)
         c = [Completion(c, needs_dot, len(like), s) for c, s in completions]
 
-        _clear_caches()
         return c
 
     def _prepare_goto(self, goto_path, is_like_search=False):
@@ -266,7 +265,6 @@ class Script(object):
         scopes |= keywords.get_keywords(string=goto_path, pos=self.pos)
 
         d = set([Definition(s) for s in scopes])
-        _clear_caches()
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
     def goto(self):
@@ -288,7 +286,6 @@ class Script(object):
             definitions = evaluate.goto(scopes, search_name_new)
 
         d = [Definition(d) for d in set(definitions)]
-        _clear_caches()
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
     def related_names(self):
@@ -353,7 +350,6 @@ class Script(object):
             else:
                 names.append(dynamic.RelatedName(d.name.names[0], d))
 
-        _clear_caches()
         return sorted(names, key=lambda x: (x.module_path, x.start_pos))
 
     def get_in_function_call(self):
@@ -413,9 +409,8 @@ class Script(object):
         match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
         return match.groups()
 
-
-def _clear_caches():
-    evaluate.clear_caches()
+    def __del__(self):
+        evaluate.clear_caches()
 
 
 def set_debug_function(func_cb):
