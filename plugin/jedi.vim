@@ -18,6 +18,43 @@ let g:loaded_jedi = 1
 
 
 " ------------------------------------------------------------------------
+" defaults for jedi-vim
+" ------------------------------------------------------------------------
+if !exists("g:jedi#use_tabs_not_buffers ")
+    let g:jedi#use_tabs_not_buffers = 1
+endif
+if !exists("g:jedi#auto_initialization")
+    let g:jedi#auto_initialization = 1
+endif
+if !exists("g:jedi#goto_command")
+    let g:jedi#goto_command = "<leader>g"
+endif
+if !exists("g:jedi#get_definition_command")
+    let g:jedi#get_definition_command = "<leader>d"
+endif
+if !exists("g:jedi#related_names_command")
+    let g:jedi#related_names_command = "<leader>n"
+endif
+if !exists("g:jedi#rename_command")
+    let g:jedi#rename_command = "<leader>r"
+endif
+if !exists("g:jedi#popup_on_dot")
+    let g:jedi#popup_on_dot = 1
+endif
+if !exists("g:jedi#pydoc")
+    let g:jedi#pydoc = "K"
+endif
+if !exists("g:jedi#show_function_definition")
+    let g:jedi#show_function_definition = 1
+endif
+if !exists("g:jedi#function_definition_escape")
+    let g:jedi#function_definition_escape = '≡'
+endif
+if !exists("g:jedi#auto_close_doc")
+    let g:jedi#auto_close_doc = 1
+endif
+
+" ------------------------------------------------------------------------
 " completion
 " ------------------------------------------------------------------------
 function! jedi#complete(findstart, base)
@@ -331,38 +368,6 @@ endfunc
 " Initialization of jedi-vim
 " ------------------------------------------------------------------------
 
-" defaults for jedi-vim
-if !exists("g:jedi#use_tabs_not_buffers ")
-    let g:jedi#use_tabs_not_buffers = 1
-endif
-if !exists("g:jedi#auto_initialization")
-    let g:jedi#auto_initialization = 1
-endif
-if !exists("g:jedi#goto_command")
-    let g:jedi#goto_command = "<leader>g"
-endif
-if !exists("g:jedi#get_definition_command")
-    let g:jedi#get_definition_command = "<leader>d"
-endif
-if !exists("g:jedi#related_names_command")
-    let g:jedi#related_names_command = "<leader>n"
-endif
-if !exists("g:jedi#rename_command")
-    let g:jedi#rename_command = "<leader>r"
-endif
-if !exists("g:jedi#popup_on_dot")
-    let g:jedi#popup_on_dot = 1
-endif
-if !exists("g:jedi#pydoc")
-    let g:jedi#pydoc = "K"
-endif
-if !exists("g:jedi#show_function_definition")
-    let g:jedi#show_function_definition = 1
-endif
-if !exists("g:jedi#function_definition_escape")
-    let g:jedi#function_definition_escape = '≡'
-endif
-
 function! jedi#configure_function_definition()
     " conceal is normal for vim >= 7.3
 
@@ -411,6 +416,11 @@ end
 
 if g:jedi#popup_on_dot
     autocmd FileType python inoremap <buffer> . .<C-R>=jedi#do_popup_on_dot() ? "\<lt>C-X>\<lt>C-O>" : ""<CR>
+end
+
+if g:jedi#auto_close_doc
+    " close preview if its still open after insert
+    autocmd InsertLeave * if pumvisible() == 0|pclose|endif
 end
 
 set switchbuf=useopen  " needed for pydoc
