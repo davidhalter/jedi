@@ -113,16 +113,21 @@ class TestRegression(unittest.TestCase):
     def test_get_in_function_call(self):
         s = "isinstance(a, abs("
         s2 = "isinstance(), "
+        s3 = "isinstance()."
 
         check = lambda call_def, index: call_def and call_def.index == index
+
         assert check(self.get_in_function_call(s, (1, 11)), 0)
         assert check(self.get_in_function_call(s, (1, 14)), 1)
         assert check(self.get_in_function_call(s, (1, 15)), 1)
         assert check(self.get_in_function_call(s, (1, 18)), 0)
 
-        ##assert check(self.get_in_function_call(s2, (1, 11)), 0) # TODO uncomment
+        assert check(self.get_in_function_call(s2, (1, 11)), 0)
         assert self.get_in_function_call(s2, (1, 12)) is None
         assert self.get_in_function_call(s2) is None
+
+        assert self.get_in_function_call(s3, (1, 12)) is None
+        assert self.get_in_function_call(s3) is None
 
 if __name__ == '__main__':
     unittest.main()

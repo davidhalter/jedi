@@ -112,9 +112,10 @@ class Definition(dynamic.BaseOutput):
 
 
 class CallDef(object):
-    def __init__(self, executable, index):
+    def __init__(self, executable, index, call):
         self.executable = executable
         self.index = index
+        self.call = call
 
     @property
     def params(self):
@@ -133,7 +134,7 @@ class CallDef(object):
 
 
 class Script(object):
-    """ 
+    """
     A Script is the base for a completion, goto or whatever call.
 
     :param source: The source code of the current file
@@ -353,41 +354,63 @@ class Script(object):
         return sorted(names, key=lambda x: (x.module_path, x.start_pos))
 
     def get_in_function_call(self):
+        """
+        Return the function, that the cursor is in, e.g.:
+        >>> isinstance(| # | <-- cursor is here
+
+        This would return the `isinstance` function. In contrary:
+        >>> isinstance()| # | <-- cursor is here
+
+        This would return `None`.
+        """
         def scan_array_for_pos(arr, pos):
             """
             Returns the function Call that match search_name in an Array.
             """
-            index = None
+            index = 0
             call = None
+            stop = False
             for index, sub in enumerate(arr):
                 call = None
                 for s in sub:
                     if isinstance(s, parsing.Array):
                         new = scan_array_for_pos(s, pos)
                         if new[0] is not None:
-                            call, index = new
+                            call, index, stop = new
+                            if stop:
+                                return call, index, stop
                     elif isinstance(s, parsing.Call):
                         while s is not None:
                             if s.start_pos >= pos:
-                                return call, index
+                                return call, index, stop
                             if s.execution is not None:
                                 if s.execution.start_pos <= pos:
                                     call = s
-                                    c, index = scan_array_for_pos(s.execution,
-                                                                    pos)
+                                    c, index, stop = scan_array_for_pos(
+                                                        s.execution, pos)
+                                    if stop:
+                                        return c, index, stop
                                     if c is not None:
                                         call = c
                                 else:
-                                    return call, index
+                                    return call, index, stop
+                                print('E', pos, s.execution.end_pos)
+                                if s.execution.end_pos is not None:
+                                    if pos < s.execution.end_pos:
+                                        return call, index, True
+                                    else:
+                                        return None, 0, True
                             s = s.next
-            return call, index
+            # The third return is just necessary for recursion inside, because
+            # it needs to know when to stop iterating.
+            return call, index, stop
 
         user_stmt = self.parser.user_stmt
         if user_stmt is None or not isinstance(user_stmt, parsing.Statement):
             return None
         ass = user_stmt.get_assignment_calls()
 
-        call, index = scan_array_for_pos(ass, self.pos)
+        call, index, stop = scan_array_for_pos(ass, self.pos)
         if call is None:
             return None
 
@@ -399,7 +422,7 @@ class Script(object):
             return None
         # just take entry zero, because we need just one.
         executable = origins[0]
-        return CallDef(executable, index)
+        return CallDef(executable, index, call)
 
     def _get_completion_parts(self, path):
         """

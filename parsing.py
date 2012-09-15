@@ -790,6 +790,7 @@ class Statement(Simple):
                     # always dictionaries and not sets.
                     result.type = Array.DICT
                 level -= 1
+                result.end_pos = start_pos[0], start_pos[1] + 1
                 close_brackets = True
             else:
                 while is_call_or_close():
@@ -943,6 +944,7 @@ class Array(Call):
 
         self.values = values if values else []
         self.keys = []
+        self.end_pos = None
 
     def add_field(self):
         """
