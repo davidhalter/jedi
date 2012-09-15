@@ -2,7 +2,9 @@
 import os
 import sys
 import unittest
+from os.path import abspath, dirname
 
+sys.path.append(abspath(dirname(abspath(__file__)) + '/..'))
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
 sys.path.append('.')
 
@@ -13,15 +15,18 @@ import functions
 
 class TestRegression(unittest.TestCase):
     def get_def(self, src, pos):
-        return functions.get_definition(src, pos[0], pos[1], '')
+        script = functions.Script(src, pos[0], pos[1], '')
+        return script.get_definition()
 
     def complete(self, src, pos):
-        return functions.complete(src, pos[0], pos[1], '')[0]
+        script = functions.Script(src, pos[0], pos[1], '')
+        return script.complete()
 
     def get_in_function_call(self, src, pos=None):
         if pos is None:
             pos = 1, len(src)
-        return functions.get_in_function_call(src, pos[0], pos[1], '')
+        script = functions.Script(src, pos[0], pos[1], '')
+        return script.get_in_function_call()
 
     def test_get_definition_cursor(self):
 
@@ -103,7 +108,7 @@ class TestRegression(unittest.TestCase):
         s = ("def abc(): pass\n"
              "abc.d.a.abc.d"
              )
-        functions.related_names(s, 2, 2, '/')
+        functions.Script(s, 2, 2, '/').related_names()
 
     def test_get_in_function_call(self):
         s = "isinstance(a, abs("

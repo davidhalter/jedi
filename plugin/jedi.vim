@@ -16,10 +16,10 @@ if exists("g:loaded_jedi") || &cp
 endif
 let g:loaded_jedi = 1
 
+
 " ------------------------------------------------------------------------
 " completion
 " ------------------------------------------------------------------------
-
 function! jedi#complete(findstart, base)
 python << PYTHONEOF
 if 1:
@@ -32,7 +32,6 @@ if 1:
             count += 1
         vim.command('return %i' % (column - count))
     else:
-        buf_path = vim.current.buffer.name
         base = vim.eval('a:base')
         source = ''
         for i, line in enumerate(vim.current.buffer):
@@ -45,7 +44,10 @@ if 1:
         # here again, the hacks, because jedi has a different interface than vim
         column += len(base)
         try:
-            completions, call_def = functions.complete(source, row, column, buf_path)
+            script = get_script(source=source, column=column)
+            completions = script.complete()
+            call_def = script.get_in_function_call()
+
             out = []
             for c in completions:
                 d = dict(word=c.word[:len(base)] + c.complete,
@@ -72,20 +74,15 @@ if 1:
 PYTHONEOF
 endfunction
 
+
 " ------------------------------------------------------------------------
 " func_def
 " ------------------------------------------------------------------------
 function jedi#show_func_def()
-python << PYTHONEOF
-if 1:
-    row, column = vim.current.window.cursor
-    source = '\n'.join(vim.current.buffer)
-    buf_path = vim.current.buffer.name
-    call_def = functions.get_in_function_call(source, row, column, buf_path)
-    show_func_def(call_def)
-PYTHONEOF
+    python show_func_def(get_script().get_in_function_call())
     return ''
 endfunction
+
 
 function jedi#clear_func_def()
 python << PYTHONEOF
@@ -106,6 +103,7 @@ function! jedi#goto()
     python _goto()
 endfunction
 
+
 " ------------------------------------------------------------------------
 " get_definition
 " ------------------------------------------------------------------------
@@ -113,12 +111,14 @@ function! jedi#get_definition()
     python _goto(is_definition=True)
 endfunction
 
+
 " ------------------------------------------------------------------------
 " related_names
 " ------------------------------------------------------------------------
 function! jedi#related_names()
     python _goto(is_related_name=True)
 endfunction
+
 
 " ------------------------------------------------------------------------
 " rename
@@ -143,7 +143,6 @@ if 1:
         # reset autocommand
         vim.command('autocmd! jedi_rename InsertLeave')
 
-        current_buf = vim.current.buffer.name
         replace = vim.eval("expand('<cword>')")
         vim.command('normal! u')  # undo new word
         vim.command('normal! u')  # 2u didn't work...
@@ -166,6 +165,7 @@ if 1:
         temp_rename = None
 PYTHONEOF
 endfunction
+
 
 " ------------------------------------------------------------------------
 " show_pydoc
@@ -231,6 +231,7 @@ PYTHONEOF
     let b:current_syntax = "rst"
 endfunction
 
+
 " ------------------------------------------------------------------------
 " helper functions
 " ------------------------------------------------------------------------
@@ -244,6 +245,7 @@ function! jedi#new_buffer(path)
         execute 'edit '.a:path
     endif
 endfunction
+
 
 function! jedi#tabnew(path)
 python << PYTHONEOF
@@ -271,6 +273,7 @@ if 1:
 PYTHONEOF
 endfunction
 
+
 function! s:add_goto_window()
     set lazyredraw
     cclose
@@ -282,6 +285,7 @@ function! s:add_goto_window()
     au WinLeave <buffer> q  " automatically leave, if an option is chosen
     redraw!
 endfunction
+
 
 function! jedi#goto_window_on_enter()
     let l:list = getqflist()
@@ -296,12 +300,14 @@ function! jedi#goto_window_on_enter()
     endif
 endfunction
 
+
 function! jedi#syn_stack()
     if !exists("*synstack")
         return []
     endif
     return map(synstack(line('.'), col('.') - 1), 'synIDattr(v:val, "name")')
 endfunc
+
 
 function! jedi#do_popup_on_dot()
     let highlight_groups = jedi#syn_stack()
@@ -435,21 +441,31 @@ class PythonToVimStr(str):
     def __repr__(self):
         return '"%s"' % self.replace('"', r'\"')
 
+
 def echo_highlight(msg):
     vim.command('echohl WarningMsg | echo "%s" | echohl None' % msg)
 
+
+def get_script(source=None, column=None):
+    if source is None:
+        source = '\n'.join(vim.current.buffer)
+    row = vim.current.window.cursor[0]
+    if column is None:
+        column = vim.current.window.cursor[1]
+    buf_path = vim.current.buffer.name
+    return functions.Script(source, row, column, buf_path)
+
+
 def _goto(is_definition=False, is_related_name=False, no_output=False):
     definitions = []
-    row, column = vim.current.window.cursor
-    buf_path = vim.current.buffer.name
-    source = '\n'.join(vim.current.buffer)
+    script = get_script()
     try:
         if is_related_name:
-            definitions = functions.related_names(source, row, column, buf_path)
+            definitions = script.related_names()
         elif is_definition:
-            definitions = functions.get_definition(source, row, column, buf_path)
+            definitions = script.get_definition()
         else:
-            definitions = functions.goto(source, row, column, buf_path)
+            definitions = script.goto()
     except functions.NotFoundError:
         echo_highlight("Cannot follow nothing. Put your cursor on a valid name.")
     except Exception:
@@ -512,7 +528,7 @@ def show_func_def(call_def, completion_lines=0):
     params = [p.get_code().replace('\n', '') for p in call_def.params]
     try:
         params[call_def.index] = '*%s*' % params[call_def.index]
-    except IndexError:
+    except (IndexError, TypeError):
         pass
 
     text = " (%s) " % ', '.join(params)
@@ -524,8 +540,6 @@ def show_func_def(call_def, completion_lines=0):
     repl = ("%s" + regex + "%s") % (line[:insert_column],
                     line[insert_column:end_column], text, line[end_column:])
     vim.eval('setline(%s, "%s")' % (row_to_replace, repl))
-    #vim.command(r"%ss/^.\{%s\}/\1%s/g" % (row_to_replace, column, text))
-
 PYTHONEOF
 
 " vim: set et ts=4:

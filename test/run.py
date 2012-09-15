@@ -16,81 +16,37 @@ import debug
 sys.path.pop()  # pop again, because it might affect the completion
 
 
-def run_completion_test(correct, source, line_nr, index, line, path):
+def run_completion_test(script, correct, line_nr):
     """
     Runs tests for completions.
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
-    # lines start with 1 and column is just the last (makes no
-    # difference for testing)
-    try:
-        completions, call_def = functions.complete(source, line_nr, index,
-                                                                        path)
-        #import cProfile as profile
-        #profile.run('functions.complete("""%s""", %i, %i, "%s")'
-        #                            % (source, line_nr, len(line), path))
-    except Exception:
-        print(traceback.format_exc())
-        print('test @%s: %s' % (line_nr - 1, line))
+    completions = script.complete()
+    #import cProfile; cProfile.run('script.complete()')
+
+    comp_str = set([c.word for c in completions])
+    if comp_str != set(literal_eval(correct)):
+        print('Solution @%s not right, received %s, wanted %s'\
+                    % (line_nr - 1, comp_str, correct))
         return 1
-    else:
-        # TODO remove set! duplicates should not be normal
-        comp_str = set([c.word for c in completions])
-        if comp_str != set(literal_eval(correct)):
-            print('Solution @%s not right, received %s, wanted %s'\
-                        % (line_nr - 1, comp_str, correct))
-            return 1
     return 0
 
 
-def run_definition_test(correct, source, line_nr, index, line, correct_start,
-                                                                        path):
+def run_definition_test(script, should_str, line_nr):
     """
     Runs tests for definitions.
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
-    def defs(line_nr, indent):
-        return set(functions.get_definition(source, line_nr, indent, path))
-    try:
-        result = defs(line_nr, index)
-    except Exception:
-        print(traceback.format_exc())
-        print('test @%s: %s' % (line_nr - 1, line))
+    result = script.get_definition()
+    is_str = set(r.desc_with_module for r in result)
+    if is_str != should_str:
+        print('Solution @%s not right, received %s, wanted %s' \
+                    % (line_nr - 1, is_str, should_str))
         return 1
-    else:
-        should_be = set()
-        number = 0
-        for index in re.finditer('(?: +|$)', correct):
-            if correct == ' ':
-                continue
-            # -1 for the comment, +3 because of the comment start `#? `
-            start = index.start()
-            if print_debug:
-                functions.set_debug_function(None)
-            number += 1
-            try:
-                should_be |= defs(line_nr - 1, start + correct_start)
-            except Exception:
-                print(traceback.format_exc())
-                print('could not resolve %s indent %s' % (line_nr - 1, start))
-                return 1
-            if print_debug:
-                functions.set_debug_function(debug.print_to_stdout)
-        # because the objects have different ids, `repr` it, then compare it.
-        should_str = set(r.desc_with_module for r in should_be)
-        if len(should_str) < number:
-            print('Solution @%s not right, too few test results: %s' \
-                        % (line_nr - 1, should_str))
-            return 1
-        is_str = set(r.desc_with_module for r in result)
-        if is_str != should_str:
-            print('Solution @%s not right, received %s, wanted %s' \
-                        % (line_nr - 1, is_str, should_str))
-            return 1
     return 0
 
 
-def run_goto_test(correct, source, line_nr, index, line, path):
+def run_goto_test(script, correct, line_nr):
     """
     Runs tests for gotos.
     Tests look like this:
@@ -107,22 +63,16 @@ def run_goto_test(correct, source, line_nr, index, line, path):
 
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
-    try:
-        result = functions.goto(source, line_nr, index, path)
-    except Exception:
-        print(traceback.format_exc())
-        print('test @%s: %s' % (line_nr - 1, line))
+    result = script.goto()
+    comp_str = str(sorted(r.description for r in result))
+    if comp_str != correct:
+        print('Solution @%s not right, received %s, wanted %s'\
+                    % (line_nr - 1, comp_str, correct))
         return 1
-    else:
-        comp_str = str(sorted(r.description for r in result))
-        if comp_str != correct:
-            print('Solution @%s not right, received %s, wanted %s'\
-                        % (line_nr - 1, comp_str, correct))
-            return 1
     return 0
 
 
-def run_related_name_test(correct, source, line_nr, index, line, path):
+def run_related_name_test(script, correct, line_nr):
     """
     Runs tests for gotos.
     Tests look like this:
@@ -132,20 +82,14 @@ def run_related_name_test(correct, source, line_nr, index, line, path):
 
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
-    try:
-        result = functions.related_names(source, line_nr, index, path)
-    except Exception:
-        print(traceback.format_exc())
-        print('test @%s: %s' % (line_nr - 1, line))
+    result = script.related_names()
+    correct = correct.strip()
+    comp_str = set('(%s,%s)' % r.start_pos for r in result)
+    correct = set(correct.split(' ')) if correct else set()
+    if comp_str != correct:
+        print('Solution @%s not right, received %s, wanted %s'\
+                    % (line_nr - 1, comp_str, correct))
         return 1
-    else:
-        correct = correct.strip()
-        comp_str = set('(%s,%s)' % r.start_pos for r in result)
-        correct = set(correct.split(' ')) if correct else set()
-        if comp_str != correct:
-            print('Solution @%s not right, received %s, wanted %s'\
-                        % (line_nr - 1, comp_str, correct))
-            return 1
     return 0
 
 
@@ -164,9 +108,40 @@ def run_test(source, f_name, lines_to_execute):
     >>> #? int()
     >>> ab = 3; ab
     """
+    def get_defs(correct, correct_start, path):
+        def defs(line_nr, indent):
+            script = functions.Script(source, line_nr, indent, path)
+            return set(script.get_definition())
+
+        should_be = set()
+        number = 0
+        for index in re.finditer('(?: +|$)', correct):
+            if correct == ' ':
+                continue
+            # -1 for the comment, +3 because of the comment start `#? `
+            start = index.start()
+            if print_debug:
+                functions.set_debug_function(None)
+            number += 1
+            try:
+                should_be |= defs(line_nr - 1, start + correct_start)
+            except Exception:
+                raise Exception('could not resolve %s indent %s'
+                                                    % (line_nr - 1, start))
+            if print_debug:
+                functions.set_debug_function(debug.print_to_stdout)
+        # because the objects have different ids, `repr` it, then compare it.
+        should_str = set(r.desc_with_module for r in should_be)
+        if len(should_str) < number:
+            raise Exception('Solution @%s not right, too few test results: %s'
+                                                % (line_nr - 1, should_str))
+        return should_str
+
     fails = 0
     tests = 0
     correct = None
+    test_type = None
+    start = None
     for line_nr, line in enumerate(BytesIO(source.encode())):
         line = unicode(line)
         line_nr += 1
@@ -181,16 +156,21 @@ def run_test(source, f_name, lines_to_execute):
             # if a list is wanted, use the completion test, otherwise the
             # get_definition test
             path = completion_test_dir + os.path.sep + f_name
-            args = (correct, source, line_nr, index, line, path)
-            if test_type == '!':
-                fails += run_goto_test(*args)
-            elif test_type == '<':
-                fails += run_related_name_test(*args)
-            elif correct.startswith('['):
-                fails += run_completion_test(*args)
-            else:
-                fails += run_definition_test(correct, source, line_nr, index,
-                                                            line, start, path)
+            try:
+                script = functions.Script(source, line_nr, index, path)
+                if test_type == '!':
+                    fails += run_goto_test(script, correct, line_nr)
+                elif test_type == '<':
+                    fails += run_related_name_test(script, correct, line_nr)
+                elif correct.startswith('['):
+                    fails += run_completion_test(script, correct, line_nr)
+                else:
+                    should_str = get_defs(correct, start, path)
+                    fails += run_definition_test(script, should_str, line_nr)
+            except Exception:
+                print(traceback.format_exc())
+                print('test @%s: %s' % (line_nr - 1, line))
+                fails += 1
             correct = None
             tests += 1
         else:
