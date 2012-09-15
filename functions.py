@@ -414,11 +414,11 @@ def _get_in_function_call(module, pos):
                         if s.execution is not None:
                             if s.execution.start_pos <= pos:
                                 call = s
+                                c, index = scan_array_for_pos(s.execution, pos)
+                                if c is not None:
+                                    call = c
                             else:
                                 return call, index
-                            c, index = scan_array_for_pos(s.execution, pos)
-                            if c is not None:
-                                call = c
                         s = s.next
         return call, index
 
