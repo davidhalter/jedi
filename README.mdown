@@ -124,11 +124,11 @@ If you want to set up an IDE with Jedi, you need to `import jedi`. You should
 have the following objects available:
 
 `complete`
->    Returns `functions.Completion` objects. Those objects have got
+>    Returns `api.Completion` objects. Those objects have got
 >    informations about the completions. More than just names.
 
 `goto`
->    Similar to complete. The returned `functions.Definition` objects contain
+>    Similar to complete. The returned `api.Definition` objects contain
 >    information about the definitions found.
 
 `get_definition`
