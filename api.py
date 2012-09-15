@@ -133,7 +133,18 @@ class CallDef(object):
 
 
 class Script(object):
-    """ TODO doc """
+    """ 
+    A Script is the base for a completion, goto or whatever call.
+
+    :param source: The source code of the current file
+    :type source: string
+    :param line: The line to complete in.
+    :type line: int
+    :param col: The column to complete in.
+    :type col: int
+    :param source_path: The path in the os, the current module is in.
+    :type source_path: int
+    """
     def __init__(self, source, line, column, source_path):
         self.pos = line, column
         self.module = modules.ModuleWithCursor(source_path, source=source,
@@ -144,15 +155,6 @@ class Script(object):
     def complete(self):
         """
         An auto completer for python files.
-
-        :param source: The source code of the current file
-        :type source: string
-        :param line: The line to complete in.
-        :type line: int
-        :param col: The column to complete in.
-        :type col: int
-        :param source_path: The path in the os, the current module is in.
-        :type source_path: str
 
         :return: list of Completion objects.
         :rtype: list
@@ -236,15 +238,6 @@ class Script(object):
         Returns the definitions of a the path under the cursor.  This is
         not a goto function! This follows complicated paths and returns the
         end, not the first definition.
-
-        :param source: The source code of the current file
-        :type source: string
-        :param line: The line to complete in.
-        :type line: int
-        :param col: The column to complete in.
-        :type col: int
-        :param source_path: The path in the os, the current module is in.
-        :type source_path: int
 
         :return: list of Definition objects, which are basically scopes.
         :rtype: list
