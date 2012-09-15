@@ -1183,7 +1183,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             scope_generator = scope.scope_generator()
         else:
             if isinstance(scope, Class):
-                # classes are only available directly via chaining? 
+                # classes are only available directly via chaining?
                 # strange stuff...
                 names = scope.get_defined_names()
             else:
@@ -1191,6 +1191,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             scope_generator = iter([(scope, names)])
 
     return descriptor_check(remove_statements(filter_name(scope_generator)))
+
 
 def check_getattr(inst, name_str):
     result = []

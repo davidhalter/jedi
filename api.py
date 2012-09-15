@@ -163,8 +163,8 @@ class Script(object):
         try:
             scopes = self._prepare_goto(path, True)
         except NotFoundError:
-            scope_generator = evaluate.get_names_for_scope(self.parser.user_scope,
-                                                                            self.pos)
+            scope_generator = evaluate.get_names_for_scope(
+                                            self.parser.user_scope, self.pos)
             completions = []
             for scope, name_list in scope_generator:
                 for c in name_list:
@@ -173,7 +173,7 @@ class Script(object):
             completions = []
             debug.dbg('possible scopes', scopes)
             for s in scopes:
-                # TODO is this really the right way? just ignore the functions? \
+                # TODO is this really the right way? just ignore the funcs? \
                 # do the magic functions first? and then recheck here?
                 if not isinstance(s, evaluate.Function):
                     if isinstance(s, imports.ImportPath):
@@ -184,12 +184,13 @@ class Script(object):
                         completions.append((c, s))
 
         completions = [(c, s) for c, s in completions
-                            if settings.case_insensitive_completion
-                                and c.names[-1].lower().startswith(like.lower())
-                                or c.names[-1].startswith(like)]
+                        if settings.case_insensitive_completion
+                            and c.names[-1].lower().startswith(like.lower())
+                            or c.names[-1].startswith(like)]
 
         needs_dot = not dot and path
-        c = [Completion(c, needs_dot, len(like), s) for c, s in set(completions)]
+        completions = set(completions)
+        c = [Completion(c, needs_dot, len(like), s) for c, s in completions]
 
         _clear_caches()
         return c
@@ -201,8 +202,8 @@ class Script(object):
         user_stmt = self.parser.user_stmt
         if not user_stmt and len(goto_path.split('\n')) > 1:
             # If the user_stmt is not defined and the goto_path is multi line,
-            # something's strange. Most probably the backwards tokenizer matched to
-            # much.
+            # something's strange. Most probably the backwards tokenizer
+            # matched to much.
             return []
 
         if isinstance(user_stmt, parsing.Import):
@@ -218,7 +219,8 @@ class Script(object):
                             kill_count=kill_count, direct_resolve=True)]
         else:
             # just parse one statement, take it and evaluate it
-            r = parsing.PyFuzzyParser(goto_path, self.source_path, no_docstr=True)
+            r = parsing.PyFuzzyParser(goto_path, self.source_path,
+                                                            no_docstr=True)
             try:
                 stmt = r.module.statements[0]
             except IndexError:
@@ -229,11 +231,10 @@ class Script(object):
             scopes = evaluate.follow_statement(stmt)
         return scopes
 
-
     def get_definition(self):
         """
-        Returns the definitions of a the path under the cursor.
-        This is not a goto function! This follows complicated paths and returns the
+        Returns the definitions of a the path under the cursor.  This is
+        not a goto function! This follows complicated paths and returns the
         end, not the first definition.
 
         :param source: The source code of the current file
@@ -275,7 +276,6 @@ class Script(object):
         _clear_caches()
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
-
     def goto(self):
         goto_path = self.module.get_path_under_cursor()
         goto_path, dot, search_name = self._get_completion_parts(goto_path)
@@ -298,13 +298,12 @@ class Script(object):
         _clear_caches()
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
-
     def related_names(self):
         """
-        Returns `dynamic.RelatedName` objects, which contain all names, that are
-        defined by the same variable, function, class or import.
-        This function can be used either to show all the usages of a variable or
-        for renaming purposes.
+        Returns `dynamic.RelatedName` objects, which contain all names, that
+        are defined by the same variable, function, class or import.
+        This function can be used either to show all the usages of a variable
+        or for renaming purposes.
         """
         goto_path = self.module.get_path_under_cursor()
         goto_path, dot, search_name = self._get_completion_parts(goto_path)
@@ -323,7 +322,8 @@ class Script(object):
             else:
                 e = evaluate.Class(self.module.parser.user_scope)
             definitions = [e]
-        elif isinstance(self.module.parser.user_stmt, (parsing.Param, parsing.Import)):
+        elif isinstance(self.module.parser.user_stmt,
+                                            (parsing.Param, parsing.Import)):
             definitions = [self.module.parser.user_stmt]
         else:
             scopes = self._prepare_goto(goto_path)
@@ -348,11 +348,12 @@ class Script(object):
             elif isinstance(d, parsing.Import):
                 is_user = d == self.module.parser.user_stmt
                 check_names = [d.namespace, d.alias, d.from_ns] if is_user \
-                                                        else d.get_defined_names()
+                                                    else d.get_defined_names()
                 for name in check_names:
                     if name:
                         for n in name.names:
-                            if n.start_pos <= self.pos <= n.end_pos or not is_user:
+                            if n.start_pos <= self.pos <= n.end_pos \
+                                                            or not is_user:
                                 names.append(dynamic.RelatedName(n, d))
             elif isinstance(d, parsing.Name):
                 names.append(dynamic.RelatedName(d.names[0], d))
@@ -364,7 +365,9 @@ class Script(object):
 
     def get_in_function_call(self):
         def scan_array_for_pos(arr, pos):
-            """ Returns the function Call that match search_name in an Array. """
+            """
+            Returns the function Call that match search_name in an Array.
+            """
             index = None
             call = None
             for index, sub in enumerate(arr):
@@ -381,7 +384,8 @@ class Script(object):
                             if s.execution is not None:
                                 if s.execution.start_pos <= pos:
                                     call = s
-                                    c, index = scan_array_for_pos(s.execution, pos)
+                                    c, index = scan_array_for_pos(s.execution,
+                                                                    pos)
                                     if c is not None:
                                         call = c
                                 else:
@@ -404,7 +408,8 @@ class Script(object):
 
         if len(origins) == 0:
             return None
-        executable = origins[0]  # just take entry zero, because we need just one.
+        # just take entry zero, because we need just one.
+        executable = origins[0]
         return CallDef(executable, index)
 
     def _get_completion_parts(self, path):
