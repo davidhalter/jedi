@@ -123,18 +123,30 @@ API-Design for IDEs
 If you want to set up an IDE with Jedi, you need to `import jedi`. You should
 have the following objects available:
 
-`complete`
+`Script`
+>    Returns a script object, that contains the relevant information for the
+>    other functions to work without params. 
+
+`Script().complete`
 >    Returns `api.Completion` objects. Those objects have got
 >    informations about the completions. More than just names.
 
-`goto`
+`Script().goto`
 >    Similar to complete. The returned `api.Definition` objects contain
 >    information about the definitions found.
 
-`get_definition`
->    A mostly for tests used function. Like goto, but follows statements and
->    imports and doesn't break there. You probably don't want to use this
->    function. It's mostly for testing.
+`Script().get_definition`
+>    Mostly used for tests. Like goto, but follows statements and imports and
+>    doesn't break there. You probably don't want to use this function. It's
+>    mostly for testing.
+
+`Script().related_names`
+>    Returns all names that point to the definition of the name under the
+>    cursor. This is also very useful for refactoring (renaming).
+
+`Script().get_in_function_call`
+>    Get the `Function` object of the call you're currently in, e.g.: `abs(`
+>    with the cursor at the end would return the builtin `abs` function.
 
 `NotFoundError`
 >    If you use the goto function and no valid identifier (name) is at the
