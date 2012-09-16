@@ -281,6 +281,8 @@ class Parser(CachedModule):
         # functions
         for name, func in funcs.items():
             params, ret = parse_function_doc(func)
+            if depth > 0:
+                params = 'self, ' + params
             doc_str = get_doc(func, indent=True)
             try:
                 mixin = mixin_funcs[name]
