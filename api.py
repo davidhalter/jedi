@@ -35,12 +35,11 @@ class Completion(object):
         append = ''
         funcs = (parsing.Function, evaluate.Function)
         if settings.add_bracket_after_function \
-                    and isinstance(self._completion_parent, funcs):
+                    and self._completion_parent.isinstance(funcs):
             append = '('
 
         if settings.add_dot_after_module:
-            if isinstance(self.base, parsing.Module):
-                append += '.'
+            if isinstance(self.base, parsing.Module): append += '.'
         return dot + self.name.names[-1][self.like_name_length:] + append
 
     @property
@@ -121,6 +120,8 @@ class CallDef(object):
     @property
     def params(self):
         if self.executable.isinstance(evaluate.Function):
+            if isinstance(self.executable, evaluate.InstanceElement):
+                return self.executable.params[1:]
             return self.executable.params
         else:
             try:
