@@ -123,6 +123,7 @@ class TestRegression(unittest.TestCase):
         s4 = 'abs(zip(), , set,'
         s5 = "abs(1,\nif 2:\n def a():"
         s6 = "str().center("
+        s7 = "str().upper().center("
 
         assert check(self.get_in_function_call(s, (1, 4)), 'abs', 0)
         assert check(self.get_in_function_call(s, (1, 6)), 'abs', 1)
@@ -148,6 +149,8 @@ class TestRegression(unittest.TestCase):
 
         assert check(self.get_in_function_call(s6, (1, 13)), 'center', 0)
         assert check(self.get_in_function_call(s6, (1, 4)), 'str', 0)
+
+        assert check(self.get_in_function_call(s7), 'center', 0)
 
 if __name__ == '__main__':
     unittest.main()
