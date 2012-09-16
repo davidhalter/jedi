@@ -60,6 +60,7 @@ endif
 function! jedi#complete(findstart, base)
 python << PYTHONEOF
 if 1:
+    vim.eval('jedi#clear_func_def()')
     row, column = vim.current.window.cursor
     if vim.eval('a:findstart') == '1':
         count = 0
@@ -387,6 +388,7 @@ function! jedi#configure_function_definition()
     autocmd FileType python inoremap <buffer> ( (<C-R>=jedi#show_func_def()<CR>
     autocmd FileType python inoremap <buffer> ) )<C-R>=jedi#show_func_def()<CR>
     autocmd FileType python inoremap <buffer> , ,<C-R>=jedi#show_func_def()<CR>
+    autocmd FileType python inoremap <buffer> <BS> <BS><C-R>=jedi#show_func_def()<CR>
 
     hi def link jediIgnore Ignore
     hi def link jediFatSymbol Ignore

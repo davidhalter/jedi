@@ -111,23 +111,43 @@ class TestRegression(unittest.TestCase):
         api.Script(s, 2, 2, '/').related_names()
 
     def test_get_in_function_call(self):
-        s = "isinstance(a, abs("
-        s2 = "isinstance(), "
-        s3 = "isinstance()."
+        def check(call_def, name, index):
+            return call_def and call_def.call_name == name \
+                            and call_def.index == index
 
-        check = lambda call_def, index: call_def and call_def.index == index
+        # simple
+        s = "abs(a, str("
+        s2 = "abs(), "
+        s3 = "abs()."
+        # more complicated
+        s4 = 'abs(zip(), , set,'
+        s5 = "abs(1,\nif 2:\n def a():"
+        s6 = "str().center("
 
-        assert check(self.get_in_function_call(s, (1, 11)), 0)
-        assert check(self.get_in_function_call(s, (1, 14)), 1)
-        assert check(self.get_in_function_call(s, (1, 15)), 1)
-        assert check(self.get_in_function_call(s, (1, 18)), 0)
+        assert check(self.get_in_function_call(s, (1, 4)), 'abs', 0)
+        assert check(self.get_in_function_call(s, (1, 6)), 'abs', 1)
+        assert check(self.get_in_function_call(s, (1, 7)), 'abs', 1)
+        assert check(self.get_in_function_call(s, (1, 8)), 'abs', 1)
+        assert check(self.get_in_function_call(s, (1, 11)), 'str', 0)
 
-        assert check(self.get_in_function_call(s2, (1, 11)), 0)
-        assert self.get_in_function_call(s2, (1, 12)) is None
+        assert check(self.get_in_function_call(s2, (1, 4)), 'abs', 0)
+        assert self.get_in_function_call(s2, (1, 5)) is None
         assert self.get_in_function_call(s2) is None
 
-        assert self.get_in_function_call(s3, (1, 12)) is None
+        assert self.get_in_function_call(s3, (1, 5)) is None
         assert self.get_in_function_call(s3) is None
+
+        assert self.get_in_function_call(s4, (1, 3)) is None
+        assert check(self.get_in_function_call(s4, (1, 4)), 'abs', 0)
+        assert check(self.get_in_function_call(s4, (1, 8)), 'zip', 0)
+        assert check(self.get_in_function_call(s4, (1, 9)), 'abs', 0)
+        assert check(self.get_in_function_call(s4, (1, 10)), 'abs', 1)
+
+        assert check(self.get_in_function_call(s5, (1, 4)), 'abs', 0)
+        assert check(self.get_in_function_call(s5, (1, 6)), 'abs', 1)
+
+        assert check(self.get_in_function_call(s6, (1, 13)), 'center', 0)
+        assert check(self.get_in_function_call(s6, (1, 4)), 'str', 0)
 
 if __name__ == '__main__':
     unittest.main()

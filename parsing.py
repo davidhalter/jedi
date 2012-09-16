@@ -1260,7 +1260,8 @@ class PyFuzzyParser(object):
             if param and tok == ':':
                 # parse annotations
                 annotation, tok = self._parse_statement(added_breaks=breaks)
-                param.add_annotation(annotation)
+                if annotation:
+                    param.add_annotation(annotation)
 
             if param:
                 param.position_nr = pos

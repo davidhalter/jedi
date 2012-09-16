@@ -9,6 +9,7 @@ import modules
 import debug
 import settings
 import keywords
+import helpers
 
 from _compatibility import next
 
@@ -130,7 +131,14 @@ class CallDef(object):
 
     @property
     def bracket_start(self):
-        return self.call.name.end_pos
+        c = self.call
+        while c.next is not None:
+            c = c.next
+        return c.name.end_pos
+
+    @property
+    def call_name(self):
+        return str(self.executable.name)
 
     def __repr__(self):
         return '<%s: %s index %s>' % (self.__class__.__name__, self.executable,
@@ -374,7 +382,7 @@ class Script(object):
             index = 0
             call = None
             stop = False
-            for index, sub in enumerate(arr):
+            for index, sub in enumerate(arr.values):
                 call = None
                 for s in sub:
                     if isinstance(s, parsing.Array):
@@ -384,26 +392,27 @@ class Script(object):
                             if stop:
                                 return call, index, stop
                     elif isinstance(s, parsing.Call):
+                        start_s = s
                         while s is not None:
                             if s.start_pos >= pos:
                                 return call, index, stop
-                            if s.execution is not None:
-                                if s.execution.start_pos <= pos:
-                                    call = s
+                            elif s.execution is not None:
+                                end = s.execution.end_pos
+                                if s.execution.start_pos < pos and \
+                                        (end is None or pos < end):
                                     c, index, stop = scan_array_for_pos(
-                                                        s.execution, pos)
+                                                            s.execution, pos)
                                     if stop:
                                         return c, index, stop
-                                    if c is not None:
-                                        call = c
-                                else:
-                                    return call, index, stop
-                                print('E', pos, s.execution.end_pos)
-                                if s.execution.end_pos is not None:
-                                    if pos < s.execution.end_pos:
-                                        return call, index, True
-                                    else:
-                                        return None, 0, True
+
+                                    # call should return without execution and
+                                    # next
+                                    reset = c or s
+                                    reset.execution = None
+                                    reset.next = None
+                                    return c or start_s, index, True
+                                #else:
+                                    #return call, index, stop
                             s = s.next
             # The third return is just necessary for recursion inside, because
             # it needs to know when to stop iterating.
@@ -412,20 +421,21 @@ class Script(object):
         user_stmt = self.parser.user_stmt
         if user_stmt is None or not isinstance(user_stmt, parsing.Statement):
             return None
-        ass = user_stmt.get_assignment_calls()
+        ass = helpers.fast_parent_copy(user_stmt.get_assignment_calls())
 
         call, index, stop = scan_array_for_pos(ass, self.pos)
         if call is None:
             return None
 
-        call.execution, temp = None, call.execution
         origins = evaluate.follow_call(call)
-        call.execution = temp
 
         if len(origins) == 0:
             return None
         # just take entry zero, because we need just one.
         executable = origins[0]
+
+        after = self.module.get_line(self.pos[0])[self.pos[1]:]
+        index -= re.search('^[ ,]*', after).group(0).count(',')
         return CallDef(executable, index, call)
 
     def _get_completion_parts(self, path):
