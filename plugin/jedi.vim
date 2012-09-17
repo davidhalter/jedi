@@ -211,12 +211,10 @@ endfunction
 function! jedi#show_pydoc()
 python << PYTHONEOF
 if 1:
-    row, column = vim.current.window.cursor
-    buf_path = vim.current.buffer.name
-    source = '\n'.join(vim.current.buffer)
+    script = get_script()
     try:
-        definitions = api.get_definition(source, row, column, buf_path)
-    except api.NotFoundError:
+        definitions = script.get_definition()
+    except jedi.NotFoundError:
         definitions = []
     except Exception:
         # print to stdout, will be in :messages
@@ -443,7 +441,8 @@ import re
 
 # normally you should import jedi. jedi-vim is an exception, because you can
 # copy that directly into the .vim directory.
-import api
+import jedi
+import jedi.keywords
 
 temp_rename = None  # used for jedi#rename
 
@@ -465,7 +464,7 @@ def get_script(source=None, column=None):
     if column is None:
         column = vim.current.window.cursor[1]
     buf_path = vim.current.buffer.name
-    return api.Script(source, row, column, buf_path)
+    return jedi.Script(source, row, column, buf_path)
 
 
 def _goto(is_definition=False, is_related_name=False, no_output=False):
@@ -478,7 +477,7 @@ def _goto(is_definition=False, is_related_name=False, no_output=False):
             definitions = script.get_definition()
         else:
             definitions = script.goto()
-    except api.NotFoundError:
+    except jedi.NotFoundError:
         echo_highlight("Cannot follow nothing. Put your cursor on a valid name.")
     except Exception:
         # print to stdout, will be in :messages
@@ -497,7 +496,7 @@ def _goto(is_definition=False, is_related_name=False, no_output=False):
 
             d = list(definitions)[0]
             if d.in_builtin_module():
-                if isinstance(d.definition, api.keywords.Keyword):
+                if isinstance(d.definition, jedi.keywords.Keyword):
                     echo_highlight("Cannot get the definition of Python keywords.")
                 else:
                     echo_highlight("Builtin modules cannot be displayed.")
