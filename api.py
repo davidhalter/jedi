@@ -40,6 +40,8 @@ class Completion(object):
 
         if settings.add_dot_after_module:
             if isinstance(self.base, parsing.Module): append += '.'
+        if isinstance(self.base, parsing.Param):
+            append += '='
         return dot + self.name.names[-1][self.like_name_length:] + append
 
     @property
@@ -141,6 +143,11 @@ class CallDef(object):
     def call_name(self):
         return str(self.executable.name)
 
+    @property
+    def module(self):
+        return self.executable.get_parent_until()
+
+
     def __repr__(self):
         return '<%s: %s index %s>' % (self.__class__.__name__, self.executable,
                                     self.index)
@@ -204,8 +211,17 @@ class Script(object):
                             and c.names[-1].lower().startswith(like.lower())
                             or c.names[-1].startswith(like)]
 
+        if not dot:  # named_params have no dots
+            call_def = self.get_in_function_call()
+            if call_def:
+                if not call_def.module.is_builtin():
+                    for p in call_def.params:
+                        completions.append((p.get_name(), p))
+                completions += []
+
         needs_dot = not dot and path
         completions = set(completions)
+
         c = [Completion(c, needs_dot, len(like), s) for c, s in completions]
 
         return c
