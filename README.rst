@@ -2,6 +2,10 @@
 Jedi - a clever Python auto-completion
 ######################################
 
+.. image:: https://secure.travis-ci.org/davidhalter/jedi.png?branch=master
+    :target: http://travis-ci.org/davidhalter/jedi
+    :alt: Travis-CI build status
+
 **now in alpha testing phase**
 
 *If you have any comments or feature request, please tell me! I really want to
@@ -34,41 +38,43 @@ Jedi supports Python 2.5 up to 3.x. There is just one code base, for both
 Python 2 and 3.
 Jedi supports many of the widely used Python features:
 
- - builtin functions/classes support
- - complex module / function / class structures
- - ignores syntax and indentation errors
- - multiple returns / yields
- - tuple assignments / array indexing / dictionary indexing
- - exceptions / with-statement
- - \*args / \*\*kwargs
- - decorators
- - descriptors -> property / staticmethod / classmethod
- - closures
- - generators (yield statement) / iterators
- - support for some magic methods: ``__call__``, ``__iter__``, ``__next__``,
-   ``__get__``, ``__getitem__``, ``__init__``
- - support for list.append, set.add, list.extend, etc.
- - (nested) list comprehensions / ternary expressions
- - relative imports
- - ``getattr()`` / ``__getattr__`` / ``__getattribute__``
- - function annotations (py3k feature, are ignored right now, but being parsed.
-   I don't know what to do with them.)
- - class decorators (py3k feature, are being ignored too, until I find a use
-   case, that doesn't work with Jedi)
- - simple/usual ``sys.path`` modifications
+- builtin functions/classes support
+- complex module / function / class structures
+- ignores syntax and indentation errors
+- multiple returns / yields
+- tuple assignments / array indexing / dictionary indexing
+- exceptions / with-statement
+- \*args / \*\*kwargs
+- decorators
+- descriptors -> property / staticmethod / classmethod
+- closures
+- generators (yield statement) / iterators
+- support for some magic methods: ``__call__``, ``__iter__``, ``__next__``,
+  ``__get__``, ``__getitem__``, ``__init__``
+- support for list.append, set.add, list.extend, etc.
+- (nested) list comprehensions / ternary expressions
+- relative imports
+- ``getattr()`` / ``__getattr__`` / ``__getattribute__``
+- function annotations (py3k feature, are ignored right now, but being parsed.
+  I don't know what to do with them.)
+- class decorators (py3k feature, are being ignored too, until I find a use
+  case, that doesn't work with Jedi)
+- simple/usual ``sys.path`` modifications
 
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
 
- - assert / isinstance
- - manipulations of instances outside the instance variables, without using
-   functions
- - operation support -> \_\_mul\_\_, \_\_add\_\_, etc.
+- assert / isinstance
+- manipulations of instances outside the instance variables, without using
+  functions
+- operation support -> ``__mul__``, ``__add__``, etc.
 
 It does not support (and most probably will not in future versions): 
- - metaclasses (how could an auto-completion ever support this)
- - setattr()
- - evaluate if / while
+
+- metaclasses (how could an auto-completion ever support this)
+- ``setattr()``
+- evaluate ``if`` / ``while``
+
 
 Caveats
 =======
@@ -77,9 +83,9 @@ This framework should work for both Python 2/3. However, some things were just
 not as *pythonic* in Python 2 as things should be. To keep things simple, some
 things have been held back:
 
- - Classes: Always Python 3 like, therefore all classes inherit from ``object``.
- - Generators: No ``next`` method. The ``__next__`` method is used instead.
- - Exceptions are only looked at in the form of ``Exception as e``, no comma!
+- Classes: Always Python 3 like, therefore all classes inherit from ``object``.
+- Generators: No ``next`` method. The ``__next__`` method is used instead.
+- Exceptions are only looked at in the form of ``Exception as e``, no comma!
 
 Syntax errors and other strange stuff, that is defined differently in the
 Python language, may lead to undefined behaviour of the completion. Jedi is
@@ -90,6 +96,7 @@ Importing ``numpy`` can be quite slow sometimes, as well as loading the builtins
 the first time. If you want to speed it up, you could write import hooks in
 jedi, which preloads this stuff. However, once loaded, this is not a problem
 anymore. The same is true for huge modules like ``PySide``, ``wx``, etc.
+
 
 A little history
 ================
@@ -119,6 +126,7 @@ many of Python's key features.
 By the way, I really tried to program it as understandable as possible. But I
 think understanding it might need some time, because of its recursive nature.
 
+
 API-Design for IDEs
 ===================
 
@@ -127,28 +135,28 @@ have the following objects available:
 
 ::
 
-    `Script`
+    Script
 
 Returns a script object, that contains the relevant information for the
 other functions to work without params. 
 
 ::
 
-    `Script().complete`
+    Script().complete
 
 Returns ``api.Completion`` objects. Those objects have got
 informations about the completions. More than just names.
 
 ::
 
-    `Script().goto`
+    Script().goto
 
 Similar to complete. The returned ``api.Definition`` objects contain
 information about the definitions found.
 
 ::
 
-    `Script().get_definition`
+    Script().get_definition
 
 Mostly used for tests. Like goto, but follows statements and imports and
 doesn't break there. You probably don't want to use this function. It's
@@ -156,37 +164,38 @@ mostly for testing.
 
 ::
 
-    `Script().related_names`
+    Script().related_names
 
 Returns all names that point to the definition of the name under the
 cursor. This is also very useful for refactoring (renaming).
 
 ::
 
-    `Script().get_in_function_call`
+    Script().get_in_function_call
 
 Get the ``Function`` object of the call you're currently in, e.g.: ``abs(``
 with the cursor at the end would return the builtin ``abs`` function.
 
 ::
 
-    `NotFoundError`
+    NotFoundError
 
 If you use the goto function and no valid identifier (name) is at the
 place of the cursor (position). It will raise this exception.
 
 ::
 
-    `set_debug_function`
+    set_debug_function
 
 Sets a callback function for ``debug.py``. This function is called with
 multiple text objects, in python 3 you could insert ``print``.
 
 ::
 
-    `settings`
+    settings
 
 Access to the ``settings.py`` module. The settings are described there.
+
 
 VIM Plugin
 ==========
@@ -200,42 +209,38 @@ install jedi in VIM. Also you need a VIM version that was compiled with
 ``+python``, which is typical for most distributions on Linux.
 
 Jedi is automatically initialized. If you don't want that I suggest you
-disable the auto-initialization in your ``.vimrc``:
+disable the auto-initialization in your ``.vimrc``::
 
     let g:jedi#auto_initialization = 0
 
 The autocompletion can be used with <ctrl+space>, if you want it to work with
 <tab> you can use `supertab <https://github.com/ervandew/supertab>`_.
-The goto is by default on <leader g>. If you want to change that:
+The goto is by default on <leader g>. If you want to change that::
 
     let g:jedi#goto_command = "<leader>g"
 
-``get_definition`` is by default on <leader d>. If you want to change that:
+``get_definition`` is by default on <leader d>. If you want to change that::
 
     let g:jedi#get_definition_command = "<leader>d"
 
-Showing the pydoc is by default on ``K`` If you want to change that:
+Showing the pydoc is by default on ``K`` If you want to change that::
 
     let g:jedi#pydoc = "K"
 
 If you are a person who likes to use VIM-buffers not tabs, you might want to
-put that in your ``.vimrc``:
+put that in your ``.vimrc``::
 
     let g:jedi#use_tabs_not_buffers = 0
 
 Jedi automatically starts the completion, if you type a dot, e.g. ``str.``, if
-you don't want this:
+you don't want this::
 
     let g:jedi#popup_on_dot = 0
 
-There's some support for refactoring:
+There's some support for refactoring::
 
     let g:jedi#rename_command = "<leader>r"
 
-And you can list all names that are related (have the same origin):
+And you can list all names that are related (have the same origin)::
+
     let g:jedi#related_names_command = "<leader>n"
-
-
-.. image:: https://secure.travis-ci.org/davidhalter/jedi.png?branch=master
-    :target: http://travis-ci.org/davidhalter/jedi
-    :alt: Travis-CI build status
