@@ -2,3 +2,6 @@
 *.swo
 .ropeproject
 *.pyc
+/build/
+/dist/
+jedi.egg-info/
