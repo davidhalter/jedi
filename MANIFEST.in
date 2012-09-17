@@ -1,0 +1,4 @@
+include README.mdown
+include LICENSE.txt
+include AUTHORS.txt
+recursive-exclude * *.pyc
