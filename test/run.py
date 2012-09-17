@@ -5,8 +5,8 @@ import re
 import traceback
 from os.path import abspath, dirname
 
-sys.path.append(abspath(dirname(abspath(__file__)) + '/..'))
-os.chdir(dirname(abspath(__file__)) + '/..')
+sys.path.append(abspath(dirname(abspath(__file__)) + '/../jedi'))
+os.chdir(dirname(abspath(__file__)) + '/../jedi')
 
 from _compatibility import unicode, BytesIO, reduce, literal_eval, is_py25
 
@@ -253,7 +253,7 @@ for arg in args:
         last = arg
 
 # completion tests:
-completion_test_dir = 'test/completion'
+completion_test_dir = '../test/completion'
 summary = []
 tests_fail = 0
 
