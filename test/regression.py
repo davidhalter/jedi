@@ -4,8 +4,8 @@ import sys
 import unittest
 from os.path import abspath, dirname
 
-sys.path.append(abspath(dirname(abspath(__file__)) + '/..'))
-os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/..')
+sys.path.append(abspath(dirname(abspath(__file__)) + '/../jedi'))
+os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
 sys.path.append('.')
 
 from _compatibility import is_py25
