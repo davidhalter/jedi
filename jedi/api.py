@@ -1,3 +1,5 @@
+__all__ = ['Script', 'NotFoundError', 'set_debug_function']
+
 import re
 import weakref
 
@@ -12,8 +14,6 @@ import keywords
 import helpers
 
 from _compatibility import next
-
-__all__ = ['Script', 'NotFoundError', 'set_debug_function']
 
 
 class NotFoundError(Exception):
@@ -39,7 +39,8 @@ class Completion(object):
             append = '('
 
         if settings.add_dot_after_module:
-            if isinstance(self.base, parsing.Module): append += '.'
+            if isinstance(self.base, parsing.Module):
+                append += '.'
         if isinstance(self.base, parsing.Param):
             append += '='
         return dot + self.name.names[-1][self.like_name_length:] + append
@@ -146,7 +147,6 @@ class CallDef(object):
     @property
     def module(self):
         return self.executable.get_parent_until()
-
 
     def __repr__(self):
         return '<%s: %s index %s>' % (self.__class__.__name__, self.executable,
