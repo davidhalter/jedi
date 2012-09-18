@@ -25,8 +25,9 @@ is a VIM implementation, which uses Jedi's autocompletion. However, I encourage
 you to use Jedi in your IDEs, as soon as a stable version arrives. If there are
 problems with licensing, just contact me.
 
-At the moment Jedi can be used as a **VIM-Plugin**. So, if you want to test
-Jedi for now, you'll have to use VIM. Just check the chapter on VIM bellow.
+At the moment Jedi can be used as a 
+`VIM-Plugin <http://github.com/davidhalter/jedi>`_. So, if you want to test
+Jedi for now, you'll have to use VIM.
 
 Get the latest from `github <http://github.com/davidhalter/jedi>`_.
 
@@ -195,52 +196,3 @@ multiple text objects, in python 3 you could insert ``print``.
     settings
 
 Access to the ``settings.py`` module. The settings are described there.
-
-
-VIM Plugin
-==========
-
-At the moment jedi is also a VIM plugin. It is some sort of reference
-implementation for other IDE's.
-The VIM plugin is located under ``plugin/jedi.vim``.
-
-You might want to use `pathogen <https://github.com/tpope/vim-pathogen>`_ to
-install jedi in VIM. Also you need a VIM version that was compiled with
-``+python``, which is typical for most distributions on Linux.
-
-Jedi is automatically initialized. If you don't want that I suggest you
-disable the auto-initialization in your ``.vimrc``::
-
-    let g:jedi#auto_initialization = 0
-
-The autocompletion can be used with <ctrl+space>, if you want it to work with
-<tab> you can use `supertab <https://github.com/ervandew/supertab>`_.
-The goto is by default on <leader g>. If you want to change that::
-
-    let g:jedi#goto_command = "<leader>g"
-
-``get_definition`` is by default on <leader d>. If you want to change that::
-
-    let g:jedi#get_definition_command = "<leader>d"
-
-Showing the pydoc is by default on ``K`` If you want to change that::
-
-    let g:jedi#pydoc = "K"
-
-If you are a person who likes to use VIM-buffers not tabs, you might want to
-put that in your ``.vimrc``::
-
-    let g:jedi#use_tabs_not_buffers = 0
-
-Jedi automatically starts the completion, if you type a dot, e.g. ``str.``, if
-you don't want this::
-
-    let g:jedi#popup_on_dot = 0
-
-There's some support for refactoring::
-
-    let g:jedi#rename_command = "<leader>r"
-
-And you can list all names that are related (have the same origin)::
-
-    let g:jedi#related_names_command = "<leader>n"
