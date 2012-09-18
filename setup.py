@@ -5,6 +5,8 @@ from setuptools import setup
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
+readme = open('README.rst').read()
+
 setup(name='jedi',
       version='0.5.0-beta',
       description='An autocompletion tool for Python that can be used from text editors like vim.',
@@ -15,6 +17,7 @@ setup(name='jedi',
       url='https://github.com/davidhalter/jedi',
       license='LGPLv3',
       keywords='python completion refactoring vim',
+      long_description=readme,
       packages=['jedi'],
       platforms=['any'],
       classifiers=[
