@@ -1,29 +1,28 @@
-######################################
-Jedi - a clever Python auto-completion
-######################################
+########################################
+Jedi - an awesome Python auto-completion
+########################################
 
 .. image:: https://secure.travis-ci.org/davidhalter/jedi.png?branch=master
     :target: http://travis-ci.org/davidhalter/jedi
     :alt: Travis-CI build status
 
-**now in beta testing phase**
+**beta testing**
 
 *If you have any comments or feature request, please tell me! I really want to
 know, what you think about Jedi.*
 
-Jedi is an autocompletion tool for Python. It should work as good as possible
-and just ignore syntax errors. Most Python auto-completions really suck,
-because they don't understand things like decorators, generators and list
-comprehensions. Jedi just sucks less, because it at least understand those
-features.
+Jedi is an autocompletion tool for Python. It works. With and without syntax
+errors. Sometimes it sucks, but that's normal in dynamic languages. But it
+sucks less. It understand basic things like decorators, generators and list
+comprehensions. 
 
-Jedi suports goto and will support some refactorings in the future.
-Auto-completion is the core.
+Jedi suports two different goto functions and has support for renaming.
+Probably it will also have some support for refactoring some in the future.
 
-Jedi uses a very simple interface to connect with IDE's. As an example, there
+Jedi uses a very simple interface to connect with IDE's. As an reference, there
 is a VIM implementation, which uses Jedi's autocompletion. However, I encourage
-you to use Jedi in your IDEs, as soon as a stable version arrives. If there are
-problems with licensing, just contact me.
+you to use Jedi in your IDEs. Start writing plugins! If there are problems with
+licensing, just contact me.
 
 At the moment Jedi can be used as a 
 `VIM-Plugin <http://github.com/davidhalter/jedi>`_. So, if you want to test
@@ -103,7 +102,8 @@ A little history
 ================
 
 The Star Wars Jedi are awesome. My Jedi software tries to imitate a little bit
-of the precognition the Jedi have.
+of the precognition the Jedi have. There is even an awesome `scene
+<http://www.youtube.com/watch?v=5BDO3pyavOY>`_ of Monty Python Jedi's :-). 
 
 But actually the name hasn't so much to do with Star Wars. It's part of my
 second name.
@@ -121,11 +121,12 @@ PyCharm. I just like my good old VIM. Rope was never really intended to be an
 auto-completion (and also I really hate project folders for my Python scripts).
 It's more of a refactoring suite. So I decided to do my own version of a
 completion, which would execute non-dangerous code. But I soon realized, that
-this wouldn't work. So I built an extremely recursive thing, that understands
+this wouldn't work. So I built an extremely recursive thing which understands
 many of Python's key features.
 
 By the way, I really tried to program it as understandable as possible. But I
-think understanding it might need some time, because of its recursive nature.
+think understanding it might need quite some time, because of its recursive
+nature.
 
 
 API-Design for IDEs
@@ -136,10 +137,16 @@ have the following objects available:
 
 ::
 
-    Script
+    Script(source, line, column, source_path)
 
-Returns a script object, that contains the relevant information for the
-other functions to work without params. 
+``source`` would be the source of your python file/script, separated by new
+lines. ``line`` is the current line you want to perform actions on (starting
+with line #1 as the first line). ``column`` represents the current
+column/indent of the cursor (starting with zero). ``source_path`` should be the
+path of your file in the file system.
+
+It returns a script object that contains the relevant information for the other
+functions to work without params.
 
 ::
 
