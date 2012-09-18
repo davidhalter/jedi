@@ -6,7 +6,7 @@ Jedi - a clever Python auto-completion
     :target: http://travis-ci.org/davidhalter/jedi
     :alt: Travis-CI build status
 
-**now in alpha testing phase**
+**now in beta testing phase**
 
 *If you have any comments or feature request, please tell me! I really want to
 know, what you think about Jedi.*
