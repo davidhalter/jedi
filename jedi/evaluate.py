@@ -864,6 +864,7 @@ class Array(use_metaclass(CachedMetaClass, parsing.Base)):
         """
         # `array.type` is a string with the type, e.g. 'list'.
         scope = get_scopes_for_name(builtin.builtin_scope, self._array.type)[0]
+        scope = Instance(scope)
         names = scope.get_defined_names()
         return [ArrayElement(n) for n in names]
 
