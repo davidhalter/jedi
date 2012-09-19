@@ -11,7 +11,8 @@ case_insensitive_completion = True
 add_dot_after_module = False
 
 # Adds an opening bracket after a function, because that's normal behaviour.
-add_bracket_after_function = True
+# Removed it again, because in VIM that is not very practical.
+add_bracket_after_function = False
 
 
 # ----------------
