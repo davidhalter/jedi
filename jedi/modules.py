@@ -17,8 +17,8 @@ class Module(builtin.CachedModule):
     """
     Manages all files, that are parsed and caches them.
 
-    :param source: The source code of the file.
     :param path: The module path of the file.
+    :param source: The source code of the file.
     """
     def __init__(self, path, source):
         super(Module, self).__init__(path=path)

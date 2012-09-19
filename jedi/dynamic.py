@@ -5,6 +5,7 @@ Sorry to everyone who is reading this code. Especially the array parts are
 really cryptic and not understandable. It's just a hack, that turned out to be
 working quite good.
 """
+from __future__ import with_statement
 
 import re
 import os
@@ -15,11 +16,43 @@ import evaluate
 import helpers
 import settings
 import debug
+import builtin
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
 search_param_modules = ['.']
 search_param_cache = {}
+
+def get_directory_modules_for_name(mods, name):
+    """
+    Search a name in the directories of modules.
+    """
+    def check_python_file(path):
+        try:
+            return builtin.CachedModule.cache[path][1].module
+        except KeyError:
+            return check_fs(path)
+
+    def check_fs(path):
+        with open(path) as f:
+            source = f.read()
+            if name in source:
+                return modules.Module(path, source).parser.module
+
+    mod_paths = set()
+    for m in mods:
+        mod_paths.add(m.path)
+
+    new = set()
+    for p in mod_paths:
+        d = os.path.dirname(p)
+        for entry in os.listdir(d):
+            if entry not in mod_paths:
+                if entry.endswith('.py'):
+                    c = check_python_file(d + os.path.sep + entry)
+                    if c is not None:
+                        new.add(c)
+    return set(mods) | new
 
 
 def search_param_memoize(func):
@@ -302,7 +335,7 @@ class ArrayInstance(parsing.Base):
         return items
 
 
-def related_names(definitions, search_name, modules):
+def related_names(definitions, search_name, mods):
     def check_call(call):
         result = []
         follow = []  # There might be multiple search_name's in one call_path
@@ -330,9 +363,9 @@ def related_names(definitions, search_name, modules):
 
         return result
 
+    mods |= set([d.get_parent_until() for d in definitions])
     names = []
-    # TODO check modules in the same directoy
-    for m in modules:
+    for m in get_directory_modules_for_name(mods, search_name):
         if not m.path.endswith('.py'):
             # don't search for names in builtin modules
             continue
