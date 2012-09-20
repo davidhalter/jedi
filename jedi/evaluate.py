@@ -1501,7 +1501,20 @@ def follow_path(path, scope, position=None):
     return follow_paths(path, set(result), position=position)
 
 
-def goto(scopes, search_name=None, statement_path_offset=1):
+def goto(scopes, search_name=None, statement_path_offset=1,
+                                                        follow_import=False):
+    def follow_imports(names):
+        global statement_path
+        new = []
+        for n in names:
+            if isinstance(n, parsing.Import):
+                statement_path = []
+                scopes = imports.strip_imports([n])
+                new += goto(scopes, follow_import=True)
+            else:
+                new.append(n)
+        return new
+
     if search_name is None:
         try:
             definitions = [statement_path[statement_path_offset]]
@@ -1527,4 +1540,13 @@ def goto(scopes, search_name=None, statement_path_offset=1):
             else:
                 names += s.get_defined_names()
         definitions = [n for n in names if n.names[-1] == search_name]
+
+    #if follow_import:
+    #    definitions = follow_imports(definitions)
+
+    definitions = set(definitions)
+    #for d in definitions.copy():
+        #if d.isinstance(Function, Class):
+        #    definitions.add(d.name)
+        #    definitions.remove(d)
     return definitions

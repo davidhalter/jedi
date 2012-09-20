@@ -11,6 +11,7 @@ import parsing
 import builtin
 import debug
 import evaluate
+import time
 
 
 class Module(builtin.CachedModule):
@@ -26,6 +27,7 @@ class Module(builtin.CachedModule):
         self._line_cache = None
 
     def _get_source(self):
+        """ Just one time """
         s = self.source
         del self.source  # memory efficiency
         return s
@@ -50,10 +52,17 @@ class ModuleWithCursor(Module):
         self._line_temp = None
         self._relevant_temp = None
 
+        self.source = source
+
+        try:
+            del builtin.CachedModule.cache[self.path]
+        except KeyError:
+            pass
         # Call the parser already here, because it will be used anyways.
         # Also, the position is here important (which will not be used by
         # default), therefore fill the cache here.
         self._parser = parsing.PyFuzzyParser(source, path, position)
+        builtin.CachedModule.cache[self.path] = time.time(), self._parser
 
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """

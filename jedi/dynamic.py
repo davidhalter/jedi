@@ -353,7 +353,8 @@ def related_names(definitions, search_name, mods):
             else:
                 search = None
             scopes = evaluate.follow_call_path(iter(f), scope, position)
-            follow_res = evaluate.goto(scopes, search, statement_path_offset=0)
+            follow_res = evaluate.goto(scopes, search, statement_path_offset=0,
+                                                            follow_import=True)
 
             # compare to see if they match
             if True in [r in definitions for r in follow_res]:

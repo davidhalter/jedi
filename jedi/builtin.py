@@ -34,7 +34,7 @@ class CachedModule(object):
         if not self._parser:
             try:
                 timestamp, parser = self.cache[self.path or self.name]
-                if not self.path or timestamp == os.path.getmtime(self.path):
+                if not self.path or os.path.getmtime(self.path) <= timestamp:
                     self._parser = parser
                 else:
                     raise KeyError()
