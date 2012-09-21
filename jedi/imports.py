@@ -127,7 +127,7 @@ class ImportPath(object):
         module = self.import_stmt.get_parent_until()
         return modules.sys_path_with_modifications(module)
 
-    def follow(self):
+    def follow(self, is_goto=False):
         """
         Returns the imported modules.
         """
@@ -137,7 +137,6 @@ class ImportPath(object):
             except ModuleNotFound:
                 debug.warning('Module not found: ' + str(self.import_stmt))
                 return []
-                return [ImportPath.GlobalNamespace]
 
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []

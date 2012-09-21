@@ -309,12 +309,33 @@ class Script(object):
         else:
             search_name_new = search_name
 
+        user_stmt = self.parser.user_stmt
         context = self.module.get_context()
         if next(context) in ('class', 'def'):
             definitions = set([self.module.parser.user_scope])
+        elif isinstance(self.parser.user_stmt, parsing.Import):
+            import_names = user_stmt.get_all_import_names()
+            count = 0
+            kill_count = -1
+            for i in import_names:
+                for name_part in i.names:
+                    count += 1
+                    if self.pos <= name_part.end_pos:
+                        kill_count += 1
+            s = imports.ImportPath(user_stmt, False, kill_count=kill_count,
+                                                    direct_resolve=True)
+            try:
+                definitions = [s.follow(is_goto=True)[0]]
+            except IndexError:
+                definitions = []
         else:
-            scopes = self._prepare_goto(goto_path)
-            definitions = evaluate.goto(scopes, search_name_new)
+            goto_path = self.module.get_path_under_cursor()
+            stmt = self._get_under_cursor_stmt(goto_path)
+            arr = stmt.get_assignment_calls()
+            call = arr.get_only_subelement()
+            definitions, search_name = evaluate.goto3(call)
+            #scopes = self._prepare_goto(goto_path)
+            #definitions = evaluate.goto(scopes, search_name_new)
 
         d = [Definition(d) for d in set(definitions)]
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
