@@ -25,7 +25,7 @@ you to use Jedi in your IDEs. Start writing plugins! If there are problems with
 licensing, just contact me.
 
 At the moment Jedi can be used as a 
-`VIM-Plugin <http://github.com/davidhalter/jedi>`_. So, if you want to test
+`VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_. So, if you want to test
 Jedi for now, you'll have to use VIM.
 
 Get the latest from `github <http://github.com/davidhalter/jedi>`_.
