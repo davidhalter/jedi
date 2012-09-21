@@ -11,6 +11,7 @@ import modules
 import debug
 import parsing
 import evaluate
+import itertools
 
 
 class ModuleNotFound(Exception):
@@ -138,17 +139,22 @@ class ImportPath(object):
                 debug.warning('Module not found: ' + str(self.import_stmt))
                 return []
 
+            scopes = [scope]
+            scopes += itertools.chain.from_iterable(
+                            remove_star_imports(s) for s in scopes)
+
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []
             elif rest:
-                scopes = list(evaluate.follow_path(iter(rest), scope))
-            else:
-                scopes = [scope]
-
-            new = []
-            for scope in scopes:
-                new += remove_star_imports(scope)
-            scopes += new
+                if is_goto:
+                    #scopes = list(evaluate.follow_path(iter(rest), scope))
+                    #scopes = evaluate.goto3_dini_mueter(rest)
+                    scopes = itertools.chain.from_iterable(
+                        evaluate.get_scopes_for_name(s, rest[0], is_goto=True)
+                            for s in scopes)
+                else:
+                    scopes = evaluate.follow_path(iter(rest), scope)
+            scopes = list(scopes)
 
             if self.is_nested_import():
                 scopes.append(self.get_nested_import(scope))

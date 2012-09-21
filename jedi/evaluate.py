@@ -1513,11 +1513,17 @@ def follow_path(path, scope, position=None):
     return follow_paths(path, set(result), position=position)
 
 
-def goto3(call, call_path=None):
+def goto3(stmt, call_path=None):
     if call_path is None:
+        arr = stmt.get_assignment_calls()
+        call = arr.get_only_subelement()
         call_path = list(call.generate_call_path())
-    scope = call.parent_stmt().parent()
-    pos = call.parent_stmt().start_pos
+
+    scope = stmt.parent()
+    pos = stmt.start_pos
+    return goto3_dini_mueter(call_path, scope, pos)
+
+def goto3_dini_mueter(call_path, scope, pos):
     call_path, search = call_path[:-1], call_path[-1]
     if call_path:
         scopes = follow_call_path(iter(call_path), scope, pos)
@@ -1530,8 +1536,9 @@ def goto3(call, call_path=None):
     for s in scopes:
         follow_res += get_scopes_for_name(s, search, pos,
                                     search_global=search_global, is_goto=True)
-    #print 'c', call, scope, follow_res
+    #print 'c', stmt, scope, follow_res
     return follow_res, search
+
 
 
 def goto2(scopes, search_name=None):

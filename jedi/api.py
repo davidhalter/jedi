@@ -331,9 +331,7 @@ class Script(object):
         else:
             goto_path = self.module.get_path_under_cursor()
             stmt = self._get_under_cursor_stmt(goto_path)
-            arr = stmt.get_assignment_calls()
-            call = arr.get_only_subelement()
-            definitions, search_name = evaluate.goto3(call)
+            definitions, search_name = evaluate.goto3(stmt)
             #scopes = self._prepare_goto(goto_path)
             #definitions = evaluate.goto(scopes, search_name_new)
 
@@ -370,9 +368,7 @@ class Script(object):
         else:
             goto_path = self.module.get_path_under_cursor()
             stmt = self._get_under_cursor_stmt(goto_path)
-            arr = stmt.get_assignment_calls()
-            call = arr.get_only_subelement()
-            definitions, search_name = evaluate.goto3(call)
+            definitions, search_name = evaluate.goto3(stmt)
             #print 'd', definitions, call, call.parent_stmt().parent().start_pos
             #evaluate.goto_names = []
             #scopes = self._prepare_goto(goto_path)
