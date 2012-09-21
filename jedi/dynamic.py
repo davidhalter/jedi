@@ -341,26 +341,21 @@ def related_names(definitions, search_name, mods):
         follow = []  # There might be multiple search_name's in one call_path
         call_path = list(call.generate_call_path())
         for i, name in enumerate(call_path):
+            # name is `parsing.NamePart`.
             if name == search_name:
                 follow.append(call_path[:i + 1])
 
         for f in follow:
-            scope = call.parent_stmt().parent()
-            evaluate.statement_path = []
-            position = call.parent_stmt().start_pos
-            if len(f) > 1:
-                f, search = f[:-1], f[-1]
-            else:
-                search = None
-            scopes = evaluate.follow_call_path(iter(f), scope, position)
-            follow_res = evaluate.goto(scopes, search, statement_path_offset=0,
-                                                            follow_import=True)
+            #print 's', evaluate.goto_names, scopes, search.start_pos
+            #follow_res = evaluate.goto(scopes, search, statement_path_offset=0,
+            #                                                follow_import=True)
+            #follow_res = evaluate.goto2(scopes, search)
+            follow_res, search = evaluate.goto3(f, call)
 
             # compare to see if they match
             if True in [r in definitions for r in follow_res]:
-                l = f[-1]  # the NamePart object
                 scope = call.parent_stmt()
-                result.append(RelatedName(l, scope))
+                result.append(RelatedName(search, scope))
 
         return result
 

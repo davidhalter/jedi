@@ -33,6 +33,7 @@ import dynamic
 memoize_caches = []
 statement_path = []
 faked_scopes = []
+goto_names = None
 
 
 class DecoratorNotFound(LookupError):
@@ -74,7 +75,7 @@ def clear_caches():
     that should be completed after each completion finishes. The only things
     that stays is the module cache (which is not deleted here).
     """
-    global memoize_caches, statement_path, faked_scopes
+    global memoize_caches, statement_path, faked_scopes, goto_names
 
     for m in memoize_caches:
         m.clear()
@@ -86,6 +87,7 @@ def clear_caches():
     # the wrappers.
     statement_path = []
     faked_scopes = []
+    goto_names = None
 
     follow_statement.reset()
 
@@ -978,7 +980,8 @@ def get_names_for_scope(scope, position=None, star_search=True,
             yield builtin_scope, builtin_scope.get_defined_names()
 
 
-def get_scopes_for_name(scope, name_str, position=None, search_global=False):
+def get_scopes_for_name(scope, name_str, position=None, search_global=False,
+                                                        is_goto=False):
     """
     This is the search function. The most important part to debug.
     `remove_statements` and `filter_statements` really are the core part of
@@ -1142,8 +1145,13 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                             and isinstance(p.var, parsing.Class):
                     p = p.var
                 if name_str == name.get_code() and p not in break_scopes:
+                    if goto_names is not None:
+                        goto_names.append(name)
                     r, no_break_scope = process(name)
-                    result += r
+                    if is_goto:
+                        result.append(name)
+                    else:
+                        result += r
                     # for comparison we need the raw class
                     s = scope.base if isinstance(scope, Class) else scope
                     # this means that a definition was found and is not e.g.
@@ -1177,6 +1185,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
             res_new.append(r)
         return res_new
 
+    if goto_names:
+        return []  # goto has already been used.
     if search_global:
         scope_generator = get_names_for_scope(scope, position=position)
     else:
@@ -1191,6 +1201,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False):
                 names = get_defined_names_for_position(scope, position)
             scope_generator = iter([(scope, names)])
 
+    if is_goto:
+        return filter_name(scope_generator)
     return descriptor_check(remove_statements(filter_name(scope_generator)))
 
 
@@ -1500,6 +1512,34 @@ def follow_path(path, scope, position=None):
                                                         position=position))
     return follow_paths(path, set(result), position=position)
 
+
+def goto3(call_path, call):
+    scope = call.parent_stmt().parent()
+    position = call.parent_stmt().start_pos
+    call_path, search = call_path[:-1], call_path[-1]
+    if call_path:
+        scopes = follow_call_path(iter(call_path), scope, position)
+        search_global = False
+        pos = None
+    else:
+        scopes = [scope]
+        pos = search.start_pos
+        search_global = True
+    follow_res = []
+    for s in scopes:
+        follow_res += get_scopes_for_name(s, search, pos,
+                                    search_global=search_global, is_goto=True)
+    print 'c', call, scope, follow_res
+    return follow_res, search
+
+
+def goto2(scopes, search_name=None):
+    global goto_names
+    result = goto_names
+    if result == []:
+        print 'LALA', scopes
+    goto_names = None
+    return result
 
 def goto(scopes, search_name=None, statement_path_offset=1,
                                                         follow_import=False):

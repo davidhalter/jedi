@@ -7,7 +7,7 @@ results always contain position informations.
 def abc(): pass
 
 #< 0 (7,4) (10,0) (12,0)
-abc.d.a.abc.d
+abc.d.a.bsaasd.abc.d
 
 abc
 

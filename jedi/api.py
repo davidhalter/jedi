@@ -341,13 +341,14 @@ class Script(object):
                 e = evaluate.Function(self.module.parser.user_scope)
             else:
                 e = evaluate.Class(self.module.parser.user_scope)
-            definitions = [e]
-        elif isinstance(self.module.parser.user_stmt,
-                                            (parsing.Param, parsing.Import)):
-            definitions = [self.module.parser.user_stmt]
+            definitions = [e.name]
+        #elif isinstance(self.module.parser.user_stmt,
+                                            #(parsing.Param, parsing.Import)):
+            #definitions = [self.module.parser.user_stmt]
         else:
+            evaluate.goto_names = []
             scopes = self._prepare_goto(goto_path)
-            definitions = evaluate.goto(scopes, search_name_new)
+            definitions = evaluate.goto2(scopes, search_name_new)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self.module.parser.module)
