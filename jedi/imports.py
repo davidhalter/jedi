@@ -237,8 +237,6 @@ def strip_imports(scopes):
     result = []
     for s in scopes:
         if isinstance(s, parsing.Import):
-            # this is something like a statement following.
-            evaluate.statement_path.append(s)
             result += ImportPath(s).follow()
         else:
             result.append(s)
