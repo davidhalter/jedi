@@ -1513,23 +1513,24 @@ def follow_path(path, scope, position=None):
     return follow_paths(path, set(result), position=position)
 
 
-def goto3(call_path, call):
+def goto3(call, call_path=None):
+    if call_path is None:
+        call_path = list(call.generate_call_path())
     scope = call.parent_stmt().parent()
-    position = call.parent_stmt().start_pos
+    pos = call.parent_stmt().start_pos
     call_path, search = call_path[:-1], call_path[-1]
     if call_path:
-        scopes = follow_call_path(iter(call_path), scope, position)
+        scopes = follow_call_path(iter(call_path), scope, pos)
         search_global = False
         pos = None
     else:
         scopes = [scope]
-        pos = search.start_pos
         search_global = True
     follow_res = []
     for s in scopes:
         follow_res += get_scopes_for_name(s, search, pos,
                                     search_global=search_global, is_goto=True)
-    print 'c', call, scope, follow_res
+    #print 'c', call, scope, follow_res
     return follow_res, search
 
 

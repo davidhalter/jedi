@@ -67,12 +67,12 @@ import colorama
 #< (65,7) (68,0)
 colorama
 
-#< 3 
-import abc
+
+
 
 
 
 from import_tree import rename1
 
-##< (78,8) (3,0)
+#< (78,8) (3,0) (4,20) (6,0)
 rename1.abc

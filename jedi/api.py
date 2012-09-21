@@ -227,8 +227,7 @@ class Script(object):
         return c
 
     def _prepare_goto(self, goto_path, is_like_search=False):
-        scope = self.parser.user_scope
-        debug.dbg('start: %s in %s' % (goto_path, scope))
+        debug.dbg('start: %s in %s' % (goto_path, self.parser.scope))
 
         user_stmt = self.parser.user_stmt
         if not user_stmt and len(goto_path.split('\n')) > 1:
@@ -250,17 +249,19 @@ class Script(object):
                             kill_count=kill_count, direct_resolve=True)]
         else:
             # just parse one statement, take it and evaluate it
-            r = parsing.PyFuzzyParser(goto_path, self.source_path,
-                                                            no_docstr=True)
-            try:
-                stmt = r.module.statements[0]
-            except IndexError:
-                raise NotFoundError()
-
-            stmt.start_pos = self.pos
-            stmt.parent = weakref.ref(scope)
+            stmt = self._get_under_cursor_stmt(goto_path)
             scopes = evaluate.follow_statement(stmt)
         return scopes
+
+    def _get_under_cursor_stmt(self, cursor_txt):
+        r = parsing.PyFuzzyParser(cursor_txt, self.source_path, no_docstr=True)
+        try:
+            stmt = r.module.statements[0]
+        except IndexError:
+            raise NotFoundError()
+        stmt.start_pos = self.pos
+        stmt.parent = weakref.ref(self.parser.user_scope)
+        return stmt
 
     def get_definition(self):
         """
@@ -346,13 +347,22 @@ class Script(object):
                                             #(parsing.Param, parsing.Import)):
             #definitions = [self.module.parser.user_stmt]
         else:
-            evaluate.goto_names = []
-            scopes = self._prepare_goto(goto_path)
-            definitions = evaluate.goto2(scopes, search_name_new)
+            goto_path = self.module.get_path_under_cursor()
+            stmt = self._get_under_cursor_stmt(goto_path)
+            arr = stmt.get_assignment_calls()
+            call = arr.get_only_subelement()
+            definitions, search_name = evaluate.goto3(call)
+            #print 'd', definitions, call, call.parent_stmt().parent().start_pos
+            #evaluate.goto_names = []
+            #scopes = self._prepare_goto(goto_path)
+            #definitions = evaluate.goto2(scopes, search_name_new)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self.module.parser.module)
-        names = dynamic.related_names(definitions, search_name, module)
+        if definitions:
+            names = dynamic.related_names(definitions, search_name, module)
+        else:
+            names = []
 
         for d in definitions:
             if isinstance(d, parsing.Statement):
