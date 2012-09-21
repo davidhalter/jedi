@@ -346,11 +346,7 @@ def related_names(definitions, search_name, mods):
                 follow.append(call_path[:i + 1])
 
         for f in follow:
-            #print 's', evaluate.goto_names, scopes, search.start_pos
-            #follow_res = evaluate.goto(scopes, search, statement_path_offset=0,
-            #                                                follow_import=True)
-            #follow_res = evaluate.goto2(scopes, search)
-            follow_res, search = evaluate.goto3(call.parent_stmt(), f)
+            follow_res, search = evaluate.goto(call.parent_stmt(), f)
 
             # compare to see if they match
             if True in [r in definitions for r in follow_res]:
@@ -369,7 +365,6 @@ def related_names(definitions, search_name, mods):
             stmts = m.used_names[search_name]
         except KeyError:
             continue
-        #TODO check heritage of statements
         for stmt in stmts:
             for call in _scan_array(stmt.get_assignment_calls(), search_name):
                 names += check_call(call)

@@ -147,8 +147,6 @@ class ImportPath(object):
                 scopes = []
             elif rest:
                 if is_goto:
-                    #scopes = list(evaluate.follow_path(iter(rest), scope))
-                    #scopes = evaluate.goto3_dini_mueter(rest)
                     scopes = itertools.chain.from_iterable(
                         evaluate.get_scopes_for_name(s, rest[0], is_goto=True)
                             for s in scopes)

@@ -1513,7 +1513,7 @@ def follow_path(path, scope, position=None):
     return follow_paths(path, set(result), position=position)
 
 
-def goto3(stmt, call_path=None):
+def goto(stmt, call_path=None):
     if call_path is None:
         arr = stmt.get_assignment_calls()
         call = arr.get_only_subelement()
@@ -1521,9 +1521,6 @@ def goto3(stmt, call_path=None):
 
     scope = stmt.parent()
     pos = stmt.start_pos
-    return goto3_dini_mueter(call_path, scope, pos)
-
-def goto3_dini_mueter(call_path, scope, pos):
     call_path, search = call_path[:-1], call_path[-1]
     if call_path:
         scopes = follow_call_path(iter(call_path), scope, pos)
@@ -1536,65 +1533,4 @@ def goto3_dini_mueter(call_path, scope, pos):
     for s in scopes:
         follow_res += get_scopes_for_name(s, search, pos,
                                     search_global=search_global, is_goto=True)
-    #print 'c', stmt, scope, follow_res
     return follow_res, search
-
-
-
-def goto2(scopes, search_name=None):
-    global goto_names
-    result = goto_names
-    if result == []:
-        print 'LALA', scopes
-    goto_names = None
-    return result
-
-def goto(scopes, search_name=None, statement_path_offset=1,
-                                                        follow_import=False):
-    def follow_imports(names):
-        global statement_path
-        new = []
-        for n in names:
-            if isinstance(n, parsing.Import):
-                statement_path = []
-                scopes = imports.strip_imports([n])
-                new += goto(scopes, follow_import=True)
-            else:
-                new.append(n)
-        return new
-
-    if search_name is None:
-        try:
-            definitions = [statement_path[statement_path_offset]]
-        except IndexError:
-            definitions = []
-            for s in scopes:
-                if isinstance(s, imports.ImportPath):
-                    try:
-                        s = s.follow()[0]
-                    except IndexError:
-                        continue
-                    else:
-                        if not isinstance(s, parsing.Module):
-                            s = statement_path[0]
-                definitions.append(s)
-    else:
-        names = []
-        for s in scopes:
-            if isinstance(s, imports.ImportPath):
-                modules = s.follow()
-                if modules:
-                    names.append(modules[0].get_module_name())
-            else:
-                names += s.get_defined_names()
-        definitions = [n for n in names if n.names[-1] == search_name]
-
-    #if follow_import:
-    #    definitions = follow_imports(definitions)
-
-    definitions = set(definitions)
-    #for d in definitions.copy():
-        #if d.isinstance(Function, Class):
-        #    definitions.add(d.name)
-        #    definitions.remove(d)
-    return definitions

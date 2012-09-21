@@ -299,17 +299,8 @@ class Script(object):
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
     def goto(self):
-        goto_path = self.module.get_path_under_cursor()
-        goto_path, dot, search_name = self._get_completion_parts(goto_path)
-
-        # define goto path the right way
-        if not dot:
-            goto_path = search_name
-            search_name_new = None
-        else:
-            search_name_new = search_name
-
         user_stmt = self.parser.user_stmt
+        goto_path = self.module.get_path_under_cursor()
         context = self.module.get_context()
         if next(context) in ('class', 'def'):
             definitions = set([self.module.parser.user_scope])
@@ -329,11 +320,8 @@ class Script(object):
             except IndexError:
                 definitions = []
         else:
-            goto_path = self.module.get_path_under_cursor()
             stmt = self._get_under_cursor_stmt(goto_path)
-            definitions, search_name = evaluate.goto3(stmt)
-            #scopes = self._prepare_goto(goto_path)
-            #definitions = evaluate.goto(scopes, search_name_new)
+            definitions, search_name = evaluate.goto(stmt)
 
         d = [Definition(d) for d in set(definitions)]
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
@@ -346,15 +334,6 @@ class Script(object):
         or for renaming purposes.
         """
         goto_path = self.module.get_path_under_cursor()
-        goto_path, dot, search_name = self._get_completion_parts(goto_path)
-
-        # define goto path the right way
-        if not dot:
-            goto_path = search_name
-            search_name_new = None
-        else:
-            search_name_new = search_name
-
         context = self.module.get_context()
         if next(context) in ('class', 'def'):
             if isinstance(self.module.parser.user_scope, parsing.Function):
@@ -362,17 +341,10 @@ class Script(object):
             else:
                 e = evaluate.Class(self.module.parser.user_scope)
             definitions = [e.name]
-        #elif isinstance(self.module.parser.user_stmt,
-                                            #(parsing.Param, parsing.Import)):
-            #definitions = [self.module.parser.user_stmt]
+            search_name = str(e.name)
         else:
-            goto_path = self.module.get_path_under_cursor()
             stmt = self._get_under_cursor_stmt(goto_path)
-            definitions, search_name = evaluate.goto3(stmt)
-            #print 'd', definitions, call, call.parent_stmt().parent().start_pos
-            #evaluate.goto_names = []
-            #scopes = self._prepare_goto(goto_path)
-            #definitions = evaluate.goto2(scopes, search_name_new)
+            definitions, search_name = evaluate.goto(stmt)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self.module.parser.module)
