@@ -299,12 +299,19 @@ class Script(object):
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
     def goto(self):
+        """ TODO doc """
+        d = [Definition(d) for d in set(self._goto()[0])]
+        return sorted(d, key=lambda x: (x.module_path, x.start_pos))
+
+    def _goto(self, check_imports=True):
         user_stmt = self.parser.user_stmt
         goto_path = self.module.get_path_under_cursor()
         context = self.module.get_context()
         if next(context) in ('class', 'def'):
-            definitions = set([self.module.parser.user_scope])
-        elif isinstance(self.parser.user_stmt, parsing.Import):
+            user_scope = self.parser.user_scope
+            definitions = set([user_scope.name])
+            search_name = str(user_scope.name)
+        elif check_imports and isinstance(self.parser.user_stmt, parsing.Import):
             import_names = user_stmt.get_all_import_names()
             count = 0
             kill_count = -1
@@ -319,12 +326,11 @@ class Script(object):
                 definitions = [s.follow(is_goto=True)[0]]
             except IndexError:
                 definitions = []
+            search_name = str(import_names[-1])
         else:
             stmt = self._get_under_cursor_stmt(goto_path)
             definitions, search_name = evaluate.goto(stmt)
-
-        d = [Definition(d) for d in set(definitions)]
-        return sorted(d, key=lambda x: (x.module_path, x.start_pos))
+        return definitions, search_name
 
     def related_names(self):
         """
@@ -333,21 +339,10 @@ class Script(object):
         This function can be used either to show all the usages of a variable
         or for renaming purposes.
         """
-        goto_path = self.module.get_path_under_cursor()
-        context = self.module.get_context()
-        if next(context) in ('class', 'def'):
-            if isinstance(self.module.parser.user_scope, parsing.Function):
-                e = evaluate.Function(self.module.parser.user_scope)
-            else:
-                e = evaluate.Class(self.module.parser.user_scope)
-            definitions = [e.name]
-            search_name = str(e.name)
-        else:
-            stmt = self._get_under_cursor_stmt(goto_path)
-            definitions, search_name = evaluate.goto(stmt)
+        definitions, search_name = self._goto(check_imports=False)
 
         module = set([d.get_parent_until() for d in definitions])
-        module.add(self.module.parser.module)
+        module.add(self.parser.module)
         if definitions:
             names = dynamic.related_names(definitions, search_name, module)
         else:

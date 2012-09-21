@@ -288,7 +288,7 @@ class Module(Scope):
         n += self.global_vars
         return n
 
-    def get_module_name(self):
+    def get_name(self):
         """ This is used for the goto function. """
         sep = (os.path.sep,) * 2
         r = re.search(r'([^%s]+?)(%s__init__)?(\.py)?$' % sep, self.path)
