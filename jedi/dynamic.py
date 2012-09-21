@@ -17,6 +17,7 @@ import helpers
 import settings
 import debug
 import builtin
+import imports
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -347,7 +348,9 @@ def related_names(definitions, search_name, mods):
 
         for f in follow:
             follow_res, search = evaluate.goto(call.parent_stmt(), f)
+            follow_res = related_name_add_import_modules(follow_res)
 
+            #print follow_res, [d.parent() for d in follow_res]
             # compare to see if they match
             if True in [r in definitions for r in follow_res]:
                 scope = call.parent_stmt()
@@ -366,9 +369,24 @@ def related_names(definitions, search_name, mods):
         except KeyError:
             continue
         for stmt in stmts:
+            print stmt
             for call in _scan_array(stmt.get_assignment_calls(), search_name):
                 names += check_call(call)
     return names
+
+def related_name_add_import_modules(definitions):
+    """ Adds the modules of the imports """
+    new = []
+    for d in definitions:
+        if isinstance(d.parent(), parsing.Import):
+            # introduce kill_count for not fully used imports
+            s = imports.ImportPath(d.parent(), False, direct_resolve=True)
+            try:
+                new.append(s.follow(is_goto=True)[0])
+            except IndexError:
+                pass
+    return definitions + new
+
 
 
 class BaseOutput(object):

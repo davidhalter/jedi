@@ -339,7 +339,8 @@ class Script(object):
         This function can be used either to show all the usages of a variable
         or for renaming purposes.
         """
-        definitions, search_name = self._goto(check_imports=False)
+        definitions, search_name = self._goto(check_imports=True)
+        definitions = dynamic.related_name_add_import_modules(definitions)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self.parser.module)
@@ -372,6 +373,8 @@ class Script(object):
                                 names.append(dynamic.RelatedName(n, d))
             elif isinstance(d, parsing.Name):
                 names.append(dynamic.RelatedName(d.names[0], d))
+            elif isinstance(d, parsing.Module):
+                names.append(dynamic.RelatedName(d.get_names(), d))
             else:
                 names.append(dynamic.RelatedName(d.name.names[0], d))
 
