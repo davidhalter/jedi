@@ -348,7 +348,7 @@ def related_names(definitions, search_name, mods):
 
         for f in follow:
             follow_res, search = evaluate.goto(call.parent_stmt(), f)
-            follow_res = related_name_add_import_modules(follow_res)
+            follow_res = related_name_add_import_modules(follow_res, search)
 
             #print follow_res, [d.parent() for d in follow_res]
             # compare to see if they match
@@ -381,9 +381,9 @@ def related_names(definitions, search_name, mods):
                         if name_part == search_name:
                             imps.append((count, name_part))
 
-                for kill_count, name_part in imps:
-                    i = imports.ImportPath(stmt, False,
-                                kill_count=count - kill_count, direct_resolve=True)
+                for used_count, name_part in imps:
+                    i = imports.ImportPath(stmt, kill_count=count - used_count,
+                                                        direct_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
                         names.append(RelatedName(name_part, stmt))
@@ -393,13 +393,12 @@ def related_names(definitions, search_name, mods):
                     names += check_call(call)
     return names
 
-def related_name_add_import_modules(definitions):
+def related_name_add_import_modules(definitions, search_name):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:
         if isinstance(d.parent(), parsing.Import):
-            # TODO introduce kill_count for not fully used imports
-            s = imports.ImportPath(d.parent(), False, direct_resolve=True)
+            s = imports.ImportPath(d.parent(), direct_resolve=True)
             try:
                 new.add(s.follow(is_goto=True)[0])
             except IndexError:

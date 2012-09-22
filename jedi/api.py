@@ -308,6 +308,7 @@ class Script(object):
             except IndexError:
                 definitions = []
             search_name = str(name_part)
+
             if add_import_name:
                 import_name = self.parser.user_stmt.get_defined_names()
                 # imports have only one name
@@ -328,7 +329,10 @@ class Script(object):
         TODO implement additional_module_paths
         """
         definitions, search_name = self._goto(add_import_name=True)
-        definitions = dynamic.related_name_add_import_modules(definitions)
+        if not isinstance(self.parser.user_stmt, parsing.Import):
+            # import case is looked at with add_import_name option
+            definitions = dynamic.related_name_add_import_modules(definitions,
+                                                                search_name)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self.parser.module)
@@ -418,15 +422,14 @@ class Script(object):
     def _get_on_import_stmt(self, is_like_search=False):
         user_stmt = self.parser.user_stmt
         import_names = user_stmt.get_all_import_names()
-        count = 0
         kill_count = -1
         cur_name_part = None
         for i in import_names:
             for name_part in i.names:
-                count += 1
-                if self.pos <= name_part.end_pos:
+                if name_part.end_pos >= self.pos:
+                    if not cur_name_part:
+                        cur_name_part = name_part
                     kill_count += 1
-                    cur_name_part = name_part
 
         i = imports.ImportPath(user_stmt, is_like_search,
                                 kill_count=kill_count, direct_resolve=True)
