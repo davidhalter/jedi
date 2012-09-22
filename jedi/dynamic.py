@@ -358,6 +358,9 @@ def related_names(definitions, search_name, mods):
 
         return result
 
+    if not definitions:
+        return set()
+
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
     for m in get_directory_modules_for_name(mods, search_name):
@@ -369,23 +372,39 @@ def related_names(definitions, search_name, mods):
         except KeyError:
             continue
         for stmt in stmts:
-            print stmt
-            for call in _scan_array(stmt.get_assignment_calls(), search_name):
-                names += check_call(call)
+            if isinstance(stmt, parsing.Import):
+                count = 0
+                imps = []
+                for i in stmt.get_all_import_names():
+                    for name_part in i.names:
+                        count += 1
+                        if name_part == search_name:
+                            imps.append((count, name_part))
+
+                for kill_count, name_part in imps:
+                    i = imports.ImportPath(stmt, False,
+                                kill_count=count - kill_count, direct_resolve=True)
+                    f = i.follow(is_goto=True)
+                    if set(f) & set(definitions):
+                        names.append(RelatedName(name_part, stmt))
+            else:
+                ass = stmt.get_assignment_calls()
+                for call in _scan_array(ass, search_name):
+                    names += check_call(call)
     return names
 
 def related_name_add_import_modules(definitions):
     """ Adds the modules of the imports """
-    new = []
+    new = set()
     for d in definitions:
         if isinstance(d.parent(), parsing.Import):
-            # introduce kill_count for not fully used imports
+            # TODO introduce kill_count for not fully used imports
             s = imports.ImportPath(d.parent(), False, direct_resolve=True)
             try:
-                new.append(s.follow(is_goto=True)[0])
+                new.add(s.follow(is_goto=True)[0])
             except IndexError:
                 pass
-    return definitions + new
+    return set(definitions) | new
 
 
 

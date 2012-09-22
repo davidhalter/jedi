@@ -1148,6 +1148,14 @@ class PyFuzzyParser(object):
                                                 self._tokenize_end_pos[1])
 
     def _check_user_stmt(self, simple):
+        if not isinstance(simple, Param):
+            for tok_name in self.module.temp_used_names:
+                try:
+                    self.module.used_names[tok_name].add(simple)
+                except KeyError:
+                    self.module.used_names[tok_name] = set([simple])
+        self.module.temp_used_names = []
+
         if not self.user_position:
             return
         # the position is right
@@ -1517,13 +1525,6 @@ class PyFuzzyParser(object):
             stmt = stmt_class(string, set_vars, used_funcs, used_vars, \
                                 tok_list, first_pos, self.end_pos)
             self._check_user_stmt(stmt)
-            if not isinstance(stmt, Param):
-                for tok_name in self.module.temp_used_names:
-                    try:
-                        self.module.used_names[tok_name].add(stmt)
-                    except KeyError:
-                        self.module.used_names[tok_name] = set([stmt])
-            self.module.temp_used_names = []
         if is_return:
             # add returns to the scope
             func = self.scope.get_parent_until(Function)

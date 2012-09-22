@@ -116,7 +116,7 @@ func_with_import().sleep
 # -----------------
 
 #? ['sqlite3']
-import sqlite
+import sqlite3
 
 #? ['classes']
 import classes

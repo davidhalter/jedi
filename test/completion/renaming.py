@@ -62,10 +62,10 @@ def a(): pass
 
 
 #< (65,7) (68,0)
-import colorama
+import module_not_exists
 
 #< (65,7) (68,0)
-colorama
+module_not_exists
 
 
 
@@ -74,5 +74,9 @@ colorama
 
 from import_tree import rename1
 
-#< (78,8) (3,0) (4,20) (6,0)
+#< (78,8) (3,0) (4,20) (6,0) (81,32) (82,0) (6,0)
 rename1.abc
+
+#< (78,8) (3,0) (4,20) (6,0) (81,32) (82,0) (6,0)
+from import_tree.rename1 import abc
+abc

@@ -237,16 +237,7 @@ class Script(object):
             return []
 
         if isinstance(user_stmt, parsing.Import):
-            import_names = user_stmt.get_all_import_names()
-            count = 0
-            kill_count = -1
-            for i in import_names:
-                for name_part in i.names:
-                    count += 1
-                    if self.pos <= name_part.end_pos:
-                        kill_count += 1
-            scopes = [imports.ImportPath(user_stmt, is_like_search,
-                            kill_count=kill_count, direct_resolve=True)]
+            scopes = [self._get_on_import_stmt(is_like_search)[0]]
         else:
             # just parse one statement, take it and evaluate it
             stmt = self._get_under_cursor_stmt(goto_path)
@@ -303,80 +294,51 @@ class Script(object):
         d = [Definition(d) for d in set(self._goto()[0])]
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
-    def _goto(self, check_imports=True):
-        user_stmt = self.parser.user_stmt
+    def _goto(self, add_import_name=False):
         goto_path = self.module.get_path_under_cursor()
         context = self.module.get_context()
         if next(context) in ('class', 'def'):
             user_scope = self.parser.user_scope
             definitions = set([user_scope.name])
             search_name = str(user_scope.name)
-        elif check_imports and isinstance(self.parser.user_stmt, parsing.Import):
-            import_names = user_stmt.get_all_import_names()
-            count = 0
-            kill_count = -1
-            for i in import_names:
-                for name_part in i.names:
-                    count += 1
-                    if self.pos <= name_part.end_pos:
-                        kill_count += 1
-            s = imports.ImportPath(user_stmt, False, kill_count=kill_count,
-                                                    direct_resolve=True)
+        elif isinstance(self.parser.user_stmt, parsing.Import):
+            s, name_part = self._get_on_import_stmt()
             try:
                 definitions = [s.follow(is_goto=True)[0]]
             except IndexError:
                 definitions = []
-            search_name = str(import_names[-1])
+            search_name = str(name_part)
+            if add_import_name:
+                import_name = self.parser.user_stmt.get_defined_names()
+                # imports have only one name
+                if name_part == import_name[0].names[-1]:
+                    definitions.append(import_name[0])
         else:
             stmt = self._get_under_cursor_stmt(goto_path)
             definitions, search_name = evaluate.goto(stmt)
         return definitions, search_name
 
-    def related_names(self):
+    def related_names(self, additional_module_paths=[]):
         """
         Returns `dynamic.RelatedName` objects, which contain all names, that
         are defined by the same variable, function, class or import.
         This function can be used either to show all the usages of a variable
         or for renaming purposes.
+
+        TODO implement additional_module_paths
         """
-        definitions, search_name = self._goto(check_imports=True)
+        definitions, search_name = self._goto(add_import_name=True)
         definitions = dynamic.related_name_add_import_modules(definitions)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self.parser.module)
-        if definitions:
-            names = dynamic.related_names(definitions, search_name, module)
-        else:
-            names = []
+        names = dynamic.related_names(definitions, search_name, module)
 
         for d in definitions:
-            if isinstance(d, parsing.Statement):
-                def add_array(arr):
-                    calls = dynamic._scan_array(arr, search_name)
-                    for call in calls:
-                        for n in call.name.names:
-                            if n == search_name:
-                                names.append(dynamic.RelatedName(n, d))
-                for op, arr in d.assignment_details:
-                    add_array(arr)
-                if not d.assignment_details:
-                    add_array(d.get_assignment_calls())
-            elif isinstance(d, parsing.Import):
-                is_user = d == self.module.parser.user_stmt
-                check_names = [d.namespace, d.alias, d.from_ns] if is_user \
-                                                    else d.get_defined_names()
-                for name in check_names:
-                    if name:
-                        for n in name.names:
-                            if n.start_pos <= self.pos <= n.end_pos \
-                                                            or not is_user:
-                                names.append(dynamic.RelatedName(n, d))
-            elif isinstance(d, parsing.Name):
-                names.append(dynamic.RelatedName(d.names[0], d))
-            elif isinstance(d, parsing.Module):
-                names.append(dynamic.RelatedName(d.get_names(), d))
+            if isinstance(d, parsing.Module):
+                names.append(dynamic.RelatedName(d, d))
             else:
-                names.append(dynamic.RelatedName(d.name.names[0], d))
+                names.append(dynamic.RelatedName(d.names[0], d))
 
         return sorted(names, key=lambda x: (x.module_path, x.start_pos))
 
@@ -452,6 +414,23 @@ class Script(object):
         after = self.module.get_line(self.pos[0])[self.pos[1]:]
         index -= re.search('^[ ,]*', after).group(0).count(',')
         return CallDef(executable, index, call)
+
+    def _get_on_import_stmt(self, is_like_search=False):
+        user_stmt = self.parser.user_stmt
+        import_names = user_stmt.get_all_import_names()
+        count = 0
+        kill_count = -1
+        cur_name_part = None
+        for i in import_names:
+            for name_part in i.names:
+                count += 1
+                if self.pos <= name_part.end_pos:
+                    kill_count += 1
+                    cur_name_part = name_part
+
+        i = imports.ImportPath(user_stmt, is_like_search,
+                                kill_count=kill_count, direct_resolve=True)
+        return i, cur_name_part
 
     def _get_completion_parts(self, path):
         """
