@@ -334,7 +334,7 @@ class Script(object):
         module.add(self.parser.module)
         names = dynamic.related_names(definitions, search_name, module)
 
-        for d in definitions:
+        for d in set(definitions):
             if isinstance(d, parsing.Module):
                 names.append(dynamic.RelatedName(d, d))
             else:

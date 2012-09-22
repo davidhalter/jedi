@@ -84,9 +84,9 @@ def run_related_name_test(script, correct, line_nr):
     """
     result = script.related_names()
     correct = correct.strip()
-    comp_str = set('(%s,%s)' % r.start_pos for r in result)
-    correct = set(correct.split(' ')) if correct else set()
-    if comp_str != correct:
+    comp_str = sorted(r.start_pos for r in result)
+    correct = sorted(literal_eval(correct))
+    if sorted(comp_str) != sorted(correct):
         print('Solution @%s not right, received %s, wanted %s'\
                     % (line_nr - 1, comp_str, correct))
         return 1
