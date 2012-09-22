@@ -1,3 +1,5 @@
+#! ['class ObjectDoesNotExist']
+from django.core.exceptions import ObjectDoesNotExist
 import django
 
 #? ['get_version']
