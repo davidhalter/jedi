@@ -152,3 +152,17 @@ except ImportError:
             while lines and not lines[0]:
                 lines.pop(0)
             return string.join(lines, '\n')
+
+if is_py25:
+    # adds the `itertools.chain.from_iterable` constructor
+    import itertools
+
+    class chain(itertools.chain):
+        @staticmethod
+        def from_iterable(iterables):
+            # chain.from_iterable(['ABC', 'DEF']) --> A B C D E F
+            for it in iterables:
+                for element in it:
+                    yield element
+    itertools.chain = chain
+    del chain
