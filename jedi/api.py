@@ -340,7 +340,7 @@ class Script(object):
             else:
                 names.append(dynamic.RelatedName(d.names[0], d))
 
-        return sorted(names, key=lambda x: (x.module_path, x.start_pos))
+        return sorted(set(names), key=lambda x: (x.module_path, x.start_pos))
 
     def get_in_function_call(self):
         """

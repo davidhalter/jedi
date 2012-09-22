@@ -449,3 +449,10 @@ class RelatedName(BaseOutput):
     @property
     def description(self):
         return "%s@%s,%s" % (self.text, self.start_pos[0], self.start_pos[1])
+
+    def __eq__(self, other):
+        return self.start_pos == other.start_pos \
+            and self.module_path == other.module_path
+
+    def __hash__(self):
+        return hash((self.start_pos, self.module_path))
