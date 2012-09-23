@@ -328,8 +328,14 @@ class Script(object):
 
         TODO implement additional_module_paths
         """
+        user_stmt = self.parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
-        if not isinstance(self.parser.user_stmt, parsing.Import):
+        if isinstance(user_stmt, parsing.Statement) \
+                    and self.pos < user_stmt.get_assignment_calls().start_pos:
+            # the search_name might be before `=`
+            definitions = [v for v in user_stmt.set_vars
+                                                if str(v) == search_name]
+        if not isinstance(user_stmt, parsing.Import):
             # import case is looked at with add_import_name option
             definitions = dynamic.related_name_add_import_modules(definitions,
                                                                 search_name)
