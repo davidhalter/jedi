@@ -10,11 +10,11 @@ statement.
 
 TODO magic methods: __mul__, __add__, etc.
 TODO evaluate asserts/isinstance (type safety)
+TODO super()
 
 TODO nonlocal statement, needed or can be ignored? (py3k)
 
 TODO __ instance attributes should not be visible outside of the class.
-TODO getattr / __getattr__ / __getattribute__ ?
 """
 from _compatibility import next, property, hasattr, is_py3k, use_metaclass
 

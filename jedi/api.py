@@ -256,7 +256,7 @@ class Script(object):
 
     def get_definition(self):
         """
-        Returns the definitions of a the path under the cursor.  This is
+        Returns the definitions of a the path under the cursor. This is
         not a goto function! This follows complicated paths and returns the
         end, not the first definition.
 
@@ -290,7 +290,10 @@ class Script(object):
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
     def goto(self):
-        """ TODO doc """
+        """
+        Returns the first definition found by goto. This means: It doesn't
+        follow imports and statements.
+        """
         d = [Definition(d) for d in set(self._goto()[0])]
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
