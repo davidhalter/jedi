@@ -24,6 +24,7 @@ import imports
 search_param_modules = ['.']
 search_param_cache = {}
 
+
 def get_directory_modules_for_name(mods, name):
     """
     Search a name in the directories of modules.
@@ -162,6 +163,26 @@ def check_array_additions(array):
     res = _check_array_additions(array, current_module, is_list)
     return res
 
+
+def _scan_array(arr, search_name):
+    """ Returns the function Call that match search_name in an Array. """
+    result = []
+    for sub in arr:
+        for s in sub:
+            if isinstance(s, parsing.Array):
+                result += _scan_array(s, search_name)
+            elif isinstance(s, parsing.Call):
+                while s is not None:
+                    n = s.name
+                    if isinstance(n, parsing.Name) and search_name in n.names:
+                        result.append(s)
+
+                    if s.execution is not None:
+                        result += _scan_array(s.execution, search_name)
+                    s = s.next
+    return result
+
+
 counter = 0
 def dec(func):
     """ TODO delete this """
@@ -181,24 +202,6 @@ def dec(func):
         return res
     return wrapper
 
-
-def _scan_array(arr, search_name):
-    """ Returns the function Call that match search_name in an Array. """
-    result = []
-    for sub in arr:
-        for s in sub:
-            if isinstance(s, parsing.Array):
-                result += _scan_array(s, search_name)
-            elif isinstance(s, parsing.Call):
-                while s is not None:
-                    n = s.name
-                    if isinstance(n, parsing.Name) and search_name in n.names:
-                        result.append(s)
-
-                    if s.execution is not None:
-                        result += _scan_array(s.execution, search_name)
-                    s = s.next
-    return result
 
 #@dec
 @evaluate.memoize_default([])
@@ -352,7 +355,7 @@ def related_names(definitions, search_name, mods):
 
             #print follow_res, [d.parent() for d in follow_res]
             # compare to see if they match
-            if True in [r in definitions for r in follow_res]:
+            if any(r in definitions for r in follow_res):
                 scope = call.parent_stmt()
                 result.append(RelatedName(search, scope))
 
@@ -409,6 +412,7 @@ def related_names(definitions, search_name, mods):
                     names += check_call(call)
     return names
 
+
 def related_name_add_import_modules(definitions, search_name):
     """ Adds the modules of the imports """
     new = set()
@@ -420,7 +424,6 @@ def related_name_add_import_modules(definitions, search_name):
             except IndexError:
                 pass
     return set(definitions) | new
-
 
 
 class BaseOutput(object):
