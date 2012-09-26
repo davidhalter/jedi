@@ -18,7 +18,9 @@ class TestRegression(unittest.TestCase):
         script = api.Script(src, pos[0], pos[1], '')
         return script.get_definition()
 
-    def complete(self, src, pos):
+    def complete(self, src, pos=None):
+        if pos is None:
+            pos = 1, len(src)
         script = api.Script(src, pos[0], pos[1], '')
         return script.complete()
 
@@ -151,6 +153,20 @@ class TestRegression(unittest.TestCase):
         assert check(self.get_in_function_call(s6, (1, 4)), 'str', 0)
 
         assert check(self.get_in_function_call(s7), 'center', 0)
+
+    def test_add_dynamic_mods(self):
+        api.settings.additional_dynamic_modules = ['dynamic.py']
+        # Fictional module that defines a function.
+        src1 = "def ret(a): return a"
+        # Other fictional modules in another place in the fs.
+        src2 = 'from .. import setup; setup.ret(1)'
+        # .parser to load the module
+        api.modules.Module(os.path.abspath('dynamic.py'), src2).parser
+        script = api.Script(src1, 1, len(src1), '../setup.py')
+        result = script.get_definition()
+        assert len(result) == 1
+        assert result[0].description == 'class int'
+
 
 if __name__ == '__main__':
     unittest.main()

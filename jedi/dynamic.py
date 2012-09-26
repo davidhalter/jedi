@@ -41,20 +41,25 @@ def get_directory_modules_for_name(mods, name):
             if name in source:
                 return modules.Module(path, source).parser.module
 
+    # skip non python modules
+    mods = set(m for m in mods if m.path.endswith('.py'))
     mod_paths = set()
     for m in mods:
         mod_paths.add(m.path)
+        yield m
 
-    new = set()
+    paths = set(settings.additional_dynamic_modules)
     for p in mod_paths:
         d = os.path.dirname(p)
         for entry in os.listdir(d):
             if entry not in mod_paths:
                 if entry.endswith('.py'):
-                    c = check_python_file(d + os.path.sep + entry)
-                    if c is not None:
-                        new.add(c)
-    return set(mods) | new
+                    paths.add(d + os.path.sep + entry)
+
+    for p in paths:
+        c = check_python_file(p)
+        if c is not None and c not in mods:
+            yield c
 
 
 def search_param_memoize(func):
@@ -121,7 +126,6 @@ def search_params(param):
             for p in params:
                 if str(p) == param_name:
                     result += evaluate.follow_statement(p.parent())
-        #print listener.param_possibilities, param, result
 
         return result
 
@@ -143,9 +147,11 @@ def search_params(param):
     listener = ParamListener()
     func.listeners.add(listener)
 
-    result = get_params_for_module(current_module)
+    for mod in get_directory_modules_for_name([current_module], func_name):
+        result = get_params_for_module(mod)
+        if result:
+            break
 
-    # TODO check other modules
     # cleanup: remove the listener; important: should not stick.
     func.listeners.remove(listener)
 
@@ -380,9 +386,6 @@ def related_names(definitions, search_name, mods):
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
     for m in get_directory_modules_for_name(mods, search_name):
-        if not m.path.endswith('.py'):
-            # don't search for names in builtin modules
-            continue
         try:
             stmts = m.used_names[search_name]
         except KeyError:

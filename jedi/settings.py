@@ -28,6 +28,10 @@ dynamic_array_additions = True
 # the params of a function.
 dynamic_params = True
 
+# Additional modules in which Jedi checks if statements are to be found. This
+# is practical for IDE's, that want to administrate their modules themselves.
+additional_dynamic_modules = []
+
 # ----------------
 # recursions
 # ----------------

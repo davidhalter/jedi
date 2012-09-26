@@ -24,7 +24,7 @@ class CachedModule(object):
     cache = {}
 
     def __init__(self, path=None, name=None):
-        self.path = path
+        self.path = path and os.path.abspath(path)
         self.name = name
         self._parser = None
 
