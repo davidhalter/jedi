@@ -422,7 +422,7 @@ class Flow(Scope):
         else:
             self.set_vars = set_vars
             for s in self.set_vars:
-                s.parent = weakref.ref(self)
+                s.parent().parent = weakref.ref(self)
 
     @property
     def parent(self):
@@ -435,17 +435,11 @@ class Flow(Scope):
             self.next.parent = value
 
     def get_code(self, first_indent=False, indention="    "):
-        if self.set_vars:
-            vars = ",".join(map(lambda x: x.get_code(), self.set_vars))
-            vars += ' in '
-        else:
-            vars = ''
-
         stmts = []
         for s in self.inits:
             stmts.append(s.get_code(new_line=False))
         stmt = ', '.join(stmts)
-        str = "%s %s%s:\n" % (self.command, vars, stmt)
+        str = "%s %s:\n" % (self.command, vars, stmt)
         str += super(Flow, self).get_code(True, indention)
         if self.next:
             str += self.next.get_code()
@@ -495,6 +489,15 @@ class ForFlow(Flow):
                                         set_stmt.used_vars)
         self.set_stmt = set_stmt
         self.is_list_comp = is_list_comp
+
+    def get_code(self, first_indent=False, indention=" " * 4):
+        vars = ",".join(x.get_code() for x in self.set_vars)
+        stmts = []
+        for s in self.inits:
+            stmts.append(s.get_code(new_line=False))
+        stmt = ', '.join(stmts)
+        s = "for %s in %s:\n" % (vars, stmt)
+        return s + super(Flow, self).get_code(True, indention)
 
 
 class Import(Simple):
@@ -1436,6 +1439,8 @@ class PyFuzzyParser(object):
                         if tok != 'in' or middle is None:
                             if middle is None:
                                 level -= 1
+                            else:
+                                middle.parent = weakref.ref(self.scope)
                             debug.warning('list comprehension formatting @%s' %
                                                             self.start_pos[0])
                             continue
@@ -1444,8 +1449,12 @@ class PyFuzzyParser(object):
                         in_clause, tok = self._parse_statement(added_breaks=b,
                                                                 list_comp=True)
                         if tok not in b or in_clause is None:
+                            middle.parent = weakref.ref(self.scope)
                             if in_clause is None:
                                 self.gen.push_back(self._current_full)
+                            else:
+                                in_clause.parent = weakref.ref(self.scope)
+                                in_clause.parent = weakref.ref(self.scope)
                             debug.warning('list comprehension in_clause %s@%s'
                                                 % (tok, self.start_pos[0]))
                             continue
@@ -1680,8 +1689,7 @@ class PyFuzzyParser(object):
                     if tok == 'in':
                         statement, tok = self._parse_statement()
                         if tok == ':':
-                            f = ForFlow([statement], first_pos,
-                                                                set_stmt)
+                            f = ForFlow([statement], first_pos, set_stmt)
                             self.scope = self.scope.add_statement(f)
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
@@ -1721,6 +1729,8 @@ class PyFuzzyParser(object):
                             s = self.scope.add_statement(f)
                         self.scope = s
                     else:
+                        for i in inits:
+                            i.parent = weakref.ref(self.scope)
                         debug.warning('syntax err, flow started @%s',
                                                             self.start_pos[0])
                 # globals

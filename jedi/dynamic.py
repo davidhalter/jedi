@@ -118,7 +118,8 @@ def search_params(param):
                 return []
 
             for stmt in possible_stmts:
-                evaluate.follow_statement(stmt)
+                if not isinstance(stmt, parsing.Import):
+                    evaluate.follow_statement(stmt)
             return listener.param_possibilities
 
         result = []
@@ -126,7 +127,6 @@ def search_params(param):
             for p in params:
                 if str(p) == param_name:
                     result += evaluate.follow_statement(p.parent())
-
         return result
 
     func = param.get_parent_until(parsing.Function)
@@ -147,6 +147,8 @@ def search_params(param):
     listener = ParamListener()
     func.listeners.add(listener)
 
+    result = []
+    # This is like backtracking: Get the first possible result.
     for mod in get_directory_modules_for_name([current_module], func_name):
         result = get_params_for_module(mod)
         if result:
