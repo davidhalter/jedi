@@ -127,9 +127,11 @@ class CachedMetaClass(type):
 
 class Executable(parsing.Base):
     """ An instance is also an executable - because __init__ is called """
-    def __init__(self, base, var_args=parsing.Array(None, None)):
+    def __init__(self, base, var_args=None):
         self.base = base
         # The param input array.
+        if var_args is None:
+            var_args = parsing.Array(None, None)
         self.var_args = var_args
 
     def get_parent_until(self, *args, **kwargs):
@@ -141,7 +143,7 @@ class Executable(parsing.Base):
 
 class Instance(use_metaclass(CachedMetaClass, Executable)):
     """ This class is used to evaluate instances. """
-    def __init__(self, base, var_args=parsing.Array(None, None)):
+    def __init__(self, base, var_args=None):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
                     and builtin.builtin_scope == base.get_parent_until():

@@ -422,7 +422,8 @@ class Flow(Scope):
         else:
             self.set_vars = set_vars
             for s in self.set_vars:
-                s.parent().parent = weakref.ref(self)
+                s.parent().parent = lambda: self
+                s.parent = weakref.ref(self)
 
     @property
     def parent(self):
@@ -1601,6 +1602,7 @@ class PyFuzzyParser(object):
         self.freshscope = True
         while True:
             try:
+                self.module.temp_used_names = []
                 token_type, tok = self.next()
                 #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
                 #    % (tok, tokenize.tok_name[token_type], start_position[0]))
