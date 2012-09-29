@@ -119,7 +119,11 @@ def search_params(param):
 
             for stmt in possible_stmts:
                 if not isinstance(stmt, parsing.Import):
-                    evaluate.follow_statement(stmt)
+                    calls = _scan_array(stmt.get_assignment_calls(), func_name)
+                    for c in calls:
+                        # no execution means that params cannot be set
+                        if c.execution:
+                            evaluate.follow_call(c)
             return listener.param_possibilities
 
         result = []

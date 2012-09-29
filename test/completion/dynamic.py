@@ -25,6 +25,10 @@ def func(a):
     #? 
     return a
 
+def func(a):
+    #? float()
+    return a
+str(func(1.0))
 
 # -----------------
 # *args, **args
