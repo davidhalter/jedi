@@ -122,8 +122,10 @@ def search_params(param):
                     calls = _scan_array(stmt.get_assignment_calls(), func_name)
                     for c in calls:
                         # no execution means that params cannot be set
-                        if c.execution:
-                            evaluate.follow_call(c)
+                        call_path = c.generate_call_path()
+                        pos = c.start_pos
+                        scope = stmt.parent()
+                        evaluate.follow_call_path(call_path, scope, pos)
             return listener.param_possibilities
 
         result = []
@@ -184,14 +186,15 @@ def _scan_array(arr, search_name):
             if isinstance(s, parsing.Array):
                 result += _scan_array(s, search_name)
             elif isinstance(s, parsing.Call):
-                while s is not None:
-                    n = s.name
+                s_new = s
+                while s_new is not None:
+                    n = s_new.name
                     if isinstance(n, parsing.Name) and search_name in n.names:
                         result.append(s)
 
-                    if s.execution is not None:
-                        result += _scan_array(s.execution, search_name)
-                    s = s.next
+                    if s_new.execution is not None:
+                        result += _scan_array(s_new.execution, search_name)
+                    s_new = s_new.next
     return result
 
 
