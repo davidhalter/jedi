@@ -197,7 +197,11 @@ def sys_path_with_modifications(module):
             debug.warning('sys path detected, but failed to evaluate')
             return None
         try:
-            return os.path.abspath(variables['result'])
+            res = variables['result']
+            if isinstance(res, str):
+                return os.path.abspath(res)
+            else:
+                return None
         except KeyError:
             return None
 

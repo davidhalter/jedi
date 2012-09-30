@@ -669,8 +669,9 @@ class Execution(Executable):
                 elif var_arg[0] == '*':
                     arrays = follow_call_list([var_arg[1:]])
                     for array in arrays:
-                        for field in array.get_contents():
-                            yield None, field
+                        if hasattr(array, 'get_contents'):
+                            for field in array.get_contents():
+                                yield None, field
                 # **kwargs
                 elif var_arg[0] == '**':
                     arrays = follow_call_list([var_arg[1:]])
@@ -1476,7 +1477,8 @@ def follow_path(path, scope, position=None):
     if isinstance(current, parsing.Array):
         # This must be an execution, either () or [].
         if current.type == parsing.Array.LIST:
-            result = scope.get_index_types(current)
+            if hasattr(scope, 'get_index_types'):
+                result = scope.get_index_types(current)
         elif current.type not in [parsing.Array.DICT]:
             # Scope must be a class or func - make an instance or execution.
             debug.dbg('exe', scope)
