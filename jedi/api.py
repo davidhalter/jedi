@@ -185,8 +185,9 @@ class Script(object):
         path, dot, like = self._get_completion_parts(path)
 
         try:
-            scopes = self._prepare_goto(path, True)
+            scopes = list(self._prepare_goto(path, True))
         except NotFoundError:
+            scopes = []
             scope_generator = evaluate.get_names_for_scope(
                                             self.parser.user_scope, self.pos)
             completions = []
@@ -214,9 +215,13 @@ class Script(object):
                     for p in call_def.params:
                         completions.append((p.get_name(), p))
 
-            # add keywords
-            s = builtin.builtin_scope
-            completions += ((k, s) for k in keywords.get_keywords(all=True))
+            # Do the completion if there is no path before and no import stmt.
+            if (not scopes or not isinstance(scopes[0], imports.ImportPath)) \
+                        and not path:
+                # add keywords
+                bs = builtin.builtin_scope
+                completions += ((k, bs) for k in keywords.get_keywords(
+                                                                    all=True))
 
         completions = [(c, s) for c, s in completions
                         if settings.case_insensitive_completion

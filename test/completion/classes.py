@@ -50,7 +50,7 @@ class TestClass(object):
         # should not know any class functions!
         #? []
         values
-        #? []
+        #? ['return']
         ret
         return a1
 
