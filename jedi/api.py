@@ -12,6 +12,7 @@ import debug
 import settings
 import keywords
 import helpers
+import builtin
 
 from _compatibility import next
 
@@ -206,18 +207,21 @@ class Script(object):
                     for c in names:
                         completions.append((c, s))
 
-        completions = [(c, s) for c, s in completions
-                        if settings.case_insensitive_completion
-                            and c.names[-1].lower().startswith(like.lower())
-                            or c.names[-1].startswith(like)]
-
         if not dot:  # named_params have no dots
             call_def = self.get_in_function_call()
             if call_def:
                 if not call_def.module.is_builtin():
                     for p in call_def.params:
                         completions.append((p.get_name(), p))
-                completions += []
+
+            # add keywords
+            s = builtin.builtin_scope
+            completions += ((k, s) for k in keywords.get_keywords(all=True))
+
+        completions = [(c, s) for c, s in completions
+                        if settings.case_insensitive_completion
+                            and c.names[-1].lower().startswith(like.lower())
+                            or c.names[-1].startswith(like)]
 
         needs_dot = not dot and path
         completions = set(completions)

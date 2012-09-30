@@ -42,6 +42,11 @@ class Keyword(object):
         return builtin.builtin_scope
 
     @property
+    def names(self):
+        """ For a `parsing.Name` like comparision """
+        return [self.name]
+
+    @property
     def docstr(self):
         return imitate_pydoc(self.name)
 

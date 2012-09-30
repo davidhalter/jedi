@@ -243,7 +243,7 @@ def _check_array_additions(compare_array, module, is_list):
                 continue
             backtrack_path = iter(call_path[:separate_index])
 
-            position = c.parent_stmt().start_pos
+            position = c.start_pos
             scope = c.parent_stmt().parent()
 
             found = evaluate.follow_call_path(backtrack_path, scope, position)
