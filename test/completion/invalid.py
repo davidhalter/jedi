@@ -64,6 +64,14 @@ a = 1 if
 #? int()
 a
 
+for for_local in :
+    for_local
+#? ['for_local']
+for_local
+#? 
+for_local
+
+
 a2 = [for a2 in [0]]
 #? 
 a2[0]

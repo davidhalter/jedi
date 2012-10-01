@@ -1691,7 +1691,8 @@ class PyFuzzyParser(object):
                     if tok == 'in':
                         statement, tok = self._parse_statement()
                         if tok == ':':
-                            f = ForFlow([statement], first_pos, set_stmt)
+                            s = [] if statement is None else [statement]
+                            f = ForFlow(s, first_pos, set_stmt)
                             self.scope = self.scope.add_statement(f)
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:

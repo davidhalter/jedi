@@ -1055,6 +1055,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
         def handle_for_loops(loop):
             # Take the first statement (for has always only
             # one, remember `in`). And follow it.
+            if not len(loop.inits):
+                return []
             result = get_iterator_types(follow_statement(loop.inits[0]))
             if len(loop.set_vars) > 1:
                 var_arr = loop.set_stmt.get_assignment_calls()
