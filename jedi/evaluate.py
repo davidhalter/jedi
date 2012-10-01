@@ -271,7 +271,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
 
     def __repr__(self):
         return "<e%s of %s (var_args: %s)>" % \
-                (self.__class__.__name__, self.base, len(self.var_args or []))
+                (type(self).__name__, self.base, len(self.var_args or []))
 
 
 class InstanceElement(use_metaclass(CachedMetaClass)):
@@ -328,7 +328,7 @@ class InstanceElement(use_metaclass(CachedMetaClass)):
         return isinstance(self.var, cls)
 
     def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self.var)
+        return "<%s of %s>" % (type(self).__name__, self.var)
 
 
 class Class(use_metaclass(CachedMetaClass, parsing.Base)):
@@ -391,7 +391,7 @@ class Class(use_metaclass(CachedMetaClass, parsing.Base)):
         return getattr(self.base, name)
 
     def __repr__(self):
-        return "<e%s of %s>" % (self.__class__.__name__, self.base)
+        return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
 class Function(use_metaclass(CachedMetaClass, parsing.Base)):
@@ -460,7 +460,7 @@ class Function(use_metaclass(CachedMetaClass, parsing.Base)):
         dec = ''
         if self._decorated_func != self.base_func:
             dec = " is " + repr(self._decorated_func)
-        return "<e%s of %s%s>" % (self.__class__.__name__, self.base_func, dec)
+        return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
 class Execution(Executable):
@@ -748,7 +748,7 @@ class Execution(Executable):
 
     def __repr__(self):
         return "<%s of %s>" % \
-                (self.__class__.__name__, self.base)
+                (type(self).__name__, self.base)
 
 
 class Generator(use_metaclass(CachedMetaClass, parsing.Base)):
@@ -786,7 +786,7 @@ class Generator(use_metaclass(CachedMetaClass, parsing.Base)):
         return self.func.parent()
 
     def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self.func)
+        return "<%s of %s>" % (type(self).__name__, self.func)
 
 
 class Array(use_metaclass(CachedMetaClass, parsing.Base)):
@@ -880,7 +880,7 @@ class Array(use_metaclass(CachedMetaClass, parsing.Base)):
         return getattr(self._array, name)
 
     def __repr__(self):
-        return "<e%s of %s>" % (self.__class__.__name__, self._array)
+        return "<e%s of %s>" % (type(self).__name__, self._array)
 
 
 class ArrayElement(object):
@@ -898,7 +898,7 @@ class ArrayElement(object):
         return getattr(self.name, name)
 
     def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self.name)
+        return "<%s of %s>" % (type(self).__name__, self.name)
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):

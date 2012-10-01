@@ -117,7 +117,7 @@ class Simple(Base):
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
         return "<%s: %s@%s>" % \
-                (self.__class__.__name__, code, self.start_pos[0])
+                (type(self).__name__, code, self.start_pos[0])
 
 
 class Scope(Simple):
@@ -255,7 +255,7 @@ class Scope(Simple):
             except AttributeError:
                 name = self.path
 
-        return "<%s: %s@%s-%s>" % (self.__class__.__name__, name,
+        return "<%s: %s@%s-%s>" % (type(self).__name__, name,
                                     self.start_pos[0], self.end_pos[0])
 
 
@@ -726,7 +726,7 @@ class Statement(Simple):
                     continue
 
             brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
-            is_call = lambda: result.__class__ == Call
+            is_call = lambda: type(result) == Call
             is_call_or_close = lambda: is_call() or close_brackets
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
@@ -748,7 +748,7 @@ class Statement(Simple):
                     if close_brackets:
                         result = result.parent()
                         close_brackets = False
-                    if result.__class__ == Call:
+                    if type(result) == Call:
                         result = result.parent()
                         close_brackets = False
                     call = Call(tok, c_type, start_pos, parent=result)
@@ -921,7 +921,7 @@ class Call(Base):
 
     def __repr__(self):
         return "<%s: %s>" % \
-                (self.__class__.__name__, self.name)
+                (type(self).__name__, self.name)
 
 
 class Array(Call):
@@ -1041,10 +1041,10 @@ class Array(Call):
 
     def __repr__(self):
         if self.type == self.NOARRAY:
-            type = 'noarray'
+            typ = 'noarray'
         else:
-            type = self.type
-        return "<%s: %s%s>" % (self.__class__.__name__, type, self.values)
+            typ = self.type
+        return "<%s: %s%s>" % (type(self).__name__, typ, self.values)
 
 
 class NamePart(str):
@@ -1096,7 +1096,7 @@ class ListComprehension(object):
 
     def __repr__(self):
         return "<%s: %s>" % \
-                (self.__class__.__name__, self.get_code())
+                (type(self).__name__, self.get_code())
 
     def get_code(self):
         statements = self.stmt, self.middle, self.input
@@ -1139,7 +1139,7 @@ class PyFuzzyParser(object):
         del self.code
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.module)
+        return "<%s: %s>" % (type(self).__name__, self.module)
 
     @property
     def start_pos(self):

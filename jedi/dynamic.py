@@ -467,7 +467,7 @@ class BaseOutput(object):
         raise NotImplementedError('Base Class')
 
     def __repr__(self):
-        return "<%s %s>" % (self.__class__.__name__, self.description)
+        return "<%s %s>" % (type(self).__name__, self.description)
 
 
 class RelatedName(BaseOutput):

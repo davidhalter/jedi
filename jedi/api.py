@@ -65,7 +65,7 @@ class Completion(object):
         return type(self.name.parent())
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self.name)
+        return '<%s: %s>' % (type(self).__name__, self.name)
 
 
 class Definition(dynamic.BaseOutput):
@@ -150,7 +150,7 @@ class CallDef(object):
         return self.executable.get_parent_until()
 
     def __repr__(self):
-        return '<%s: %s index %s>' % (self.__class__.__name__, self.executable,
+        return '<%s: %s index %s>' % (type(self).__name__, self.executable,
                                     self.index)
 
 
