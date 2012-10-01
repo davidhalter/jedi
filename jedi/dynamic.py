@@ -48,18 +48,19 @@ def get_directory_modules_for_name(mods, name):
         mod_paths.add(m.path)
         yield m
 
-    paths = set(settings.additional_dynamic_modules)
-    for p in mod_paths:
-        d = os.path.dirname(p)
-        for entry in os.listdir(d):
-            if entry not in mod_paths:
-                if entry.endswith('.py'):
-                    paths.add(d + os.path.sep + entry)
+    if settings.dynamic_params_for_other_modules:
+        paths = set(settings.additional_dynamic_modules)
+        for p in mod_paths:
+            d = os.path.dirname(p)
+            for entry in os.listdir(d):
+                if entry not in mod_paths:
+                    if entry.endswith('.py'):
+                        paths.add(d + os.path.sep + entry)
 
-    for p in paths:
-        c = check_python_file(p)
-        if c is not None and c not in mods:
-            yield c
+        for p in paths:
+            c = check_python_file(p)
+            if c is not None and c not in mods:
+                yield c
 
 
 def search_param_memoize(func):

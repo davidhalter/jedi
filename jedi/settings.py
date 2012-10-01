@@ -27,6 +27,8 @@ dynamic_array_additions = True
 # A dynamic param completion, finds the callees of the function, which define
 # the params of a function.
 dynamic_params = True
+# Do the same for other modules.
+dynamic_params_for_other_modules = True
 
 # Additional modules in which Jedi checks if statements are to be found. This
 # is practical for IDE's, that want to administrate their modules themselves.
