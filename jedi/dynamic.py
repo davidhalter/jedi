@@ -279,6 +279,9 @@ def _check_array_additions(compare_array, module, is_list):
             stop_classes = list(stop_classes) + [evaluate.Function]
         return stmt.get_parent_until(stop_classes)
 
+    temp_param_add = settings.dynamic_params_for_other_modules
+    settings.dynamic_params_for_other_modules = False
+
     search_names = ['append', 'extend', 'insert'] if is_list else \
                                                             ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array, evaluate.Execution)
@@ -309,6 +312,8 @@ def _check_array_additions(compare_array, module, is_list):
                 continue
             res += check_calls(_scan_array(stmt.get_assignment_calls(), n), n)
             evaluate.follow_statement.pop_stmt()
+    # reset settings
+    settings.dynamic_params_for_other_modules = temp_param_add
     return res
 
 
