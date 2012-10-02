@@ -494,18 +494,11 @@ class Execution(Executable):
                 for obj in objects:
                     if not isinstance(obj, (Instance, Class)):
                         debug.warning('getattr called without instance')
-                        return []
+                        continue
 
                     for name in names:
                         key = name.var_args.get_only_subelement()
-                        try:
-                            stmts.append(obj.get_subscope_by_name(key))
-                        except KeyError:
-                            debug.warning('called getattr() without string')
-                #if not (isinstance(name, Instance) \
-                        #and name.var_args:
-                    #debug.warning('getattr called without instance')
-                    #return []
+                        stmts += follow_path(iter([key]), obj)
                 return stmts
 
         if self.base.isinstance(Class):
