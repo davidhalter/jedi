@@ -209,7 +209,7 @@ def sys_path_with_modifications(module):
         try:
             possible_stmts = module.used_names['path']
         except KeyError:
-            return builtin.module_find_path
+            return list(builtin.module_find_path)
 
         sys_path = list(builtin.module_find_path)  # copy
         for p in possible_stmts:
@@ -251,7 +251,28 @@ def sys_path_with_modifications(module):
         pass
 
     result = check_module(module)
+    result += detect_django_path(module.path)
 
     # cleanup, back to old directory
     os.chdir(curdir)
+    return result
+
+
+def detect_django_path(module_path):
+    """ Detects the path of the very well known Django library (if used) """
+    result = []
+    while True:
+        new = os.path.dirname(module_path)
+        # If the module_path doesn't change anymore, we're finished -> /
+        if new == module_path:
+            break
+        else:
+            module_path = new
+
+        try:
+            with open(module_path + os.path.sep + 'manage.py'):
+                debug.dbg('Found django path: %s' % module_path)
+                result.append(module_path)
+        except IOError:
+            pass
     return result
