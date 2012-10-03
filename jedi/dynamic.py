@@ -492,3 +492,43 @@ class RelatedName(BaseOutput):
 
     def __hash__(self):
         return hash((self.start_pos, self.module_path))
+
+
+def check_flow_information(flow, search_name):
+    """ Try to find out the type of a variable just with the information that
+    is given by the flows: e.g.
+    >>> if isinstance(k, str):
+    >>>     k.  # <- completion here
+
+    ensures that `k` is a string.
+    """
+    try:
+        assert flow.command in ['if', 'while']
+        assert len(flow.inits) == 1
+        ass = flow.inits[0].get_assignment_calls()
+        assert len(ass.values) == 1 and len(ass.values[0]) == 1
+        call = ass.values[0][0]
+        assert type(call) == parsing.Call and str(call.name) == 'isinstance'
+        assert bool(call.execution)
+
+        # isinstance check
+        isinst = call.execution.values
+        assert len(isinst) == 2
+        assert len(isinst[0]) == 1
+        assert len(isinst[1]) == 1
+        assert isinstance(isinst[0][0], parsing.Call)
+        # names fit?
+        assert str(isinst[0][0].name) == search_name
+        classes_call = isinst[1][0]  # class_or_type_or_tuple
+        assert isinstance(classes_call, parsing.Call)
+        result = []
+        for c in  evaluate.follow_call(classes_call):
+            if isinstance(c, evaluate.Array):
+                result += c.get_index_types()
+            else:
+                result.append(c)
+        for i, c in enumerate(result):
+            result[i] = evaluate.Instance(c)
+        return result
+    except AssertionError:
+        return []

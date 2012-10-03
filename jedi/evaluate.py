@@ -1118,10 +1118,11 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 result.append(par)
             return result, no_break_scope
 
+        flow_scope = scope
         result = []
         # compare func uses the tuple of line/indent = line/column
         comparison_func = lambda name: (name.start_pos)
-        for scope, name_list in scope_generator:
+        for nscope, name_list in scope_generator:
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):
@@ -1136,7 +1137,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                     else:
                         result += r
                     # for comparison we need the raw class
-                    s = scope.base if isinstance(scope, Class) else scope
+                    s = nscope.base if isinstance(nscope, Class) else nscope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
                     if result and not no_break_scope:
@@ -1147,10 +1148,19 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
             if result:
                 break
 
-        if not result and isinstance(scope, Instance):
+            while flow_scope and flow_scope.isinstance(parsing.Flow):
+                result = dynamic.check_flow_information(flow_scope, name_str)
+                if result:
+                    break
+                flow_scope = flow_scope.parent()
+            flow_scope = nscope
+            if result:
+                break
+
+        if not result and isinstance(nscope, Instance):
             # getattr() / __getattr__ / __getattribute__
-            result += check_getattr(scope, name_str)
-        debug.dbg('sfn filter "%s" in %s: %s' % (name_str, scope, result))
+            result += check_getattr(nscope, name_str)
+        debug.dbg('sfn filter "%s" in %s: %s' % (name_str, nscope, result))
         return result
 
     def descriptor_check(result):
