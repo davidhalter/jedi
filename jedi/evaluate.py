@@ -1401,6 +1401,12 @@ def follow_call_list(call_list):
                                     pass
                             continue
                         result += follow_call(call)
+                    elif call == '*':
+                        if [r for r in result if isinstance(r, Array)
+                                        or isinstance(r, Instance)
+                                            and str(r.name) == 'str']:
+                            # if it is an iterable, ignore * operations
+                            next(calls_iterator)
     return set(result)
 
 

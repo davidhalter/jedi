@@ -65,7 +65,6 @@ Jedi supports many of the widely used Python features:
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
 
-- operation support -> [3]\*3 etc.
 - manipulations of instances outside the instance variables, without using
   functions
 - assert
