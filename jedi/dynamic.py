@@ -520,14 +520,16 @@ def check_flow_information(flow, search_name, pos):
 def check_statement_information(stmt, search_name):
     try:
         ass = stmt.get_assignment_calls()
-        assert len(ass.values) == 1 and len(ass.values[0]) == 1
-        call = ass.values[0][0]
+        try:
+            call = ass.get_only_subelement()
+        except AttributeError:
+            assert False
         assert type(call) == parsing.Call and str(call.name) == 'isinstance'
         assert bool(call.execution)
 
         # isinstance check
         isinst = call.execution.values
-        assert len(isinst) == 2
+        assert len(isinst) == 2  # has two params
         assert len(isinst[0]) == 1
         assert len(isinst[1]) == 1
         assert isinstance(isinst[0][0], parsing.Call)
