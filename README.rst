@@ -60,14 +60,13 @@ Jedi supports many of the widely used Python features:
 - class decorators (py3k feature, are being ignored too, until I find a use
   case, that doesn't work with Jedi)
 - simple/usual ``sys.path`` modifications
-- ``isinstance`` checks for if/while
+- ``isinstance`` checks for if/while/assert
 
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
 
 - manipulations of instances outside the instance variables, without using
   functions
-- assert
 
 It does not support (and most probably will not in future versions): 
 

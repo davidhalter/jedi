@@ -264,7 +264,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'name', 'get_imports',
-                                                                'docstr']:
+                                                        'docstr', 'asserts']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                     % (self, name))
         return getattr(self.base, name)
@@ -386,7 +386,7 @@ class Class(use_metaclass(CachedMetaClass, parsing.Base)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'subscopes',
-                            'get_imports', 'get_parent_until', 'docstr']:
+                    'get_imports', 'get_parent_until', 'docstr', 'asserts']:
             raise AttributeError("Don't touch this (%s)!" % name)
         return getattr(self.base, name)
 
@@ -725,6 +725,11 @@ class Execution(Executable):
     @memoize_default()
     def returns(self):
         return self.copy_properties('returns')
+
+    @property
+    @memoize_default()
+    def asserts(self):
+        return self.copy_properties('asserts')
 
     @property
     @memoize_default()
@@ -1148,9 +1153,12 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
             if result:
                 break
 
-            while flow_scope and flow_scope.isinstance(parsing.Flow):
-                result = dynamic.check_flow_information(flow_scope, name_str)
+            while flow_scope:
+                result = dynamic.check_flow_information(flow_scope, name_str,
+                                                                    position)
                 if result:
+                    break
+                if flow_scope == nscope:
                     break
                 flow_scope = flow_scope.parent()
             flow_scope = nscope

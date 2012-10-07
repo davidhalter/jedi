@@ -139,6 +139,7 @@ class Scope(Simple):
         self.imports = []
         self.statements = []
         self.docstr = docstr
+        self.asserts = []
 
     def add_scope(self, sub, decorators):
         sub.parent = weakref.ref(self)
@@ -1416,7 +1417,7 @@ class PyFuzzyParser(object):
                         string += ".".join(n.names)
                     continue
                 elif token_type == tokenize.NAME:
-                    if tok in ['return', 'yield', 'del', 'raise', 'assert']:
+                    if tok in ['return', 'yield', 'del', 'raise']:
                         if len(tok_list) > 1:
                             # this happens, when a statement has opening
                             # brackets, which are not closed again, here I just
@@ -1751,6 +1752,10 @@ class PyFuzzyParser(object):
                     decorators.append(stmt)
                 elif tok == 'pass':
                     continue
+                elif tok == 'assert':
+                    stmt, tok = self._parse_statement()
+                    stmt.parent = weakref.ref(self.scope)
+                    self.scope.asserts.append(stmt)
                 # default
                 elif token_type in [tokenize.NAME, tokenize.STRING,
                                     tokenize.NUMBER] \

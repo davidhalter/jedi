@@ -494,18 +494,32 @@ class RelatedName(BaseOutput):
         return hash((self.start_pos, self.module_path))
 
 
-def check_flow_information(flow, search_name):
+def check_flow_information(flow, search_name, pos):
     """ Try to find out the type of a variable just with the information that
-    is given by the flows: e.g.
+    is given by the flows: e.g. It is also responsible for assert checks.
     >>> if isinstance(k, str):
     >>>     k.  # <- completion here
 
     ensures that `k` is a string.
     """
+    result = []
+    if isinstance(flow, parsing.Scope) and not result:
+        for ass in reversed(flow.asserts):
+            if ass.start_pos > pos:
+                continue
+            result = check_statement_information(ass, search_name)
+            if result:
+                break
+
+    if isinstance(flow, parsing.Flow) and not result:
+        if flow.command in ['if', 'while'] and len(flow.inits) == 1:
+            result = check_statement_information(flow.inits[0], search_name)
+    return result
+
+
+def check_statement_information(stmt, search_name):
     try:
-        assert flow.command in ['if', 'while']
-        assert len(flow.inits) == 1
-        ass = flow.inits[0].get_assignment_calls()
+        ass = stmt.get_assignment_calls()
         assert len(ass.values) == 1 and len(ass.values[0]) == 1
         call = ass.values[0][0]
         assert type(call) == parsing.Call and str(call.name) == 'isinstance'
