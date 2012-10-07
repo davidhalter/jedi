@@ -126,6 +126,7 @@ class TestRegression(unittest.TestCase):
         s5 = "abs(1,\nif 2:\n def a():"
         s6 = "str().center("
         s7 = "str().upper().center("
+        s8 = "str(int[zip("
 
         assert check(self.get_in_function_call(s, (1, 4)), 'abs', 0)
         assert check(self.get_in_function_call(s, (1, 6)), 'abs', 1)
@@ -153,6 +154,8 @@ class TestRegression(unittest.TestCase):
         assert check(self.get_in_function_call(s6, (1, 4)), 'str', 0)
 
         assert check(self.get_in_function_call(s7), 'center', 0)
+        assert check(self.get_in_function_call(s8), 'zip', 0)
+        assert check(self.get_in_function_call(s8, (1, 8)), 'str', 0)
 
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']

@@ -408,12 +408,16 @@ class Script(object):
                                     # call should return without execution and
                                     # next
                                     reset = c or s
+                                    if reset.execution.type not in \
+                                                [parsing.Array.TUPLE,
+                                                parsing.Array.NOARRAY]:
+                                        return start_s, index, False
+
                                     reset.execution = None
                                     reset.next = None
                                     return c or start_s, index, True
-                                #else:
-                                    #return call, index, stop
                             s = s.next
+
             # The third return is just necessary for recursion inside, because
             # it needs to know when to stop iterating.
             return call, index, stop
