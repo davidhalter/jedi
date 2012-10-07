@@ -709,7 +709,7 @@ class Statement(Simple):
                 raise
             else:
                 if tok in ['return', 'yield'] or level == 0 and \
-                        '=' in tok and not tok in ['>=', '<=', '==', '!=']:
+                    tok.endswith('=') and not tok in ['>=', '<=', '==', '!=']:
                     # This means, there is an assignment here.
 
                     # Add assignments, which can be more than one
