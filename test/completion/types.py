@@ -23,6 +23,9 @@ r"".upper
 # strangely this didn't work, because the = is used for assignments
 #? ['upper']
 "=".upper
+a = "="
+#? ['upper']
+a.upper
 
 
 # -----------------
