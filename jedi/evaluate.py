@@ -1138,7 +1138,10 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 if name_str == name.get_code() and p not in break_scopes:
                     r, no_break_scope = process(name)
                     if is_goto:
-                        result.append(name)
+                        if r:
+                            # Directly assign the name, but there has to be a
+                            # result.
+                            result.append(name)
                     else:
                         result += r
                     # for comparison we need the raw class

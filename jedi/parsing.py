@@ -1508,7 +1508,7 @@ class PyFuzzyParser(object):
                                 string += ' '
                             string += ".".join(n.names)
                         continue
-                elif tok.endswith('=') and not tok in ['>=', '<=', '==', '!=']:
+                elif tok.endswith('=') and tok not in ['>=', '<=', '==', '!=']:
                     # there has been an assignement -> change vars
                     if level == 0:
                         set_vars = used_vars
@@ -1518,10 +1518,7 @@ class PyFuzzyParser(object):
                 elif tok in closing_brackets:
                     level -= 1
 
-                if set_string is not None:
-                    string = set_string
-                else:
-                    string += tok
+                string = set_string if set_string is not None else string + tok
                 token_type, tok = self.next()
             except StopIteration:
                 # comes from tokenizer
