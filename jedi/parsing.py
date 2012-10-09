@@ -751,7 +751,6 @@ class Statement(Simple):
                         close_brackets = False
                     if type(result) == Call:
                         result = result.parent()
-                        close_brackets = False
                     call = Call(tok, c_type, start_pos, parent=result)
                     result.add_to_current_field(call)
                     result = call
@@ -765,7 +764,7 @@ class Statement(Simple):
                     result = Array(start_pos, brackets[tok], parent=result)
                     result.parent().add_to_current_field(result)
             elif tok == ':':
-                if is_call_or_close():
+                while is_call_or_close():
                     result = result.parent()
                     close_brackets = False
                 if result.type == Array.LIST:  # [:] lookups

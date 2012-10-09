@@ -30,6 +30,9 @@ b[8-7]
 #? list()
 b[8:]
 
+#? list()
+b[int():]
+
 
 # -----------------
 # iterable multiplication
