@@ -8,8 +8,6 @@ search functions `get_names_for_scope` and `get_scopes_for_name`. At the end
 there are the `follow_` functions, which evaluate a statement, or parts of a
 statement.
 
-TODO magic methods: __mul__, __add__, etc.
-TODO evaluate asserts/isinstance (type safety)
 TODO super()
 
 TODO nonlocal statement, needed or can be ignored? (py3k)
@@ -1106,7 +1104,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                     is_exe |= is_execution(assignee)
                 if is_exe:
                     # filter array[3] = ...
-                    # TODO: check executions for dict contents
+                    # TODO check executions for dict contents
                     pass
                 else:
                     details = par.assignment_details
