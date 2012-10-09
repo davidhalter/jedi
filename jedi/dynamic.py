@@ -354,6 +354,9 @@ class ArrayInstance(parsing.Base):
                     continue
             items += evaluate.get_iterator_types([array])
 
+        if self.var_args.parent_stmt() is None:
+            return []  # generated var_args should not be checked for arrays
+
         module = self.var_args.parent_stmt().get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self.instance, module, is_list)
