@@ -1294,7 +1294,11 @@ def assign_tuples(tup, results, seek_name):
     if tup.type == parsing.Array.NOARRAY:
         # Here we have unnessecary braces, which we just remove.
         arr = tup.get_only_subelement()
-        result = assign_tuples(arr, results, seek_name)
+        if type(arr) == parsing.Call:
+            if arr.name.names[-1] == seek_name:
+                result = results
+        else:
+            result = assign_tuples(arr, results, seek_name)
     else:
         for i, t in enumerate(tup):
             # Used in assignments. There is just one call and no other things,
