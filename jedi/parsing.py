@@ -835,7 +835,7 @@ class Param(Statement):
         """ get the name of the param """
         n = self.set_vars or self.used_vars
         if len(n) > 1:
-            raise IndexError("Multiple param names (%s)." % n)
+            debug.warning("Multiple param names (%s)." % n)
         return n[0]
 
 

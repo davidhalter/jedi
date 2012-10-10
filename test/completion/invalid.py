@@ -1,5 +1,10 @@
-# This file is less about the results and much more about the fact, that no
-# exception should be thrown.
+"""
+This file is less about the results and much more about the fact, that no
+exception should be thrown.
+
+Basically this file could change depending on the current implementation. But
+there should never be any errors.
+"""
 
 #? ['upper']
 str()).upper
@@ -101,3 +106,9 @@ a[0]
 
 #? []
 int()).
+
+def asdf(a or b): # multiple param names
+    return a
+
+#? int()
+asdf(2)
