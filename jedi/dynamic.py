@@ -239,8 +239,9 @@ def _check_array_additions(compare_array, module, is_list):
         for c in calls:
             call_path = list(c.generate_call_path())
             separate_index = call_path.index(add_name)
-            if not len(call_path) > separate_index + 1:
+            if add_name == call_path[-1] or separate_index == 0:
                 # this means that there is no execution -> [].append
+                # or the keyword is at the start -> append()
                 continue
             backtrack_path = iter(call_path[:separate_index])
 

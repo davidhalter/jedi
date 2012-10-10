@@ -383,6 +383,8 @@ first(1.0)[0]
 
 def third():
     b = []
+    b.extend
+    extend()
     b.extend(first())
     return list(b)
 #? 
