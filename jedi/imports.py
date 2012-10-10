@@ -132,6 +132,10 @@ class ImportPath(object):
         """
         Returns the imported modules.
         """
+        if evaluate.follow_statement.push_stmt(self.import_stmt):
+            # check recursion
+            return []
+
         if self.import_path:
             try:
                 scope, rest = self._follow_file_system()
@@ -159,6 +163,8 @@ class ImportPath(object):
         else:
             scopes = [ImportPath.GlobalNamespace]
         debug.dbg('after import', scopes)
+
+        evaluate.follow_statement.pop_stmt()
         return scopes
 
     def _follow_file_system(self):
@@ -243,7 +249,7 @@ def strip_imports(scopes):
     return result
 
 
-def remove_star_imports(scope):
+def remove_star_imports(scope, ignored_modules=[]):
     """
     Check a module for star imports:
     >>> from module import *
@@ -253,7 +259,8 @@ def remove_star_imports(scope):
     modules = strip_imports(i for i in scope.get_imports() if i.star)
     new = []
     for m in modules:
-        new += remove_star_imports(m)
+        if m not in ignored_modules:
+            new += remove_star_imports(m, modules)
     modules += new
 
     # Filter duplicate modules.

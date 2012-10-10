@@ -201,3 +201,7 @@ from .. import run
 
 #? []
 from not_a_module import 
+
+# self import
+# this can cause recursions
+from imports import *
