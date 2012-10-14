@@ -28,6 +28,22 @@ At the moment Jedi can be used as a
 `VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_. So, if you want to test
 Jedi for now, you'll have to use VIM.
 
+Here are some pictures:
+
+.. image:: https://github.com/davidhalter/jedi/raw/master/screenshot_complete.png
+
+Completion for almost anything (Ctrl+Space).
+
+.. image:: https://github.com/davidhalter/jedi/raw/master/screenshot_function.png
+
+Display of function/class bodies, docstrings.
+
+.. image:: https://github.com/davidhalter/jedi/raw/master/screenshot_pydoc.png
+
+Pydoc support (with highlighting, Shift+k).
+
+There is also support for goto and renaming.
+
 Get the latest from `github <http://github.com/davidhalter/jedi>`_.
 
 
