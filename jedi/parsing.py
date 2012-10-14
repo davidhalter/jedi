@@ -1169,7 +1169,7 @@ class PyFuzzyParser(object):
             if self.user_stmt is not None:
                 # if there is already a user position (another import, because
                 # imports are splitted) the names are checked.
-                for n in simple.get_defined_names():
+                for n in simple.get_set_vars():
                     if n.start_pos < self.user_position <= n.end_pos:
                         self.user_stmt = simple
             else:
