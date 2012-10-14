@@ -10,6 +10,7 @@ sys.path.append('.')
 
 from _compatibility import is_py25
 import api
+
 #api.set_debug_function(api.debug.print_to_stdout)
 
 

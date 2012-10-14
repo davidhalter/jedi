@@ -36,7 +36,10 @@ class RecursionDecorator(object):
         return False
 
     def pop_stmt(self):
-        self.current = self.current.parent
+        if self.current is not None:
+            # I don't know how current can be None, but sometimes it happens
+            # with Python3.
+            self.current = self.current.parent
 
     def _check_recursion(self):
         test = self.current

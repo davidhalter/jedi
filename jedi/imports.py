@@ -141,6 +141,7 @@ class ImportPath(object):
                 scope, rest = self._follow_file_system()
             except ModuleNotFound:
                 debug.warning('Module not found: ' + str(self.import_stmt))
+                evaluate.follow_statement.pop_stmt()
                 return []
 
             scopes = [scope]
