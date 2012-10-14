@@ -1193,7 +1193,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
         if isinstance(scope, Instance):
             scope_generator = scope.scope_generator()
         else:
-            if isinstance(scope, Class):
+            if isinstance(scope, (Class, parsing.Module)):
                 # classes are only available directly via chaining?
                 # strange stuff...
                 names = scope.get_defined_names()

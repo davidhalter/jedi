@@ -158,6 +158,9 @@ class TestRegression(unittest.TestCase):
         assert check(self.get_in_function_call(s8), 'zip', 0)
         assert check(self.get_in_function_call(s8, (1, 8)), 'str', 0)
 
+        s = "import time; abc = time; abc.sleep("
+        assert check(self.get_in_function_call(s), 'sleep', 0)
+
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
         # Fictional module that defines a function.
