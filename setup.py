@@ -7,8 +7,9 @@ __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 readme = open('README.rst').read()
 
+
 setup(name='jedi',
-      version='0.5b2',
+      version='0.5b3',
       description='An autocompletion tool for Python that can be used for text editors.',
       author=__AUTHOR__,
       author_email=__AUTHOR_EMAIL__,
@@ -18,7 +19,7 @@ setup(name='jedi',
       license='LGPLv3',
       keywords='python completion refactoring vim',
       long_description=readme,
-      packages=['jedi'],
+      packages=['jedi', 'jedi.mixin'],
       platforms=['any'],
       classifiers=[
           'Development Status :: 4 - Beta',
