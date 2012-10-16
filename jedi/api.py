@@ -448,6 +448,8 @@ class Script(object):
         kill_count = -1
         cur_name_part = None
         for i in import_names:
+            if user_stmt.alias == i:
+                continue
             for name_part in i.names:
                 if name_part.end_pos >= self.pos:
                     if not cur_name_part:

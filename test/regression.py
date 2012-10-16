@@ -106,13 +106,6 @@ class TestRegression(unittest.TestCase):
         assert 10 < len(self.complete("from . import", (1, 5))) < 30
         assert 10 < len(self.complete("from . import classes", (1, 5))) < 30
 
-    def test_new(self):
-        """ This is just to try out things, removing or deleting it is ok. """
-        s = ("def abc(): pass\n"
-             "abc.d.a.abc.d"
-             )
-        api.Script(s, 2, 2, '/').related_names()
-
     def test_get_in_function_call(self):
         def check(call_def, name, index):
             return call_def and call_def.call_name == name \
@@ -177,6 +170,12 @@ class TestRegression(unittest.TestCase):
         result = script.get_definition()
         assert len(result) == 1
         assert result[0].description == 'class int'
+
+    def test_named_import(self):
+        """ named import - jedi-vim issue #8 """
+        s = "import datetime as dt"
+        assert len(api.Script(s, 1, 19, '/').get_definition()) == 1
+        assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
 
 
 if __name__ == '__main__':
