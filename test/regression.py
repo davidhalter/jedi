@@ -173,8 +173,8 @@ class TestRegression(unittest.TestCase):
 
     def test_named_import(self):
         """ named import - jedi-vim issue #8 """
-        s = "import datetime as dt"
-        assert len(api.Script(s, 1, 19, '/').get_definition()) == 1
+        s = "import time as dt"
+        assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
         assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
 
 
