@@ -161,6 +161,10 @@ class TestRegression(unittest.TestCase):
         s = "import time; abc = time; abc.sleep("
         assert check(self.get_in_function_call(s), 'sleep', 0)
 
+        # jedi-vim #9
+        s = "with open("
+        assert check(self.get_in_function_call(s), 'open', 0)
+
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
         # Fictional module that defines a function.

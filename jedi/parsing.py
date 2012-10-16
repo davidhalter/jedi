@@ -1702,7 +1702,8 @@ class PyFuzzyParser(object):
                     # multiple statements because of with
                     inits = []
                     first = True
-                    while first or command == 'with' and tok != ':':
+                    while first or command == 'with' \
+                                                and tok not in [':', '\n']:
                         statement, tok = \
                             self._parse_statement(added_breaks=added_breaks)
                         if command == 'except' and tok in added_breaks:
