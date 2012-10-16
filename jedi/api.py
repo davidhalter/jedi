@@ -165,7 +165,7 @@ class Script(object):
     :param col: The column to complete in.
     :type col: int
     :param source_path: The path in the os, the current module is in.
-    :type source_path: int
+    :type source_path: string
     """
     def __init__(self, source, line, column, source_path):
         self.pos = line, column
