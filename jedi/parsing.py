@@ -1191,13 +1191,13 @@ class PyFuzzyParser(object):
         if pre_used_token is None:
             token_type, tok = self.next()
             if token_type != tokenize.NAME and tok != '*':
-                return ([], token_type, tok, self.start_pos)
+                return [], token_type, tok
         else:
             token_type, tok = pre_used_token
 
         if token_type != tokenize.NAME and tok != '*':
             # token maybe a name or star
-            return (None, token_type, tok)
+            return None, token_type, tok
 
         append((tok, self.start_pos))
         first_pos = self.start_pos
@@ -1211,7 +1211,7 @@ class PyFuzzyParser(object):
             append((tok, self.start_pos))
 
         n = Name(names, first_pos, self.end_pos) if names else None
-        return (n, token_type, tok)
+        return n, token_type, tok
 
     def _parseimportlist(self):
         """
