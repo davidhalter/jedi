@@ -158,6 +158,12 @@ class TestRegression(unittest.TestCase):
         s = "with open("
         assert check(self.get_in_function_call(s), 'open', 0)
 
+        # jedi-vim #11
+        s1 = "for sorted("
+        assert check(self.get_in_function_call(s1), 'sorted', 0)
+        s2 = "for s in sorted("
+        assert check(self.get_in_function_call(s2), 'sorted', 0)
+
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
         # Fictional module that defines a function.

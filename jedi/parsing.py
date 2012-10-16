@@ -1693,6 +1693,18 @@ class PyFuzzyParser(object):
                             s = [] if statement is None else [statement]
                             f = ForFlow(s, first_pos, set_stmt)
                             self.scope = self.scope.add_statement(f)
+                        else:
+                            debug.warning('syntax err, for flow started @%s',
+                                                            self.start_pos[0])
+                            if statement is not None:
+                                statement.parent = weakref.ref(self.scope)
+                            if set_stmt is not None:
+                                set_stmt.parent = weakref.ref(self.scope)
+                    else:
+                        debug.warning('syntax err, for flow incomplete @%s',
+                                                            self.start_pos[0])
+                        if set_stmt is not None:
+                            set_stmt.parent = weakref.ref(self.scope)
 
                 elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
                     added_breaks = []
