@@ -1464,7 +1464,7 @@ class PyFuzzyParser(object):
                         other_level = 0
 
                         for i, tok in enumerate(reversed(tok_list)):
-                            if not isinstance(tok, Name):
+                            if not isinstance(tok, (Name, ListComprehension)):
                                 tok = tok[1]
                             if tok in closing_brackets:
                                 other_level -= 1
