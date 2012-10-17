@@ -178,7 +178,7 @@ class Parser(CachedModule):
             return {}
         else:
             mixin_dct = process_code(f.read())
-            if is_py3k and self.name == _Builtin.name:
+            if is_py3k and self.name == Builtin.name:
                 # in the case of Py3k xrange is now range
                 mixin_dct['range'] = mixin_dct['xrange']
             return mixin_dct
