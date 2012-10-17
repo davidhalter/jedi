@@ -105,6 +105,8 @@ class TestRegression(unittest.TestCase):
         assert 10 < len(self.complete("from .", (1, 5))) < 30
         assert 10 < len(self.complete("from . import", (1, 5))) < 30
         assert 10 < len(self.complete("from . import classes", (1, 5))) < 30
+        assert len(self.complete("import")) == 0
+        assert len(self.complete("import import")) > 0
 
     def test_get_in_function_call(self):
         def check(call_def, name, index):

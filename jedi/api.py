@@ -234,6 +234,10 @@ class Script(object):
                 # do the magic functions first? and then recheck here?
                 if not isinstance(s, evaluate.Function):
                     if isinstance(s, imports.ImportPath):
+                        if like == 'import':
+                            l = self.module.get_line(self.pos[0])[:self.pos[1]]
+                            if not l.endswith('import import'):
+                                continue
                         names = s.get_defined_names(on_import_stmt=True)
                     else:
                         names = s.get_defined_names()
