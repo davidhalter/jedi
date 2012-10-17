@@ -23,6 +23,8 @@ class NotFoundError(Exception):
 
 
 class Completion(object):
+    """ `Completion` objects are returned from `Script.complete`. Providing
+    some useful functions for IDE's. """
     def __init__(self, name, needs_dot, like_name_length, base):
         self.name = name
         self.needs_dot = needs_dot
@@ -32,6 +34,12 @@ class Completion(object):
 
     @property
     def complete(self):
+        """ Delievers the rest of the word, e.g. completing `isinstance`
+        >>> isinstan
+
+        would return the string 'ce'. It also adds additional stuff, depending
+        on your `settings.py`
+        """
         dot = '.' if self.needs_dot else ''
         append = ''
         funcs = (parsing.Function, evaluate.Function)
@@ -48,20 +56,30 @@ class Completion(object):
 
     @property
     def word(self):
+        """ In contrary to `complete` returns the whole word, e.g.
+        >>> isinstan
+
+        would return 'isinstance'.
+        """
         return str(self.name.names[-1])
 
     @property
     def description(self):
+        """ Provides a description of the completion object
+        TODO return value is just __repr__ of some objects, improve! """
         return str(self.name.parent())
 
     @property
     def doc(self):
+        """ Returns the docstring `__doc__` for any object """
         try:
             return str(self.name.parent().docstr)
         except AttributeError:
             return ''
 
     def get_type(self):
+        """ Returns the type of a completion object (e.g. Function/Class
+        TODO please don't use yet, behaviour may change in the future. """
         return type(self.name.parent())
 
     def __repr__(self):
@@ -69,13 +87,16 @@ class Completion(object):
 
 
 class Definition(dynamic.BaseOutput):
+    """ These are the objects returned by either `Script.goto` or
+    `Script.get_definition`. """
     def __init__(self, definition):
-        """ The definition of a function """
         super(Definition, self).__init__(definition.start_pos, definition)
         self._def_parent = definition.parent()  # just here to limit gc
 
     @property
     def description(self):
+        """ A description of the Definition object, which is heavily used in
+        testing. e.g. for `isinstance` it returns 'def isinstance' """
         d = self.definition
         if isinstance(d, evaluate.InstanceElement):
             d = d.var
@@ -99,6 +120,7 @@ class Definition(dynamic.BaseOutput):
 
     @property
     def doc(self):
+        """ Returns the docstr, behaves like `Completion.doc`. """
         try:
             return str(self.definition.docstr)
         except AttributeError:
@@ -106,6 +128,10 @@ class Definition(dynamic.BaseOutput):
 
     @property
     def desc_with_module(self):
+        """ In addition to the Definition, it also returns the module. Don't
+        use it yet, its behaviour may change. If you really need it, talk to me
+        TODO add full path. This function is should return a
+        module.class.function path. """
         if self.module_path.endswith('.py') \
                     and not isinstance(self.definition, parsing.Module):
             position = '@%s' % (self.line_nr)
@@ -116,6 +142,9 @@ class Definition(dynamic.BaseOutput):
 
 
 class CallDef(object):
+    """ `CallDef` objects is the return value of `Script.get_in_function_call`.
+    It knows what functions you are currently in. e.g. `isinstance(` would
+    return the `isinstance` function. without `(` it would return nothing."""
     def __init__(self, executable, index, call):
         self.executable = executable
         self.index = index
@@ -136,6 +165,8 @@ class CallDef(object):
 
     @property
     def bracket_start(self):
+        """ The indent of the bracket that is responsible for the last function
+        call. """
         c = self.call
         while c.next is not None:
             c = c.next
@@ -143,6 +174,7 @@ class CallDef(object):
 
     @property
     def call_name(self):
+        """ The name (e.g. 'isinstance') as a string. """
         return str(self.executable.name)
 
     @property
@@ -236,6 +268,8 @@ class Script(object):
         return c
 
     def _prepare_goto(self, goto_path, is_like_search=False):
+        """ Base for complete, goto and get_definition. Basically it returns
+        the resolved scopes under cursor. """
         debug.dbg('start: %s in %s' % (goto_path, self.parser.scope))
 
         user_stmt = self.parser.user_stmt
@@ -268,6 +302,8 @@ class Script(object):
         Returns the definitions of a the path under the cursor. This is
         not a goto function! This follows complicated paths and returns the
         end, not the first definition.
+        The big difference of goto and get_definition is that goto doesn't
+        follow imports and statements.
 
         :return: list of Definition objects, which are basically scopes.
         :rtype: list
@@ -302,11 +338,16 @@ class Script(object):
         """
         Returns the first definition found by goto. This means: It doesn't
         follow imports and statements.
+
+        :return: list of Definition objects, which are basically scopes.
         """
         d = [Definition(d) for d in set(self._goto()[0])]
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
     def _goto(self, add_import_name=False):
+        """
+        Used for goto and related_names.
+        """
         goto_path = self.module.get_path_under_cursor()
         context = self.module.get_context()
         if next(context) in ('class', 'def'):
@@ -443,6 +484,8 @@ class Script(object):
         return CallDef(executable, index, call)
 
     def _get_on_import_stmt(self, is_like_search=False):
+        """ Resolve the user statement, if it is an import. Only resolve the
+        parts until the user position. """
         user_stmt = self.parser.user_stmt
         import_names = user_stmt.get_all_import_names()
         kill_count = -1
