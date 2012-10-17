@@ -39,7 +39,7 @@ class Keyword(object):
         self.start_pos = pos
 
     def get_parent_until(self):
-        return builtin.builtin_scope
+        return builtin.Builtin.scope
 
     @property
     def names(self):

@@ -403,13 +403,24 @@ def parse_function_doc(func):
     return param_str, ret
 
 
-class _Builtin(object):
+class Builtin(object):
     """ The builtin scope / module """
     # Python 3 compatibility
     if is_py3k:
         name = 'builtins'
     else:
         name = '__builtin__'
-    _builtins = Parser(name=name)
 
-builtin_scope = _Builtin()._builtins.parser.module
+    _builtin = None
+
+    @property
+    def builtin(self):
+        if self._builtin is None:
+            self._builtin = Parser(name=self.name)
+        return self._builtin
+
+    @property
+    def scope(self):
+        return self.builtin.parser.module
+
+Builtin = Builtin()

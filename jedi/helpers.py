@@ -75,7 +75,7 @@ class RecursionNode(object):
         # The same's true for the builtins, because the builtins are really
         # simple.
         self.is_ignored = isinstance(stmt, parsing.Param) \
-                                   or (self.script == builtin.builtin_scope)
+                                   or (self.script == builtin.Builtin.scope)
 
     def __eq__(self, other):
         if not other:
@@ -121,7 +121,7 @@ class ExecutionRecursionDecorator(object):
         if isinstance(execution.base, (evaluate.Generator, evaluate.Array)):
             return False
         module = execution.get_parent_until()
-        if evaluate_generator or module == builtin.builtin_scope:
+        if evaluate_generator or module == builtin.Builtin.scope:
             return False
 
         if in_par_execution_funcs:

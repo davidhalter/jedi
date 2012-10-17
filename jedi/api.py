@@ -251,7 +251,7 @@ class Script(object):
             if (not scopes or not isinstance(scopes[0], imports.ImportPath)) \
                         and not path:
                 # add keywords
-                bs = builtin.builtin_scope
+                bs = builtin.Builtin.scope
                 completions += ((k, bs) for k in keywords.get_keywords(
                                                                     all=True))
 

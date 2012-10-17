@@ -144,7 +144,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
     def __init__(self, base, var_args=None):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
-                    and builtin.builtin_scope == base.get_parent_until():
+                    and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = dynamic.check_array_instances(self)
         else:
@@ -475,7 +475,7 @@ class Execution(Executable):
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
         stmts = []
-        if self.base.parent() == builtin.builtin_scope \
+        if self.base.parent() == builtin.Builtin.scope \
                 and not isinstance(self.base, (Generator, Array)):
             func_name = str(self.base.name)
 
@@ -853,7 +853,7 @@ class Array(use_metaclass(CachedMetaClass, parsing.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = get_scopes_for_name(builtin.builtin_scope, self._array.type)[0]
+        scope = get_scopes_for_name(builtin.Builtin.scope, self._array.type)[0]
         scope = Instance(scope)
         names = scope.get_defined_names()
         return [ArrayElement(n) for n in names]
@@ -865,10 +865,10 @@ class Array(use_metaclass(CachedMetaClass, parsing.Base)):
         """
         Return the builtin scope as parent, because the arrays are builtins
         """
-        return builtin.builtin_scope
+        return builtin.Builtin.scope
 
     def get_parent_until(self, *args, **kwargs):
-        return builtin.builtin_scope
+        return builtin.Builtin.scope
 
     def __getattr__(self, name):
         if name not in ['type', 'start_pos']:
@@ -964,7 +964,7 @@ def get_names_for_scope(scope, position=None, star_search=True,
 
         # Add builtins to the global scope.
         if include_builtin:
-            builtin_scope = builtin.builtin_scope
+            builtin_scope = builtin.Builtin.scope
             yield builtin_scope, builtin_scope.get_defined_names()
 
 
@@ -1441,7 +1441,7 @@ def follow_call_path(path, scope, position):
         if not isinstance(current, parsing.NamePart):
             if current.type in (parsing.Call.STRING, parsing.Call.NUMBER):
                 t = type(current.name).__name__
-                scopes = get_scopes_for_name(builtin.builtin_scope, t)
+                scopes = get_scopes_for_name(builtin.Builtin.scope, t)
             else:
                 debug.warning('unknown type:', current.type, current)
                 scopes = []
