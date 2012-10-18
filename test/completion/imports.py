@@ -86,6 +86,9 @@ from keyword import kwlist, \
 #? ['kwlist']
 kwlist
 
+#? []
+from keyword import not_existing1, not_existing2
+
 from tokenize import io
 tokenize.generate_tokens
 
