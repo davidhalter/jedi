@@ -570,6 +570,9 @@ class Import(Simple):
         else:
             return [self.namespace]
 
+    def get_set_vars(self):
+        return self.get_defined_names()
+
     def get_all_import_names(self):
         n = []
         if self.from_ns:
