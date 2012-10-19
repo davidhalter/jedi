@@ -67,7 +67,8 @@ class Completion(object):
     def description(self):
         """ Provides a description of the completion object
         TODO return value is just __repr__ of some objects, improve! """
-        return str(self.name.parent())
+        parent = self.name.parent()
+        return '' if parent is None else str(parent)
 
     @property
     def doc(self):
