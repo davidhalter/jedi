@@ -50,6 +50,27 @@ There is also support for goto and renaming.
 Get the latest from `github <http://github.com/davidhalter/jedi>`_.
 
 
+Installation
+============
+
+You can either include Jedi as a submodule in your text editor plugin (like
+jedi-vim_ does it by default), or you
+can install Jedi systemwide.
+
+The preferred way to install the Jedi library into your system is by using
+pip_::
+
+    sudo pip install jedi
+
+If you want to install the current development version::
+
+    sudo pip install -e git://github.com/davidhalter/jedi.git#egg=jedi
+
+Note: This just installs the Jedi library, not the editor plugins. For
+information about how to make it work with your editor, refer to the
+corresponding documentation.
+
+
 Support
 =======
 
@@ -221,3 +242,8 @@ multiple text objects, in python 3 you could insert ``print``.
     settings
 
 Access to the ``settings.py`` module. The settings are described there.
+
+
+
+.. _jedi-vim: http://github.com/davidhalter/jedi-vim
+.. _pip: http://www.pip-installer.org/
