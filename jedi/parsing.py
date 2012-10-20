@@ -44,7 +44,7 @@ class ParserError(Exception):
     pass
 
 
-def indent_block(text, indention="    "):
+def indent_block(text, indention='    '):
     """ This function indents a text block with a default of four spaces """
     temp = ''
     while text and text[-1] == '\n':
@@ -176,7 +176,7 @@ class Scope(Simple):
                 i += s.get_imports()
         return i
 
-    def get_code(self, first_indent=False, indention="    "):
+    def get_code(self, first_indent=False, indention='    '):
         """
         :return: Returns the code of the current scope.
         :rtype: str
@@ -220,8 +220,8 @@ class Scope(Simple):
         return n
 
     def get_defined_names(self):
-        return [n for n in self.get_set_vars() \
-                            if isinstance(n, Import) or len(n) == 1]
+        return [n for n in self.get_set_vars()
+                  if isinstance(n, Import) or len(n) == 1]
 
     def is_empty(self):
         """
@@ -325,7 +325,7 @@ class Class(Scope):
             s.parent = weakref.ref(self)
         self.decorators = []
 
-    def get_code(self, first_indent=False, indention="    "):
+    def get_code(self, first_indent=False, indention='    '):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
         string += 'class %s' % (self.name)
         if len(self.supers) > 0:
@@ -367,7 +367,7 @@ class Function(Scope):
             annotation.parent = weakref.ref(self)
             self.annotation = annotation
 
-    def get_code(self, first_indent=False, indention="    "):
+    def get_code(self, first_indent=False, indention='    '):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
         params = ','.join([stmt.code for stmt in self.params])
         string += "def %s(%s):\n" % (self.name, params)
@@ -418,7 +418,7 @@ class Flow(Scope):
         self.inits = inits
         for s in inits:
             s.parent = weakref.ref(self)
-        if set_vars == None:
+        if set_vars is None:
             self.set_vars = []
         else:
             self.set_vars = set_vars
@@ -436,7 +436,7 @@ class Flow(Scope):
         if self.next:
             self.next.parent = value
 
-    def get_code(self, first_indent=False, indention="    "):
+    def get_code(self, first_indent=False, indention='    '):
         stmts = []
         for s in self.inits:
             stmts.append(s.get_code(new_line=False))
@@ -522,8 +522,8 @@ class Import(Simple):
     :param defunct: An Import is valid or not.
     :type defunct: bool
     """
-    def __init__(self, start_pos, end_pos, namespace, alias=None, \
-                from_ns=None, star=False, relative_count=0, defunct=False):
+    def __init__(self, start_pos, end_pos, namespace, alias=None,
+                 from_ns=None, star=False, relative_count=0, defunct=False):
         super(Import, self).__init__(start_pos, end_pos)
 
         self.namespace = namespace
@@ -807,7 +807,7 @@ class Statement(Simple):
 
         if level != 0:
             debug.warning("Brackets don't match: %s."
-                         "This is not normal behaviour." % level)
+                          "This is not normal behaviour." % level)
 
         self._assignment_calls_calculated = True
         self._assignment_calls = top
@@ -819,10 +819,10 @@ class Param(Statement):
     The class which shows definitions of params of classes and functions.
     But this is not to define function calls.
     """
-    def __init__(self, code, set_vars, used_funcs, used_vars, token_list,
-                                                        start_pos, end_pos):
-        super(Param, self).__init__(code, set_vars, used_funcs,
-                        used_vars, token_list, start_pos, end_pos)
+    def __init__(self, code, set_vars, used_funcs, used_vars,
+                 token_list, start_pos, end_pos):
+        super(Param, self).__init__(code, set_vars, used_funcs, used_vars,
+                                    token_list, start_pos, end_pos)
 
         # this is defined by the parser later on, not at the initialization
         # it is the position in the call (first argument, second...)
@@ -1024,10 +1024,10 @@ class Array(Call):
                 return str(el)
 
         map = {Array.NOARRAY: '%s',
-               Array.TUPLE:   '(%s)',
-               Array.LIST:    '[%s]',
-               Array.DICT:    '{%s}',
-               Array.SET:     '{%s}'
+               Array.TUPLE: '(%s)',
+               Array.LIST: '[%s]',
+               Array.DICT: '{%s}',
+               Array.SET: '{%s}'
               }
         inner = []
         for i, value in enumerate(self.values):
@@ -1077,7 +1077,7 @@ class Name(Simple):
     def __init__(self, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(start_pos, end_pos)
         self.names = tuple(n if isinstance(n, NamePart) else NamePart(*n)
-                                                            for n in names)
+                           for n in names)
         if parent is not None:
             self.parent = weakref.ref(parent)
 
@@ -1484,7 +1484,7 @@ class PyFuzzyParser(object):
                         for t in toks:
                             src += t[1] if isinstance(t, tuple) \
                                         else t.get_code()
-                        st = Statement(src, [], [], [], \
+                        st = Statement(src, [], [], [],
                                         toks, first_pos, self.end_pos)
 
                         for s in [st, middle, in_clause]:
@@ -1534,7 +1534,7 @@ class PyFuzzyParser(object):
             self.scope.add_docstr(self.last_token[1])
             return None, tok
         else:
-            stmt = stmt_class(string, set_vars, used_funcs, used_vars, \
+            stmt = stmt_class(string, set_vars, used_funcs, used_vars,
                                 tok_list, first_pos, self.end_pos)
             self._check_user_stmt(stmt)
         if is_return:
