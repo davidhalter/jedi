@@ -198,3 +198,52 @@ def generate_param_array(args_tuple, parent_stmt=None):
     arr = parsing.Array(pos, parsing.Array.TUPLE, parent_stmt, values=values)
     evaluate.faked_scopes.append(arr)
     return arr
+
+
+def scan_array_for_pos(arr, pos):
+    """
+    Returns the function Call that match search_name in an Array.
+    """
+    index = 0
+    call = None
+    stop = False
+    for index, sub in enumerate(arr.values):
+        call = None
+        for s in sub:
+            if isinstance(s, parsing.Array):
+                new = scan_array_for_pos(s, pos)
+                if new[0] is not None:
+                    call, index, stop = new
+                    if stop:
+                        return call, index, stop
+            elif isinstance(s, parsing.Call):
+                start_s = s
+                while s is not None:
+                    if s.start_pos >= pos:
+                        return call, index, stop
+                    elif s.execution is not None:
+                        end = s.execution.end_pos
+                        if s.execution.start_pos < pos and \
+                                (end is None or pos < end):
+                            c, index, stop = scan_array_for_pos(
+                                                    s.execution, pos)
+                            if stop:
+                                return c, index, stop
+
+                            # call should return without execution and
+                            # next
+                            reset = c or s
+                            if reset.execution.type not in \
+                                        [parsing.Array.TUPLE,
+                                        parsing.Array.NOARRAY]:
+                                return start_s, index, False
+
+                            reset.execution = None
+                            reset.next = None
+                            return c or start_s, index, True
+                    s = s.next
+
+    # The third return is just necessary for recursion inside, because
+    # it needs to know when to stop iterating.
+    return call, index, stop
+
