@@ -449,10 +449,11 @@ class Script(object):
                 old_stmt = parser.module.get_statement_for_position(self.pos)
                 if old_stmt is None:
                     return None, 0
-                new_call, new_index = check_user_stmt(user_stmt)
-                if new_call:
-                    if str(new_call) == str(call) and index == new_index:
-                        return new_call, new_index
+                old_call, old_index = check_user_stmt(old_stmt)
+                if old_call:
+                    if str(old_call) == str(call):
+                        # return the index of the part_parser
+                        return old_call, index
                 return None, 0
             else:
                 raise NotFoundError()
