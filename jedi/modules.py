@@ -6,12 +6,13 @@ import re
 import tokenize
 import sys
 import os
+import time
 
 import parsing
 import builtin
 import debug
 import evaluate
-import time
+import settings
 
 
 class Module(builtin.CachedModule):
@@ -53,6 +54,7 @@ class ModuleWithCursor(Module):
         self._relevant_temp = None
 
         self.source = source
+        self._part_parser = None
 
     @property
     def parser(self):
@@ -67,7 +69,7 @@ class ModuleWithCursor(Module):
             # default), therefore fill the cache here.
             self._parser = parsing.PyFuzzyParser(self.source, self.path,
                                                                 self.position)
-            if self.path:
+            if self.path is not None:
                 builtin.CachedModule.cache[self.path] = time.time(), self._parser
         return self._parser
 
@@ -191,6 +193,21 @@ class ModuleWithCursor(Module):
             return self._line_cache[line_nr - 1]
         except IndexError:
             raise StopIteration()
+
+    def get_part_parser(self):
+        """ Returns a parser that contains only part of the source code. This
+        exists only because of performance reasons.
+        """
+        if self._part_parser:
+            return self._part_parser
+
+        # TODO check for docstrings
+        length = settings.part_line_length
+        offset = max(self.position[0] - length, 0)
+        s = '\n'.join(self.source.split('\n')[offset:offset + length])
+        self._part_parser = parsing.PyFuzzyParser(s, self.path, self.position,
+                                                        line_offset=offset)
+        return self._part_parser
 
 
 @evaluate.memoize_default([])

@@ -1120,7 +1120,7 @@ class PyFuzzyParser(object):
     :type user_position: tuple(int, int)
     """
     def __init__(self, code, module_path=None, user_position=None,
-                                                            no_docstr=False):
+                                    no_docstr=False, line_offset=0):
         self.user_position = user_position
         self.user_scope = None
         self.user_stmt = None
@@ -1136,7 +1136,7 @@ class PyFuzzyParser(object):
 
         # Stuff to fix tokenize errors. The parser is pretty good in tolerating
         # any errors of tokenize and just parse ahead.
-        self._line_of_tokenize_restart = 0
+        self._line_of_tokenize_restart = line_offset
 
         self.parse()
 

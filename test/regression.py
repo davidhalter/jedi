@@ -31,6 +31,13 @@ class TestRegression(unittest.TestCase):
         script = api.Script(src, pos[0], pos[1], '')
         return script.get_in_function_call()
 
+    def test_part_parser(self):
+        """ test the get_in_function_call speedups """
+        s = '\n' * 100 + 'abs('
+        pos = 101, 4
+        self.get_in_function_call(s, pos)
+        assert self.get_in_function_call(s, pos)
+
     def test_get_definition_cursor(self):
 
         s = ("class A():\n"

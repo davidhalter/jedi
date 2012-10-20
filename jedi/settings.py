@@ -62,3 +62,10 @@ additional_dynamic_modules = []
 max_function_recursion_level = 5
 max_until_execution_unique = 50
 max_executions = 1000
+
+# ----------------
+# various
+# ----------------
+
+# Size of the current code part, which is used to speed up parsing.
+part_line_length = 20

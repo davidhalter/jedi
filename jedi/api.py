@@ -425,14 +425,49 @@ class Script(object):
 
         This would return `None`.
         """
-        user_stmt = self.parser.user_stmt
-        if user_stmt is None or not isinstance(user_stmt, parsing.Statement):
-            return None
-        ass = helpers.fast_parent_copy(user_stmt.get_assignment_calls())
+        def check_user_stmt(user_stmt):
+            if user_stmt is None or not isinstance(user_stmt, parsing.Statement):
+                return None, 0
+            ass = helpers.fast_parent_copy(user_stmt.get_assignment_calls())
 
-        call, index, stop = helpers.scan_array_for_pos(ass, self.pos)
-        if call is None:
+            call, index, stop = helpers.scan_array_for_pos(ass, self.pos)
+            return call, index
+
+        def check_cache():
+            if self.source_path is None:
+                return None, 0
+
+            try:
+                timestamp, parser = builtin.CachedModule.cache[
+                                                            self.source_path]
+            except KeyError:
+                return None, 0
+            part_parser = self.module.get_part_parser()
+            user_stmt = part_parser.user_stmt
+            call, index = check_user_stmt(user_stmt)
+            if call:
+                old_stmt = parser.module.get_statement_for_position(self.pos)
+                if old_stmt is None:
+                    return None, 0
+                new_call, new_index = check_user_stmt(user_stmt)
+                if new_call:
+                    if str(new_call) == str(call) and index == new_index:
+                        return new_call, new_index
+                return None, 0
+            else:
+                raise NotFoundError()
+
+
+        try:
+            call, index = check_cache()
+        except NotFoundError:
             return None
+
+        if call is None:
+            user_stmt = self.parser.user_stmt
+            call, index = check_user_stmt(user_stmt)
+            if call is None:
+                return None
 
         origins = evaluate.follow_call(call)
 
