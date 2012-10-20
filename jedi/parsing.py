@@ -326,16 +326,16 @@ class Class(Scope):
         self.decorators = []
 
     def get_code(self, first_indent=False, indention="    "):
-        str = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
-        str += 'class %s' % (self.name)
+        string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
+        string += 'class %s' % (self.name)
         if len(self.supers) > 0:
             sup = ','.join(stmt.code for stmt in self.supers)
-            str += '(%s)' % sup
-        str += ':\n'
-        str += super(Class, self).get_code(True, indention)
+            string += '(%s)' % sup
+        string += ':\n'
+        string += super(Class, self).get_code(True, indention)
         if self.is_empty():
-            str += "pass\n"
-        return str
+            string += "pass\n"
+        return string
 
 
 class Function(Scope):
@@ -368,13 +368,13 @@ class Function(Scope):
             self.annotation = annotation
 
     def get_code(self, first_indent=False, indention="    "):
-        str = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
+        string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
         params = ','.join([stmt.code for stmt in self.params])
-        str += "def %s(%s):\n" % (self.name, params)
-        str += super(Function, self).get_code(True, indention)
+        string += "def %s(%s):\n" % (self.name, params)
+        string += super(Function, self).get_code(True, indention)
         if self.is_empty():
-            str += "pass\n"
-        return str
+            string += "pass\n"
+        return string
 
     def get_set_vars(self):
         n = super(Function, self).get_set_vars()
@@ -441,11 +441,11 @@ class Flow(Scope):
         for s in self.inits:
             stmts.append(s.get_code(new_line=False))
         stmt = ', '.join(stmts)
-        str = "%s %s:\n" % (self.command, vars, stmt)
-        str += super(Flow, self).get_code(True, indention)
+        string = "%s %s:\n" % (self.command, vars, stmt)
+        string += super(Flow, self).get_code(True, indention)
         if self.next:
-            str += self.next.get_code()
-        return str
+            string += self.next.get_code()
+        return string
 
     def get_set_vars(self, is_internal_call=False):
         """
