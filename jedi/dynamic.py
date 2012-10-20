@@ -542,7 +542,7 @@ def check_statement_information(stmt, search_name):
         classes_call = isinst[1][0]  # class_or_type_or_tuple
         assert isinstance(classes_call, parsing.Call)
         result = []
-        for c in  evaluate.follow_call(classes_call):
+        for c in evaluate.follow_call(classes_call):
             if isinstance(c, evaluate.Array):
                 result += c.get_index_types()
             else:
