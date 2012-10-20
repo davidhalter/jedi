@@ -40,7 +40,7 @@ class ModuleWithCursor(Module):
     be there.
 
     :param source: The source code of the file.
-    :param path: The module path of the file.
+    :param path: The module path of the file or None.
     :param position: The position, the user is currently in. Only important \
     for the main file.
     """
@@ -62,7 +62,8 @@ class ModuleWithCursor(Module):
         # Also, the position is here important (which will not be used by
         # default), therefore fill the cache here.
         self._parser = parsing.PyFuzzyParser(source, path, position)
-        builtin.CachedModule.cache[self.path] = time.time(), self._parser
+        if self.path:
+            builtin.CachedModule.cache[self.path] = time.time(), self._parser
 
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """

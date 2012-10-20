@@ -37,7 +37,8 @@ class ImportPath(object):
         self.is_like_search = is_like_search
         self.direct_resolve = direct_resolve
         self.is_partial_import = bool(kill_count)
-        self.file_path = os.path.dirname(import_stmt.get_parent_until().path)
+        path = import_stmt.get_parent_until().path
+        self.file_path = os.path.dirname(path) if path is not None else None
 
         # rest is import_path resolution
         self.import_path = []
@@ -198,9 +199,13 @@ class ImportPath(object):
                 sys.path = temp
                 return i
 
-        sys_path_mod = self.sys_path_with_modifications()
+        if self.file_path:
+            sys_path_mod = self.sys_path_with_modifications()
+            sys_path_mod.insert(0, self.file_path)
+        else:
+            sys_path_mod = builtin.module_find_path
+
         current_namespace = None
-        sys_path_mod.insert(0, self.file_path)
         # now execute those paths
         rest = []
         for i, s in enumerate(self.import_path):

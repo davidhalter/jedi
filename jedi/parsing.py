@@ -300,7 +300,7 @@ class Module(Scope):
         return self._name
 
     def is_builtin(self):
-        return not self.path.endswith('.py')
+        return not (self.path is None or self.path.endswith('.py'))
 
 
 class Class(Scope):

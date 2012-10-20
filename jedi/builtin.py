@@ -50,7 +50,8 @@ class CachedModule(object):
         self._parser = parsing.PyFuzzyParser(source, self.path or self.name)
         p_time = None if not self.path else os.path.getmtime(self.path)
 
-        self.cache[self.path or self.name] = p_time, self._parser
+        if self.path or self.name:
+            self.cache[self.path or self.name] = p_time, self._parser
 
 
 class Parser(CachedModule):

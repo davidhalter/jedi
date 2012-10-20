@@ -16,7 +16,7 @@ import api
 
 class TestRegression(unittest.TestCase):
     def get_def(self, src, pos):
-        script = api.Script(src, pos[0], pos[1], '')
+        script = api.Script(src, pos[0], pos[1], None)
         return script.get_definition()
 
     def complete(self, src, pos=None):
