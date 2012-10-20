@@ -54,16 +54,22 @@ class ModuleWithCursor(Module):
 
         self.source = source
 
-        try:
-            del builtin.CachedModule.cache[self.path]
-        except KeyError:
-            pass
-        # Call the parser already here, because it will be used anyways.
-        # Also, the position is here important (which will not be used by
-        # default), therefore fill the cache here.
-        self._parser = parsing.PyFuzzyParser(source, path, position)
-        if self.path:
-            builtin.CachedModule.cache[self.path] = time.time(), self._parser
+    @property
+    def parser(self):
+        """ get the parser lazy """
+        if not self._parser:
+            try:
+                del builtin.CachedModule.cache[self.path]
+            except KeyError:
+                pass
+            # Call the parser already here, because it will be used anyways.
+            # Also, the position is here important (which will not be used by
+            # default), therefore fill the cache here.
+            self._parser = parsing.PyFuzzyParser(self.source, self.path,
+                                                                self.position)
+            if self.path:
+                builtin.CachedModule.cache[self.path] = time.time(), self._parser
+        return self._parser
 
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
