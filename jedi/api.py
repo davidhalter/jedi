@@ -451,7 +451,9 @@ class Script(object):
                     return None, 0
                 old_call, old_index = check_user_stmt(old_stmt)
                 if old_call:
-                    if str(old_call) == str(call):
+                    # compare repr because that should definitely be the same.
+                    # Otherwise the whole thing is out of sync.
+                    if repr(old_call) == repr(call):
                         # return the index of the part_parser
                         return old_call, index
                 return None, 0
