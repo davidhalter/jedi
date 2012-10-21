@@ -192,6 +192,13 @@ class TestRegression(unittest.TestCase):
         assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
         assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
 
+class TestSpeed(unittest.TestCase):
+    def test_os_path_join(self):
+        """ named import - jedi-vim issue #8 """
+        s = "join"
+        assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
+        assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
+
 
 if __name__ == '__main__':
     unittest.main()

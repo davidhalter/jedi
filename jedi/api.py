@@ -426,7 +426,8 @@ class Script(object):
         This would return `None`.
         """
         def check_user_stmt(user_stmt):
-            if user_stmt is None or not isinstance(user_stmt, parsing.Statement):
+            if user_stmt is None \
+                        or not isinstance(user_stmt, parsing.Statement):
                 return None, 0
             ass = helpers.fast_parent_copy(user_stmt.get_assignment_calls())
 
@@ -459,7 +460,6 @@ class Script(object):
                 return None, 0
             else:
                 raise NotFoundError()
-
 
         try:
             call, index = check_cache()

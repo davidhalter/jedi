@@ -246,4 +246,3 @@ def scan_array_for_pos(arr, pos):
     # The third return is just necessary for recursion inside, because
     # it needs to know when to stop iterating.
     return call, index, stop
-

@@ -70,7 +70,8 @@ class ModuleWithCursor(Module):
             self._parser = parsing.PyFuzzyParser(self.source, self.path,
                                                                 self.position)
             if self.path is not None:
-                builtin.CachedModule.cache[self.path] = time.time(), self._parser
+                builtin.CachedModule.cache[self.path] = time.time(), \
+                                                        self._parser
         return self._parser
 
     def get_path_until_cursor(self):
