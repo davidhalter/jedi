@@ -250,7 +250,7 @@ def sys_path_with_modifications(module):
             if call.execution is None:
                 continue
             exe = call.execution
-            if not (array_cmd == 'insert' and len(exe) == 2 \
+            if not (array_cmd == 'insert' and len(exe) == 2
                     or array_cmd == 'append' and len(exe) == 1):
                 continue
 

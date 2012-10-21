@@ -68,7 +68,7 @@ def imitate_pydoc(string):
         pass
 
     get_target = lambda s: h.topics.get(s, h.keywords.get(s))
-    while type(string) == type(''):
+    while isinstance(string, str):
         string = get_target(string)
 
     try:
