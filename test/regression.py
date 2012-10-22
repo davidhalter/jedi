@@ -3,6 +3,8 @@ import os
 import sys
 import unittest
 from os.path import abspath, dirname
+import time
+import functools
 
 sys.path.append(abspath(dirname(abspath(__file__)) + '/../jedi'))
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
@@ -12,6 +14,7 @@ from _compatibility import is_py25
 import api
 
 #api.set_debug_function(api.debug.print_to_stdout)
+
 
 class Base(unittest.TestCase):
     def get_def(self, src, pos):
@@ -29,6 +32,7 @@ class Base(unittest.TestCase):
             pos = 1, len(src)
         script = api.Script(src, pos[0], pos[1], '')
         return script.get_in_function_call()
+
 
 class TestRegression(Base):
     def test_part_parser(self):
@@ -192,13 +196,28 @@ class TestRegression(Base):
         assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
         assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
 
+
 class TestSpeed(Base):
+    def _check_speed(time_per_run, number=10):
+        """ Speed checks should typically be very tolerant. Some machines are
+        faster than others, but the tests should still pass. These tests are
+        here to assure that certain effects that kill jedi performance are not
+        reintroduced to Jedi."""
+        def decorated(func):
+            @functools.wraps(func)
+            def wrapper(self):
+                first = time.time()
+                for i in range(number):
+                    func(self)
+                sum_time = time.time() - first
+                assert sum_time / number < time_per_run
+            return wrapper
+        return decorated
+
+    @_check_speed(0.1)
     def test_os_path_join(self):
-        """ named import - jedi-vim issue #8 """
         s = "from posixpath import join; join('', '')."
-        #api.set_debug_function(api.debug.print_to_stdout)
         assert len(self.complete(s)) > 10  # is a str completion
-        #api.set_debug_function(None)
 
 
 if __name__ == '__main__':
