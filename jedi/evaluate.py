@@ -589,7 +589,7 @@ class Execution(Executable):
         for param in self.base.params[start_offset:]:
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
-            # Wrong value count is just ignored. If you try to test cases which
+            # Wrong value count is just ignored. If you try to test cases that
             # are not allowed in Python, Jedi will maybe not show any
             # completions.
             key, value = next(var_arg_iterator, (None, None))

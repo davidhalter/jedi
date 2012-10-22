@@ -200,10 +200,10 @@ class ImportPath(object):
                 return i
 
         if self.file_path:
-            sys_path_mod = self.sys_path_with_modifications()
+            sys_path_mod = list(self.sys_path_with_modifications())
             sys_path_mod.insert(0, self.file_path)
         else:
-            sys_path_mod = builtin.module_find_path
+            sys_path_mod = list(builtin.module_find_path)
 
         current_namespace = None
         # now execute those paths
@@ -218,7 +218,7 @@ class ImportPath(object):
                     raise ModuleNotFound(
                             'The module you searched has not been found')
 
-        sys_path_mod.pop(0)
+        sys_path_mod.pop(0)  # TODO why is this here?
         path = current_namespace[1]
         is_package_directory = current_namespace[2][2] == imp.PKG_DIRECTORY
 

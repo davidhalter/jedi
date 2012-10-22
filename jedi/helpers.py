@@ -58,7 +58,7 @@ class RecursionDecorator(object):
         result = []
         n = self.current
         while n:
-            result.append(n.stmt)
+            result.insert(0, n.stmt)
             n = n.parent
         return result
 
@@ -157,19 +157,26 @@ def fast_parent_copy(obj):
                 continue
             if isinstance(value, list):
                 new_obj.__dict__[key] = list_rec(value)
-            elif isinstance(value, parsing.Simple):
+            elif isinstance(value, (parsing.Simple, parsing.Call)):
                 new_obj.__dict__[key] = recursion(value)
 
-        if obj.parent is not None:
+        # replace parent (first try _parent and then parent)
+        if hasattr(obj, '_parent') and obj._parent is not None:
+            try:
+                new_obj._parent = weakref.ref(new_elements[obj._parent()])
+            except KeyError:
+                pass
+        elif obj.parent is not None:
             try:
                 new_obj.parent = weakref.ref(new_elements[obj.parent()])
             except KeyError:
                 pass
 
-        if hasattr(obj, 'parent_stmt') and obj.parent_stmt is not None:
+        # replace parent_stmt
+        if hasattr(obj, '_parent_stmt') and obj._parent_stmt is not None:
             p = obj.parent_stmt()
             try:
-                new_obj.parent_stmt = weakref.ref(new_elements[p])
+                new_obj._parent_stmt = weakref.ref(new_elements[p])
             except KeyError:
                 pass
 

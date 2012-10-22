@@ -234,7 +234,7 @@ def sys_path_with_modifications(module):
         try:
             possible_stmts = module.used_names['path']
         except KeyError:
-            return list(builtin.module_find_path)
+            return builtin.module_find_path
 
         sys_path = list(builtin.module_find_path)  # copy
         for p in possible_stmts:

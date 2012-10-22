@@ -90,7 +90,7 @@ class Parser(CachedModule):
             name = name.rpartition('.')[0]  # cut file type (normally .so)
         super(Parser, self).__init__(path=path, name=name)
 
-        self.sys_path = sys_path
+        self.sys_path = list(sys_path)
         self._module = None
 
     @property

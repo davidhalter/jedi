@@ -13,8 +13,7 @@ import api
 
 #api.set_debug_function(api.debug.print_to_stdout)
 
-
-class TestRegression(unittest.TestCase):
+class Base(unittest.TestCase):
     def get_def(self, src, pos):
         script = api.Script(src, pos[0], pos[1], None)
         return script.get_definition()
@@ -31,6 +30,7 @@ class TestRegression(unittest.TestCase):
         script = api.Script(src, pos[0], pos[1], '')
         return script.get_in_function_call()
 
+class TestRegression(Base):
     def test_part_parser(self):
         """ test the get_in_function_call speedups """
         s = '\n' * 100 + 'abs('
@@ -192,12 +192,13 @@ class TestRegression(unittest.TestCase):
         assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
         assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
 
-class TestSpeed(unittest.TestCase):
+class TestSpeed(Base):
     def test_os_path_join(self):
         """ named import - jedi-vim issue #8 """
-        s = "join"
-        assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
-        assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
+        s = "from posixpath import join; join('', '')."
+        #api.set_debug_function(api.debug.print_to_stdout)
+        assert len(self.complete(s)) > 10  # is a str completion
+        #api.set_debug_function(None)
 
 
 if __name__ == '__main__':

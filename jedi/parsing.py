@@ -687,8 +687,7 @@ class Statement(Simple):
         if self._assignment_calls_calculated:
             return self._assignment_calls
         self._assignment_details = []
-        result = Array(self.start_pos, Array.NOARRAY, self)
-        top = result
+        top = result = Array(self.start_pos, Array.NOARRAY, self)
         level = 0
         is_chain = False
         close_brackets = False
