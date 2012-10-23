@@ -152,34 +152,24 @@ def fast_parent_copy(obj):
         new_obj = copy.copy(obj)
         new_elements[obj] = new_obj
 
-        for key, value in new_obj.__dict__.items():
-            if key in ['parent', '_parent', '_parent_stmt', 'parent_stmt']:
+        items = new_obj.__dict__.items()
+        for key, value in items:
+            # replace parent (first try _parent and then parent)
+            if key in ['parent', '_parent', '_parent_stmt'] \
+                                                    and value is not None:
+                if key == 'parent' and '_parent' in items:
+                    # parent can be a property
+                    continue
+                try:
+                    setattr(new_obj, key, weakref.ref(new_elements[value()]))
+                except KeyError:
+                    pass
+            elif key == 'parent_stmt':
                 continue
-            if isinstance(value, list):
-                new_obj.__dict__[key] = list_rec(value)
+            elif isinstance(value, list):
+                setattr(new_obj, key, list_rec(value))
             elif isinstance(value, (parsing.Simple, parsing.Call)):
-                new_obj.__dict__[key] = recursion(value)
-
-        # replace parent (first try _parent and then parent)
-        if hasattr(obj, '_parent') and obj._parent is not None:
-            try:
-                new_obj._parent = weakref.ref(new_elements[obj._parent()])
-            except KeyError:
-                pass
-        elif obj.parent is not None:
-            try:
-                new_obj.parent = weakref.ref(new_elements[obj.parent()])
-            except KeyError:
-                pass
-
-        # replace parent_stmt
-        if hasattr(obj, '_parent_stmt') and obj._parent_stmt is not None:
-            p = obj.parent_stmt()
-            try:
-                new_obj._parent_stmt = weakref.ref(new_elements[p])
-            except KeyError:
-                pass
-
+                setattr(new_obj, key, recursion(value))
         return new_obj
 
     def list_rec(list_obj):
