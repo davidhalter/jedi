@@ -1162,7 +1162,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                                                                     position)
                 if n and result:
                     result = n + [p for p in result if not check_for_param(r)]
-                else:
+                elif n:
                     result = n
 
                 if result:
