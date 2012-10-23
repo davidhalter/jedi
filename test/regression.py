@@ -211,14 +211,14 @@ class TestSpeed(Base):
                 for i in range(number):
                     func(self)
                 single_time = (time.time() - first) / number
-                print func, single_time
+                print(func, single_time)
                 assert single_time < time_per_run
             return wrapper
         return decorated
 
-    @unittest.skip('not used yet')
+    # skip by removing test
     @_check_speed(0.1)
-    def test_os_path_join(self):
+    def _test_os_path_join(self):
         s = "from posixpath import join; join('', '')."
         assert len(self.complete(s)) > 10  # is a str completion
 
@@ -227,15 +227,14 @@ class TestSpeed(Base):
         s = 'from scipy.weave import inline; inline('
         self.get_in_function_call(s)
 
-    @unittest.skip('not used yet')
-    @unittest.expectedFailure
+    #@unittest.expectedFailure
     @_check_speed(0.6, number=1)
-    def test_new(self):
+    def _test_new(self):
         s = 'import scipy.weave; scipy.weave.inline('
         api.set_debug_function(api.debug.print_to_stdout)
-        #print self.get_in_function_call(s)
+        #print(self.get_in_function_call(s))
         api.set_debug_function(None)
-        #print api.imports.imports_processed
+        #print(api.imports.imports_processed)
 
 
 if __name__ == '__main__':
