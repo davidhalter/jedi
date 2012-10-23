@@ -136,6 +136,16 @@ the first time. If you want to speed it up, you could write import hooks in
 jedi, which preloads this stuff. However, once loaded, this is not a problem
 anymore. The same is true for huge modules like ``PySide``, ``wx``, etc.
 
+Security is an important issue for Jedi. Therefore no Python code is executed.
+As long as you write pure python, everything is evaluated statically. But: If
+you use builtin modules (`c_builtin`) there is no other option than to execute
+those modules. However: Execute isn't that critical (as e.g. in pythoncomplete,
+which used to execute *every* import!), because it means one import and no
+more. So basically the only dangerous thing is using the import itself. If your
+`c_builtin` uses some strange initializations, it might be dangerous. But if it
+does you're screwed anyways, because eventualy you're going to execute your
+code, which executes the import.
+
 
 A little history
 ================
