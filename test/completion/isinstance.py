@@ -28,3 +28,13 @@ assert not isinstance(ass, int):
 if 2:
     #? str()
     ass
+
+# -----------------
+# in functions
+# -----------------
+
+import datetime
+def fooooo(obj):
+    if isinstance(obj, datetime.datetime):
+        #? datetime.datetime
+        obj

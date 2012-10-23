@@ -1125,6 +1125,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
         result = []
         # compare func uses the tuple of line/indent = line/column
         comparison_func = lambda name: (name.start_pos)
+        check_for_param = lambda p: isinstance(p, parsing.Param) \
+                                                    and not p.is_generated
         for nscope, name_list in scope_generator:
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
@@ -1150,13 +1152,17 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                         if not name.parent() or p == s:
                             break
                         break_scopes.append(p)
-            # if there are results, ignore the other scopes
-            if result:
+            # if there are results, ignore the other scopes, if params are in
+            # there, we still need to check flows, if they contain information.
+            if result and not [r for r in result if check_for_param(r)]:
                 break
 
             while flow_scope:
-                result = dynamic.check_flow_information(flow_scope, name_str,
+                n = dynamic.check_flow_information(flow_scope, name_str,
                                                                     position)
+                if n and result:
+                    result = n + [p for p in result if not check_for_param(r)]
+
                 if result:
                     break
                 if flow_scope == nscope:
