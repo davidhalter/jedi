@@ -13,6 +13,9 @@ import parsing
 import evaluate
 import itertools
 
+# for debugging purposes only
+imports_processed = 0
+
 
 class ModuleNotFound(Exception):
     pass
@@ -184,6 +187,8 @@ class ImportPath(object):
                 for i in range(self.import_stmt.relative_count):
                     path = os.path.dirname(path)
 
+            global imports_processed
+            imports_processed += 1
             if path is not None:
                 return imp.find_module(string, [path])
             else:
