@@ -197,6 +197,10 @@ class TestRegression(Base):
         assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
         assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
 
+    def test_os_nowait(self):
+        s = self.complete("import os; os.P_")
+        assert 'P_NOWAIT' in [i.word for i in s]
+
 
 class TestSpeed(Base):
     def _check_speed(time_per_run, number=10):
