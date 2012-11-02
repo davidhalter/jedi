@@ -8,7 +8,7 @@ from os.path import abspath, dirname
 sys.path.append(abspath(dirname(abspath(__file__)) + '/../jedi'))
 os.chdir(dirname(abspath(__file__)) + '/../jedi')
 
-from _compatibility import unicode, BytesIO, reduce, literal_eval, is_py25
+from _compatibility import unicode, StringIO, reduce, literal_eval, is_py25
 
 import api
 import debug
@@ -142,7 +142,7 @@ def run_test(source, f_name, lines_to_execute):
     correct = None
     test_type = None
     start = None
-    for line_nr, line in enumerate(BytesIO(source)):
+    for line_nr, line in enumerate(StringIO(source)):
         line = unicode(line)
         line_nr += 1
         if correct:

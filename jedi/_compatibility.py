@@ -73,11 +73,11 @@ else:
 import tokenize
 tokenize_func = tokenize.generate_tokens
 
-# BytesIO (Python 2.5 has no io module)
+# StringIO (Python 2.5 has no io module), so use io only for py3k
 try:
-    from StringIO import StringIO as BytesIO
+    from StringIO import StringIO
 except ImportError:
-    from io import StringIO as BytesIO
+    from io import StringIO
 
 # hasattr function used because python
 if is_py3k:
