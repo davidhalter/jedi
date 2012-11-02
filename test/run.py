@@ -64,7 +64,7 @@ def run_goto_test(script, correct, line_nr):
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
     result = script.goto()
-    comp_str = str(sorted(r.description for r in result))
+    comp_str = str(sorted(str(r.description) for r in result))
     if comp_str != correct:
         print('Solution @%s not right, received %s, wanted %s'\
                     % (line_nr - 1, comp_str, correct))
@@ -142,7 +142,7 @@ def run_test(source, f_name, lines_to_execute):
     correct = None
     test_type = None
     start = None
-    for line_nr, line in enumerate(BytesIO(source.encode())):
+    for line_nr, line in enumerate(BytesIO(source)):
         line = unicode(line)
         line_nr += 1
         if correct:
@@ -212,7 +212,8 @@ def test_dir(completion_test_dir, thirdparty=False):
 
             path = os.path.join(completion_test_dir, f_name)
             f = open(path)
-            num_tests, fails = run_test(f.read(), f_name, lines_to_execute)
+            num_tests, fails = run_test(unicode(f.read()), f_name,
+                                                            lines_to_execute)
 
             s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
             tests_fail += fails

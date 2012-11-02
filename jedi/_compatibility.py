@@ -58,8 +58,7 @@ else:
 try:
     unicode = unicode
 except NameError:
-    def unicode(s):
-        return s.decode("utf-8")
+    unicode = str
 
 # exec function
 if is_py3k:
@@ -78,9 +77,9 @@ else:
 
 # BytesIO (Python 2.5 has no io module)
 try:
-    from cStringIO import StringIO as BytesIO
+    from StringIO import StringIO as BytesIO
 except ImportError:
-    from io import BytesIO
+    from io import BytesIO as BytesIO
 
 # hasattr function used because python
 if is_py3k:

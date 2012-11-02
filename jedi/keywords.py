@@ -59,6 +59,9 @@ def imitate_pydoc(string):
     It's not possible to get the pydoc's without starting the annoying pager
     stuff.
     """
+    # str needed because of possible unicode stuff in py2k (pydoc doesn't work
+    # with unicode strings)
+    string = str(string)
     h = pydoc.help
     try:
         # try to access symbols

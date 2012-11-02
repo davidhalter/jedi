@@ -14,7 +14,8 @@ TODO nonlocal statement, needed or can be ignored? (py3k)
 
 TODO __ instance attributes should not be visible outside of the class.
 """
-from _compatibility import next, property, hasattr, is_py3k, use_metaclass
+from _compatibility import next, property, hasattr, is_py3k, use_metaclass, \
+                            unicode
 
 import sys
 import itertools
@@ -1407,7 +1408,7 @@ def follow_call_list(call_list):
                                             dynamic.ArrayInstance)):
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
-                    elif not isinstance(call, str):
+                    elif not isinstance(call, (str, unicode)):
                         if str(call.name) == 'if':
                             # Ternary operators.
                             while True:

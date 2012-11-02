@@ -14,7 +14,7 @@ import keywords
 import helpers
 import builtin
 
-from _compatibility import next
+from _compatibility import next, unicode
 
 
 class NotFoundError(Exception):
@@ -201,6 +201,7 @@ class Script(object):
     :type source_path: string or None
     """
     def __init__(self, source, line, column, source_path):
+        source = unicode(source)
         self.pos = line, column
         self.module = modules.ModuleWithCursor(source_path, source=source,
                                                             position=self.pos)
