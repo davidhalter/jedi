@@ -68,11 +68,6 @@ else:
     eval(compile("""def exec_function(source, global_map):
                         exec source in global_map """, 'blub', 'exec'))
 
-# tokenize function
-# TODO remove this, not used anymore
-import tokenize
-tokenize_func = tokenize.generate_tokens
-
 # StringIO (Python 2.5 has no io module), so use io only for py3k
 try:
     from StringIO import StringIO
