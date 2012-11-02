@@ -212,8 +212,7 @@ def test_dir(completion_test_dir, thirdparty=False):
 
             path = os.path.join(completion_test_dir, f_name)
             f = open(path)
-            num_tests, fails = run_test(unicode(f.read()), f_name,
-                                                            lines_to_execute)
+            num_tests, fails = run_test(f.read(), f_name, lines_to_execute)
 
             s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
             tests_fail += fails

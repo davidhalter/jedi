@@ -69,17 +69,15 @@ else:
                         exec source in global_map """, 'blub', 'exec'))
 
 # tokenize function
+# TODO remove this, not used anymore
 import tokenize
-if is_py3k:
-    tokenize_func = tokenize.tokenize
-else:
-    tokenize_func = tokenize.generate_tokens
+tokenize_func = tokenize.generate_tokens
 
 # BytesIO (Python 2.5 has no io module)
 try:
     from StringIO import StringIO as BytesIO
 except ImportError:
-    from io import BytesIO as BytesIO
+    from io import StringIO as BytesIO
 
 # hasattr function used because python
 if is_py3k:

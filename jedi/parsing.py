@@ -1126,8 +1126,6 @@ class PyFuzzyParser(object):
         self.user_stmt = None
         self.code = code + '\n'  # end with \n, because the parser needs it
         self.no_docstr = no_docstr
-        if is_py3k:
-            self.code = self.code.encode()
 
         # initialize global Scope
         self.module = Module(module_path)
