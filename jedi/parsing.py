@@ -1611,188 +1611,185 @@ class PyFuzzyParser(object):
         self.iterator = iter(self)
         # This iterator stuff is not intentional. It grew historically.
         for token_type, tok in self.iterator:
-                self.module.temp_used_names = []
-                #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
-                #    % (tok, tokenize.tok_name[token_type], start_position[0]))
+            self.module.temp_used_names = []
+            #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
+            #    % (tok, tokenize.tok_name[token_type], start_position[0]))
 
-                while token_type == tokenize.DEDENT \
-                                                and self.scope != self.module:
-                    token_type, tok = self.next()
-                    if self.start_pos[1] <= self.scope.start_pos[1]:
-                        self.scope.end_pos = self.start_pos
-                        self.scope = self.scope.parent()
-
-                # check again for unindented stuff. this is true for syntax
-                # errors. only check for names, because thats relevant here. If
-                # some docstrings are not indented, I don't care.
-                while self.start_pos[1] <= self.scope.start_pos[1] \
-                        and (token_type == tokenize.NAME or tok in ['(', '['])\
-                        and self.scope != self.module:
+            while token_type == tokenize.DEDENT and self.scope != self.module:
+                token_type, tok = self.next()
+                if self.start_pos[1] <= self.scope.start_pos[1]:
                     self.scope.end_pos = self.start_pos
                     self.scope = self.scope.parent()
 
-                first_pos = self.start_pos
-                if tok == 'def':
-                    func = self._parsefunction()
-                    if func is None:
-                        debug.warning("function: syntax error@%s" %
-                                                            self.start_pos[0])
-                        continue
-                    self.freshscope = True
-                    self.scope = self.scope.add_scope(func, decorators)
-                    decorators = []
-                elif tok == 'class':
-                    cls = self._parseclass()
-                    if cls is None:
-                        debug.warning("class: syntax error@%s" %
-                                                            self.start_pos[0])
-                        continue
-                    self.freshscope = True
-                    self.scope = self.scope.add_scope(cls, decorators)
-                    decorators = []
-                # import stuff
-                elif tok == 'import':
-                    imports = self._parseimportlist()
-                    for m, alias, defunct in imports:
-                        i = Import(first_pos, self.end_pos, m, alias,
-                                                            defunct=defunct)
-                        self._check_user_stmt(i)
-                        self.scope.add_import(i)
-                    if not imports:
-                        i = Import(first_pos, self.end_pos, None, defunct=True)
-                        self._check_user_stmt(i)
-                    self.freshscope = False
-                elif tok == 'from':
-                    defunct = False
-                    # take care for relative imports
-                    relative_count = 0
-                    while 1:
-                        token_type, tok = self.next()
-                        if tok != '.':
-                            break
-                        relative_count += 1
-                    # the from import
-                    mod, token_type, tok = self._parsedotname(self.current)
-                    if str(mod) == 'import' and relative_count:
+            # check again for unindented stuff. this is true for syntax
+            # errors. only check for names, because thats relevant here. If
+            # some docstrings are not indented, I don't care.
+            while self.start_pos[1] <= self.scope.start_pos[1] \
+                    and (token_type == tokenize.NAME or tok in ['(', '['])\
+                    and self.scope != self.module:
+                self.scope.end_pos = self.start_pos
+                self.scope = self.scope.parent()
+
+            first_pos = self.start_pos
+            if tok == 'def':
+                func = self._parsefunction()
+                if func is None:
+                    debug.warning("function: syntax error@%s" %
+                                                        self.start_pos[0])
+                    continue
+                self.freshscope = True
+                self.scope = self.scope.add_scope(func, decorators)
+                decorators = []
+            elif tok == 'class':
+                cls = self._parseclass()
+                if cls is None:
+                    debug.warning("class: syntax error@%s" % self.start_pos[0])
+                    continue
+                self.freshscope = True
+                self.scope = self.scope.add_scope(cls, decorators)
+                decorators = []
+            # import stuff
+            elif tok == 'import':
+                imports = self._parseimportlist()
+                for m, alias, defunct in imports:
+                    i = Import(first_pos, self.end_pos, m, alias,
+                                                        defunct=defunct)
+                    self._check_user_stmt(i)
+                    self.scope.add_import(i)
+                if not imports:
+                    i = Import(first_pos, self.end_pos, None, defunct=True)
+                    self._check_user_stmt(i)
+                self.freshscope = False
+            elif tok == 'from':
+                defunct = False
+                # take care for relative imports
+                relative_count = 0
+                while 1:
+                    token_type, tok = self.next()
+                    if tok != '.':
+                        break
+                    relative_count += 1
+                # the from import
+                mod, token_type, tok = self._parsedotname(self.current)
+                if str(mod) == 'import' and relative_count:
+                    self.gen.push_back(self._current_full)
+                    tok = 'import'
+                    mod = None
+                if not mod and not relative_count or tok != "import":
+                    debug.warning("from: syntax error@%s" % self.start_pos[0])
+                    defunct = True
+                    if tok != 'import':
                         self.gen.push_back(self._current_full)
-                        tok = 'import'
-                        mod = None
-                    if not mod and not relative_count or tok != "import":
-                        debug.warning("from: syntax error@%s" %
-                                                            self.start_pos[0])
-                        defunct = True
-                        if tok != 'import':
-                            self.gen.push_back(self._current_full)
-                    names = self._parseimportlist()
-                    for name, alias, defunct2 in names:
-                        star = name is not None and name.names[0] == '*'
-                        if star:
-                            name = None
-                        i = Import(first_pos, self.end_pos, name, alias, mod,
-                            star, relative_count, defunct=defunct or defunct2)
-                        self._check_user_stmt(i)
-                        self.scope.add_import(i)
-                    self.freshscope = False
-                #loops
-                elif tok == 'for':
-                    set_stmt, tok = self._parse_statement(added_breaks=['in'])
-                    if tok == 'in':
-                        statement, tok = self._parse_statement()
-                        if tok == ':':
-                            s = [] if statement is None else [statement]
-                            f = ForFlow(s, first_pos, set_stmt)
-                            self.scope = self.scope.add_statement(f)
-                        else:
-                            debug.warning('syntax err, for flow started @%s',
-                                                            self.start_pos[0])
-                            if statement is not None:
-                                statement.parent = weakref.ref(self.scope)
-                            if set_stmt is not None:
-                                set_stmt.parent = weakref.ref(self.scope)
+                names = self._parseimportlist()
+                for name, alias, defunct2 in names:
+                    star = name is not None and name.names[0] == '*'
+                    if star:
+                        name = None
+                    i = Import(first_pos, self.end_pos, name, alias, mod,
+                        star, relative_count, defunct=defunct or defunct2)
+                    self._check_user_stmt(i)
+                    self.scope.add_import(i)
+                self.freshscope = False
+            #loops
+            elif tok == 'for':
+                set_stmt, tok = self._parse_statement(added_breaks=['in'])
+                if tok == 'in':
+                    statement, tok = self._parse_statement()
+                    if tok == ':':
+                        s = [] if statement is None else [statement]
+                        f = ForFlow(s, first_pos, set_stmt)
+                        self.scope = self.scope.add_statement(f)
                     else:
-                        debug.warning('syntax err, for flow incomplete @%s',
-                                                            self.start_pos[0])
+                        debug.warning('syntax err, for flow started @%s',
+                                                        self.start_pos[0])
+                        if statement is not None:
+                            statement.parent = weakref.ref(self.scope)
                         if set_stmt is not None:
                             set_stmt.parent = weakref.ref(self.scope)
-
-                elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
-                    added_breaks = []
-                    command = tok
-                    if command in ['except', 'with']:
-                        added_breaks.append(',')
-                    # multiple statements because of with
-                    inits = []
-                    first = True
-                    while first or command == 'with' \
-                                                and tok not in [':', '\n']:
-                        statement, tok = \
-                            self._parse_statement(added_breaks=added_breaks)
-                        if command == 'except' and tok in added_breaks:
-                            # the except statement defines a var
-                            # this is only true for python 2
-                            n, token_type, tok = self._parsedotname()
-                            if n:
-                                statement.set_vars.append(n)
-                                statement.code += ',' + n.get_code()
-                        if statement:
-                            inits.append(statement)
-                        first = False
-
-                    if tok == ':':
-                        f = Flow(command, inits, first_pos)
-                        if command in extended_flow:
-                            # the last statement has to be another part of
-                            # the flow statement, because a dedent releases the
-                            # main scope, so just take the last statement.
-                            try:
-                                s = self.scope.statements[-1].set_next(f)
-                            except (AttributeError, IndexError):
-                                # If set_next doesn't exist, just add it.
-                                s = self.scope.add_statement(f)
-                        else:
-                            s = self.scope.add_statement(f)
-                        self.scope = s
-                    else:
-                        for i in inits:
-                            i.parent = weakref.ref(self.scope)
-                        debug.warning('syntax err, flow started @%s',
-                                                            self.start_pos[0])
-                # globals
-                elif tok == 'global':
-                    stmt, tok = self._parse_statement(self.current)
-                    if stmt:
-                        self.scope.add_statement(stmt)
-                        for name in stmt.used_vars:
-                            # add the global to the top, because there it is
-                            # important.
-                            self.module.add_global(name)
-                # decorator
-                elif tok == '@':
-                    stmt, tok = self._parse_statement()
-                    decorators.append(stmt)
-                elif tok == 'pass':
-                    continue
-                elif tok == 'assert':
-                    stmt, tok = self._parse_statement()
-                    stmt.parent = weakref.ref(self.scope)
-                    self.scope.asserts.append(stmt)
-                # default
-                elif token_type in [tokenize.NAME, tokenize.STRING,
-                                    tokenize.NUMBER] \
-                        or tok in statement_toks:
-                    # this is the main part - a name can be a function or a
-                    # normal var, which can follow anything. but this is done
-                    # by the statement parser.
-                    stmt, tok = self._parse_statement(self.current)
-                    if stmt:
-                        self.scope.add_statement(stmt)
-                    self.freshscope = False
                 else:
-                    if token_type not in [tokenize.COMMENT, tokenize.INDENT,
-                                          tokenize.NEWLINE, tokenize.NL,
-                                          tokenize.ENDMARKER]:
-                        debug.warning('token not classified', tok, token_type,
-                                                            self.start_pos[0])
+                    debug.warning('syntax err, for flow incomplete @%s',
+                                                        self.start_pos[0])
+                    if set_stmt is not None:
+                        set_stmt.parent = weakref.ref(self.scope)
+
+            elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
+                added_breaks = []
+                command = tok
+                if command in ['except', 'with']:
+                    added_breaks.append(',')
+                # multiple statements because of with
+                inits = []
+                first = True
+                while first or command == 'with' \
+                                            and tok not in [':', '\n']:
+                    statement, tok = \
+                        self._parse_statement(added_breaks=added_breaks)
+                    if command == 'except' and tok in added_breaks:
+                        # the except statement defines a var
+                        # this is only true for python 2
+                        n, token_type, tok = self._parsedotname()
+                        if n:
+                            statement.set_vars.append(n)
+                            statement.code += ',' + n.get_code()
+                    if statement:
+                        inits.append(statement)
+                    first = False
+
+                if tok == ':':
+                    f = Flow(command, inits, first_pos)
+                    if command in extended_flow:
+                        # the last statement has to be another part of
+                        # the flow statement, because a dedent releases the
+                        # main scope, so just take the last statement.
+                        try:
+                            s = self.scope.statements[-1].set_next(f)
+                        except (AttributeError, IndexError):
+                            # If set_next doesn't exist, just add it.
+                            s = self.scope.add_statement(f)
+                    else:
+                        s = self.scope.add_statement(f)
+                    self.scope = s
+                else:
+                    for i in inits:
+                        i.parent = weakref.ref(self.scope)
+                    debug.warning('syntax err, flow started @%s',
+                                                        self.start_pos[0])
+            # globals
+            elif tok == 'global':
+                stmt, tok = self._parse_statement(self.current)
+                if stmt:
+                    self.scope.add_statement(stmt)
+                    for name in stmt.used_vars:
+                        # add the global to the top, because there it is
+                        # important.
+                        self.module.add_global(name)
+            # decorator
+            elif tok == '@':
+                stmt, tok = self._parse_statement()
+                decorators.append(stmt)
+            elif tok == 'pass':
+                continue
+            elif tok == 'assert':
+                stmt, tok = self._parse_statement()
+                stmt.parent = weakref.ref(self.scope)
+                self.scope.asserts.append(stmt)
+            # default
+            elif token_type in [tokenize.NAME, tokenize.STRING,
+                                tokenize.NUMBER] \
+                    or tok in statement_toks:
+                # this is the main part - a name can be a function or a
+                # normal var, which can follow anything. but this is done
+                # by the statement parser.
+                stmt, tok = self._parse_statement(self.current)
+                if stmt:
+                    self.scope.add_statement(stmt)
+                self.freshscope = False
+            else:
+                if token_type not in [tokenize.COMMENT, tokenize.INDENT,
+                                      tokenize.NEWLINE, tokenize.NL,
+                                      tokenize.ENDMARKER]:
+                    debug.warning('token not classified', tok, token_type,
+                                                        self.start_pos[0])
 
         del self.buf
         return self.module
