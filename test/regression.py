@@ -197,6 +197,14 @@ class TestRegression(Base):
         assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
         assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
 
+    def test_unicode_script(self):
+        """ normally no unicode objects are being used. (<=2.7) """
+        try:
+            s = unicode("import datetime; datetime.d")
+        except NameError:
+            pass # python 3 has no unicode method
+        else:
+            assert len(self.complete(s))
 
 class TestSpeed(Base):
     def _check_speed(time_per_run, number=10):
