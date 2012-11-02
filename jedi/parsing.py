@@ -802,7 +802,8 @@ class Statement(Simple):
                 while is_call_or_close():
                     result = result.parent()
                     close_brackets = False
-                result.add_to_current_field(tok)
+                if tok != '\n':
+                    result.add_to_current_field(tok)
 
         if level != 0:
             debug.warning("Brackets don't match: %s."

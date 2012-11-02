@@ -188,6 +188,11 @@ exe['b']
 #? int() float()
 exe['c']
 
+exe2 = kwargs_func(**{a:3,
+                      b:4.0})
+#? int()
+exe2['a']
+
 # -----------------
 # *args / ** kwargs
 # -----------------
