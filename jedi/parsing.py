@@ -385,6 +385,31 @@ class Function(Scope):
                 debug.warning("multiple names in param %s" % n)
         return n
 
+    def get_call_signature(self, width=72):
+        """
+        Generate call signature of this function.
+
+        :param width: Fold lines if a line is longer than this value.
+        :type width: int
+
+        :rtype: str
+        """
+        l = self.name.names[-1] + '('
+        lines = []
+        for (i, p) in enumerate(self.params):
+            code = p.get_code(False)
+            if i != len(self.params) - 1:
+                code += ', '
+            if len(l + code) > width:
+                lines.append(l[:-1] if l[-1] == ' ' else l)
+                l = code
+            else:
+                l += code
+        if l:
+            lines.append(l)
+        lines[-1] += ')'
+        return '\n'.join(lines)
+
 
 class Flow(Scope):
     """
