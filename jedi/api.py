@@ -78,10 +78,15 @@ class Completion(object):
         except AttributeError:
             return ''
 
-    def get_type(self):
-        """ Returns the type of a completion object (e.g. Function/Class
-        TODO please don't use yet, behaviour may change in the future. """
-        return type(self.name.parent())
+    @property
+    def type(self):
+        """ Returns the type of a completion object (e.g. Function/Class) """
+        if self.name.parent is None:
+            return ''
+        name_type = self.name.parent()
+        if isinstance(self.name_type, evaluate.InstanceElement):
+            name_type = name_type.var
+        return type(self.name_var).__class__
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.name)
