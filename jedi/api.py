@@ -72,9 +72,13 @@ class Completion(object):
 
     @property
     def doc(self):
-        """ Returns the docstring `__doc__` for any object """
+        """ Return a document string for this completion object. """
         try:
-            return str(self.name.parent().docstr)
+            parent = self.name.parent()
+            docstr = str(parent.docstr)
+            if hasattr(parent, 'get_call_signature'):
+                docstr = parent.get_call_signature() + '\n\n' + docstr
+            return docstr
         except AttributeError:
             return ''
 
