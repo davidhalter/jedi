@@ -6,3 +6,5 @@ sys.path.insert(0, __path__[0])
 
 from .api import Script, NotFoundError, set_debug_function
 from . import settings
+
+sys.path.pop(0)
