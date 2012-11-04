@@ -75,10 +75,11 @@ class Completion(object):
         """ Return a document string for this completion object. """
         try:
             parent = self.name.parent()
-            docstr = str(parent.docstr)
-            if hasattr(parent, 'get_call_signature'):
-                docstr = parent.get_call_signature() + '\n\n' + docstr
-            return docstr
+            try:
+                return '%s\n\n%s' % (parent.get_call_signature(),
+                                     parent.docstr)
+            except AttributeError:
+                return str(parent.docstr)
         except AttributeError:
             return ''
 
