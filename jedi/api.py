@@ -74,14 +74,9 @@ class Completion(object):
     def doc(self):
         """ Return a document string for this completion object. """
         try:
-            parent = self.name.parent()
-            try:
-                return '%s\n\n%s' % (parent.get_call_signature(),
-                                     parent.docstr)
-            except AttributeError:
-                return str(parent.docstr)
+            return self.name.parent().doc
         except AttributeError:
-            return ''
+            return self.raw_doc
 
     @property
     def raw_doc(self):
@@ -140,6 +135,14 @@ class Definition(dynamic.BaseOutput):
     @property
     def doc(self):
         """ Returns the docstr, behaves like `Completion.doc`. """
+        try:
+            return self.definition.doc
+        except AttributeError:
+            return self.raw_doc
+
+    @property
+    def raw_doc(self):
+        """ Returns the docstring `__doc__` for any object """
         try:
             return str(self.definition.docstr)
         except AttributeError:
