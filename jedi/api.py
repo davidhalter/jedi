@@ -84,6 +84,14 @@ class Completion(object):
             return ''
 
     @property
+    def raw_doc(self):
+        """ Returns the docstring `__doc__` for any object """
+        try:
+            return str(self.name.parent().docstr)
+        except AttributeError :
+            return ''
+
+    @property
     def type(self):
         """ Returns the type of a completion object (e.g. Function/Class) """
         if self.name.parent is None:
