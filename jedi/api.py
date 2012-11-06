@@ -136,6 +136,14 @@ class Definition(dynamic.BaseOutput):
     def doc(self):
         """ Returns the docstr, behaves like `Completion.doc`. """
         try:
+            return self.definition.doc
+        except AttributeError:
+            return self.raw_doc
+
+    @property
+    def raw_doc(self):
+        """ Returns the docstring `__doc__` for any object """
+        try:
             return str(self.definition.docstr)
         except AttributeError:
             return ''
