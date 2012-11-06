@@ -410,6 +410,11 @@ class Function(Scope):
         lines[-1] += ')'
         return '\n'.join(lines)
 
+    @property
+    def doc(self):
+        """ Return a document string including call signature. """
+        return '%s\n\n%s' % (self.get_call_signature(), self.docstr)
+
 
 class Flow(Scope):
     """
