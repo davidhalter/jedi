@@ -35,11 +35,12 @@ def get_operator(string, pos):
 class Keyword(object):
     def __init__(self, name, pos):
         self.name = name
-        self.parent = lambda: None
         self.start_pos = pos
 
-    def get_parent_until(self):
+    def parent(self):
         return builtin.Builtin.scope
+
+    get_parent_until = parent
 
     @property
     def names(self):

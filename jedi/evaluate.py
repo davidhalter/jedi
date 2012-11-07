@@ -894,6 +894,9 @@ class ArrayElement(object):
             raise AttributeError('Strange access: %s.' % name)
         return getattr(self.name, name)
 
+    def get_parent_until(self):
+        return builtin.Builtin.scope
+
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.name)
 

@@ -10,10 +10,12 @@ import keywords
 
 
 class BaseOutput(object):
-    def __init__(self, start_pos, definition):
-        self.module_path = str(definition.get_parent_until().path)
+    def __init__(self, definition, start_pos):
         self.start_pos = start_pos
         self.definition = definition
+        self.is_keyword = isinstance(definition, keywords.Keyword)
+
+        self.module_path = str(definition.get_parent_until().path)
 
     @property
     def module_name(self):
@@ -34,6 +36,32 @@ class BaseOutput(object):
         return self.start_pos[1]
 
     @property
+    def doc(self):
+        """ Return a document string for this completion object. """
+        try:
+            return self.definition.doc
+        except AttributeError:
+            return self.raw_doc
+
+    @property
+    def raw_doc(self):
+        """ Returns the raw docstring `__doc__` for any object """
+        try:
+            return str(self.definition.docstr)
+        except AttributeError:
+            return ''
+
+    @property
+    def type(self):
+        """ Returns the type of a completion object (e.g. 'Module'/'Class') """
+        if self.name.parent is None:
+            return ''
+        name_type = self.definition
+        if isinstance(name_type, evaluate.InstanceElement):
+            name_type = name_type.var
+        return type(name_type).__name__
+
+    @property
     def description(self):
         raise NotImplementedError('Base Class')
 
@@ -41,15 +69,17 @@ class BaseOutput(object):
         return "<%s %s>" % (type(self).__name__, self.description)
 
 
-class Completion(object):
+class Completion(BaseOutput):
     """ `Completion` objects are returned from `Script.complete`. Providing
     some useful functions for IDE's. """
     def __init__(self, name, needs_dot, like_name_length, base):
+        super(Completion, self).__init__(name, name.start_pos)
+
         self.name = name
         self.needs_dot = needs_dot
         self.like_name_length = like_name_length
-        self._completion_parent = name.parent()  # limit gc
         self.base = base
+        self._parent = name.parent()
 
     @property
     def complete(self):
@@ -63,7 +93,7 @@ class Completion(object):
         append = ''
         funcs = (parsing.Function, evaluate.Function)
         if settings.add_bracket_after_function \
-                    and self._completion_parent.isinstance(funcs):
+                    and self._parent.isinstance(funcs):
             append = '('
 
         if settings.add_dot_after_module:
@@ -89,32 +119,6 @@ class Completion(object):
         parent = self.name.parent()
         return '' if parent is None else str(parent)
 
-    @property
-    def doc(self):
-        """ Return a document string for this completion object. """
-        try:
-            return self.name.parent().doc
-        except AttributeError:
-            return self.raw_doc
-
-    @property
-    def raw_doc(self):
-        """ Returns the docstring `__doc__` for any object """
-        try:
-            return str(self.name.parent().docstr)
-        except AttributeError :
-            return ''
-
-    @property
-    def type(self):
-        """ Returns the type of a completion object (e.g. Function/Class) """
-        if self.name.parent is None:
-            return ''
-        name_type = self.name.parent()
-        if isinstance(self.name_type, evaluate.InstanceElement):
-            name_type = name_type.var
-        return type(self.name_var).__class__
-
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.name)
 
@@ -123,7 +127,7 @@ class Definition(BaseOutput):
     """ These are the objects returned by either `Script.goto` or
     `Script.get_definition`. """
     def __init__(self, definition):
-        super(Definition, self).__init__(definition.start_pos, definition)
+        super(Definition, self).__init__(definition, definition.start_pos)
         self._def_parent = definition.parent()  # just here to limit gc
 
     @property
@@ -145,27 +149,11 @@ class Definition(BaseOutput):
         elif isinstance(d, evaluate.parsing.Module):
             # only show module name
             d = 'module %s' % self.module_name
-        elif isinstance(d, keywords.Keyword):
+        elif self.is_keyword:
             d = 'keyword %s' % d.name
         else:
             d = d.get_code().replace('\n', '')
         return d
-
-    @property
-    def doc(self):
-        """ Returns the docstr, behaves like `Completion.doc`. """
-        try:
-            return self.definition.doc
-        except AttributeError:
-            return self.raw_doc
-
-    @property
-    def raw_doc(self):
-        """ Returns the docstring `__doc__` for any object """
-        try:
-            return str(self.definition.docstr)
-        except AttributeError:
-            return ''
 
     @property
     def desc_with_module(self):
@@ -180,6 +168,25 @@ class Definition(BaseOutput):
             # is a builtin or module
             position = ''
         return "%s:%s%s" % (self.module_name, self.description, position)
+
+
+class RelatedName(BaseOutput):
+    def __init__(self, name_part, scope):
+        super(RelatedName, self).__init__(scope, name_part.start_pos)
+        self.name_part = name_part
+        self.text = str(name_part)
+        self.end_pos = name_part.end_pos
+
+    @property
+    def description(self):
+        return "%s@%s,%s" % (self.text, self.start_pos[0], self.start_pos[1])
+
+    def __eq__(self, other):
+        return self.start_pos == other.start_pos \
+            and self.module_path == other.module_path
+
+    def __hash__(self):
+        return hash((self.start_pos, self.module_path))
 
 
 class CallDef(object):
@@ -225,21 +232,3 @@ class CallDef(object):
     def __repr__(self):
         return '<%s: %s index %s>' % (type(self).__name__, self.executable,
                                     self.index)
-
-
-class RelatedName(BaseOutput):
-    def __init__(self, name_part, scope):
-        super(RelatedName, self).__init__(name_part.start_pos, scope)
-        self.text = str(name_part)
-        self.end_pos = name_part.end_pos
-
-    @property
-    def description(self):
-        return "%s@%s,%s" % (self.text, self.start_pos[0], self.start_pos[1])
-
-    def __eq__(self, other):
-        return self.start_pos == other.start_pos \
-            and self.module_path == other.module_path
-
-    def __hash__(self):
-        return hash((self.start_pos, self.module_path))
