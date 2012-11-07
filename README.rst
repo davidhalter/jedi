@@ -17,7 +17,7 @@ sucks less than other tools. It understands almost all of the basic Python
 syntax elements including many builtins.
 
 Jedi suports two different goto functions and has support for renaming.
-Probably it will also have some support for refactoring some in the future.
+Probably it will also have some support for refactoring in the future.
 
 Jedi uses a very simple interface to connect with IDE's. As an reference, there
 is a VIM implementation, which uses Jedi's autocompletion. However, I encourage
