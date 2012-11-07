@@ -1541,7 +1541,7 @@ class PyFuzzyParser(object):
                 elif tok.endswith('=') and tok not in ['>=', '<=', '==', '!=']:
                     # there has been an assignement -> change vars
                     if level == 0:
-                        set_vars = used_vars
+                        set_vars += used_vars
                         used_vars = []
                 elif tok in opening_brackets:
                     level += 1

@@ -207,6 +207,7 @@ class TestRegression(Base):
             assert len(self.complete(s))
 
     def test_os_nowait(self):
+        """ github issue #45 """
         s = self.complete("import os; os.P_")
         assert 'P_NOWAIT' in [i.word for i in s]
 
