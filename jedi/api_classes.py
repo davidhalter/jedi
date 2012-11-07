@@ -15,7 +15,22 @@ class BaseOutput(object):
         self.definition = definition
         self.is_keyword = isinstance(definition, keywords.Keyword)
 
+        # generate the type
+        self.stripped_definition = self.definition
+        if isinstance(self.definition, evaluate.InstanceElement):
+            self.stripped_definition = self.definition.var
+        self.type = type(self.stripped_definition).__name__
+
+        # generate a path to the definition
         self.module_path = str(definition.get_parent_until().path)
+        self.path = []
+        par = definition
+        while par is not None:
+            if not isinstance(self.stripped_definition,
+                        (parsing.Flow, parsing.Statement, parsing.Import,
+                        evaluate.Array, parsing.Name)):
+                self.path.insert(0, par.name)
+            par = par.parent()
 
     @property
     def module_name(self):
@@ -52,16 +67,6 @@ class BaseOutput(object):
             return ''
 
     @property
-    def type(self):
-        """ Returns the type of a completion object (e.g. 'Module'/'Class') """
-        if self.name.parent is None:
-            return ''
-        name_type = self.definition
-        if isinstance(name_type, evaluate.InstanceElement):
-            name_type = name_type.var
-        return type(name_type).__name__
-
-    @property
     def description(self):
         raise NotImplementedError('Base Class')
 
@@ -90,9 +95,8 @@ class Completion(BaseOutput):
         """
         dot = '.' if self.needs_dot else ''
         append = ''
-        funcs = (parsing.Function, evaluate.Function)
         if settings.add_bracket_after_function \
-                    and self.definition.isinstance(funcs):
+                    and self.type == 'Function':
             append = '('
 
         if settings.add_dot_after_module:
@@ -119,12 +123,13 @@ class Completion(BaseOutput):
         if parent is None:
             return ''
         t = self.type
-        desc = self.definition.get_code(False) if t == 'Statement' \
-                                                else str(self.name.names[-1])
+        if t == 'Statement':
+            desc = self.definition.get_code(False)
+        else:
+            desc = '.'.join(str(p) for p in self.path)
+
         line_nr = '' if self.in_builtin_module else '@%s' % self.line_nr
-        temp = '%s: %s%s' % (t, desc, line_nr)
-        print temp
-        return temp
+        return '%s: %s%s' % (t, desc, line_nr)
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.name)

@@ -249,12 +249,12 @@ class Scope(Simple):
 
     def __repr__(self):
         try:
-            name = self.name
+            name = self.path
         except AttributeError:
             try:
-                name = self.command
+                name = self.name
             except AttributeError:
-                name = self.path
+                name = self.command
 
         return "<%s: %s@%s-%s>" % (type(self).__name__, name,
                                     self.start_pos[0], self.end_pos[0])
@@ -289,15 +289,21 @@ class Module(Scope):
         n += self.global_vars
         return n
 
-    def get_name(self):
+    @property
+    def name(self):
         """ This is used for the goto function. """
-        sep = (os.path.sep,) * 2
-        r = re.search(r'([^%s]+?)(%s__init__)?(\.py)?$' % sep, self.path)
-        string = r.group(1)
+        if self._name is not None:
+            return self._name
+        if self.path is None:
+            string = ''  # no path -> empty name
+        else:
+            sep = (os.path.sep,) * 2
+            r = re.search(r'([^%s]+?)(%s__init__)?(\.py)?$' % sep, self.path)
+            string = r.group(1)
         names = [(string, (0, 0))]
-        if not self._name:
-            self._name = Name(names, self.start_pos, self.end_pos, self)
+        self._name = Name(names, self.start_pos, self.end_pos, self)
         return self._name
+
 
     def is_builtin(self):
         return not (self.path is None or self.path.endswith('.py'))
