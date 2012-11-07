@@ -7,7 +7,6 @@ working quite good.
 """
 from __future__ import with_statement
 
-import re
 import os
 
 import parsing
@@ -18,6 +17,7 @@ import settings
 import debug
 import builtin
 import imports
+import api_classes
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -382,7 +382,7 @@ def related_names(definitions, search_name, mods):
             # compare to see if they match
             if any(r in definitions for r in follow_res):
                 scope = call.parent_stmt()
-                result.append(RelatedName(search, scope))
+                result.append(api_classes.RelatedName(search, scope))
 
         return result
 
@@ -424,7 +424,7 @@ def related_names(definitions, search_name, mods):
                                                         direct_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
-                        names.append(RelatedName(name_part, stmt))
+                        names.append(api_classes.RelatedName(name_part, stmt))
             else:
                 calls = _scan_array(stmt.get_assignment_calls(), search_name)
                 for d in stmt.assignment_details:
@@ -446,56 +446,6 @@ def related_name_add_import_modules(definitions, search_name):
             except IndexError:
                 pass
     return set(definitions) | new
-
-
-class BaseOutput(object):
-    def __init__(self, start_pos, definition):
-        self.module_path = str(definition.get_parent_until().path)
-        self.start_pos = start_pos
-        self.definition = definition
-
-    @property
-    def module_name(self):
-        path = self.module_path
-        sep = os.path.sep
-        p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', path)
-        return p
-
-    def in_builtin_module(self):
-        return not self.module_path.endswith('.py')
-
-    @property
-    def line_nr(self):
-        return self.start_pos[0]
-
-    @property
-    def column(self):
-        return self.start_pos[1]
-
-    @property
-    def description(self):
-        raise NotImplementedError('Base Class')
-
-    def __repr__(self):
-        return "<%s %s>" % (type(self).__name__, self.description)
-
-
-class RelatedName(BaseOutput):
-    def __init__(self, name_part, scope):
-        super(RelatedName, self).__init__(name_part.start_pos, scope)
-        self.text = str(name_part)
-        self.end_pos = name_part.end_pos
-
-    @property
-    def description(self):
-        return "%s@%s,%s" % (self.text, self.start_pos[0], self.start_pos[1])
-
-    def __eq__(self, other):
-        return self.start_pos == other.start_pos \
-            and self.module_path == other.module_path
-
-    def __hash__(self):
-        return hash((self.start_pos, self.module_path))
 
 
 def check_flow_information(flow, search_name, pos):
