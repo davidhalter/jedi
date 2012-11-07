@@ -73,13 +73,12 @@ class Completion(BaseOutput):
     """ `Completion` objects are returned from `Script.complete`. Providing
     some useful functions for IDE's. """
     def __init__(self, name, needs_dot, like_name_length, base):
-        super(Completion, self).__init__(name, name.start_pos)
+        super(Completion, self).__init__(name.parent(), name.start_pos)
 
         self.name = name
         self.needs_dot = needs_dot
         self.like_name_length = like_name_length
         self.base = base
-        self._parent = name.parent()
 
     @property
     def complete(self):
@@ -93,7 +92,7 @@ class Completion(BaseOutput):
         append = ''
         funcs = (parsing.Function, evaluate.Function)
         if settings.add_bracket_after_function \
-                    and self._parent.isinstance(funcs):
+                    and self.definition.isinstance(funcs):
             append = '('
 
         if settings.add_dot_after_module:
@@ -117,7 +116,15 @@ class Completion(BaseOutput):
         """ Provides a description of the completion object
         TODO return value is just __repr__ of some objects, improve! """
         parent = self.name.parent()
-        return '' if parent is None else str(parent)
+        if parent is None:
+            return ''
+        t = self.type
+        desc = self.definition.get_code(False) if t == 'Statement' \
+                                                else str(self.name.names[-1])
+        line_nr = '' if self.in_builtin_module else '@%s' % self.line_nr
+        temp = '%s: %s%s' % (t, desc, line_nr)
+        print temp
+        return temp
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.name)
