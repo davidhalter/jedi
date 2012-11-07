@@ -335,6 +335,9 @@ class Script(object):
         end, not the first definition.
         The big difference of goto and get_definition is that goto doesn't
         follow imports and statements.
+        Multiple objects may be returned, because Python itself is a dynamic
+        language, which means depending on an option you can have two different
+        versions of a function.
 
         :return: list of Definition objects, which are basically scopes.
         :rtype: list
@@ -369,6 +372,9 @@ class Script(object):
         """
         Returns the first definition found by goto. This means: It doesn't
         follow imports and statements.
+        Multiple objects may be returned, because Python itself is a dynamic
+        language, which means depending on an option you can have two different
+        versions of a function.
 
         :return: list of Definition objects, which are basically scopes.
         """
