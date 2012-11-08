@@ -178,6 +178,11 @@ class TestRegression(Base):
         s2 = "for s in sorted("
         assert check(self.get_in_function_call(s2), 'sorted', 0)
 
+        # jedi #57
+        s = "def func(alpha, beta): pass\n" \
+            "func(alpha='101',"
+        assert check(self.get_in_function_call(s, (2, 13)), 'func', 0)
+
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
         # Fictional module that defines a function.
