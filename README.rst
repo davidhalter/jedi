@@ -28,7 +28,7 @@ At the moment Jedi can be used as a
 `VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_. So, if you want to test
 Jedi for now, you'll have to use VIM. But there are new plugins emerging:
 
-- `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_ **Under construction**
+- `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_
 - `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_ **Under construction**
 
 Here are some pictures:
