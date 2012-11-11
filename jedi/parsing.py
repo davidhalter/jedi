@@ -819,7 +819,7 @@ class Statement(Simple):
                 while is_call_or_close():
                     result = result.parent()
                     close_brackets = False
-                result.add_field()
+                result.add_field((start_pos[0], start_pos[1] + 1))
                 # important - it cannot be empty anymore
                 if result.type == Array.NOARRAY:
                     result.type = Array.TUPLE
@@ -986,16 +986,18 @@ class Array(Call):
                                                                     parent)
 
         self.values = values if values else []
+        self.arr_el_pos = []
         self.keys = []
         self.end_pos = None
 
-    def add_field(self):
+    def add_field(self, start_pos):
         """
         Just add a new field to the values.
 
         Each value has a sub-array, because there may be different tokens in
         one array.
         """
+        self.arr_el_pos.append(start_pos)
         self.values.append([])
 
     def add_to_current_field(self, tok):

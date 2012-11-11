@@ -348,8 +348,6 @@ class Script(object):
         # just take entry zero, because we need just one.
         executable = origins[0]
 
-        after = self.module.get_line(self.pos[0])[self.pos[1]:]
-        index -= re.search('^[ ,]*', after).group(0).count(',')
         return api_classes.CallDef(executable, index, call)
 
     def _get_on_import_stmt(self, is_like_search=False):

@@ -1,7 +1,6 @@
 import copy
 import weakref
 
-from _compatibility import hasattr
 import parsing
 import evaluate
 import debug
@@ -201,10 +200,16 @@ def scan_array_for_pos(arr, pos):
     """
     Returns the function Call that match search_name in an Array.
     """
-    index = 0
+    def check_arr_index():
+        positions = arr.arr_el_pos
+        for index, comma_pos in enumerate(positions):
+            if pos < comma_pos:
+                return index
+        return len(positions)
+
     call = None
     stop = False
-    for index, sub in enumerate(arr.values):
+    for sub in arr.values:
         call = None
         for s in sub:
             if isinstance(s, parsing.Array):
@@ -215,9 +220,10 @@ def scan_array_for_pos(arr, pos):
                         return call, index, stop
             elif isinstance(s, parsing.Call):
                 start_s = s
+                # check parts of calls
                 while s is not None:
                     if s.start_pos >= pos:
-                        return call, index, stop
+                        return call, check_arr_index(), stop
                     elif s.execution is not None:
                         end = s.execution.end_pos
                         if s.execution.start_pos < pos and \
@@ -242,4 +248,4 @@ def scan_array_for_pos(arr, pos):
 
     # The third return is just necessary for recursion inside, because
     # it needs to know when to stop iterating.
-    return call, index, stop
+    return call, check_arr_index(), stop
