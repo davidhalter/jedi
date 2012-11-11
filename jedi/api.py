@@ -60,9 +60,17 @@ class Script(object):
     :type col: int
     :param source_path: The path in the os, the current module is in.
     :type source_path: string or None
+    :param source_encoding: encoding for decoding `source`, when it
+                            is not a `unicode` object.
+    :type source_encoding: string
     """
-    def __init__(self, source, line, column, source_path):
-        source = unicode(source)
+    def __init__(self, source, line, column, source_path,
+                 source_encoding='utf-8'):
+        try:
+            source = unicode(source, source_encoding, 'replace')
+            # Use 'replace' over 'ignore' to hold code structure.
+        except TypeError:  # `source` is already a unicode object
+            pass
         self.pos = line, column
         self.module = modules.ModuleWithCursor(source_path, source=source,
                                                             position=self.pos)

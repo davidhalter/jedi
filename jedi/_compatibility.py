@@ -60,6 +60,15 @@ try:
 except NameError:
     unicode = str
 
+if is_py3k:
+    utf8 = lambda s: s
+else:
+    utf8 = lambda s: s.decode('utf-8')
+
+utf8.__doc__ = """
+Decode a raw string into unicode object.  Do nothing in Python 3.
+"""
+
 # exec function
 if is_py3k:
     def exec_function(source, global_map):
