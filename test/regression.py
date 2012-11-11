@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 import sys
 import unittest
@@ -10,7 +11,7 @@ sys.path.append(abspath(dirname(abspath(__file__)) + '/../jedi'))
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
 sys.path.append('.')
 
-from _compatibility import is_py25
+from _compatibility import is_py25, utf8
 import api
 
 #api.set_debug_function(api.debug.print_to_stdout)
@@ -210,6 +211,17 @@ class TestRegression(Base):
             pass # python 3 has no unicode method
         else:
             assert len(self.complete(s))
+
+    def test_multibyte_script(self):
+        """ `jedi.Script` must accept multi-byte string source. """
+        try:
+            code = unicode("import datetime; datetime.d")
+            comment = utf8("# multi-byte comment あいうえお")
+            s = (unicode('%s\n%s') % (code, comment)).encode('utf-8')
+        except NameError:
+            pass # python 3 has no unicode method
+        else:
+            assert len(self.complete(s, (1, len(code))))
 
     def test_os_nowait(self):
         """ github issue #45 """
