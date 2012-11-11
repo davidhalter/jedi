@@ -668,14 +668,15 @@ class Execution(Executable):
                 elif var_arg[0] == '**':
                     arrays = follow_call_list([var_arg[1:]])
                     for array in arrays:
-                        for key, field in array.get_contents():
-                            # Take the first index.
-                            if isinstance(key, parsing.Name):
-                                name = key
-                            else:
-                                # `parsing`.[Call|Function|Class] lookup.
-                                name = key[0].name
-                            yield name, field
+                        if hasattr(array, 'get_contents'):
+                            for key, field in array.get_contents():
+                                # Take the first index.
+                                if isinstance(key, parsing.Name):
+                                    name = key
+                                else:
+                                    # `parsing`.[Call|Function|Class] lookup.
+                                    name = key[0].name
+                                yield name, field
                 # Normal arguments (including key arguments).
                 else:
                     if len(var_arg) > 1 and var_arg[1] == '=':
