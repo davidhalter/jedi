@@ -101,8 +101,13 @@ class Parser(CachedModule):
 
             temp, sys.path = sys.path, self.sys_path
             content = {}
-            exec_function('import %s as module' % name, content)
-            self._module = content['module']
+            try:
+                exec_function('import %s as module' % name, content)
+                self._module = content['module']
+            except AttributeError:
+                # use sys.modules, because you cannot access some modules
+                # directly. -> #59
+                self._module = sys.modules[name]
             sys.path = temp
 
             if path:
