@@ -27,5 +27,5 @@ numpy.random.sample
 
 import numpy
 na = numpy.array([1,2])
-#? ['a']
-na.
+#? ['shape']
+na.shape
