@@ -1,5 +1,4 @@
 import pylab
-pylab.
 
 # two gotos
 #! ['module numpy']
@@ -29,3 +28,7 @@ import numpy
 na = numpy.array([1,2])
 #? ['shape']
 na.shape
+
+fig = pylab.figure()
+#! 
+fig.add_subplot

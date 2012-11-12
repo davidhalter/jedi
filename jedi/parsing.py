@@ -1426,6 +1426,11 @@ class PyFuzzyParser(object):
         else:
             token_type, tok = self.next()
 
+        while token_type == tokenize.COMMENT:
+            # remove newline and comment
+            self.next()
+            token_type, tok = self.next()
+
         first_pos = self.start_pos
         opening_brackets = ['{', '(', '[']
         closing_brackets = ['}', ')', ']']

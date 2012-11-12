@@ -38,6 +38,14 @@ def variable_rename(param):
 #? int()
 variable_rename(1)
 
+def multi_line_func(a, # comment blabla
+
+                    b):
+    return b
+
+#? str()
+multi_line_func(1,'')
+
 # -----------------
 # double execution
 # -----------------
