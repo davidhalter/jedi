@@ -14,7 +14,7 @@ WARNING = object()
 ERROR = object()
 
 debug_function = None
-ignored_modules = ['parsing', 'builtin']
+ignored_modules = ['parsing', 'builtin', 'jedi.builtin', 'jedi.parsing']
 
 
 def dbg(*args):
