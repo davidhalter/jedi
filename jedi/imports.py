@@ -161,7 +161,9 @@ class ImportPath(object):
                         evaluate.get_scopes_for_name(s, rest[0], is_goto=True)
                             for s in scopes)
                 else:
-                    scopes = evaluate.follow_path(iter(rest), scope)
+                    scopes = itertools.chain.from_iterable(
+                                            evaluate.follow_path(iter(rest), s)
+                                            for s in scopes)
             scopes = list(scopes)
 
             if self.is_nested_import():
