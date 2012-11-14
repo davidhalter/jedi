@@ -298,7 +298,7 @@ class Module(Scope):
             string = ''  # no path -> empty name
         else:
             sep = (os.path.sep,) * 2
-            r = re.search(r'([^%s]+?)(%s__init__)?(\.py)?$' % sep, self.path)
+            r = re.search(r'([^%s]*?)(%s__init__)?(\.py)?$' % sep, self.path)
             string = r.group(1)
         names = [(string, (0, 0))]
         self._name = Name(names, self.start_pos, self.end_pos, self)
