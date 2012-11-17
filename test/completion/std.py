@@ -63,3 +63,12 @@ def example(a):
 
 #? str()
 example('')
+
+# -----------------
+# various regression tests
+# -----------------
+
+#62
+import threading
+#? ['_Verbose', '_VERBOSE']
+threading._Verbose

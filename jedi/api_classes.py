@@ -26,9 +26,9 @@ class BaseOutput(object):
         self.path = []
         par = definition
         while par is not None:
-            if not isinstance(self.stripped_definition,
-                        (parsing.Flow, parsing.Statement, parsing.Import,
-                        evaluate.Array, parsing.Name)):
+            if not par.isinstance(
+                        parsing.Flow, parsing.Statement, parsing.Import,
+                        evaluate.Array, parsing.Name):
                 self.path.insert(0, par.name)
             par = par.parent()
 
