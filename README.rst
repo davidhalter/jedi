@@ -111,7 +111,8 @@ they are on my todo list):
 It does not support (and most probably will not in future versions): 
 
 - metaclasses (how could an auto-completion ever support this)
-- ``setattr()``, ``globals()``, ``locals()``
+- ``setattr()``
+- Writing to some dicts: ``globals()``, ``locals()``, ``object.__dict__``
 - evaluate ``if`` / ``while``
 
 
