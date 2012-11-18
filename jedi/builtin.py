@@ -14,7 +14,19 @@ import parsing
 
 
 def get_sys_path():
-    return sys.path[1:]
+    def check_virtual_env(sys_path):
+        """ Add virtualenv's site-packages to the `sys.path`."""
+        venv = os.getenv('VIRTUAL_ENV')
+        if not venv:
+            return
+        venv = os.path.abspath(venv)
+        p = os.path.join(
+            venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
+        sys_path.insert(0, p)
+
+    p = sys.path[1:]
+    check_virtual_env(p)
+    return p
 
 class CachedModule(object):
     """
