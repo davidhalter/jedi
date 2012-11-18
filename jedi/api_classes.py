@@ -34,10 +34,10 @@ class BaseOutput(object):
         if not isinstance(definition, keywords.Keyword):
             par = definition
             while par is not None:
-                if not par.isinstance(
-                            parsing.Flow, parsing.Statement, parsing.Import,
-                            evaluate.Array, parsing.Name):
+                try:
                     self.path.insert(0, par.name)
+                except AttributeError:
+                    pass
                 par = par.parent()
 
     @property
