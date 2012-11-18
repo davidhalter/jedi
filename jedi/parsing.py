@@ -1316,7 +1316,8 @@ class PyFuzzyParser(object):
                 if annotation:
                     param.add_annotation(annotation)
 
-            if param:
+            # params without vars are usually syntax errors.
+            if param and (param.set_vars or param.used_vars):
                 param.position_nr = pos
                 names.append(param)
                 pos += 1

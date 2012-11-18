@@ -245,8 +245,6 @@ class Parser(CachedModule):
             stmts = {}
             members = {}
             for n in names:
-                if '__' in n and n not in mixin_funcs:
-                    continue
                 try:
                     # this has a builtin_function_or_method
                     exe = getattr(scope, n)
