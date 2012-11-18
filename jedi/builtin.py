@@ -13,8 +13,8 @@ import debug
 import parsing
 
 
-module_find_path = sys.path[1:]
-
+def get_sys_path():
+    return sys.path[1:]
 
 class CachedModule(object):
     """
@@ -84,7 +84,9 @@ class Parser(CachedModule):
 
     module_cache = {}
 
-    def __init__(self, path=None, name=None, sys_path=module_find_path):
+    def __init__(self, path=None, name=None, sys_path=None):
+        if sys_path is None:
+            sys_path = get_sys_path()
         if not name:
             name = os.path.basename(path)
             name = name.rpartition('.')[0]  # cut file type (normally .so)
