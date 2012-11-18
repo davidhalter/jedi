@@ -232,7 +232,8 @@ class TestRegression(Base):
 class TestFeature(Base):
     def test_full_name(self):
         """ feature request #61"""
-        assert self.complete('import os; os.path.join')[0].full_name == 'os.path.join'
+        assert self.complete('import os; os.path.join')[0].full_name \
+                                    == 'os.path.join'
 
 class TestSpeed(Base):
     def _check_speed(time_per_run, number=10):

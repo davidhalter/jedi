@@ -14,6 +14,7 @@ class BaseOutput(object):
                'riscospath': 'os.path',
                'ntpath': 'os.path',
                'os2emxpath': 'os.path',
+               'macpath': 'os.path',
                '_io': 'io'
                }
 
