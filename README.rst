@@ -111,7 +111,7 @@ they are on my todo list):
 It does not support (and most probably will not in future versions): 
 
 - metaclasses (how could an auto-completion ever support this)
-- ``setattr()``
+- ``setattr()``, ``globals()``, ``locals()``
 - evaluate ``if`` / ``while``
 
 
