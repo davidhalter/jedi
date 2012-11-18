@@ -9,4 +9,5 @@ Contributors
 
 Danilo Bargen (@gwrtheyrn)
 tek (@tek)
+Takafumi Arakaki (@tkf)
 Aaron Griffin
