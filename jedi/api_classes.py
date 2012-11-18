@@ -10,6 +10,13 @@ import keywords
 
 
 class BaseOutput(object):
+    _mapping = {'posixpath': 'os.path',
+               'riscospath': 'os.path',
+               'ntpath': 'os.path',
+               'os2emxpath': 'os.path',
+               '_io': 'io'
+               }
+
     def __init__(self, definition, start_pos):
         self.start_pos = start_pos
         self.definition = definition
@@ -24,13 +31,14 @@ class BaseOutput(object):
         # generate a path to the definition
         self.module_path = str(definition.get_parent_until().path)
         self.path = []
-        par = definition
-        while par is not None:
-            if not par.isinstance(
-                        parsing.Flow, parsing.Statement, parsing.Import,
-                        evaluate.Array, parsing.Name):
-                self.path.insert(0, par.name)
-            par = par.parent()
+        if not isinstance(definition, keywords.Keyword):
+            par = definition
+            while par is not None:
+                if not par.isinstance(
+                            parsing.Flow, parsing.Statement, parsing.Import,
+                            evaluate.Array, parsing.Name):
+                    self.path.insert(0, par.name)
+                par = par.parent()
 
     @property
     def module_name(self):
@@ -69,6 +77,19 @@ class BaseOutput(object):
     @property
     def description(self):
         raise NotImplementedError('Base Class')
+
+    @property
+    def full_name(self):
+        """
+        Returns the path to a certain class/function, see #61.
+        """
+        path = [str(p) for p in self.path]
+        # TODO add further checks, the mapping should only occur on stdlib.
+        try:
+            path[0] = self._mapping[path[0]]
+        except KeyError:
+            pass
+        return '.'.join(path)
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)

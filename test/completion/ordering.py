@@ -81,6 +81,7 @@ def func(a_param):
     #? []
     a_param.
 
+from os import path
 # -----------------
 # class
 # -----------------
