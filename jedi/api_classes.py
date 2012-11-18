@@ -19,6 +19,10 @@ class BaseOutput(object):
                '_io': 'io'
                }
 
+    _tuple_mapping = {
+               ('argparse', '_ActionsContainer'): 'argparse._ActionsContainer'
+               }
+
     def __init__(self, definition, start_pos):
         self.start_pos = start_pos
         self.definition = definition
@@ -91,6 +95,10 @@ class BaseOutput(object):
             path[0] = self._mapping[path[0]]
         except KeyError:
             pass
+        for key, repl in self._tuple_mapping.items():
+            if tuple(path[:len(key)]) == key:
+                path = [repl] + path[len(key)]
+
         return '.'.join(path)
 
     def __repr__(self):
