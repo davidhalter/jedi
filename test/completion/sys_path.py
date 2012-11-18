@@ -3,7 +3,7 @@ import sys
 import os
 from os import dirname
 
-sys.path.insert(0, '../..')
+sys.path.insert(0, '../../jedi')
 sys.path.append(dirname(os.path.abspath('thirdparty' + os.path.sep + 'asdf')))
 
 # modifications, that should fail:
