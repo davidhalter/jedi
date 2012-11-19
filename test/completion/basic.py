@@ -195,3 +195,15 @@ def a():
     global_define
     """
     pass
+
+# -----------------
+# magic methods
+# -----------------
+
+class A(object): pass
+class B(): pass
+
+#? ['__init__']
+A.__init__
+#? ['__init__']
+B.__init__
