@@ -198,3 +198,9 @@ class int():
 class str():
     def __init__(self, obj):
         pass
+
+class object():
+    def mro():
+        """ mro() -> list
+        return a type's method resolution order """
+        return [object]

@@ -279,7 +279,8 @@ class Parser(CachedModule):
         code += get_doc(scope)
 
         names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
-                                                '__path__', '__package__'])
+                                                '__path__', '__package__']) \
+                                | set(['mro'])
 
         classes, funcs, stmts, members = get_scope_objects(names)
 
