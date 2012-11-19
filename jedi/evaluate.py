@@ -349,6 +349,9 @@ class Class(use_metaclass(CachedMetaClass, parsing.Base)):
                     debug.warning('Received non class, as a super class')
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
+        if not supers and self.base.parent != builtin.Builtin.scope:
+            # add `object` to classes
+            supers += get_scopes_for_name(builtin.Builtin.scope, 'object')
         return supers
 
     @memoize_default(default=[])
