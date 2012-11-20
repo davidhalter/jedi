@@ -1010,18 +1010,21 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                             add = get_scopes_for_name(r.parent(),
                                                             str(token_name))
                 else:
-                    # generated objects are used within executions, where
+                    # generated objects are used within executions, but these
+                    # objects are in functions, and we have to dynamically
+                    # execute first.
                     if isinstance(r, parsing.Param):
                         func = r.parent()
-                        # Instances are typically faked, if the instance is not
-                        # called from outside. Here we check it for __init__
-                        # functions and return.
-                        if isinstance(func, InstanceElement) \
+                        if not r.is_generated:
+                            # Instances are typically faked, if the instance is
+                            # not called from outside. Here we check it for
+                            # __init__ functions and return.
+                            if isinstance(func, InstanceElement) \
                                     and func.instance.is_generated \
                                     and str(func.name) == '__init__' \
                                     and r.position_nr > 0:  # 0 would be self
-                            r = func.var.params[r.position_nr]
-                        if not r.is_generated:
+                                r = func.var.params[r.position_nr]
+
                             res_new += dynamic.search_params(r)
                             if not r.assignment_details:
                                 # this means that there are no default params,
