@@ -167,7 +167,7 @@ def fast_parent_copy(obj):
                 continue
             elif isinstance(value, list):
                 setattr(new_obj, key, list_rec(value))
-            elif isinstance(value, (parsing.Simple, parsing.Array)):
+            elif isinstance(value, (parsing.Simple, parsing.Call)):
                 setattr(new_obj, key, recursion(value))
         return new_obj
 
