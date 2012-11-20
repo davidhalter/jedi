@@ -33,7 +33,10 @@ def get_directory_modules_for_name(mods, name):
         try:
             return builtin.CachedModule.cache[path][1].module
         except KeyError:
-            return check_fs(path)
+            try:
+                return check_fs(path)
+            except IOError:
+                return None
 
     def check_fs(path):
         with open(path) as f:
