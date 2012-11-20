@@ -61,7 +61,13 @@ additional_dynamic_modules = []
 
 max_function_recursion_level = 5
 max_until_execution_unique = 50
-max_executions = 1000
+max_executions_without_builtins = 200
+max_executions = 250
+
+# Because get_in_function_call is normally used on every single key hit, it has
+# to be faster than a normal completion. This is the factor that is used to
+# scale `max_executions` and `max_until_execution_unique`:
+scale_get_in_function_call = 0.1
 
 # ----------------
 # various

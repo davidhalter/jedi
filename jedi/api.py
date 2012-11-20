@@ -349,7 +349,9 @@ class Script(object):
             if call is None:
                 return None
 
-        origins = evaluate.follow_call(call)
+        with helpers.scale_speed_settings(settings.scale_get_in_function_call):
+            origins = evaluate.follow_call(call)
+            print settings.max_executions, helpers.ExecutionRecursionDecorator.execution_count
 
         if len(origins) == 0:
             return None

@@ -1,5 +1,6 @@
 import copy
 import weakref
+import contextlib
 
 import parsing
 import evaluate
@@ -117,6 +118,9 @@ class ExecutionRecursionDecorator(object):
         cls.execution_funcs.add(execution.base)
         cls.parent_execution_funcs.append(execution.base)
 
+        if cls.execution_count > settings.max_executions:
+            return True
+
         if isinstance(execution.base, (evaluate.Generator, evaluate.Array)):
             return False
         module = execution.get_parent_until()
@@ -129,7 +133,7 @@ class ExecutionRecursionDecorator(object):
         if in_execution_funcs and \
                 len(cls.execution_funcs) > settings.max_until_execution_unique:
             return True
-        if cls.execution_count > settings.max_executions:
+        if cls.execution_count > settings.max_executions_without_builtins:
             return True
         return False
 
@@ -249,3 +253,14 @@ def scan_array_for_pos(arr, pos):
     # The third return is just necessary for recursion inside, because
     # it needs to know when to stop iterating.
     return call, check_arr_index(), stop
+
+
+@contextlib.contextmanager
+def scale_speed_settings(factor):
+    a = settings.max_executions
+    b = settings.max_until_execution_unique
+    settings.max_executions *= factor
+    settings.max_until_execution_unique *= factor
+    yield
+    settings.max_executions = a
+    settings.max_until_execution_unique = b
