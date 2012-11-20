@@ -193,7 +193,7 @@ class Parser(CachedModule):
             if name == '__builtin__' and not is_py3k:
                 name = 'builtins'
             path = os.path.dirname(os.path.abspath(__file__))
-            f = open(os.path.sep.join([path, 'mixin', name]) + '.py')
+            f = open(os.path.sep.join([path, 'mixin', name]) + '.pym')
         except IOError:
             return {}
         else:
