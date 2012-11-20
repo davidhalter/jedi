@@ -23,6 +23,7 @@ As you see Jedi is pretty simple and allows you to concentrate
 writing a good text editor, while still having very good IDE features
 for Python.
 """
+from __future__ import with_statement
 __all__ = ['Script', 'NotFoundError', 'set_debug_function']
 
 import re
@@ -351,7 +352,6 @@ class Script(object):
 
         with helpers.scale_speed_settings(settings.scale_get_in_function_call):
             origins = evaluate.follow_call(call)
-            print settings.max_executions, helpers.ExecutionRecursionDecorator.execution_count
 
         if len(origins) == 0:
             return None
