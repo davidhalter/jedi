@@ -1,3 +1,4 @@
+from __future__ import with_statement
 from _compatibility import exec_function, is_py3k
 
 import re
@@ -92,7 +93,7 @@ class Parser(CachedModule):
     }
 
     if is_py3k:
-        map_types['file object'] = 'import io; return io.TextIOWrapper(file)'
+        map_types['file object'] = 'import io; return io.TextIOWrapper()'
 
     module_cache = {}
 
@@ -193,11 +194,12 @@ class Parser(CachedModule):
             if name == '__builtin__' and not is_py3k:
                 name = 'builtins'
             path = os.path.dirname(os.path.abspath(__file__))
-            f = open(os.path.sep.join([path, 'mixin', name]) + '.py')
+            with open(os.path.sep.join([path, 'mixin', name]) + '.py') as f:
+                s = f.read()
         except IOError:
             return {}
         else:
-            mixin_dct = process_code(f.read())
+            mixin_dct = process_code(s)
             if is_py3k and self.name == Builtin.name:
                 # in the case of Py3k xrange is now range
                 mixin_dct['range'] = mixin_dct['xrange']

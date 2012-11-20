@@ -239,6 +239,7 @@ class ImportPath(object):
                     source = f.read()
             else:
                 source = current_namespace[0].read()
+                current_namespace[0].close()
             if path.endswith('.py'):
                 f = modules.Module(path, source)
             else:
