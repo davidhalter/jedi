@@ -5,6 +5,7 @@ import pkgutil
 import imp
 import sys
 import weakref
+import time
 
 import builtin
 import modules
@@ -12,9 +13,12 @@ import debug
 import parsing
 import evaluate
 import itertools
+import settings
 
 # for debugging purposes only
 imports_processed = 0
+
+star_import_cache = {}
 
 
 class ModuleNotFound(Exception):
@@ -264,12 +268,42 @@ def strip_imports(scopes):
     return result
 
 
-def star_import_cache(func):
+def cache_star_import(func):
     def wrapper(scope, *args, **kwargs):
-        return func(scope, *args, **kwargs)
+        try:
+            mods = star_import_cache[scope]
+            if mods[0] + settings.star_import_cache_validity > time.time():
+                return mods[1]
+        except KeyError:
+            pass
+        # cache is too old and therefore invalid or not available
+        invalidate_star_import_cache(scope)
+        mods = func(scope, *args, **kwargs)
+        star_import_cache[scope] = time.time(), mods
+
+        return mods
     return wrapper
 
-@star_import_cache
+
+def invalidate_star_import_cache(module, only_main=False):
+    """ Important if some new modules are being reparsed """
+    try:
+        mods = star_import_cache[module]
+
+        for t, m in mods:
+            invalidate_star_import_cache(m, only_main=True)
+
+        del star_import_cache[module]
+    except KeyError:
+        pass
+
+    if not only_main:
+        for key, (t, mods) in star_import_cache.items():
+            if module in mods:
+                invalidate_star_import_cache(key)
+
+
+@cache_star_import
 def remove_star_imports(scope, ignored_modules=[]):
     """
     Check a module for star imports:
@@ -285,6 +319,4 @@ def remove_star_imports(scope, ignored_modules=[]):
     modules += new
 
     # Filter duplicate modules.
-    if len(modules) > 10:
-        print scope, len(modules)
     return set(modules)

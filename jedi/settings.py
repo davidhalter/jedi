@@ -75,3 +75,13 @@ scale_get_in_function_call = 0.1
 
 # Size of the current code part, which is used to speed up parsing.
 part_line_length = 20
+
+# ----------------
+# star import caching
+# ----------------
+
+# In huge packages like numpy, checking all star imports on every completion
+# might be slow, therefore we do a star import caching, that lasts a certain
+# time span (in seconds).
+
+star_import_cache_validity = 60.0

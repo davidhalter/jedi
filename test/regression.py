@@ -249,7 +249,7 @@ class TestSpeed(Base):
                 for i in range(number):
                     func(self)
                 single_time = (time.time() - first) / number
-                print(func, single_time)
+                print('speed', func, single_time)
                 assert single_time < time_per_run
             return wrapper
         return decorated
@@ -259,15 +259,12 @@ class TestSpeed(Base):
         s = "from posixpath import join; join('', '')."
         assert len(self.complete(s)) > 10  # is a str completion
 
-    @_check_speed(0.2, number=1)
+    @_check_speed(0.1)
     def test_scipy_speed(self):
         s = 'import scipy.weave; scipy.weave.inline('
-        #api.set_debug_function(api.debug.print_to_stdout)
         script = api.Script(s, 1, len(s), '')
         script.get_in_function_call()
-        # self.get_in_function_call(s)
-        #api.set_debug_function(None)
-        print(api.imports.imports_processed)
+        #print(api.imports.imports_processed)
 
 
 if __name__ == '__main__':

@@ -12,6 +12,7 @@ import inspect
 
 import debug
 import parsing
+import imports
 
 
 def get_sys_path():
@@ -50,6 +51,10 @@ class CachedModule(object):
                 if not self.path or os.path.getmtime(self.path) <= timestamp:
                     self._parser = parser
                 else:
+                    # In case there is already a module cached and this module
+                    # has to be reparsed, we also need to invalidate the import
+                    # caches.
+                    imports.invalidate_star_import_cache(self._parser.module)
                     raise KeyError()
             except KeyError:
                 self._load_module()
