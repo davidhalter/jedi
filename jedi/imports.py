@@ -288,9 +288,9 @@ def cache_star_import(func):
 def invalidate_star_import_cache(module, only_main=False):
     """ Important if some new modules are being reparsed """
     try:
-        mods = star_import_cache[module]
+        t, mods = star_import_cache[module]
 
-        for t, m in mods:
+        for m in mods:
             invalidate_star_import_cache(m, only_main=True)
 
         del star_import_cache[module]
