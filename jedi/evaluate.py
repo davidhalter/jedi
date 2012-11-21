@@ -86,6 +86,8 @@ def clear_caches():
 
     follow_statement.reset()
 
+    imports.imports_processed = 0
+
 
 def memoize_default(default=None):
     """

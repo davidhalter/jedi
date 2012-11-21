@@ -235,7 +235,7 @@ class TestFeature(Base):
                                     == 'os.path.join'
 
 class TestSpeed(Base):
-    def _check_speed(time_per_run, number=10):
+    def _check_speed(time_per_run, number=4, run_warm=True):
         """ Speed checks should typically be very tolerant. Some machines are
         faster than others, but the tests should still pass. These tests are
         here to assure that certain effects that kill jedi performance are not
@@ -243,6 +243,8 @@ class TestSpeed(Base):
         def decorated(func):
             @functools.wraps(func)
             def wrapper(self):
+                if run_warm:
+                    func(self)
                 first = time.time()
                 for i in range(number):
                     func(self)
@@ -252,25 +254,20 @@ class TestSpeed(Base):
             return wrapper
         return decorated
 
-    # skip by removing test
     @_check_speed(0.1)
-    def _test_os_path_join(self):
+    def test_os_path_join(self):
         s = "from posixpath import join; join('', '')."
         assert len(self.complete(s)) > 10  # is a str completion
 
-    def test_2(self):
-        # preload
-        s = 'from scipy.weave import inline; inline('
-        self.get_in_function_call(s)
-
-    #@unittest.expectedFailure
-    @_check_speed(0.6, number=1)
-    def _test_new(self):
+    @_check_speed(0.2, number=1)
+    def test_scipy_speed(self):
         s = 'import scipy.weave; scipy.weave.inline('
-        api.set_debug_function(api.debug.print_to_stdout)
-        #print(self.get_in_function_call(s))
-        api.set_debug_function(None)
-        #print(api.imports.imports_processed)
+        #api.set_debug_function(api.debug.print_to_stdout)
+        script = api.Script(s, 1, len(s), '')
+        script.get_in_function_call()
+        # self.get_in_function_call(s)
+        #api.set_debug_function(None)
+        print(api.imports.imports_processed)
 
 
 if __name__ == '__main__':

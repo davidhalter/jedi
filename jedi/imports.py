@@ -264,6 +264,12 @@ def strip_imports(scopes):
     return result
 
 
+def star_import_cache(func):
+    def wrapper(scope, *args, **kwargs):
+        return func(scope, *args, **kwargs)
+    return wrapper
+
+@star_import_cache
 def remove_star_imports(scope, ignored_modules=[]):
     """
     Check a module for star imports:
@@ -279,4 +285,6 @@ def remove_star_imports(scope, ignored_modules=[]):
     modules += new
 
     # Filter duplicate modules.
+    if len(modules) > 10:
+        print scope, len(modules)
     return set(modules)
