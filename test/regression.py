@@ -207,7 +207,7 @@ class TestRegression(Base):
         try:
             s = unicode("import datetime; datetime.d")
         except NameError:
-            pass # python 3 has no unicode method
+            pass  # python 3 has no unicode method
         else:
             assert len(self.complete(s))
 
@@ -218,7 +218,7 @@ class TestRegression(Base):
             comment = utf8("# multi-byte comment あいうえお")
             s = (unicode('%s\n%s') % (code, comment)).encode('utf-8')
         except NameError:
-            pass # python 3 has no unicode method
+            pass  # python 3 has no unicode method
         else:
             assert len(self.complete(s, (1, len(code))))
 
@@ -233,6 +233,7 @@ class TestFeature(Base):
         """ feature request #61"""
         assert self.complete('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
+
 
 class TestSpeed(Base):
     def _check_speed(time_per_run, number=4, run_warm=True):

@@ -30,6 +30,7 @@ def get_sys_path():
     check_virtual_env(p)
     return p
 
+
 class CachedModule(object):
     """
     The base type for all modules, which is not to be confused with
