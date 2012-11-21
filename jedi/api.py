@@ -86,7 +86,7 @@ class Script(object):
         """
         An auto completer for python files.
 
-        :return: list of Completion objects.
+        :return: list of Completion objects, sorted by name and __ comes last.
         :rtype: list
         """
         path = self.module.get_path_until_cursor()
@@ -146,7 +146,8 @@ class Script(object):
         c = [api_classes.Completion(
                         c, needs_dot, len(like), s) for c, s in completions]
 
-        return c
+        return sorted(c, key=lambda x: (x.word.startswith('__'),
+                                            x.word.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):
         """ Base for complete, goto and get_definition. Basically it returns
