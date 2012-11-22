@@ -25,7 +25,7 @@ class ModuleNotFound(Exception):
     pass
 
 
-class ImportPath(object):
+class ImportPath(parsing.Base):
     """
     An ImportPath is the path of a `parsing.Import` object.
     """

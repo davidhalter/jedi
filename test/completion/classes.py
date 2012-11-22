@@ -20,6 +20,9 @@ class FindClass():
             #? ['ret']
             TestClass.ret
 
+#? []
+FindClass().find_class.self
+
 # set variables, which should not be included, because they don't belong to the
 # class
 second = 1
