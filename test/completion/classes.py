@@ -22,6 +22,8 @@ class FindClass():
 
 #? []
 FindClass().find_class.self
+#? []
+FindClass().find_class.self.find_class
 
 # set variables, which should not be included, because they don't belong to the
 # class

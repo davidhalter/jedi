@@ -1534,7 +1534,7 @@ def follow_path(path, scope, position=None):
             debug.warning('strange function call with {}', current, scope)
     else:
         # The function must not be decorated with something else.
-        if isinstance(scope, Function):
+        if scope.isinstance(Function):
             # TODO Check default function methods and return them.
             result = []
         else:
@@ -1543,7 +1543,6 @@ def follow_path(path, scope, position=None):
             result = imports.strip_imports(get_scopes_for_name(scope, current,
                                                         position=position))
     return follow_paths(path, set(result), position=position)
-
 
 def goto(stmt, call_path=None):
     if call_path is None:
