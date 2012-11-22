@@ -135,23 +135,20 @@ class Script(object):
                 completions += ((k, bs) for k in keywords.get_keywords(
                                                                     all=True))
 
+        needs_dot = not dot and path
+
         comps = []
-        for c, s in completions:
+        for c, s in set(completions):
             n = c.names[-1]
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
                                                     self.parser.user_stmt, n):
-                    comps.append((c, s))
+                    new = api_classes.Completion( c, needs_dot, len(like), s)
+                    comps.append(new)
 
-        needs_dot = not dot and path
-        completions = set(comps)
-
-        c = [api_classes.Completion(
-                        c, needs_dot, len(like), s) for c, s in completions]
-
-        return sorted(c, key=lambda x: (x.word.startswith('__'),
+        return sorted(comps, key=lambda x: (x.word.startswith('__'),
                                             x.word.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):
