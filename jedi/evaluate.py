@@ -1550,12 +1550,9 @@ def follow_path(path, scope, call_scope, position=None):
 def filter_private_variable(scope, call_scope, var_name):
     if isinstance(var_name, (str, unicode)) \
                 and var_name.startswith('__') and isinstance(scope, Instance):
-        #print 'a', scope, var_name, call_scope
         s = call_scope.get_parent_until((parsing.Class, Instance), include_current=True)
         if s != scope and s != scope.base.base:
-            #print s, scope, call_scope.parent()
             return True
-
     return False
 
 

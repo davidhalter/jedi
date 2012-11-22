@@ -135,13 +135,18 @@ class Script(object):
                 completions += ((k, bs) for k in keywords.get_keywords(
                                                                     all=True))
 
-        completions = [(c, s) for c, s in completions
-                        if settings.case_insensitive_completion
-                            and c.names[-1].lower().startswith(like.lower())
-                            or c.names[-1].startswith(like)]
+        comps = []
+        for c, s in completions:
+            n = c.names[-1]
+            if settings.case_insensitive_completion \
+                    and n.lower().startswith(like.lower()) \
+                    or n.startswith(like):
+                if not evaluate.filter_private_variable(s,
+                                                    self.parser.user_stmt, n):
+                    comps.append((c, s))
 
         needs_dot = not dot and path
-        completions = set(completions)
+        completions = set(comps)
 
         c = [api_classes.Completion(
                         c, needs_dot, len(like), s) for c, s in completions]
