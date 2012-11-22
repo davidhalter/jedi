@@ -510,3 +510,16 @@ Wrapper(Base()).ret(3)
 
 #? int()
 Wrapper2(Base()).ret(3)
+
+# -----------------
+# private vars
+# -----------------
+class PrivateVar():
+    def __init__(self):
+        self.__var = 1
+        #? int()
+        self.__var
+#? []
+PrivateVar().__var
+#? 
+PrivateVar().__var

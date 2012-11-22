@@ -502,7 +502,7 @@ class Execution(Executable):
 
                     for name in names:
                         key = name.var_args.get_only_subelement()
-                        stmts += follow_path(iter([key]), obj)
+                        stmts += follow_path(iter([key]), obj, self.base)
                 return stmts
 
         if self.base.isinstance(Class):
@@ -1480,10 +1480,10 @@ def follow_call_path(path, scope, position):
             # Reset the position, when imports where stripped.
             position = None
 
-    return follow_paths(path, result, position=position)
+    return follow_paths(path, result, scope, position=position)
 
 
-def follow_paths(path, results, position=None):
+def follow_paths(path, results, call_scope, position=None):
     """
     In each result, `path` must be followed. Copies the path iterator.
     """
@@ -1495,7 +1495,7 @@ def follow_paths(path, results, position=None):
             iter_paths = [path]
 
         for i, r in enumerate(results):
-            fp = follow_path(iter_paths[i], r, position=position)
+            fp = follow_path(iter_paths[i], r, call_scope, position=position)
             if fp is not None:
                 results_new += fp
             else:
@@ -1504,7 +1504,7 @@ def follow_paths(path, results, position=None):
     return results_new
 
 
-def follow_path(path, scope, position=None):
+def follow_path(path, scope, call_scope, position=None):
     """
     Uses a generator and tries to complete the path, e.g.
     >>> foo.bar.baz
@@ -1540,9 +1540,24 @@ def follow_path(path, scope, position=None):
         else:
             # TODO Check magic class methods and return them also.
             # This is the typical lookup while chaining things.
+            if filter_private_variable(scope, call_scope, current):
+                return []
             result = imports.strip_imports(get_scopes_for_name(scope, current,
                                                         position=position))
-    return follow_paths(path, set(result), position=position)
+    return follow_paths(path, set(result), call_scope, position=position)
+
+
+def filter_private_variable(scope, call_scope, var_name):
+    if isinstance(var_name, (str, unicode)) \
+                and var_name.startswith('__') and isinstance(scope, Instance):
+        #print 'a', scope, var_name, call_scope
+        s = call_scope.get_parent_until((parsing.Class, Instance), include_current=True)
+        if s != scope and s != scope.base.base:
+            #print s, scope, call_scope.parent()
+            return True
+
+    return False
+
 
 def goto(stmt, call_path=None):
     if call_path is None:

@@ -157,6 +157,7 @@ class ImportPath(parsing.Base):
             scopes += itertools.chain.from_iterable(
                             remove_star_imports(s) for s in scopes)
 
+            # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []
             elif rest:
@@ -166,8 +167,8 @@ class ImportPath(parsing.Base):
                             for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
-                                            evaluate.follow_path(iter(rest), s)
-                                            for s in scopes)
+                                        evaluate.follow_path(iter(rest), s, s)
+                                        for s in scopes)
             scopes = list(scopes)
 
             if self.is_nested_import():
