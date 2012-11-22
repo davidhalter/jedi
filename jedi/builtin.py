@@ -55,7 +55,7 @@ class CachedModule(object):
                     # In case there is already a module cached and this module
                     # has to be reparsed, we also need to invalidate the import
                     # caches.
-                    imports.invalidate_star_import_cache(self._parser.module)
+                    imports.invalidate_star_import_cache(parser.module)
                     raise KeyError()
             except KeyError:
                 self._load_module()
