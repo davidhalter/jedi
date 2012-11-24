@@ -236,13 +236,13 @@ class TestFeature(Base):
 
     def test_full_name_tuple_mapping(self):
         s = """
-        import argparse
-        parser = argparse.ArgumentParser()
-        parser.add_argument"""
+        import re
+        any_re = re.compile('.*')
+        any_re"""
         lines = s.splitlines()
         defs = self.get_def(s, (len(lines), len(lines[-1])))
         self.assertEqual(defs[0].full_name,
-                         'argparse.ArgumentParser.add_argument')
+                         're.RegexObject')
 
 
 class TestSpeed(Base):
