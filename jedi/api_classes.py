@@ -19,9 +19,9 @@ class BaseOutput(object):
                '_io': 'io'
                }
 
-    _tuple_mapping = {
-               ('argparse', '_ActionsContainer'): 'argparse._ActionsContainer'
-               }
+    _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
+        'argparse._ActionsContainer': 'argparse.ArgumentParser',
+    }.items())
 
     def __init__(self, definition, start_pos):
         self.start_pos = start_pos
