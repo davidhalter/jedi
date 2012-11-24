@@ -234,6 +234,16 @@ class TestFeature(Base):
         assert self.complete('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
 
+    def test_full_name_tuple_mapping(self):
+        s = """
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument"""
+        lines = s.splitlines()
+        defs = self.get_def(s, (len(lines), len(lines[-1])))
+        self.assertEqual(defs[0].full_name,
+                         'argparse.ArgumentParser.add_argument')
+
 
 class TestSpeed(Base):
     def _check_speed(time_per_run, number=4, run_warm=True):

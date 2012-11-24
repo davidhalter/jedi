@@ -19,9 +19,11 @@ class BaseOutput(object):
                '_io': 'io'
                }
 
-    _tuple_mapping = {
-               ('argparse', '_ActionsContainer'): 'argparse._ActionsContainer'
-               }
+    _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
+        'argparse._ActionsContainer': 'argparse.ArgumentParser',
+        '_sre.SRE_Match': 're.MatchObject',
+        '_sre.SRE_Pattern': 're.RegexObject',
+    }.items())
 
     def __init__(self, definition, start_pos):
         self.start_pos = start_pos
@@ -97,7 +99,7 @@ class BaseOutput(object):
             pass
         for key, repl in self._tuple_mapping.items():
             if tuple(path[:len(key)]) == key:
-                path = [repl] + path[len(key)]
+                path = [repl] + path[len(key):]
 
         return '.'.join(path)
 

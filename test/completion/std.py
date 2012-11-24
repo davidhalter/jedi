@@ -7,6 +7,9 @@ std library stuff
 # -----------------
 import re
 c = re.compile(r'a')
+# re.compile should not return str -> issue #68
+#? []
+c.startswith
 #? int()
 c.match().start()
 

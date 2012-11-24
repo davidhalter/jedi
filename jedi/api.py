@@ -108,7 +108,7 @@ class Script(object):
             for s in scopes:
                 # TODO is this really the right way? just ignore the funcs? \
                 # do the magic functions first? and then recheck here?
-                if not isinstance(s, evaluate.Function):
+                if not s.isinstance(evaluate.Function):
                     if isinstance(s, imports.ImportPath):
                         if like == 'import':
                             l = self.module.get_line(self.pos[0])[:self.pos[1]]
@@ -135,18 +135,20 @@ class Script(object):
                 completions += ((k, bs) for k in keywords.get_keywords(
                                                                     all=True))
 
-        completions = [(c, s) for c, s in completions
-                        if settings.case_insensitive_completion
-                            and c.names[-1].lower().startswith(like.lower())
-                            or c.names[-1].startswith(like)]
-
         needs_dot = not dot and path
-        completions = set(completions)
 
-        c = [api_classes.Completion(
-                        c, needs_dot, len(like), s) for c, s in completions]
+        comps = []
+        for c, s in set(completions):
+            n = c.names[-1]
+            if settings.case_insensitive_completion \
+                    and n.lower().startswith(like.lower()) \
+                    or n.startswith(like):
+                if not evaluate.filter_private_variable(s,
+                                                    self.parser.user_stmt, n):
+                    new = api_classes.Completion( c, needs_dot, len(like), s)
+                    comps.append(new)
 
-        return sorted(c, key=lambda x: (x.word.startswith('__'),
+        return sorted(comps, key=lambda x: (x.word.startswith('__'),
                                             x.word.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):

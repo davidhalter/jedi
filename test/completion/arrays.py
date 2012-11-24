@@ -253,5 +253,5 @@ tuple({1})[0]
 tuple((1,))[0]
 
 # implementation detail for lists, should not be visible
-##? []
+#? []
 list().__iterable
