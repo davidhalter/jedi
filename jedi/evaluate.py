@@ -505,8 +505,11 @@ class Execution(Executable):
                         stmts += follow_path(iter([key]), obj, self.base)
                 return stmts
             elif func_name == 'type':
-                print 'LALA'
-                raise NotImplementedError()
+                # otherwise it would be a metaclass
+                if len(self.var_args) == 1:
+                    objects = follow_call_list([self.var_args[0]])
+                    print 'LALA', objects, [o.base for o in objects if isinstance(o, Instance)]
+                    return [o.base for o in objects if isinstance(o, Instance)]
 
         if self.base.isinstance(Class):
             # There maybe executions of executions.
@@ -1188,15 +1191,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                             break
                         break_scopes.append(p)
 
-            print 'b',  flow_scope, name_str, result
-
             while flow_scope:
                 # TODO check if result is in scope -> no evaluation necessary
                 n = dynamic.check_flow_information(flow_scope, name_str,
                                                                     position)
-                print
-                print 'n', n, flow_scope
-                if n and result:
+                if n:
+                    result = n
+                    break
+                if n and result: # TODO remove this crap :-)
                     result = n + [p for p in result if not check_for_param(r)]
                 elif n:
                     result = n
