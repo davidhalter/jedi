@@ -21,6 +21,8 @@ class BaseOutput(object):
 
     _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
         'argparse._ActionsContainer': 'argparse.ArgumentParser',
+        '_sre.SRE_Match': 're.MatchObject',
+        '_sre.SRE_Pattern': 're.RegexObject',
     }.items())
 
     def __init__(self, definition, start_pos):
