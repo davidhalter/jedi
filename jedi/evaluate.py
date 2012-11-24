@@ -1502,10 +1502,6 @@ def follow_call_path(path, scope, position):
                                             search_global=True)
         result = imports.strip_imports(scopes)
 
-        if result != scopes:
-            # Reset the position, when imports where stripped.
-            position = None
-
     return follow_paths(path, result, scope, position=position)
 
 
