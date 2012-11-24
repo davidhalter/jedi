@@ -508,7 +508,6 @@ class Execution(Executable):
                 # otherwise it would be a metaclass
                 if len(self.var_args) == 1:
                     objects = follow_call_list([self.var_args[0]])
-                    print 'LALA', objects, [o.base for o in objects if isinstance(o, Instance)]
                     return [o.base for o in objects if isinstance(o, Instance)]
 
         if self.base.isinstance(Class):
@@ -734,19 +733,22 @@ class Execution(Executable):
 
     @memoize_default()
     def _scope_copy(self, scope):
-       try:
-        """ Copies a scope (e.g. if) in an execution """
-        # TODO This method uses different scopes than the subscopes property.
-        if scope == self.base or scope == self.base.base_func:
-            return self
-        else:
+        try:
+            """ Copies a scope (e.g. if) in an execution """
+            # TODO method uses different scopes than the subscopes property.
+
+            # just check the start_pos, sometimes it's difficult with closures
+            # to compare the scopes directly.
+            if scope.start_pos == self.start_pos:
+                return self
+            else:
                 copied = helpers.fast_parent_copy(scope)
                 #copied.parent = self._scope_copy(copied.parent())
                 copied.parent = weakref.ref(self._scope_copy(copied.parent()))
                 #copied.parent = weakref.ref(self)
                 faked_scopes.append(copied)
                 return copied
-       except AttributeError:
+        except AttributeError:
             raise MultiLevelAttributeError(sys.exc_info())
 
 
