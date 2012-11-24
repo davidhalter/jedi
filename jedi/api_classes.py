@@ -97,7 +97,7 @@ class BaseOutput(object):
             pass
         for key, repl in self._tuple_mapping.items():
             if tuple(path[:len(key)]) == key:
-                path = [repl] + path[len(key)]
+                path = [repl] + path[len(key):]
 
         return '.'.join(path)
 
