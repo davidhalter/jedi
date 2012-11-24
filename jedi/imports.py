@@ -291,10 +291,10 @@ def invalidate_star_import_cache(module, only_main=False):
     try:
         t, mods = star_import_cache[module]
 
+        del star_import_cache[module]
+
         for m in mods:
             invalidate_star_import_cache(m, only_main=True)
-
-        del star_import_cache[module]
     except KeyError:
         pass
 
