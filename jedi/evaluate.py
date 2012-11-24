@@ -949,8 +949,12 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
         return names
     names_new = []
     for n in names:
-        if n.start_pos < position:
+     try:
+        if n.start_pos[0] is not None and n.start_pos < position:
             names_new.append(n)
+     except:
+        print(n, position, n.parent())
+        raise
     return names_new
 
 

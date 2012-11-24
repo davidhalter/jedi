@@ -80,8 +80,8 @@ class ImportPath(parsing.Base):
         """
         i = self.import_stmt
         # This is not an existing Import statement. Therefore, set position to
-        # None.
-        zero = (None, None)
+        # 0 (0 is not a valid line number).
+        zero = (0, 0)
         n = parsing.Name(i.namespace.names[1:], zero, zero, self.import_stmt)
         new = parsing.Import(zero, zero, n)
         new.parent = weakref.ref(parent)
