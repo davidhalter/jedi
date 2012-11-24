@@ -504,6 +504,9 @@ class Execution(Executable):
                         key = name.var_args.get_only_subelement()
                         stmts += follow_path(iter([key]), obj, self.base)
                 return stmts
+            elif func_name == 'type':
+                print 'LALA'
+                raise NotImplementedError()
 
         if self.base.isinstance(Class):
             # There maybe executions of executions.
@@ -714,7 +717,7 @@ class Execution(Executable):
         objects = []
         for element in attr:
             copied = helpers.fast_parent_copy(element)
-            copied.parent = weakref.ref(self)
+            copied.parent = weakref.ref(self._scope_copy(copied.parent()))
             if isinstance(copied, parsing.Function):
                 copied = Function(copied)
             objects.append(copied)
@@ -725,6 +728,24 @@ class Execution(Executable):
         if name not in ['start_pos', 'end_pos', 'imports']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
+
+    @memoize_default()
+    def _scope_copy(self, scope):
+       try:
+        """ Copies a scope (e.g. if) in an execution """
+        # TODO This method uses different scopes than the subscopes property.
+        if scope == self.base or scope == self.base.base_func:
+            return self
+        else:
+                copied = helpers.fast_parent_copy(scope)
+                #copied.parent = self._scope_copy(copied.parent())
+                copied.parent = weakref.ref(self._scope_copy(copied.parent()))
+                #copied.parent = weakref.ref(self)
+                faked_scopes.append(copied)
+                return copied
+       except AttributeError:
+            raise MultiLevelAttributeError(sys.exc_info())
+
 
     @property
     @memoize_default()
@@ -1139,8 +1160,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
         result = []
         # compare func uses the tuple of line/indent = line/column
         comparison_func = lambda name: (name.start_pos)
-        check_for_param = lambda p: isinstance(p, parsing.Param) \
-                                                    and not p.is_generated
+        check_for_param = lambda p: isinstance(p, parsing.Param)
+
         for nscope, name_list in scope_generator:
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
@@ -1166,14 +1187,15 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                         if not name.parent() or p == s:
                             break
                         break_scopes.append(p)
-            # if there are results, ignore the other scopes, if params are in
-            # there, we still need to check flows, if they contain information.
-            if result and not [r for r in result if check_for_param(r)]:
-                break
+
+            print 'b',  flow_scope, name_str, result
 
             while flow_scope:
+                # TODO check if result is in scope -> no evaluation necessary
                 n = dynamic.check_flow_information(flow_scope, name_str,
                                                                     position)
+                print
+                print 'n', n, flow_scope
                 if n and result:
                     result = n + [p for p in result if not check_for_param(r)]
                 elif n:
