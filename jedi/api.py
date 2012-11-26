@@ -76,6 +76,7 @@ class Script(object):
         self.module = modules.ModuleWithCursor(source_path, source=source,
                                                             position=self.pos)
         self.source_path = source_path
+        debug.reset_time()
 
     @property
     def parser(self):
@@ -342,10 +343,12 @@ class Script(object):
             else:
                 raise NotFoundError()
 
+        debug.speed('func_call start')
         try:
             call, index = check_cache()
         except NotFoundError:
             return None
+        debug.speed('func_call parsed')
 
         if call is None:
             user_stmt = self.parser.user_stmt
@@ -355,6 +358,7 @@ class Script(object):
 
         with helpers.scale_speed_settings(settings.scale_get_in_function_call):
             origins = evaluate.follow_call(call)
+        debug.speed('func_call followed')
 
         if len(origins) == 0:
             return None
@@ -395,7 +399,8 @@ class Script(object):
         evaluate.clear_caches()
 
 
-def set_debug_function(func_cb):
+def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
+                                            notices=True, speed=True):
     """
     You can define a callback debug function to get all the debug messages.
     :param func_cb: The callback function for debug messages, with n params.

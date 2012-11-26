@@ -23,7 +23,10 @@ enable_notice = False
 debug_function = None
 ignored_modules = ['parsing', 'builtin', 'jedi.builtin', 'jedi.parsing']
 
-start_time = time.time()
+
+def reset_time():
+    global start_time
+    start_time = time.time()
 
 
 def dbg(*args):
