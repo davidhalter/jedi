@@ -156,7 +156,7 @@ class Completion(BaseOutput):
         if parent is None:
             return ''
         t = self.type
-        if t == 'Statement':
+        if t == 'Statement' or t == 'Import':
             desc = self.definition.get_code(False)
         else:
             desc = '.'.join(str(p) for p in self.path)

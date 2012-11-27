@@ -573,8 +573,8 @@ class Import(Simple):
         self.relative_count = relative_count
         self.defunct = defunct
 
-    def get_code(self):
-        # in case one thing is None
+    def get_code(self, new_line=True):
+        # in case one of the names is None
         alias = self.alias or ''
         namespace = self.namespace or ''
         from_ns = self.from_ns or ''
@@ -583,13 +583,15 @@ class Import(Simple):
             ns_str = "%s as %s" % (namespace, alias)
         else:
             ns_str = str(namespace)
+
+        nl = '\n' if new_line else ''
         if self.from_ns or self.relative_count:
             if self.star:
                 ns_str = '*'
             dots = '.' * self.relative_count
-            return "from %s%s import %s\n" % (dots, from_ns, ns_str)
+            return "from %s%s import %s%s" % (dots, from_ns, ns_str, nl)
         else:
-            return "import %s\n" % ns_str
+            return "import %s%s" % (ns_str, nl)
 
     def get_defined_names(self):
         if self.defunct:
