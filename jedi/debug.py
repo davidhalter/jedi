@@ -20,6 +20,7 @@ enable_speed = False
 enable_warning = False
 enable_notice = False
 
+# callback, interface: level, str
 debug_function = None
 ignored_modules = ['parsing', 'builtin', 'jedi.builtin', 'jedi.parsing']
 
@@ -35,29 +36,29 @@ def dbg(*args):
         frm = inspect.stack()[1]
         mod = inspect.getmodule(frm[0])
         if not (mod.__name__ in ignored_modules):
-            debug_function(NOTICE, *args)
+            debug_function(NOTICE, 'dbg: ' + ', '.join(str(a) for a in args))
 
 
 def warning(*args):
     if debug_function and enable_warning:
-        debug_function(WARNING, *args)
+        debug_function(WARNING, 'warning: ' + ', '.join(str(a) for a in args))
 
 
 def speed(name):
-    if debug_function:
-        args = ('%s\t\t' % name,)
-        debug_function(SPEED, *args)
+    if debug_function and enable_speed:
+        now = time.time()
+        debug_function(SPEED, 'speed: ' + '%s %s' % (name, now - start_time))
 
 
-def print_to_stdout(level, *args):
+def print_to_stdout(level, str_out):
     """ The default debug function """
     if level == NOTICE:
-        msg = Fore.GREEN + 'dbg: '
+        col = Fore.GREEN
     elif level == WARNING:
-        msg = Fore.RED + 'warning: '
+        col = Fore.RED
     else:
-        msg = Fore.YELLOW + 'speed: '
-    print(msg + ', '.join(str(a) for a in args) + Fore.RESET)
+        col = Fore.YELLOW
+    print(col + str_out + Fore.RESET)
 
 
 #debug_function = print_to_stdout

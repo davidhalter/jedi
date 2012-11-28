@@ -67,6 +67,7 @@ class Script(object):
     """
     def __init__(self, source, line, column, source_path,
                  source_encoding='utf-8'):
+        debug.reset_time()
         try:
             source = unicode(source, source_encoding, 'replace')
             # Use 'replace' over 'ignore' to hold code structure.
@@ -76,7 +77,7 @@ class Script(object):
         self.module = modules.ModuleWithCursor(source_path, source=source,
                                                             position=self.pos)
         self.source_path = source_path
-        debug.reset_time()
+        debug.speed('init')
 
     @property
     def parser(self):
@@ -406,3 +407,6 @@ def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
     :param func_cb: The callback function for debug messages, with n params.
     """
     debug.debug_function = func_cb
+    debug.enable_warning = warnings
+    debug.enable_notice = notices
+    debug.enable_speed = speed
