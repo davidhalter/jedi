@@ -318,6 +318,10 @@ class Script(object):
             return call, index
 
         def check_cache():
+            """ Do the parsing with a part parser, therefore reduce ressource
+            costs.
+            TODO this is not working with multi-line docstrings, improve.
+            """
             if self.source_path is None:
                 return None, 0
 
@@ -352,11 +356,13 @@ class Script(object):
         debug.speed('func_call parsed')
 
         if call is None:
+            # This is a backup, if the above is not successful.
             user_stmt = self.parser.user_stmt
             call, index = check_user_stmt(user_stmt)
             if call is None:
                 return None
 
+        debug.speed('func_call user_stmt')
         with helpers.scale_speed_settings(settings.scale_get_in_function_call):
             origins = evaluate.follow_call(call)
         debug.speed('func_call followed')

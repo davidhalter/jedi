@@ -232,20 +232,25 @@ class Scope(Simple):
 
     @Python3Method
     def get_statement_for_position(self, pos):
-        for s in self.statements:
+        checks = self.statements + self.asserts
+        if self.isinstance(Function):
+            checks += self.params + self.decorators + self.returns
+        for s in checks:
             if isinstance(s, Flow):
                 p = s.get_statement_for_position(pos)
-                if s.next and not p:
-                    p = s.next.get_statement_for_position(pos)
+                while s.next and not p:
+                    s = s.next
+                    p = s.get_statement_for_position(pos)
                 if p:
                     return p
             elif s.start_pos <= pos < s.end_pos:
                 return s
 
         for s in self.subscopes:
-            p = s.get_statement_for_position(pos)
-            if p:
-                return p
+            if s.start_pos <= pos <= s.end_pos:
+                p = s.get_statement_for_position(pos)
+                if p:
+                    return p
 
     def __repr__(self):
         try:
@@ -1621,6 +1626,13 @@ class PyFuzzyParser(object):
             self.gen = PushBackIterator(tokenize.generate_tokens(
                                                         self.buf.readline))
             return self.next()
+        except StopIteration:
+            # set end_pos correctly, if we finish
+            s = self.scope
+            while s is not None:
+                s.end_pos = self.end_pos
+                s = s.parent()
+            raise
 
         type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
                             self.parserline = self._current_full
