@@ -456,7 +456,10 @@ class Function(use_metaclass(CachedMetaClass, parsing.Base)):
         return self._decorated_func
 
     def get_magic_method_names(self):
-        return builtin.Builtin.magic_function_names
+        return builtin.Builtin.magic_function_scope.get_defined_names()
+
+    def get_magic_method_scope(self):
+        return builtin.Builtin.magic_function_scope
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
@@ -1552,13 +1555,13 @@ def follow_path(path, scope, call_scope, position=None):
     else:
         # The function must not be decorated with something else.
         if scope.isinstance(Function):
-            result = scope.get_magic_method_names()
+            scope = scope.get_magic_method_scope()
         else:
             # This is the typical lookup while chaining things.
             if filter_private_variable(scope, call_scope, current):
                 return []
-            result = imports.strip_imports(get_scopes_for_name(scope, current,
-                                                        position=position))
+        result = imports.strip_imports(get_scopes_for_name(scope, current,
+                                                    position=position))
     return follow_paths(path, set(result), call_scope, position=position)
 
 

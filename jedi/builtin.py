@@ -452,9 +452,9 @@ class Builtin(object):
         return self.builtin.parser.module
 
     @property
-    def magic_function_names(self):
+    def magic_function_scope(self):
         try:
-            return self._magic_function_names
+            return self._magic_function_scope
         except AttributeError:
             # depth = 1 because this is not a module
             class Container(object):
@@ -463,11 +463,11 @@ class Builtin(object):
             parser = parsing.PyFuzzyParser(source, None)
             # needed for caching (because of weakref)
             module = self.magic_func_module = parser.module
+            module.parent = lambda: self.scope
             typ = evaluate.follow_path(iter(['FunctionType']), module, module)
 
-            names = typ.pop().get_defined_names()
-            self._magic_function_names = names
-            return names
+            self._magic_function_scope = s = typ.pop()
+            return s
 
 
 Builtin = Builtin()
