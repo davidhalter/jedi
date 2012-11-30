@@ -6,13 +6,13 @@ import sys
 import os
 if is_py3k:
     import io
-else:
-    import types
+import types
 import inspect
 
 import debug
 import parsing
 import imports
+import evaluate
 
 
 def get_sys_path():
@@ -157,7 +157,7 @@ class Parser(CachedModule):
 
     def _get_source(self):
         """ Override this abstract method """
-        return self._generate_code(self.module, self._load_mixins())
+        return _generate_code(self.module, self._load_mixins())
 
     def _load_mixins(self):
         """
@@ -211,161 +211,162 @@ class Parser(CachedModule):
                 mixin_dct['range'] = mixin_dct['xrange']
             return mixin_dct
 
-    def _generate_code(self, scope, mixin_funcs, depth=0):
-        """
-        Generate a string, which uses python syntax as an input to the
-        PyFuzzyParser.
-        """
-        def get_doc(obj, indent=False):
-            doc = inspect.getdoc(obj)
-            if doc:
-                doc = ('r"""\n%s\n"""\n' % doc)
-                if indent:
-                    doc = parsing.indent_block(doc)
-                return doc
-            return ''
 
-        def is_in_base_classes(cls, name, comparison):
-            """ Base classes may contain the exact same object """
-            if name in mixin_funcs:
-                return False
-            try:
-                mro = cls.mro()
-            except TypeError:
-                # this happens, if cls == type
-                return False
-            for base in mro[1:]:
-                try:
-                    attr = getattr(base, name)
-                except AttributeError:
-                    continue
-                if attr == comparison:
-                    return True
+def _generate_code(scope, mixin_funcs={}, depth=0):
+    """
+    Generate a string, which uses python syntax as an input to the
+    PyFuzzyParser.
+    """
+    def get_doc(obj, indent=False):
+        doc = inspect.getdoc(obj)
+        if doc:
+            doc = ('r"""\n%s\n"""\n' % doc)
+            if indent:
+                doc = parsing.indent_block(doc)
+            return doc
+        return ''
+
+    def is_in_base_classes(cls, name, comparison):
+        """ Base classes may contain the exact same object """
+        if name in mixin_funcs:
             return False
-
-        def get_scope_objects(names):
-            """
-            Looks for the names defined with dir() in an objects and divides
-            them into different object types.
-            """
-            classes = {}
-            funcs = {}
-            stmts = {}
-            members = {}
-            for n in names:
-                try:
-                    # this has a builtin_function_or_method
-                    exe = getattr(scope, n)
-                except AttributeError:
-                    # happens e.g. in properties of
-                    # PyQt4.QtGui.QStyleOptionComboBox.currentText
-                    # -> just set it to None
-                    members[n] = None
-                else:
-                    if inspect.isclass(scope):
-                        if is_in_base_classes(scope, n, exe):
-                            continue
-                    if inspect.isbuiltin(exe) or inspect.ismethod(exe) \
-                                or inspect.ismethoddescriptor(exe):
-                        funcs[n] = exe
-                    elif inspect.isclass(exe):
-                        classes[n] = exe
-                    elif inspect.ismemberdescriptor(exe):
-                        members[n] = exe
-                    else:
-                        stmts[n] = exe
-            return classes, funcs, stmts, members
-
-        code = ''
-        if inspect.ismodule(scope):  # generate comment where the code's from.
+        try:
+            mro = cls.mro()
+        except TypeError:
+            # this happens, if cls == type
+            return False
+        for base in mro[1:]:
             try:
-                path = scope.__file__
+                attr = getattr(base, name)
             except AttributeError:
-                path = '?'
-            code += '# Generated module %s from %s\n' % (scope.__name__, path)
+                continue
+            if attr == comparison:
+                return True
+        return False
 
-        code += get_doc(scope)
+    def get_scope_objects(names):
+        """
+        Looks for the names defined with dir() in an objects and divides
+        them into different object types.
+        """
+        classes = {}
+        funcs = {}
+        stmts = {}
+        members = {}
+        for n in names:
+            try:
+                # this has a builtin_function_or_method
+                exe = getattr(scope, n)
+            except AttributeError:
+                # happens e.g. in properties of
+                # PyQt4.QtGui.QStyleOptionComboBox.currentText
+                # -> just set it to None
+                members[n] = None
+            else:
+                if inspect.isclass(scope):
+                    if is_in_base_classes(scope, n, exe):
+                        continue
+                if inspect.isbuiltin(exe) or inspect.ismethod(exe) \
+                            or inspect.ismethoddescriptor(exe):
+                    funcs[n] = exe
+                elif inspect.isclass(exe):
+                    classes[n] = exe
+                elif inspect.ismemberdescriptor(exe):
+                    members[n] = exe
+                else:
+                    stmts[n] = exe
+        return classes, funcs, stmts, members
 
-        names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
-                                                '__path__', '__package__']) \
-                                | set(['mro'])
+    code = ''
+    if inspect.ismodule(scope):  # generate comment where the code's from.
+        try:
+            path = scope.__file__
+        except AttributeError:
+            path = '?'
+        code += '# Generated module %s from %s\n' % (scope.__name__, path)
 
-        classes, funcs, stmts, members = get_scope_objects(names)
+    code += get_doc(scope)
 
-        # classes
-        for name, cl in classes.items():
-            bases = (c.__name__ for c in cl.__bases__)
-            code += 'class %s(%s):\n' % (name, ','.join(bases))
-            if depth == 0:
-                try:
-                    mixin = mixin_funcs[name]
-                except KeyError:
-                    mixin = {}
-                cl_code = self._generate_code(cl, mixin, depth + 1)
-                code += parsing.indent_block(cl_code)
-            code += '\n'
+    names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
+                                            '__path__', '__package__']) \
+                            | set(['mro'])
 
-        # functions
-        for name, func in funcs.items():
-            params, ret = parse_function_doc(func)
-            if depth > 0:
-                params = 'self, ' + params
-            doc_str = get_doc(func, indent=True)
+    classes, funcs, stmts, members = get_scope_objects(names)
+
+    # classes
+    for name, cl in classes.items():
+        bases = (c.__name__ for c in cl.__bases__)
+        code += 'class %s(%s):\n' % (name, ','.join(bases))
+        if depth == 0:
             try:
                 mixin = mixin_funcs[name]
             except KeyError:
-                # normal code generation
-                code += 'def %s(%s):\n' % (name, params)
-                code += doc_str
-                code += parsing.indent_block('%s\n\n' % ret)
-            else:
-                # generation of code with mixins
-                # the parser only supports basic functions with a newline after
-                # the double dots
-                # find doc_str place
-                pos = re.search(r'\):\s*\n', mixin).end()
-                if pos is None:
-                    raise Exception("Builtin function not parsed correctly")
-                code += mixin[:pos] + doc_str + mixin[pos:]
+                mixin = {}
+            cl_code = _generate_code(cl, mixin, depth + 1)
+            code += parsing.indent_block(cl_code)
+        code += '\n'
 
-        # class members (functions) properties?
-        for name, func in members.items():
-            # recursion problem in properties TODO remove
-            if name in ['fget', 'fset', 'fdel']:
-                continue
-            ret = 'pass'
-            code += '@property\ndef %s(self):\n' % (name)
-            code += parsing.indent_block(get_doc(func) + '%s\n\n' % ret)
+    # functions
+    for name, func in funcs.items():
+        params, ret = parse_function_doc(func)
+        if depth > 0:
+            params = 'self, ' + params
+        doc_str = get_doc(func, indent=True)
+        try:
+            mixin = mixin_funcs[name]
+        except KeyError:
+            # normal code generation
+            code += 'def %s(%s):\n' % (name, params)
+            code += doc_str
+            code += parsing.indent_block('%s\n\n' % ret)
+        else:
+            # generation of code with mixins
+            # the parser only supports basic functions with a newline after
+            # the double dots
+            # find doc_str place
+            pos = re.search(r'\):\s*\n', mixin).end()
+            if pos is None:
+                raise Exception("Builtin function not parsed correctly")
+            code += mixin[:pos] + doc_str + mixin[pos:]
 
-        # variables
-        for name, value in stmts.items():
-            if is_py3k:
-                file_type = io.TextIOWrapper
-            else:
-                file_type = types.FileType
-            if type(value) == file_type:
-                value = 'open()'
-            elif name == 'None':
-                value = ''
-            elif type(value).__name__ in ['int', 'bool', 'float',
-                                          'dict', 'list', 'tuple']:
-                value = repr(value)
-            else:
-                # get the type, if the type is not simple.
-                mod = type(value).__module__
-                value = type(value).__name__ + '()'
-                if mod != '__builtin__':
-                    value = '%s.%s' % (mod, value)
-            code += '%s = %s\n' % (name, value)
+    # class members (functions) properties?
+    for name, func in members.items():
+        # recursion problem in properties TODO remove
+        if name in ['fget', 'fset', 'fdel']:
+            continue
+        ret = 'pass'
+        code += '@property\ndef %s(self):\n' % (name)
+        code += parsing.indent_block(get_doc(func) + '%s\n\n' % ret)
 
-        if depth == 0:
-            #with open('writeout.py', 'w') as f:
-            #    f.write(code)
-            #import sys
-            #sys.stdout.write(code)
-            #exit()
-            pass
-        return code
+    # variables
+    for name, value in stmts.items():
+        if is_py3k:
+            file_type = io.TextIOWrapper
+        else:
+            file_type = types.FileType
+        if type(value) == file_type:
+            value = 'open()'
+        elif name == 'None':
+            value = ''
+        elif type(value).__name__ in ['int', 'bool', 'float',
+                                      'dict', 'list', 'tuple']:
+            value = repr(value)
+        else:
+            # get the type, if the type is not simple.
+            mod = type(value).__module__
+            value = type(value).__name__ + '()'
+            if mod != '__builtin__':
+                value = '%s.%s' % (mod, value)
+        code += '%s = %s\n' % (name, value)
+
+    if depth == 0:
+        #with open('writeout.py', 'w') as f:
+        #    f.write(code)
+        #import sys
+        #sys.stdout.write(code)
+        #exit()
+        pass
+    return code
 
 
 def parse_function_doc(func):
@@ -449,5 +450,24 @@ class Builtin(object):
     @property
     def scope(self):
         return self.builtin.parser.module
+
+    @property
+    def magic_function_names(self):
+        try:
+            return self._magic_function_names
+        except AttributeError:
+            # depth = 1 because this is not a module
+            class Container(object):
+                FunctionType = types.FunctionType
+            source = _generate_code(Container, depth=0)
+            parser = parsing.PyFuzzyParser(source, None)
+            # needed for caching (because of weakref)
+            module = self.magic_func_module = parser.module
+            typ = evaluate.follow_path(iter(['FunctionType']), module, module)
+
+            names = typ.pop().get_defined_names()
+            self._magic_function_names = names
+            return names
+
 
 Builtin = Builtin()

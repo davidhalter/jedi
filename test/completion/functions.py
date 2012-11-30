@@ -350,3 +350,10 @@ def annot_ret(a:3) -> 3:
 
 #? str()
 annot_ret('')
+
+# -----------------
+# magic methods
+# -----------------
+def a(): pass
+#? ['__closure__']
+a.__closure__

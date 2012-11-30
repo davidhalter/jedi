@@ -108,9 +108,9 @@ class Script(object):
             completions = []
             debug.dbg('possible scopes', scopes)
             for s in scopes:
-                # TODO is this really the right way? just ignore the funcs? \
-                # do the magic functions first? and then recheck here?
-                if not s.isinstance(evaluate.Function):
+                if s.isinstance(evaluate.Function):
+                    names = s.get_magic_method_names()
+                else:
                     if isinstance(s, imports.ImportPath):
                         if like == 'import':
                             l = self.module.get_line(self.pos[0])[:self.pos[1]]
@@ -119,8 +119,9 @@ class Script(object):
                         names = s.get_defined_names(on_import_stmt=True)
                     else:
                         names = s.get_defined_names()
-                    for c in names:
-                        completions.append((c, s))
+
+                for c in names:
+                    completions.append((c, s))
 
         if not dot:  # named_params have no dots
             call_def = self.get_in_function_call()

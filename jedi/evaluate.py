@@ -457,6 +457,9 @@ class Function(use_metaclass(CachedMetaClass, parsing.Base)):
             return self
         return self._decorated_func
 
+    def get_magic_method_names(self):
+        return builtin.Builtin.magic_function_names
+
     def __getattr__(self, name):
         return getattr(self.base_func, name)
 
@@ -1561,10 +1564,8 @@ def follow_path(path, scope, call_scope, position=None):
     else:
         # The function must not be decorated with something else.
         if scope.isinstance(Function):
-            # TODO Check default function methods and return them.
-            result = []
+            result = scope.get_magic_method_names()
         else:
-            # TODO Check magic class methods and return them also.
             # This is the typical lookup while chaining things.
             if filter_private_variable(scope, call_scope, current):
                 return []
