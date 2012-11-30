@@ -90,9 +90,6 @@ recursion2(1)
 # ordering
 # -----------------
 
-#def b():
-    #return ""
-
 def a():
     #? int()
     b()

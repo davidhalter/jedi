@@ -600,6 +600,7 @@ class Execution(Executable):
         var_arg_iterator = self.get_var_args_iterator()
 
         non_matching_keys = []
+        keys_used = set()
         keys_only = False
         for param in self.base.params[start_offset:]:
             # The value and key can both be null. There, the defaults apply.
@@ -609,15 +610,16 @@ class Execution(Executable):
             # completions.
             key, value = next(var_arg_iterator, (None, None))
             while key:
+                keys_only = True
                 try:
                     key_param = param_dict[str(key)]
                 except KeyError:
                     non_matching_keys.append((key, value))
                 else:
+                    keys_used.add(str(key))
                     result.append(gen_param_name_copy(key_param,
                                                         values=[value]))
                 key, value = next(var_arg_iterator, (None, None))
-                keys_only = True
 
             assignments = param.get_assignment_calls().values
             assignment = assignments[0]
@@ -657,8 +659,15 @@ class Execution(Executable):
             # Just ignore all the params that are without a key, after one
             # keyword argument was set.
             if not keys_only or assignment[0] == '**':
+                keys_used.add(str(key))
                 result.append(gen_param_name_copy(param, keys=keys,
                                         values=values, array_type=array_type))
+
+        if keys_only:
+            # sometimes param arguments are not completely written (which would
+            # create an Exception, but we have to handle that).
+            for k in set(param_dict) - keys_used:
+                result.append(gen_param_name_copy(param_dict[k]))
         return result
 
     def get_var_args_iterator(self):
