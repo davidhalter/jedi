@@ -7,7 +7,7 @@ David Halter (@davidhalter)
 Contributors
 ============
 
-Danilo Bargen (@gwrtheyrn)
+Danilo Bargen (@dbrgn)
 tek (@tek)
 Takafumi Arakaki (@tkf)
 Aaron Griffin
