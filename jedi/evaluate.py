@@ -9,7 +9,6 @@ there are the `follow_` functions, which evaluate a statement, or parts of a
 statement.
 
 TODO super()
-
 TODO nonlocal statement, needed or can be ignored? (py3k)
 """
 from _compatibility import next, property, hasattr, is_py3k, use_metaclass, \
