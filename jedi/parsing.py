@@ -302,7 +302,7 @@ class Module(Scope):
         if self.path is None:
             string = ''  # no path -> empty name
         else:
-            sep = (os.path.sep,) * 2
+            sep = (re.escape(os.path.sep),) * 2
             r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep,
                                                                 self.path)
             string = r.group(1)
