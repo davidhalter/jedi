@@ -11,8 +11,6 @@ statement.
 TODO super()
 
 TODO nonlocal statement, needed or can be ignored? (py3k)
-
-TODO __ instance attributes should not be visible outside of the class.
 """
 from _compatibility import next, property, hasattr, is_py3k, use_metaclass, \
                             unicode
@@ -754,7 +752,6 @@ class Execution(Executable):
         except AttributeError:
             raise MultiLevelAttributeError(sys.exc_info())
 
-
     @property
     @memoize_default()
     def returns(self):
@@ -952,12 +949,8 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
         return names
     names_new = []
     for n in names:
-     try:
         if n.start_pos[0] is not None and n.start_pos < position:
             names_new.append(n)
-     except:
-        print(n, position, n.parent())
-        raise
     return names_new
 
 
@@ -1172,7 +1165,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
         result = []
         # compare func uses the tuple of line/indent = line/column
         comparison_func = lambda name: (name.start_pos)
-        check_for_param = lambda p: isinstance(p, parsing.Param)
 
         for nscope, name_list in scope_generator:
             break_scopes = []
@@ -1207,10 +1199,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 if n:
                     result = n
                     break
-                if n and result: # TODO remove this crap :-)
-                    result = n + [p for p in result if not check_for_param(r)]
-                elif n:
-                    result = n
 
                 if result:
                     break
@@ -1577,7 +1565,8 @@ def follow_path(path, scope, call_scope, position=None):
 def filter_private_variable(scope, call_scope, var_name):
     if isinstance(var_name, (str, unicode)) \
                 and var_name.startswith('__') and isinstance(scope, Instance):
-        s = call_scope.get_parent_until((parsing.Class, Instance), include_current=True)
+        s = call_scope.get_parent_until((parsing.Class, Instance),
+                                                include_current=True)
         if s != scope and s != scope.base.base:
             return True
     return False
