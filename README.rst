@@ -102,6 +102,7 @@ Jedi supports many of the widely used Python features:
 - simple/usual ``sys.path`` modifications
 - ``isinstance`` checks for if/while/assert
 - virtualenv support
+- infer function arguments with sphinx (and other) docstrings
 
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
