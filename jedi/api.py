@@ -67,6 +67,7 @@ class Script(object):
     """
     def __init__(self, source, line, column, source_path,
                  source_encoding='utf-8'):
+        debug.reset_time()
         try:
             source = unicode(source, source_encoding, 'replace')
             # Use 'replace' over 'ignore' to hold code structure.
@@ -76,6 +77,7 @@ class Script(object):
         self.module = modules.ModuleWithCursor(source_path, source=source,
                                                             position=self.pos)
         self.source_path = source_path
+        debug.speed('init')
 
     @property
     def parser(self):
@@ -108,7 +110,7 @@ class Script(object):
             for s in scopes:
                 # TODO is this really the right way? just ignore the funcs? \
                 # do the magic functions first? and then recheck here?
-                if not isinstance(s, evaluate.Function):
+                if not s.isinstance(evaluate.Function):
                     if isinstance(s, imports.ImportPath):
                         if like == 'import':
                             l = self.module.get_line(self.pos[0])[:self.pos[1]]
@@ -135,18 +137,20 @@ class Script(object):
                 completions += ((k, bs) for k in keywords.get_keywords(
                                                                     all=True))
 
-        completions = [(c, s) for c, s in completions
-                        if settings.case_insensitive_completion
-                            and c.names[-1].lower().startswith(like.lower())
-                            or c.names[-1].startswith(like)]
-
         needs_dot = not dot and path
-        completions = set(completions)
 
-        c = [api_classes.Completion(
-                        c, needs_dot, len(like), s) for c, s in completions]
+        comps = []
+        for c, s in set(completions):
+            n = c.names[-1]
+            if settings.case_insensitive_completion \
+                    and n.lower().startswith(like.lower()) \
+                    or n.startswith(like):
+                if not evaluate.filter_private_variable(s,
+                                                    self.parser.user_stmt, n):
+                    new = api_classes.Completion( c, needs_dot, len(like), s)
+                    comps.append(new)
 
-        return sorted(c, key=lambda x: (x.word.startswith('__'),
+        return sorted(comps, key=lambda x: (x.word.startswith('__'),
                                             x.word.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):
@@ -314,6 +318,10 @@ class Script(object):
             return call, index
 
         def check_cache():
+            """ Do the parsing with a part parser, therefore reduce ressource
+            costs.
+            TODO this is not working with multi-line docstrings, improve.
+            """
             if self.source_path is None:
                 return None, 0
 
@@ -340,19 +348,24 @@ class Script(object):
             else:
                 raise NotFoundError()
 
+        debug.speed('func_call start')
         try:
             call, index = check_cache()
         except NotFoundError:
             return None
+        debug.speed('func_call parsed')
 
         if call is None:
+            # This is a backup, if the above is not successful.
             user_stmt = self.parser.user_stmt
             call, index = check_user_stmt(user_stmt)
             if call is None:
                 return None
 
+        debug.speed('func_call user_stmt')
         with helpers.scale_speed_settings(settings.scale_get_in_function_call):
             origins = evaluate.follow_call(call)
+        debug.speed('func_call followed')
 
         if len(origins) == 0:
             return None
@@ -393,9 +406,13 @@ class Script(object):
         evaluate.clear_caches()
 
 
-def set_debug_function(func_cb):
+def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
+                                            notices=True, speed=True):
     """
     You can define a callback debug function to get all the debug messages.
     :param func_cb: The callback function for debug messages, with n params.
     """
     debug.debug_function = func_cb
+    debug.enable_warning = warnings
+    debug.enable_notice = notices
+    debug.enable_speed = speed

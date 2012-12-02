@@ -25,7 +25,7 @@ class ModuleNotFound(Exception):
     pass
 
 
-class ImportPath(object):
+class ImportPath(parsing.Base):
     """
     An ImportPath is the path of a `parsing.Import` object.
     """
@@ -80,8 +80,8 @@ class ImportPath(object):
         """
         i = self.import_stmt
         # This is not an existing Import statement. Therefore, set position to
-        # None.
-        zero = (None, None)
+        # 0 (0 is not a valid line number).
+        zero = (0, 0)
         n = parsing.Name(i.namespace.names[1:], zero, zero, self.import_stmt)
         new = parsing.Import(zero, zero, n)
         new.parent = weakref.ref(parent)
@@ -157,6 +157,7 @@ class ImportPath(object):
             scopes += itertools.chain.from_iterable(
                             remove_star_imports(s) for s in scopes)
 
+            # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []
             elif rest:
@@ -166,8 +167,8 @@ class ImportPath(object):
                             for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
-                                            evaluate.follow_path(iter(rest), s)
-                                            for s in scopes)
+                                        evaluate.follow_path(iter(rest), s, s)
+                                        for s in scopes)
             scopes = list(scopes)
 
             if self.is_nested_import():
@@ -290,10 +291,10 @@ def invalidate_star_import_cache(module, only_main=False):
     try:
         t, mods = star_import_cache[module]
 
+        del star_import_cache[module]
+
         for m in mods:
             invalidate_star_import_cache(m, only_main=True)
-
-        del star_import_cache[module]
     except KeyError:
         pass
 

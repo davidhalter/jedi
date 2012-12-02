@@ -502,8 +502,13 @@ class Execution(Executable):
 
                     for name in names:
                         key = name.var_args.get_only_subelement()
-                        stmts += follow_path(iter([key]), obj)
+                        stmts += follow_path(iter([key]), obj, self.base)
                 return stmts
+            elif func_name == 'type':
+                # otherwise it would be a metaclass
+                if len(self.var_args) == 1:
+                    objects = follow_call_list([self.var_args[0]])
+                    return [o.base for o in objects if isinstance(o, Instance)]
 
         if self.base.isinstance(Class):
             # There maybe executions of executions.
@@ -714,7 +719,7 @@ class Execution(Executable):
         objects = []
         for element in attr:
             copied = helpers.fast_parent_copy(element)
-            copied.parent = weakref.ref(self)
+            copied.parent = weakref.ref(self._scope_copy(copied.parent()))
             if isinstance(copied, parsing.Function):
                 copied = Function(copied)
             objects.append(copied)
@@ -725,6 +730,27 @@ class Execution(Executable):
         if name not in ['start_pos', 'end_pos', 'imports']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
+
+    @memoize_default()
+    def _scope_copy(self, scope):
+        try:
+            """ Copies a scope (e.g. if) in an execution """
+            # TODO method uses different scopes than the subscopes property.
+
+            # just check the start_pos, sometimes it's difficult with closures
+            # to compare the scopes directly.
+            if scope.start_pos == self.start_pos:
+                return self
+            else:
+                copied = helpers.fast_parent_copy(scope)
+                #copied.parent = self._scope_copy(copied.parent())
+                copied.parent = weakref.ref(self._scope_copy(copied.parent()))
+                #copied.parent = weakref.ref(self)
+                faked_scopes.append(copied)
+                return copied
+        except AttributeError:
+            raise MultiLevelAttributeError(sys.exc_info())
+
 
     @property
     @memoize_default()
@@ -923,8 +949,12 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
         return names
     names_new = []
     for n in names:
-        if n.start_pos < position:
+     try:
+        if n.start_pos[0] is not None and n.start_pos < position:
             names_new.append(n)
+     except:
+        print(n, position, n.parent())
+        raise
     return names_new
 
 
@@ -1139,8 +1169,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
         result = []
         # compare func uses the tuple of line/indent = line/column
         comparison_func = lambda name: (name.start_pos)
-        check_for_param = lambda p: isinstance(p, parsing.Param) \
-                                                    and not p.is_generated
+        check_for_param = lambda p: isinstance(p, parsing.Param)
+
         for nscope, name_list in scope_generator:
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
@@ -1166,15 +1196,15 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                         if not name.parent() or p == s:
                             break
                         break_scopes.append(p)
-            # if there are results, ignore the other scopes, if params are in
-            # there, we still need to check flows, if they contain information.
-            if result and not [r for r in result if check_for_param(r)]:
-                break
 
             while flow_scope:
+                # TODO check if result is in scope -> no evaluation necessary
                 n = dynamic.check_flow_information(flow_scope, name_str,
                                                                     position)
-                if n and result:
+                if n:
+                    result = n
+                    break
+                if n and result: # TODO remove this crap :-)
                     result = n + [p for p in result if not check_for_param(r)]
                 elif n:
                     result = n
@@ -1476,14 +1506,10 @@ def follow_call_path(path, scope, position):
                                             search_global=True)
         result = imports.strip_imports(scopes)
 
-        if result != scopes:
-            # Reset the position, when imports where stripped.
-            position = None
-
-    return follow_paths(path, result, position=position)
+    return follow_paths(path, result, scope, position=position)
 
 
-def follow_paths(path, results, position=None):
+def follow_paths(path, results, call_scope, position=None):
     """
     In each result, `path` must be followed. Copies the path iterator.
     """
@@ -1495,7 +1521,7 @@ def follow_paths(path, results, position=None):
             iter_paths = [path]
 
         for i, r in enumerate(results):
-            fp = follow_path(iter_paths[i], r, position=position)
+            fp = follow_path(iter_paths[i], r, call_scope, position=position)
             if fp is not None:
                 results_new += fp
             else:
@@ -1504,7 +1530,7 @@ def follow_paths(path, results, position=None):
     return results_new
 
 
-def follow_path(path, scope, position=None):
+def follow_path(path, scope, call_scope, position=None):
     """
     Uses a generator and tries to complete the path, e.g.
     >>> foo.bar.baz
@@ -1534,15 +1560,26 @@ def follow_path(path, scope, position=None):
             debug.warning('strange function call with {}', current, scope)
     else:
         # The function must not be decorated with something else.
-        if isinstance(scope, Function):
+        if scope.isinstance(Function):
             # TODO Check default function methods and return them.
             result = []
         else:
             # TODO Check magic class methods and return them also.
             # This is the typical lookup while chaining things.
+            if filter_private_variable(scope, call_scope, current):
+                return []
             result = imports.strip_imports(get_scopes_for_name(scope, current,
                                                         position=position))
-    return follow_paths(path, set(result), position=position)
+    return follow_paths(path, set(result), call_scope, position=position)
+
+
+def filter_private_variable(scope, call_scope, var_name):
+    if isinstance(var_name, (str, unicode)) \
+                and var_name.startswith('__') and isinstance(scope, Instance):
+        s = call_scope.get_parent_until((parsing.Class, Instance), include_current=True)
+        if s != scope and s != scope.base.base:
+            return True
+    return False
 
 
 def goto(stmt, call_path=None):

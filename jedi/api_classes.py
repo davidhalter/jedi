@@ -16,12 +16,15 @@ class BaseOutput(object):
                'os2emxpath': 'os.path',
                'macpath': 'os.path',
                'genericpath': 'os.path',
-               '_io': 'io'
+               '_io': 'io',
+               '__builtin__': '',
                }
 
-    _tuple_mapping = {
-               ('argparse', '_ActionsContainer'): 'argparse._ActionsContainer'
-               }
+    _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
+        'argparse._ActionsContainer': 'argparse.ArgumentParser',
+        '_sre.SRE_Match': 're.MatchObject',
+        '_sre.SRE_Pattern': 're.RegexObject',
+    }.items())
 
     def __init__(self, definition, start_pos):
         self.start_pos = start_pos
@@ -97,9 +100,9 @@ class BaseOutput(object):
             pass
         for key, repl in self._tuple_mapping.items():
             if tuple(path[:len(key)]) == key:
-                path = [repl] + path[len(key)]
+                path = [repl] + path[len(key):]
 
-        return '.'.join(path)
+        return '.'.join(path if path[0] else path[1:])
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
@@ -154,7 +157,7 @@ class Completion(BaseOutput):
         if parent is None:
             return ''
         t = self.type
-        if t == 'Statement':
+        if t == 'Statement' or t == 'Import':
             desc = self.definition.get_code(False)
         else:
             desc = '.'.join(str(p) for p in self.path)

@@ -234,6 +234,19 @@ class TestFeature(Base):
         assert self.complete('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
 
+    def test_full_name_builtin(self):
+        self.assertEqual(self.complete('type')[0].full_name, 'type')
+
+    def test_full_name_tuple_mapping(self):
+        s = """
+        import re
+        any_re = re.compile('.*')
+        any_re"""
+        lines = s.splitlines()
+        defs = self.get_def(s, (len(lines), len(lines[-1])))
+        self.assertEqual(defs[0].full_name,
+                         're.RegexObject')
+
 
 class TestSpeed(Base):
     def _check_speed(time_per_run, number=4, run_warm=True):
