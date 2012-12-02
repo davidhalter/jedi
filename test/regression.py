@@ -227,6 +227,12 @@ class TestRegression(Base):
         s = self.complete("import os; os.P_")
         assert 'P_NOWAIT' in [i.word for i in s]
 
+    def test_follow_imports_if_possible(self):
+        """ github issue #45 """
+        s = self.complete("import datetime.timedelta; datetime.timedelta")
+        print s, [r.name.parent() for r in s], [r.type for r in s]
+        assert 'Import' not in [r.type for r in s]
+
 
 class TestFeature(Base):
     def test_full_name(self):

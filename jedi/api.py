@@ -91,6 +91,15 @@ class Script(object):
         :return: list of Completion objects, sorted by name and __ comes last.
         :rtype: list
         """
+        def follow_imports_if_possible(name):
+            par = name.parent()
+            if isinstance(par, parsing.Import):
+                new = imports.ImportPath(par).follow()
+                # Only remove the old entry if a new one has been found.
+                if new:
+                    return new
+            return [name]
+
         path = self.module.get_path_until_cursor()
         path, dot, like = self._get_completion_parts(path)
 
@@ -148,8 +157,12 @@ class Script(object):
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
                                                     self.parser.user_stmt, n):
-                    new = api_classes.Completion( c, needs_dot, len(like), s)
-                    comps.append(new)
+                    for f in follow_imports_if_possible(c):
+                        print f, f.parent()
+                        new = api_classes.Completion(f, needs_dot,
+                                                        len(like), s)
+                        comps.append(new)
+
 
         return sorted(comps, key=lambda x: (x.word.startswith('__'),
                                             x.word.lower()))
