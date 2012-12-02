@@ -16,7 +16,9 @@ class BaseOutput(object):
                'os2emxpath': 'os.path',
                'macpath': 'os.path',
                'genericpath': 'os.path',
-               '_io': 'io'
+               '_io': 'io',
+               '__builtin__': '',
+               'builtins': '',
                }
 
     _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
@@ -101,7 +103,7 @@ class BaseOutput(object):
             if tuple(path[:len(key)]) == key:
                 path = [repl] + path[len(key):]
 
-        return '.'.join(path)
+        return '.'.join(path if path[0] else path[1:])
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)

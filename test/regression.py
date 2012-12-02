@@ -234,6 +234,9 @@ class TestFeature(Base):
         assert self.complete('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
 
+    def test_full_name_builtin(self):
+        self.assertEqual(self.complete('type')[0].full_name, 'type')
+
     def test_full_name_tuple_mapping(self):
         s = """
         import re
