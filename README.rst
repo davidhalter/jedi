@@ -101,6 +101,7 @@ Jedi supports many of the widely used Python features:
   case, that doesn't work with Jedi)
 - simple/usual ``sys.path`` modifications
 - ``isinstance`` checks for if/while/assert
+- virtualenv support
 
 However, it does not yet support (and probably will in future versions, because
 they are on my todo list):
