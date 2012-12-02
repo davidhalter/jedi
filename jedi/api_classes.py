@@ -18,6 +18,7 @@ class BaseOutput(object):
                'genericpath': 'os.path',
                '_io': 'io',
                '__builtin__': '',
+               'builtins': '',
                }
 
     _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
