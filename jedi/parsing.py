@@ -369,6 +369,7 @@ class Function(Scope):
         self.params = params
         for p in params:
             p.parent = weakref.ref(self)
+            p.parent_function = weakref.ref(self)
         self.decorators = []
         self.returns = []
         self.is_generator = False
@@ -872,6 +873,7 @@ class Param(Statement):
         self.position_nr = None
         self.is_generated = False
         self.annotation_stmt = None
+        self.parent_function = None
 
     def add_annotation(self, annotation_stmt):
         annotation_stmt.parent = weakref.ref(self)

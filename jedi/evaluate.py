@@ -25,6 +25,7 @@ import builtin
 import imports
 import helpers
 import dynamic
+import docstrings
 
 memoize_caches = []
 faked_scopes = []
@@ -1063,6 +1064,12 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                                 and str(func.name) == '__init__' \
                                 and r.position_nr > 0:  # 0 would be self
                             r = func.var.params[r.position_nr]
+
+                        # add docstring knowledge
+                        doc_params = docstrings.follow_param(r)
+                        if doc_params:
+                            res_new += doc_params
+                            continue
 
                         if not r.is_generated:
                             res_new += dynamic.search_params(r)
