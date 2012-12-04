@@ -92,11 +92,14 @@ class Script(object):
         :rtype: list
         """
         def follow_imports_if_possible(name):
+            return [name]  #TODO remove
             par = name.parent()
-            if isinstance(par, parsing.Import):
-                new = imports.ImportPath(par).follow()
+            if isinstance(par, parsing.Import) and not \
+                        isinstance(self.parser.user_stmt, parsing.Import):
+                new = imports.ImportPath(par).follow(is_goto=True)
                 # Only remove the old entry if a new one has been found.
                 if new:
+                    print(new, name)
                     return new
             return [name]
 
@@ -158,7 +161,6 @@ class Script(object):
                 if not evaluate.filter_private_variable(s,
                                                     self.parser.user_stmt, n):
                     for f in follow_imports_if_possible(c):
-                        print f, f.parent()
                         new = api_classes.Completion(f, needs_dot,
                                                         len(like), s)
                         comps.append(new)
