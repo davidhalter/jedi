@@ -27,7 +27,6 @@ from __future__ import with_statement
 __all__ = ['Script', 'NotFoundError', 'set_debug_function']
 
 import re
-import weakref
 
 import parsing
 import dynamic
@@ -196,7 +195,7 @@ class Script(object):
         except IndexError:
             raise NotFoundError()
         stmt.start_pos = self.pos
-        stmt.parent = weakref.ref(self.parser.user_scope)
+        stmt.parent = lambda: self.parser.user_scope
         return stmt
 
     def get_definition(self):

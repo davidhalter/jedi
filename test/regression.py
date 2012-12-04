@@ -7,9 +7,8 @@ from os.path import abspath, dirname
 import time
 import functools
 
-sys.path.append(abspath(dirname(abspath(__file__)) + '/../jedi'))
+sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../jedi'))
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
-sys.path.append('.')
 
 from _compatibility import is_py25, utf8
 import api
