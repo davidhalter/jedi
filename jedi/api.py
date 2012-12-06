@@ -27,6 +27,7 @@ from __future__ import with_statement
 __all__ = ['Script', 'NotFoundError', 'set_debug_function']
 
 import re
+import weakref
 
 import parsing
 import dynamic
@@ -91,15 +92,18 @@ class Script(object):
         :rtype: list
         """
         def follow_imports_if_possible(name):
-            return [name]  #TODO remove
+            # TODO remove this, or move to another place (not used)
             par = name.parent()
             if isinstance(par, parsing.Import) and not \
                         isinstance(self.parser.user_stmt, parsing.Import):
                 new = imports.ImportPath(par).follow(is_goto=True)
                 # Only remove the old entry if a new one has been found.
+                #print par, new, par.parent()
                 if new:
-                    print(new, name)
-                    return new
+                    try:
+                        return new
+                    except AttributeError:  # .name undefined
+                        pass
             return [name]
 
         path = self.module.get_path_until_cursor()
@@ -159,10 +163,9 @@ class Script(object):
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
                                                     self.parser.user_stmt, n):
-                    for f in follow_imports_if_possible(c):
-                        new = api_classes.Completion(f, needs_dot,
-                                                        len(like), s)
-                        comps.append(new)
+                    new = api_classes.Completion(c, needs_dot,
+                                                    len(like), s)
+                    comps.append(new)
 
 
         return sorted(comps, key=lambda x: (x.word.startswith('__'),
@@ -195,7 +198,7 @@ class Script(object):
         except IndexError:
             raise NotFoundError()
         stmt.start_pos = self.pos
-        stmt.parent = lambda: self.parser.user_scope
+        stmt.parent = weakref.ref(self.parser.user_scope)
         return stmt
 
     def get_definition(self):

@@ -228,9 +228,11 @@ class TestRegression(Base):
 
     def test_follow_imports_if_possible(self):
         """ github issue #45 """
-        s = self.complete("import datetime.timedelta; datetime.timedelta")
-        #print s, [r.name.parent() for r in s], [r.type for r in s]
-        #assert 'Import' not in [r.type for r in s]
+        s = self.complete("from datetime import timedelta; timedelta")
+        # type can also point to import, but there will be additional
+        # attributes
+        types = [r.type for r in s]
+        #assert 'Import' not in types and 'Class' in types
 
 
 class TestFeature(Base):
@@ -284,7 +286,6 @@ class TestSpeed(Base):
         script = api.Script(s, 1, len(s), '')
         script.get_in_function_call()
         #print(api.imports.imports_processed)
-
 
 if __name__ == '__main__':
     unittest.main()
