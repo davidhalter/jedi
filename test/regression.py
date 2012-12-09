@@ -261,6 +261,10 @@ class TestRegression(Base):
         defs = self.get_def("print")
         assert [d.doc for d in defs]
 
+        defs = self.get_def("import")
+        print [d.doc for d in defs]
+        assert [d.doc for d in defs]
+
 
 class TestFeature(Base):
     def test_full_name(self):

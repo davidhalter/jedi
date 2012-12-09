@@ -35,6 +35,13 @@ class ImportPath(parsing.Base):
         def get_imports(self):
             return []
 
+        @property
+        def start_pos(self):
+            return (0, 0)
+
+        def get_parent_until(self):
+            return None
+
     GlobalNamespace = _GlobalNamespace()
 
     def __init__(self, import_stmt, is_like_search=False, kill_count=0,

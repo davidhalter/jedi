@@ -34,7 +34,10 @@ class BaseDefinition(object):
         self.is_keyword = isinstance(definition, keywords.Keyword)
 
         # generate a path to the definition
-        self.module_path = str(definition.get_parent_until().path)
+        try:
+            self.module_path = str(definition.get_parent_until().path)
+        except AttributeError:
+            self.module_path = None
 
     @property
     def type(self):
@@ -206,7 +209,6 @@ class Definition(BaseDefinition):
     `Script.get_definition`. """
     def __init__(self, definition):
         super(Definition, self).__init__(definition, definition.start_pos)
-        self._def_parent = definition.parent  # just here to limit gc
 
     @property
     def description(self):
@@ -229,6 +231,8 @@ class Definition(BaseDefinition):
             d = 'module %s' % self.module_name
         elif self.is_keyword:
             d = 'keyword %s' % d.name
+        elif isinstance(d, type(imports.ImportPath.GlobalNamespace)):
+            d = 'Global Namespace'
         else:
             d = d.get_code().replace('\n', '')
         return d
