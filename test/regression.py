@@ -270,6 +270,12 @@ class TestRegression(Base):
         assert len(defs) == 1
         assert [d.doc for d in defs]
 
+    def test_goto_following_on_imports(self):
+        g = self.goto("import multiprocessing.dummy; multiprocessing.dummy")
+        assert len(g) == 1
+        if not is_py25:
+            assert g[0].start_pos != (0, 0)
+
 
 class TestFeature(Base):
     def test_full_name(self):
