@@ -48,7 +48,7 @@ class BaseOutput(object):
                     self.path.insert(0, par.name)
                 except AttributeError:
                     pass
-                par = par.parent()
+                par = par.parent
 
     @property
     def module_name(self):
@@ -113,7 +113,7 @@ class Completion(BaseOutput):
     """ `Completion` objects are returned from `Script.complete`. Providing
     some useful functions for IDE's. """
     def __init__(self, name, needs_dot, like_name_length, base):
-        super(Completion, self).__init__(name.parent(), name.start_pos)
+        super(Completion, self).__init__(name.parent, name.start_pos)
 
         self.name = name
         self.needs_dot = needs_dot
@@ -154,7 +154,7 @@ class Completion(BaseOutput):
     def description(self):
         """ Provides a description of the completion object
         TODO return value is just __repr__ of some objects, improve! """
-        parent = self.name.parent()
+        parent = self.name.parent
         if parent is None:
             return ''
         t = self.type
@@ -175,7 +175,7 @@ class Definition(BaseOutput):
     `Script.get_definition`. """
     def __init__(self, definition):
         super(Definition, self).__init__(definition, definition.start_pos)
-        self._def_parent = definition.parent()  # just here to limit gc
+        self._def_parent = definition.parent  # just here to limit gc
 
     @property
     def description(self):
@@ -185,7 +185,7 @@ class Definition(BaseOutput):
         if isinstance(d, evaluate.InstanceElement):
             d = d.var
         if isinstance(d, evaluate.parsing.Name):
-            d = d.parent()
+            d = d.parent
 
         if isinstance(d, evaluate.Array):
             d = 'class ' + d.type

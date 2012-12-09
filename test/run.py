@@ -267,7 +267,6 @@ print('\nSummary: (%s fails)' % tests_fail)
 for s in summary:
     print(s)
 
-
 exit_code = 1 if tests_fail else 0
 if sys.hexversion < 0x02060000 and tests_fail <= 5:
     # Python 2.5 has major incompabillities (e.g. no property.setter),

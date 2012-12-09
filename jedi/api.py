@@ -27,7 +27,6 @@ from __future__ import with_statement
 __all__ = ['Script', 'NotFoundError', 'set_debug_function']
 
 import re
-import weakref
 
 import parsing
 import dynamic
@@ -93,12 +92,12 @@ class Script(object):
         """
         def follow_imports_if_possible(name):
             # TODO remove this, or move to another place (not used)
-            par = name.parent()
+            par = name.parent
             if isinstance(par, parsing.Import) and not \
                         isinstance(self.parser.user_stmt, parsing.Import):
                 new = imports.ImportPath(par).follow(is_goto=True)
                 # Only remove the old entry if a new one has been found.
-                #print par, new, par.parent()
+                #print par, new, par.parent
                 if new:
                     try:
                         return new
@@ -198,7 +197,7 @@ class Script(object):
         except IndexError:
             raise NotFoundError()
         stmt.start_pos = self.pos
-        stmt.parent = weakref.ref(self.parser.user_scope)
+        stmt.parent = self.parser.user_scope
         return stmt
 
     def get_definition(self):

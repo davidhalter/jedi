@@ -4,7 +4,6 @@ import os
 import pkgutil
 import imp
 import sys
-import weakref
 import time
 
 import builtin
@@ -84,7 +83,7 @@ class ImportPath(parsing.Base):
         zero = (0, 0)
         n = parsing.Name(i.namespace.names[1:], zero, zero, self.import_stmt)
         new = parsing.Import(zero, zero, n)
-        new.parent = weakref.ref(parent)
+        new.parent = parent
         evaluate.faked_scopes.append(new)
         debug.dbg('Generated a nested import: %s' % new)
         return new

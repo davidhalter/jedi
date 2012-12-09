@@ -1,5 +1,4 @@
 import copy
-import weakref
 import contextlib
 
 import parsing
@@ -164,10 +163,10 @@ def fast_parent_copy(obj):
                     # parent can be a property
                     continue
                 try:
-                    setattr(new_obj, key, weakref.ref(new_elements[value()]))
+                    setattr(new_obj, key, new_elements[value])
                 except KeyError:
                     pass
-            elif key == 'parent_stmt':
+            elif key in ['parent_stmt', 'parent_function']:
                 continue
             elif isinstance(value, list):
                 setattr(new_obj, key, list_rec(value))

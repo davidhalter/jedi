@@ -34,7 +34,6 @@ from _compatibility import (next, literal_eval, StringIO,
 import tokenize
 import re
 import keyword
-import weakref
 import os
 
 import debug
@@ -97,7 +96,7 @@ class Simple(Base):
     def __init__(self, start_pos, end_pos=(None, None)):
         self.start_pos = start_pos
         self.end_pos = end_pos
-        self.parent = lambda: None
+        self.parent = None
 
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
@@ -106,12 +105,12 @@ class Simple(Base):
         if type(classes) not in (tuple, list):
             classes = (classes,)
         scope = self
-        while not scope.parent() is None:
+        while scope.parent is not None:
             if classes and reverse != scope.isinstance(*classes):
                 if include_current:
                     return scope
                 break
-            scope = scope.parent()
+            scope = scope.parent
         return scope
 
     def __repr__(self):
@@ -142,7 +141,7 @@ class Scope(Simple):
         self.asserts = []
 
     def add_scope(self, sub, decorators):
-        sub.parent = weakref.ref(self)
+        sub.parent = self
         sub.decorators = decorators
         for d in decorators:
             # the parent is the same, because the decorator has not the scope
@@ -156,7 +155,7 @@ class Scope(Simple):
         Used to add a Statement or a Scope.
         A statement would be a normal command (Statement) or a Scope (Flow).
         """
-        stmt.parent = weakref.ref(self)
+        stmt.parent = self
         self.statements.append(stmt)
         return stmt
 
@@ -166,7 +165,7 @@ class Scope(Simple):
 
     def add_import(self, imp):
         self.imports.append(imp)
-        imp.parent = weakref.ref(self)
+        imp.parent = self
 
     def get_imports(self):
         """ Gets also the imports within flow statements """
@@ -330,10 +329,10 @@ class Class(Scope):
     def __init__(self, name, supers, start_pos, docstr=''):
         super(Class, self).__init__(start_pos, docstr)
         self.name = name
-        name.parent = weakref.ref(self)
+        name.parent = self
         self.supers = supers
         for s in self.supers:
-            s.parent = weakref.ref(self)
+            s.parent = self
         self.decorators = []
 
     def get_code(self, first_indent=False, indention='    '):
@@ -365,18 +364,18 @@ class Function(Scope):
     def __init__(self, name, params, start_pos, annotation):
         Scope.__init__(self, start_pos)
         self.name = name
-        name.parent = weakref.ref(self)
+        name.parent = self
         self.params = params
         for p in params:
-            p.parent = weakref.ref(self)
-            p.parent_function = weakref.ref(self)
+            p.parent = self
+            p.parent_function = self
         self.decorators = []
         self.returns = []
         self.is_generator = False
         self.listeners = set()  # not used here, but in evaluation.
 
         if annotation is not None:
-            annotation.parent = weakref.ref(self)
+            annotation.parent = self
             self.annotation = annotation
 
     def get_code(self, first_indent=False, indention='    '):
@@ -459,14 +458,14 @@ class Flow(Scope):
         # These have to be statements, because of with, which takes multiple.
         self.inits = inits
         for s in inits:
-            s.parent = weakref.ref(self)
+            s.parent = self
         if set_vars is None:
             self.set_vars = []
         else:
             self.set_vars = set_vars
             for s in self.set_vars:
-                s.parent().parent = lambda: self
-                s.parent = weakref.ref(self)
+                s.parent.parent = self
+                s.parent = self
 
     @property
     def parent(self):
@@ -573,7 +572,7 @@ class Import(Simple):
         self.from_ns = from_ns
         for n in [namespace, alias, from_ns]:
             if n:
-                n.parent = weakref.ref(self)
+                n.parent = self
 
         self.star = star
         self.relative_count = relative_count
@@ -609,7 +608,7 @@ class Import(Simple):
         if len(self.namespace) > 1:
             o = self.namespace
             n = Name([(o.names[0], o.start_pos)], o.start_pos, o.end_pos,
-                                                            parent=o.parent())
+                                                            parent=o.parent)
             return [n]
         else:
             return [self.namespace]
@@ -656,7 +655,7 @@ class Statement(Simple):
         self.used_vars = used_vars
         self.token_list = token_list
         for s in set_vars + used_funcs + used_vars:
-            s.parent = weakref.ref(self)
+            s.parent = self
         self.set_vars = self._remove_executions_from_set_vars(set_vars)
 
         # cache
@@ -793,10 +792,10 @@ class Statement(Simple):
                     close_brackets = False
                 else:
                     if close_brackets:
-                        result = result.parent()
+                        result = result.parent
                         close_brackets = False
                     if type(result) == Call:
-                        result = result.parent()
+                        result = result.parent
                     call = Call(tok, c_type, start_pos, parent=result)
                     result.add_to_current_field(call)
                     result = call
@@ -804,28 +803,28 @@ class Statement(Simple):
                 level += 1
                 if is_call_or_close():
                     result = Array(start_pos, brackets[tok], parent=result)
-                    result = result.parent().add_execution(result)
+                    result = result.parent.add_execution(result)
                     close_brackets = False
                 else:
                     result = Array(start_pos, brackets[tok], parent=result)
-                    result.parent().add_to_current_field(result)
+                    result.parent.add_to_current_field(result)
             elif tok == ':':
                 while is_call_or_close():
-                    result = result.parent()
+                    result = result.parent
                     close_brackets = False
                 if result.type == Array.LIST:  # [:] lookups
                     result.add_to_current_field(tok)
                 else:
                     result.add_dictionary_key()
             elif tok == '.':
-                if close_brackets and result.parent() != top:
+                if close_brackets and result.parent != top:
                     # only get out of the array, if it is a array execution
-                    result = result.parent()
+                    result = result.parent
                     close_brackets = False
                 is_chain = True
             elif tok == ',':
                 while is_call_or_close():
-                    result = result.parent()
+                    result = result.parent
                     close_brackets = False
                 result.add_field((start_pos[0], start_pos[1] + 1))
                 # important - it cannot be empty anymore
@@ -833,7 +832,7 @@ class Statement(Simple):
                     result.type = Array.TUPLE
             elif tok in [')', '}', ']']:
                 while is_call_or_close():
-                    result = result.parent()
+                    result = result.parent
                     close_brackets = False
                 if tok == '}' and not len(result):
                     # this is a really special case - empty brackets {} are
@@ -844,7 +843,7 @@ class Statement(Simple):
                 close_brackets = True
             else:
                 while is_call_or_close():
-                    result = result.parent()
+                    result = result.parent
                     close_brackets = False
                 if tok != '\n':
                     result.add_to_current_field(tok)
@@ -876,7 +875,7 @@ class Param(Statement):
         self.parent_function = None
 
     def add_annotation(self, annotation_stmt):
-        annotation_stmt.parent = weakref.ref(self)
+        annotation_stmt.parent = self
         self.annotation_stmt = annotation_stmt
 
     def get_name(self):
@@ -900,22 +899,22 @@ class Call(Base):
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
-        self.parent = weakref.ref(parent) if parent is not None else None
+        self.parent = parent
         self.type = type
         self.start_pos = start_pos
 
         self.next = None
         self.execution = None
-        self._parent_stmt = weakref.ref(parent_stmt) if parent_stmt else None
+        self._parent_stmt = parent_stmt
 
     @property
     def parent_stmt(self):
         if self._parent_stmt is not None:
             return self._parent_stmt
         elif self.parent:
-            return self.parent().parent_stmt
+            return self.parent.parent_stmt
         else:
-            return lambda: None
+            return None
 
     @parent_stmt.setter
     def parent_stmt(self, value):
@@ -935,10 +934,10 @@ class Call(Base):
         self.execution = call
         # there might be multiple executions, like a()[0], in that case, they
         # have the same parent. Otherwise it's not possible to parse proper.
-        if self.parent().execution == self:
+        if self.parent.execution == self:
             call.parent = self.parent
         else:
-            call.parent = weakref.ref(self)
+            call.parent = self
         return call
 
     def generate_call_path(self):
@@ -1126,7 +1125,7 @@ class Name(Simple):
         self.names = tuple(n if isinstance(n, NamePart) else NamePart(*n)
                            for n in names)
         if parent is not None:
-            self.parent = weakref.ref(parent)
+            self.parent = parent
 
     def get_code(self):
         """ Returns the names in a full string format """
@@ -1497,7 +1496,7 @@ class PyFuzzyParser(object):
                             if middle is None:
                                 level -= 1
                             else:
-                                middle.parent = weakref.ref(self.scope)
+                                middle.parent = self.scope
                             debug.warning('list comprehension formatting @%s' %
                                                             self.start_pos[0])
                             continue
@@ -1506,12 +1505,12 @@ class PyFuzzyParser(object):
                         in_clause, tok = self._parse_statement(added_breaks=b,
                                                                 list_comp=True)
                         if tok not in b or in_clause is None:
-                            middle.parent = weakref.ref(self.scope)
+                            middle.parent = self.scope
                             if in_clause is None:
                                 self.gen.push_back(self._current_full)
                             else:
-                                in_clause.parent = weakref.ref(self.scope)
-                                in_clause.parent = weakref.ref(self.scope)
+                                in_clause.parent = self.scope
+                                in_clause.parent = self.scope
                             debug.warning('list comprehension in_clause %s@%s'
                                                 % (tok, self.start_pos[0]))
                             continue
@@ -1539,7 +1538,7 @@ class PyFuzzyParser(object):
                                         toks, first_pos, self.end_pos)
 
                         for s in [st, middle, in_clause]:
-                            s.parent = weakref.ref(self.scope)
+                            s.parent = self.scope
                         tok = ListComprehension(st, middle, in_clause)
                         tok_list.append(tok)
                         if list_comp:
@@ -1633,7 +1632,7 @@ class PyFuzzyParser(object):
             s = self.scope
             while s is not None:
                 s.end_pos = self.end_pos
-                s = s.parent()
+                s = s.parent
             raise
 
         type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
@@ -1679,7 +1678,7 @@ class PyFuzzyParser(object):
                 token_type, tok = self.next()
                 if self.start_pos[1] <= self.scope.start_pos[1]:
                     self.scope.end_pos = self.start_pos
-                    self.scope = self.scope.parent()
+                    self.scope = self.scope.parent
 
             # check again for unindented stuff. this is true for syntax
             # errors. only check for names, because thats relevant here. If
@@ -1688,7 +1687,7 @@ class PyFuzzyParser(object):
                     and (token_type == tokenize.NAME or tok in ['(', '['])\
                     and self.scope != self.module:
                 self.scope.end_pos = self.start_pos
-                self.scope = self.scope.parent()
+                self.scope = self.scope.parent
 
             first_pos = self.start_pos
             if tok == 'def':
@@ -1763,14 +1762,14 @@ class PyFuzzyParser(object):
                         debug.warning('syntax err, for flow started @%s',
                                                         self.start_pos[0])
                         if statement is not None:
-                            statement.parent = weakref.ref(self.scope)
+                            statement.parent = self.scope
                         if set_stmt is not None:
-                            set_stmt.parent = weakref.ref(self.scope)
+                            set_stmt.parent = self.scope
                 else:
                     debug.warning('syntax err, for flow incomplete @%s',
                                                         self.start_pos[0])
                     if set_stmt is not None:
-                        set_stmt.parent = weakref.ref(self.scope)
+                        set_stmt.parent = self.scope
 
             elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
                 added_breaks = []
@@ -1811,7 +1810,7 @@ class PyFuzzyParser(object):
                     self.scope = s
                 else:
                     for i in inits:
-                        i.parent = weakref.ref(self.scope)
+                        i.parent = self.scope
                     debug.warning('syntax err, flow started @%s',
                                                         self.start_pos[0])
             # globals
@@ -1831,7 +1830,7 @@ class PyFuzzyParser(object):
                 continue
             elif tok == 'assert':
                 stmt, tok = self._parse_statement()
-                stmt.parent = weakref.ref(self.scope)
+                stmt.parent = self.scope
                 self.scope.asserts.append(stmt)
             # default
             elif token_type in [tokenize.NAME, tokenize.STRING,

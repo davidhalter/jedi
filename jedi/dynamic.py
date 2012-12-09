@@ -128,7 +128,7 @@ def search_params(param):
                         # no execution means that params cannot be set
                         call_path = c.generate_call_path()
                         pos = c.start_pos
-                        scope = stmt.parent()
+                        scope = stmt.parent
                         evaluate.follow_call_path(call_path, scope, pos)
             return listener.param_possibilities
 
@@ -136,14 +136,14 @@ def search_params(param):
         for params in get_posibilities(module, func_name):
             for p in params:
                 if str(p) == param_name:
-                    result += evaluate.follow_statement(p.parent())
+                    result += evaluate.follow_statement(p.parent)
         return result
 
     func = param.get_parent_until(parsing.Function)
     current_module = param.get_parent_until()
     func_name = str(func.name)
-    if func_name == '__init__' and isinstance(func.parent(), parsing.Class):
-        func_name = str(func.parent().name)
+    if func_name == '__init__' and isinstance(func.parent, parsing.Class):
+        func_name = str(func.parent.name)
 
     # get the param name
     if param.assignment_details:
@@ -177,7 +177,7 @@ def check_array_additions(array):
         return []
 
     is_list = array._array.type == 'list'
-    current_module = array._array.parent_stmt().get_parent_until()
+    current_module = array._array.parent_stmt.get_parent_until()
     res = _check_array_additions(array, current_module, is_list)
     return res
 
@@ -209,10 +209,10 @@ def dec(func):
         global counter
         element = args[0]
         if isinstance(element, evaluate.Array):
-            stmt = element._array.parent_stmt()
+            stmt = element._array.parent_stmt
         else:
             # must be instance
-            stmt = element.var_args.parent_stmt()
+            stmt = element.var_args.parent_stmt
         print('  ' * counter + 'recursion,', stmt)
         counter += 1
         res = func(*args, **kwargs)
@@ -249,7 +249,7 @@ def _check_array_additions(compare_array, module, is_list):
             backtrack_path = iter(call_path[:separate_index])
 
             position = c.start_pos
-            scope = c.parent_stmt().parent()
+            scope = c.parent_stmt.parent
 
             found = evaluate.follow_call_path(backtrack_path, scope, position)
             if not compare_array in found:
@@ -275,10 +275,10 @@ def _check_array_additions(compare_array, module, is_list):
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/Execution parent """
         if isinstance(element, evaluate.Array):
-            stmt = element._array.parent_stmt()
+            stmt = element._array.parent_stmt
         else:
             # must be instance
-            stmt = element.var_args.parent_stmt()
+            stmt = element.var_args.parent_stmt
         if isinstance(stmt, evaluate.InstanceElement):
             stop_classes = list(stop_classes) + [evaluate.Function]
         return stmt.get_parent_until(stop_classes)
@@ -326,7 +326,7 @@ def check_array_instances(instance):
     if not settings.dynamic_arrays_instances:
         return instance.var_args
     ai = ArrayInstance(instance)
-    return helpers.generate_param_array([ai], instance.var_args.parent_stmt())
+    return helpers.generate_param_array([ai], instance.var_args.parent_stmt)
 
 
 class ArrayInstance(parsing.Base):
@@ -358,10 +358,10 @@ class ArrayInstance(parsing.Base):
                     continue
             items += evaluate.get_iterator_types([array])
 
-        if self.var_args.parent_stmt() is None:
+        if self.var_args.parent_stmt is None:
             return []  # generated var_args should not be checked for arrays
 
-        module = self.var_args.parent_stmt().get_parent_until()
+        module = self.var_args.parent_stmt.get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self.instance, module, is_list)
         return items
@@ -378,13 +378,13 @@ def related_names(definitions, search_name, mods):
                 follow.append(call_path[:i + 1])
 
         for f in follow:
-            follow_res, search = evaluate.goto(call.parent_stmt(), f)
+            follow_res, search = evaluate.goto(call.parent_stmt, f)
             follow_res = related_name_add_import_modules(follow_res, search)
 
-            #print follow_res, [d.parent() for d in follow_res]
+            #print follow_res, [d.parent for d in follow_res]
             # compare to see if they match
             if any(r in definitions for r in follow_res):
-                scope = call.parent_stmt()
+                scope = call.parent_stmt
                 result.append(api_classes.RelatedName(search, scope))
 
         return result
@@ -442,8 +442,8 @@ def related_name_add_import_modules(definitions, search_name):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:
-        if isinstance(d.parent(), parsing.Import):
-            s = imports.ImportPath(d.parent(), direct_resolve=True)
+        if isinstance(d.parent, parsing.Import):
+            s = imports.ImportPath(d.parent, direct_resolve=True)
             try:
                 new.add(s.follow(is_goto=True)[0])
             except IndexError:

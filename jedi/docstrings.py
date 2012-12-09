@@ -7,8 +7,8 @@ import evaluate
 
 #@evaluate.memoize_default()  # TODO add
 def follow_param(param):
-    func = param.parent_function()
-    #print func, param, param.parent_function()
+    func = param.parent_function
+    #print func, param, param.parent_function
     param_str = search_param_in_docstr(func.docstr, str(param.get_name()))
 
     if param_str is not None:

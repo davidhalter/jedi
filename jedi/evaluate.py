@@ -17,7 +17,6 @@ from _compatibility import next, property, hasattr, is_py3k, use_metaclass, \
 import sys
 import itertools
 import copy
-import weakref
 
 import parsing
 import debug
@@ -136,8 +135,9 @@ class Executable(parsing.Base):
     def get_parent_until(self, *args, **kwargs):
         return self.base.get_parent_until(*args, **kwargs)
 
+    @property
     def parent(self):
-        return self.base.parent()
+        return self.base.parent
 
 
 class Instance(use_metaclass(CachedMetaClass, Executable)):
@@ -215,8 +215,8 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         if args is None:
             args = helpers.generate_param_array([])
         method = self.get_subscope_by_name(name)
-        if args.parent_stmt() is None:
-            args.parent_stmt = weakref.ref(method)
+        if args.parent_stmt is None:
+            args.parent_stmt = method
         return Execution(method, args).get_return_types()
 
     def get_descriptor_return(self, obj):
@@ -287,9 +287,10 @@ class InstanceElement(use_metaclass(CachedMetaClass)):
         self.var = var
         self.is_class_var = is_class_var
 
+    @property
     @memoize_default()
     def parent(self):
-        par = self.var.parent()
+        par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
                         or isinstance(par, parsing.Class) \
                             and par == self.instance.base.base:
@@ -313,9 +314,9 @@ class InstanceElement(use_metaclass(CachedMetaClass)):
         origin = self.var.get_assignment_calls()
         # Delete parent, because it isn't used anymore.
         new = helpers.fast_parent_copy(origin)
-        par = InstanceElement(self.instance, origin.parent_stmt(),
+        par = InstanceElement(self.instance, origin.parent_stmt,
                                                     self.is_class_var)
-        new.parent_stmt = weakref.ref(par)
+        new.parent_stmt = par
         faked_scopes.append(par)
         faked_scopes.append(new)
         return new
@@ -485,7 +486,7 @@ class Execution(Executable):
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
         stmts = []
-        if self.base.parent() == builtin.Builtin.scope \
+        if self.base.parent == builtin.Builtin.scope \
                 and not isinstance(self.base, (Generator, Array)):
             func_name = str(self.base.name)
 
@@ -566,7 +567,7 @@ class Execution(Executable):
             """
             Create a param with the original scope (of varargs) as parent.
             """
-            parent_stmt = self.var_args.parent_stmt()
+            parent_stmt = self.var_args.parent_stmt
             pos = parent_stmt.start_pos if parent_stmt else None
             calls = parsing.Array(pos, parsing.Array.NOARRAY, parent_stmt)
             calls.values = values
@@ -574,12 +575,12 @@ class Execution(Executable):
             calls.type = array_type
             new_param = copy.copy(param)
             if parent_stmt is not None:
-                new_param.parent = weakref.ref(parent_stmt)
+                new_param.parent = parent_stmt
             new_param._assignment_calls_calculated = True
             new_param._assignment_calls = calls
             new_param.is_generated = True
             name = copy.copy(param.get_name())
-            name.parent = weakref.ref(new_param)
+            name.parent = new_param
             faked_scopes.append(new_param)
             return name
 
@@ -589,7 +590,7 @@ class Execution(Executable):
             # Care for self -> just exclude it and add the instance
             start_offset = 1
             self_name = copy.copy(self.base.params[0].get_name())
-            self_name.parent = weakref.ref(self.base.instance)
+            self_name.parent = self.base.instance
             result.append(self_name)
 
         param_dict = {}
@@ -732,7 +733,7 @@ class Execution(Executable):
         objects = []
         for element in attr:
             copied = helpers.fast_parent_copy(element)
-            copied.parent = weakref.ref(self._scope_copy(copied.parent()))
+            copied.parent = self._scope_copy(copied.parent)
             if isinstance(copied, parsing.Function):
                 copied = Function(copied)
             objects.append(copied)
@@ -756,9 +757,7 @@ class Execution(Executable):
                 return self
             else:
                 copied = helpers.fast_parent_copy(scope)
-                #copied.parent = self._scope_copy(copied.parent())
-                copied.parent = weakref.ref(self._scope_copy(copied.parent()))
-                #copied.parent = weakref.ref(self)
+                copied.parent = self._scope_copy(copied.parent)
                 faked_scopes.append(copied)
                 return copied
         except AttributeError:
@@ -810,7 +809,7 @@ class Generator(use_metaclass(CachedMetaClass, parsing.Base)):
         for n in ('close', 'throw') + executes_generator:
             name = parsing.Name([(n, none_pos)], none_pos, none_pos)
             if n in executes_generator:
-                name.parent = weakref.ref(self)
+                name.parent = self
             names.append(name)
         debug.dbg('generator names', names)
         return names
@@ -823,8 +822,9 @@ class Generator(use_metaclass(CachedMetaClass, parsing.Base)):
         debug.warning('Tried to get array access on a generator', self)
         return []
 
+    @property
     def parent(self):
-        return self.func.parent()
+        return self.func.parent
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.func)
@@ -906,6 +906,7 @@ class Array(use_metaclass(CachedMetaClass, parsing.Base)):
     def get_contents(self):
         return self._array
 
+    @property
     def parent(self):
         """
         Return the builtin scope as parent, because the arrays are builtins
@@ -998,7 +999,7 @@ def get_names_for_scope(scope, position=None, star_search=True,
             # is a list comprehension
             yield scope, scope.get_set_vars(is_internal_call=True)
 
-        scope = scope.parent()
+        scope = scope.parent
         # This is used, because subscopes (Flow scopes) would distort the
         # results.
         if scope and scope.isinstance(Function, parsing.Function, Execution):
@@ -1047,14 +1048,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 if r.is_global():
                     for token_name in r.token_list[1:]:
                         if isinstance(token_name, parsing.Name):
-                            add = get_scopes_for_name(r.parent(),
+                            add = get_scopes_for_name(r.parent,
                                                             str(token_name))
                 else:
                     # generated objects are used within executions, but these
                     # objects are in functions, and we have to dynamically
                     # execute first.
                     if isinstance(r, parsing.Param):
-                        func = r.parent()
+                        func = r.parent
                         # Instances are typically faked, if the instance is not
                         # called from outside. Here we check it for __init__
                         # functions and return.
@@ -1124,7 +1125,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
             """
             result = []
             no_break_scope = False
-            par = name.parent()
+            par = name.parent
 
             if par.isinstance(parsing.Flow):
                 if par.command == 'for':
@@ -1132,8 +1133,8 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 else:
                     debug.warning('Flow: Why are you here? %s' % par.command)
             elif par.isinstance(parsing.Param) \
-                    and par.parent() is not None \
-                    and par.parent().parent().isinstance(parsing.Class) \
+                    and par.parent is not None \
+                    and par.parent.parent.isinstance(parsing.Class) \
                     and par.position_nr == 0:
                 # This is where self gets added - this happens at another
                 # place, if the var_args are clear. But sometimes the class is
@@ -1142,7 +1143,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 if isinstance(scope, InstanceElement):
                     inst = scope.instance
                 else:
-                    inst = Instance(Class(par.parent().parent()))
+                    inst = Instance(Class(par.parent.parent))
                     inst.is_generated = True
                 result.append(inst)
             elif par.isinstance(parsing.Statement):
@@ -1188,7 +1189,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):
-                p = name.parent().parent() if name.parent() else None
+                p = name.parent.parent if name.parent else None
                 if isinstance(p, InstanceElement) \
                             and isinstance(p.var, parsing.Class):
                     p = p.var
@@ -1206,7 +1207,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                     # this means that a definition was found and is not e.g.
                     # in if/else.
                     if result and not no_break_scope:
-                        if not name.parent() or p == s:
+                        if not name.parent or p == s:
                             break
                         break_scopes.append(p)
 
@@ -1222,7 +1223,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                     break
                 if flow_scope == nscope:
                     break
-                flow_scope = flow_scope.parent()
+                flow_scope = flow_scope.parent
             flow_scope = nscope
             if result:
                 break
@@ -1427,9 +1428,9 @@ def follow_call_list(call_list):
         loop = parsing.ForFlow([input], lc.stmt.start_pos,
                                                 lc.middle, True)
         if parent is None:
-            loop.parent = weakref.ref(lc.stmt.parent())
+            loop.parent = lc.stmt.parent
         else:
-            loop.parent = lambda: parent
+            loop.parent = parent
 
         if isinstance(nested_lc, parsing.ListComprehension):
             loop = evaluate_list_comprehension(nested_lc, loop)
@@ -1450,7 +1451,7 @@ def follow_call_list(call_list):
                 elif isinstance(call, parsing.ListComprehension):
                     loop = evaluate_list_comprehension(call)
                     stmt = copy.copy(call.stmt)
-                    stmt.parent = lambda: loop
+                    stmt.parent = loop
                     # create a for loop which does the same as list
                     # comprehensions
                     result += follow_statement(stmt)
@@ -1486,9 +1487,9 @@ def follow_call_list(call_list):
 
 def follow_call(call):
     """ Follow a call is following a function, variable, string, etc. """
-    scope = call.parent_stmt().parent()
+    scope = call.parent_stmt.parent
     path = call.generate_call_path()
-    position = call.parent_stmt().start_pos
+    position = call.parent_stmt.start_pos
     return follow_call_path(path, scope, position)
 
 
@@ -1596,7 +1597,7 @@ def goto(stmt, call_path=None):
         call = arr.get_only_subelement()
         call_path = list(call.generate_call_path())
 
-    scope = stmt.parent()
+    scope = stmt.parent
     pos = stmt.start_pos
     call_path, search = call_path[:-1], call_path[-1]
     if call_path:
