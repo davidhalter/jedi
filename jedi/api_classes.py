@@ -34,10 +34,7 @@ class BaseDefinition(object):
         self.is_keyword = isinstance(definition, keywords.Keyword)
 
         # generate a path to the definition
-        try:
-            self.module_path = str(definition.get_parent_until().path)
-        except AttributeError:
-            self.module_path = None
+        self.module_path = str(definition.get_parent_until().path)
 
     @property
     def type(self):
@@ -231,8 +228,6 @@ class Definition(BaseDefinition):
             d = 'module %s' % self.module_name
         elif self.is_keyword:
             d = 'keyword %s' % d.name
-        elif isinstance(d, type(imports.ImportPath.GlobalNamespace)):
-            d = 'Global Namespace'
         else:
             d = d.get_code().replace('\n', '')
         return d

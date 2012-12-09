@@ -262,7 +262,7 @@ class TestRegression(Base):
         assert [d.doc for d in defs]
 
         defs = self.get_def("import")
-        print [d.doc for d in defs]
+        assert len(defs) == 1
         assert [d.doc for d in defs]
 
 

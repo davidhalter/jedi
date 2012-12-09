@@ -237,7 +237,8 @@ class Script(object):
         # add keywords
         scopes |= keywords.get_keywords(string=goto_path, pos=self.pos)
 
-        d = set([api_classes.Definition(s) for s in scopes])
+        d = set([api_classes.Definition(s) for s in scopes
+                    if not isinstance(s, imports.ImportPath._GlobalNamespace)])
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
     def goto(self):
