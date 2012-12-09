@@ -80,4 +80,7 @@ def imitate_pydoc(string):
     except TypeError:
         return ''
 
-    return pydoc_topics.topics[label] if pydoc_topics else ''
+    try:
+        return pydoc_topics.topics[label] if pydoc_topics else ''
+    except KeyError:
+        return ''

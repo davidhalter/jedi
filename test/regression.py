@@ -18,7 +18,9 @@ import api
 
 
 class Base(unittest.TestCase):
-    def get_def(self, src, pos):
+    def get_def(self, src, pos=None):
+        if pos is None:
+            pos = 1, len(src)
         script = api.Script(src, pos[0], pos[1], None)
         return script.get_definition()
 
@@ -253,6 +255,11 @@ class TestRegression(Base):
         objs = itertools.chain.from_iterable(r.follow_definition() for r in c)
         types = [o.type for o in objs]
         assert 'Import' not in types and 'Class' in types
+
+    def test_keyword_definition_doc(self):
+        """ github jedi-vim issue #44 """
+        defs = self.get_def("print")
+        assert [d.doc for d in defs]
 
 
 class TestFeature(Base):
