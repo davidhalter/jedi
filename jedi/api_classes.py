@@ -32,23 +32,29 @@ class BaseOutput(object):
         self.definition = definition
         self.is_keyword = isinstance(definition, keywords.Keyword)
 
-        # generate the type
-        self.stripped_definition = self.definition
-        if isinstance(self.definition, evaluate.InstanceElement):
-            self.stripped_definition = self.definition.var
-        self.type = type(self.stripped_definition).__name__
-
         # generate a path to the definition
         self.module_path = str(definition.get_parent_until().path)
-        self.path = []
-        if not isinstance(definition, keywords.Keyword):
-            par = definition
+
+    @property
+    def type(self):
+        # generate the type
+        stripped = self.definition
+        if isinstance(self.definition, evaluate.InstanceElement):
+            stripped = self.definition.var
+        self.type = type(stripped).__name__
+
+    @property
+    def path(self):
+        path = []
+        if not isinstance(self.definition, keywords.Keyword):
+            par = self.definition
             while par is not None:
                 try:
-                    self.path.insert(0, par.name)
+                    path.insert(0, par.name)
                 except AttributeError:
                     pass
                 par = par.parent
+        return path
 
     @property
     def module_name(self):

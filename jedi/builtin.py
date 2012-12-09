@@ -461,12 +461,11 @@ class Builtin(object):
                 FunctionType = types.FunctionType
             source = _generate_code(Container, depth=0)
             parser = parsing.PyFuzzyParser(source, None)
-            # needed for caching (because of weakref)
-            module = self.magic_func_module = parser.module
+            module = parser.module
             module.parent = self.scope
             typ = evaluate.follow_path(iter(['FunctionType']), module, module)
 
-            self._magic_function_scope = s = typ.pop()
+            s = self._magic_function_scope = typ.pop()
             return s
 
 
