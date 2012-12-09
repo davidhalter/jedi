@@ -276,10 +276,6 @@ class TestRegression(Base):
             assert len(g) == 1
             assert g[0].start_pos != (0, 0)
 
-        script = api.Script("import json", 1, len("import js"), None)
-        completions = script.complete()
-        completions
-
 
 class TestFeature(Base):
     def test_full_name(self):
