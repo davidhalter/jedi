@@ -462,7 +462,7 @@ def check_flow_information(flow, search_name, pos):
     result = []
     if isinstance(flow, parsing.Scope) and not result:
         for ass in reversed(flow.asserts):
-            if ass.start_pos > pos:
+            if pos is None or ass.start_pos > pos:
                 continue
             result = check_statement_information(ass, search_name)
             if result:

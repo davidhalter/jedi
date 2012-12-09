@@ -301,7 +301,7 @@ class TestSpeed(Base):
                 for i in range(number):
                     func(self)
                 single_time = (time.time() - first) / number
-                print('speed', func, single_time)
+                print('\nspeed', func, single_time)
                 assert single_time < time_per_run
             return wrapper
         return decorated
