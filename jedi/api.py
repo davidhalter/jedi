@@ -257,7 +257,22 @@ class Script(object):
     def _goto(self, add_import_name=False):
         """
         Used for goto and related_names.
+        :param add_import_name: TODO add description
         """
+        def follow_inexistent_imports(defs):
+            """ Imports can be generated, e.g. following
+            `multiprocessing.dummy` generates an import dummy in the
+            multiprocessing module. The Import doesn't exist -> follow.
+            """
+            definitions = set(defs)
+            for d in defs:
+                if isinstance(d.parent, parsing.Import) \
+                                        and d.start_pos == (0, 0):
+                    i = imports.ImportPath(d.parent).follow(is_goto=True)
+                    definitions.remove(d)
+                    definitions |= follow_inexistent_imports(i)
+            return definitions
+
         goto_path = self.module.get_path_under_cursor()
         context = self.module.get_context()
         if next(context) in ('class', 'def'):
@@ -279,7 +294,8 @@ class Script(object):
                     definitions.append(import_name[0])
         else:
             stmt = self._get_under_cursor_stmt(goto_path)
-            definitions, search_name = evaluate.goto(stmt)
+            defs, search_name = evaluate.goto(stmt)
+            definitions = follow_inexistent_imports(defs)
         return definitions, search_name
 
     def related_names(self, additional_module_paths=[]):
