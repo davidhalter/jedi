@@ -13,6 +13,7 @@ import builtin
 import debug
 import evaluate
 import settings
+import imports
 
 
 class Module(builtin.CachedModule):
@@ -61,6 +62,9 @@ class ModuleWithCursor(Module):
         """ get the parser lazy """
         if not self._parser:
             try:
+                ts, parser = builtin.CachedModule.cache[self.path]
+                imports.invalidate_star_import_cache(parser.module)
+
                 del builtin.CachedModule.cache[self.path]
             except KeyError:
                 pass
