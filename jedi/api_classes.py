@@ -5,11 +5,12 @@ import os
 
 import settings
 import evaluate
+import imports
 import parsing
 import keywords
 
 
-class BaseOutput(object):
+class BaseDefinition(object):
     _mapping = {'posixpath': 'os.path',
                'riscospath': 'os.path',
                'ntpath': 'os.path',
@@ -41,7 +42,7 @@ class BaseOutput(object):
         stripped = self.definition
         if isinstance(self.definition, evaluate.InstanceElement):
             stripped = self.definition.var
-        self.type = type(stripped).__name__
+        return type(stripped).__name__
 
     @property
     def path(self):
@@ -92,7 +93,7 @@ class BaseOutput(object):
 
     @property
     def description(self):
-        raise NotImplementedError('Base Class')
+        return str(self.definition)
 
     @property
     def full_name(self):
@@ -115,7 +116,7 @@ class BaseOutput(object):
         return "<%s %s>" % (type(self).__name__, self.description)
 
 
-class Completion(BaseOutput):
+class Completion(BaseDefinition):
     """ `Completion` objects are returned from `Script.complete`. Providing
     some useful functions for IDE's. """
     def __init__(self, name, needs_dot, like_name_length, base):
@@ -125,6 +126,8 @@ class Completion(BaseOutput):
         self.needs_dot = needs_dot
         self.like_name_length = like_name_length
         self.base = base
+
+        self._followed_definitions = None
 
     @property
     def complete(self):
@@ -172,11 +175,33 @@ class Completion(BaseOutput):
         line_nr = '' if self.in_builtin_module else '@%s' % self.line_nr
         return '%s: %s%s' % (t, desc, line_nr)
 
+    def follow_definition(self):
+        """ Returns you the original definitions. I strongly recommend not
+        using it for your completions, because it might slow down Jedi. If you
+        want to read only a few objects (<=20). I think it might be useful,
+        especially to get the original docstrings.
+        The basic problem of this function is that it follows all results. This
+        means with 1000 completions (e.g. numpy), it's just PITA slow.
+        """
+        if self._followed_definitions is None:
+            if self.definition.isinstance(parsing.Statement):
+                defs = evaluate.follow_statement(self.definition)
+            elif self.definition.isinstance(parsing.Import):
+                defs = imports.strip_imports([self.definition])
+            else:
+                return [self]
+
+            self._followed_definitions = \
+                            [BaseDefinition(d, start_pos=None) for d in defs]
+            evaluate.clear_caches()
+
+        return self._followed_definitions
+
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.name)
 
 
-class Definition(BaseOutput):
+class Definition(BaseDefinition):
     """ These are the objects returned by either `Script.goto` or
     `Script.get_definition`. """
     def __init__(self, definition):
@@ -223,7 +248,7 @@ class Definition(BaseOutput):
         return "%s:%s%s" % (self.module_name, self.description, position)
 
 
-class RelatedName(BaseOutput):
+class RelatedName(BaseDefinition):
     def __init__(self, name_part, scope):
         super(RelatedName, self).__init__(scope, name_part.start_pos)
         self.name_part = name_part

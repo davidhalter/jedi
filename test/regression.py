@@ -6,6 +6,7 @@ import unittest
 from os.path import abspath, dirname
 import time
 import functools
+import itertools
 
 sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../jedi'))
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
@@ -244,13 +245,14 @@ class TestRegression(Base):
         s = self.complete("import os; os.P_")
         assert 'P_NOWAIT' in [i.word for i in s]
 
-    def test_follow_imports_if_possible(self):
+    def test_follow_definition(self):
         """ github issue #45 """
-        s = self.complete("from datetime import timedelta; timedelta")
+        c = self.complete("from datetime import timedelta; timedelta")
         # type can also point to import, but there will be additional
         # attributes
-        types = [r.type for r in s]
-        #assert 'Import' not in types and 'Class' in types
+        objs = itertools.chain.from_iterable(r.follow_definition() for r in c)
+        types = [o.type for o in objs]
+        assert 'Import' not in types and 'Class' in types
 
 
 class TestFeature(Base):
