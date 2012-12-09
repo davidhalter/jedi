@@ -35,6 +35,24 @@ class Base(unittest.TestCase):
 
 
 class TestRegression(Base):
+    def test_star_import_cache_duration(self):
+        new = 0.01
+        old, api.settings.star_import_cache_validity = \
+                api.settings.star_import_cache_validity, new
+
+        imports = api.imports
+        imports.star_import_cache = {}  # first empty...
+        # path needs to be not-None (otherwise caching effects are not visible)
+        api.Script('', 1,0, '').complete()
+        time.sleep(2*new)
+        api.Script('', 1,0, '').complete()
+
+        # reset values
+        api.settings.star_import_cache_validity = old
+        length = len(imports.star_import_cache)
+        imports.star_import_cache = {}
+        self.assertEqual(length, 1)
+
     def test_part_parser(self):
         """ test the get_in_function_call speedups """
         s = '\n' * 100 + 'abs('

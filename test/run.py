@@ -267,6 +267,7 @@ print('\nSummary: (%s fails)' % tests_fail)
 for s in summary:
     print(s)
 
+import mem_debug
 
 exit_code = 1 if tests_fail else 0
 if sys.hexversion < 0x02060000 and tests_fail <= 5:
