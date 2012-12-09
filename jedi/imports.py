@@ -102,10 +102,11 @@ class ImportPath(parsing.Base):
                 if self.import_stmt.relative_count == 0:
                     names += self.get_module_names()
 
-                path = os.path.abspath(self.file_path)
-                for i in range(self.import_stmt.relative_count - 1):
-                    path = os.path.dirname(path)
-                names += self.get_module_names([path])
+                if self.file_path is not None:
+                    path = os.path.abspath(self.file_path)
+                    for i in range(self.import_stmt.relative_count - 1):
+                        path = os.path.dirname(path)
+                    names += self.get_module_names([path])
             else:
                 if on_import_stmt and isinstance(scope, parsing.Module) \
                                         and scope.path.endswith('__init__.py'):

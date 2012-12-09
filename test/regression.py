@@ -18,22 +18,26 @@ import api
 
 
 class Base(unittest.TestCase):
-    def get_def(self, src, pos=None):
+    def get_script(self, src, pos, path=None):
         if pos is None:
-            pos = 1, len(src)
-        script = api.Script(src, pos[0], pos[1], None)
+            lines = src.splitlines()
+            pos = len(lines), len(lines[-1])
+        return api.Script(src, pos[0], pos[1], path)
+
+    def get_def(self, src, pos=None):
+        script = self.get_script(src, pos)
         return script.get_definition()
 
-    def complete(self, src, pos=None):
-        if pos is None:
-            pos = 1, len(src)
-        script = api.Script(src, pos[0], pos[1], '')
+    def complete(self, src, pos=None, path=None):
+        script = self.get_script(src, pos, path)
         return script.complete()
 
+    def goto(self, src, pos=None):
+        script = self.get_script(src, pos)
+        return script.goto()
+
     def get_in_function_call(self, src, pos=None):
-        if pos is None:
-            pos = 1, len(src)
-        script = api.Script(src, pos[0], pos[1], '')
+        script = self.get_script(src, pos)
         return script.get_in_function_call()
 
 
@@ -134,11 +138,12 @@ class TestRegression(Base):
 
     def test_complete_on_empty_import(self):
         # should just list the files in the directory
-        assert 10 < len(self.complete("from .", (1, 5))) < 30
-        assert 10 < len(self.complete("from . import", (1, 5))) < 30
-        assert 10 < len(self.complete("from . import classes", (1, 5))) < 30
+        assert 10 < len(self.complete("from .", path='')) < 30
+        assert 10 < len(self.complete("from . import", (1, 5), '')) < 30
+        assert 10 < len(self.complete("from . import classes",
+                                        (1, 5), '')) < 30
         assert len(self.complete("import")) == 0
-        assert len(self.complete("import import")) > 0
+        assert len(self.complete("import import", path='')) > 0
 
     def test_get_in_function_call(self):
         def check(call_def, name, index):
@@ -280,10 +285,7 @@ class TestFeature(Base):
         import re
         any_re = re.compile('.*')
         any_re"""
-        lines = s.splitlines()
-        defs = self.get_def(s, (len(lines), len(lines[-1])))
-        self.assertEqual(defs[0].full_name,
-                         're.RegexObject')
+        self.assertEqual(self.get_def(s)[0].full_name, 're.RegexObject')
 
 
 class TestSpeed(Base):
