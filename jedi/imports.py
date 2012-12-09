@@ -298,7 +298,9 @@ def invalidate_star_import_cache(module, only_main=False):
         pass
 
     if not only_main:
-        for key, (t, mods) in star_import_cache.items():
+        # We need a list here because otherwise the list is being changed
+        # during the iteration in py3k: iteritems -> items.
+        for key, (t, mods) in list(star_import_cache.items()):
             if module in mods:
                 invalidate_star_import_cache(key)
 
