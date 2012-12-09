@@ -271,10 +271,14 @@ class TestRegression(Base):
         assert [d.doc for d in defs]
 
     def test_goto_following_on_imports(self):
-        g = self.goto("import multiprocessing.dummy; multiprocessing.dummy")
-        assert len(g) == 1
         if not is_py25:
+            g = self.goto("import multiprocessing.dummy; multiprocessing.dummy")
+            assert len(g) == 1
             assert g[0].start_pos != (0, 0)
+
+        script = api.Script("import json", 1, len("import js"), None)
+        completions = script.complete()
+        completions
 
 
 class TestFeature(Base):

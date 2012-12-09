@@ -275,6 +275,9 @@ def sys_path_with_modifications(module):
                     debug.dbg('sys path added: %s' % res)
         return sys_path
 
+    if module.path is None:
+        return []  # support for modules without a path is intentionally bad.
+
     curdir = os.path.abspath(os.curdir)
     try:
         os.chdir(os.path.dirname(module.path))
