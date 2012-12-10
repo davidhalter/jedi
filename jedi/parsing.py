@@ -1027,7 +1027,8 @@ class Array(Call):
         if self.type in (Array.LIST, Array.TUPLE):
             return  # these are basically code errors, just ignore
         self.keys.append(self.values.pop())
-        self.type = Array.DICT
+        if self.type == Array.DICT:
+            self.type = Array.DICT
         self.values.append([])
 
     def get_only_subelement(self):

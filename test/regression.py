@@ -208,6 +208,24 @@ class TestRegression(Base):
             "func(alpha='101',"
         assert check(self.get_in_function_call(s, (2, 13)), 'func', 0)
 
+    def test_get_in_function_call_complex(self):
+        def check(call_def, name, index):
+            return call_def and call_def.call_name == name \
+                            and call_def.index == index
+
+        s = """
+                def abc(a,b):
+                    pass
+
+                def a(self):
+                    abc(
+
+                if 1:
+                    pass
+            """
+        assert check(self.get_in_function_call(s, (6, 24)), 'abc', 0)
+
+
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
         # Fictional module that defines a function.

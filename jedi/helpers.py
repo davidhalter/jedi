@@ -202,6 +202,7 @@ def generate_param_array(args_tuple, parent_stmt=None):
 def scan_array_for_pos(arr, pos):
     """
     Returns the function Call that match search_name in an Array.
+    Makes changes to arr!
     """
     def check_arr_index():
         positions = arr.arr_el_pos
