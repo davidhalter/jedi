@@ -1027,7 +1027,7 @@ class Array(Call):
         if self.type in (Array.LIST, Array.TUPLE):
             return  # these are basically code errors, just ignore
         self.keys.append(self.values.pop())
-        if self.type == Array.DICT:
+        if self.type == Array.SET:
             self.type = Array.DICT
         self.values.append([])
 
