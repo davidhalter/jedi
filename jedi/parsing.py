@@ -768,7 +768,7 @@ class Statement(Simple):
                     is_chain = False
                     continue
                 elif tok == 'as':
-                    next(tok_iter)
+                    next(tok_iter, None)
                     continue
 
             brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
