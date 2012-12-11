@@ -168,6 +168,7 @@ class Script(object):
 
 
         return sorted(comps, key=lambda x: (x.word.startswith('__'),
+                                            x.word.startswith('_'),
                                             x.word.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):
