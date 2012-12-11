@@ -105,6 +105,8 @@ class Script(object):
                         pass
             return [name]
 
+
+        debug.speed('complete start')
         path = self.module.get_path_until_cursor()
         path, dot, like = self._get_completion_parts(path)
 
@@ -166,6 +168,7 @@ class Script(object):
                                                     len(like), s)
                     comps.append(new)
 
+        debug.speed('complete end')
 
         return sorted(comps, key=lambda x: (x.word.startswith('__'),
                                             x.word.startswith('_'),
@@ -177,6 +180,7 @@ class Script(object):
         debug.dbg('start: %s in %s' % (goto_path, self.parser.scope))
 
         user_stmt = self.parser.user_stmt
+        debug.speed('parsed')
         if not user_stmt and len(goto_path.split('\n')) > 1:
             # If the user_stmt is not defined and the goto_path is multi line,
             # something's strange. Most probably the backwards tokenizer
