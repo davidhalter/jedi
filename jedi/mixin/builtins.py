@@ -142,6 +142,18 @@ class set():
     def copy(self):
         return self
 
+    def difference(self, other):
+        return self - other
+
+    def intersection(self, other):
+        return self & other
+
+    def symetric_difference(self, other):
+        return self ^ other
+
+    def union(self, other):
+        return self | other
+
 
 class frozenset():
     def __init__(self, iterable=[]):
