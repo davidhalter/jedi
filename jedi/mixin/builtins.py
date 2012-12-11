@@ -148,7 +148,7 @@ class set():
     def intersection(self, other):
         return self & other
 
-    def symetric_difference(self, other):
+    def symmetric_difference(self, other):
         return self ^ other
 
     def union(self, other):
