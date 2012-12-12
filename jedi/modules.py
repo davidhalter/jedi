@@ -8,6 +8,7 @@ import sys
 import os
 import time
 
+import cache
 import parsing
 import builtin
 import debug
@@ -215,7 +216,7 @@ class ModuleWithCursor(Module):
         return self._part_parser
 
 
-@evaluate.memoize_default([])
+@cache.memoize_default([])
 def sys_path_with_modifications(module):
     def execute_code(code):
         c = "import os; from os.path import *; result=%s"

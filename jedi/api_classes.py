@@ -3,11 +3,28 @@
 import re
 import os
 
+import cache
+import dynamic
+import helpers
 import settings
 import evaluate
 import imports
 import parsing
 import keywords
+
+
+def _clear_caches():
+    """
+    Clears all caches of this and related modules. The only cache that will not
+    be deleted is the module cache.
+    """
+    cache.clear_caches()
+    dynamic.search_param_cache.clear()
+    helpers.ExecutionRecursionDecorator.reset()
+
+    evaluate.follow_statement.reset()
+
+    imports.imports_processed = 0
 
 
 class BaseDefinition(object):
@@ -193,7 +210,7 @@ class Completion(BaseDefinition):
 
             self._followed_definitions = \
                             [BaseDefinition(d, d.start_pos) for d in defs]
-            evaluate.clear_caches()
+            _clear_caches()
 
         return self._followed_definitions
 

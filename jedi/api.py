@@ -442,7 +442,7 @@ class Script(object):
         return match.groups()
 
     def __del__(self):
-        evaluate.clear_caches()
+        api_classes._clear_caches()
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,

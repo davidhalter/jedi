@@ -9,6 +9,7 @@ from __future__ import with_statement
 
 import os
 
+import cache
 import parsing
 import modules
 import evaluate
@@ -93,7 +94,7 @@ class ParamListener(object):
         self.param_possibilities.append(params)
 
 
-@evaluate.memoize_default([])
+@cache.memoize_default([])
 def search_params(param):
     """
     This is a dynamic search for params. If you try to complete a type:
@@ -223,7 +224,7 @@ def dec(func):
 
 
 #@dec
-@evaluate.memoize_default([])
+@cache.memoize_default([])
 def _check_array_additions(compare_array, module, is_list):
     """
     Checks if a `parsing.Array` has "add" statements:

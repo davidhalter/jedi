@@ -5,7 +5,7 @@ import re
 import evaluate
 
 
-#@evaluate.memoize_default()  # TODO add
+#@cache.memoize_default()  # TODO add
 def follow_param(param):
     func = param.parent_function
     #print func, param, param.parent_function
