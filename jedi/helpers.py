@@ -1,7 +1,6 @@
 import copy
 import contextlib
 
-import cache
 import parsing
 import evaluate
 import debug
@@ -196,7 +195,6 @@ def generate_param_array(args_tuple, parent_stmt=None):
             values.append([arg])
     pos = None
     arr = parsing.Array(pos, parsing.Array.TUPLE, parent_stmt, values=values)
-    cache.faked_scopes.append(arr)
     return arr
 
 

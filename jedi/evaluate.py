@@ -255,8 +255,6 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
         par = InstanceElement(self.instance, origin.parent_stmt,
                                                     self.is_class_var)
         new.parent_stmt = par
-        cache.faked_scopes.append(par)
-        cache.faked_scopes.append(new)
         return new
 
     def __getattr__(self, name):
@@ -370,7 +368,6 @@ class Function(use_metaclass(cache.CachedMetaClass, parsing.Base)):
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
                 params = helpers.generate_param_array([old_func], old_func)
-                cache.faked_scopes.append(old_func)
 
                 wrappers = Execution(decorator, params).get_return_types()
                 if not len(wrappers):
@@ -519,7 +516,6 @@ class Execution(Executable):
             new_param.is_generated = True
             name = copy.copy(param.get_name())
             name.parent = new_param
-            cache.faked_scopes.append(new_param)
             return name
 
         result = []
@@ -675,7 +671,6 @@ class Execution(Executable):
             if isinstance(copied, parsing.Function):
                 copied = Function(copied)
             objects.append(copied)
-            cache.faked_scopes.append(copied)
         return objects
 
     def __getattr__(self, name):
@@ -696,7 +691,6 @@ class Execution(Executable):
             else:
                 copied = helpers.fast_parent_copy(scope)
                 copied.parent = self._scope_copy(copied.parent)
-                cache.faked_scopes.append(copied)
                 return copied
         except AttributeError:
             raise MultiLevelAttributeError(sys.exc_info())

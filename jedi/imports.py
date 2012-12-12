@@ -6,7 +6,6 @@ import imp
 import sys
 import time
 
-import cache
 import builtin
 import modules
 import debug
@@ -92,7 +91,6 @@ class ImportPath(parsing.Base):
         n = parsing.Name(i.namespace.names[1:], zero, zero, self.import_stmt)
         new = parsing.Import(zero, zero, n)
         new.parent = parent
-        cache.faked_scopes.append(new)
         debug.dbg('Generated a nested import: %s' % new)
         return new
 

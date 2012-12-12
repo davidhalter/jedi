@@ -1,19 +1,16 @@
 memoize_caches = []
-faked_scopes = []
 
 
 def clear_caches():
     """ Jedi caches many things, that should be completed after each completion
     finishes.
     """
-    global memoize_caches, faked_scopes
+    global memoize_caches
 
     # memorize_caches must never be deleted, because the dicts will get lost in
     # the wrappers.
     for m in memoize_caches:
         m.clear()
-
-    faked_scopes = []  # TODO really needed anymore? weakrefs are gone...
 
 
 def memoize_default(default=None):
