@@ -20,7 +20,7 @@ setup(name='jedi',
       keywords='python completion refactoring vim',
       long_description=readme,
       packages=['jedi'],
-      data_files={'jedi': ['mixin/*.py']},
+      package_data={'jedi': ['mixin/*.pym']},
       platforms=['any'],
       classifiers=[
           'Development Status :: 4 - Beta',
