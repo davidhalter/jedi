@@ -6,4 +6,5 @@ class partial():
 
     def __call__(self, *args, **kwargs):
         # I know this doesn't work in Python, but Jedi can this ;-)
-        return self.__func(*self.__args, *args, **self.keywords, **kwargs)
+        kwargs.update(self.__keywords)
+        return self.__func(*(self.__args + args), **kwargs)

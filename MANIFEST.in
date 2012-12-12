@@ -1,5 +1,3 @@
 include README.rst
 include LICENSE.txt
 include AUTHORS.txt
-include jedi/mixin/*.py
-recursive-exclude * *.pyc

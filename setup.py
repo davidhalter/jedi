@@ -21,6 +21,7 @@ setup(name='jedi',
       long_description=readme,
       packages=['jedi', 'jedi.mixin'],
       platforms=['any'],
+      zip_safe=True,
       classifiers=[
           'Development Status :: 4 - Beta',
           'Environment :: Plugins',
