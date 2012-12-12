@@ -105,7 +105,6 @@ class Script(object):
                         pass
             return [name]
 
-
         debug.speed('complete start')
         path = self.module.get_path_until_cursor()
         path, dot, like = self._get_completion_parts(path)

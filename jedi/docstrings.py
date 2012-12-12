@@ -21,7 +21,7 @@ def follow_param(param):
 def search_param_in_docstr(docstr, param_str):
     lines = docstr.split('\n')
 
-    # look at #40 to see definitions of those params 
+    # look at #40 to see definitions of those params
     sphinx_comp = ':type %s:' % param_str
     googley_comp = re.compile('\s*%s\s+\(([^()]+)\)' % re.escape(param_str))
     for l in lines:

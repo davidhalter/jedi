@@ -46,5 +46,3 @@ class CachedMetaClass(type):
     @memoize_default()
     def __call__(self, *args, **kwargs):
         return super(CachedMetaClass, self).__call__(*args, **kwargs)
-
-

@@ -203,27 +203,6 @@ def _scan_array(arr, search_name):
     return result
 
 
-counter = 0
-def dec(func):
-    """ TODO delete this """
-    def wrapper(*args, **kwargs):
-        global counter
-        element = args[0]
-        if isinstance(element, evaluate.Array):
-            stmt = element._array.parent_stmt
-        else:
-            # must be instance
-            stmt = element.var_args.parent_stmt
-        print('  ' * counter + 'recursion,', stmt)
-        counter += 1
-        res = func(*args, **kwargs)
-        counter -= 1
-        #print '  '*counter + 'end,'
-        return res
-    return wrapper
-
-
-#@dec
 @cache.memoize_default([])
 def _check_array_additions(compare_array, module, is_list):
     """
