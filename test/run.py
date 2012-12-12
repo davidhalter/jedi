@@ -3,6 +3,7 @@ import os
 import sys
 import re
 import traceback
+import time
 from os.path import abspath, dirname
 
 sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../jedi'))
@@ -220,6 +221,7 @@ def test_dir(completion_test_dir, thirdparty=False):
             summary.append(s)
 
 
+t_start = time.time()
 # Sorry I didn't use argparse here. It's because argparse is not in the
 # stdlib in 2.5.
 args = sys.argv[1:]
@@ -263,7 +265,7 @@ if test_files or thirdparty:
     completion_test_dir += '/thirdparty'
     test_dir(completion_test_dir, thirdparty=True)
 
-print('\nSummary: (%s fails)' % tests_fail)
+print('\nSummary: (%s fails) in %.3fs' % (tests_fail, time.time() - t_start))
 for s in summary:
     print(s)
 
