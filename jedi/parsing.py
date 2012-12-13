@@ -1163,15 +1163,18 @@ class PyFuzzyParser(object):
 
     :param code: The codebase for the parser.
     :type code: str
+    :param module_path: The path of the module in the file system, may be None.
+    :type module_path: str
     :param user_position: The line/column, the user is currently on.
     :type user_position: tuple(int, int)
+    :param no_docstr: If True, a string at the beginning is not a docstr.
+    :param tokenize_gen: A prepared tokenize generator -> for fast_parser
     """
     def __init__(self, code, module_path=None, user_position=None,
-                                    no_docstr=False, line_offset=0):
+                            no_docstr=False, line_offset=0, tokenize_gen=None):
         self.user_position = user_position
         self.user_scope = None
         self.user_stmt = None
-        self.code = code + '\n'  # end with \n, because the parser needs it
         self.no_docstr = no_docstr
 
         # initialize global Scope
@@ -1183,10 +1186,14 @@ class PyFuzzyParser(object):
         # any errors of tokenize and just parse ahead.
         self._line_of_tokenize_restart = line_offset
 
-        self.parse()
+        if tokenize_gen is None:
+            self.code = code + '\n'  # end with \n, because the parser needs it
+            self.parse()
 
-        # delete code again, only the parser needs it
-        del self.code
+            # delete code again, only the parser needs it
+            del self.code
+        else:
+            self.parse(tokenize_gen)
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
