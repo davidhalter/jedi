@@ -9,6 +9,7 @@ if is_py3k:
 import types
 import inspect
 
+import common
 import debug
 import parsing
 import imports
@@ -222,7 +223,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
         if doc:
             doc = ('r"""\n%s\n"""\n' % doc)
             if indent:
-                doc = parsing.indent_block(doc)
+                doc = common.indent_block(doc)
             return doc
         return ''
 
@@ -303,7 +304,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
             except KeyError:
                 mixin = {}
             cl_code = _generate_code(cl, mixin, depth + 1)
-            code += parsing.indent_block(cl_code)
+            code += common.indent_block(cl_code)
         code += '\n'
 
     # functions
@@ -318,7 +319,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
             # normal code generation
             code += 'def %s(%s):\n' % (name, params)
             code += doc_str
-            code += parsing.indent_block('%s\n\n' % ret)
+            code += common.indent_block('%s\n\n' % ret)
         else:
             # generation of code with mixins
             # the parser only supports basic functions with a newline after
@@ -336,7 +337,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
             continue
         ret = 'pass'
         code += '@property\ndef %s(self):\n' % (name)
-        code += parsing.indent_block(get_doc(func) + '%s\n\n' % ret)
+        code += common.indent_block(get_doc(func) + '%s\n\n' % ret)
 
     # variables
     for name, value in stmts.items():

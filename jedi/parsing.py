@@ -37,42 +37,11 @@ import keyword
 import os
 
 import debug
+import common
 
 
 class ParserError(Exception):
     pass
-
-
-def indent_block(text, indention='    '):
-    """ This function indents a text block with a default of four spaces """
-    temp = ''
-    while text and text[-1] == '\n':
-        temp += text[-1]
-        text = text[:-1]
-    lines = text.split('\n')
-    return '\n'.join(map(lambda s: indention + s, lines)) + temp
-
-
-class PushBackIterator(object):
-    def __init__(self, iterator):
-        self.pushes = []
-        self.iterator = iterator
-
-    def push_back(self, value):
-        self.pushes.append(value)
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        """ Python 2 Compatibility """
-        return self.__next__()
-
-    def __next__(self):
-        if self.pushes:
-            return self.pushes.pop()
-        else:
-            return next(self.iterator)
 
 
 class Base(object):
@@ -191,7 +160,7 @@ class Scope(Simple):
             string += stmt.get_code()
 
         if first_indent:
-            string = indent_block(string, indention=indention)
+            string = common.indent_block(string, indention=indention)
         return string
 
     @Python3Method
@@ -1632,7 +1601,7 @@ class PyFuzzyParser(object):
             debug.warning('indentation error on line %s, ignoring it' %
                                                     (self.start_pos[0]))
             self._line_of_tokenize_restart = self.start_pos[0] + 1
-            self.gen = PushBackIterator(tokenize.generate_tokens(
+            self.gen = common.PushBackIterator(tokenize.generate_tokens(
                                                         self.buf.readline))
             return self.next()
         except StopIteration:
@@ -1667,7 +1636,7 @@ class PyFuzzyParser(object):
         :raises: IndentationError
         """
         self.buf = StringIO(self.code)
-        self.gen = PushBackIterator(tokenize.generate_tokens(
+        self.gen = common.PushBackIterator(tokenize.generate_tokens(
                                                     self.buf.readline))
 
         extended_flow = ['else', 'elif', 'except', 'finally']

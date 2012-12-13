@@ -254,12 +254,3 @@ def scan_array_for_pos(arr, pos):
     return call, check_arr_index(), stop
 
 
-@contextlib.contextmanager
-def scale_speed_settings(factor):
-    a = settings.max_executions
-    b = settings.max_until_execution_unique
-    settings.max_executions *= factor
-    settings.max_until_execution_unique *= factor
-    yield
-    settings.max_executions = a
-    settings.max_until_execution_unique = b

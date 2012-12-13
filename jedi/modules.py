@@ -12,7 +12,6 @@ import cache
 import parsing
 import builtin
 import debug
-import evaluate
 import settings
 import imports
 

@@ -18,6 +18,7 @@ import sys
 import itertools
 import copy
 
+import common
 import cache
 import parsing
 import debug
@@ -643,7 +644,7 @@ class Execution(Executable):
                     else:
                         yield None, var_arg
 
-        return iter(parsing.PushBackIterator(iterate()))
+        return iter(common.PushBackIterator(iterate()))
 
     def get_set_vars(self):
         return self.get_defined_names()

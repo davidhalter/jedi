@@ -37,6 +37,7 @@ import debug
 import settings
 import keywords
 import helpers
+import common
 import builtin
 import api_classes
 
@@ -401,7 +402,7 @@ class Script(object):
                 return None
 
         debug.speed('func_call user_stmt')
-        with helpers.scale_speed_settings(settings.scale_get_in_function_call):
+        with common.scale_speed_settings(settings.scale_get_in_function_call):
             origins = evaluate.follow_call(call)
         debug.speed('func_call followed')
 
