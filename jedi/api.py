@@ -195,7 +195,7 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        r = parsing.PyFuzzyParser(cursor_txt, self.source_path, no_docstr=True)
+        r = parsing.PyFuzzyParser(cursor_txt, no_docstr=True)
         try:
             stmt = r.module.statements[0]
         except IndexError:
