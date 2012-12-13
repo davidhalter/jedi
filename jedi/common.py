@@ -62,7 +62,7 @@ class NoErrorTokenizer(object):
                                                                 self.readline))
             self.current = self.next()
         c = list(self.current)
-        c[2] += self.line_offset, 0
+        c[2] = self.line_offset + c[2][0], c[2][1]
         return c
 
 

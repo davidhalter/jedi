@@ -1150,6 +1150,8 @@ class PyFuzzyParser(object):
         self.module = Module(module_path)
         self.scope = self.module
         self.current = (None, None)
+        self.start_pos = 1, 0
+        self.end_pos = 1, 0
 
         # Stuff to fix tokenize errors. The parser is pretty good in tolerating
         # any errors of tokenize and just parse ahead.
@@ -1158,23 +1160,13 @@ class PyFuzzyParser(object):
         if tokenize_gen is None:
             code = code + '\n'  # end with \n, because the parser needs it
             buf = StringIO(code)
-            self.gen = common.NoErrorTokenizer(buf.readline)
+            self.gen = common.NoErrorTokenizer(buf.readline, line_offset)
         else:
             self.gen = tokenize_gen
         self.parse()
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
-
-    @property
-    def start_pos(self):
-        return (self._line_offset + self._tokenize_start_pos[0],
-                                                self._tokenize_start_pos[1])
-
-    @property
-    def end_pos(self):
-        return (self._line_offset + self._tokenize_end_pos[0],
-                                                self._tokenize_end_pos[1])
 
     def _check_user_stmt(self, simple):
         if not isinstance(simple, Param):
@@ -1586,7 +1578,7 @@ class PyFuzzyParser(object):
     def __next__(self):
         """ Generate the next tokenize pattern. """
         try:
-            type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
+            type, tok, self.start_pos, self.end_pos, \
                                 self.parserline = next(self.gen)
         except StopIteration:
             # on finish, set end_pos correctly
