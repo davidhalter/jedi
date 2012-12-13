@@ -1156,13 +1156,12 @@ class PyFuzzyParser(object):
         self._line_offset = line_offset
 
         if tokenize_gen is None:
-            self.code = code + '\n'  # end with \n, because the parser needs it
-            self.parse()
-
-            # delete code again, only the parser needs it
-            del self.code
+            code = code + '\n'  # end with \n, because the parser needs it
+            buf = StringIO(code)
+            self.gen = common.NoErrorTokenizer(buf.readline)
         else:
-            self.parse(tokenize_gen)
+            self.gen = tokenize_gen
+        self.parse()
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
@@ -1590,7 +1589,7 @@ class PyFuzzyParser(object):
             type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
                                 self.parserline = next(self.gen)
         except StopIteration:
-            # set end_pos correctly, if we finish
+            # on finish, set end_pos correctly
             s = self.scope
             while s is not None:
                 s.end_pos = self.end_pos
@@ -1618,9 +1617,6 @@ class PyFuzzyParser(object):
 
         :raises: IndentationError
         """
-        self.buf = StringIO(self.code)
-        self.gen = common.NoErrorTokenizer(self.buf.readline)
-
         extended_flow = ['else', 'elif', 'except', 'finally']
         statement_toks = ['{', '[', '(', '`']
 
@@ -1808,6 +1804,3 @@ class PyFuzzyParser(object):
                                       tokenize.ENDMARKER]:
                     debug.warning('token not classified', tok, token_type,
                                                         self.start_pos[0])
-
-        del self.buf
-        return self.module
