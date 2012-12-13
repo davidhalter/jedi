@@ -1,3 +1,4 @@
+# memoize caches will be deleted after every action
 memoize_caches = []
 
 
@@ -13,7 +14,7 @@ def clear_caches():
         m.clear()
 
 
-def memoize_default(default=None):
+def memoize_default(default=None, cache=memoize_caches):
     """ This is a typical memoization decorator, BUT there is one difference:
     To prevent recursion it sets defaults.
 
@@ -23,7 +24,7 @@ def memoize_default(default=None):
     """
     def func(function):
         memo = {}
-        memoize_caches.append(memo)
+        cache.append(memo)
 
         def wrapper(*args, **kwargs):
             key = (args, frozenset(kwargs.items()))
