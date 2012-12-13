@@ -1153,7 +1153,7 @@ class PyFuzzyParser(object):
 
         # Stuff to fix tokenize errors. The parser is pretty good in tolerating
         # any errors of tokenize and just parse ahead.
-        self._line_of_tokenize_restart = line_offset
+        self._line_offset = line_offset
 
         if tokenize_gen is None:
             self.code = code + '\n'  # end with \n, because the parser needs it
@@ -1169,12 +1169,12 @@ class PyFuzzyParser(object):
 
     @property
     def start_pos(self):
-        return (self._line_of_tokenize_restart + self._tokenize_start_pos[0],
+        return (self._line_offset + self._tokenize_start_pos[0],
                                                 self._tokenize_start_pos[1])
 
     @property
     def end_pos(self):
-        return (self._line_of_tokenize_restart + self._tokenize_end_pos[0],
+        return (self._line_offset + self._tokenize_end_pos[0],
                                                 self._tokenize_end_pos[1])
 
     def _check_user_stmt(self, simple):
@@ -1484,7 +1484,7 @@ class PyFuzzyParser(object):
                         if tok not in b or in_clause is None:
                             middle.parent = self.scope
                             if in_clause is None:
-                                self.gen.push_back(self._current_full)
+                                self.gen.push_last_back()
                             else:
                                 in_clause.parent = self.scope
                                 in_clause.parent = self.scope
@@ -1575,7 +1575,7 @@ class PyFuzzyParser(object):
                 debug.warning('return in non-function')
 
         if tok in always_break:
-            self.gen.push_back(self._current_full)
+            self.gen.push_last_back()
         return stmt, tok
 
     def next(self):
@@ -1587,23 +1587,8 @@ class PyFuzzyParser(object):
     def __next__(self):
         """ Generate the next tokenize pattern. """
         try:
-            self._current_full = next(self.gen)
-        except tokenize.TokenError:
-            # We just ignore this error, I try to handle it earlier - as
-            # good as possible
-            debug.warning('parentheses not closed error')
-        except IndentationError:
-            # This is an error, that tokenize may produce, because the code
-            # is not indented as it should. Here it just ignores this line
-            # and restarts the parser.
-            # (This is a rather unlikely error message, for normal code,
-            # tokenize seems to be pretty tolerant)
-            debug.warning('indentation error on line %s, ignoring it' %
-                                                    (self.start_pos[0]))
-            self._line_of_tokenize_restart = self.start_pos[0] + 1
-            self.gen = common.PushBackIterator(tokenize.generate_tokens(
-                                                        self.buf.readline))
-            return self.next()
+            type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
+                                self.parserline = next(self.gen)
         except StopIteration:
             # set end_pos correctly, if we finish
             s = self.scope
@@ -1612,8 +1597,6 @@ class PyFuzzyParser(object):
                 s = s.parent
             raise
 
-        type, tok, self._tokenize_start_pos, self._tokenize_end_pos, \
-                            self.parserline = self._current_full
         if self.user_position and (self.start_pos[0] == self.user_position[0]
                         or self.user_scope is None
                             and self.start_pos[0] >= self.user_position[0]):
@@ -1636,8 +1619,7 @@ class PyFuzzyParser(object):
         :raises: IndentationError
         """
         self.buf = StringIO(self.code)
-        self.gen = common.PushBackIterator(tokenize.generate_tokens(
-                                                    self.buf.readline))
+        self.gen = common.NoErrorTokenizer(self.buf.readline)
 
         extended_flow = ['else', 'elif', 'except', 'finally']
         statement_toks = ['{', '[', '(', '`']
@@ -1708,14 +1690,14 @@ class PyFuzzyParser(object):
                 # the from import
                 mod, token_type, tok = self._parsedotname(self.current)
                 if str(mod) == 'import' and relative_count:
-                    self.gen.push_back(self._current_full)
+                    self.gen.push_last_back()
                     tok = 'import'
                     mod = None
                 if not mod and not relative_count or tok != "import":
                     debug.warning("from: syntax error@%s" % self.start_pos[0])
                     defunct = True
                     if tok != 'import':
-                        self.gen.push_back(self._current_full)
+                        self.gen.push_last_back()
                 names = self._parseimportlist()
                 for name, alias, defunct2 in names:
                     star = name is not None and name.names[0] == '*'
