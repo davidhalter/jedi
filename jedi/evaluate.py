@@ -36,32 +36,6 @@ class DecoratorNotFound(LookupError):
     pass
 
 
-class MultiLevelStopIteration(Exception):
-    """
-    StopIteration's get catched pretty easy by for loops, let errors propagate.
-    """
-    pass
-
-
-class MultiLevelAttributeError(Exception):
-    """
-    Important, because `__getattr__` and `hasattr` catch AttributeErrors
-    implicitly. This is really evil (mainly because of `__getattr__`).
-    `hasattr` in Python 2 is even more evil, because it catches ALL exceptions.
-    Therefore this class has to be a `BaseException` and not an `Exception`.
-    But because I rewrote hasattr, we can now switch back to `Exception`.
-
-    :param base: return values of sys.exc_info().
-    """
-    def __init__(self, base):
-        self.base = base
-
-    def __str__(self):
-        import traceback
-        tb = traceback.format_exception(*self.base)
-        return 'Original:\n\n' + ''.join(tb)
-
-
 class Executable(parsing.Base):
     """ An instance is also an executable - because __init__ is called """
     def __init__(self, base, var_args=None):
@@ -694,7 +668,7 @@ class Execution(Executable):
                 copied.parent = self._scope_copy(copied.parent)
                 return copied
         except AttributeError:
-            raise MultiLevelAttributeError(sys.exc_info())
+            raise common.MultiLevelAttributeError(sys.exc_info())
 
     @property
     @cache.memoize_default()
@@ -927,7 +901,7 @@ def get_names_for_scope(scope, position=None, star_search=True,
                     yield scope, get_defined_names_for_position(scope,
                                                     position, in_func_scope)
             except StopIteration:
-                raise MultiLevelStopIteration('StopIteration raised somewhere')
+                raise common.MultiLevelStopIteration('StopIteration raised')
         if scope.isinstance(parsing.ForFlow) and scope.is_list_comp:
             # is a list comprehension
             yield scope, scope.get_set_vars(is_internal_call=True)
@@ -1333,7 +1307,7 @@ def follow_statement(stmt, seek_name=None):
     except AttributeError:
         # This is so evil! But necessary to propagate errors. The attribute
         # errors here must not be catched, because they shouldn't exist.
-        raise MultiLevelAttributeError(sys.exc_info())
+        raise common.MultiLevelAttributeError(sys.exc_info())
 
     # Assignment checking is only important if the statement defines multiple
     # variables.

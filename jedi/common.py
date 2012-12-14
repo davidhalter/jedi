@@ -6,6 +6,32 @@ import debug
 import settings
 
 
+class MultiLevelStopIteration(Exception):
+    """
+    StopIteration's get catched pretty easy by for loops, let errors propagate.
+    """
+    pass
+
+
+class MultiLevelAttributeError(Exception):
+    """
+    Important, because `__getattr__` and `hasattr` catch AttributeErrors
+    implicitly. This is really evil (mainly because of `__getattr__`).
+    `hasattr` in Python 2 is even more evil, because it catches ALL exceptions.
+    Therefore this class has to be a `BaseException` and not an `Exception`.
+    But because I rewrote hasattr, we can now switch back to `Exception`.
+
+    :param base: return values of sys.exc_info().
+    """
+    def __init__(self, base):
+        self.base = base
+
+    def __str__(self):
+        import traceback
+        tb = traceback.format_exception(*self.base)
+        return 'Original:\n\n' + ''.join(tb)
+
+
 class PushBackIterator(object):
     def __init__(self, iterator):
         self.pushes = []
