@@ -29,10 +29,11 @@ class PushBackIterator(object):
 
 
 class NoErrorTokenizer(object):
-    def __init__(self, readline, line_offset=0):
+    def __init__(self, readline, line_offset=0, stop_on_scope=False):
         self.readline = readline
         self.gen = PushBackIterator(tokenize.generate_tokens(readline))
         self.line_offset = line_offset
+        self.stop_on_scope = stop_on_scope
 
     def push_last_back(self):
         self.gen.push_back(self.current)
@@ -61,7 +62,13 @@ class NoErrorTokenizer(object):
             self.gen = PushBackIterator(tokenize.generate_tokens(
                                                                 self.readline))
             self.current = self.next()
+
         c = list(self.current)
+
+        # stop if a new class or definition is started at position zero.
+        if self.stop_on_scope and c[1] in ['def', 'class'] and c[2][1] == 0:
+            raise StopIteration()
+
         c[2] = self.line_offset + c[2][0], c[2][1]
         return c
 

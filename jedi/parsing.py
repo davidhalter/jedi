@@ -244,6 +244,8 @@ class Module(Scope):
         self._name = None
         self.used_names = {}
         self.temp_used_names = []
+        # this may be changed depending on fast_parser
+        self.line_offset = 0
 
     def add_global(self, name):
         """
@@ -1137,10 +1139,10 @@ class PyFuzzyParser(object):
     :param user_position: The line/column, the user is currently on.
     :type user_position: tuple(int, int)
     :param no_docstr: If True, a string at the beginning is not a docstr.
-    :param tokenize_gen: A prepared tokenize generator -> for fast_parser
+    :param stop_on_scope: Stop if a scope appears -> for fast_parser
     """
     def __init__(self, code, module_path=None, user_position=None,
-                            no_docstr=False, line_offset=0, tokenize_gen=None):
+                        no_docstr=False, line_offset=0, stop_on_scope=None):
         self.user_position = user_position
         self.user_scope = None
         self.user_stmt = None
@@ -1157,12 +1159,10 @@ class PyFuzzyParser(object):
         # any errors of tokenize and just parse ahead.
         self._line_offset = line_offset
 
-        if tokenize_gen is None:
-            code = code + '\n'  # end with \n, because the parser needs it
-            buf = StringIO(code)
-            self.gen = common.NoErrorTokenizer(buf.readline, line_offset)
-        else:
-            self.gen = tokenize_gen
+        code = code + '\n'  # end with \n, because the parser needs it
+        buf = StringIO(code)
+        self.gen = common.NoErrorTokenizer(buf.readline, line_offset,
+                                                            stop_on_scope)
         self.parse()
 
     def __repr__(self):
