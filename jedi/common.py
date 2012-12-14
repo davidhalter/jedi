@@ -2,6 +2,7 @@
 import contextlib
 import tokenize
 
+from _compatibility import next
 import debug
 import settings
 
