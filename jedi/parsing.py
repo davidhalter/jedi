@@ -233,12 +233,19 @@ class Scope(Simple):
                                     self.start_pos[0], self.end_pos[0])
 
 
-class Module(Scope):
+class Module(object):
+    """ For isinstance checks. fast_parser.Module also inherits from this. """
+    pass
+
+
+class SubModule(Scope, Module):
     """
     The top scope, which is always a module.
+    Depending on the underlying parser this may be a full module or just a part
+    of a module.
     """
     def __init__(self, path, docstr=''):
-        super(Module, self).__init__((1, 0), docstr)
+        super(SubModule, self).__init__((1, 0), docstr)
         self.path = path
         self.global_vars = []
         self._name = None
@@ -260,7 +267,7 @@ class Module(Scope):
         # set no parent here, because globals are not defined in this scope.
 
     def get_set_vars(self):
-        n = super(Module, self).get_set_vars()
+        n = super(SubModule, self).get_set_vars()
         n += self.global_vars
         return n
 
@@ -1149,7 +1156,7 @@ class PyFuzzyParser(object):
         self.no_docstr = no_docstr
 
         # initialize global Scope
-        self.module = Module(module_path)
+        self.module = SubModule(module_path)
         self.scope = self.module
         self.current = (None, None)
         self.start_pos = 1, 0
