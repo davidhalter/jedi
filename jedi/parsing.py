@@ -244,8 +244,8 @@ class SubModule(Scope, Module):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    def __init__(self, path, docstr=''):
-        super(SubModule, self).__init__((1, 0), docstr)
+    def __init__(self, path, start_pos):
+        super(SubModule, self).__init__(start_pos)
         self.path = path
         self.global_vars = []
         self._name = None
@@ -1156,7 +1156,7 @@ class PyFuzzyParser(object):
         self.no_docstr = no_docstr
 
         # initialize global Scope
-        self.module = SubModule(module_path)
+        self.module = SubModule(module_path, (line_offset + 1, 0))
         self.scope = self.module
         self.current = (None, None)
         self.start_pos = 1, 0
