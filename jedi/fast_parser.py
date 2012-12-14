@@ -2,6 +2,7 @@ import re
 import operator
 from functools import reduce
 
+import common
 import parsing
 from _compatibility import use_metaclass
 
@@ -10,25 +11,19 @@ parser_cache = {}
 
 class Module(parsing.Simple, parsing.Module):
     def __init__(self, parsers):
-        super(Module, self).__init__((0,0))
+        super(Module, self).__init__((1,0))
         self.parsers = parsers
         self.reset_caches()
-
-        self.subscopes = []
-        self.imports = []
-        self.statements = []
-        self.asserts = []
 
     def reset_caches(self):
         """ This module does a whole lot of caching, because it uses different
         parsers. """
         self.cache = {}
-        self.modules = [p.module for p in self.parsers]
 
     def _get(self, name, operation, *args, **kwargs):
         key = (name, args, frozenset(kwargs.items()))
         if key not in self.cache:
-            objs = (getattr(m, name)(*args, **kwargs) for m in self.modules)
+            objs = (getattr(p.module, name)(*args, **kwargs) for p in self.parsers)
             self.cache[key] = reduce(operation, objs)
         return self.cache[key]
 
@@ -43,13 +38,16 @@ class Module(parsing.Simple, parsing.Module):
                       'imports': operator.add,
                       'statements': operator.add,
                       'imports': operator.add,
-                      'asserts': operator.add
+                      'asserts': operator.add,
+                      'global_vars': operator.add
                      }
         if name in operators:
             return lambda *args, **kwargs: self._get(name, operators[name],
                                                         *args, **kwargs)
         elif name in properties:
             return self._get(name, properties[name])
+        else:
+            raise AttributeError()
 
     def get_statement_for_position(self, pos):
         key = 'get_statement_for_position', pos
@@ -59,19 +57,48 @@ class Module(parsing.Simple, parsing.Module):
                 if s:
                     self.cache[key] = s
                     break
+            else:
+                self.cache[key] = None
+        return self.cache[key]
+
+    @property
+    def used_names(self):
+        key = 'used_names'
+        if key not in self.cache:
+            dct = {}
+            for p in self.parsers:
+                for k, statement_set in p.module.used_names.items():
+                    if k in dct:
+                        dct[k] |= statement_set
+                    else:
+                        dct[k] = set(statement_set)
+
+            self.cache[key] = dct
         return self.cache[key]
 
     @property
     def docstr(self):
-        return self.modules[0].docstr
+        return self.parsers[0].module.docstr
 
     @property
     def name(self):
-        return self.modules[0].name
+        return self.parsers[0].module.name
+
+    @property
+    def path(self):
+        return self.parsers[0].module.path
 
     @property
     def is_builtin(self):
-        return self.modules[0].is_builtin
+        return self.parsers[0].module.is_builtin
+
+    @property
+    def end_pos(self):
+        return self.parsers[-1].module.end_pos
+
+    @end_pos.setter
+    def end_pos(self, value):
+        pass  # just ignore, end_pos is not important
 
     def __repr__(self):
         return "<%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -82,7 +109,8 @@ class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
     def __call__(self, code, module_path=None, user_position=None):
         if module_path is None or module_path not in parser_cache:
-            p = super(CachedFastParser, self).__call__(code, module_path)
+            p = super(CachedFastParser, self).__call__(code, module_path,
+                                                            user_position)
             parser_cache[module_path] = p
         else:
             p = parser_cache[module_path]
@@ -98,9 +126,9 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         self.parsers = []
         self.module = Module(self.parsers)
-        self._parse(code)
-
         self.reset_caches()
+
+        self._parse(code)
 
     @property
     def user_scope(self):
@@ -108,6 +136,10 @@ class FastParser(use_metaclass(CachedFastParser)):
             for p in self.parsers:
                 if p.user_scope:
                     self._user_scope = p.user_scope
+                    break
+
+        if isinstance(self._user_scope, parsing.SubModule):
+            self._user_scope = self.module
         return self._user_scope
 
     @property
@@ -120,19 +152,23 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def update(self, code, user_position=None):
         self.user_position = user_position
-        self._parse(code)
         self.reset_caches()
+        self.parsers = []  # TODO remove
+        self._parse(code)
 
     def _parse(self, code):
-        parts = re.split(r'\n(?:def|class).*?(?!\n(?:def|class))')
+        parts = re.findall(r'(?:\n(?:def|class)|^).*?(?=\n(?:def|class)|$)',
+                            code, re.DOTALL)
         line_offset = 0
         for p in parts:
             lines = p.count('\n')
             p = parsing.PyFuzzyParser(p, self.module_path, self.user_position,
                                 line_offset=line_offset, stop_on_scope=True)
+            p.module.parent = self.module
             line_offset += lines
             self.parsers.append(p)
 
     def reset_caches(self):
         self._user_scope = None
+        self._user_stmt = None
         self.module.reset_caches()

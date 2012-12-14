@@ -14,6 +14,12 @@ add_dot_after_module = False
 # Removed it again, because in VIM that is not very practical.
 add_bracket_after_function = False
 
+# ----------------
+# parser
+# ----------------
+
+# Use the fast parser, may cause problems sometimes.
+fast_parser = False
 
 # ----------------
 # dynamic stuff

@@ -10,6 +10,7 @@ import time
 
 import cache
 import parsing
+import fast_parser
 import builtin
 import debug
 import settings
@@ -71,8 +72,12 @@ class ModuleWithCursor(Module):
             # Call the parser already here, because it will be used anyways.
             # Also, the position is here important (which will not be used by
             # default), therefore fill the cache here.
-            self._parser = parsing.PyFuzzyParser(self.source, self.path,
-                                                                self.position)
+            if settings.fast_parser:
+                self._parser = fast_parser.FastParser(self.source, self.path,
+                                                            self.position)
+            else:
+                self._parser = parsing.PyFuzzyParser(self.source, self.path,
+                                                            self.position)
             if self.path is not None:
                 builtin.CachedModule.cache[self.path] = time.time(), \
                                                         self._parser
