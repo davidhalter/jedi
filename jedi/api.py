@@ -177,7 +177,7 @@ class Script(object):
     def _prepare_goto(self, goto_path, is_like_search=False):
         """ Base for complete, goto and get_definition. Basically it returns
         the resolved scopes under cursor. """
-        debug.dbg('start: %s in %s' % (goto_path, self.parser.scope))
+        debug.dbg('start: %s in %s' % (goto_path, self.parser.user_scope))
 
         user_stmt = self.parser.user_stmt
         debug.speed('parsed')
