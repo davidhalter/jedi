@@ -67,6 +67,8 @@ class Simple(Base):
         self.start_pos = start_pos
         self.end_pos = end_pos
         self.parent = None
+        # use this attribute if parent should be something else than self.
+        self.set_parent = self
 
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
@@ -111,12 +113,12 @@ class Scope(Simple):
         self.asserts = []
 
     def add_scope(self, sub, decorators):
-        sub.parent = self
+        sub.parent = self.set_parent
         sub.decorators = decorators
         for d in decorators:
             # the parent is the same, because the decorator has not the scope
             # of the function
-            d.parent = sub.parent
+            d.parent = self.set_parent
         self.subscopes.append(sub)
         return sub
 
@@ -125,7 +127,7 @@ class Scope(Simple):
         Used to add a Statement or a Scope.
         A statement would be a normal command (Statement) or a Scope (Flow).
         """
-        stmt.parent = self
+        stmt.parent = self.set_parent
         self.statements.append(stmt)
         return stmt
 
@@ -135,7 +137,7 @@ class Scope(Simple):
 
     def add_import(self, imp):
         self.imports.append(imp)
-        imp.parent = self
+        imp.parent = self.set_parent
 
     def get_imports(self):
         """ Gets also the imports within flow statements """
@@ -245,7 +247,7 @@ class SubModule(Scope, Module):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    def __init__(self, path, start_pos):
+    def __init__(self, path, start_pos, top_module=None):
         super(SubModule, self).__init__(start_pos)
         self.path = path
         self.global_vars = []
@@ -254,6 +256,8 @@ class SubModule(Scope, Module):
         self.temp_used_names = []
         # this may be changed depending on fast_parser
         self._line_offset = 0
+
+        self.set_parent = top_module or self
 
     def add_global(self, name):
         """
@@ -285,7 +289,7 @@ class SubModule(Scope, Module):
                                                                 self.path)
             string = r.group(1)
         names = [(string, (0, 0))]
-        self._name = Name(names, self.start_pos, self.end_pos, self)
+        self._name = Name(names, self.start_pos, self.end_pos, self.set_parent)
         return self._name
 
     def is_builtin(self):
@@ -308,10 +312,10 @@ class Class(Scope):
     def __init__(self, name, supers, start_pos, docstr=''):
         super(Class, self).__init__(start_pos, docstr)
         self.name = name
-        name.parent = self
+        name.parent = self.set_parent
         self.supers = supers
         for s in self.supers:
-            s.parent = self
+            s.parent = self.set_parent
         self.decorators = []
 
     def get_code(self, first_indent=False, indention='    '):
@@ -343,18 +347,18 @@ class Function(Scope):
     def __init__(self, name, params, start_pos, annotation):
         Scope.__init__(self, start_pos)
         self.name = name
-        name.parent = self
+        name.parent = self.set_parent
         self.params = params
         for p in params:
-            p.parent = self
-            p.parent_function = self
+            p.parent = self.set_parent
+            p.parent_function = self.set_parent
         self.decorators = []
         self.returns = []
         self.is_generator = False
         self.listeners = set()  # not used here, but in evaluation.
 
         if annotation is not None:
-            annotation.parent = self
+            annotation.parent = self.set_parent
             self.annotation = annotation
 
     def get_code(self, first_indent=False, indention='    '):
@@ -437,14 +441,14 @@ class Flow(Scope):
         # These have to be statements, because of with, which takes multiple.
         self.inits = inits
         for s in inits:
-            s.parent = self
+            s.parent = self.set_parent
         if set_vars is None:
             self.set_vars = []
         else:
             self.set_vars = set_vars
             for s in self.set_vars:
-                s.parent.parent = self
-                s.parent = self
+                s.parent.parent = self.set_parent
+                s.parent = self.set_parent
 
     @property
     def parent(self):
@@ -551,7 +555,7 @@ class Import(Simple):
         self.from_ns = from_ns
         for n in [namespace, alias, from_ns]:
             if n:
-                n.parent = self
+                n.parent = self.set_parent
 
         self.star = star
         self.relative_count = relative_count
@@ -634,7 +638,7 @@ class Statement(Simple):
         self.used_vars = used_vars
         self.token_list = token_list
         for s in set_vars + used_funcs + used_vars:
-            s.parent = self
+            s.parent = self.set_parent
         self.set_vars = self._remove_executions_from_set_vars(set_vars)
 
         # cache
@@ -854,7 +858,7 @@ class Param(Statement):
         self.parent_function = None
 
     def add_annotation(self, annotation_stmt):
-        annotation_stmt.parent = self
+        annotation_stmt.parent = self.set_parent
         self.annotation_stmt = annotation_stmt
 
     def get_name(self):
@@ -1148,16 +1152,18 @@ class PyFuzzyParser(object):
     :type user_position: tuple(int, int)
     :param no_docstr: If True, a string at the beginning is not a docstr.
     :param stop_on_scope: Stop if a scope appears -> for fast_parser
+    :param top_module: Use this module as a parent instead of `self.module`.
     """
     def __init__(self, code, module_path=None, user_position=None,
-                        no_docstr=False, line_offset=0, stop_on_scope=None):
+                        no_docstr=False, line_offset=0, stop_on_scope=None,
+                        top_module=None):
         self.user_position = user_position
         self.user_scope = None
         self.user_stmt = None
         self.no_docstr = no_docstr
 
         # initialize global Scope
-        self.module = SubModule(module_path, (line_offset + 1, 0))
+        self.module = SubModule(module_path, (line_offset + 1, 0), top_module)
         self.scope = self.module
         self.current = (None, None)
         self.start_pos = 1, 0
@@ -1171,12 +1177,20 @@ class PyFuzzyParser(object):
         buf = StringIO(code)
         self.gen = common.NoErrorTokenizer(buf.readline, line_offset,
                                                             stop_on_scope)
+        self.top_module = top_module or self.module
         self.parse()
+
+        # clean up unused decorators
+        for d in self._decorators:
+            # set a parent for unused decorators, avoid NullPointerException
+            # because of `self.module.used_names`.
+            d.parent = self.module
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
 
     def _check_user_stmt(self, simple):
+        # this is not user checking, just update the used_names
         if not isinstance(simple, Param):
             for tok_name in self.module.temp_used_names:
                 try:
@@ -1488,7 +1502,7 @@ class PyFuzzyParser(object):
                                 in_clause.parent = self.scope
                                 in_clause.parent = self.scope
                             debug.warning('list comprehension in_clause %s@%s'
-                                                % (tok, self.start_pos[0]))
+                                            % (repr(tok), self.start_pos[0]))
                             continue
                         other_level = 0
 
@@ -1620,7 +1634,7 @@ class PyFuzzyParser(object):
         extended_flow = ['else', 'elif', 'except', 'finally']
         statement_toks = ['{', '[', '(', '`']
 
-        decorators = []
+        self._decorators = []
         self.freshscope = True
         self.iterator = iter(self)
         # This iterator stuff is not intentional. It grew historically.
@@ -1634,6 +1648,9 @@ class PyFuzzyParser(object):
                 if self.start_pos[1] <= self.scope.start_pos[1]:
                     self.scope.end_pos = self.start_pos
                     self.scope = self.scope.parent
+                    if isinstance(self.scope, Module) \
+                            and not isinstance(self.scope, SubModule):
+                        self.scope = self.module
 
             # check again for unindented stuff. this is true for syntax
             # errors. only check for names, because thats relevant here. If
@@ -1643,7 +1660,12 @@ class PyFuzzyParser(object):
                     and self.scope != self.module:
                 self.scope.end_pos = self.start_pos
                 self.scope = self.scope.parent
+                if isinstance(self.scope, Module) \
+                        and not isinstance(self.scope, SubModule):
+                    self.scope = self.module
 
+            set_parent_scope = self.top_module if isinstance(self.scope,
+                                            SubModule) else self.scope
             first_pos = self.start_pos
             if tok == 'def':
                 func = self._parsefunction()
@@ -1652,16 +1674,16 @@ class PyFuzzyParser(object):
                                                         self.start_pos[0])
                     continue
                 self.freshscope = True
-                self.scope = self.scope.add_scope(func, decorators)
-                decorators = []
+                self.scope = self.scope.add_scope(func, self._decorators)
+                self._decorators = []
             elif tok == 'class':
                 cls = self._parseclass()
                 if cls is None:
                     debug.warning("class: syntax error@%s" % self.start_pos[0])
                     continue
                 self.freshscope = True
-                self.scope = self.scope.add_scope(cls, decorators)
-                decorators = []
+                self.scope = self.scope.add_scope(cls, self._decorators)
+                self._decorators = []
             # import stuff
             elif tok == 'import':
                 imports = self._parseimportlist()
@@ -1717,14 +1739,14 @@ class PyFuzzyParser(object):
                         debug.warning('syntax err, for flow started @%s',
                                                         self.start_pos[0])
                         if statement is not None:
-                            statement.parent = self.scope
+                            statement.parent = set_parent_scope
                         if set_stmt is not None:
-                            set_stmt.parent = self.scope
+                            set_stmt.parent = set_parent_scope
                 else:
                     debug.warning('syntax err, for flow incomplete @%s',
                                                         self.start_pos[0])
                     if set_stmt is not None:
-                        set_stmt.parent = self.scope
+                        set_stmt.parent = set_parent_scope
 
             elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
                 added_breaks = []
@@ -1765,7 +1787,7 @@ class PyFuzzyParser(object):
                     self.scope = s
                 else:
                     for i in inits:
-                        i.parent = self.scope
+                        i.parent = set_parent_scope
                     debug.warning('syntax err, flow started @%s',
                                                         self.start_pos[0])
             # globals
@@ -1780,12 +1802,12 @@ class PyFuzzyParser(object):
             # decorator
             elif tok == '@':
                 stmt, tok = self._parse_statement()
-                decorators.append(stmt)
+                self._decorators.append(stmt)
             elif tok == 'pass':
                 continue
             elif tok == 'assert':
                 stmt, tok = self._parse_statement()
-                stmt.parent = self.scope
+                stmt.parent = set_parent_scope
                 self.scope.asserts.append(stmt)
             # default
             elif token_type in [tokenize.NAME, tokenize.STRING,

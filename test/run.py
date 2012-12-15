@@ -127,8 +127,8 @@ def run_test(source, f_name, lines_to_execute):
             try:
                 should_be |= defs(line_nr - 1, start + correct_start)
             except Exception:
-                raise Exception('could not resolve %s indent %s'
-                                                    % (line_nr - 1, start))
+                print('could not resolve %s indent %s' % (line_nr - 1, start))
+                raise
             if print_debug:
                 api.set_debug_function(debug.print_to_stdout)
         # because the objects have different ids, `repr` it, then compare it.

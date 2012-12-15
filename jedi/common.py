@@ -24,7 +24,7 @@ class MultiLevelAttributeError(Exception):
 
     :param base: return values of sys.exc_info().
     """
-    def __init__(self, base):
+    def __init__(self, base=None):
         self.base = base
 
     def __str__(self):

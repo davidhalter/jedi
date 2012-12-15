@@ -889,10 +889,10 @@ def get_names_for_scope(scope, position=None, star_search=True,
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
         if not (scope != non_flow and scope.isinstance(parsing.Class)
-                or scope.isinstance(parsing.Flow)
-                or scope.isinstance(Instance) and non_flow.isinstance(Function)
-                or isinstance(scope, parsing.SubModule) and scope.parent
-                ):
+                    or scope.isinstance(parsing.Flow)
+                    or scope.isinstance(Instance)
+                        and non_flow.isinstance(Function)
+                    ):
             try:
                 if isinstance(scope, Instance):
                     for g in scope.scope_generator():
@@ -1100,9 +1100,6 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 if isinstance(p, InstanceElement) \
                             and isinstance(p.var, parsing.Class):
                     p = p.var
-                if isinstance(p, parsing.SubModule) and p.parent is not None:
-                    p = p.parent
-
                 if name_str == name.get_code() and p not in break_scopes:
                     r, no_break_scope = process(name)
                     if is_goto:

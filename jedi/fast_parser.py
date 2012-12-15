@@ -13,6 +13,7 @@ class Module(parsing.Simple, parsing.Module):
     def __init__(self, parsers):
         super(Module, self).__init__((1,0))
         self.parsers = parsers
+        self._end_pos = None, None
         self.reset_caches()
 
     def reset_caches(self):
@@ -47,7 +48,7 @@ class Module(parsing.Simple, parsing.Module):
         elif name in properties:
             return self._get(name, properties[name])
         else:
-            raise AttributeError()
+            raise AttributeError("__getattr__ doesn't offer %s" % name)
 
     def get_statement_for_position(self, pos):
         key = 'get_statement_for_position', pos
@@ -63,6 +64,8 @@ class Module(parsing.Simple, parsing.Module):
 
     @property
     def used_names(self):
+        if not self.parsers:
+            raise NotImplementedError("Parser doesn't exist.")
         key = 'used_names'
         if key not in self.cache:
             dct = {}
@@ -78,27 +81,36 @@ class Module(parsing.Simple, parsing.Module):
 
     @property
     def docstr(self):
+        if not self.parsers:
+            raise NotImplementedError("Parser doesn't exist.")
         return self.parsers[0].module.docstr
 
     @property
     def name(self):
+        if not self.parsers:
+            raise NotImplementedError("Parser doesn't exist.")
         return self.parsers[0].module.name
 
     @property
     def path(self):
+        if not self.parsers:
+            raise NotImplementedError("Parser doesn't exist.")
         return self.parsers[0].module.path
 
     @property
     def is_builtin(self):
+        if not self.parsers:
+            raise NotImplementedError("Parser doesn't exist.")
         return self.parsers[0].module.is_builtin
 
     @property
     def end_pos(self):
-        return self.parsers[-1].module.end_pos
+        return self._end_pos
 
     @end_pos.setter
     def end_pos(self, value):
-        pass  # just ignore, end_pos is not important
+        if None not in value and self._end_pos < value:
+            self._end_pos = value
 
     def __repr__(self):
         return "<%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -153,17 +165,23 @@ class FastParser(use_metaclass(CachedFastParser)):
     def update(self, code, user_position=None):
         self.user_position = user_position
         self.reset_caches()
-        self.parsers = []  # TODO remove
+        self.parsers = []
+        self.module.parsers = self.parsers
+
         self._parse(code)
 
     def _parse(self, code):
-        parts = re.findall(r'(?:\n(?:def|class)|^).*?(?=\n(?:def|class)|$)',
-                            code, re.DOTALL)
+        """ :type code: str """
+        r = r'(?:\n(?:def|class|@.*?\n(?:def|class))|^).*?(?=\n(?:def|class|@)|$)'
+        parts = re.findall(r, code, re.DOTALL)
+
         line_offset = 0
         for p in parts:
             lines = p.count('\n')
             p = parsing.PyFuzzyParser(p, self.module_path, self.user_position,
-                                line_offset=line_offset, stop_on_scope=True)
+                                line_offset=line_offset, stop_on_scope=True,
+                                top_module=self.module)
+
             p.module.parent = self.module
             line_offset += lines
             self.parsers.append(p)

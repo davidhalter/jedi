@@ -19,7 +19,7 @@ add_bracket_after_function = False
 # ----------------
 
 # Use the fast parser, may cause problems sometimes.
-fast_parser = False
+fast_parser = True
 
 # ----------------
 # dynamic stuff
