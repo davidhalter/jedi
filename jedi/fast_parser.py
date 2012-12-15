@@ -151,8 +151,10 @@ class FastParser(use_metaclass(CachedFastParser)):
         if self._user_scope is None:
             for p in self.parsers:
                 if p.user_scope:
+                    if self._user_scope is not None and not \
+                            isinstance(self._user_scope, parsing.SubModule):
+                        continue
                     self._user_scope = p.user_scope
-                    break
 
         if isinstance(self._user_scope, parsing.SubModule):
             self._user_scope = self.module
@@ -164,6 +166,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             for p in self.parsers:
                 if p.user_stmt:
                     self._user_stmt = p.user_stmt
+                    break
         return self._user_stmt
 
     def update(self, code, user_position=None):
