@@ -21,10 +21,14 @@ class Module(parsing.Simple, parsing.Module):
         parsers. """
         self.cache = {}
 
-    def _get(self, name, operation, *args, **kwargs):
+    def _get(self, name, operation, execute=False, *args, **kwargs):
         key = (name, args, frozenset(kwargs.items()))
         if key not in self.cache:
-            objs = (getattr(p.module, name)(*args, **kwargs) for p in self.parsers)
+            if execute:
+                objs = (getattr(p.module, name)(*args, **kwargs)
+                                                    for p in self.parsers)
+            else:
+                objs = (getattr(p.module, name) for p in self.parsers)
             self.cache[key] = reduce(operation, objs)
         return self.cache[key]
 
@@ -44,7 +48,7 @@ class Module(parsing.Simple, parsing.Module):
                      }
         if name in operators:
             return lambda *args, **kwargs: self._get(name, operators[name],
-                                                        *args, **kwargs)
+                                                        True, *args, **kwargs)
         elif name in properties:
             return self._get(name, properties[name])
         else:
@@ -172,7 +176,8 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def _parse(self, code):
         """ :type code: str """
-        r = r'(?:\n(?:def|class|@.*?\n(?:def|class))|^).*?(?=\n(?:def|class|@)|$)'
+        r = r'(?:\n(?:def|class|@.*?\n(?:def|class))|^).*?' \
+            r'(?=\n(?:def|class|@)|$)'
         parts = re.findall(r, code, re.DOTALL)
 
         line_offset = 0

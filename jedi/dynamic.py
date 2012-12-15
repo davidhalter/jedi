@@ -19,6 +19,7 @@ import debug
 import builtin
 import imports
 import api_classes
+import fast_parser
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -440,7 +441,7 @@ def check_flow_information(flow, search_name, pos):
     ensures that `k` is a string.
     """
     result = []
-    if isinstance(flow, parsing.Scope) and not result:
+    if isinstance(flow, (parsing.Scope, fast_parser.Module)) and not result:
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue

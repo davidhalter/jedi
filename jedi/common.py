@@ -77,6 +77,7 @@ class NoErrorTokenizer(object):
             # We just ignore this error, I try to handle it earlier - as
             # good as possible
             debug.warning('parentheses not closed error')
+            return self.__next__()
         except IndentationError:
             # This is an error, that tokenize may produce, because the code
             # is not indented as it should. Here it just ignores this line
