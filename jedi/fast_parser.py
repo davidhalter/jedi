@@ -183,6 +183,13 @@ class FastParser(use_metaclass(CachedFastParser)):
             r'(?=\n(?:def|class|@)|$)'
         parts = re.findall(r, code, re.DOTALL)
 
+        if len(parts) > 1 and not re.match('def|class|@', parts[0]):
+            # Merge the first two because `common.NoErrorTokenizer` is not able
+            # to know if there's a class/func or not.
+            # Therefore every part has it's own class/func. Exactly one.
+            parts[0] += parts[1]
+            parts.pop(1)
+
         line_offset = 0
         start = 0
         p = None

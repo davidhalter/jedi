@@ -62,6 +62,7 @@ class NoErrorTokenizer(object):
         self.line_offset = line_offset
         self.stop_on_scope = stop_on_scope
         self.first_scope = False
+        self.closed = False
 
     def push_last_back(self):
         self.gen.push_back(self.current)
@@ -71,6 +72,8 @@ class NoErrorTokenizer(object):
         return self.__next__()
 
     def __next__(self):
+        if self.closed:
+            raise MultiLevelStopIteration()
         try:
             self.current = next(self.gen)
         except tokenize.TokenError:
@@ -98,7 +101,8 @@ class NoErrorTokenizer(object):
         breaks = ['def', 'class', '@']
         if self.stop_on_scope and c[1] in breaks and c[2][1] == 0:
             if self.first_scope:
-                raise StopIteration
+                self.closed = True
+                raise MultiLevelStopIteration()
             elif c[1] != '@':
                 self.first_scope = True
 

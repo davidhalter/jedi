@@ -1180,7 +1180,7 @@ class PyFuzzyParser(object):
         self.top_module = top_module or self.module
         try:
             self.parse()
-        except StopIteration:
+        except common.MultiLevelStopIteration:
             # sometimes StopIteration isn't catched. Just ignore it.
             pass
 
@@ -1566,7 +1566,7 @@ class PyFuzzyParser(object):
 
                 string = set_string if set_string is not None else string + tok
                 token_type, tok = self.next()
-            except StopIteration:
+            except (StopIteration, common.MultiLevelStopIteration):
                 # comes from tokenizer
                 break
 
@@ -1606,7 +1606,7 @@ class PyFuzzyParser(object):
         try:
             type, tok, self.start_pos, self.end_pos, \
                                 self.parserline = next(self.gen)
-        except StopIteration:
+        except (StopIteration, common.MultiLevelStopIteration):
             # on finish, set end_pos correctly
             s = self.scope
             while s is not None:
