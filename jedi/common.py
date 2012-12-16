@@ -85,20 +85,21 @@ class NoErrorTokenizer(object):
             # (This is a rather unlikely error message, for normal code,
             # tokenize seems to be pretty tolerant)
             debug.warning('indentation error on line %s, ignoring it' %
-                                                        (self.start_pos[0]))
+                                                        self.current[2][0])
             # add the starting line of the last position
             self.line_offset += self.current[2][0]
             self.gen = PushBackIterator(tokenize.generate_tokens(
                                                                 self.readline))
-            self.current = self.next()
+            return self.__next__()
 
         c = list(self.current)
 
         # stop if a new class or definition is started at position zero.
-        if self.stop_on_scope and c[1] in ['def', 'class'] and c[2][1] == 0:
+        breaks = ['def', 'class', '@']
+        if self.stop_on_scope and c[1] in breaks and c[2][1] == 0:
             if self.first_scope:
-                raise StopIteration()
-            else:
+                raise StopIteration
+            elif c[1] != '@':
                 self.first_scope = True
 
         c[2] = self.line_offset + c[2][0], c[2][1]

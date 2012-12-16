@@ -2,7 +2,6 @@ import re
 import operator
 from functools import reduce
 
-import common
 import parsing
 from _compatibility import use_metaclass
 
@@ -11,9 +10,9 @@ parser_cache = {}
 
 class Module(parsing.Simple, parsing.Module):
     def __init__(self, parsers):
+        self._end_pos = None, None
         super(Module, self).__init__((1,0))
         self.parsers = parsers
-        self._end_pos = None, None
         self.reset_caches()
 
     def reset_caches(self):
@@ -113,7 +112,8 @@ class Module(parsing.Simple, parsing.Module):
 
     @end_pos.setter
     def end_pos(self, value):
-        if None not in value and self._end_pos < value:
+        if None in self._end_pos \
+                or None not in value and self._end_pos < value:
             self._end_pos = value
 
     def __repr__(self):
@@ -184,15 +184,20 @@ class FastParser(use_metaclass(CachedFastParser)):
         parts = re.findall(r, code, re.DOTALL)
 
         line_offset = 0
-        for p in parts:
-            lines = p.count('\n')
-            p = parsing.PyFuzzyParser(p, self.module_path, self.user_position,
+        start = 0
+        p = None
+        for s in parts:
+            lines = s.count('\n')
+            if p is None or line_offset >= p.end_pos[0] - 2:
+                p = parsing.PyFuzzyParser(code[start:],
+                                self.module_path, self.user_position,
                                 line_offset=line_offset, stop_on_scope=True,
                                 top_module=self.module)
 
-            p.module.parent = self.module
+                p.module.parent = self.module
+                self.parsers.append(p)
             line_offset += lines
-            self.parsers.append(p)
+            start += len(s)
 
     def reset_caches(self):
         self._user_scope = None

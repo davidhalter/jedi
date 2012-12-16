@@ -1178,7 +1178,11 @@ class PyFuzzyParser(object):
         self.gen = common.NoErrorTokenizer(buf.readline, line_offset,
                                                             stop_on_scope)
         self.top_module = top_module or self.module
-        self.parse()
+        try:
+            self.parse()
+        except StopIteration:
+            # sometimes StopIteration isn't catched. Just ignore it.
+            pass
 
         # clean up unused decorators
         for d in self._decorators:
