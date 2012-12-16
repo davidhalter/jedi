@@ -29,15 +29,15 @@ class ImportPath(parsing.Base):
     An ImportPath is the path of a `parsing.Import` object.
     """
     class _GlobalNamespace(object):
+        def __init__(self):
+            self.start_pos = 0, 0
+            self.line_offset = 0
+
         def get_defined_names(self):
             return []
 
         def get_imports(self):
             return []
-
-        @property
-        def start_pos(self):
-            return (0, 0)
 
         def get_parent_until(self):
             return None
@@ -88,8 +88,9 @@ class ImportPath(parsing.Base):
         # This is not an existing Import statement. Therefore, set position to
         # 0 (0 is not a valid line number).
         zero = (0, 0)
-        n = parsing.Name(i.namespace.names[1:], zero, zero, self.import_stmt)
-        new = parsing.Import(zero, zero, n)
+        names = i.namespace.names[1:]
+        n = parsing.Name(i.module, names, zero, zero, self.import_stmt)
+        new = parsing.Import(i.module, zero, zero, n)
         new.parent = parent
         debug.dbg('Generated a nested import: %s' % new)
         return new
@@ -135,8 +136,8 @@ class ImportPath(parsing.Base):
         names = []
         for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
             inf_pos = (float('inf'), float('inf'))
-            names.append(parsing.Name([(name, inf_pos)], inf_pos, inf_pos,
-                                                            self.import_stmt))
+            names.append(parsing.Name(self.GlobalNamespace, [(name, inf_pos)],
+                                        inf_pos, inf_pos, self.import_stmt))
         return names
 
     def sys_path_with_modifications(self):

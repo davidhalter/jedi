@@ -166,7 +166,8 @@ def fast_parent_copy(obj):
                     setattr(new_obj, key, new_elements[value])
                 except KeyError:
                     pass
-            elif key in ['parent_stmt', 'parent_function', 'set_parent']:
+            elif key in ['parent_stmt', 'parent_function', 'set_parent',
+                            'module']:
                 continue
             elif isinstance(value, list):
                 setattr(new_obj, key, list_rec(value))
@@ -230,7 +231,7 @@ def scan_array_for_pos(arr, pos):
                     elif s.execution is not None:
                         end = s.execution.end_pos
                         if s.execution.start_pos < pos and \
-                                (end is None or pos < end):
+                                (None in end or pos < end):
                             c, index, stop = scan_array_for_pos(
                                                     s.execution, pos)
                             if stop:

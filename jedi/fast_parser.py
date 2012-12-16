@@ -10,9 +10,10 @@ parser_cache = {}
 class Module(parsing.Simple, parsing.Module):
     def __init__(self, parsers):
         self._end_pos = None, None
-        super(Module, self).__init__((1,0))
+        super(Module, self).__init__(self, (1,0))
         self.parsers = parsers
         self.reset_caches()
+        self.line_offset = 0
 
     def reset_caches(self):
         """ This module does a whole lot of caching, because it uses different
@@ -106,6 +107,16 @@ class Module(parsing.Simple, parsing.Module):
         return self.parsers[0].module.is_builtin
 
     @property
+    def start_pos(self):
+        """ overwrite start_pos of Simple """
+        return 1, 0
+
+    @start_pos.setter
+    def start_pos(self):
+        """ ignore """
+        pass
+
+    @property
     def end_pos(self):
         return self._end_pos
 
@@ -172,7 +183,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.user_position = user_position
         self.reset_caches()
         self.parsers = []
-        self.module.parsers = self.parsers
+        self.module = Module(self.parsers)
 
         self._parse(code)
 
@@ -189,12 +200,19 @@ class FastParser(use_metaclass(CachedFastParser)):
             parts[0] += parts[1]
             parts.pop(1)
 
+        self.parsers = []
+        self.module.parsers = self.parsers
+        hashes = {p.hash:p for p in self.parsers}
+
         line_offset = 0
         start = 0
         p = None
-        for s in parts:
-            lines = s.count('\n')
+        for code_part in parts:
+            lines = code_part.count('\n')
             if p is None or line_offset >= p.end_pos[0] - 2:
+                h = hash(code_part)
+                if h in hashes:
+                    print(h)
                 p = parsing.PyFuzzyParser(code[start:],
                                 self.module_path, self.user_position,
                                 line_offset=line_offset, stop_on_scope=True,
@@ -203,7 +221,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 p.module.parent = self.module
                 self.parsers.append(p)
             line_offset += lines
-            start += len(s)
+            start += len(code_part)
 
     def reset_caches(self):
         self._user_scope = None

@@ -714,7 +714,8 @@ class Generator(use_metaclass(cache.CachedMetaClass, parsing.Base)):
         none_pos = (0, 0)
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
-            name = parsing.Name([(n, none_pos)], none_pos, none_pos)
+            name = parsing.Name(builtin.Builtin.scope, [(n, none_pos)],
+                                none_pos, none_pos)
             if n in executes_generator:
                 name.parent = self
             names.append(name)
@@ -1332,7 +1333,8 @@ def follow_call_list(call_list):
         if isinstance(nested_lc, parsing.ListComprehension):
             # is nested LC
             input = nested_lc.stmt
-        loop = parsing.ForFlow([input], lc.stmt.start_pos,
+        module = input.get_parent_until()
+        loop = parsing.ForFlow(module, [input], lc.stmt.start_pos,
                                                 lc.middle, True)
         if parent is None:
             loop.parent = lc.stmt.parent

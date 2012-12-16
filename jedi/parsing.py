@@ -63,12 +63,13 @@ class Simple(Base):
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
     """
-    def __init__(self, start_pos, end_pos=(None, None)):
-        self.start_pos = start_pos
-        self.end_pos = end_pos
+    def __init__(self, module, start_pos, end_pos=(None, None)):
+        self._start_pos = start_pos
+        self._end_pos = end_pos
         self.parent = None
         # use this attribute if parent should be something else than self.
         self.set_parent = self
+        self.module = module
 
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
@@ -84,6 +85,24 @@ class Simple(Base):
                 break
             scope = scope.parent
         return scope
+
+    @property
+    def start_pos(self):
+        return self.module.line_offset + self._start_pos[0], self._start_pos[1]
+
+    @start_pos.setter
+    def start_pos(self, value):
+        self._start_pos = value
+
+    @property
+    def end_pos(self):
+        if None in self._end_pos:
+            return self._end_pos
+        return self.module.line_offset + self._end_pos[0], self._end_pos[1]
+
+    @end_pos.setter
+    def end_pos(self, value):
+        self._end_pos = value
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
@@ -104,12 +123,12 @@ class Scope(Simple):
     :param docstr: The docstring for the current Scope.
     :type docstr: str
     """
-    def __init__(self, start_pos, docstr=''):
-        super(Scope, self).__init__(start_pos)
+    def __init__(self, module, start_pos):
+        super(Scope, self).__init__(module, start_pos)
         self.subscopes = []
         self.imports = []
         self.statements = []
-        self.docstr = docstr
+        self.docstr = ''
         self.asserts = []
 
     def add_scope(self, sub, decorators):
@@ -248,14 +267,14 @@ class SubModule(Scope, Module):
     of a module.
     """
     def __init__(self, path, start_pos, top_module=None):
-        super(SubModule, self).__init__(start_pos)
+        super(SubModule, self).__init__(self, start_pos)
         self.path = path
         self.global_vars = []
         self._name = None
         self.used_names = {}
         self.temp_used_names = []
         # this may be changed depending on fast_parser
-        self._line_offset = 0
+        self.line_offset = 0
 
         self.set_parent = top_module or self
 
@@ -289,7 +308,8 @@ class SubModule(Scope, Module):
                                                                 self.path)
             string = r.group(1)
         names = [(string, (0, 0))]
-        self._name = Name(names, self.start_pos, self.end_pos, self.set_parent)
+        self._name = Name(self, names, self.start_pos, self.end_pos,
+                                                            self.set_parent)
         return self._name
 
     def is_builtin(self):
@@ -306,11 +326,9 @@ class Class(Scope):
     :type supers: list
     :param start_pos: The start position (line, column) of the class.
     :type start_pos: tuple(int, int)
-    :param docstr: The docstring for the current Scope.
-    :type docstr: str
     """
-    def __init__(self, name, supers, start_pos, docstr=''):
-        super(Class, self).__init__(start_pos, docstr)
+    def __init__(self, module, name, supers, start_pos):
+        super(Class, self).__init__(module, start_pos)
         self.name = name
         name.parent = self.set_parent
         self.supers = supers
@@ -344,8 +362,8 @@ class Function(Scope):
     :param docstr: The docstring for the current Scope.
     :type docstr: str
     """
-    def __init__(self, name, params, start_pos, annotation):
-        Scope.__init__(self, start_pos)
+    def __init__(self, module, name, params, start_pos, annotation):
+        super(Function, self).__init__(module, start_pos)
         self.name = name
         name.parent = self.set_parent
         self.params = params
@@ -433,10 +451,10 @@ class Flow(Scope):
     :param set_vars: Local variables used in the for loop (only there).
     :type set_vars: list
     """
-    def __init__(self, command, inits, start_pos, set_vars=None):
+    def __init__(self, module, command, inits, start_pos, set_vars=None):
         self.next = None
         self.command = command
-        super(Flow, self).__init__(start_pos, '')
+        super(Flow, self).__init__(module, start_pos)
         self._parent = None
         # These have to be statements, because of with, which takes multiple.
         self.inits = inits
@@ -510,8 +528,8 @@ class ForFlow(Flow):
     """
     Used for the for loop, because there are two statement parts.
     """
-    def __init__(self, inits, start_pos, set_stmt, is_list_comp=False):
-        super(ForFlow, self).__init__('for', inits, start_pos,
+    def __init__(self, module, inits, start_pos, set_stmt, is_list_comp=False):
+        super(ForFlow, self).__init__(module, 'for', inits, start_pos,
                                         set_stmt.used_vars)
         self.set_stmt = set_stmt
         self.is_list_comp = is_list_comp
@@ -546,9 +564,9 @@ class Import(Simple):
     :param defunct: An Import is valid or not.
     :type defunct: bool
     """
-    def __init__(self, start_pos, end_pos, namespace, alias=None,
+    def __init__(self, module, start_pos, end_pos, namespace, alias=None,
                  from_ns=None, star=False, relative_count=0, defunct=False):
-        super(Import, self).__init__(start_pos, end_pos)
+        super(Import, self).__init__(module, start_pos, end_pos)
 
         self.namespace = namespace
         self.alias = alias
@@ -590,8 +608,8 @@ class Import(Simple):
             return [self.alias]
         if len(self.namespace) > 1:
             o = self.namespace
-            n = Name([(o.names[0], o.start_pos)], o.start_pos, o.end_pos,
-                                                            parent=o.parent)
+            n = Name(self.module, [(o.names[0], o.start_pos)], o.start_pos,
+                                                o.end_pos, parent=o.parent)
             return [n]
         else:
             return [self.namespace]
@@ -630,9 +648,9 @@ class Statement(Simple):
     :param start_pos: Position (line, column) of the Statement.
     :type start_pos: tuple(int, int)
     """
-    def __init__(self, code, set_vars, used_funcs, used_vars, token_list,
-                                                        start_pos, end_pos):
-        super(Statement, self).__init__(start_pos, end_pos)
+    def __init__(self, module, code, set_vars, used_funcs, used_vars,
+                                            token_list, start_pos, end_pos):
+        super(Statement, self).__init__(module, start_pos, end_pos)
         self.code = code
         self.used_funcs = used_funcs
         self.used_vars = used_vars
@@ -845,10 +863,10 @@ class Param(Statement):
     The class which shows definitions of params of classes and functions.
     But this is not to define function calls.
     """
-    def __init__(self, code, set_vars, used_funcs, used_vars,
+    def __init__(self, module, code, set_vars, used_funcs, used_vars,
                  token_list, start_pos, end_pos):
-        super(Param, self).__init__(code, set_vars, used_funcs, used_vars,
-                                    token_list, start_pos, end_pos)
+        super(Param, self).__init__(module, code, set_vars, used_funcs,
+                                used_vars, token_list, start_pos, end_pos)
 
         # this is defined by the parser later on, not at the initialization
         # it is the position in the call (first argument, second...)
@@ -889,6 +907,15 @@ class Call(Base):
         self.next = None
         self.execution = None
         self._parent_stmt = parent_stmt
+
+    @property
+    def start_pos(self):
+        offset = self.parent_stmt.module.line_offset
+        return offset + self._start_pos[0], self._start_pos[1]
+
+    @start_pos.setter
+    def start_pos(self, value):
+        self._start_pos = value
 
     @property
     def parent_stmt(self):
@@ -979,7 +1006,18 @@ class Array(Call):
         self.values = values if values else []
         self.arr_el_pos = []
         self.keys = []
-        self.end_pos = None
+        self._end_pos = None, None
+
+    @property
+    def end_pos(self):
+        if None in self._end_pos:
+            return self._end_pos
+        offset = self.parent_stmt.module.line_offset
+        return offset + self._end_pos[0], self._end_pos[1]
+
+    @end_pos.setter
+    def end_pos(self, value):
+        self._end_pos = value
 
     def add_field(self, start_pos):
         """
@@ -1087,10 +1125,16 @@ class NamePart(str):
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
     """
-    def __new__(cls, s, start_pos):
+    def __new__(cls, s, parent, start_pos):
         self = super(NamePart, cls).__new__(cls, s)
-        self.start_pos = start_pos
+        self._start_pos = start_pos
+        self.parent = parent
         return self
+
+    @property
+    def start_pos(self):
+        offset = self.parent.module.line_offset
+        return offset + self._start_pos[0], self._start_pos[1]
 
     @property
     def end_pos(self):
@@ -1104,10 +1148,10 @@ class Name(Simple):
     So a name like "module.class.function"
     would result in an array of [module, class, function]
     """
-    def __init__(self, names, start_pos, end_pos, parent=None):
-        super(Name, self).__init__(start_pos, end_pos)
-        self.names = tuple(n if isinstance(n, NamePart) else NamePart(*n)
-                           for n in names)
+    def __init__(self, module, names, start_pos, end_pos, parent=None):
+        super(Name, self).__init__(module, start_pos, end_pos)
+        self.names = tuple(n if isinstance(n, NamePart) else
+                                NamePart(n[0], self, n[1]) for n in names)
         if parent is not None:
             self.parent = parent
 
@@ -1251,7 +1295,8 @@ class PyFuzzyParser(object):
                 break
             append((tok, self.start_pos))
 
-        n = Name(names, first_pos, self.end_pos) if names else None
+        n = Name(self.module, names, first_pos, self.end_pos) if names \
+                                                                else None
         return n, token_type, tok
 
     def _parseimportlist(self):
@@ -1339,7 +1384,8 @@ class PyFuzzyParser(object):
         if token_type != tokenize.NAME:
             return None
 
-        fname = Name([(fname, self.start_pos)], self.start_pos, self.end_pos)
+        fname = Name(self.module, [(fname, self.start_pos)], self.start_pos,
+                                                                self.end_pos)
 
         token_type, open = self.next()
         if open != '(':
@@ -1361,7 +1407,7 @@ class PyFuzzyParser(object):
             return None
 
         # because of 2 line func param definitions
-        scope = Function(fname, params, first_pos, annotation)
+        scope = Function(self.module, fname, params, first_pos, annotation)
         if self.user_scope and scope != self.user_scope \
                         and self.user_position > first_pos:
             self.user_scope = scope
@@ -1382,7 +1428,8 @@ class PyFuzzyParser(object):
                 % (self.start_pos[0], tokenize.tok_name[token_type], cname))
             return None
 
-        cname = Name([(cname, self.start_pos)], self.start_pos, self.end_pos)
+        cname = Name(self.module, [(cname, self.start_pos)], self.start_pos,
+                                                                self.end_pos)
 
         super = []
         token_type, next = self.next()
@@ -1395,7 +1442,7 @@ class PyFuzzyParser(object):
             return None
 
         # because of 2 line class initializations
-        scope = Class(cname, super, first_pos)
+        scope = Class(self.module, cname, super, first_pos)
         if self.user_scope and scope != self.user_scope \
                         and self.user_position > first_pos:
             self.user_scope = scope
@@ -1528,7 +1575,7 @@ class PyFuzzyParser(object):
                         for t in toks:
                             src += t[1] if isinstance(t, tuple) \
                                         else t.get_code()
-                        st = Statement(src, [], [], [],
+                        st = Statement(self.module, src, [], [], [],
                                         toks, first_pos, self.end_pos)
 
                         for s in [st, middle, in_clause]:
@@ -1578,8 +1625,8 @@ class PyFuzzyParser(object):
             self.scope.add_docstr(self.last_token[1])
             return None, tok
         else:
-            stmt = stmt_class(string, set_vars, used_funcs, used_vars,
-                                tok_list, first_pos, self.end_pos)
+            stmt = stmt_class(self.module, string, set_vars, used_funcs,
+                            used_vars, tok_list, first_pos, self.end_pos)
             self._check_user_stmt(stmt)
         if is_return:
             # add returns to the scope
@@ -1692,12 +1739,13 @@ class PyFuzzyParser(object):
             elif tok == 'import':
                 imports = self._parseimportlist()
                 for m, alias, defunct in imports:
-                    i = Import(first_pos, self.end_pos, m, alias,
+                    i = Import(self.module, first_pos, self.end_pos, m, alias,
                                                         defunct=defunct)
                     self._check_user_stmt(i)
                     self.scope.add_import(i)
                 if not imports:
-                    i = Import(first_pos, self.end_pos, None, defunct=True)
+                    i = Import(self.module, first_pos, self.end_pos, None,
+                                                                defunct=True)
                     self._check_user_stmt(i)
                 self.freshscope = False
             elif tok == 'from':
@@ -1725,8 +1773,9 @@ class PyFuzzyParser(object):
                     star = name is not None and name.names[0] == '*'
                     if star:
                         name = None
-                    i = Import(first_pos, self.end_pos, name, alias, mod,
-                        star, relative_count, defunct=defunct or defunct2)
+                    i = Import(self.module, first_pos, self.end_pos, name,
+                                        alias, mod, star, relative_count,
+                                        defunct=defunct or defunct2)
                     self._check_user_stmt(i)
                     self.scope.add_import(i)
                 self.freshscope = False
@@ -1737,7 +1786,7 @@ class PyFuzzyParser(object):
                     statement, tok = self._parse_statement()
                     if tok == ':':
                         s = [] if statement is None else [statement]
-                        f = ForFlow(s, first_pos, set_stmt)
+                        f = ForFlow(self.module, s, first_pos, set_stmt)
                         self.scope = self.scope.add_statement(f)
                     else:
                         debug.warning('syntax err, for flow started @%s',
@@ -1776,7 +1825,7 @@ class PyFuzzyParser(object):
                     first = False
 
                 if tok == ':':
-                    f = Flow(command, inits, first_pos)
+                    f = Flow(self.module, command, inits, first_pos)
                     if command in extended_flow:
                         # the last statement has to be another part of
                         # the flow statement, because a dedent releases the
