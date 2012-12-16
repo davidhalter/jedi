@@ -214,6 +214,8 @@ def test_dir(completion_test_dir, thirdparty=False):
             path = os.path.join(completion_test_dir, f_name)
             f = open(path)
             num_tests, fails = run_test(f.read(), f_name, lines_to_execute)
+            global test_sum
+            test_sum += num_tests
 
             s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
             tests_fail += fails
@@ -221,6 +223,7 @@ def test_dir(completion_test_dir, thirdparty=False):
             summary.append(s)
 
 
+test_sum = 0
 t_start = time.time()
 # Sorry I didn't use argparse here. It's because argparse is not in the
 # stdlib in 2.5.
@@ -265,7 +268,8 @@ if test_files or thirdparty:
     completion_test_dir += '/thirdparty'
     test_dir(completion_test_dir, thirdparty=True)
 
-print('\nSummary: (%s fails) in %.3fs' % (tests_fail, time.time() - t_start))
+print('\nSummary: (%s fails of %s tests) in %.3fs' % (tests_fail, test_sum,
+                                                    time.time() - t_start))
 for s in summary:
     print(s)
 
