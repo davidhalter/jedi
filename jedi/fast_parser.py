@@ -1,9 +1,8 @@
 import re
 import operator
-from functools import reduce
 
 import parsing
-from _compatibility import use_metaclass
+from _compatibility import use_metaclass, reduce, property
 
 parser_cache = {}
 
@@ -57,7 +56,7 @@ class Module(parsing.Simple, parsing.Module):
         key = 'get_statement_for_position', pos
         if key not in self.cache:
             for p in self.parsers:
-                s = p.module.get_statement_for_position(self)
+                s = p.module.get_statement_for_position(pos)
                 if s:
                     self.cache[key] = s
                     break

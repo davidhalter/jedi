@@ -167,3 +167,8 @@ if is_py25:
                     yield element
     itertools.chain = chain
     del chain
+
+try:
+    from functools import reduce
+except ImportError:
+    reduce = reduce
