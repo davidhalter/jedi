@@ -1234,6 +1234,9 @@ class PyFuzzyParser(object):
             # because of `self.module.used_names`.
             d.parent = self.module
 
+        self.start_pos = self.module.start_pos
+        self.end_pos = self.module.start_pos
+
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
 

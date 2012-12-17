@@ -182,8 +182,6 @@ class FastParser(use_metaclass(CachedFastParser)):
     def update(self, code, user_position=None):
         self.user_position = user_position
         self.reset_caches()
-        self.parsers = []
-        self.module = Module(self.parsers)
 
         self._parse(code)
 
@@ -200,28 +198,46 @@ class FastParser(use_metaclass(CachedFastParser)):
             parts[0] += parts[1]
             parts.pop(1)
 
-        self.parsers = []
-        self.module.parsers = self.parsers
+        #self.parsers[:] = []
         hashes = {p.hash:p for p in self.parsers}
+        #print set(hashes)
 
         line_offset = 0
         start = 0
         p = None
+        parser_order = 0
         for code_part in parts:
             lines = code_part.count('\n')
             if p is None or line_offset >= p.end_pos[0] - 2:
+                # check if code_part has already been parsed
                 h = hash(code_part)
+
+                p = None
                 if h in hashes:
-                    print(h)
-                p = parsing.PyFuzzyParser(code[start:],
+                    p = hashes[h]
+                    m = p.module
+                    m.line_offset += line_offset + 1 - m.start_pos[0]
+                    if self.user_position is not None and \
+                            m.start_pos >= self.user_position >= m.end_pos:
+                        #print(h, line_offset, m.start_pos, lines)
+                        p = None
+                    else:
+                        del hashes[h]
+
+                if p is None:
+                    p = parsing.PyFuzzyParser(code[start:],
                                 self.module_path, self.user_position,
                                 line_offset=line_offset, stop_on_scope=True,
                                 top_module=self.module)
 
-                p.module.parent = self.module
-                self.parsers.append(p)
+                    p.hash = h
+                    p.module.parent = self.module
+                self.parsers.insert(parser_order, p)
+
+                parser_order += 1
             line_offset += lines
             start += len(code_part)
+        self.parsers[parser_order + 1:] = []
 
     def reset_caches(self):
         self._user_scope = None
