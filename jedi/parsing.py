@@ -221,16 +221,18 @@ class Scope(Simple):
         return not (self.imports or self.subscopes or self.statements)
 
     @Python3Method
-    def get_statement_for_position(self, pos):
+    def get_statement_for_position(self, pos, include_imports=False):
         checks = self.statements + self.asserts
+        if include_imports:
+            checks += self.imports
         if self.isinstance(Function):
             checks += self.params + self.decorators + self.returns
         for s in checks:
             if isinstance(s, Flow):
-                p = s.get_statement_for_position(pos)
+                p = s.get_statement_for_position(pos, include_imports)
                 while s.next and not p:
                     s = s.next
-                    p = s.get_statement_for_position(pos)
+                    p = s.get_statement_for_position(pos, include_imports)
                 if p:
                     return p
             elif s.start_pos <= pos < s.end_pos:
@@ -238,7 +240,7 @@ class Scope(Simple):
 
         for s in self.subscopes:
             if s.start_pos <= pos <= s.end_pos:
-                p = s.get_statement_for_position(pos)
+                p = s.get_statement_for_position(pos, include_imports)
                 if p:
                     return p
 

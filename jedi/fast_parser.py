@@ -188,6 +188,16 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         self._parse(code)
 
+    def scan_user_scope(self, sub_module):
+        """ Scan with self.user_position.
+        :type sub_module: parsing.SubModule
+        """
+        for scope in sub_module.statements + sub_module.subscopes:
+            if isinstance(scope, parsing.Scope):
+                if scope.start_pos <= self.user_position <= scope.end_pos:
+                    return self.scan_user_scope(scope) or scope
+        return None
+
     def _parse(self, code):
         """ :type code: str """
         r = r'(?:\n(?:def|class|@.*?\n(?:def|class))|^).*?' \
@@ -215,19 +225,25 @@ class FastParser(use_metaclass(CachedFastParser)):
                 # check if code_part has already been parsed
                 h = hash(code_part)
 
-                p = None
                 if h in hashes and hashes[h].code == code_part:
                     p = hashes[h]
+                    del hashes[h]
                     m = p.module
                     m.line_offset += line_offset + 1 - m.start_pos[0]
                     if self.user_position is not None and \
                             m.start_pos <= self.user_position <= m.end_pos:
+                        # It's important to take care of the whole user
+                        # positioning stuff.
                         #print(h, line_offset, m.start_pos, lines)
-                        p = None
-                    else:
-                        del hashes[h]
-
-                if p is None:
+                        #p = None
+                        p.user_stmt = m.get_statement_for_position(
+                                    self.user_position, include_imports=True)
+                        if p.user_stmt:
+                            p.user_scope = p.user_stmt.parent
+                        else:
+                            p.user_scope = self.scan_user_scope(m) \
+                                            or self.module
+                else:
                     p = parsing.PyFuzzyParser(code[start:],
                                 self.module_path, self.user_position,
                                 line_offset=line_offset, stop_on_scope=True,
