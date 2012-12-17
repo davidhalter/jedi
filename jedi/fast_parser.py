@@ -212,8 +212,8 @@ class FastParser(use_metaclass(CachedFastParser)):
             parts.pop(1)
 
         #self.parsers[:] = []
-        hashes = {p.hash:p for p in self.parsers}
-        #print set(hashes)
+        # dict comprehensions are not available in py2.5/2.6 :-(
+        hashes = dict((p.hash, p) for p in self.parsers)
 
         line_offset = 0
         start = 0
@@ -233,9 +233,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     if self.user_position is not None and \
                             m.start_pos <= self.user_position <= m.end_pos:
                         # It's important to take care of the whole user
-                        # positioning stuff.
-                        #print(h, line_offset, m.start_pos, lines)
-                        #p = None
+                        # positioning stuff, if no reparsing is being done.
                         p.user_stmt = m.get_statement_for_position(
                                     self.user_position, include_imports=True)
                         if p.user_stmt:
