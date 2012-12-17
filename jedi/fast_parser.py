@@ -19,6 +19,9 @@ class Module(parsing.Simple, parsing.Module):
         """ This module does a whole lot of caching, because it uses different
         parsers. """
         self.cache = {}
+        for p in self.parsers:
+            p.user_scope = None
+            p.user_stmt = None
 
     def _get(self, name, operation, execute=False, *args, **kwargs):
         key = (name, args, frozenset(kwargs.items()))
@@ -213,12 +216,12 @@ class FastParser(use_metaclass(CachedFastParser)):
                 h = hash(code_part)
 
                 p = None
-                if h in hashes:
+                if h in hashes and hashes[h].code == code_part:
                     p = hashes[h]
                     m = p.module
                     m.line_offset += line_offset + 1 - m.start_pos[0]
                     if self.user_position is not None and \
-                            m.start_pos >= self.user_position >= m.end_pos:
+                            m.start_pos <= self.user_position <= m.end_pos:
                         #print(h, line_offset, m.start_pos, lines)
                         p = None
                     else:
@@ -231,6 +234,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                                 top_module=self.module)
 
                     p.hash = h
+                    p.code = code_part
                     p.module.parent = self.module
                 self.parsers.insert(parser_order, p)
 

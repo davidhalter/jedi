@@ -483,7 +483,7 @@ class Flow(Scope):
         for s in self.inits:
             stmts.append(s.get_code(new_line=False))
         stmt = ', '.join(stmts)
-        string = "%s %s:\n" % (self.command, vars, stmt)
+        string = "%s %s:\n" % (self.command, stmt)
         string += super(Flow, self).get_code(True, indention)
         if self.next:
             string += self.next.get_code()
@@ -1235,7 +1235,7 @@ class PyFuzzyParser(object):
             d.parent = self.module
 
         self.start_pos = self.module.start_pos
-        self.end_pos = self.module.start_pos
+        self.module.end_pos = self.end_pos
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
