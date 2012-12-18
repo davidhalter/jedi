@@ -224,7 +224,13 @@ class TestRegression(Base):
                     pass
             """
         assert check(self.get_in_function_call(s, (6, 24)), 'abc', 0)
-
+        s = """
+                import re
+                def huhu(it):
+                    re.compile(
+                    return it * 2
+            """
+        assert check(self.get_in_function_call(s, (4, 31)), 'compile', 0)
 
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
