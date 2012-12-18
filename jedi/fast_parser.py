@@ -1,8 +1,9 @@
 import re
 import operator
 
-import parsing
 from _compatibility import use_metaclass, reduce, property
+import settings
+import parsing
 
 parser_cache = {}
 
@@ -211,7 +212,9 @@ class FastParser(use_metaclass(CachedFastParser)):
             parts[0] += parts[1]
             parts.pop(1)
 
-        #self.parsers[:] = []
+        if settings.fast_parser_always_reparse:
+            self.parsers[:] = []
+
         # dict comprehensions are not available in py2.5/2.6 :-(
         hashes = dict((p.hash, p) for p in self.parsers)
 
