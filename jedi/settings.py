@@ -21,7 +21,7 @@ add_bracket_after_function = False
 # Use the fast parser. This means that reparsing is only being done if
 # something has been changed e.g. to a function. If this happens, only the
 # function is being reparsed.
-fast_parser = False
+fast_parser = True
 
 # This is just a debugging option. Always reparsing means that the fast parser
 # is basically useless. So don't use it.
