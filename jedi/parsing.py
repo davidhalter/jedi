@@ -226,7 +226,9 @@ class Scope(Simple):
         if include_imports:
             checks += self.imports
         if self.isinstance(Function):
-            checks += self.params + self.decorators + self.returns
+            checks += self.params + self.decorators
+            checks += [r for r in self.returns if r is not None]
+
         for s in checks:
             if isinstance(s, Flow):
                 p = s.get_statement_for_position(pos, include_imports)
@@ -1474,7 +1476,6 @@ class PyFuzzyParser(object):
         used_funcs = []
         used_vars = []
         level = 0  # The level of parentheses
-        is_return = None
 
         if pre_used_token:
             token_type, tok = pre_used_token
@@ -1496,12 +1497,15 @@ class PyFuzzyParser(object):
         # in a statement.
         breaks = ['\n', ':', ')']
         always_break = [';', 'import', 'from', 'class', 'def', 'try', 'except',
-                        'finally', 'while']
+                        'finally', 'while', 'return', 'yield']
+        not_first_break = ['del', 'raise']
         if added_breaks:
             breaks += added_breaks
 
         tok_list = []
-        while not (tok in always_break or tok in breaks and level <= 0):
+        while not (tok in always_break
+                or tok in not_first_break and not tok_list
+                or tok in breaks and level <= 0):
             try:
                 set_string = None
                 #print 'parse_stmt', tok, tokenize.tok_name[token_type]
@@ -1517,24 +1521,7 @@ class PyFuzzyParser(object):
                         string += ".".join(n.names)
                     continue
                 elif token_type == tokenize.NAME:
-                    if tok in ['return', 'yield', 'del', 'raise']:
-                        if len(tok_list) > 1:
-                            # this happens, when a statement has opening
-                            # brackets, which are not closed again, here I just
-                            # start a new statement. This is a hack, but I
-                            # could not come up with a better solution.
-                            # This is basically a reset of the statement.
-                            debug.warning('keyword in statement %s@%s',
-                                            tok_list, self.start_pos[0])
-                            tok_list = [self.current + (self.start_pos,)]
-                            set_vars = []
-                            used_funcs = []
-                            used_vars = []
-                            level = 0
-                        set_string = tok + ' '
-                        if tok in ['return', 'yield']:
-                            is_return = tok
-                    elif tok == 'for':
+                    if tok == 'for':
                         # list comprehensions!
                         middle, tok = self._parse_statement(
                                                         added_breaks=['in'])
@@ -1633,17 +1620,8 @@ class PyFuzzyParser(object):
             stmt = stmt_class(self.module, string, set_vars, used_funcs,
                             used_vars, tok_list, first_pos, self.end_pos)
             self._check_user_stmt(stmt)
-        if is_return:
-            # add returns to the scope
-            func = self.scope.get_parent_until(Function)
-            if is_return == 'yield':
-                func.is_generator = True
-            try:
-                func.returns.append(stmt)
-            except AttributeError:
-                debug.warning('return in non-function')
 
-        if tok in always_break:
+        if tok in always_break + not_first_break:
             self.gen.push_last_back()
         return stmt, tok
 
@@ -1848,6 +1826,21 @@ class PyFuzzyParser(object):
                         i.parent = set_parent_scope
                     debug.warning('syntax err, flow started @%s',
                                                         self.start_pos[0])
+            # returns
+            elif tok in ['return', 'yield']:
+                self.freshscope = False
+                # add returns to the scope
+                func = self.scope.get_parent_until(Function)
+                if tok == 'yield':
+                    func.is_generator = True
+
+                stmt, tok = self._parse_statement()
+                if stmt is not None:
+                    stmt.parent = set_parent_scope
+                try:
+                    func.returns.append(stmt)
+                except AttributeError:
+                    debug.warning('return in non-function')
             # globals
             elif tok == 'global':
                 stmt, tok = self._parse_statement(self.current)

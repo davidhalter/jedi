@@ -462,7 +462,8 @@ class Execution(Executable):
         else:
             stmts = []
             for r in self.returns:
-                stmts += follow_statement(r)
+                if r is not None:
+                    stmts += follow_statement(r)
             return stmts
 
     @cache.memoize_default(default=[])
@@ -641,10 +642,13 @@ class Execution(Executable):
         attr = getattr(self.base, prop)
         objects = []
         for element in attr:
-            copied = helpers.fast_parent_copy(element)
-            copied.parent = self._scope_copy(copied.parent)
-            if isinstance(copied, parsing.Function):
-                copied = Function(copied)
+            if element is None:
+                copied = element
+            else:
+                copied = helpers.fast_parent_copy(element)
+                copied.parent = self._scope_copy(copied.parent)
+                if isinstance(copied, parsing.Function):
+                    copied = Function(copied)
             objects.append(copied)
         return objects
 
