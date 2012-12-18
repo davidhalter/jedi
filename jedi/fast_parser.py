@@ -138,6 +138,8 @@ class Module(parsing.Simple, parsing.Module):
 class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
     def __call__(self, code, module_path=None, user_position=None):
+        if not settings.fast_parser:
+            return parsing.PyFuzzyParser(code, module_path, user_position)
         if module_path is None or module_path not in parser_cache:
             p = super(CachedFastParser, self).__call__(code, module_path,
                                                             user_position)

@@ -9,7 +9,6 @@ if is_py3k:
 import types
 import inspect
 
-import settings
 import common
 import debug
 import parsing
@@ -70,10 +69,7 @@ class CachedModule(object):
     def _load_module(self):
         source = self._get_source()
         p = self.path or self.name
-        if settings.fast_parser:
-            self._parser = fast_parser.FastParser(source, p)
-        else:
-            self._parser = parsing.PyFuzzyParser(source, p)
+        self._parser = fast_parser.FastParser(source, p)
         p_time = None if not self.path else os.path.getmtime(self.path)
 
         if self.path or self.name:
