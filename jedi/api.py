@@ -108,6 +108,8 @@ class Script(object):
 
         debug.speed('complete start')
         path = self.module.get_path_until_cursor()
+        if re.search('^\.|\.\.$', path):
+            return []
         path, dot, like = self._get_completion_parts(path)
 
         try:
