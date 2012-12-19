@@ -302,6 +302,8 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
                 mixin = mixin_funcs[name]
             except KeyError:
                 mixin = {}
+            if not isinstance(mixin, dict):
+                mixin = {}
             cl_code = _generate_code(cl, mixin, depth + 1)
             code += parsing.indent_block(cl_code)
         code += '\n'
@@ -314,6 +316,9 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
         doc_str = get_doc(func, indent=True)
         try:
             mixin = mixin_funcs[name]
+            # In pypy reversed is builtin
+            if isinstance(mixin, dict):
+                raise KeyError()
         except KeyError:
             # normal code generation
             code += 'def %s(%s):\n' % (name, params)

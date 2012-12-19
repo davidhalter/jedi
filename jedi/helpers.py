@@ -105,8 +105,9 @@ class ExecutionRecursionDecorator(object):
 
     @classmethod
     def cleanup(cls):
-        cls.parent_execution_funcs.pop()
-        cls.recursion_level -= 1
+        if cls.parent_execution_funcs:
+            cls.parent_execution_funcs.pop()
+            cls.recursion_level -= 1
 
     @classmethod
     def check_recursion(cls, execution, evaluate_generator):
