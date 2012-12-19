@@ -330,7 +330,17 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
             # the parser only supports basic functions with a newline after
             # the double dots
             # find doc_str place
-            pos = re.search(r'\):\s*\n', mixin).end()
+            try:
+                pos = re.search(r'\):\s*\n', mixin).end()
+            except TypeError:
+                # pypy uses a different reversed builtin
+                if name == 'reversed':
+                    mixin = 'def reversed(sequence):\n' \
+                            '    for i in self.__sequence: yield i'
+                    pos = 24
+                else:
+                    debug.warning('mixin trouble in pypy: %s', name)
+                    raise
             if pos is None:
                 raise Exception("Builtin function not parsed correctly")
             code += mixin[:pos] + doc_str + mixin[pos:]
