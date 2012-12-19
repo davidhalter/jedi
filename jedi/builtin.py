@@ -200,6 +200,9 @@ class Parser(CachedModule):
 
         try:
             name = self.name
+            # sometimes there are stupid endings like `_sqlite3.cpython-32mu`
+            name = re.sub(r'\..*', '', name)
+
             if name == '__builtin__' and not is_py3k:
                 name = 'builtins'
             path = os.path.dirname(os.path.abspath(__file__))
