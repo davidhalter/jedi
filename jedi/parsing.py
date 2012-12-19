@@ -758,14 +758,14 @@ class Statement(Simple):
                                 tok_temp, type(tok_temp))
                 raise
             else:
-                if tok in ['return', 'yield'] or level == 0 and \
-                    tok.endswith('=') and not tok in ['>=', '<=', '==', '!=']:
+                if level == 0 and tok.endswith('=') \
+                                and not tok in ['>=', '<=', '==', '!=']:
                     # This means, there is an assignment here.
 
                     # Add assignments, which can be more than one
                     self._assignment_details.append((tok, top))
                     # All these calls wouldn't be important if nonlocal would
-                    # exist. -> Initialize the first item again.
+                    # exist. -> Initialize the first items again.
                     top = result = Array(start_pos, Array.NOARRAY, self)
                     level = 0
                     close_brackets = False
