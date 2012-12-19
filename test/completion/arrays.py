@@ -2,6 +2,7 @@
 # basic array lookups
 # -----------------
 
+
 #? int()
 [1,""][0]
 #? str()
@@ -161,6 +162,13 @@ dic2[r'asdf']
 #? int() str()
 dic2['just_something']
 
+def f():
+    r = {}
+    r['status'] = (200, 'ok')
+    return r
+
+#? dict()
+f()
 # -----------------
 # with variable as index
 # -----------------
