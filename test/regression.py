@@ -251,10 +251,22 @@ class TestRegression(Base):
         assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
         assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
 
+
     def test_unicode_script(self):
         """ normally no unicode objects are being used. (<=2.7) """
-        s = unicode("import datetime; datetime.d")
-        assert len(self.complete(s))
+        s = unicode("import datetime; datetime.timedelta")
+        completions = self.complete(s)
+        assert len(completions)
+        assert type(completions[0].description) is unicode
+
+        s = utf8("author='öä'; author")
+        completions = self.complete(s)
+        assert type(completions[0].description) is unicode
+
+        s = utf8("#-*- coding: iso-8859-1 -*-\nauthor='öä'; author")
+        s = s.encode('latin-1')
+        completions = self.complete(s)
+        assert type(completions[0].description) is unicode
 
     def test_multibyte_script(self):
         """ `jedi.Script` must accept multi-byte string source. """

@@ -26,7 +26,7 @@ class Module(builtin.CachedModule):
     """
     def __init__(self, path, source):
         super(Module, self).__init__(path=path)
-        self.source = source
+        self.source = source_to_unicode(source)
         self._line_cache = None
 
     def _get_source(self):
@@ -311,3 +311,33 @@ def detect_django_path(module_path):
         except IOError:
             pass
     return result
+
+
+def source_to_unicode(source, encoding=None):
+    def detect_encoding():
+        """ For the implementation of encoding definitions in Python, look at:
+        http://www.python.org/dev/peps/pep-0263/
+        http://docs.python.org/2/reference/lexical_analysis.html#encoding-\
+                                                                declarations
+        """
+        if encoding is not None:
+            return encoding
+
+        if source.startswith('\xef\xbb\xbf'):
+            # UTF-8 byte-order mark
+            return 'utf-8'
+
+        first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', source).group(0)
+        possible_encoding = re.match("coding[=:]\s*([-\w.]+)", first_two_lines)
+        if possible_encoding:
+            return possible_encoding.group(1)
+        else:
+            # the default if nothing else has been set -> PEP 263
+            return 'iso-8859-1'
+
+    if isinstance(source, unicode):
+        # only cast str/bytes
+        return source
+
+    # cast to unicode by default
+    return unicode(source, detect_encoding(), 'replace')

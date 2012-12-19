@@ -42,7 +42,7 @@ def get_directory_modules_for_name(mods, name):
 
     def check_fs(path):
         with open(path) as f:
-            source = f.read()
+            source = modules.source_to_unicode(f.read())
             if name in source:
                 return modules.Module(path, source).parser.module
 
