@@ -50,9 +50,9 @@ class TestRegression(Base):
         imports = api.imports
         imports.star_import_cache = {}  # first empty...
         # path needs to be not-None (otherwise caching effects are not visible)
-        api.Script('', 1,0, '').complete()
-        time.sleep(2*new)
-        api.Script('', 1,0, '').complete()
+        api.Script('', 1, 0, '').complete()
+        time.sleep(2 * new)
+        api.Script('', 1, 0, '').complete()
 
         # reset values
         api.settings.star_import_cache_validity = old
@@ -251,7 +251,6 @@ class TestRegression(Base):
         assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
         assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
 
-
     def test_unicode_script(self):
         """ normally no unicode objects are being used. (<=2.7) """
         s = unicode("import datetime; datetime.timedelta")
@@ -303,10 +302,11 @@ class TestRegression(Base):
         assert [d.doc for d in defs]
 
     def test_goto_following_on_imports(self):
-        if not is_py25:
-            g = self.goto("import multiprocessing.dummy; multiprocessing.dummy")
-            assert len(g) == 1
-            assert g[0].start_pos != (0, 0)
+        if is_py25:
+            return
+        g = self.goto("import multiprocessing.dummy; multiprocessing.dummy")
+        assert len(g) == 1
+        assert g[0].start_pos != (0, 0)
 
 
 class TestFeature(Base):
