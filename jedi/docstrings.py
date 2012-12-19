@@ -3,6 +3,7 @@
 import re
 
 import evaluate
+import parsing
 
 
 #@cache.memoize_default()  # TODO add
@@ -12,9 +13,9 @@ def follow_param(param):
     param_str = search_param_in_docstr(func.docstr, str(param.get_name()))
 
     if param_str is not None:
-        scope = func.get_parent_until()
-        return evaluate.get_scopes_for_name(scope, param_str,
-                                            search_global=True)
+        p = parsing.PyFuzzyParser(param_str, None, (1, 0), no_docstr=True)
+        p.user_stmt.parent = func
+        return evaluate.follow_statement(p.user_stmt)
     return []
 
 
