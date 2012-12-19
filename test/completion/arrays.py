@@ -163,6 +163,7 @@ dic2[r'asdf']
 dic2['just_something']
 
 def f():
+    """ github #83 """
     r = {}
     r['status'] = (200, 'ok')
     return r

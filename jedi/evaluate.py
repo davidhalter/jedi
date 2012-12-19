@@ -1066,13 +1066,17 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                             if is_execution(a):
                                 return True
                         elif a.isinstance(parsing.Call):
-                            if a.name == name and a.execution:
+                            # Compare start_pos, because names may be different
+                            # because of executions.
+                            if a.name.start_pos == name.start_pos \
+                                                            and a.execution:
                                 return True
                     return False
 
                 is_exe = False
                 for op, assignee in par.assignment_details:
                     is_exe |= is_execution(assignee)
+
                 if is_exe:
                     # filter array[3] = ...
                     # TODO check executions for dict contents

@@ -766,8 +766,7 @@ class Statement(Simple):
                     self._assignment_details.append((tok, top))
                     # All these calls wouldn't be important if nonlocal would
                     # exist. -> Initialize the first item again.
-                    result = Array(start_pos, Array.NOARRAY, self)
-                    top = result
+                    top = result = Array(start_pos, Array.NOARRAY, self)
                     level = 0
                     close_brackets = False
                     is_chain = False
@@ -776,6 +775,7 @@ class Statement(Simple):
                     next(tok_iter, None)
                     continue
 
+            # here starts the statement creation madness!
             brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
             is_call = lambda: type(result) == Call
             is_call_or_close = lambda: is_call() or close_brackets
