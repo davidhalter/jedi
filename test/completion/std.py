@@ -67,6 +67,26 @@ def example(a):
 #? str()
 example('')
 
+
+# -----------------
+# sqlite3 (#84)
+# -----------------
+
+import sqlite3
+#? sqlite3.Connection()
+con = sqlite3.connect()
+#? sqlite3.Cursor()
+c = con.cursor()
+#? sqlite3.Row()
+row = c.fetchall()[0]
+#? str()
+row.keys()[0]
+
+def huhu(db):
+    """db (sqlite3.Connection): the db connection"""
+    #? sqlite3.Connection()
+    db
+
 # -----------------
 # various regression tests
 # -----------------
