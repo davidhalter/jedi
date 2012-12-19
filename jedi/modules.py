@@ -1,6 +1,6 @@
 from __future__ import with_statement
 
-from _compatibility import exec_function
+from _compatibility import exec_function, unicode
 
 import re
 import tokenize
