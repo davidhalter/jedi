@@ -30,6 +30,7 @@ Jedi for now, you'll have to use VIM. But there are new plugins emerging:
 
 - `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_
 - `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_ **Under construction**
+- `wdb (web debugger) <https://github.com/Kozea/wdb>`_ 
 
 Here are some pictures:
 
