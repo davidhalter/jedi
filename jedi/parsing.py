@@ -29,7 +29,7 @@ as input and ignores just all the non-python stuff. Basically you could feed it
 a perl script, and it should still work (which means throw no error).
 TODO remove docstr params from Scope.__init__()
 """
-from _compatibility import (next, literal_eval, StringIO,
+from _compatibility import (next, literal_eval, StringIO, unicode,
                             property, cleandoc, Python3Method)
 
 import tokenize
@@ -1471,7 +1471,7 @@ class PyFuzzyParser(object):
         :rtype: (Statement, str)
         """
 
-        string = ''
+        string = unicode('')
         set_vars = []
         used_funcs = []
         used_vars = []
@@ -1634,7 +1634,7 @@ class PyFuzzyParser(object):
     def __next__(self):
         """ Generate the next tokenize pattern. """
         try:
-            type, tok, self.start_pos, self.end_pos, \
+            typ, tok, self.start_pos, self.end_pos, \
                                 self.parserline = next(self.gen)
         except (StopIteration, common.MultiLevelStopIteration):
             # on finish, set end_pos correctly
@@ -1651,7 +1651,7 @@ class PyFuzzyParser(object):
                     (self.parserline.replace('\n', ''), repr(self.scope)))
             self.user_scope = self.scope
         self.last_token = self.current
-        self.current = (type, tok)
+        self.current = (typ, tok)
         return self.current
 
     def parse(self):

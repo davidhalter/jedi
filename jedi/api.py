@@ -285,14 +285,14 @@ class Script(object):
         if next(context) in ('class', 'def'):
             user_scope = self.parser.user_scope
             definitions = set([user_scope.name])
-            search_name = str(user_scope.name)
+            search_name = unicode(user_scope.name)
         elif isinstance(self.parser.user_stmt, parsing.Import):
             s, name_part = self._get_on_import_stmt()
             try:
                 definitions = [s.follow(is_goto=True)[0]]
             except IndexError:
                 definitions = []
-            search_name = str(name_part)
+            search_name = unicode(name_part)
 
             if add_import_name:
                 import_name = self.parser.user_stmt.get_defined_names()
@@ -320,7 +320,7 @@ class Script(object):
                     and self.pos < user_stmt.get_assignment_calls().start_pos:
             # the search_name might be before `=`
             definitions = [v for v in user_stmt.set_vars
-                                                if str(v) == search_name]
+                                                if unicode(v) == search_name]
         if not isinstance(user_stmt, parsing.Import):
             # import case is looked at with add_import_name option
             definitions = dynamic.related_name_add_import_modules(definitions,

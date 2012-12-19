@@ -3,6 +3,7 @@
 import re
 import os
 
+from _compatibility import unicode
 import cache
 import dynamic
 import helpers
@@ -51,7 +52,7 @@ class BaseDefinition(object):
         self.is_keyword = isinstance(definition, keywords.Keyword)
 
         # generate a path to the definition
-        self.module_path = str(definition.get_parent_until().path)
+        self.module_path = unicode(definition.get_parent_until().path)
 
     @property
     def type(self):
@@ -104,20 +105,20 @@ class BaseDefinition(object):
     def raw_doc(self):
         """ Returns the raw docstring `__doc__` for any object """
         try:
-            return str(self.definition.docstr)
+            return unicode(self.definition.docstr)
         except AttributeError:
             return ''
 
     @property
     def description(self):
-        return str(self.definition)
+        return unicode(self.definition)
 
     @property
     def full_name(self):
         """
         Returns the path to a certain class/function, see #61.
         """
-        path = [str(p) for p in self.path]
+        path = [unicode(p) for p in self.path]
         # TODO add further checks, the mapping should only occur on stdlib.
         try:
             path[0] = self._mapping[path[0]]
@@ -174,7 +175,7 @@ class Completion(BaseDefinition):
 
         would return 'isinstance'.
         """
-        return str(self.name.names[-1])
+        return unicode(self.name.names[-1])
 
     @property
     def description(self):
@@ -187,7 +188,7 @@ class Completion(BaseDefinition):
         if t == 'Statement' or t == 'Import':
             desc = self.definition.get_code(False)
         else:
-            desc = '.'.join(str(p) for p in self.path)
+            desc = '.'.join(unicode(p) for p in self.path)
 
         line_nr = '' if self.in_builtin_module else '@%s' % self.line_nr
         return '%s: %s%s' % (t, desc, line_nr)
@@ -237,9 +238,9 @@ class Definition(BaseDefinition):
         if isinstance(d, evaluate.Array):
             d = 'class ' + d.type
         elif isinstance(d, (parsing.Class, evaluate.Class, evaluate.Instance)):
-            d = 'class ' + str(d.name)
+            d = 'class ' + unicode(d.name)
         elif isinstance(d, (evaluate.Function, evaluate.parsing.Function)):
-            d = 'def ' + str(d.name)
+            d = 'def ' + unicode(d.name)
         elif isinstance(d, evaluate.parsing.Module):
             # only show module name
             d = 'module %s' % self.module_name
@@ -268,7 +269,7 @@ class RelatedName(BaseDefinition):
     def __init__(self, name_part, scope):
         super(RelatedName, self).__init__(scope, name_part.start_pos)
         self.name_part = name_part
-        self.text = str(name_part)
+        self.text = unicode(name_part)
         self.end_pos = name_part.end_pos
 
     @property
@@ -317,7 +318,7 @@ class CallDef(object):
     @property
     def call_name(self):
         """ The name (e.g. 'isinstance') as a string. """
-        return str(self.executable.name)
+        return unicode(self.executable.name)
 
     @property
     def module(self):
