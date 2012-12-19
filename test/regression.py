@@ -11,7 +11,7 @@ import itertools
 sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../jedi'))
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
 
-from _compatibility import is_py25, utf8
+from _compatibility import is_py25, utf8, unicode
 import api
 
 #api.set_debug_function(api.debug.print_to_stdout)
@@ -253,18 +253,14 @@ class TestRegression(Base):
 
     def test_unicode_script(self):
         """ normally no unicode objects are being used. (<=2.7) """
-        try:
-            s = unicode("import datetime; datetime.d")
-        except NameError:
-            pass  # python 3 has no unicode method
-        else:
-            assert len(self.complete(s))
+        s = unicode("import datetime; datetime.d")
+        assert len(self.complete(s))
 
     def test_multibyte_script(self):
         """ `jedi.Script` must accept multi-byte string source. """
         try:
             code = unicode("import datetime; datetime.d")
-            comment = utf8("# multi-byte comment あいうえお")
+            comment = utf8("# multi-byte comment あいうえおä")
             s = (unicode('%s\n%s') % (code, comment)).encode('utf-8')
         except NameError:
             pass  # python 3 has no unicode method
