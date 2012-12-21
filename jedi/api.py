@@ -386,11 +386,12 @@ class Script(object):
                 raise NotFoundError()
 
         debug.speed('func_call start')
-        try:
-            call, index = check_cache()
-        except NotFoundError:
-            return None
-        debug.speed('func_call parsed')
+        call = None
+        if settings.use_get_in_function_call_cache:
+            try:
+                call, index = check_cache()
+            except NotFoundError:
+                return None
 
         if call is None:
             # This is a backup, if the above is not successful.
@@ -398,6 +399,7 @@ class Script(object):
             call, index = check_user_stmt(user_stmt)
             if call is None:
                 return None
+        debug.speed('func_call parsed')
 
         debug.speed('func_call user_stmt')
         with common.scale_speed_settings(settings.scale_get_in_function_call):
