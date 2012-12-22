@@ -9,6 +9,7 @@ if is_py3k:
 import types
 import inspect
 
+import cache
 import common
 import debug
 import parsing
