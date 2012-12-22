@@ -432,6 +432,16 @@ class Function(Scope):
         return '%s\n\n%s' % (self.get_call_signature(), self.docstr)
 
 
+class Lambda(Function):
+    def __init__(self, module, params, start_pos):
+        super(Lambda, self).__init__(module, None, params, start_pos, None)
+
+    def get_code(self, first_indent=False, indention='    '):
+        params = ','.join([stmt.code for stmt in self.params])
+        string = "lambda %s:" % params
+        return string + super(Function, self).get_code(indention=indention)
+
+
 class Flow(Scope):
     """
     Used to describe programming structure - flow statements,
