@@ -30,7 +30,7 @@ fast_parser_always_reparse = False
 # Use the cache (full cache) to generate get_in_function_call's. This may fail
 # with multiline docstrings (likely) and other complicated changes to the fail
 # (unlikely). The goal is to move away from it by making the rest faster.
-use_get_in_function_call_cache = True
+use_get_in_function_call_cache = False
 
 # ----------------
 # dynamic stuff
@@ -94,7 +94,7 @@ scale_get_in_function_call = 0.1
 part_line_length = 20
 
 # ----------------
-# star import caching
+# caching validity (time)
 # ----------------
 
 # In huge packages like numpy, checking all star imports on every completion
@@ -102,3 +102,7 @@ part_line_length = 20
 # time span (in seconds).
 
 star_import_cache_validity = 60.0
+
+# Finding function calls might be slow (0.1-0.5s). This is not acceptible for
+# normal writing. Therefore cache it for a short time.
+get_in_function_call_validity = 3.0

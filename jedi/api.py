@@ -40,6 +40,7 @@ import helpers
 import common
 import builtin
 import api_classes
+import cache
 
 from _compatibility import next, unicode
 
@@ -403,7 +404,8 @@ class Script(object):
 
         debug.speed('func_call user_stmt')
         with common.scale_speed_settings(settings.scale_get_in_function_call):
-            origins = evaluate.follow_call(call)
+            _callable = lambda: evaluate.follow_call(call)
+            origins = cache.cache_get_in_function_call(_callable, user_stmt)
         debug.speed('func_call followed')
 
         if len(origins) == 0:
