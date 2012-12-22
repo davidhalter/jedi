@@ -6,6 +6,8 @@ memoize_caches = []
 
 time_caches = []
 
+star_import_cache = {}
+
 
 def clear_caches():
     """ Jedi caches many things, that should be completed after each completion
@@ -90,3 +92,40 @@ def time_cache(time_add_setting):
 def cache_get_in_function_call(stmt):
     module_path = stmt.get_parent_until().path
     return None if module_path is None else (module_path, stmt.start_pos)
+
+
+def cache_star_import(func):
+    def wrapper(scope, *args, **kwargs):
+        try:
+            mods = star_import_cache[scope]
+            if mods[0] + settings.star_import_cache_validity > time.time():
+                return mods[1]
+        except KeyError:
+            pass
+        # cache is too old and therefore invalid or not available
+        invalidate_star_import_cache(scope)
+        mods = func(scope, *args, **kwargs)
+        star_import_cache[scope] = time.time(), mods
+
+        return mods
+    return wrapper
+
+
+def invalidate_star_import_cache(module, only_main=False):
+    """ Important if some new modules are being reparsed """
+    try:
+        t, mods = star_import_cache[module]
+
+        del star_import_cache[module]
+
+        for m in mods:
+            invalidate_star_import_cache(m, only_main=True)
+    except KeyError:
+        pass
+
+    if not only_main:
+        # We need a list here because otherwise the list is being changed
+        # during the iteration in py3k: iteritems -> items.
+        for key, (t, mods) in list(star_import_cache.items()):
+            if module in mods:
+                invalidate_star_import_cache(key)
