@@ -14,7 +14,6 @@ import fast_parser
 import builtin
 import debug
 import settings
-import imports
 
 
 class Module(builtin.CachedModule):
@@ -64,7 +63,7 @@ class ModuleWithCursor(Module):
         if not self._parser:
             try:
                 ts, parser = builtin.CachedModule.cache[self.path]
-                imports.invalidate_star_import_cache(parser.module)
+                cache.invalidate_star_import_cache(parser.module)
 
                 del builtin.CachedModule.cache[self.path]
             except KeyError:
