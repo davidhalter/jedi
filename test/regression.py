@@ -47,8 +47,8 @@ class TestRegression(Base):
         old, api.settings.star_import_cache_validity = \
                 api.settings.star_import_cache_validity, new
 
-        imports = api.imports
-        imports.star_import_cache = {}  # first empty...
+        cache = api.cache
+        cache.star_import_cache = {}  # first empty...
         # path needs to be not-None (otherwise caching effects are not visible)
         api.Script('', 1, 0, '').complete()
         time.sleep(2 * new)
@@ -57,7 +57,7 @@ class TestRegression(Base):
         # reset values
         api.settings.star_import_cache_validity = old
         length = len(imports.star_import_cache)
-        imports.star_import_cache = {}
+        cache.star_import_cache = {}
         self.assertEqual(length, 1)
 
     def test_part_parser(self):
