@@ -37,14 +37,14 @@ def compile():
         groups = 0
         pattern = 'a'
 
-        def findall(self):
+        def findall(self, string, pos=None, endpos=None):
             """
             findall(string[, pos[, endpos]]) --> list.
             Return a list of all non-overlapping matches of pattern in string.
             """
             return ['a']
 
-        def finditer(self):
+        def finditer(self, string, pos=None, endpos=None):
             """
             finditer(string[, pos[, endpos]]) --> iterator.
             Return an iterator over all non-overlapping matches for the
@@ -53,7 +53,7 @@ def compile():
             """
             yield SRE_Match(self)
 
-        def match(self):
+        def match(self, string, pos=None, endpos=None):
             """
             match(string[, pos[, endpos]]) --> match object or None.
             Matches zero or more characters at the beginning of the string
@@ -61,10 +61,10 @@ def compile():
             """
             return SRE_Match(self)
 
-        def scanner(self):
+        def scanner(self, string, pos=None, endpos=None):
             pass
 
-        def search(self):
+        def search(self, string, pos=None, endpos=None):
             """
             search(string[, pos[, endpos]]) --> match object or None.
             Scan through string looking for a match, and return a corresponding
@@ -72,14 +72,14 @@ def compile():
             """
             return SRE_Match(self)
 
-        def split(self):
+        def split(self, string, maxsplit=0]):
             """
             split(string[, maxsplit = 0])  --> list.
             Split string by the occurrences of pattern.
             """
             return ['a']
 
-        def sub(self):
+        def sub(self, repl, string, count=0):
             """
             sub(repl, string[, count = 0]) --> newstring
             Return the string obtained by replacing the leftmost non-overlapping
@@ -87,7 +87,7 @@ def compile():
             """
             return ''
 
-        def subn(self):
+        def subn(self, repl, string, count=0):
             """
             subn(repl, string[, count = 0]) --> (newstring, number of subs)
             Return the tuple (new_string, number_of_subs_made) found by replacing
