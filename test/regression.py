@@ -56,7 +56,7 @@ class TestRegression(Base):
 
         # reset values
         api.settings.star_import_cache_validity = old
-        length = len(imports.star_import_cache)
+        length = len(cache.star_import_cache)
         cache.star_import_cache = {}
         self.assertEqual(length, 1)
 
