@@ -18,7 +18,12 @@ def clear_caches():
     for m in memoize_caches:
         m.clear()
 
-    time_caches = []
+    for tc in time_caches:
+        # check time_cache for expired entries
+        for key, (t, value) in list(tc.items()):
+            if t < time.time():
+                # delete expired entries
+                del tc[key]
 
 
 def memoize_default(default=None, cache=memoize_caches):
