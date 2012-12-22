@@ -22,7 +22,7 @@ def compile():
         def expand(self):
             return ''
 
-        def group(self):
+        def group(self, nr):
             return ''
 
         def groupdict(self):
