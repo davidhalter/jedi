@@ -369,7 +369,8 @@ class Function(Scope):
     def __init__(self, module, name, params, start_pos, annotation):
         super(Function, self).__init__(module, start_pos)
         self.name = name
-        name.parent = self.set_parent
+        if name is not None:
+            name.parent = self.set_parent
         self.params = params
         for p in params:
             p.parent = self.set_parent
@@ -1530,6 +1531,22 @@ class PyFuzzyParser(object):
                         tok_list.append(n)
                         string += ".".join(n.names)
                     continue
+                elif tok == 'lambda':
+                    params = []
+                    start_pos = self.start_pos
+                    while tok !=':':
+                        param, tok = self._parse_statement(
+                                                    added_breaks=[':', ','])
+                        if param is None:
+                            break
+                        params.append(param)
+                    if tok != ':':
+                        continue
+
+                    lambd = Lambda(self.module, params, start_pos)
+                    ret, tok = self._parse_statement(added_breaks=[','])
+                    if ret is not None:
+                        lambd.returns.append(ret)
                 elif token_type == tokenize.NAME:
                     if tok == 'for':
                         # list comprehensions!
