@@ -68,6 +68,7 @@ class Script(object):
     """
     def __init__(self, source, line, column, source_path,
                                  source_encoding='utf-8'):
+        api_classes._clear_caches()
         debug.reset_time()
         source = modules.source_to_unicode(source, source_encoding)
         self.pos = line, column
