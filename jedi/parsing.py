@@ -1546,7 +1546,11 @@ class PyFuzzyParser(object):
                     lambd = Lambda(self.module, params, start_pos)
                     ret, tok = self._parse_statement(added_breaks=[','])
                     if ret is not None:
+                        ret.parent = lambd
                         lambd.returns.append(ret)
+                    lambd.parent = self.scope
+                    tok_list[-1] = lambd
+                    continue
                 elif token_type == tokenize.NAME:
                     if tok == 'for':
                         # list comprehensions!

@@ -1374,8 +1374,8 @@ def follow_call_list(call_list):
                     result += follow_statement(stmt)
                 else:
                     # With things like params, these can also be functions...
-                    if isinstance(call, (Function, Class, Instance,
-                                            dynamic.ArrayInstance)):
+                    if isinstance(call, (parsing.Lambda, Function, Class,
+                                            Instance, dynamic.ArrayInstance)):
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, (str, unicode)):
