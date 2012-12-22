@@ -178,8 +178,11 @@ class Scope(Simple):
             string += i.get_code()
         for sub in self.subscopes:
             string += sub.get_code(first_indent=True, indention=indention)
-        for stmt in self.statements:
-            string += stmt.get_code()
+
+        returns = self.returns if hasattr(self, 'returns') else []
+        ret_str = '' if isinstance(self, Lambda) else 'return '
+        for stmt in self.statements + returns:
+            string += (ret_str if stmt in returns else '') + stmt.get_code()
 
         if first_indent:
             string = common.indent_block(string, indention=indention)
@@ -1536,7 +1539,7 @@ class PyFuzzyParser(object):
                     start_pos = self.start_pos
                     while tok !=':':
                         param, tok = self._parse_statement(
-                                                    added_breaks=[':', ','])
+                                    added_breaks=[':', ','], stmt_class=Param)
                         if param is None:
                             break
                         params.append(param)

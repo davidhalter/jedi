@@ -365,7 +365,7 @@ a()
 
 x = []
 a = lambda x: x
-int()
+#? int()
 a(0)
 
 #? float()
