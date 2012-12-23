@@ -373,11 +373,11 @@ a(0)
 
 arg_l = lambda x, y: y, x
 #? float()
-argl[0]('', 1.0)
+arg_l[0]('', 1.0)
 #? list()
 arg_l[1]
 
-arg_l = lambda x, y: y, x
+arg_l = lambda x, y: (y, x)
 args = 1,""
 result = arg_l(*args)
 #? tuple()
@@ -395,9 +395,11 @@ with_lambda(arg_l, 1.0)[1]
 #? float()
 with_lambda(arg_l, 1.0)[0]
 #? float()
-with_lambda(arg_l, x=1.0)[0]
+with_lambda(arg_l, y=1.0)[0]
+#? int()
+with_lambda(lambda x: x)
 #? float()
-with_lambda(lambda x: x, x=1.0)[0]
+with_lambda(lambda x, y: y, y=1.0)
 
 arg_func = lambda *args, **kwargs: args[0], kwargs['a']
 #? int()

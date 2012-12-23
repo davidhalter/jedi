@@ -829,7 +829,7 @@ class Array(use_metaclass(cache.CachedMetaClass, parsing.Base)):
         return builtin.Builtin.scope
 
     def __getattr__(self, name):
-        if name not in ['type', 'start_pos']:
+        if name not in ['type', 'start_pos', 'get_only_subelement']:
             raise AttributeError('Strange access: %s.' % name)
         return getattr(self._array, name)
 
@@ -1373,9 +1373,11 @@ def follow_call_list(call_list):
                     # comprehensions
                     result += follow_statement(stmt)
                 else:
+                    if isinstance(call, (parsing.Lambda)):
+                        result.append(Function(call))
                     # With things like params, these can also be functions...
-                    if isinstance(call, (parsing.Lambda, Function, Class,
-                                            Instance, dynamic.ArrayInstance)):
+                    elif isinstance(call, (Function, Class, Instance,
+                                                    dynamic.ArrayInstance)):
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
                     elif not isinstance(call, (str, unicode)):

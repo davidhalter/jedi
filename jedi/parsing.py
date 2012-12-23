@@ -445,6 +445,10 @@ class Lambda(Function):
         string = "lambda %s:" % params
         return string + super(Function, self).get_code(indention=indention)
 
+    def __repr__(self):
+        return "<%s @%s (%s-%s)>" % (type(self).__name__, self.start_pos[0],
+                                        self.start_pos[1], self.end_pos[1])
+
 
 class Flow(Scope):
     """
@@ -1551,6 +1555,7 @@ class PyFuzzyParser(object):
                     if ret is not None:
                         ret.parent = lambd
                         lambd.returns.append(ret)
+                        lambd.end_pos = ret.end_pos
                     lambd.parent = self.scope
                     tok_list[-1] = lambd
                     continue
