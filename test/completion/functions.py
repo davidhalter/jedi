@@ -401,7 +401,7 @@ with_lambda(lambda x: x)
 #? float()
 with_lambda(lambda x, y: y, y=1.0)
 
-arg_func = lambda *args, **kwargs: args[0], kwargs['a']
+arg_func = lambda *args, **kwargs: (args[0], kwargs['a'])
 #? int()
 arg_func(1, 2, a='', b=10)[0]
 #? list()
