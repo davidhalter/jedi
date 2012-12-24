@@ -11,17 +11,10 @@ abc.d.a.bsaasd.abc.d
 
 abc
 
-
-
-
-
-
-
 abc = 
 
 #< (-3,0), (0,0)
 abc
-
 
 
 Abc = 3
@@ -47,10 +40,6 @@ class Abc():
 Abc.d.Abc
 
 
-
-
-
-
 #< 4 (0,4), (4,1)
 def blub():
 
@@ -60,15 +49,11 @@ def blub():
 def a(): pass
 
 
-
 #< (0,7), (3,0)
 import module_not_exists
 
 #< (-3,7), (0,0)
 module_not_exists
-
-
-
 
 
 #< ('rename1', 1,0), (0,24), (3,0), (6,17), ('rename2', 4,5), (10,17), (13,17)
@@ -86,8 +71,6 @@ from import_tree.rename1 import abc
 
 #< (0, 32),
 from import_tree.rename1 import not_existing
-
-
 
 
 response = 5
