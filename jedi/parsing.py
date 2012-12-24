@@ -1239,11 +1239,11 @@ class PyFuzzyParser(object):
 
         code = code + '\n'  # end with \n, because the parser needs it
         buf = StringIO(code)
-        self.gen = common.NoErrorTokenizer(buf.readline, line_offset,
+        self._gen = common.NoErrorTokenizer(buf.readline, line_offset,
                                                             stop_on_scope)
         self.top_module = top_module or self.module
         try:
-            self.parse()
+            self._parse()
         except common.MultiLevelStopIteration:
             # sometimes StopIteration isn't catched. Just ignore it.
             pass
@@ -1577,7 +1577,7 @@ class PyFuzzyParser(object):
                         if tok not in b or in_clause is None:
                             middle.parent = self.scope
                             if in_clause is None:
-                                self.gen.push_last_back()
+                                self._gen.push_last_back()
                             else:
                                 in_clause.parent = self.scope
                                 in_clause.parent = self.scope
@@ -1659,7 +1659,7 @@ class PyFuzzyParser(object):
             self._check_user_stmt(stmt)
 
         if tok in always_break + not_first_break:
-            self.gen.push_last_back()
+            self._gen.push_last_back()
         return stmt, tok
 
     def next(self):
@@ -1672,7 +1672,7 @@ class PyFuzzyParser(object):
         """ Generate the next tokenize pattern. """
         try:
             typ, tok, self.start_pos, self.end_pos, \
-                                self.parserline = next(self.gen)
+                                self.parserline = next(self._gen)
         except (StopIteration, common.MultiLevelStopIteration):
             # on finish, set end_pos correctly
             s = self.scope
@@ -1691,7 +1691,7 @@ class PyFuzzyParser(object):
         self.current = (typ, tok)
         return self.current
 
-    def parse(self):
+    def _parse(self):
         """
         The main part of the program. It analyzes the given code-text and
         returns a tree-like scope. For a more detailed description, see the
@@ -1780,14 +1780,14 @@ class PyFuzzyParser(object):
                 # the from import
                 mod, token_type, tok = self._parsedotname(self.current)
                 if str(mod) == 'import' and relative_count:
-                    self.gen.push_last_back()
+                    self._gen.push_last_back()
                     tok = 'import'
                     mod = None
                 if not mod and not relative_count or tok != "import":
                     debug.warning("from: syntax error@%s" % self.start_pos[0])
                     defunct = True
                     if tok != 'import':
-                        self.gen.push_last_back()
+                        self._gen.push_last_back()
                 names = self._parseimportlist()
                 for name, alias, defunct2 in names:
                     star = name is not None and name.names[0] == '*'
