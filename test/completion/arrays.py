@@ -125,6 +125,8 @@ def a(): return ''
 (a)().replace()
 #? int()
 (tuple).index()
+#? int()
+(tuple)().index()
 
 
 # -----------------

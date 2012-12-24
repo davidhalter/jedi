@@ -1328,7 +1328,7 @@ def follow_statement(stmt, seek_name=None):
     return set(result)
 
 
-def follow_call_list(call_list):
+def follow_call_list(call_list, follow_array=False):
     """
     The call_list has a special structure.
     This can be either `parsing.Array` or `list of list`.
@@ -1364,7 +1364,7 @@ def follow_call_list(call_list):
             calls_iterator = iter(calls)
             for call in calls_iterator:
                 if parsing.Array.is_type(call, parsing.Array.NOARRAY):
-                    result += follow_call_list(call)
+                    result += follow_call_list(call, follow_array=True)
                 elif isinstance(call, parsing.ListComprehension):
                     loop = evaluate_list_comprehension(call)
                     stmt = copy.copy(call.stmt)
@@ -1401,6 +1401,14 @@ def follow_call_list(call_list):
                                             and str(r.name) == 'str']:
                             # if it is an iterable, ignore * operations
                             next(calls_iterator)
+
+    if follow_array and isinstance(call_list, parsing.Array):
+        # call_list can also be a two dimensional array
+        call_path = call_list.generate_call_path()
+        next(call_path, None)  # the first one has been used already
+        call_scope = call_list.parent_stmt
+        position = call_list.start_pos
+        result = follow_paths(call_path, result, call_scope, position=position)
     return set(result)
 
 
@@ -1419,7 +1427,11 @@ def follow_call_path(path, scope, position):
     if isinstance(current, parsing.Array):
         result = [Array(current)]
     else:
-        if not isinstance(current, parsing.NamePart):
+        if isinstance(current, parsing.NamePart):
+            # This is the first global lookup.
+            scopes = get_scopes_for_name(scope, current, position=position,
+                                            search_global=True)
+        else:
             if current.type in (parsing.Call.STRING, parsing.Call.NUMBER):
                 t = type(current.name).__name__
                 scopes = get_scopes_for_name(builtin.Builtin.scope, t)
@@ -1429,10 +1441,6 @@ def follow_call_path(path, scope, position):
             # Make instances of those number/string objects.
             arr = helpers.generate_param_array([current.name])
             scopes = [Instance(s, arr) for s in scopes]
-        else:
-            # This is the first global lookup.
-            scopes = get_scopes_for_name(scope, current, position=position,
-                                            search_global=True)
         result = imports.strip_imports(scopes)
 
     return follow_paths(path, result, scope, position=position)
@@ -1467,7 +1475,7 @@ def follow_path(path, scope, call_scope, position=None):
     `follow_path` is only responsible for completing `.bar.baz`, the rest is
     done in the `follow_call` function.
     """
-    # Current is either an Array or a Scope.
+    # current is either an Array or a Scope.
     try:
         current = next(path)
     except StopIteration:
