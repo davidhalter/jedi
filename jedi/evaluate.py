@@ -424,6 +424,18 @@ class Execution(Executable):
                 if len(self.var_args) == 1:
                     objects = follow_call_list([self.var_args[0]])
                     return [o.base for o in objects if isinstance(o, Instance)]
+            elif func_name == 'super':
+                accept = (parsing.Function,)
+                func = self.var_args.parent_stmt.get_parent_until(accept)
+                if func.isinstance(*accept):
+                    cls = func.get_parent_until(accept + (parsing.Class,),
+                                                    include_current=False)
+                    if isinstance(cls, parsing.Class):
+                        cls = Class(cls)
+                        su = cls.get_super_classes()
+                        if su:
+                            return [Instance(su[0])]
+                return []
 
         if self.base.isinstance(Class):
             # There maybe executions of executions.
@@ -887,8 +899,7 @@ def get_names_for_scope(scope, position=None, star_search=True,
     the whole thing would probably start a little recursive madness.
     """
     in_func_scope = scope
-    non_flow = scope.get_parent_until(parsing.Flow, reverse=True,
-                                                    include_current=True)
+    non_flow = scope.get_parent_until(parsing.Flow, reverse=True)
     while scope:
         # `parsing.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
@@ -1511,8 +1522,7 @@ def follow_path(path, scope, call_scope, position=None):
 def filter_private_variable(scope, call_scope, var_name):
     if isinstance(var_name, (str, unicode)) \
                 and var_name.startswith('__') and isinstance(scope, Instance):
-        s = call_scope.get_parent_until((parsing.Class, Instance),
-                                                include_current=True)
+        s = call_scope.get_parent_until((parsing.Class, Instance))
         if s != scope and s != scope.base.base:
             return True
     return False

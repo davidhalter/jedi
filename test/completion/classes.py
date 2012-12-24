@@ -523,3 +523,24 @@ class PrivateVar():
 PrivateVar().__var
 #? 
 PrivateVar().__var
+
+# -----------------
+# super
+# -----------------
+class Super(object):
+    a = 3
+
+class TestSuper(Super):
+    #? 
+    super()
+    def test(self):
+        #? Super()
+        super()
+        #? ['a']
+        super().a
+        if 1:
+            #? Super()
+            super()
+        def a():
+            #? 
+            super()

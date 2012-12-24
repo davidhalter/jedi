@@ -73,15 +73,13 @@ class Simple(Base):
 
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
-                                                    include_current=False):
+                                                    include_current=True):
         """ Takes always the parent, until one class (not a Class) """
         if type(classes) not in (tuple, list):
             classes = (classes,)
-        scope = self
+        scope = self if include_current else self.parent
         while scope.parent is not None:
             if classes and reverse != scope.isinstance(*classes):
-                if include_current:
-                    return scope
                 break
             scope = scope.parent
         return scope
