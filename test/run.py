@@ -274,7 +274,7 @@ for s in summary:
     print(s)
 
 exit_code = 1 if tests_fail else 0
-if sys.hexversion < 0x02060000 and tests_fail <= 6:
+if sys.hexversion < 0x02060000 and tests_fail <= 9:
     # Python 2.5 has major incompabillities (e.g. no property.setter),
     # therefore it is not possible to pass all tests.
     exit_code = 0
