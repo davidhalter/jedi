@@ -1322,6 +1322,7 @@ class PyFuzzyParser(object):
 
         n = Name(self.module, names, first_pos, self.end_pos) if names \
                                                                 else None
+        #if self.module.path != '__builtin__': print n
         return n, token_type, tok
 
     def _parseimportlist(self):
@@ -1555,8 +1556,9 @@ class PyFuzzyParser(object):
                     if ret is not None:
                         ret.parent = lambd
                         lambd.returns.append(ret)
-                        lambd.end_pos = ret.end_pos
                     lambd.parent = self.scope
+                    lambd.end_pos = self.end_pos
+                    #print lambd, added_breaks, ret, param
                     tok_list[-1] = lambd
                     continue
                 elif token_type == tokenize.NAME:

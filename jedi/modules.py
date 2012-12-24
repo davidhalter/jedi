@@ -118,9 +118,13 @@ class ModuleWithCursor(Module):
         string = ''
         level = 0
         force_point = False
+        last_type = None
         try:
             for token_type, tok, start, end, line in gen:
                 #print 'tok', token_type, tok, force_point
+                if last_type == token_type == tokenize.NAME:
+                    string += ' '
+
                 if level > 0:
                     if tok in close_brackets:
                         level += 1
@@ -146,6 +150,7 @@ class ModuleWithCursor(Module):
 
                 self._column_temp = self._line_length - end[1]
                 string += tok
+                last_type = token_type
         except tokenize.TokenError:
             debug.warning("Tokenize couldn't finish", sys.exc_info)
 
