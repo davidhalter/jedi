@@ -80,3 +80,14 @@ response['Content-Disposition'] = 'attachment; filename=%s.pdf' % id
 response.write(pdf)
 #< (-4,0), (-3,0), (-2,0), (0,0)
 response
+
+
+class Inheritance(object): pass
+
+#< 20 (0,17), (-3,6)
+class TestClass(Inheritance):
+    def a():
+        pass
+
+    def b():
+        pass
