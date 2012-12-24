@@ -85,11 +85,20 @@ def run_related_name_test(script, correct, line_nr):
     """
     result = script.related_names()
     correct = correct.strip()
-    comp_str = sorted(r.start_pos for r in result)
-    correct = sorted(literal_eval(correct))
-    if sorted(comp_str) != sorted(correct):
+    compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
+                                                            for r in result)
+    wanted = []
+    for pos_tup in literal_eval(correct):
+        if type(pos_tup[0]) == str:
+            # this means that there is a module specified
+            wanted.append(pos_tup)
+        else:
+            wanted.append(('renaming', line_nr + pos_tup[0], pos_tup[1]))
+
+    wanted = sorted(wanted)
+    if compare != wanted:
         print('Solution @%s not right, received %s, wanted %s'\
-                    % (line_nr - 1, comp_str, correct))
+                    % (line_nr - 1, compare, wanted))
         return 1
     return 0
 
