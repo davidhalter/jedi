@@ -118,6 +118,15 @@ u1
 #? int()
 a
 
+def a(): return ''
+#? str()
+(a)()
+#? str()
+(a)().replace()
+#? int()
+(tuple).index()
+
+
 # -----------------
 # imbalanced sides
 # -----------------
