@@ -84,11 +84,10 @@ Jedi supports many of the widely used Python features:
 - ignores syntax and indentation errors
 - multiple returns / yields
 - tuple assignments / array indexing / dictionary indexing
-- exceptions / with-statement
+- with-statement / exceptions
 - \*args / \*\*kwargs
-- decorators
+- decorators / lambdas / closures
 - descriptors -> property / staticmethod / classmethod
-- closures
 - generators (yield statement) / iterators
 - support for some magic methods: ``__call__``, ``__iter__``, ``__next__``,
   ``__get__``, ``__getitem__``, ``__init__``
