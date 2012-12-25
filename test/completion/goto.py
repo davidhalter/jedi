@@ -121,11 +121,25 @@ def func():
 #! 8 ['def b']
 func().b()
 
-# -----------------    
+# -----------------
 # on itself
-# -----------------    
+# -----------------
 
 #! 7 ['class ClassDef']
 class ClassDef():
     """ abc """
     pass
+
+# -----------------
+# params
+# -----------------
+
+param = ClassDef
+#! 9 ['param']
+def ab1(param): pass
+#! 9 ['param']
+def ab2(param): pass
+#! 11 ['param=ClassDef']
+def ab3(a=param): pass
+
+ab1(ClassDef);ab2(ClassDef);ab3(ClassDef)
