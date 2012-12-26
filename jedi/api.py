@@ -408,9 +408,9 @@ class Script(object):
             except NotFoundError:
                 return None
 
+        user_stmt = self._parser.user_stmt
         if call is None:
             # This is a backup, if the above is not successful.
-            user_stmt = self._parser.user_stmt
             call, index = check_user_stmt(user_stmt)
             if call is None:
                 return None
