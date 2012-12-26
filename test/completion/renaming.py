@@ -49,6 +49,11 @@ def blub():
 def a(): pass
 
 
+#< 0 (0,0), (1,0)
+set_object_var = object()
+set_object_var.var = 1
+
+
 response = 5
 #< 0 (0,0), (1,0), (2,0), (4,0)
 response = HttpResponse(mimetype='application/pdf')
