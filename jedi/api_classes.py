@@ -135,8 +135,10 @@ class BaseDefinition(object):
 
 
 class Completion(BaseDefinition):
-    """ `Completion` objects are returned from `Script.complete`. Providing
-    some useful functions for IDE's. """
+    """
+    `Completion` objects are returned from :meth:`api.Script.complete`. They
+    provide additional information about a completion.
+    """
     def __init__(self, name, needs_dot, like_name_length, base):
         super(Completion, self).__init__(name.parent, name.start_pos)
 
@@ -149,11 +151,13 @@ class Completion(BaseDefinition):
 
     @property
     def complete(self):
-        """ Delievers the rest of the word, e.g. completing `isinstance`
-        >>> isinstan
+        """
+        Return the rest of the word, e.g. completing ``isinstance``::
+
+            >>> isinstan# <-- Cursor is here
 
         would return the string 'ce'. It also adds additional stuff, depending
-        on your `settings.py`
+        on your `settings.py`.
         """
         dot = '.' if self.needs_dot else ''
         append = ''
@@ -170,8 +174,10 @@ class Completion(BaseDefinition):
 
     @property
     def word(self):
-        """ In contrary to `complete` returns the whole word, e.g.
-        >>> isinstan
+        """
+        Similar to :meth:`Completion.complete`, but return the whole word, e.g. ::
+
+            >>> isinstan
 
         would return 'isinstance'.
         """
@@ -179,8 +185,11 @@ class Completion(BaseDefinition):
 
     @property
     def description(self):
-        """ Provides a description of the completion object
-        TODO return value is just __repr__ of some objects, improve! """
+        """
+        Provide a description of the completion object.
+
+        .. todo:: return value is just __repr__ of some objects, improve!
+        """
         parent = self.name.parent
         if parent is None:
             return ''
@@ -194,12 +203,13 @@ class Completion(BaseDefinition):
         return '%s: %s%s' % (t, desc, line_nr)
 
     def follow_definition(self):
-        """ Returns you the original definitions. I strongly recommend not
-        using it for your completions, because it might slow down Jedi. If you
-        want to read only a few objects (<=20). I think it might be useful,
-        especially to get the original docstrings.
-        The basic problem of this function is that it follows all results. This
-        means with 1000 completions (e.g. numpy), it's just PITA slow.
+        """
+        Return the original definitions. I strongly recommend not using it for
+        your completions, because it might slow down *Jedi*. If you want to read
+        only a few objects (<=20), it might be useful, especially to
+        get the original docstrings. The basic problem of this function is
+        that it follows all results. This means with 1000 completions (e.g.
+        numpy), it's just PITA-slow.
         """
         if self._followed_definitions is None:
             if self.definition.isinstance(parsing.Statement):
@@ -220,15 +230,19 @@ class Completion(BaseDefinition):
 
 
 class Definition(BaseDefinition):
-    """ These are the objects returned by either `Script.goto` or
-    `Script.get_definition`. """
+    """
+    *Definition* objects are returned from :meth:`api.Script.goto` or
+    :meth:`api.Script.get_definition`.
+    """
     def __init__(self, definition):
         super(Definition, self).__init__(definition, definition.start_pos)
 
     @property
     def description(self):
-        """ A description of the Definition object, which is heavily used in
-        testing. e.g. for `isinstance` it returns 'def isinstance' """
+        """
+        A description of the :class:`.Definition` object, which is heavily used
+        in testing. e.g. for ``isinstance`` it returns ``def isinstance``.
+        """
         d = self.definition
         if isinstance(d, evaluate.InstanceElement):
             d = d.var
@@ -252,10 +266,15 @@ class Definition(BaseDefinition):
 
     @property
     def desc_with_module(self):
-        """ In addition to the Definition, it also returns the module. Don't
-        use it yet, its behaviour may change. If you really need it, talk to me
-        TODO add full path. This function is should return a
-        module.class.function path. """
+        """
+        In addition to the definition, also return the module.
+        
+        .. warning:: Don't use this function yet, its behaviour may change. If
+            you really need it, talk to me.
+
+        .. todo:: Add full path. This function is should return a
+            `module.class.function` path.
+        """
         if self.module_path.endswith('.py') \
                     and not isinstance(self.definition, parsing.Module):
             position = '@%s' % (self.line_nr)

@@ -45,7 +45,7 @@ from _compatibility import next, unicode
 
 
 class NotFoundError(Exception):
-    """ A custom error to avoid catching the wrong exceptions """
+    """A custom error to avoid catching the wrong exceptions."""
     pass
 
 
@@ -78,7 +78,7 @@ class Script(object):
 
     @property
     def parser(self):
-        """ The lazy parser """
+        """ The lazy parser."""
         return self.module.parser
 
     def complete(self):
@@ -210,7 +210,7 @@ class Script(object):
         """
         Return the definitions of a the path under the cursor. This is not a
         goto function! This follows complicated paths and returns the end, not
-        the first definition. The big difference of :meth:`goto` and
+        the first definition. The big difference between :meth:`goto` and
         :meth:`get_definition` is that :meth:`goto` doesn't follow imports and
         statements. Multiple objects may be returned, because Python itself is
         a dynamic language, which means depending on an option you can have two
@@ -311,7 +311,7 @@ class Script(object):
         is very useful for refactoring (renaming), or to show all usages of a
         variable.
 
-        TODO implement additional_module_paths
+        .. todo:: Implement additional_module_paths
         """
         user_stmt = self.parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
@@ -340,13 +340,17 @@ class Script(object):
 
     def get_in_function_call(self):
         """
-        Return the function, that the cursor is in, e.g.:
-        >>> isinstance(| # | <-- cursor is here
+        Return the function object of the call you're currently in.
+        
+        E.g. if the cursor is here::
 
-        This would return the `isinstance` function. In contrary:
-        >>> isinstance()| # | <-- cursor is here
+            >>> abs(# <-- cursor is here
 
-        This would return `None`.
+        This would return the ``abs`` function. On the other hand::
+
+            >>> abs()# <-- cursor is here
+
+        This would return ``None``.
         """
         def check_user_stmt(user_stmt):
             if user_stmt is None \
