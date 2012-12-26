@@ -46,7 +46,7 @@ from _compatibility import next, unicode
 
 
 class NotFoundError(Exception):
-    """ A custom error to avoid catching the wrong exceptions """
+    """A custom error to avoid catching the wrong exceptions."""
     pass
 
 
@@ -54,16 +54,17 @@ class Script(object):
     """
     A Script is the base for a completion, goto or whatever call.
 
-    :param source: The source code of the current file
+    :param source: The source code of the current file, separated by newlines.
     :type source: string
-    :param line: The line to complete in.
+    :param line: The line to perform actions on (starting with 1).
     :type line: int
-    :param col: The column to complete in.
+    :param col: The column of the cursor (starting with 0).
     :type col: int
-    :param source_path: The path in the os, the current module is in.
+    :param source_path: The path of the file in the file system, or ``''`` if
+        it hasn't been saved yet.
     :type source_path: string or None
-    :param source_encoding: encoding for decoding `source`, if it
-                            is not a `unicode` object.
+    :param source_encoding: The encoding of ``source``, if it is not a
+        ``unicode`` object (default `utf-8`).
     :type source_encoding: string
     """
     def __init__(self, source, line, column, source_path,
@@ -79,14 +80,16 @@ class Script(object):
 
     @property
     def parser(self):
-        """ The lazy parser """
+        """ The lazy parser."""
         return self.module.parser
 
     def complete(self):
         """
-        An auto completer for python files.
+        Return :class:`api_classes.Completion` objects. Those objects contain
+        information about the completions, more than just names.
 
-        :return: list of Completion objects, sorted by name and __ comes last.
+        :return: list of :class:`api_classes.Completion` objects, sorted by
+            name and __ comes last.
         :rtype: list
         """
         def follow_imports_if_possible(name):
@@ -207,16 +210,16 @@ class Script(object):
 
     def get_definition(self):
         """
-        Returns the definitions of a the path under the cursor. This is
-        not a goto function! This follows complicated paths and returns the
-        end, not the first definition.
-        The big difference of goto and get_definition is that goto doesn't
-        follow imports and statements.
-        Multiple objects may be returned, because Python itself is a dynamic
-        language, which means depending on an option you can have two different
-        versions of a function.
+        Return the definitions of a the path under the cursor. This is not a
+        goto function! This follows complicated paths and returns the end, not
+        the first definition. The big difference between :meth:`goto` and
+        :meth:`get_definition` is that :meth:`goto` doesn't follow imports and
+        statements. Multiple objects may be returned, because Python itself is
+        a dynamic language, which means depending on an option you can have two
+        different versions of a function.
 
-        :return: list of Definition objects, which are basically scopes.
+        :return: list of :class:`api_classes.Definition` objects, which are
+            basically scopes.
         :rtype: list
         """
         def resolve_import_paths(scopes):
@@ -248,13 +251,13 @@ class Script(object):
 
     def goto(self):
         """
-        Returns the first definition found by goto. This means: It doesn't
-        follow imports and statements.
-        Multiple objects may be returned, because Python itself is a dynamic
-        language, which means depending on an option you can have two different
-        versions of a function.
+        Return the first definition found by goto. Imports and statements
+        aren't followed.  Multiple objects may be returned, because Python
+        itself is a dynamic language, which means depending on an option you
+        can have two different versions of a function.
 
-        :return: list of Definition objects, which are basically scopes.
+        :return: list of :class:`api_classes.Definition` objects, which are
+            basically scopes.
         """
         d = [api_classes.Definition(d) for d in set(self._goto()[0])]
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
@@ -305,12 +308,12 @@ class Script(object):
 
     def related_names(self, additional_module_paths=[]):
         """
-        Returns `dynamic.RelatedName` objects, which contain all names, that
-        are defined by the same variable, function, class or import.
-        This function can be used either to show all the usages of a variable
-        or for renaming purposes.
+        Return :class:`api_classes.RelatedName` objects, which contain all
+        names that point to the definition of the name under the cursor. This
+        is very useful for refactoring (renaming), or to show all usages of a
+        variable.
 
-        TODO implement additional_module_paths
+        .. todo:: Implement additional_module_paths
         """
         user_stmt = self.parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
@@ -339,13 +342,17 @@ class Script(object):
 
     def get_in_function_call(self):
         """
-        Return the function, that the cursor is in, e.g.:
-        >>> isinstance(| # | <-- cursor is here
+        Return the function object of the call you're currently in.
+        
+        E.g. if the cursor is here::
 
-        This would return the `isinstance` function. In contrary:
-        >>> isinstance()| # | <-- cursor is here
+            >>> abs(# <-- cursor is here
 
-        This would return `None`.
+        This would return the ``abs`` function. On the other hand::
+
+            >>> abs()# <-- cursor is here
+
+        This would return ``None``.
         """
         def check_user_stmt(user_stmt):
             if user_stmt is None \
@@ -451,7 +458,8 @@ class Script(object):
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
                                             notices=True, speed=True):
     """
-    You can define a callback debug function to get all the debug messages.
+    Define a callback debug function to get all the debug messages.
+
     :param func_cb: The callback function for debug messages, with n params.
     """
     debug.debug_function = func_cb
