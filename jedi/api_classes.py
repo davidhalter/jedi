@@ -56,6 +56,7 @@ class BaseDefinition(object):
 
     @property
     def type(self):
+        """The type of the definition."""
         # generate the type
         stripped = self.definition
         if isinstance(self.definition, evaluate.InstanceElement):
@@ -64,6 +65,7 @@ class BaseDefinition(object):
 
     @property
     def path(self):
+        """The module path."""
         path = []
         if not isinstance(self.definition, keywords.Keyword):
             par = self.definition
@@ -77,20 +79,24 @@ class BaseDefinition(object):
 
     @property
     def module_name(self):
+        """The module name."""
         path = self.module_path
         sep = os.path.sep
         p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', path)
         return p
 
     def in_builtin_module(self):
+        """Whether this is a builtin module."""
         return not self.module_path.endswith('.py')
 
     @property
     def line_nr(self):
+        """The line where the definition occurs (starting with 1)."""
         return self.start_pos[0]
 
     @property
     def column(self):
+        """The column where the definition occurs (starting with 0)."""
         return self.start_pos[1]
 
     @property
@@ -103,7 +109,7 @@ class BaseDefinition(object):
 
     @property
     def raw_doc(self):
-        """ Returns the raw docstring `__doc__` for any object """
+        """The raw docstring ``__doc__`` for any object."""
         try:
             return unicode(self.definition.docstr)
         except AttributeError:
@@ -111,13 +117,12 @@ class BaseDefinition(object):
 
     @property
     def description(self):
+        """A textual description of the object."""
         return unicode(self.definition)
 
     @property
     def full_name(self):
-        """
-        Returns the path to a certain class/function, see #61.
-        """
+        """The path to a certain class/function, see #61."""
         path = [unicode(p) for p in self.path]
         # TODO add further checks, the mapping should only occur on stdlib.
         try:
