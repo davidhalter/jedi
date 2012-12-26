@@ -113,3 +113,58 @@ class TestClassVar(object):
         TestClassVar.class_v
         #< (0,8), (-7, 8)
         class_v
+
+class TestInstanceVar():
+    def a(self):
+        #< 13 (4,13), (0,13)
+        self._instance_var = 3
+
+    def b(self):
+        #< (-4,13), (0,13)
+        self._instance_var
+
+
+# -----------------
+# inheritance
+# -----------------
+class Super(object):
+    #< 4 (0,4), (23,18), (25,13)
+    base_class = 1
+    #< 4 (0,4),
+    class_var = 1
+
+    #< 8 (0,8),
+    def base_method(self):
+        #< 13 (0,13), (20,13)
+        self.base_var = 1
+        #< 13 (0,13), (29,13)
+        self.instance_var = 1
+
+    #< 8 (0,8),
+    def just_a_method(self): pass
+
+
+#< 20 (0,16), (-18,6)
+class TestClass(Super):
+    #< 4 (0,4),
+    class_var = 1
+
+    def x_method(self):
+
+        #< (0,18), (2,13), (-23,4)
+        TestClass.base_class
+        #< (-2,18), (0,13), (-25,4)
+        self.base_class
+        #< (-20,13), (0,13)
+        self.base_var
+        #< 
+        TestClass.base_var
+
+
+        #< 13 (5,13), (0,13)
+        self.instance_var = 3
+
+    #< 9 (0,8), 
+    def just_a_method(self):
+        #< (-5,13), (0,13), (-29,13)
+        self.instance_var

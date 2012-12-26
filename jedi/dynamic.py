@@ -349,12 +349,14 @@ class ArrayInstance(parsing.Base):
 
 
 def related_names(definitions, search_name, mods):
-    def strip_ambiguity(definitions):
+    def compare_array(definitions):
+        """ `definitions` are being compared by module/start_pos, because
+        sometimes the id's of the objects change (e.g. executions).
+        """
         result = []
         for d in definitions:
-            if isinstance(d, evaluate.InstanceElement):
-                d = d.var
-            result.append(d)
+            module = d.get_parent_until()
+            result.append((module, d.start_pos))
         return result
 
     def check_call(call):
@@ -369,11 +371,10 @@ def related_names(definitions, search_name, mods):
         for f in follow:
             follow_res, search = evaluate.goto(call.parent_stmt, f)
             follow_res = related_name_add_import_modules(follow_res, search)
-            follow_res = strip_ambiguity(follow_res)
 
-            #print follow_res, [d.parent for d in follow_res]
+            compare_follow_res = compare_array(follow_res)
             # compare to see if they match
-            if any(r in definitions for r in follow_res):
+            if any(r in compare_definitions for r in compare_follow_res):
                 scope = call.parent_stmt
                 result.append(api_classes.RelatedName(search, scope))
 
@@ -395,7 +396,7 @@ def related_names(definitions, search_name, mods):
         except AssertionError:
             return False
 
-    definitions = strip_ambiguity(definitions)
+    compare_definitions = compare_array(definitions)
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
     for m in get_directory_modules_for_name(mods, search_name):

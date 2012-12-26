@@ -327,7 +327,7 @@ class Script(object):
                     and self.pos < user_stmt.get_assignment_calls().start_pos:
             # the search_name might be before `=`
             definitions = [v for v in user_stmt.set_vars
-                                                if unicode(v) == search_name]
+                                if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, parsing.Import):
             # import case is looked at with add_import_name option
             definitions = dynamic.related_name_add_import_modules(definitions,
@@ -341,7 +341,7 @@ class Script(object):
             if isinstance(d, parsing.Module):
                 names.append(api_classes.RelatedName(d, d))
             else:
-                names.append(api_classes.RelatedName(d.names[0], d))
+                names.append(api_classes.RelatedName(d.names[-1], d))
 
         return sorted(set(names), key=lambda x: (x.module_path, x.start_pos),
                                                                 reverse=True)

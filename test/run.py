@@ -88,7 +88,11 @@ def run_related_name_test(script, correct, line_nr):
     compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
                                                             for r in result)
     wanted = []
-    for pos_tup in literal_eval(correct):
+    if not correct:
+        positions = []
+    else:
+        positions = literal_eval(correct)
+    for pos_tup in positions:
         if type(pos_tup[0]) == str:
             # this means that there is a module specified
             wanted.append(pos_tup)
