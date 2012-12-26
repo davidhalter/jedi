@@ -59,7 +59,7 @@ class Script(object):
     :type line: int
     :param col: The column of the cursor (starting with 0).
     :type col: int
-    :param source_path: The path of the file in the file system, or ``None`` if
+    :param source_path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
     :type source_path: string or None
     :param source_encoding: The encoding of ``source``, if it is not a
