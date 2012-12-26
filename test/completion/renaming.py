@@ -142,7 +142,7 @@ class Super(object):
     def base_method(self):
         #< 13 (0,13), (20,13)
         self.base_var = 1
-        #< 13 (0,13), (29,13)
+        #< 13 (0,13), (24,13), (29,13)
         self.instance_var = 1
 
     #< 8 (0,8),
@@ -173,3 +173,33 @@ class TestClass(Super):
     def just_a_method(self):
         #< (-5,13), (0,13), (-29,13)
         self.instance_var
+
+
+# -----------------
+# properties
+# -----------------
+class TestProperty:
+
+    @property
+    #< 10 (0,8), (5,13)
+    def prop(self):
+        return 1
+
+    def a(self):
+        #< 13 (-5,8), (0,13)
+        self.prop
+
+    @property
+    #< 13 (0,8), (4,5)
+    def rw_prop(self):
+        return self._rw_prop
+
+    #< 8 (-4,8), (0,5)
+    @rw_prop.setter
+    #< 8 (0,8), (5,13)
+    def rw_prop(self, value):
+        self._rw_prop = value
+
+    def b(self):
+        #< 13 (-5,8), (0,13)
+        self.rw_prop

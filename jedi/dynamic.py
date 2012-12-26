@@ -383,19 +383,6 @@ def related_names(definitions, search_name, mods):
     if not definitions:
         return set()
 
-    def is_definition(arr):
-        try:
-            for a in arr:
-                assert len(a) == 1
-                a = a[0]
-                if a.isinstance(parsing.Array):
-                    assert is_definition(a)
-                elif a.isinstance(parsing.Call):
-                    assert a.execution is None
-            return True
-        except AssertionError:
-            return False
-
     compare_definitions = compare_array(definitions)
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
@@ -423,8 +410,7 @@ def related_names(definitions, search_name, mods):
             else:
                 calls = _scan_array(stmt.get_assignment_calls(), search_name)
                 for d in stmt.assignment_details:
-                    if not is_definition(d[1]):
-                        calls += _scan_array(d[1], search_name)
+                    calls += _scan_array(d[1], search_name)
                 for call in calls:
                     names += check_call(call)
     return names
