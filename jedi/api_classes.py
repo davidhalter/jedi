@@ -266,6 +266,7 @@ class Definition(BaseDefinition):
 
 
 class RelatedName(BaseDefinition):
+    """TODO: document this"""
     def __init__(self, name_part, scope):
         super(RelatedName, self).__init__(scope, name_part.start_pos)
         self.name_part = name_part

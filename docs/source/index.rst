@@ -3,10 +3,18 @@ Jedi – Python autocompletion that works!
 
 
 .. automodule:: jedi
+    :members:
+    :undoc-members:
 
+
+Contents
+========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+
+   installation
+   plugin-api
 
 
 Indices and tables
@@ -15,4 +23,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
