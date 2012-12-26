@@ -17,21 +17,22 @@ Main class
 .. module:: api
 
 .. autoclass:: Script
-    :members:
 
 API Classes
 ~~~~~~~~~~~
 
 .. module:: api_classes
 
+.. autoclass:: BaseDefinition
+
 .. autoclass:: Completion
-    :members:
+    :show-inheritance:
 
 .. autoclass:: Definition
-    :members:
+    :show-inheritance:
 
 .. autoclass:: RelatedName
-    :members:
+    :show-inheritance:
 
 Exceptions
 ~~~~~~~~~~

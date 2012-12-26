@@ -245,3 +245,7 @@ texinfo_documents = [
 # -- Options for todo module ---------------------------------------------------
 
 todo_include_todos = False
+
+# -- Options for autodoc module ------------------------------------------------
+
+autodoc_default_flags = ['members', 'undoc-members']
