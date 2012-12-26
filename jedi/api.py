@@ -283,11 +283,12 @@ class Script(object):
 
         goto_path = self._module.get_path_under_cursor()
         context = self._module.get_context()
+        user_stmt = self._parser.user_stmt
         if next(context) in ('class', 'def'):
             user_scope = self._parser.user_scope
             definitions = set([user_scope.name])
             search_name = unicode(user_scope.name)
-        elif isinstance(self._parser.user_stmt, parsing.Import):
+        elif isinstance(user_stmt, parsing.Import):
             s, name_part = self._get_on_import_stmt()
             try:
                 definitions = [s.follow(is_goto=True)[0]]
@@ -296,7 +297,7 @@ class Script(object):
             search_name = unicode(name_part)
 
             if add_import_name:
-                import_name = self._parser.user_stmt.get_defined_names()
+                import_name = user_stmt.get_defined_names()
                 # imports have only one name
                 if name_part == import_name[0].names[-1]:
                     definitions.append(import_name[0])
@@ -304,6 +305,11 @@ class Script(object):
             stmt = self._get_under_cursor_stmt(goto_path)
             defs, search_name = evaluate.goto(stmt)
             definitions = follow_inexistent_imports(defs)
+            if isinstance(user_stmt, parsing.Statement):
+                if user_stmt.get_assignment_calls().start_pos > self.pos:
+                    # The cursor must be after the start, otherwise the
+                    # statement is just an assignee.
+                    definitions = [user_stmt]
         return definitions, search_name
 
     def related_names(self, additional_module_paths=[]):

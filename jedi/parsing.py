@@ -1262,12 +1262,11 @@ class PyFuzzyParser(object):
 
     def _check_user_stmt(self, simple):
         # this is not user checking, just update the used_names
-        if not isinstance(simple, Param):
-            for tok_name in self.module.temp_used_names:
-                try:
-                    self.module.used_names[tok_name].add(simple)
-                except KeyError:
-                    self.module.used_names[tok_name] = set([simple])
+        for tok_name in self.module.temp_used_names:
+            try:
+                self.module.used_names[tok_name].add(simple)
+            except KeyError:
+                self.module.used_names[tok_name] = set([simple])
         self.module.temp_used_names = []
 
         if not self.user_position:
@@ -1379,7 +1378,7 @@ class PyFuzzyParser(object):
         breaks = [',', ':']
         while tok not in [')', ':']:
             param, tok = self._parse_statement(added_breaks=breaks,
-                                              stmt_class=Param)
+                                                  stmt_class=Param)
             if param and tok == ':':
                 # parse annotations
                 annotation, tok = self._parse_statement(added_breaks=breaks)
@@ -1656,6 +1655,7 @@ class PyFuzzyParser(object):
         else:
             stmt = stmt_class(self.module, string, set_vars, used_funcs,
                             used_vars, tok_list, first_pos, self.end_pos)
+
             self._check_user_stmt(stmt)
 
         if tok in always_break + not_first_break:

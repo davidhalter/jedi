@@ -82,12 +82,15 @@ response.write(pdf)
 response
 
 
-class Inheritance(object): pass
+class Super(object):
+    base_class = 1
+    def base_method(self):
+        self.base_var
 
-#< 20 (0,17), (-3,6)
-class TestClass(Inheritance):
-    def a():
+#< 20 (0,16), (-6,6)
+class TestClass(Super):
+    def a(self):
         pass
 
-    def b():
+    def b(self):
         pass

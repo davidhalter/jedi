@@ -14,6 +14,12 @@ c = b
 #! ['c=b']
 c
 
+cd = 1
+#! 1 ['cd=c']
+cd = c
+#! 0 ['cd=e']
+cd = e
+
 #! ['module math']
 import math
 #! ['import math']
@@ -135,7 +141,7 @@ class ClassDef():
 # -----------------
 
 param = ClassDef
-#! 9 ['param']
+#! 8 ['param']
 def ab1(param): pass
 #! 9 ['param']
 def ab2(param): pass

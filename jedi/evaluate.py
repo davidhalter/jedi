@@ -1537,6 +1537,8 @@ def goto(stmt, call_path=None):
     scope = stmt.parent
     pos = stmt.start_pos
     call_path, search = call_path[:-1], call_path[-1]
+    pos = pos[0], pos[1]+1
+
     if call_path:
         scopes = follow_call_path(iter(call_path), scope, pos)
         search_global = False
