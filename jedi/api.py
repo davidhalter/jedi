@@ -73,15 +73,15 @@ class Script(object):
         debug.reset_time()
         source = modules.source_to_unicode(source, source_encoding)
         self.pos = line, column
-        self.module = modules.ModuleWithCursor(source_path, source=source,
+        self._module = modules.ModuleWithCursor(source_path, source=source,
                                                             position=self.pos)
         self.source_path = source_path
         debug.speed('init')
 
     @property
-    def parser(self):
-        """ The lazy parser."""
-        return self.module.parser
+    def _parser(self):
+        """ lazy parser."""
+        return self._module.parser
 
     def complete(self):
         """
@@ -96,7 +96,7 @@ class Script(object):
             # TODO remove this, or move to another place (not used)
             par = name.parent
             if isinstance(par, parsing.Import) and not \
-                        isinstance(self.parser.user_stmt, parsing.Import):
+                        isinstance(self._parser.user_stmt, parsing.Import):
                 new = imports.ImportPath(par).follow(is_goto=True)
                 # Only remove the old entry if a new one has been found.
                 #print par, new, par.parent
@@ -108,7 +108,7 @@ class Script(object):
             return [name]
 
         debug.speed('complete start')
-        path = self.module.get_path_until_cursor()
+        path = self._module.get_path_until_cursor()
         if re.search('^\.|\.\.$', path):
             return []
         path, dot, like = self._get_completion_parts(path)
@@ -118,7 +118,7 @@ class Script(object):
         except NotFoundError:
             scopes = []
             scope_generator = evaluate.get_names_for_scope(
-                                            self.parser.user_scope, self.pos)
+                                            self._parser.user_scope, self.pos)
             completions = []
             for scope, name_list in scope_generator:
                 for c in name_list:
@@ -132,7 +132,7 @@ class Script(object):
                 else:
                     if isinstance(s, imports.ImportPath):
                         if like == 'import':
-                            l = self.module.get_line(self.pos[0])[:self.pos[1]]
+                            l = self._module.get_line(self.pos[0])[:self.pos[1]]
                             if not l.endswith('import import'):
                                 continue
                         names = s.get_defined_names(on_import_stmt=True)
@@ -166,7 +166,7 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
-                                                    self.parser.user_stmt, n):
+                                                    self._parser.user_stmt, n):
                     new = api_classes.Completion(c, needs_dot,
                                                     len(like), s)
                     comps.append(new)
@@ -180,9 +180,9 @@ class Script(object):
     def _prepare_goto(self, goto_path, is_like_search=False):
         """ Base for complete, goto and get_definition. Basically it returns
         the resolved scopes under cursor. """
-        debug.dbg('start: %s in %s' % (goto_path, self.parser.user_scope))
+        debug.dbg('start: %s in %s' % (goto_path, self._parser.user_scope))
 
-        user_stmt = self.parser.user_stmt
+        user_stmt = self._parser.user_stmt
         debug.speed('parsed')
         if not user_stmt and len(goto_path.split('\n')) > 1:
             # If the user_stmt is not defined and the goto_path is multi line,
@@ -205,7 +205,7 @@ class Script(object):
         except IndexError:
             raise NotFoundError()
         stmt.start_pos = self.pos
-        stmt.parent = self.parser.user_scope
+        stmt.parent = self._parser.user_scope
         return stmt
 
     def get_definition(self):
@@ -229,13 +229,13 @@ class Script(object):
                     scopes.update(resolve_import_paths(set(s.follow())))
             return scopes
 
-        goto_path = self.module.get_path_under_cursor()
+        goto_path = self._module.get_path_under_cursor()
 
-        context = self.module.get_context()
+        context = self._module.get_context()
         if next(context) in ('class', 'def'):
-            scopes = set([self.module.parser.user_scope])
+            scopes = set([self._module.parser.user_scope])
         elif not goto_path:
-            op = self.module.get_operator_under_cursor()
+            op = self._module.get_operator_under_cursor()
             scopes = set([keywords.get_operator(op, self.pos)] if op else [])
         else:
             scopes = set(self._prepare_goto(goto_path))
@@ -281,13 +281,13 @@ class Script(object):
                     definitions |= follow_inexistent_imports(i)
             return definitions
 
-        goto_path = self.module.get_path_under_cursor()
-        context = self.module.get_context()
+        goto_path = self._module.get_path_under_cursor()
+        context = self._module.get_context()
         if next(context) in ('class', 'def'):
-            user_scope = self.parser.user_scope
+            user_scope = self._parser.user_scope
             definitions = set([user_scope.name])
             search_name = unicode(user_scope.name)
-        elif isinstance(self.parser.user_stmt, parsing.Import):
+        elif isinstance(self._parser.user_stmt, parsing.Import):
             s, name_part = self._get_on_import_stmt()
             try:
                 definitions = [s.follow(is_goto=True)[0]]
@@ -296,7 +296,7 @@ class Script(object):
             search_name = unicode(name_part)
 
             if add_import_name:
-                import_name = self.parser.user_stmt.get_defined_names()
+                import_name = self._parser.user_stmt.get_defined_names()
                 # imports have only one name
                 if name_part == import_name[0].names[-1]:
                     definitions.append(import_name[0])
@@ -315,7 +315,7 @@ class Script(object):
 
         .. todo:: Implement additional_module_paths
         """
-        user_stmt = self.parser.user_stmt
+        user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
         if isinstance(user_stmt, parsing.Statement) \
                     and self.pos < user_stmt.get_assignment_calls().start_pos:
@@ -328,7 +328,7 @@ class Script(object):
                                                                 search_name)
 
         module = set([d.get_parent_until() for d in definitions])
-        module.add(self.parser.module)
+        module.add(self._parser.module)
         names = dynamic.related_names(definitions, search_name, module)
 
         for d in set(definitions):
@@ -343,7 +343,7 @@ class Script(object):
     def get_in_function_call(self):
         """
         Return the function object of the call you're currently in.
-        
+
         E.g. if the cursor is here::
 
             >>> abs(# <-- cursor is here
@@ -376,7 +376,7 @@ class Script(object):
                                                             self.source_path]
             except KeyError:
                 return None, 0
-            part_parser = self.module.get_part_parser()
+            part_parser = self._module.get_part_parser()
             user_stmt = part_parser.user_stmt
             call, index = check_user_stmt(user_stmt)
             if call:
@@ -404,7 +404,7 @@ class Script(object):
 
         if call is None:
             # This is a backup, if the above is not successful.
-            user_stmt = self.parser.user_stmt
+            user_stmt = self._parser.user_stmt
             call, index = check_user_stmt(user_stmt)
             if call is None:
                 return None
@@ -426,7 +426,7 @@ class Script(object):
     def _get_on_import_stmt(self, is_like_search=False):
         """ Resolve the user statement, if it is an import. Only resolve the
         parts until the user position. """
-        user_stmt = self.parser.user_stmt
+        user_stmt = self._parser.user_stmt
         import_names = user_stmt.get_all_import_names()
         kill_count = -1
         cur_name_part = None
