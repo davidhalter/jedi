@@ -28,9 +28,9 @@ fast_parser = True
 fast_parser_always_reparse = False
 
 # Use the cache (full cache) to generate get_in_function_call's. This may fail
-# with multiline docstrings (likely) and other complicated changes to the fail
-# (unlikely). The goal is to move away from it by making the rest faster.
-use_get_in_function_call_cache = False
+# with multiline docstrings (likely) and other complicated changes (unlikely).
+# The goal is to move away from it by making the rest faster.
+use_get_in_function_call_cache = True
 
 # ----------------
 # dynamic stuff
