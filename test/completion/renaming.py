@@ -49,6 +49,18 @@ def blub():
 def a(): pass
 
 
+response = 5
+#< 0 (0,0), (1,0), (2,0), (4,0)
+response = HttpResponse(mimetype='application/pdf')
+response['Content-Disposition'] = 'attachment; filename=%s.pdf' % id
+response.write(pdf)
+#< (-4,0), (-3,0), (-2,0), (0,0)
+response
+
+
+# -----------------
+# imports
+# -----------------
 #< (0,7), (3,0)
 import module_not_exists
 
@@ -73,24 +85,31 @@ from import_tree.rename1 import abc
 from import_tree.rename1 import not_existing
 
 
-response = 5
-#< 0 (0,0), (1,0), (2,0), (4,0)
-response = HttpResponse(mimetype='application/pdf')
-response['Content-Disposition'] = 'attachment; filename=%s.pdf' % id
-response.write(pdf)
-#< (-4,0), (-3,0), (-2,0), (0,0)
-response
+# -----------------
+# classes
+# -----------------
+
+class TestMethods(object):
+    #< 8 (0,8), (2,13)
+    def a_method(self):
+        #< 13 (-2,8), (0,13)
+        self.a_method()
+        #< 13 (2,8), (0,13), (3,13)
+        self.b_method()
+
+    def b_method(self):
+        self.b_method
 
 
-class Super(object):
-    base_class = 1
-    def base_method(self):
-        self.base_var
-
-#< 20 (0,16), (-6,6)
-class TestClass(Super):
+class TestClassVar(object):
+    #< 4 (0,4), (5,13), (7,21)
+    class_v = 1
     def a(self):
-        pass
+        class_v = 1
 
-    def b(self):
-        pass
+        #< (-5,4), (0,13), (2,21)
+        self.class_v
+        #< (-7,4), (-2,13), (0,21)
+        TestClassVar.class_v
+        #< (0,8), (-7, 8)
+        class_v

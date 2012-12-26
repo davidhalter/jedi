@@ -349,6 +349,14 @@ class ArrayInstance(parsing.Base):
 
 
 def related_names(definitions, search_name, mods):
+    def strip_ambiguity(definitions):
+        result = []
+        for d in definitions:
+            if isinstance(d, evaluate.InstanceElement):
+                d = d.var
+            result.append(d)
+        return result
+
     def check_call(call):
         result = []
         follow = []  # There might be multiple search_name's in one call_path
@@ -361,6 +369,7 @@ def related_names(definitions, search_name, mods):
         for f in follow:
             follow_res, search = evaluate.goto(call.parent_stmt, f)
             follow_res = related_name_add_import_modules(follow_res, search)
+            follow_res = strip_ambiguity(follow_res)
 
             #print follow_res, [d.parent for d in follow_res]
             # compare to see if they match
@@ -386,6 +395,7 @@ def related_names(definitions, search_name, mods):
         except AssertionError:
             return False
 
+    definitions = strip_ambiguity(definitions)
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
     for m in get_directory_modules_for_name(mods, search_name):
