@@ -3,5 +3,6 @@
 .ropeproject
 *.pyc
 /build/
+/docs/build/
 /dist/
 jedi.egg-info/
