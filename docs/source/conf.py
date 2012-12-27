@@ -167,6 +167,8 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Jedidoc'
 
+html_style = ''  # Force usage of default template on RTD
+
 
 # -- Options for LaTeX output --------------------------------------------------
 
@@ -249,8 +251,3 @@ todo_include_todos = False
 # -- Options for autodoc module ------------------------------------------------
 
 autodoc_default_flags = ['members', 'undoc-members']
-
-
-# -- Options for readthedocs ---------------------------------------------------
-
-html_style = True  # Force usage of default template on RTD
