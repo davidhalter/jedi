@@ -5,7 +5,7 @@ The plugin API
 
 If you want to set up an editor/IDE-plugin with **Jedi**, you first need to
 ``import jedi``. You then have direct access to the :class:`.Script`,
-:class:`.NotFoundError` and :func:`.set_debug_function` objects.
+:exc:`.NotFoundError` and :func:`.set_debug_function` objects.
 
 
 API documentation
