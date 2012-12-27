@@ -1,8 +1,9 @@
 """
-The api basically only provides one class. You can create a ``Script`` and use
-it's complete/goto/etc functions. Additionally you can add a debug function
-with ``set_debug_function`` and catch ``NotFoundError``, which is being raised
-if your completion is impossible.
+The api basically only provides one class. You can create a :class:`Script` and
+use it's ``complete`` / ``goto`` / etc functions.
+Additionally you can add a debug function with :func:`set_debug_function` and
+catch :exc:`NotFoundError` which is being raised if your completion is
+impossible.
 """
 from __future__ import with_statement
 __all__ = ['Script', 'NotFoundError', 'set_debug_function']
@@ -33,7 +34,8 @@ class NotFoundError(Exception):
 
 class Script(object):
     """
-    A Script is the base for a completion, goto or whatever call.
+    A Script is the base for a completion, goto or whatever you want to do with
+    jedi.
 
     :param source: The source code of the current file, separated by newlines.
     :type source: string
