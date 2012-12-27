@@ -118,6 +118,9 @@ from import_tree.pkg.mod1 import a
 #! ['import os']
 from .imports import os
 
+#! ['some_variable=1']
+from . import some_variable
+
 # -----------------
 # anonymous classes
 # -----------------

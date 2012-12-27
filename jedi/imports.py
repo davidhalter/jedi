@@ -187,16 +187,20 @@ class ImportPath(parsing.Base):
         """
         Find a module with a path (of the module, like usb.backend.libusb10).
         """
-        def follow_str(ns, string):
-            debug.dbg('follow_module', ns, string)
+        def get_relative_path():
+            module = self.import_stmt.get_parent_until()
+            path = os.path.abspath(module.path)
+            for i in range(self.import_stmt.relative_count):
+                path = os.path.dirname(path)
+            return path
+
+        def follow_str(ns_path, string):
+            debug.dbg('follow_module', ns_path, string)
             path = None
-            if ns:
-                path = ns[1]
+            if ns_path:
+                path = ns_path
             elif self.import_stmt.relative_count:
-                module = self.import_stmt.get_parent_until()
-                path = os.path.abspath(module.path)
-                for i in range(self.import_stmt.relative_count):
-                    path = os.path.dirname(path)
+                path = get_relative_path()
 
             global imports_processed
             imports_processed += 1
@@ -221,14 +225,22 @@ class ImportPath(parsing.Base):
         else:
             sys_path_mod = list(builtin.get_sys_path())
 
-        current_namespace = None
+        current_namespace = (None, None, None)
         # now execute those paths
         rest = []
         for i, s in enumerate(self.import_path):
             try:
-                current_namespace = follow_str(current_namespace, s)
+                current_namespace = follow_str(current_namespace[1], s)
             except ImportError:
-                if current_namespace:
+                if self.import_stmt.relative_count \
+                                and len(self.import_path) == 1:
+                    # follow `from . import some_variable`
+                    try:
+                        current_namespace = follow_str(get_relative_path(),
+                                                                    '__init__')
+                    except ImportError:
+                        pass
+                if current_namespace[1]:
                     rest = self.import_path[i:]
                 else:
                     raise ModuleNotFound(
