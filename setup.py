@@ -7,9 +7,11 @@ __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 readme = open('README.rst').read()
 
+with open('VERSION') as f:
+    VERSION = f.read().strip()
 
 setup(name='jedi',
-      version='0.5b5',
+      version=VERSION,
       description='An autocompletion tool for Python that can be used for text editors.',
       author=__AUTHOR__,
       author_email=__AUTHOR_EMAIL__,
