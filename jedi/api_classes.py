@@ -93,8 +93,8 @@ class BaseDefinition(object):
     @property
     def line_nr(self):
         """
-        .. warning:: Deprecated! It's just here for backwards compatibility,
-            use `api_classes.BaseDefinition.line` instead.
+        .. deprecated:: 0.5.0
+           Use :attr:`.line` instead.
         .. todo:: Remove!
         """
         warnings.warn("Use line instead.", DeprecationWarning)
@@ -102,7 +102,7 @@ class BaseDefinition(object):
 
     @property
     def line(self):
-        """ The line where the definition occurs (starting with 1). """
+        """The line where the definition occurs (starting with 1)."""
         return self.start_pos[0]
 
     @property
@@ -112,7 +112,7 @@ class BaseDefinition(object):
 
     @property
     def doc(self):
-        """ Return a document string for this completion object. """
+        """Return a document string for this completion object."""
         try:
             return self.definition.doc
         except AttributeError:
