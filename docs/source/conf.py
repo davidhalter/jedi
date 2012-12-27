@@ -249,3 +249,8 @@ todo_include_todos = False
 # -- Options for autodoc module ------------------------------------------------
 
 autodoc_default_flags = ['members', 'undoc-members']
+
+
+# -- Options for readthedocs ---------------------------------------------------
+
+html_style = True  # Force usage of default template on RTD
