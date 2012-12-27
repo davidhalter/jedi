@@ -1,27 +1,5 @@
 """
-Jedi is an autocompletion library for Python. It offers additonal
-services such as goto / get_definition / pydoc support /
-get_in_function_call / related names.
-
-To give you a simple exmple how you can use the jedi library,
-here is an exmple for the autocompletion feature:
-
->>> import jedi
->>> source = '''import json; json.l'''
->>> script = jedi.Script(source, 1, 19, '')
->>> script
-<jedi.api.Script at 0x7f6d40f3db90>
->>> completions = script.complete()
->>> completions
-[<Completion: load>, <Completion: loads>]
->>> completions[0].complete
-'oad'
->>> completions[0].word
-'load'
-
-As you see Jedi is pretty simple and allows you to concentrate
-writing a good text editor, while still having very good IDE features
-for Python.
+TODO doc
 """
 from __future__ import with_statement
 __all__ = ['Script', 'NotFoundError', 'set_debug_function']
