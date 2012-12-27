@@ -158,8 +158,7 @@ class ImportPath(parsing.Base):
                 return []
 
             scopes = [scope]
-            scopes += itertools.chain.from_iterable(
-                            remove_star_imports(s) for s in scopes)
+            scopes += remove_star_imports(scope)
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:

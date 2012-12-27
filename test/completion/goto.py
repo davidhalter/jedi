@@ -115,6 +115,9 @@ mod1.a
 #! ['a=1.0']
 from import_tree.pkg.mod1 import a
 
+#! ['import os']
+from .imports import os
+
 # -----------------
 # anonymous classes
 # -----------------
