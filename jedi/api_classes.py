@@ -2,6 +2,7 @@
 
 import re
 import os
+import warnings
 
 from _compatibility import unicode
 import cache
@@ -96,7 +97,7 @@ class BaseDefinition(object):
             use `api_classes.BaseDefinition.line` instead.
         .. todo:: Remove!
         """
-        raise DeprecationWarning("Use line instead.")
+        warnings.warn("Use line instead.", DeprecationWarning)
         return self.line
 
     @property
