@@ -19,3 +19,13 @@ def g(a, b):
     a
     #? 
     b
+
+def e(a, b):
+    """ asdfasdf
+    @type a: str
+    @param a: blablabla
+    """
+    #? str()
+    a
+    #?
+    b

@@ -5,6 +5,11 @@ import re
 import evaluate
 import parsing
 
+DOCSTRING_PARAM_PATTERNS = [
+    r'\s*:type\s+%s:\s*([\d\w_]+)', # Sphinx
+    r'\s*@type\s+%s:\s*([\d\w_]+)', # Epidoc
+    r'\s*%s\s+\(([^()]+)\)'         # googley
+]
 
 #@cache.memoize_default()  # TODO add
 def follow_param(param):
@@ -21,15 +26,12 @@ def follow_param(param):
 
 def search_param_in_docstr(docstr, param_str):
     lines = docstr.split('\n')
-
     # look at #40 to see definitions of those params
-    sphinx_comp = ':type %s:' % param_str
-    googley_comp = re.compile('\s*%s\s+\(([^()]+)\)' % re.escape(param_str))
+    patterns = [ re.compile(p % re.escape(param_str)) for p in DOCSTRING_PARAM_PATTERNS ]
     for l in lines:
-        if l.startswith(sphinx_comp):
-            return l.replace(sphinx_comp, '', 1).strip()
+        for pattern in patterns:
+            match = pattern.match(l)
+            if match:
+                return match.group(1)
 
-        r = re.match(googley_comp, l)
-        if r is not None:
-            return r.group(1)
     return None
