@@ -11,43 +11,17 @@ If you want to set up an editor/IDE-plugin with **Jedi**, you first need to
 API documentation
 -----------------
 
-Main class
-~~~~~~~~~~
+API Interface
+~~~~~~~~~~~~~
 
-.. module:: api
+.. automodule:: api
+    :undoc-members:
 
-.. autoclass:: Script
+API Return Classes
+~~~~~~~~~~~~~~~~~~
 
-API Classes
-~~~~~~~~~~~
-
-.. module:: api_classes
-
-.. autoclass:: BaseDefinition
-
-.. autoclass:: Completion
-    :show-inheritance:
-
-.. autoclass:: Definition
-    :show-inheritance:
-
-.. autoclass:: RelatedName
-    :show-inheritance:
-
-Exceptions
-~~~~~~~~~~
-
-.. module:: api
-
-.. autoexception:: NotFoundError
-
-Useful functions
-~~~~~~~~~~~~~~~~
-
-.. module:: api
-
-.. autofunction:: set_debug_function
-
+.. automodule:: api_classes
+    :undoc-members:
 
 Examples
 --------
@@ -71,7 +45,7 @@ Completions:
    >>> completions[1].word
    'loads'
 
-Definitions:
+Definitions / Goto:
 
 .. sourcecode:: python
 
