@@ -175,6 +175,13 @@ mod1.
 #? str()
 imp_tree.a
 
+#? ['some_variable']
+from . import some_variable
+#? ['arrays']
+from . import arrays
+#? []
+from . import import_tree as ren
+
 
 # -----------------
 # special positions -> edge cases
