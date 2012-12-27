@@ -93,7 +93,7 @@ class BaseDefinition(object):
     def line_nr(self):
         """
         .. warning:: Deprecated! It's just here for backwards compatibility,
-            use line instead.
+            use `api_classes.BaseDefinition.line` instead.
         .. todo:: Remove!
         """
         raise DeprecationWarning("Use line instead.")
