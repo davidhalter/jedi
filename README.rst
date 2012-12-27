@@ -48,9 +48,16 @@ Pydoc support (with highlighting, Shift+k).
 
 There is also support for goto and renaming.
 
-Get the latest from `github <http://github.com/davidhalter/jedi>`_.
+Get the latest version from `github <http://github.com/davidhalter/jedi>`_
+(master branch should always be kind of stable/working).
 
-Jedi uses `semantic versioning <http://semver.org/>`_.
+Docs are available at `https://jedi.readthedocs.org/
+<https://jedi.readthedocs.org/>`_. Pull requests with documentation
+nhancements
+and/or fixes are awesome and most welcome.
+
+Jedi uses `semantic versioning <http://semver.org/>`_ starting with version
+0.6.0.
 
 Installation
 ============
