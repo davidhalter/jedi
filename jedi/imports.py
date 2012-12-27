@@ -104,6 +104,14 @@ class ImportPath(parsing.Base):
                     for i in range(self.import_stmt.relative_count - 1):
                         path = os.path.dirname(path)
                     names += self.get_module_names([path])
+
+                    if self.import_stmt.relative_count:
+                        rel_path = self.get_relative_path() + '/__init__.py'
+                        try:
+                            m = modules.Module(rel_path)
+                            names += m.parser.module.get_defined_names()
+                        except IOError:
+                            pass
             else:
                 if on_import_stmt and isinstance(scope, parsing.Module) \
                                         and scope.path.endswith('__init__.py'):
@@ -183,24 +191,23 @@ class ImportPath(parsing.Base):
         evaluate.follow_statement.pop_stmt()
         return scopes
 
+    def get_relative_path(self):
+        path = self.file_path
+        for i in range(self.import_stmt.relative_count - 1):
+            path = os.path.dirname(path)
+        return path
+
     def _follow_file_system(self):
         """
         Find a module with a path (of the module, like usb.backend.libusb10).
         """
-        def get_relative_path():
-            module = self.import_stmt.get_parent_until()
-            path = os.path.abspath(module.path)
-            for i in range(self.import_stmt.relative_count):
-                path = os.path.dirname(path)
-            return path
-
         def follow_str(ns_path, string):
             debug.dbg('follow_module', ns_path, string)
             path = None
             if ns_path:
                 path = ns_path
             elif self.import_stmt.relative_count:
-                path = get_relative_path()
+                path = self.get_relative_path()
 
             global imports_processed
             imports_processed += 1
@@ -235,9 +242,9 @@ class ImportPath(parsing.Base):
                 if self.import_stmt.relative_count \
                                 and len(self.import_path) == 1:
                     # follow `from . import some_variable`
+                    rel_path = self.get_relative_path()
                     try:
-                        current_namespace = follow_str(get_relative_path(),
-                                                                    '__init__')
+                        current_namespace = follow_str(rel_path, '__init__')
                     except ImportError:
                         pass
                 if current_namespace[1]:
