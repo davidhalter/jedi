@@ -9,6 +9,10 @@ About Jedi
     :members:
     :undoc-members:
 
+Autocompletion can look like this (e.g. VIM plugin):
+
+.. figure:: screenshot_complete.png
+   :align: center
 
 Contents
 --------
