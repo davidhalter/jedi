@@ -91,7 +91,15 @@ class BaseDefinition(object):
 
     @property
     def line_nr(self):
-        """The line where the definition occurs (starting with 1)."""
+        """ Use line instead!
+        TODO remove, deprecated! it's just here for backwards compatibility
+        """
+        raise DeprecationWarning("Use line instead.")
+        return self.line
+
+    @property
+    def line(self):
+        """ The line where the definition occurs (starting with 1). """
         return self.start_pos[0]
 
     @property
@@ -204,8 +212,8 @@ class Completion(BaseDefinition):
         else:
             desc = '.'.join(unicode(p) for p in self.path)
 
-        line_nr = '' if self.in_builtin_module else '@%s' % self.line_nr
-        return '%s: %s%s' % (t, desc, line_nr)
+        line = '' if self.in_builtin_module else '@%s' % self.line
+        return '%s: %s%s' % (t, desc, line)
 
     def follow_definition(self):
         """
@@ -273,7 +281,7 @@ class Definition(BaseDefinition):
     def desc_with_module(self):
         """
         In addition to the definition, also return the module.
-        
+
         .. warning:: Don't use this function yet, its behaviour may change. If
             you really need it, talk to me.
 
@@ -282,7 +290,7 @@ class Definition(BaseDefinition):
         """
         if self.module_path.endswith('.py') \
                     and not isinstance(self.definition, parsing.Module):
-            position = '@%s' % (self.line_nr)
+            position = '@%s' % (self.line)
         else:
             # is a builtin or module
             position = ''
