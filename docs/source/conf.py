@@ -167,7 +167,7 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Jedidoc'
 
-html_style = ''  # Force usage of default template on RTD
+html_style = '/default.css'  # Force usage of default template on RTD
 
 
 # -- Options for LaTeX output --------------------------------------------------
