@@ -104,6 +104,14 @@ class ImportPath(parsing.Base):
                     for i in range(self.import_stmt.relative_count - 1):
                         path = os.path.dirname(path)
                     names += self.get_module_names([path])
+
+                    if self.import_stmt.relative_count:
+                        rel_path = self.get_relative_path() + '/__init__.py'
+                        try:
+                            m = modules.Module(rel_path)
+                            names += m.parser.module.get_defined_names()
+                        except IOError:
+                            pass
             else:
                 if on_import_stmt and isinstance(scope, parsing.Module) \
                                         and scope.path.endswith('__init__.py'):
@@ -158,8 +166,7 @@ class ImportPath(parsing.Base):
                 return []
 
             scopes = [scope]
-            scopes += itertools.chain.from_iterable(
-                            remove_star_imports(s) for s in scopes)
+            scopes += remove_star_imports(scope)
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
@@ -184,20 +191,23 @@ class ImportPath(parsing.Base):
         evaluate.follow_statement.pop_stmt()
         return scopes
 
+    def get_relative_path(self):
+        path = self.file_path
+        for i in range(self.import_stmt.relative_count - 1):
+            path = os.path.dirname(path)
+        return path
+
     def _follow_file_system(self):
         """
         Find a module with a path (of the module, like usb.backend.libusb10).
         """
-        def follow_str(ns, string):
-            debug.dbg('follow_module', ns, string)
+        def follow_str(ns_path, string):
+            debug.dbg('follow_module', ns_path, string)
             path = None
-            if ns:
-                path = ns[1]
+            if ns_path:
+                path = ns_path
             elif self.import_stmt.relative_count:
-                module = self.import_stmt.get_parent_until()
-                path = os.path.abspath(module.path)
-                for i in range(self.import_stmt.relative_count):
-                    path = os.path.dirname(path)
+                path = self.get_relative_path()
 
             global imports_processed
             imports_processed += 1
@@ -222,14 +232,22 @@ class ImportPath(parsing.Base):
         else:
             sys_path_mod = list(builtin.get_sys_path())
 
-        current_namespace = None
+        current_namespace = (None, None, None)
         # now execute those paths
         rest = []
         for i, s in enumerate(self.import_path):
             try:
-                current_namespace = follow_str(current_namespace, s)
+                current_namespace = follow_str(current_namespace[1], s)
             except ImportError:
-                if current_namespace:
+                if self.import_stmt.relative_count \
+                                and len(self.import_path) == 1:
+                    # follow `from . import some_variable`
+                    rel_path = self.get_relative_path()
+                    try:
+                        current_namespace = follow_str(rel_path, '__init__')
+                    except ImportError:
+                        pass
+                if current_namespace[1]:
                     rest = self.import_path[i:]
                 else:
                     raise ModuleNotFound(

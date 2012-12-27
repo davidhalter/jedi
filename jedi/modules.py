@@ -23,8 +23,11 @@ class Module(builtin.CachedModule):
     :param path: The module path of the file.
     :param source: The source code of the file.
     """
-    def __init__(self, path, source):
+    def __init__(self, path, source=None):
         super(Module, self).__init__(path=path)
+        if source is None:
+            with open(path) as f:
+                source = f.read()
         self.source = source_to_unicode(source)
         self._line_cache = None
 
