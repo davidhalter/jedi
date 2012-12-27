@@ -472,7 +472,7 @@ class Execution(Executable):
         if func.is_generator and not evaluate_generator:
             return [Generator(func, self.var_args)]
         else:
-            stmts = []
+            stmts = docstrings.find_return_types(func)
             for r in self.returns:
                 if r is not None:
                     stmts += follow_statement(r)
