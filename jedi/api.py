@@ -1,5 +1,8 @@
 """
-TODO doc
+The api basically only provides one class. You can create a ``Script`` and use
+it's complete/goto/etc functions. Additionally you can add a debug function
+with ``set_debug_function`` and catch ``NotFoundError``, which is being raised
+if your completion is impossible.
 """
 from __future__ import with_statement
 __all__ = ['Script', 'NotFoundError', 'set_debug_function']
