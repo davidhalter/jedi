@@ -135,6 +135,9 @@ class Script(object):
                             l = self._module.get_line(self.pos[0])[:self.pos[1]]
                             if not l.endswith('import import'):
                                 continue
+                        a = s.import_stmt.alias
+                        if a and a.start_pos <= self.pos <= a.end_pos:
+                            continue
                         names = s.get_defined_names(on_import_stmt=True)
                     else:
                         names = s.get_defined_names()
