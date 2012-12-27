@@ -91,8 +91,10 @@ class BaseDefinition(object):
 
     @property
     def line_nr(self):
-        """ Use line instead!
-        TODO remove, deprecated! it's just here for backwards compatibility
+        """
+        .. warning:: Deprecated! It's just here for backwards compatibility,
+            use line instead.
+        .. todo:: Remove!
         """
         raise DeprecationWarning("Use line instead.")
         return self.line
