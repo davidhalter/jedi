@@ -50,6 +50,7 @@ There is also support for goto and renaming.
 
 Get the latest from `github <http://github.com/davidhalter/jedi>`_.
 
+Jedi uses `semantic versioning <http://semver.org/>`_
 
 Installation
 ============
