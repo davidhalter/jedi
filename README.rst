@@ -6,11 +6,6 @@ Jedi - an awesome Python auto-completion
     :target: http://travis-ci.org/davidhalter/jedi
     :alt: Travis-CI build status
 
-**beta testing**
-
-*If you have any comments or feature requests, please tell me! I really want to
-know, what you think about Jedi.*
-
 Jedi is an autocompletion tool for Python. It works. With and without syntax
 errors. Sometimes it sucks, but that's normal in dynamic languages. But it
 sucks less than other tools. It understands almost all of the basic Python
