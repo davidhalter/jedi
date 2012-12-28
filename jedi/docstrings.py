@@ -6,8 +6,8 @@ import evaluate
 import parsing
 
 DOCSTRING_PARAM_PATTERNS = [
-    r'\s*:type\s+%s:\s*([\d\w_]+)', # Sphinx
-    r'\s*@type\s+%s:\s*([\d\w_]+)', # Epidoc
+    r'\s*:type\s+%s:\s*([^\n]+)', # Sphinx
+    r'\s*@type\s+%s:\s*([^\n]+)', # Epidoc
     r'\s*%s\s+\(([^()]+)\)'         # googley
 ]
 
@@ -35,14 +35,12 @@ def follow_param(param):
 
 
 def search_param_in_docstr(docstr, param_str):
-    lines = docstr.split('\n')
     # look at #40 to see definitions of those params
     patterns = [ re.compile(p % re.escape(param_str)) for p in DOCSTRING_PARAM_PATTERNS ]
-    for l in lines:
-        for pattern in patterns:
-            match = pattern.match(l)
-            if match:
-                return match.group(1)
+    for pattern in patterns:
+        match = pattern.search(docstr)
+        if match:
+            return match.group(1)
 
     return None
 
