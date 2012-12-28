@@ -245,6 +245,17 @@ class Completion(BaseDefinition):
         return '<%s: %s>' % (type(self).__name__, self.name)
 
 
+    # Completion with the same word and description
+    # should be the same object at all
+    __instances__ = {}
+    def __eq__(self, other):
+        return self.word == other.word and\
+               self.description == other.description and\
+               self.__class__ == other.__class__
+    def __hash__(self):
+        return hash((self.__class__, self.word, self.description))
+
+
 class Definition(BaseDefinition):
     """
     *Definition* objects are returned from :meth:`api.Script.goto` or

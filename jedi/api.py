@@ -146,7 +146,7 @@ class Script(object):
         needs_dot = not dot and path
 
         comps = []
-        for c, s in set(completions):
+        for c, s in completions:
             n = c.names[-1]
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
@@ -159,7 +159,7 @@ class Script(object):
 
         debug.speed('complete end')
 
-        return sorted(comps, key=lambda x: (x.word.startswith('__'),
+        return sorted(set(comps), key=lambda x: (x.word.startswith('__'),
                                             x.word.startswith('_'),
                                             x.word.lower()))
 
