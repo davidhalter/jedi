@@ -83,7 +83,10 @@ row = c.fetchall()[0]
 row.keys()[0]
 
 def huhu(db):
-    """db (sqlite3.Connection): the db connection"""
+    """
+        :type db: sqlite3.Connection
+        :param db: the db connection
+    """
     #? sqlite3.Connection()
     db
 

@@ -8,17 +8,11 @@ import parsing
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)', # Sphinx
     r'\s*@type\s+%s:\s*([^\n]+)', # Epidoc
-    r'\s*%s\s+\(([^()]+)\)'         # googley
 ]
 
 DOCSTRING_RETURN_PATTERNS = [
         re.compile(r'\s*:rtype:\s*([^\n]+)', re.M), # Sphinx
         re.compile(r'\s*@rtype:\s*([^\n]+)', re.M), # Epidoc
-
-        # Googley is the most undocumented format for
-        # return types, so we try to analyze the first
-        # line or line after `Returns:` keyword
-        re.compile(r'returns\s*:[\s\n]*([^\n]+)', re.M|re.I),
 ]
 
 #@cache.memoize_default()  # TODO add

@@ -17,22 +17,6 @@ def f(a, b):
 #? dict()
 f()
 
-def g(a, b):
-    """ asdfasdf
-    Arguments:
-        a (str): blablabla
-
-    Returns: list
-        Blah blah.
-    """
-    #? str()
-    a
-    #? 
-    b
-
-#? list()
-g()
-
 def e(a, b):
     """ asdfasdf
     @type a: str
