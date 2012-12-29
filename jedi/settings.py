@@ -154,8 +154,14 @@ earlier.
 """
 
 max_executions_without_builtins = 200
+"""
+.. todo:: Document this.
+"""
 
 max_executions = 250
+"""
+A maximum amount of time, the completion may use.
+"""
 
 scale_get_in_function_call = 0.1
 """
