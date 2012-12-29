@@ -157,7 +157,7 @@ class Script(object):
                     new = api_classes.Completion(c, needs_dot,
                                                     len(like), s)
                     k = (new.word, new.complete)  # key
-                    if k in comp_dct and not settings.no_completion_duplicates:
+                    if k in comp_dct and settings.no_completion_duplicates:
                         comp_dct[k].same_name_completions.append(new)
                     else:
                         comp_dct[k] = new

@@ -16,7 +16,7 @@ add_bracket_after_function = False
 
 # If set, completions with the same name don't appear in the output anymore,
 # but are in the `same_name_completions` attribute.
-no_completion_duplicates = False
+no_completion_duplicates = True
 
 # ----------------
 # parser
