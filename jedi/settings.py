@@ -1,4 +1,13 @@
 """
+Variables to hold global jedi setting.
+
+Plugin can change the variables defined in :mod:`jedi.settings` to
+modify behavior of Jedi.  Plugin should expose an interface to setup
+these variables by user.  Example usage::
+
+    from jedi import settings
+    settings.case_insensitive_completion = True
+
 * Completion output settings
 
   - :data:`case_insensitive_completion`
