@@ -158,7 +158,7 @@ class Script(object):
                                                     len(like), s)
                     k = (new.word, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
-                        comp_dct[k].same_name_completions.append(new)
+                        comp_dct[k]._same_name_completions.append(new)
                     else:
                         comp_dct[k] = new
                         comps.append(new)

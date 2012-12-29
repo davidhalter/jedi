@@ -165,7 +165,7 @@ class Completion(BaseDefinition):
 
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
-        self.same_name_completions = []
+        self._same_name_completions = []
 
         self._followed_definitions = None
 
