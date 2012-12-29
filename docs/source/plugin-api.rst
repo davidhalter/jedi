@@ -25,6 +25,11 @@ API Return Classes
 .. automodule:: api_classes
     :undoc-members:
 
+Jedi setting interface
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: settings
+
 Examples
 --------
 
