@@ -157,7 +157,8 @@ class ModuleWithCursor(Module):
         except tokenize.TokenError:
             debug.warning("Tokenize couldn't finish", sys.exc_info)
 
-        return string[::-1]
+        # string can still contain spaces at the end
+        return string[::-1].strip()
 
     def get_path_under_cursor(self):
         """
