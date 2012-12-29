@@ -1,4 +1,7 @@
-""" The classes returned by the api """
+"""`api_classes` contains the return classes of the API. These classes are the
+much bigger part of the whole API, because here you get out the information
+about completion and goto operations.
+"""
 
 import re
 import os
