@@ -156,11 +156,11 @@ class Script(object):
                                                     self._parser.user_stmt, n):
                     new = api_classes.Completion(c, needs_dot,
                                                     len(like), s)
-                    n = new.complete
-                    if n in comp_dct and not settings.no_completion_duplicates:
-                        comp_dct[n].same_name_completions.append(new)
+                    k = (new.word, new.complete)  # key
+                    if k in comp_dct and not settings.no_completion_duplicates:
+                        comp_dct[k].same_name_completions.append(new)
                     else:
-                        comp_dct[n] = new
+                        comp_dct[k] = new
                         comps.append(new)
 
         debug.speed('complete end')
