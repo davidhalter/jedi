@@ -14,6 +14,10 @@ add_dot_after_module = False
 # Removed it again, because in VIM that is not very practical.
 add_bracket_after_function = False
 
+# If set, completions with the same name don't appear in the output anymore,
+# but are in the `same_name_completions` attribute.
+no_completion_duplicates = False
+
 # ----------------
 # parser
 # ----------------

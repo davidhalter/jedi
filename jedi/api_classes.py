@@ -163,6 +163,10 @@ class Completion(BaseDefinition):
         self.like_name_length = like_name_length
         self.base = base
 
+        # Completion objects with the same Completion name (which means
+        # duplicate items in the completion)
+        self.same_name_completions = []
+
         self._followed_definitions = None
 
     @property

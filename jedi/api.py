@@ -146,6 +146,7 @@ class Script(object):
         needs_dot = not dot and path
 
         comps = []
+        comp_dct = {}
         for c, s in set(completions):
             n = c.names[-1]
             if settings.case_insensitive_completion \
@@ -155,7 +156,12 @@ class Script(object):
                                                     self._parser.user_stmt, n):
                     new = api_classes.Completion(c, needs_dot,
                                                     len(like), s)
-                    comps.append(new)
+                    n = new.complete
+                    if n in comp_dct and not settings.no_completion_duplicates:
+                        comp_dct[n].same_name_completions.append(new)
+                    else:
+                        comp_dct[n] = new
+                        comps.append(new)
 
         debug.speed('complete end')
 
