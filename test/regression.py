@@ -308,6 +308,14 @@ class TestRegression(Base):
         assert len(g) == 1
         assert g[0].start_pos != (0, 0)
 
+    def test_points_in_completion(self):
+        """At some point, points were inserted into the completions, this
+        caused problems, sometimes.
+        """
+        c = self.complete("if IndentationErr")
+        assert c[0].word == 'IndentationError'
+        self.assertEqual(c[0].complete, 'or')
+
 
 class TestFeature(Base):
     def test_full_name(self):
