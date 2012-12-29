@@ -1,3 +1,54 @@
+"""
+* Completion output settings
+
+  - :data:`case_insensitive_completion`
+  - :data:`add_dot_after_module`
+  - :data:`add_bracket_after_function`
+  - :data:`no_completion_duplicates`
+
+* Parser
+
+  - :data:`fast_parser`
+  - :data:`fast_parser_always_reparse`
+  - :data:`use_get_in_function_call_cache`
+
+* Dynamic stuff
+
+  - :data:`dynamic_arrays_instances`
+  - :data:`dynamic_array_additions`
+  - :data:`dynamic_params`
+  - :data:`dynamic_params_for_other_modules`
+  - :data:`additional_dynamic_modules`
+
+* Recursions
+
+  Recursion settings are important if you don't want extremly
+  recursive python code to go absolutely crazy. First of there is a
+  global limit :data:`max_executions`. This limit is important, to set
+  a maximum amount of time, the completion may use.
+
+  The values are based on my experimental tries, used on the jedi library. But
+  I don't think there's any other Python library, that uses recursion in a
+  similar (extreme) way. This makes the completion definitely worse in some
+  cases. But a completion should also be fast.
+
+  - :data:`max_until_execution_unique`
+  - :data:`max_function_recursion_level`
+  - :data:`max_executions_without_builtins`
+  - :data:`max_executions`
+  - :data:`scale_get_in_function_call`
+
+* Various
+
+  - :data:`part_line_length`
+
+* Caching validity (time)
+
+  - :data:`star_import_cache_validity`
+  - :data:`get_in_function_call_validity`
+
+"""
+
 # ----------------
 # completion output settings
 # ----------------
@@ -84,16 +135,6 @@ is practical for IDE's, that want to administrate their modules themselves.
 # ----------------
 # recursions
 # ----------------
-
-# Recursion settings are important if you don't want extremly recursive python
-# code to go absolutely crazy. First of there is a global limit
-# `max_executions`. This limit is important, to set a maximum amount of time,
-# the completion may use.
-#
-# The values are based on my experimental tries, used on the jedi library. But
-# I don't think there's any other Python library, that uses recursion in a
-# similar (extreme) way. This makes the completion definitely worse in some
-# cases. But a completion should also be fast.
 
 max_until_execution_unique = 50
 """
