@@ -47,7 +47,7 @@ class Script(object):
         it hasn't been saved yet.
     :type source_path: string or None
     :param source_encoding: The encoding of ``source``, if it is not a
-        ``unicode`` object (default `utf-8`).
+        ``unicode`` object (default ``'utf-8'``).
     :type source_encoding: string
     """
     def __init__(self, source, line, column, source_path,
@@ -71,9 +71,8 @@ class Script(object):
         Return :class:`api_classes.Completion` objects. Those objects contain
         information about the completions, more than just names.
 
-        :return: list of :class:`api_classes.Completion` objects, sorted by
-            name and __ comes last.
-        :rtype: list
+        :return: completion objects, sorted by name and __ comes last.
+        :rtype: list of :class:`api_classes.Completion`
         """
         def follow_imports_if_possible(name):
             # TODO remove this, or move to another place (not used)
@@ -210,9 +209,7 @@ class Script(object):
         a dynamic language, which means depending on an option you can have two
         different versions of a function.
 
-        :return: list of :class:`api_classes.Definition` objects, which are
-            basically scopes.
-        :rtype: list
+        :rtype: list of :class:`api_classes.Definition`
         """
         def resolve_import_paths(scopes):
             for s in scopes.copy():
@@ -248,8 +245,7 @@ class Script(object):
         itself is a dynamic language, which means depending on an option you
         can have two different versions of a function.
 
-        :return: list of :class:`api_classes.Definition` objects, which are
-            basically scopes.
+        :rtype: list of :class:`api_classes.Definition`
         """
         d = [api_classes.Definition(d) for d in set(self._goto()[0])]
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
@@ -312,6 +308,8 @@ class Script(object):
         variable.
 
         .. todo:: Implement additional_module_paths
+
+        :rtype: list of :class:`api_classes.RelatedName`
         """
         user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
@@ -351,6 +349,8 @@ class Script(object):
             >>> abs()# <-- cursor is here
 
         This would return ``None``.
+
+        :rtype: :class:`api_classes.CallDef`
         """
         def check_user_stmt(user_stmt):
             if user_stmt is None \
