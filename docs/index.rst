@@ -1,7 +1,7 @@
 Jedi
 ====
 
-Release v\ |version|. (:doc:`Installation <installation>`)
+Release v\ |release|. (:doc:`Installation <docs/installation>`)
 
 .. automodule:: jedi
     :members:
@@ -9,7 +9,7 @@ Release v\ |version|. (:doc:`Installation <installation>`)
 
 Autocompletion can look like this (e.g. VIM plugin):
 
-.. figure:: screenshot_complete.png
+.. figure:: _screenshots/screenshot_complete.png
 
 
 Docs
@@ -18,8 +18,8 @@ Docs
 .. toctree::
    :maxdepth: 1
 
-   installation
-   plugin-api
+   docs/installation
+   docs/plugin-api
 
 
 Resources

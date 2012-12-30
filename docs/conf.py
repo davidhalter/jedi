@@ -16,8 +16,8 @@ import sys, os, datetime
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../..'))
-sys.path.insert(0, os.path.abspath('../../jedi'))
+sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../jedi'))
 sys.path.append(os.path.abspath('_themes'))
 
 # -- General configuration -----------------------------------------------------
@@ -46,7 +46,7 @@ project = u'Jedi'
 copyright = u'2012 - {today.year}, Jedi contributors'.format(today=datetime.date.today())
 
 _path = os.path.dirname(os.path.abspath(__file__))
-with open(_path + '/../../VERSION') as f:
+with open(os.path.join(_path, '../VERSION'), 'r') as f:
     VERSION = f.read().strip()
 
 # The version info for the project you're documenting, acts as replacement for

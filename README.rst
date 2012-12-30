@@ -29,15 +29,15 @@ Jedi for now, you'll have to use VIM. But there are new plugins emerging:
 
 Here are some pictures:
 
-.. image:: https://github.com/davidhalter/jedi/raw/master/docs/source/screenshot_complete.png
+.. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_complete.png
 
 Completion for almost anything (Ctrl+Space).
 
-.. image:: https://github.com/davidhalter/jedi/raw/master/docs/source/screenshot_function.png
+.. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_function.png
 
 Display of function/class bodies, docstrings.
 
-.. image:: https://github.com/davidhalter/jedi/raw/master/docs/source/screenshot_pydoc.png
+.. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_pydoc.png
 
 Pydoc support (with highlighting, Shift+k).
 
