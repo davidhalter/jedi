@@ -324,7 +324,7 @@ class TestFeature(Base):
                                     == 'os.path.join'
         # issue #94
         defs = self.get_def("""import json; json.load(""")
-        defs[0].full_name
+        assert defs[0].full_name is None
 
     def test_full_name_builtin(self):
         self.assertEqual(self.complete('type')[0].full_name, 'type')

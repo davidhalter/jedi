@@ -139,6 +139,9 @@ class BaseDefinition(object):
         """The path to a certain class/function, see #61."""
         path = [unicode(p) for p in self.path]
         # TODO add further checks, the mapping should only occur on stdlib.
+        if not path:
+            return None  # for keywords the path is empty
+
         try:
             path[0] = self._mapping[path[0]]
         except KeyError:
