@@ -146,8 +146,18 @@ class ImportPath(parsing.Base):
         return names
 
     def sys_path_with_modifications(self):
+        # If you edit e.g. gunicorn, there will be imports like this:
+        # `from gunicorn import something`. But gunicorn is not in the
+        # sys.path. Therefore look if gunicorn is a parent directory, #56.
+        parts = self.file_path.split(os.path.sep)
+        in_path = []
+        for i, p in enumerate(parts):
+            if p == self.import_path[0]:
+                new = os.path.sep.join(parts[:i])
+                in_path.append(new)
+
         module = self.import_stmt.get_parent_until()
-        return modules.sys_path_with_modifications(module)
+        return in_path + modules.sys_path_with_modifications(module)
 
     def follow(self, is_goto=False):
         """

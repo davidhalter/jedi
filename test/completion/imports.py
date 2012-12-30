@@ -215,3 +215,11 @@ from not_a_module import
 # self import
 # this can cause recursions
 from imports import *
+
+# -----------------
+# packages
+# -----------------
+
+from import_tree.mod1 import c
+#? set
+c
