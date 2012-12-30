@@ -185,7 +185,6 @@ a.headerlink {
  
 a.headerlink:hover {
     color: #444;
-    background: #eaeaea;
 }
  
 div.body p, div.body dd, div.body li {

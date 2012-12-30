@@ -1,9 +1,7 @@
-Jedi – Python autocompletion that works!
-========================================
+Jedi
+====
 
-
-About Jedi
-----------
+Release v\ |version|. (:doc:`Installation <installation>`)
 
 .. automodule:: jedi
     :members:
@@ -12,10 +10,10 @@ About Jedi
 Autocompletion can look like this (e.g. VIM plugin):
 
 .. figure:: screenshot_complete.png
-   :align: center
 
-Contents
---------
+
+Docs
+----
 
 .. toctree::
    :maxdepth: 1
@@ -23,16 +21,24 @@ Contents
    installation
    plugin-api
 
+
 Resources
 ---------
-- `Source Code on github <https://github.com/davidhalter/jedi>`_
-- `Travis testing <https://travis-ci.org/davidhalter/jedi>`_
-- `Current PyPi package <http://pypi.python.org/pypi/jedi/>`_
 
-Plugins using the Jedi library
-------------------------------
+- `Source Code on Github <https://github.com/davidhalter/jedi>`_
+- `Travis Testing <https://travis-ci.org/davidhalter/jedi>`_
+- `Python Package Index <http://pypi.python.org/pypi/jedi/>`_
 
-- `VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_
-- `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_
-- `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_ **Under construction**
-- `wdb (web debugger) <https://github.com/Kozea/wdb>`_
+
+Text Editor Plugins
+-------------------
+
+- `Vim <http://github.com/davidhalter/jedi-vim>`_
+- `Emacs <https://github.com/tkf/emacs-jedi>`_
+- `Sublime Text 2 <https://github.com/svaiter/SublimeJEDI>`_ (*under construction*)
+
+
+Other Software Using Jedi
+-------------------------
+
+- `wdb <https://github.com/Kozea/wdb>`_

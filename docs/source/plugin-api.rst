@@ -1,4 +1,4 @@
-The plugin API
+The Plugin API
 ==============
 
 .. currentmodule:: jedi
@@ -18,6 +18,7 @@ API Interface
 
 .. automodule:: api
     :undoc-members:
+
 
 API Return Classes
 ~~~~~~~~~~~~~~~~~~
