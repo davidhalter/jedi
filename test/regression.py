@@ -322,6 +322,9 @@ class TestFeature(Base):
         """ feature request #61"""
         assert self.complete('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
+        # issue #94
+        defs = self.get_def("""import json; json.load(""")
+        defs[0].full_name
 
     def test_full_name_builtin(self):
         self.assertEqual(self.complete('type')[0].full_name, 'type')
