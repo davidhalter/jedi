@@ -1,7 +1,9 @@
+.. include:: ../global.rst
+
 Features and Caveats
 ====================
 
-Jedi supports many of the widely used Python features:
+|jedi| supports many of the widely used Python features:
 
 
 General Features
@@ -34,7 +36,7 @@ Supported Python Features
 - function annotations (py3k feature, are ignored right now, but being parsed.
   I don't know what to do with them.)
 - class decorators (py3k feature, are being ignored too, until I find a use
-  case, that doesn't work with Jedi)
+  case, that doesn't work with |jedi|)
 - simple/usual ``sys.path`` modifications
 - ``isinstance`` checks for if/while/assert
 
@@ -61,8 +63,8 @@ Caveats
 **Malformed Syntax**
 
 Syntax errors and other strange stuff may lead to undefined behaviour of the
-completion. Jedi is **NOT** a Python compiler, that tries to correct you. It is
-a tool that wants to help you. But **YOU** have to know Python, not Jedi.
+completion. |jedi| is **NOT** a Python compiler, that tries to correct you. It is
+a tool that wants to help you. But **YOU** have to know Python, not |jedi|.
 
 **Legacy Python 2 Features**
 
@@ -78,12 +80,12 @@ older Python 2 features have been left out:
 
 Importing ``numpy`` can be quite slow sometimes, as well as loading the builtins
 the first time. If you want to speed things up, you could write import hooks in
-jedi, which preload stuff. However, once loaded, this is not a problem anymore.
+|jedi|, which preload stuff. However, once loaded, this is not a problem anymore.
 The same is true for huge modules like ``PySide``, ``wx``, etc.
 
 **Security**
 
-Security is an important issue for Jedi. Therefore no Python code is executed.
+Security is an important issue for |jedi|. Therefore no Python code is executed.
 As long as you write pure python, everything is evaluated statically. But: If
 you use builtin modules (``c_builtin``) there is no other option than to execute
 those modules. However: Execute isn't that critical (as e.g. in pythoncomplete,

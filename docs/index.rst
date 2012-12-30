@@ -1,3 +1,5 @@
+.. include global.rst
+
 Jedi
 ====
 
@@ -12,6 +14,8 @@ Autocompletion can look like this (e.g. VIM plugin):
 .. figure:: _screenshots/screenshot_complete.png
 
 
+.. _toc:
+
 Docs
 ----
 
@@ -23,6 +27,8 @@ Docs
    docs/plugin-api
 
 
+.. _resources:
+
 Resources
 ---------
 
@@ -31,13 +37,17 @@ Resources
 - `Python Package Index <http://pypi.python.org/pypi/jedi/>`_
 
 
-Text Editor Plugins
--------------------
+.. _editor-plugins:
+
+Editor Plugins
+--------------
 
 - `Vim <http://github.com/davidhalter/jedi-vim>`_
 - `Emacs <https://github.com/tkf/emacs-jedi>`_
 - `Sublime Text 2 <https://github.com/svaiter/SublimeJEDI>`_ (*under construction*)
 
+
+.. _other-software:
 
 Other Software Using Jedi
 -------------------------

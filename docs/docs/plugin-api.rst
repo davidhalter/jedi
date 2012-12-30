@@ -1,3 +1,5 @@
+.. include:: ../global.rst
+
 The Plugin API
 ==============
 
@@ -6,7 +8,7 @@ The Plugin API
 Note: This documentation is for Plugin developers, who want to improve their
 editors/IDE autocompletion 
 
-If you want to use **Jedi**, you first need to
+If you want to use |jedi|, you first need to
 ``import jedi``. You then have direct access to the :class:`.Script`.
 
 
