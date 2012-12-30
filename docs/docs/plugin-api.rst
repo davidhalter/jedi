@@ -19,19 +19,19 @@ API Interface
 ~~~~~~~~~~~~~
 
 .. automodule:: api
-    :undoc-members:
 
 
 API Return Classes
 ~~~~~~~~~~~~~~~~~~
 
 .. automodule:: api_classes
-    :undoc-members:
 
-Jedi setting interface
-~~~~~~~~~~~~~~~~~~~~~~
+Settings Module
+~~~~~~~~~~~~~~~
 
 .. automodule:: settings
+    :no-members:
+    :no-undoc-members:
 
 Examples
 --------

@@ -6,8 +6,6 @@ Jedi
 Release v\ |release|. (:doc:`Installation <docs/installation>`)
 
 .. automodule:: jedi
-    :members:
-    :undoc-members:
 
 Autocompletion can look like this (e.g. VIM plugin):
 

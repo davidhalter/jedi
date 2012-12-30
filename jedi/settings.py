@@ -1,60 +1,77 @@
 """
-Variables to hold global jedi setting.
+This module contains variables with global |jedi| setting. To change the
+behavior of |jedi|, change the variables defined in
+:mod:`jedi.settings`.
 
-Plugin can change the variables defined in :mod:`jedi.settings` to
-modify behavior of Jedi.  Plugin should expose an interface to setup
-these variables by user.  Example usage::
+Plugins should expose an interface so that the user can adjust the
+configuration.
+
+
+Example usage::
 
     from jedi import settings
     settings.case_insensitive_completion = True
 
-* Completion output settings
 
-  - :data:`case_insensitive_completion`
-  - :data:`add_dot_after_module`
-  - :data:`add_bracket_after_function`
-  - :data:`no_completion_duplicates`
+Completion output
+~~~~~~~~~~~~~~~~~
 
-* Parser
+.. autodata:: case_insensitive_completion
+.. autodata:: add_dot_after_module
+.. autodata:: add_bracket_after_function
+.. autodata:: no_completion_duplicates
 
-  - :data:`fast_parser`
-  - :data:`fast_parser_always_reparse`
-  - :data:`use_get_in_function_call_cache`
 
-* Dynamic stuff
+Parser
+~~~~~~
 
-  - :data:`dynamic_arrays_instances`
-  - :data:`dynamic_array_additions`
-  - :data:`dynamic_params`
-  - :data:`dynamic_params_for_other_modules`
-  - :data:`additional_dynamic_modules`
+.. autodata:: fast_parser
+.. autodata:: fast_parser_always_reparse
+.. autodata:: use_get_in_function_call_cache
 
-* Recursions
 
-  Recursion settings are important if you don't want extremly
-  recursive python code to go absolutely crazy. First of there is a
-  global limit :data:`max_executions`. This limit is important, to set
-  a maximum amount of time, the completion may use.
+Dynamic stuff
+~~~~~~~~~~~~~
 
-  The values are based on my experimental tries, used on the jedi library. But
-  I don't think there's any other Python library, that uses recursion in a
-  similar (extreme) way. This makes the completion definitely worse in some
-  cases. But a completion should also be fast.
+.. autodata:: dynamic_arrays_instances
+.. autodata:: dynamic_array_additions
+.. autodata:: dynamic_params
+.. autodata:: dynamic_params_for_other_modules
+.. autodata:: additional_dynamic_modules
 
-  - :data:`max_until_execution_unique`
-  - :data:`max_function_recursion_level`
-  - :data:`max_executions_without_builtins`
-  - :data:`max_executions`
-  - :data:`scale_get_in_function_call`
 
-* Various
+Recursions
+~~~~~~~~~~
 
-  - :data:`part_line_length`
+Recursion settings are important if you don't want extremly
+recursive python code to go absolutely crazy. First of there is a
+global limit :data:`max_executions`. This limit is important, to set
+a maximum amount of time, the completion may use.
 
-* Caching validity (time)
+The default values are based on experiments while completing the |jedi| library
+itself (inception!). But I don't think there's any other Python library that
+uses recursion in a similarly extreme way. These settings make the completion
+definitely worse in some cases. But a completion should also be fast.
 
-  - :data:`star_import_cache_validity`
-  - :data:`get_in_function_call_validity`
+.. autodata:: max_until_execution_unique
+.. autodata:: max_function_recursion_level
+.. autodata:: max_executions_without_builtins
+.. autodata:: max_executions
+.. autodata:: scale_get_in_function_call
+
+
+Caching
+~~~~~~~
+
+.. autodata:: star_import_cache_validity
+.. autodata:: get_in_function_call_validity
+
+
+Various
+~~~~~~~
+
+.. autodata:: part_line_length
+
 
 """
 
@@ -116,7 +133,7 @@ The goal is to move away from it by making the rest faster.
 
 dynamic_arrays_instances = True
 """
-check for `append`, etc. on array instances like list()
+Check for `append`, etc. on array instances like list()
 """
 
 dynamic_array_additions = True
@@ -137,8 +154,8 @@ Do the same for other modules.
 
 additional_dynamic_modules = []
 """
-Additional modules in which Jedi checks if statements are to be found. This
-is practical for IDE's, that want to administrate their modules themselves.
+Additional modules in which |jedi| checks if statements are to be found. This
+is practical for IDEs, that want to administrate their modules themselves.
 """
 
 # ----------------
@@ -147,10 +164,10 @@ is practical for IDE's, that want to administrate their modules themselves.
 
 max_until_execution_unique = 50
 """
-The `max_until_execution_unique` limit is probably the most important one,
-because if that limit is passed, functions can only be one time executed. So
-new functions will be executed, complex recursions with the same functions
-again and again, are ignored.
+This limit is probably the most important one, because if this limit is
+exceeded, functions can only be one time executed. So new functions will be
+executed, complex recursions with the same functions again and again, are
+ignored.
 """
 
 max_function_recursion_level = 5

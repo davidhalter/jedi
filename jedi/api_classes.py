@@ -1,6 +1,7 @@
-"""`api_classes` contains the return classes of the API. These classes are the
-much bigger part of the whole API, because here you get out the information
-about completion and goto operations.
+"""
+The :mod:`api_classes` module contains the return classes of the API. These
+classes are the much bigger part of the whole API, because they contain the
+interesting information about completion and goto operations.
 """
 
 import re
@@ -20,7 +21,7 @@ import keywords
 
 def _clear_caches():
     """
-    Clears all caches of this and related modules. The only cache that will not
+    Clear all caches of this and related modules. The only cache that will not
     be deleted is the module cache.
     """
     cache.clear_caches()
@@ -231,7 +232,7 @@ class Completion(BaseDefinition):
     def follow_definition(self):
         """
         Return the original definitions. I strongly recommend not using it for
-        your completions, because it might slow down *Jedi*. If you want to read
+        your completions, because it might slow down |jedi|. If you want to read
         only a few objects (<=20), it might be useful, especially to
         get the original docstrings. The basic problem of this function is
         that it follows all results. This means with 1000 completions (e.g.
