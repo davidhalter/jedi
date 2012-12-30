@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys, os, datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -43,7 +43,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Jedi'
-copyright = u'2012, Jedi contributors'
+copyright = u'2012 - {today.year}, Jedi contributors'.format(today=datetime.date.today())
 
 _path = os.path.dirname(os.path.abspath(__file__))
 with open(_path + '/../../VERSION') as f:
