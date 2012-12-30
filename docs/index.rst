@@ -19,6 +19,7 @@ Docs
    :maxdepth: 1
 
    docs/installation
+   docs/features
    docs/plugin-api
 
 
