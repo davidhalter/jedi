@@ -14,7 +14,7 @@ from _compatibility import unicode, StringIO, reduce, literal_eval, is_py25
 import api
 import debug
 
-sys.path.pop()  # pop again, because it might affect the completion
+sys.path.pop(0)  # pop again, because it might affect the completion
 
 
 def run_completion_test(script, correct, line_nr):
@@ -215,10 +215,11 @@ def test_dir(completion_test_dir, thirdparty=False):
                 continue
 
             if thirdparty:
+                lib = f_name.replace('_.py', '')
                 try:
                     # there is always an underline at the end.
                     # It looks like: completion/thirdparty/pylab_.py
-                    __import__(f_name.replace('_.py', ''))
+                    __import__(lib)
                 except ImportError:
                     summary.append('Thirdparty-Library %s not found.' %
                                                                     f_name)

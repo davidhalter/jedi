@@ -226,6 +226,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         parser_order = 0
         for code_part in parts:
             lines = code_part.count('\n')
+            # the parser is using additional newlines, therefore substract
             if p is None or line_offset >= p.end_pos[0] - 2:
                 # check if code_part has already been parsed
                 h = hash(code_part)
