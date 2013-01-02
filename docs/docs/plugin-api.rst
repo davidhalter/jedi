@@ -1,4 +1,6 @@
-The plugin API
+.. include:: ../global.rst
+
+The Plugin API
 ==============
 
 .. currentmodule:: jedi
@@ -6,7 +8,7 @@ The plugin API
 Note: This documentation is for Plugin developers, who want to improve their
 editors/IDE autocompletion 
 
-If you want to use **Jedi**, you first need to
+If you want to use |jedi|, you first need to
 ``import jedi``. You then have direct access to the :class:`.Script`.
 
 
@@ -17,13 +19,19 @@ API Interface
 ~~~~~~~~~~~~~
 
 .. automodule:: api
-    :undoc-members:
+
 
 API Return Classes
 ~~~~~~~~~~~~~~~~~~
 
 .. automodule:: api_classes
-    :undoc-members:
+
+Settings Module
+~~~~~~~~~~~~~~~
+
+.. automodule:: settings
+    :no-members:
+    :no-undoc-members:
 
 Examples
 --------

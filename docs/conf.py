@@ -11,13 +11,14 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys, os, datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../..'))
-sys.path.insert(0, os.path.abspath('../../jedi'))
+sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../jedi'))
+sys.path.append(os.path.abspath('_themes'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -42,10 +43,10 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Jedi'
-copyright = u'2012, Jedi contributors'
+copyright = u'2012 - {today.year}, Jedi contributors'.format(today=datetime.date.today())
 
 _path = os.path.dirname(os.path.abspath(__file__))
-with open(_path + '/../../VERSION') as f:
+with open(os.path.join(_path, '../VERSION'), 'r') as f:
     VERSION = f.read().strip()
 
 # The version info for the project you're documenting, acts as replacement for
@@ -98,7 +99,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'flask'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -106,7 +107,7 @@ html_theme = 'default'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = []
+html_theme_path = ['_themes']
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -138,7 +139,16 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
+html_sidebars = {
+    '**': [
+#        'sidebarlogo.html',
+        'localtoc.html',
+        'relations.html',
+        'ghbuttons.html',
+        'sourcelink.html',
+        'searchbox.html'
+    ]
+}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
@@ -173,7 +183,7 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Jedidoc'
 
-html_style = '/default.css'  # Force usage of default template on RTD
+#html_style = 'default.css'  # Force usage of default template on RTD
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -256,4 +266,5 @@ todo_include_todos = False
 
 # -- Options for autodoc module ------------------------------------------------
 
+autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'undoc-members']

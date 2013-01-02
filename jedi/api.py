@@ -1,9 +1,10 @@
 """
-The api basically only provides one class. You can create a :class:`Script` and
-use it's ``complete`` / ``goto`` / etc functions.
+The API basically only provides one class. You can create a :class:`Script` and
+use its methods.
+
 Additionally you can add a debug function with :func:`set_debug_function` and
-catch :exc:`NotFoundError` which is being raised if your completion is
-impossible.
+catch :exc:`NotFoundError` which is being raised if your completion is not
+possible.
 """
 from __future__ import with_statement
 __all__ = ['Script', 'NotFoundError', 'set_debug_function']
@@ -35,7 +36,7 @@ class NotFoundError(Exception):
 class Script(object):
     """
     A Script is the base for a completion, goto or whatever you want to do with
-    jedi.
+    |jedi|.
 
     :param source: The source code of the current file, separated by newlines.
     :type source: string
@@ -71,7 +72,7 @@ class Script(object):
         Return :class:`api_classes.Completion` objects. Those objects contain
         information about the completions, more than just names.
 
-        :return: completion objects, sorted by name and __ comes last.
+        :return: Completion objects, sorted by name and __ comes last.
         :rtype: list of :class:`api_classes.Completion`
         """
         def follow_imports_if_possible(name):
