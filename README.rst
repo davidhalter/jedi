@@ -29,15 +29,15 @@ Jedi for now, you'll have to use VIM. But there are new plugins emerging:
 
 Here are some pictures:
 
-.. image:: https://github.com/davidhalter/jedi/raw/master/docs/source/screenshot_complete.png
+.. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_complete.png
 
 Completion for almost anything (Ctrl+Space).
 
-.. image:: https://github.com/davidhalter/jedi/raw/master/docs/source/screenshot_function.png
+.. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_function.png
 
 Display of function/class bodies, docstrings.
 
-.. image:: https://github.com/davidhalter/jedi/raw/master/docs/source/screenshot_pydoc.png
+.. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_pydoc.png
 
 Pydoc support (with highlighting, Shift+k).
 
@@ -47,8 +47,7 @@ Get the latest version from `github <http://github.com/davidhalter/jedi>`_
 (master branch should always be kind of stable/working).
 
 Docs are available at `https://jedi.readthedocs.org/
-<https://jedi.readthedocs.org/>`_. Pull requests with documentation
-nhancements
+<https://jedi.readthedocs.org/>`_. Pull requests with documentation enhancements
 and/or fixes are awesome and most welcome.
 
 Jedi uses `semantic versioning <http://semver.org/>`_ starting with version
@@ -57,100 +56,17 @@ Jedi uses `semantic versioning <http://semver.org/>`_ starting with version
 Installation
 ============
 
-You can either include Jedi as a submodule in your text editor plugin (like
-jedi-vim_ does it by default), or you
-can install Jedi systemwide.
-
-The preferred way to install the Jedi library into your system is by using
-pip_::
-
-    sudo pip install jedi
-
-If you want to install the current development version::
-
-    sudo pip install -e git://github.com/davidhalter/jedi.git#egg=jedi
+See https://jedi.readthedocs.org/en/latest/docs/installation.html
 
 Note: This just installs the Jedi library, not the editor plugins. For
 information about how to make it work with your editor, refer to the
 corresponding documentation.
 
 
-Support
-=======
+Feature Support and Caveats
+===========================
 
-Jedi supports Python 2.5 up to 3.x. There is just one code base, for both
-Python 2 and 3.
-Jedi supports many of the widely used Python features:
-
-- builtin functions/classes support
-- complex module / function / class structures
-- ignores syntax and indentation errors
-- multiple returns / yields
-- tuple assignments / array indexing / dictionary indexing
-- with-statement / exceptions
-- \*args / \*\*kwargs
-- decorators / lambdas / closures
-- descriptors -> property / staticmethod / classmethod
-- generators (yield statement) / iterators
-- support for some magic methods: ``__call__``, ``__iter__``, ``__next__``,
-  ``__get__``, ``__getitem__``, ``__init__``
-- support for list.append, set.add, list.extend, etc.
-- (nested) list comprehensions / ternary expressions
-- relative imports
-- ``getattr()`` / ``__getattr__`` / ``__getattribute__``
-- function annotations (py3k feature, are ignored right now, but being parsed.
-  I don't know what to do with them.)
-- class decorators (py3k feature, are being ignored too, until I find a use
-  case, that doesn't work with Jedi)
-- simple/usual ``sys.path`` modifications
-- ``isinstance`` checks for if/while/assert
-- virtualenv support
-- infer function arguments with sphinx (and other) docstrings
-
-However, it does not yet support (and probably will in future versions, because
-they are on my todo list):
-
-- manipulations of instances outside the instance variables, without using
-  functions
-
-It does not support (and most probably will not in future versions): 
-
-- metaclasses (how could an auto-completion ever support this)
-- ``setattr()``, ``__import__()``
-- Writing to some dicts: ``globals()``, ``locals()``, ``object.__dict__``
-- evaluate ``if`` / ``while``
-
-
-Caveats
-=======
-
-This framework should work for both Python 2/3. However, some things were just
-not as *pythonic* in Python 2 as things should be. To keep things simple, some
-things have been held back:
-
-- Classes: Always Python 3 like, therefore all classes inherit from ``object``.
-- Generators: No ``next`` method. The ``__next__`` method is used instead.
-- Exceptions are only looked at in the form of ``Exception as e``, no comma!
-
-Syntax errors and other strange stuff, that is defined differently in the
-Python language, may lead to undefined behaviour of the completion. Jedi is
-**NOT** a Python compiler, that tries to correct you. It is a tool that wants
-to help you. But **YOU** have to know Python, not Jedi.
-
-Importing ``numpy`` can be quite slow sometimes, as well as loading the builtins
-the first time. If you want to speed it up, you could write import hooks in
-jedi, which preloads this stuff. However, once loaded, this is not a problem
-anymore. The same is true for huge modules like ``PySide``, ``wx``, etc.
-
-Security is an important issue for Jedi. Therefore no Python code is executed.
-As long as you write pure python, everything is evaluated statically. But: If
-you use builtin modules (`c_builtin`) there is no other option than to execute
-those modules. However: Execute isn't that critical (as e.g. in pythoncomplete,
-which used to execute *every* import!), because it means one import and no
-more. So basically the only dangerous thing is using the import itself. If your
-`c_builtin` uses some strange initializations, it might be dangerous. But if it
-does you're screwed anyways, because eventualy you're going to execute your
-code, which executes the import.
+See https://jedi.readthedocs.org/en/latest/docs/features.html
 
 
 A little history
@@ -184,82 +100,9 @@ think understanding it might need quite some time, because of its recursive
 nature.
 
 
-API-Design for IDEs
-===================
+API for IDEs
+============
 
-If you want to set up an IDE with Jedi, you need to ``import jedi``. You should
-have the following objects available:
-
-::
-
-    Script(source, line, column, source_path)
-
-``source`` would be the source of your python file/script, separated by new
-lines. ``line`` is the current line you want to perform actions on (starting
-with line #1 as the first line). ``column`` represents the current
-column/indent of the cursor (starting with zero). ``source_path`` should be the
-path of your file in the file system.
-
-It returns a script object that contains the relevant information for the other
-functions to work without params.
-
-::
-
-    Script().complete
-
-Returns ``api.Completion`` objects. Those objects have got
-informations about the completions. More than just names.
-
-::
-
-    Script().goto
-
-Similar to complete. The returned ``api.Definition`` objects contain
-information about the definitions found.
-
-::
-
-    Script().get_definition
-
-Mostly used for tests. Like goto, but follows statements and imports and
-doesn't break there. You probably don't want to use this function. It's
-mostly for testing.
-
-::
-
-    Script().related_names
-
-Returns all names that point to the definition of the name under the
-cursor. This is also very useful for refactoring (renaming).
-
-::
-
-    Script().get_in_function_call
-
-Get the ``Function`` object of the call you're currently in, e.g.: ``abs(``
-with the cursor at the end would return the builtin ``abs`` function.
-
-::
-
-    NotFoundError
-
-If you use the goto function and no valid identifier (name) is at the
-place of the cursor (position). It will raise this exception.
-
-::
-
-    set_debug_function
-
-Sets a callback function for ``debug.py``. This function is called with
-multiple text objects, in python 3 you could insert ``print``.
-
-::
-
-    settings
-
-Access to the ``settings.py`` module. The settings are described there.
-
-
-
-.. _jedi-vim: http://github.com/davidhalter/jedi-vim
-.. _pip: http://www.pip-installer.org/
+It's very easy to create an editor plugin that uses Jedi. See
+https://jedi.readthedocs.org/en/latest/docs/plugin-api.html for more
+information.
