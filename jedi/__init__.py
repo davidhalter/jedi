@@ -29,7 +29,7 @@ import sys
 # imports and circular imports... Just avoid it:
 sys.path.insert(0, __path__[0])
 
-from .api import Script, NotFoundError, set_debug_function
+from .api import Script, NotFoundError, quick_complete, set_debug_function
 from . import settings
 
 from . import api

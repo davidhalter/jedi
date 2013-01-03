@@ -7,7 +7,7 @@ catch :exc:`NotFoundError` which is being raised if your completion is not
 possible.
 """
 from __future__ import with_statement
-__all__ = ['Script', 'NotFoundError', 'set_debug_function']
+__all__ = ['Script', 'NotFoundError', 'quick_complete', 'set_debug_function']
 
 import re
 
@@ -452,6 +452,26 @@ class Script(object):
 
     def __del__(self):
         api_classes._clear_caches()
+
+
+def quick_complete(source):
+    """
+    Convenience function to complete a source string at the end.
+
+    Example::
+
+        >>> quick_complete('import json\\njson.l')
+        [<Completion: load>, <Completion: loads>]
+
+    :param source: The source code to be completed.
+    :type source: string
+    :return: Completion objects as returned by :meth:`complete`.
+    :rtype: list of :class:`api_classes.Completion`
+    """
+    lines = re.sub(r'[\n\r\s]*$', '', source).splitlines()
+    pos = len(lines), len(lines[-1])
+    script = Script(source, pos[0], pos[1], '')
+    return script.complete()
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
