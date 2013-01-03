@@ -338,11 +338,11 @@ class TestFeature(Base):
 
     def test_equality_operators(self):
         """Test the equality operator overloading for Completion objecs."""
-        src1 = '''import json; json.l'''
-        src2 = '''import json; json.d'''
-        c1 = self.complete(src1)
-        c2 = self.complete(src1)
-        c3 = self.complete(src2)
+        src1 = '''import os; os.path.n'''
+        src2 = '''import os; os.path.w'''
+        c1 = self.complete(src1)[0]
+        c2 = self.complete(src1)[0]
+        c3 = self.complete(src2)[0]
         self.assertTrue(c1 == c1)
         self.assertFalse(c1 != c1)
         self.assertTrue(c1 == c2)
