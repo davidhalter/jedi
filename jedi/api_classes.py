@@ -176,6 +176,30 @@ class Completion(BaseDefinition):
 
         self._followed_definitions = None
 
+    def __ne__(self, other):
+        """
+        Inequality comparison operator.
+
+        Two completions are equal if ``full_name``, ``line`` and ``column`` are
+        the same.
+        """
+        if self.full_name != other.full_name:
+            return True
+        if self.line != other.line:
+            return True
+        if self.column != other.column:
+            return True
+        return False
+
+    def __eq__(self, other):
+        """
+        Equality comparison operator.
+
+        Two completions are equal if ``full_name``, ``line`` and ``column`` are
+        the same.
+        """
+        return not self.__ne__(other)
+
     @property
     def complete(self):
         """

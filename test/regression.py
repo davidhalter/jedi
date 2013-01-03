@@ -336,6 +336,20 @@ class TestFeature(Base):
         any_re"""
         self.assertEqual(self.get_def(s)[0].full_name, 're.RegexObject')
 
+    def test_equality_operators(self):
+        """Test the equality operator overloading for Completion objecs."""
+        src1 = 'import itertools; itertools.c'
+        src2 = 'import itertools; itertools.t'
+        c1 = self.complete(src1)[0]
+        c2 = self.complete(src1)[0]
+        c3 = self.complete(src2)[0]
+        self.assertTrue(c1 == c1)
+        self.assertFalse(c1 != c1)
+        self.assertTrue(c1 == c2)
+        self.assertFalse(c1 != c2)
+        self.assertTrue(c1 != c3)
+        self.assertFalse(c1 == c3)
+
 
 class TestSpeed(Base):
     def _check_speed(time_per_run, number=4, run_warm=True):
