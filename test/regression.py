@@ -338,8 +338,8 @@ class TestFeature(Base):
 
     def test_equality_operators(self):
         """Test the equality operator overloading for Completion objecs."""
-        src1 = '''import os; os.path.n'''
-        src2 = '''import os; os.path.w'''
+        src1 = 'import itertools; itertools.c'
+        src2 = 'import itertools; itertools.t'
         c1 = self.complete(src1)[0]
         c2 = self.complete(src1)[0]
         c3 = self.complete(src2)[0]
