@@ -12,16 +12,12 @@ class Refactoring(object):
         return ''
 
 
-def refactor(operation, *args, **kwargs):
-    """ The end of the params are the same as in:
+def rename(new_name, *args, **kwargs):
+    """ The `args` / `kwargs` params are the same as in `api.Script`.
     :param operation: The refactoring operation to execute.
     :type operation: str
     :return: list of changed lines/changed files
     """
-    return globals()[operation](*args, **kwargs)
-
-def rename(new_name, *args, **kwargs):
     script = api.Script(*args, **kwargs)
     old_names = script.related_names()
-
     return []
