@@ -39,17 +39,17 @@ class Script(object):
     |jedi|.
 
     :param source: The source code of the current file, separated by newlines.
-    :type source: string
+    :type source: str
     :param line: The line to perform actions on (starting with 1).
     :type line: int
     :param col: The column of the cursor (starting with 0).
     :type col: int
     :param source_path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
-    :type source_path: string or None
+    :type source_path: str or None
     :param source_encoding: The encoding of ``source``, if it is not a
         ``unicode`` object (default ``'utf-8'``).
-    :type source_encoding: string
+    :type source_encoding: str
     """
     def __init__(self, source, line, column, source_path,
                                  source_encoding='utf-8'):

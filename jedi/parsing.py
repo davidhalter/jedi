@@ -326,7 +326,7 @@ class Class(Scope):
     Used to store the parsed contents of a python class.
 
     :param name: The Class name.
-    :type name: string
+    :type name: str
     :param supers: The super classes of a Class.
     :type supers: list
     :param start_pos: The start position (line, column) of the class.
@@ -359,7 +359,7 @@ class Function(Scope):
     Used to store the parsed contents of a python function.
 
     :param name: The Function name.
-    :type name: string
+    :type name: str
     :param params: The parameters (Statement) of a Function.
     :type params: list
     :param start_pos: The start position (line, column) the Function.
