@@ -47,7 +47,7 @@ def get_directory_modules_for_name(mods, name):
                 return modules.Module(path, source).parser.module
 
     # skip non python modules
-    mods = set(m for m in mods if m.path.endswith('.py'))
+    mods = set(m for m in mods if m.path is None or m.path.endswith('.py'))
     mod_paths = set()
     for m in mods:
         mod_paths.add(m.path)
@@ -56,11 +56,12 @@ def get_directory_modules_for_name(mods, name):
     if settings.dynamic_params_for_other_modules:
         paths = set(settings.additional_dynamic_modules)
         for p in mod_paths:
-            d = os.path.dirname(p)
-            for entry in os.listdir(d):
-                if entry not in mod_paths:
-                    if entry.endswith('.py'):
-                        paths.add(d + os.path.sep + entry)
+            if p is not None:
+                d = os.path.dirname(p)
+                for entry in os.listdir(d):
+                    if entry not in mod_paths:
+                        if entry.endswith('.py'):
+                            paths.add(d + os.path.sep + entry)
 
         for p in paths:
             c = check_python_file(p)
