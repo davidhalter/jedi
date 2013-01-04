@@ -56,7 +56,6 @@ def rename(new_name, source, *args, **kwargs):
     current_path = object()
     new_lines = old_lines = None
     for name in order:
-        assert isinstance(name, api.api_classes.RelatedName)
         if name.in_builtin_module():
             continue
         if current_path != name.module_path:
