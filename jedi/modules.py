@@ -195,7 +195,7 @@ class ModuleWithCursor(Module):
 
     def get_line(self, line_nr):
         if not self._line_cache:
-            self._line_cache = self.source.split('\n')
+            self._line_cache = self.source.splitlines()
 
         if line_nr == 0:
             # This is a fix for the zeroth line. We need a newline there, for
@@ -218,7 +218,7 @@ class ModuleWithCursor(Module):
         # TODO check for docstrings
         length = settings.part_line_length
         offset = max(self.position[0] - length, 0)
-        s = '\n'.join(self.source.split('\n')[offset:offset + length])
+        s = '\n'.join(self.source.splitlines()[offset:offset + length])
         self._part_parser = parsing.PyFuzzyParser(s, self.path, self.position,
                                                         line_offset=offset)
         return self._part_parser
