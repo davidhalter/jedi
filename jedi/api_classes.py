@@ -57,7 +57,8 @@ class BaseDefinition(object):
         self.is_keyword = isinstance(definition, keywords.Keyword)
 
         # generate a path to the definition
-        self.module_path = unicode(definition.get_parent_until().path)
+        p = definition.get_parent_until().path
+        self.module_path = p if p is None else unicode(p)
 
     @property
     def type(self):
@@ -92,7 +93,8 @@ class BaseDefinition(object):
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        return not self.module_path.endswith('.py')
+        return not (self.module_path is None or
+                    self.module_path.endswith('.py'))
 
     @property
     def line_nr(self):
