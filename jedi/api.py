@@ -334,8 +334,7 @@ class Script(object):
             else:
                 names.append(api_classes.RelatedName(d.names[-1], d))
 
-        return sorted(set(names), key=lambda x: (x.module_path, x.start_pos),
-                                                                reverse=True)
+        return sorted(set(names), key=lambda x: (x.module_path, x.start_pos))
 
     def get_in_function_call(self):
         """
