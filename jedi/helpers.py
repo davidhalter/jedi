@@ -218,7 +218,7 @@ def scan_array_for_pos(arr, pos, overwrite_after=False):
         call = None
         for s in sub:
             if isinstance(s, parsing.Array):
-                new = scan_array_for_pos(s, pos)
+                new = scan_array_for_pos(s, pos, overwrite_after)
                 if new[0] is not None:
                     call, index, stop = new
                     if stop:
@@ -234,7 +234,7 @@ def scan_array_for_pos(arr, pos, overwrite_after=False):
                         if s.execution.start_pos < pos and \
                                 (None in end or pos < end):
                             c, index, stop = scan_array_for_pos(
-                                                    s.execution, pos)
+                                            s.execution, pos, overwrite_after)
                             if stop:
                                 return c, index, stop
 

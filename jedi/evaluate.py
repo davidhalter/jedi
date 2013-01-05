@@ -8,7 +8,6 @@ search functions `get_names_for_scope` and `get_scopes_for_name`. At the end
 there are the `follow_` functions, which evaluate a statement, or parts of a
 statement.
 
-TODO super()
 TODO nonlocal statement, needed or can be ignored? (py3k)
 """
 from _compatibility import next, property, hasattr, is_py3k, use_metaclass, \
@@ -842,7 +841,7 @@ class Array(use_metaclass(cache.CachedMetaClass, parsing.Base)):
 
     def __getattr__(self, name):
         if name not in ['type', 'start_pos', 'get_only_subelement']:
-            raise AttributeError('Strange access: %s.' % name)
+            raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
 
     def __repr__(self):

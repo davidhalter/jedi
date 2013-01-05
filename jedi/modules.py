@@ -196,6 +196,8 @@ class ModuleWithCursor(Module):
     def get_line(self, line_nr):
         if not self._line_cache:
             self._line_cache = self.source.splitlines()
+            if not self.source:  # ''.splitlines() == []
+                self._line_cache = [self.source]
 
         if line_nr == 0:
             # This is a fix for the zeroth line. We need a newline there, for
