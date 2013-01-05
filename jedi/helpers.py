@@ -199,10 +199,11 @@ def generate_param_array(args_tuple, parent_stmt=None):
     return arr
 
 
-def scan_array_for_pos(arr, pos):
+def scan_array_for_pos(arr, pos, overwrite_after=False):
     """
-    Returns the function Call that match search_name in an Array.
-    Makes changes to arr!
+    Returns the function Call that matches the position before `arr`.
+    This is somehow stupid, probably only the name of the function.
+    :param overwrite_after: Overwrite every statement after the found array.
     """
     def check_arr_index():
         positions = arr.arr_el_pos
@@ -245,8 +246,9 @@ def scan_array_for_pos(arr, pos):
                                         parsing.Array.NOARRAY]:
                                 return start_s, index, False
 
-                            reset.execution = None
-                            reset.next = None
+                            if overwrite_after:
+                                reset.execution = None
+                                reset.next = None
                             return c or start_s, index, True
                     s = s.next
 

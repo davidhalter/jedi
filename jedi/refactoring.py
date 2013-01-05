@@ -3,6 +3,7 @@
 import api
 import modules
 import difflib
+import helpers
 
 
 class Refactoring(object):
@@ -76,4 +77,47 @@ def rename(new_name, source, *args, **kwargs):
                             line[indent + len(name.name_part):]
 
     process(current_path, old_lines, new_lines)
+    return Refactoring(dct)
+
+
+def extract(new_name, source, *args, **kwargs):
+    """ The `args` / `kwargs` params are the same as in `api.Script`.
+    :param operation: The refactoring operation to execute.
+    :type operation: str
+    :type source: str
+    :return: list of changed lines/changed files
+    """
+    new_lines = modules.source_to_unicode(source).splitlines()
+    old_lines = new_lines[:]
+
+    script = api.Script(source, *args, **kwargs)
+    user_stmt = script._parser.user_stmt
+
+    # TODO care for multiline extracts
+    dct = {}
+    if user_stmt:
+        indent = user_stmt.start_pos[0]
+        pos = script.pos
+        line_index = pos[0] - 1
+        import parsing
+        assert isinstance(user_stmt, parsing.Statement)
+        call, index, stop = helpers.scan_array_for_pos(
+                                        user_stmt.get_assignment_calls(), pos)
+        assert isinstance(call, parsing.Call)
+        exe = call.execution
+        if exe:
+            s = exe.start_pos[0], exe.start_pos[1] + 1
+            positions = [s] + call.execution.arr_el_pos + [exe.end_pos]
+            start_pos = positions[index]
+            end_pos = positions[index + 1][0], positions[index + 1][1] - 1
+            print start_pos, end_pos
+            text = new_lines[start_pos[0] - 1][start_pos[1]:end_pos[1]]
+            print text
+            for l in range(start_pos[0], end_pos[0] - 1):
+                text
+            new_lines[start_pos[0]:end_pos[0]-1]
+            text = user_stmt.start_pos[1], user_stmt.end_pos[1]
+            new = "%s%s = %s" % (' ' * indent, new_name, text)
+            new_lines.insert(line_index, new)
+    dct[script.source_path] = script.source_path, old_lines, new_lines
     return Refactoring(dct)
