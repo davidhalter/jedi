@@ -9,8 +9,6 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
 
 import api
 
-#api.set_debug_function(api.debug.print_to_stdout)
-
 
 class TestBase(unittest.TestCase):
     def get_script(self, src, pos, path=None):
@@ -34,5 +32,3 @@ class TestBase(unittest.TestCase):
     def get_in_function_call(self, src, pos=None):
         script = self.get_script(src, pos)
         return script.get_in_function_call()
-
-

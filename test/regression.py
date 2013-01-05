@@ -10,6 +10,9 @@ from base import TestBase
 from _compatibility import is_py25, utf8, unicode
 import api
 
+#api.set_debug_function(api.debug.print_to_stdout)
+
+
 class TestRegression(TestBase):
     def test_star_import_cache_duration(self):
         new = 0.01
