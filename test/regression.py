@@ -323,7 +323,7 @@ class TestFeature(Base):
         assert self.complete('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
         # issue #94
-        defs = self.get_def("""import json; json.load(""")
+        defs = self.get_def("""import os; os.path.join(""")
         assert defs[0].full_name is None
 
     def test_full_name_builtin(self):
