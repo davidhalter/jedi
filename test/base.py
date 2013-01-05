@@ -1,5 +1,6 @@
 import unittest
 
+import time
 import sys
 import os
 from os.path import abspath, dirname
@@ -8,7 +9,28 @@ sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../jedi'))
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
 
 import api
+import debug
 
+test_sum = 0
+t_start = time.time()
+# Sorry I didn't use argparse here. It's because argparse is not in the
+# stdlib in 2.5.
+args = sys.argv[1:]
+
+print_debug = False
+try:
+    i = args.index('--debug')
+    args = args[:i] + args[i + 1:]
+except ValueError:
+    pass
+else:
+    print_debug = True
+    api.set_debug_function(debug.print_to_stdout)
+
+sys.argv = sys.argv[:1] + args
+
+summary = []
+tests_fail = 0
 
 class TestBase(unittest.TestCase):
     def get_script(self, src, pos, path=None):
@@ -32,3 +54,10 @@ class TestBase(unittest.TestCase):
     def get_in_function_call(self, src, pos=None):
         script = self.get_script(src, pos)
         return script.get_in_function_call()
+
+def print_summary():
+    print('\nSummary: (%s fails of %s tests) in %.3fs' % \
+                                (tests_fail, test_sum, time.time() - t_start))
+    for s in summary:
+        print(s)
+

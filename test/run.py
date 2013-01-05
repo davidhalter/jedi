@@ -3,13 +3,16 @@ import os
 import sys
 import re
 import traceback
-import time
 
-from base import api
+import base
+
 from _compatibility import unicode, StringIO, reduce, literal_eval, is_py25
+
+import api
 import debug
 
-#sys.path.pop(0)  # pop again, because it might affect the completion
+
+sys.path.pop(0)  # pop again, because it might affect the completion
 
 
 def run_completion_test(script, correct, line_nr):
@@ -129,7 +132,7 @@ def run_test(source, f_name, lines_to_execute):
                 continue
             # -1 for the comment, +3 because of the comment start `#? `
             start = index.start()
-            if print_debug:
+            if base.print_debug:
                 api.set_debug_function(None)
             number += 1
             try:
@@ -137,7 +140,7 @@ def run_test(source, f_name, lines_to_execute):
             except Exception:
                 print('could not resolve %s indent %s' % (line_nr - 1, start))
                 raise
-            if print_debug:
+            if base.print_debug:
                 api.set_debug_function(debug.print_to_stdout)
         # because the objects have different ids, `repr` it, then compare it.
         should_str = set(r.desc_with_module for r in should_be)
@@ -199,7 +202,6 @@ def run_test(source, f_name, lines_to_execute):
 
 
 def test_dir(completion_test_dir, thirdparty=False):
-    global tests_fail
     for f_name in os.listdir(completion_test_dir):
         files_to_execute = [a for a in test_files.items() if a[0] in f_name]
         lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
@@ -216,7 +218,7 @@ def test_dir(completion_test_dir, thirdparty=False):
                     # It looks like: completion/thirdparty/pylab_.py
                     __import__(lib)
                 except ImportError:
-                    summary.append('Thirdparty-Library %s not found.' %
+                    base.summary.append('Thirdparty-Library %s not found.' %
                                                                     f_name)
                     continue
 
@@ -224,40 +226,24 @@ def test_dir(completion_test_dir, thirdparty=False):
             f = open(path)
             num_tests, fails = run_test(f.read(), f_name, lines_to_execute)
             global test_sum
-            test_sum += num_tests
+            base.test_sum += num_tests
 
             s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
-            tests_fail += fails
+            base.tests_fail += fails
             print(s)
-            summary.append(s)
+            base.summary.append(s)
 
-
-test_sum = 0
-t_start = time.time()
-# Sorry I didn't use argparse here. It's because argparse is not in the
-# stdlib in 2.5.
-args = sys.argv[1:]
 try:
-    i = args.index('--thirdparty')
+    i = sys.argv.index('--thirdparty')
     thirdparty = True
-    args = args[:i] + args[i + 1:]
+    sys.argv = sys.argv[:i] + sys.argv[i + 1:]
 except ValueError:
     thirdparty = False
-
-print_debug = False
-try:
-    i = args.index('--debug')
-    args = args[:i] + args[i + 1:]
-except ValueError:
-    pass
-else:
-    print_debug = True
-    api.set_debug_function(debug.print_to_stdout)
 
 # get test list, that should be executed
 test_files = {}
 last = None
-for arg in args:
+for arg in sys.argv[1:]:
     if arg.isdigit():
         if last is None:
             continue
@@ -268,8 +254,6 @@ for arg in args:
 
 # completion tests:
 completion_test_dir = '../test/completion'
-summary = []
-tests_fail = 0
 
 # execute tests
 test_dir(completion_test_dir)
@@ -277,13 +261,10 @@ if test_files or thirdparty:
     completion_test_dir += '/thirdparty'
     test_dir(completion_test_dir, thirdparty=True)
 
-print('\nSummary: (%s fails of %s tests) in %.3fs' % (tests_fail, test_sum,
-                                                    time.time() - t_start))
-for s in summary:
-    print(s)
+base.print_summary()
 
-exit_code = 1 if tests_fail else 0
-if sys.hexversion < 0x02060000 and tests_fail <= 9:
+exit_code = 1 if base.tests_fail else 0
+if sys.hexversion < 0x02060000 and base.tests_fail <= 9:
     # Python 2.5 has major incompabillities (e.g. no property.setter),
     # therefore it is not possible to pass all tests.
     exit_code = 0

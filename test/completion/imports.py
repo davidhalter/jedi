@@ -152,11 +152,11 @@ from .......import_tree import mod1
 #? 
 mod1.a
 
-from .. import run
+from .. import base
 #? int()
-run.tests_fail
+base.tests_fail
 
-from ..run import tests_fail as f
+from ..base import tests_fail as f
 #? int()
 f
 
