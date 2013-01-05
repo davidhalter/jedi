@@ -348,7 +348,7 @@ class TestFeature(Base):
         ]
         for source, pos in sources:
             # Run quick_complete
-            quick_completions = api.quick_complete(source)
+            quick_completions = api._quick_complete(source)
             # Run real completion
             script = api.Script(source, pos[0], pos[1], '')
             real_completions = script.complete()
