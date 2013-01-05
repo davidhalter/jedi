@@ -1,47 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
-import sys
 import unittest
-from os.path import abspath, dirname
 import time
 import functools
 import itertools
+import os
 
-sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../jedi'))
-os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
-
+from base import TestBase
 from _compatibility import is_py25, utf8, unicode
 import api
 
-#api.set_debug_function(api.debug.print_to_stdout)
-
-
-class Base(unittest.TestCase):
-    def get_script(self, src, pos, path=None):
-        if pos is None:
-            lines = src.splitlines()
-            pos = len(lines), len(lines[-1])
-        return api.Script(src, pos[0], pos[1], path)
-
-    def get_def(self, src, pos=None):
-        script = self.get_script(src, pos)
-        return script.get_definition()
-
-    def complete(self, src, pos=None, path=None):
-        script = self.get_script(src, pos, path)
-        return script.complete()
-
-    def goto(self, src, pos=None):
-        script = self.get_script(src, pos)
-        return script.goto()
-
-    def get_in_function_call(self, src, pos=None):
-        script = self.get_script(src, pos)
-        return script.get_in_function_call()
-
-
-class TestRegression(Base):
+class TestRegression(TestBase):
     def test_star_import_cache_duration(self):
         new = 0.01
         old, api.settings.star_import_cache_validity = \
@@ -317,7 +286,7 @@ class TestRegression(Base):
         self.assertEqual(c[0].complete, 'or')
 
 
-class TestFeature(Base):
+class TestFeature(TestBase):
     def test_full_name(self):
         """ feature request #61"""
         assert self.complete('import os; os.path.join')[0].full_name \
@@ -358,7 +327,7 @@ class TestFeature(Base):
             self.assertEqual(quick_values, real_values)
 
 
-class TestSpeed(Base):
+class TestSpeed(TestBase):
     def _check_speed(time_per_run, number=4, run_warm=True):
         """ Speed checks should typically be very tolerant. Some machines are
         faster than others, but the tests should still pass. These tests are
