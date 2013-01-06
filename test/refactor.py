@@ -5,7 +5,7 @@ import traceback
 import re
 import base
 
-from _compatibility import unicode, reduce
+from _compatibility import reduce
 import api
 import refactoring
 
@@ -27,15 +27,14 @@ def run_test(source, f_name, lines_to_execute):
     """
     fails = 0
     tests = 0
-    s = unicode(source)
     # parse the refactor format
     r = r'^# --- ?([^\n]*)\n((?:(?!\n# \+\+\+).)*)' \
         r'\n# \+\+\+((?:(?!\n# ---).)*)'
-    for match in re.finditer(r, s, re.DOTALL | re.MULTILINE):
+    for match in re.finditer(r, source, re.DOTALL | re.MULTILINE):
         name = match.group(1).strip()
         first = match.group(2).strip()
         second = match.group(3).strip()
-        start_line_test = s[:match.start()].count('\n') + 1
+        start_line_test = source[:match.start()].count('\n') + 1
 
         # get the line with the position of the operation
         p = re.match(r'((?:(?!#\?).)*)#\? (\d*) ?([^\n]*)', first, re.DOTALL)
@@ -47,10 +46,12 @@ def run_test(source, f_name, lines_to_execute):
         new_name = p.group(3)
 
         line_nr = start_line_test + until.count('\n') + 2
+        if lines_to_execute and line_nr - 1 not in lines_to_execute:
+            continue
 
         path = refactoring_test_dir + os.path.sep + f_name
         try:
-            script = api.Script(source, line_nr, index, path)
+            script = api.Script(source, line_nr + 1, index, path)
             refactor_func = getattr(refactoring, f_name.replace('.py', ''))
             args = (script, new_name) if new_name else (script,)
             refactor_object = refactor_func(*args)
