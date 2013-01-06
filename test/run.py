@@ -154,9 +154,8 @@ def run_test(source, f_name, lines_to_execute):
     correct = None
     test_type = None
     start = None
-    for line_nr, line in enumerate(StringIO(source)):
+    for line_nr, line in enumerate(StringIO(source), 1):
         line = unicode(line)
-        line_nr += 1
         if correct:
             r = re.match('^(\d+)\s*(.*)$', correct)
             if r:
@@ -240,17 +239,7 @@ try:
 except ValueError:
     thirdparty = False
 
-# get test list, that should be executed
-test_files = {}
-last = None
-for arg in sys.argv[1:]:
-    if arg.isdigit():
-        if last is None:
-            continue
-        test_files[last].append(int(arg))
-    else:
-        test_files[arg] = []
-        last = arg
+test_files = base.get_test_list()
 
 # completion tests:
 completion_test_dir = '../test/completion'

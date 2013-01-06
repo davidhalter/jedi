@@ -32,6 +32,20 @@ sys.argv = sys.argv[:1] + args
 summary = []
 tests_fail = 0
 
+def get_test_list():
+# get test list, that should be executed
+    test_files = {}
+    last = None
+    for arg in sys.argv[1:]:
+        if arg.isdigit():
+            if last is None:
+                continue
+            test_files[last].append(int(arg))
+        else:
+            test_files[arg] = []
+            last = arg
+    return test_files
+
 class TestBase(unittest.TestCase):
     def get_script(self, src, pos, path=None):
         if pos is None:
