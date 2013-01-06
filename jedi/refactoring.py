@@ -27,7 +27,6 @@ class Refactoring(object):
     def diff(self):
         texts = []
         for old_path, (new_path, old_l, new_l) in self.change_dct.items():
-            print old_path, new_path, old_l, new_l
             if old_path:
                 udiff = difflib.unified_diff(old_l, new_l)
             else:
@@ -107,9 +106,7 @@ def extract(script, new_name):
             positions = [s] + call.execution.arr_el_pos + [exe.end_pos]
             start_pos = positions[index]
             end_pos = positions[index + 1][0], positions[index + 1][1] - 1
-            print start_pos, end_pos
             text = new_lines[start_pos[0] - 1][start_pos[1]:end_pos[1]]
-            print text
             for l in range(start_pos[0], end_pos[0] - 1):
                 text
             new_lines[start_pos[0]:end_pos[0]-1]

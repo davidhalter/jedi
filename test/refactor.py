@@ -30,18 +30,23 @@ def run_test(source, f_name, lines_to_execute):
     s = unicode(source)
     # parse the refactor format
     r = r'^# --- ?([^\n]*)\n((?:(?!\n# \+\+\+).)*)' \
-        r'\n# \+\+\+((?:(?!\n# \+\+\+).)*)'
+        r'\n# \+\+\+((?:(?!\n# ---).)*)'
     for match in re.finditer(r, s, re.DOTALL | re.MULTILINE):
         name = match.group(1).strip()
         first = match.group(2).strip()
         second = match.group(3).strip()
+        start_line_test = s[:match.start()].count('\n') + 1
 
         # get the line with the position of the operation
-        p = re.match(r'((?:(?!#\?).)*)#\? (\d*) ([^\n]*)', first, re.DOTALL)
-        until_pos = p.group(1)
-        index = p.group(2)
+        p = re.match(r'((?:(?!#\?).)*)#\? (\d*) ?([^\n]*)', first, re.DOTALL)
+        if p is None:
+            print("Please add a test start.")
+            continue
+        until = p.group(1)
+        index = int(p.group(2))
         new_name = p.group(3)
-        line_nr = until_pos.count('\n')
+
+        line_nr = start_line_test + until.count('\n') + 2
 
         path = refactoring_test_dir + os.path.sep + f_name
         try:
@@ -49,9 +54,27 @@ def run_test(source, f_name, lines_to_execute):
             refactor_func = getattr(refactoring, f_name.replace('.py', ''))
             args = (script, new_name) if new_name else (script,)
             refactor_object = refactor_func(*args)
-            print refactor_object.new_files()
-            if second != refactor_object.new_files:
+
+            # try to get the right excerpt of the newfile
+            f = refactor_object.new_files()[path]
+            lines = f.splitlines()[start_line_test:]
+
+            end = start_line_test + len(lines)
+            pop_start = None
+            for i, l in enumerate(lines):
+                if l.startswith('# +++'):
+                    end = i
+                    break
+                elif '#? ' in l:
+                    pop_start = i
+            lines.pop(pop_start)
+            result = '\n'.join(lines[:end - 1]).strip()
+
+            if second != result:
                 print('test @%s: not the same result, %s' % (line_nr - 1, name))
+                print('    ' + repr(result))
+                print('    ' + repr(second))
+                fails += 1
         except Exception:
             print(traceback.format_exc())
             print('test @%s: %s' % (line_nr - 1, name))
@@ -76,7 +99,7 @@ def test_dir(refactoring_test_dir):
             base.summary.append(s)
 
 
-refactoring_test_dir = '../test/refactor/'
+refactoring_test_dir = '../test/refactor'
 test_files = base.get_test_list()
 test_dir(refactoring_test_dir)
 
