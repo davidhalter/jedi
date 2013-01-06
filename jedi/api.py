@@ -55,10 +55,10 @@ class Script(object):
                                  source_encoding='utf-8'):
         api_classes._clear_caches()
         debug.reset_time()
-        source = modules.source_to_unicode(source, source_encoding)
+        self.source = modules.source_to_unicode(source, source_encoding)
         self.pos = line, column
-        self._module = modules.ModuleWithCursor(source_path, source=source,
-                                                            position=self.pos)
+        self._module = modules.ModuleWithCursor(source_path,
+                                        source=self.source, position=self.pos)
         self.source_path = source_path
         debug.speed('init')
 

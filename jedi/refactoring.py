@@ -1,6 +1,5 @@
 """ Introduce refactoring """
 
-import api
 import modules
 import difflib
 import helpers
@@ -37,7 +36,7 @@ class Refactoring(object):
         return '\n'.join(texts)
 
 
-def rename(new_name, source, *args, **kwargs):
+def rename(script, new_name):
     """ The `args` / `kwargs` params are the same as in `api.Script`.
     :param operation: The refactoring operation to execute.
     :type operation: str
@@ -49,7 +48,6 @@ def rename(new_name, source, *args, **kwargs):
         if new_lines is not None:  # goto next file, save last
             dct[path] = path, old_lines, new_lines
 
-    script = api.Script(source, *args, **kwargs)
     old_names = script.related_names()
     order = sorted(old_names, key=lambda x: (x.module_path, x.start_pos),
                             reverse=True)
@@ -80,17 +78,16 @@ def rename(new_name, source, *args, **kwargs):
     return Refactoring(dct)
 
 
-def extract(new_name, source, *args, **kwargs):
+def extract(script, new_name):
     """ The `args` / `kwargs` params are the same as in `api.Script`.
     :param operation: The refactoring operation to execute.
     :type operation: str
     :type source: str
     :return: list of changed lines/changed files
     """
-    new_lines = modules.source_to_unicode(source).splitlines()
+    new_lines = modules.source_to_unicode(script.source).splitlines()
     old_lines = new_lines[:]
 
-    script = api.Script(source, *args, **kwargs)
     user_stmt = script._parser.user_stmt
 
     # TODO care for multiline extracts

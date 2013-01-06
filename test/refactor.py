@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import os
 import traceback
 import re
@@ -48,7 +49,7 @@ def run_test(source, f_name, lines_to_execute):
             refactor_func = getattr(refactoring, f_name.replace('.py', ''))
             args = (script, new_name) if new_name else (script,)
             refactor_object = refactor_func(*args)
-            print refactor_object.new_files
+            print refactor_object.new_files()
             if second != refactor_object.new_files:
                 print('test @%s: not the same result, %s' % (line_nr - 1, name))
         except Exception:
@@ -78,3 +79,7 @@ def test_dir(refactoring_test_dir):
 refactoring_test_dir = '../test/refactor/'
 test_files = base.get_test_list()
 test_dir(refactoring_test_dir)
+
+base.print_summary()
+
+sys.exit(1 if base.tests_fail else 0)
