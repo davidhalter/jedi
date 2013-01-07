@@ -50,7 +50,7 @@ def run_test(source, f_name, lines_to_execute):
         if lines_to_execute and line_nr - 1 not in lines_to_execute:
             continue
 
-        path = refactoring_test_dir + os.path.sep + f_name
+        path = os.path.abspath(refactoring_test_dir + os.path.sep + f_name)
         try:
             script = api.Script(source, line_nr, index, path)
             refactor_func = getattr(refactoring, f_name.replace('.py', ''))

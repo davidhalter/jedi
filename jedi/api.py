@@ -10,6 +10,7 @@ from __future__ import with_statement
 __all__ = ['Script', 'NotFoundError', 'set_debug_function', '_quick_complete']
 
 import re
+import os
 
 import parsing
 import dynamic
@@ -59,11 +60,12 @@ class Script(object):
         self.pos = line, column
         self._module = modules.ModuleWithCursor(source_path,
                                         source=self.source, position=self.pos)
-        self.source_path = source_path
+        self._source_path = source_path
+        self.source_path = os.path.abspath(source_path)
         debug.speed('init')
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, repr(self.source_path))
+        return '<%s: %s>' % (self.__class__.__name__, repr(self._source_path))
 
     @property
     def _parser(self):
