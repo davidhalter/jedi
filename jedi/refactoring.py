@@ -96,15 +96,11 @@ def extract(script, new_name):
     if user_stmt:
         pos = script.pos
         line_index = pos[0] - 1
-        import parsing
-        assert isinstance(user_stmt, parsing.Statement)
-        call, index, stop = helpers.scan_array_for_pos(
-                                        user_stmt.get_assignment_calls(), pos)
-        assert isinstance(call, parsing.Call)
-        exe = call.execution
-        if exe:
-            s = exe.start_pos[0], exe.start_pos[1] + 1
-            positions = [s] + call.execution.arr_el_pos + [exe.end_pos]
+        arr, index = helpers.array_for_pos(user_stmt.get_assignment_calls(),
+                                            pos)
+        if arr:
+            s = arr.start_pos[0], arr.start_pos[1] + 1
+            positions = [s] + arr.arr_el_pos + [arr.end_pos]
             start_pos = positions[index]
             end_pos = positions[index + 1][0], positions[index + 1][1] - 1
 
