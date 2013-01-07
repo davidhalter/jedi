@@ -92,7 +92,6 @@ def extract(script, new_name):
     # TODO care for multiline extracts
     dct = {}
     if user_stmt:
-        indent = user_stmt.start_pos[0]
         pos = script.pos
         line_index = pos[0] - 1
         import parsing
@@ -141,6 +140,7 @@ def extract(script, new_name):
                 text = '(%s)' % text
 
             # add new line before statement
+            indent = user_stmt.start_pos[1]
             new = "%s%s = %s" % (' ' * indent, new_name, text)
             new_lines.insert(line_index, new)
     dct[script.source_path] = script.source_path, old_lines, new_lines

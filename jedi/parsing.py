@@ -1865,6 +1865,7 @@ class PyFuzzyParser(object):
                                                         self.start_pos[0])
             # returns
             elif tok in ['return', 'yield']:
+                s = self.start_pos
                 self.freshscope = False
                 # add returns to the scope
                 func = self.scope.get_parent_until(Function)
@@ -1876,6 +1877,8 @@ class PyFuzzyParser(object):
                     stmt.parent = set_parent_scope
                 try:
                     func.returns.append(stmt)
+                    # start_pos is the one of the return statement
+                    stmt.start_pos = s
                 except AttributeError:
                     debug.warning('return in non-function')
             # globals

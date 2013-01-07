@@ -15,7 +15,7 @@ def test():
                             + 1)
 # +++
 def test():
-              x = ((30 + b, c) + 1
+    x = ((30 + b, c) 
                             + 1)
-    return test(x
+    return test(1, x
 )
