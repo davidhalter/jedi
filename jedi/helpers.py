@@ -225,11 +225,10 @@ def array_for_pos(arr, pos):
     return result, check_arr_index(result, pos)
 
 
-def scan_array_for_pos(arr, pos, overwrite_after=False):
+def search_function_call(arr, pos):
     """
     Returns the function Call that matches the position before `arr`.
     This is somehow stupid, probably only the name of the function.
-    :param overwrite_after: Overwrite every statement after the found array.
     """
     call = None
     stop = False
@@ -237,7 +236,7 @@ def scan_array_for_pos(arr, pos, overwrite_after=False):
         call = None
         for s in sub:
             if isinstance(s, parsing.Array):
-                new = scan_array_for_pos(s, pos, overwrite_after)
+                new = search_function_call(s, pos)
                 if new[0] is not None:
                     call, index, stop = new
                     if stop:
@@ -252,8 +251,8 @@ def scan_array_for_pos(arr, pos, overwrite_after=False):
                         end = s.execution.end_pos
                         if s.execution.start_pos < pos and \
                                 (None in end or pos < end):
-                            c, index, stop = scan_array_for_pos(
-                                            s.execution, pos, overwrite_after)
+                            c, index, stop = search_function_call(
+                                            s.execution, pos)
                             if stop:
                                 return c, index, stop
 
@@ -265,9 +264,8 @@ def scan_array_for_pos(arr, pos, overwrite_after=False):
                                         parsing.Array.NOARRAY]:
                                 return start_s, index, False
 
-                            if overwrite_after:
-                                reset.execution = None
-                                reset.next = None
+                            reset.execution = None
+                            reset.next = None
                             return c or start_s, index, True
                     s = s.next
 

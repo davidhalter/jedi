@@ -361,7 +361,7 @@ class Script(object):
                 return None, 0
             ass = helpers.fast_parent_copy(user_stmt.get_assignment_calls())
 
-            call, index, stop = helpers.scan_array_for_pos(ass, self.pos, True)
+            call, index, stop = helpers.search_function_call(ass, self.pos)
             return call, index
 
         def check_cache():
