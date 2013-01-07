@@ -798,6 +798,7 @@ class Statement(Simple):
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:
+                _tok = tok
                 c_type = Call.NAME
                 if is_literal:
                     tok = literal_eval(tok)
@@ -820,6 +821,7 @@ class Statement(Simple):
                     call = Call(tok, c_type, start_pos, parent=result)
                     result.add_to_current_field(call)
                     result = call
+                tok = _tok
             elif tok in brackets.keys():  # brackets
                 level += 1
                 if is_call_or_close():
@@ -872,6 +874,10 @@ class Statement(Simple):
         if level != 0:
             debug.warning("Brackets don't match: %s."
                           "This is not normal behaviour." % level)
+
+        while result is not None:
+            result.end_pos = start_pos[0], start_pos[1] + len(tok)
+            result = result.parent
 
         self._assignment_calls_calculated = True
         self._assignment_calls = top
