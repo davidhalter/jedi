@@ -876,12 +876,15 @@ class Statement(Simple):
             debug.warning("Brackets don't match: %s."
                           "This is not normal behaviour." % level)
 
-        while result is not None:
-            try:
-                result.end_pos = start_pos[0], start_pos[1] + len(tok)
-            except TypeError:
-                result.end_pos = tok.end_pos
-            result = result.parent
+        if self.token_list:
+            while result is not None:
+                try:
+                    result.end_pos = start_pos[0], start_pos[1] + len(tok)
+                except TypeError:
+                    result.end_pos = tok.end_pos
+                result = result.parent
+        else:
+            result.end_pos = self.end_pos
 
         self._assignment_calls_calculated = True
         self._assignment_calls = top
