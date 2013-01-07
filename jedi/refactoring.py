@@ -171,12 +171,17 @@ def inline(script):
 
         line = new_lines[index]
         replace_str = line[ass.start_pos[1]:ass.end_pos[1] + 1]
+        replace_str = replace_str.strip()
+        # tuples need parentheses
+        if len(ass.values) > 1:
+            replace_str = '(%s)' % replace_str
 
         # if it's the only assignment, remove the statement
         if len(stmt.set_vars) == 1:
             line = line[:stmt.start_pos[1]] + line[stmt.end_pos[1]:]
 
-        dct = _rename(inlines, replace_str.strip())
+
+        dct = _rename(inlines, replace_str)
         # remove the empty line
         new_lines = dct[script.source_path][2]
         if line.strip():
