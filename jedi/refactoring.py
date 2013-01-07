@@ -1,5 +1,7 @@
 """ Introduce refactoring """
 
+from __future__ import with_statement
+
 import modules
 import difflib
 import helpers
