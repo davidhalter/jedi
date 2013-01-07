@@ -44,15 +44,18 @@ def rename(script, new_name):
     :type source: str
     :return: list of changed lines/changed files
     """
-    dct = {}
+    return Refactoring(_rename(script.related_names(), new_name))
+
+
+def _rename(names, replace_str):
+    """ For both rename and inline. """
+    order = sorted(names, key=lambda x: (x.module_path, x.start_pos),
+                            reverse=True)
     def process(path, old_lines, new_lines):
         if new_lines is not None:  # goto next file, save last
             dct[path] = path, old_lines, new_lines
 
-    old_names = script.related_names()
-    order = sorted(old_names, key=lambda x: (x.module_path, x.start_pos),
-                            reverse=True)
-
+    dct = {}
     current_path = object()
     new_lines = old_lines = None
     for name in order:
@@ -72,11 +75,10 @@ def rename(script, new_name):
 
         nr, indent = name.start_pos
         line = new_lines[nr - 1]
-        new_lines[nr - 1] = line[:indent] + new_name + \
+        new_lines[nr - 1] = line[:indent] + replace_str + \
                             line[indent + len(name.name_part):]
-
     process(current_path, old_lines, new_lines)
-    return Refactoring(dct)
+    return dct
 
 
 def extract(script, new_name):
@@ -142,4 +144,47 @@ def extract(script, new_name):
             new = "%s%s = %s" % (' ' * indent, new_name, text)
             new_lines.insert(line_index, new)
     dct[script.source_path] = script.source_path, old_lines, new_lines
+    return Refactoring(dct)
+
+
+def inline(script):
+    """
+    :type script: api.Script
+    """
+    new_lines = modules.source_to_unicode(script.source).splitlines()
+
+    dct = {}
+
+    definitions = script.goto()
+    try:
+        assert len(definitions) == 1
+        stmt = definitions[0].definition
+        related_names = script.related_names()
+        inlines = [r for r in related_names
+                        if not stmt.start_pos <= r.start_pos <= stmt.end_pos]
+        inlines = sorted(inlines, key=lambda x: (x.module_path, x.start_pos),
+                                                reverse=True)
+        ass = stmt.get_assignment_calls()
+        # don't allow multiline refactorings for now.
+        assert ass.start_pos[0] == ass.end_pos[0]
+        index = ass.start_pos[0] - 1
+
+        line = new_lines[index]
+        replace_str = line[ass.start_pos[1]:ass.end_pos[1] + 1]
+
+        # if it's the only assignment, remove the statement
+        if len(stmt.set_vars) == 1:
+            line = line[:stmt.start_pos[1]] + line[stmt.end_pos[1]:]
+
+        dct = _rename(inlines, replace_str.strip())
+        # remove the empty line
+        new_lines = dct[script.source_path][2]
+        if line.strip():
+            new_lines[index] = line
+        else:
+            new_lines.pop(index)
+
+    except AssertionError:
+        pass
+
     return Refactoring(dct)

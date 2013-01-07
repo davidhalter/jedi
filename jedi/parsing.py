@@ -782,7 +782,8 @@ class Statement(Simple):
                     self._assignment_details.append((tok, top))
                     # All these calls wouldn't be important if nonlocal would
                     # exist. -> Initialize the first items again.
-                    top = result = Array(start_pos, Array.NOARRAY, self)
+                    end_pos = start_pos[0], start_pos[1] + len(tok)
+                    top = result = Array(end_pos, Array.NOARRAY, self)
                     level = 0
                     close_brackets = False
                     is_chain = False
@@ -876,7 +877,10 @@ class Statement(Simple):
                           "This is not normal behaviour." % level)
 
         while result is not None:
-            result.end_pos = start_pos[0], start_pos[1] + len(tok)
+            try:
+                result.end_pos = start_pos[0], start_pos[1] + len(tok)
+            except TypeError:
+                result.end_pos = tok.end_pos
             result = result.parent
 
         self._assignment_calls_calculated = True
