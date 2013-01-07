@@ -154,7 +154,8 @@ def run_test(source, f_name, lines_to_execute):
     correct = None
     test_type = None
     start = None
-    for line_nr, line in enumerate(StringIO(source), 1):
+    for line_nr, line in enumerate(StringIO(source)):
+        line_nr += 1  # py2.5 doesn't know about the additional enumerate param
         line = unicode(line)
         if correct:
             r = re.match('^(\d+)\s*(.*)$', correct)
