@@ -106,11 +106,41 @@ def extract(script, new_name):
             positions = [s] + call.execution.arr_el_pos + [exe.end_pos]
             start_pos = positions[index]
             end_pos = positions[index + 1][0], positions[index + 1][1] - 1
-            text = new_lines[start_pos[0] - 1][start_pos[1]:end_pos[1]]
+
+            # take full line if the start line is different from end line
+            e = end_pos[1] if end_pos[0] == start_pos[0] else None
+            start_line = new_lines[start_pos[0] - 1]
+            text = start_line[start_pos[1]:e]
             for l in range(start_pos[0], end_pos[0] - 1):
-                text
-            new_lines[start_pos[0]:end_pos[0]-1]
-            text = user_stmt.start_pos[1], user_stmt.end_pos[1]
+                text += '\n' + l
+            if e is None:
+                end_line = new_lines[end_pos[0] - 1]
+                text += '\n' + end_line[:end_pos[1]]
+
+
+            # remove code from new lines
+            t = text.lstrip()
+            del_start = start_pos[1] + len(text) - len(t)
+
+            text = t.rstrip()
+            del_end = len(t) - len(text)
+            if e is None:
+                new_lines[end_pos[0] - 1] = end_line[end_pos[1] - del_end:]
+                e = len(start_line)
+            else:
+                e = e - del_end
+            start_line = start_line[:del_start] + new_name + start_line[e:]
+            new_lines[start_pos[0] - 1] = start_line
+            new_lines[start_pos[0]:end_pos[0]-1] = []
+
+            # add parentheses in multiline case
+            open_brackets = ['(', '[', '{']
+            close_brackets = [')', ']', '}']
+            if '\n' in text and not (text[0] in open_brackets and text[-1] ==
+                                close_brackets[open_brackets.index(text[0])]):
+                text = '(%s)' % text
+
+            # add new line before statement
             new = "%s%s = %s" % (' ' * indent, new_name, text)
             new_lines.insert(line_index, new)
     dct[script.source_path] = script.source_path, old_lines, new_lines
