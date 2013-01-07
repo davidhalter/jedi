@@ -8,9 +8,9 @@ example for the autocompletion feature:
 
 >>> import jedi
 >>> source = '''import json; json.l'''
->>> script = jedi.Script(source, 1, 19, '')
+>>> script = jedi.Script(source, 1, 19, 'example.py')
 >>> script
-<jedi.api.Script at 0x7f6d40f3db90>
+<Script: 'example.py'>
 >>> completions = script.complete()
 >>> completions
 [<Completion: load>, <Completion: loads>]

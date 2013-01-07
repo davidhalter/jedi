@@ -62,6 +62,9 @@ class Script(object):
         self.source_path = source_path
         debug.speed('init')
 
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, repr(self.source_path))
+
     @property
     def _parser(self):
         """ lazy parser."""
