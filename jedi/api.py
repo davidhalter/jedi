@@ -61,7 +61,8 @@ class Script(object):
         self._module = modules.ModuleWithCursor(source_path,
                                         source=self.source, position=self.pos)
         self._source_path = source_path
-        self.source_path = os.path.abspath(source_path)
+        self.source_path = None if source_path is None \
+                                    else os.path.abspath(source_path)
         debug.speed('init')
 
     def __repr__(self):
