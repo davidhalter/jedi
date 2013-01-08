@@ -21,26 +21,26 @@ def clear_caches(delete_all=False):
     :param delete_all: Deletes also the cache that is normally not deleted,
         like parser cache, which is important for faster parsing.
     """
-    global memoize_caches
+    global memoize_caches, time_caches
 
     # memorize_caches must never be deleted, because the dicts will get lost in
     # the wrappers.
     for m in memoize_caches:
         m.clear()
 
-    for tc in time_caches:
-        # check time_cache for expired entries
-        for key, (t, value) in list(tc.items()):
-            if t < time.time():
-                # delete expired entries
-                del tc[key]
-
     if delete_all:
-        global time_caches
         time_caches = []
         star_import_cache.clear()
         parser_cache.clear()
         module_cache.clear()
+    else:
+        # normally just kill the expired entries, not all
+        for tc in time_caches:
+            # check time_cache for expired entries
+            for key, (t, value) in list(tc.items()):
+                if t < time.time():
+                    # delete expired entries
+                    del tc[key]
 
 
 def memoize_default(default=None, cache=memoize_caches):
