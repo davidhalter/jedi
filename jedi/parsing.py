@@ -63,6 +63,8 @@ class Simple(Base):
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
     """
+    __slots__ = ('parent', 'module', '_start_pos', 'set_parent',
+                '_end_pos')
     def __init__(self, module, start_pos, end_pos=(None, None)):
         self._start_pos = start_pos
         self._end_pos = end_pos
@@ -668,6 +670,10 @@ class Statement(Simple):
     :param start_pos: Position (line, column) of the Statement.
     :type start_pos: tuple(int, int)
     """
+    __slots__ = ('used_funcs', 'code', 'token_list', 'used_vars', 'used_funcs',
+                 'set_vars', '_assignment_calls', '_assignment_details',
+                 '_assignment_calls_calculated')
+
     def __init__(self, module, code, set_vars, used_funcs, used_vars,
                                             token_list, start_pos, end_pos):
         super(Statement, self).__init__(module, start_pos, end_pos)
@@ -1158,6 +1164,9 @@ class NamePart(str):
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
     """
+    # Unfortunately there's no way to use slots for str (non-zero __itemsize__)
+    # -> http://utcc.utoronto.ca/~cks/space/blog/python/IntSlotsPython3k
+    #__slots__ = ('_start_pos', 'parent') 
     def __new__(cls, s, parent, start_pos):
         self = super(NamePart, cls).__new__(cls, s)
         self._start_pos = start_pos
@@ -1181,6 +1190,8 @@ class Name(Simple):
     So a name like "module.class.function"
     would result in an array of [module, class, function]
     """
+    __slots__ = ('parent', 'module', 'names', '_start_pos', 'set_parent',
+                '_end_pos')
     def __init__(self, module, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(module, start_pos, end_pos)
         self.names = tuple(n if isinstance(n, NamePart) else
