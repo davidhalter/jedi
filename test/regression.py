@@ -21,7 +21,7 @@ class TestRegression(TestBase):
         old, jedi.settings.star_import_cache_validity = \
                 jedi.settings.star_import_cache_validity, new
 
-        cache = jedi.cache
+        cache = api.cache
         cache.star_import_cache = {}  # first empty...
         # path needs to be not-None (otherwise caching effects are not visible)
         jedi.Script('', 1, 0, '').complete()
