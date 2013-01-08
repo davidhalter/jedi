@@ -9,7 +9,7 @@ time_caches = []
 star_import_cache = {}
 
 
-def clear_caches():
+def clear_caches(delete_all=False):
     """ Jedi caches many things, that should be completed after each completion
     finishes.
     """
@@ -26,6 +26,11 @@ def clear_caches():
             if t < time.time():
                 # delete expired entries
                 del tc[key]
+
+    if delete_all:
+        global time_caches
+        time_caches = []
+        star_import_cache.clear()
 
 
 def memoize_default(default=None, cache=memoize_caches):
