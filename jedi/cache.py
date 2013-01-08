@@ -8,8 +8,10 @@ time_caches = []
 
 star_import_cache = {}
 
-# for fast_parser, should never be deleted
+# for fast_parser, should not be deleted
 parser_cache = {}
+# should also not be deleted
+module_cache = {}
 
 
 def clear_caches(delete_all=False):
@@ -38,6 +40,7 @@ def clear_caches(delete_all=False):
         time_caches = []
         star_import_cache.clear()
         parser_cache.clear()
+        module_cache.clear()
 
 
 def memoize_default(default=None, cache=memoize_caches):

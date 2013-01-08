@@ -38,7 +38,6 @@ class CachedModule(object):
     The base type for all modules, which is not to be confused with
     `parsing.Module`. Caching happens here.
     """
-    cache = {}
 
     def __init__(self, path=None, name=None):
         self.path = path and os.path.abspath(path)
@@ -50,7 +49,7 @@ class CachedModule(object):
         """ get the parser lazy """
         if not self._parser:
             try:
-                timestamp, parser = self.cache[self.path or self.name]
+                timestamp, parser = cache.module_cache[self.path or self.name]
                 if not self.path or os.path.getmtime(self.path) <= timestamp:
                     self._parser = parser
                 else:
@@ -73,7 +72,7 @@ class CachedModule(object):
         p_time = None if not self.path else os.path.getmtime(self.path)
 
         if self.path or self.name:
-            self.cache[self.path or self.name] = p_time, self._parser
+            cache.module_cache[self.path or self.name] = p_time, self._parser
 
 
 class Parser(CachedModule):
@@ -103,8 +102,6 @@ class Parser(CachedModule):
 
     if is_py3k:
         map_types['file object'] = 'import io; return io.TextIOWrapper()'
-
-    module_cache = {}
 
     def __init__(self, path=None, name=None, sys_path=None):
         if sys_path is None:
