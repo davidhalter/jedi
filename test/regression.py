@@ -7,9 +7,9 @@ import itertools
 import os
 
 from base import TestBase
-from jedi._compatibility import is_py25, utf8, unicode
 
 import jedi
+from jedi._compatibility import is_py25, utf8, unicode
 from jedi import api
 
 #jedi.set_debug_function(jedi.debug.print_to_stdout)

@@ -5,11 +5,11 @@ import sys
 import os
 from os.path import abspath, dirname
 
-sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../'))
+sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/..'))
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
 
-from jedi import api
-import debug
+import jedi
+from jedi import debug
 
 test_sum = 0
 t_start = time.time()
@@ -25,7 +25,7 @@ except ValueError:
     pass
 else:
     print_debug = True
-    api.set_debug_function(debug.print_to_stdout)
+    jedi.set_debug_function(debug.print_to_stdout)
 
 sys.argv = sys.argv[:1] + args
 
@@ -51,7 +51,7 @@ class TestBase(unittest.TestCase):
         if pos is None:
             lines = src.splitlines()
             pos = len(lines), len(lines[-1])
-        return api.Script(src, pos[0], pos[1], path)
+        return jedi.Script(src, pos[0], pos[1], path)
 
     def get_def(self, src, pos=None):
         script = self.get_script(src, pos)
