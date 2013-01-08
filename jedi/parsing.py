@@ -1269,6 +1269,7 @@ class PyFuzzyParser(object):
 
         self.start_pos = self.module.start_pos
         self.module.end_pos = self.end_pos
+        del self._gen
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
