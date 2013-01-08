@@ -16,7 +16,6 @@ import evaluate
 import helpers
 import settings
 import debug
-import builtin
 import imports
 import api_classes
 import fast_parser
@@ -33,7 +32,7 @@ def get_directory_modules_for_name(mods, name):
     """
     def check_python_file(path):
         try:
-            return builtin.CachedModule.cache[path][1].module
+            return cache.module_cache[path][1].module
         except KeyError:
             try:
                 return check_fs(path)

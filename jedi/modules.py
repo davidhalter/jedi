@@ -65,10 +65,10 @@ class ModuleWithCursor(Module):
         """ get the parser lazy """
         if not self._parser:
             try:
-                ts, parser = builtin.CachedModule.cache[self.path]
+                ts, parser = cache.module_cache[self.path]
                 cache.invalidate_star_import_cache(parser.module)
 
-                del builtin.CachedModule.cache[self.path]
+                del cache.module_cache[self.path]
             except KeyError:
                 pass
             # Call the parser already here, because it will be used anyways.
@@ -77,7 +77,7 @@ class ModuleWithCursor(Module):
             self._parser = fast_parser.FastParser(self.source, self.path,
                                                         self.position)
             if self.path is not None:
-                builtin.CachedModule.cache[self.path] = time.time(), \
+                cache.module_cache[self.path] = time.time(), \
                                                         self._parser
         return self._parser
 
