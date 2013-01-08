@@ -7,27 +7,29 @@ import itertools
 import os
 
 from base import TestBase
-from _compatibility import is_py25, utf8, unicode
-import api
+from jedi._compatibility import is_py25, utf8, unicode
 
-#api.set_debug_function(api.debug.print_to_stdout)
+import jedi
+from jedi import api
+
+#jedi.set_debug_function(jedi.debug.print_to_stdout)
 
 
 class TestRegression(TestBase):
     def test_star_import_cache_duration(self):
         new = 0.01
-        old, api.settings.star_import_cache_validity = \
-                api.settings.star_import_cache_validity, new
+        old, jedi.settings.star_import_cache_validity = \
+                jedi.settings.star_import_cache_validity, new
 
-        cache = api.cache
+        cache = jedi.cache
         cache.star_import_cache = {}  # first empty...
         # path needs to be not-None (otherwise caching effects are not visible)
-        api.Script('', 1, 0, '').complete()
+        jedi.Script('', 1, 0, '').complete()
         time.sleep(2 * new)
-        api.Script('', 1, 0, '').complete()
+        jedi.Script('', 1, 0, '').complete()
 
         # reset values
-        api.settings.star_import_cache_validity = old
+        jedi.settings.star_import_cache_validity = old
         length = len(cache.star_import_cache)
         cache.star_import_cache = {}
         self.assertEqual(length, 1)
@@ -72,7 +74,7 @@ class TestRegression(TestBase):
         #print should2, diff_line
         assert should2 == diff_line
 
-        self.assertRaises(api.NotFoundError, get_def, cls)
+        self.assertRaises(jedi.NotFoundError, get_def, cls)
 
     def test_keyword_doc(self):
         r = list(self.get_def("or", (1, 1)))
@@ -212,7 +214,7 @@ class TestRegression(TestBase):
         src2 = 'from .. import setup; setup.ret(1)'
         # .parser to load the module
         api.modules.Module(os.path.abspath('dynamic.py'), src2).parser
-        script = api.Script(src1, 1, len(src1), '../setup.py')
+        script = jedi.Script(src1, 1, len(src1), '../setup.py')
         result = script.get_definition()
         assert len(result) == 1
         assert result[0].description == 'class int'
@@ -220,8 +222,8 @@ class TestRegression(TestBase):
     def test_named_import(self):
         """ named import - jedi-vim issue #8 """
         s = "import time as dt"
-        assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
-        assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
+        assert len(jedi.Script(s, 1, 15, '/').get_definition()) == 1
+        assert len(jedi.Script(s, 1, 10, '/').get_definition()) == 1
 
     def test_unicode_script(self):
         """ normally no unicode objects are being used. (<=2.7) """
@@ -322,7 +324,7 @@ class TestFeature(TestBase):
             # Run quick_complete
             quick_completions = api._quick_complete(source)
             # Run real completion
-            script = api.Script(source, pos[0], pos[1], '')
+            script = jedi.Script(source, pos[0], pos[1], '')
             real_completions = script.complete()
             # Compare results
             quick_values = [(c.full_name, c.line, c.column) for c in quick_completions]
@@ -358,9 +360,9 @@ class TestSpeed(TestBase):
     @_check_speed(0.1)
     def test_scipy_speed(self):
         s = 'import scipy.weave; scipy.weave.inline('
-        script = api.Script(s, 1, len(s), '')
+        script = jedi.Script(s, 1, len(s), '')
         script.get_in_function_call()
-        #print(api.imports.imports_processed)
+        #print(jedi.imports.imports_processed)
 
 if __name__ == '__main__':
     unittest.main()

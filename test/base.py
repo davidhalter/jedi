@@ -5,10 +5,10 @@ import sys
 import os
 from os.path import abspath, dirname
 
-sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../jedi'))
+sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../'))
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
 
-import api
+from jedi import api
 import debug
 
 test_sum = 0

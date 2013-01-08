@@ -6,9 +6,9 @@ import traceback
 import re
 import base
 
-from _compatibility import reduce
-import api
-import refactoring
+from jedi._compatibility import reduce
+import jedi
+from jedi import refactoring
 
 
 def run_test(source, f_name, lines_to_execute):
@@ -52,7 +52,7 @@ def run_test(source, f_name, lines_to_execute):
 
         path = os.path.abspath(refactoring_test_dir + os.path.sep + f_name)
         try:
-            script = api.Script(source, line_nr, index, path)
+            script = jedi.Script(source, line_nr, index, path)
             refactor_func = getattr(refactoring, f_name.replace('.py', ''))
             args = (script, new_name) if new_name else (script,)
             refactor_object = refactor_func(*args)
