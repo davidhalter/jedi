@@ -4,8 +4,7 @@ import operator
 from _compatibility import use_metaclass, reduce, property
 import settings
 import parsing
-
-parser_cache = {}
+import cache
 
 
 class Module(parsing.Simple, parsing.Module):
@@ -140,12 +139,12 @@ class CachedFastParser(type):
     def __call__(self, code, module_path=None, user_position=None):
         if not settings.fast_parser:
             return parsing.PyFuzzyParser(code, module_path, user_position)
-        if module_path is None or module_path not in parser_cache:
+        if module_path is None or module_path not in cache.parser_cache:
             p = super(CachedFastParser, self).__call__(code, module_path,
                                                             user_position)
-            parser_cache[module_path] = p
+            cache.parser_cache[module_path] = p
         else:
-            p = parser_cache[module_path]
+            p = cache.parser_cache[module_path]
             p.update(code, user_position)
         return p
 

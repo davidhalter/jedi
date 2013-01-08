@@ -8,10 +8,16 @@ time_caches = []
 
 star_import_cache = {}
 
+# for fast_parser, should never be deleted
+parser_cache = {}
+
 
 def clear_caches(delete_all=False):
     """ Jedi caches many things, that should be completed after each completion
     finishes.
+
+    :param delete_all: Deletes also the cache that is normally not deleted,
+        like parser cache, which is important for faster parsing.
     """
     global memoize_caches
 
@@ -31,6 +37,7 @@ def clear_caches(delete_all=False):
         global time_caches
         time_caches = []
         star_import_cache.clear()
+        parser_cache.clear()
 
 
 def memoize_default(default=None, cache=memoize_caches):
