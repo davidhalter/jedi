@@ -1192,7 +1192,7 @@ class Name(Simple):
     So a name like "module.class.function"
     would result in an array of [module, class, function]
     """
-    __slots__ = ('names', )
+    __slots__ = ('names',)
     def __init__(self, module, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(module, start_pos, end_pos)
         self.names = tuple(n if isinstance(n, NamePart) else

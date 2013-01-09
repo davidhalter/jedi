@@ -159,13 +159,15 @@ def fast_parent_copy(obj):
             # __dict__ not available, because of __slots__
             items = []
 
-        try:
-            names = new_obj.__slots__
-        except AttributeError:
-            # __slots__ not available (normal)
-            pass
-        else:
-            items += [(n, getattr(new_obj, n)) for n in names]
+        before = ()
+        for cls in new_obj.__class__.__mro__:
+            try:
+                if before == cls.__slots__:
+                    continue
+                before = cls.__slots__
+                items += [(n, getattr(new_obj, n)) for n in before]
+            except AttributeError:
+                pass
 
         for key, value in items:
             # replace parent (first try _parent and then parent)
