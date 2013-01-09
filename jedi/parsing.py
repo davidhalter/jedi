@@ -64,13 +64,13 @@ class Simple(Base):
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
     """
-    __slots__ = ('parent', 'module', '_start_pos', 'set_parent', '_end_pos')
+    __slots__ = ('parent', 'module', '_start_pos', 'use_as_parent', '_end_pos')
     def __init__(self, module, start_pos, end_pos=(None, None)):
         self._start_pos = start_pos
         self._end_pos = end_pos
         self.parent = None
         # use this attribute if parent should be something else than self.
-        self.set_parent = self
+        self.use_as_parent = self
         self.module = module
 
     @Python3Method
@@ -132,12 +132,12 @@ class Scope(Simple):
         self.asserts = []
 
     def add_scope(self, sub, decorators):
-        sub.parent = self.set_parent
+        sub.parent = self.use_as_parent
         sub.decorators = decorators
         for d in decorators:
             # the parent is the same, because the decorator has not the scope
             # of the function
-            d.parent = self.set_parent
+            d.parent = self.use_as_parent
         self.subscopes.append(sub)
         return sub
 
@@ -146,7 +146,7 @@ class Scope(Simple):
         Used to add a Statement or a Scope.
         A statement would be a normal command (Statement) or a Scope (Flow).
         """
-        stmt.parent = self.set_parent
+        stmt.parent = self.use_as_parent
         self.statements.append(stmt)
         return stmt
 
@@ -156,7 +156,7 @@ class Scope(Simple):
 
     def add_import(self, imp):
         self.imports.append(imp)
-        imp.parent = self.set_parent
+        imp.parent = self.use_as_parent
 
     def get_imports(self):
         """ Gets also the imports within flow statements """
@@ -283,7 +283,7 @@ class SubModule(Scope, Module):
         # this may be changed depending on fast_parser
         self.line_offset = 0
 
-        self.set_parent = top_module or self
+        self.use_as_parent = top_module or self
 
     def add_global(self, name):
         """
@@ -316,7 +316,7 @@ class SubModule(Scope, Module):
             string = r.group(1)
         names = [(string, (0, 0))]
         self._name = Name(self, names, self.start_pos, self.end_pos,
-                                                            self.set_parent)
+                                                            self.use_as_parent)
         return self._name
 
     def is_builtin(self):
@@ -337,10 +337,10 @@ class Class(Scope):
     def __init__(self, module, name, supers, start_pos):
         super(Class, self).__init__(module, start_pos)
         self.name = name
-        name.parent = self.set_parent
+        name.parent = self.use_as_parent
         self.supers = supers
         for s in self.supers:
-            s.parent = self.set_parent
+            s.parent = self.use_as_parent
         self.decorators = []
 
     def get_code(self, first_indent=False, indention='    '):
@@ -373,18 +373,18 @@ class Function(Scope):
         super(Function, self).__init__(module, start_pos)
         self.name = name
         if name is not None:
-            name.parent = self.set_parent
+            name.parent = self.use_as_parent
         self.params = params
         for p in params:
-            p.parent = self.set_parent
-            p.parent_function = self.set_parent
+            p.parent = self.use_as_parent
+            p.parent_function = self.use_as_parent
         self.decorators = []
         self.returns = []
         self.is_generator = False
         self.listeners = set()  # not used here, but in evaluation.
 
         if annotation is not None:
-            annotation.parent = self.set_parent
+            annotation.parent = self.use_as_parent
             self.annotation = annotation
 
     def get_code(self, first_indent=False, indention='    '):
@@ -481,14 +481,14 @@ class Flow(Scope):
         # These have to be statements, because of with, which takes multiple.
         self.inits = inits
         for s in inits:
-            s.parent = self.set_parent
+            s.parent = self.use_as_parent
         if set_vars is None:
             self.set_vars = []
         else:
             self.set_vars = set_vars
             for s in self.set_vars:
-                s.parent.parent = self.set_parent
-                s.parent = self.set_parent
+                s.parent.parent = self.use_as_parent
+                s.parent = self.use_as_parent
 
     @property
     def parent(self):
@@ -595,7 +595,7 @@ class Import(Simple):
         self.from_ns = from_ns
         for n in [namespace, alias, from_ns]:
             if n:
-                n.parent = self.set_parent
+                n.parent = self.use_as_parent
 
         self.star = star
         self.relative_count = relative_count
@@ -682,7 +682,7 @@ class Statement(Simple):
         self.used_vars = used_vars
         self.token_list = token_list
         for s in set_vars + used_funcs + used_vars:
-            s.parent = self.set_parent
+            s.parent = self.use_as_parent
         self.set_vars = self._remove_executions_from_set_vars(set_vars)
 
         # cache
@@ -917,7 +917,7 @@ class Param(Statement):
         self.parent_function = None
 
     def add_annotation(self, annotation_stmt):
-        annotation_stmt.parent = self.set_parent
+        annotation_stmt.parent = self.use_as_parent
         self.annotation_stmt = annotation_stmt
 
     def get_name(self):
