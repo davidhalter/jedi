@@ -1761,7 +1761,7 @@ class PyFuzzyParser(object):
                         and not isinstance(self.scope, SubModule):
                     self.scope = self.module
 
-            set_parent_scope = self.top_module if isinstance(self.scope,
+            use_as_parent_scope = self.top_module if isinstance(self.scope,
                                             SubModule) else self.scope
             first_pos = self.start_pos
             if tok == 'def':
@@ -1838,14 +1838,14 @@ class PyFuzzyParser(object):
                         debug.warning('syntax err, for flow started @%s',
                                                         self.start_pos[0])
                         if statement is not None:
-                            statement.parent = set_parent_scope
+                            statement.parent = use_as_parent_scope
                         if set_stmt is not None:
-                            set_stmt.parent = set_parent_scope
+                            set_stmt.parent = use_as_parent_scope
                 else:
                     debug.warning('syntax err, for flow incomplete @%s',
                                                         self.start_pos[0])
                     if set_stmt is not None:
-                        set_stmt.parent = set_parent_scope
+                        set_stmt.parent = use_as_parent_scope
 
             elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
                 added_breaks = []
@@ -1886,7 +1886,7 @@ class PyFuzzyParser(object):
                     self.scope = s
                 else:
                     for i in inits:
-                        i.parent = set_parent_scope
+                        i.parent = use_as_parent_scope
                     debug.warning('syntax err, flow started @%s',
                                                         self.start_pos[0])
             # returns
@@ -1900,7 +1900,7 @@ class PyFuzzyParser(object):
 
                 stmt, tok = self._parse_statement()
                 if stmt is not None:
-                    stmt.parent = set_parent_scope
+                    stmt.parent = use_as_parent_scope
                 try:
                     func.returns.append(stmt)
                     # start_pos is the one of the return statement
@@ -1924,7 +1924,7 @@ class PyFuzzyParser(object):
                 continue
             elif tok == 'assert':
                 stmt, tok = self._parse_statement()
-                stmt.parent = set_parent_scope
+                stmt.parent = use_as_parent_scope
                 self.scope.asserts.append(stmt)
             # default
             elif token_type in [tokenize.NAME, tokenize.STRING,

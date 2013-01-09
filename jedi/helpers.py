@@ -153,7 +153,20 @@ def fast_parent_copy(obj):
         new_obj = copy.copy(obj)
         new_elements[obj] = new_obj
 
-        items = new_obj.__dict__.items()
+        try:
+            items = new_obj.__dict__.items()
+        except AttributeError:
+            # __dict__ not available, because of __slots__
+            items = []
+
+        try:
+            names = new_obj.__slots__
+        except AttributeError:
+            # __slots__ not available (normal)
+            pass
+        else:
+            items += [(n, getattr(new_obj, n)) for n in names]
+
         for key, value in items:
             # replace parent (first try _parent and then parent)
             if key in ['parent', '_parent', '_parent_stmt'] \
@@ -165,7 +178,7 @@ def fast_parent_copy(obj):
                     setattr(new_obj, key, new_elements[value])
                 except KeyError:
                     pass
-            elif key in ['parent_stmt', 'parent_function', 'set_parent',
+            elif key in ['parent_stmt', 'parent_function', 'use_as_parent',
                             'module']:
                 continue
             elif isinstance(value, list):
