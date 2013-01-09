@@ -54,6 +54,7 @@ class Base(object):
     I know that there is a chance to do such things with __instancecheck__, but
     since Python 2.5 doesn't support it, I decided to do it this way.
     """
+    __slots__ = ()
     def isinstance(self, *cls):
         return isinstance(self, cls)
 
@@ -63,8 +64,7 @@ class Simple(Base):
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
     """
-    __slots__ = ('parent', 'module', '_start_pos', 'set_parent',
-                '_end_pos')
+    __slots__ = ('parent', 'module', '_start_pos', 'set_parent', '_end_pos')
     def __init__(self, module, start_pos, end_pos=(None, None)):
         self._start_pos = start_pos
         self._end_pos = end_pos
@@ -273,7 +273,7 @@ class SubModule(Scope, Module):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    def __init__(self, path, start_pos, top_module=None):
+    def __init__(self, path, start_pos=(1, 0), top_module=None):
         super(SubModule, self).__init__(self, start_pos)
         self.path = path
         self.global_vars = []
@@ -670,7 +670,7 @@ class Statement(Simple):
     :param start_pos: Position (line, column) of the Statement.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('used_funcs', 'code', 'token_list', 'used_vars', 'used_funcs',
+    __slots__ = ('used_funcs', 'code', 'token_list', 'used_vars',
                  'set_vars', '_assignment_calls', '_assignment_details',
                  '_assignment_calls_calculated')
 
@@ -902,6 +902,8 @@ class Param(Statement):
     The class which shows definitions of params of classes and functions.
     But this is not to define function calls.
     """
+    __slots__ = ('position_nr', 'is_generated', 'annotation_stmt',
+                 'parent_function')
     def __init__(self, module, code, set_vars, used_funcs, used_vars,
                  token_list, start_pos, end_pos):
         super(Param, self).__init__(module, code, set_vars, used_funcs,
@@ -1190,8 +1192,7 @@ class Name(Simple):
     So a name like "module.class.function"
     would result in an array of [module, class, function]
     """
-    __slots__ = ('parent', 'module', 'names', '_start_pos', 'set_parent',
-                '_end_pos')
+    __slots__ = ('names', )
     def __init__(self, module, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(module, start_pos, end_pos)
         self.names = tuple(n if isinstance(n, NamePart) else
