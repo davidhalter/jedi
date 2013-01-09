@@ -1357,10 +1357,8 @@ def follow_call_list(call_list, follow_array=False):
         module = input.get_parent_until()
         loop = parsing.ForFlow(module, [input], lc.stmt.start_pos,
                                                 lc.middle, True)
-        if parent is None:
-            loop.parent = lc.stmt.parent
-        else:
-            loop.parent = parent
+
+        loop.parent = lc.stmt.parent if parent is None else parent
 
         if isinstance(nested_lc, parsing.ListComprehension):
             loop = evaluate_list_comprehension(nested_lc, loop)
@@ -1539,7 +1537,7 @@ def goto(stmt, call_path=None):
     scope = stmt.parent
     pos = stmt.start_pos
     call_path, search = call_path[:-1], call_path[-1]
-    pos = pos[0], pos[1]+1
+    pos = pos[0], pos[1] + 1
 
     if call_path:
         scopes = follow_call_path(iter(call_path), scope, pos)

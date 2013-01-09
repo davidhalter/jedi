@@ -55,6 +55,7 @@ class Base(object):
     since Python 2.5 doesn't support it, I decided to do it this way.
     """
     __slots__ = ()
+
     def isinstance(self, *cls):
         return isinstance(self, cls)
 
@@ -65,6 +66,7 @@ class Simple(Base):
     the parser tree inherits from this class.
     """
     __slots__ = ('parent', 'module', '_start_pos', 'use_as_parent', '_end_pos')
+
     def __init__(self, module, start_pos, end_pos=(None, None)):
         self._start_pos = start_pos
         self._end_pos = end_pos
@@ -904,6 +906,7 @@ class Param(Statement):
     """
     __slots__ = ('position_nr', 'is_generated', 'annotation_stmt',
                  'parent_function')
+
     def __init__(self, module, code, set_vars, used_funcs, used_vars,
                  token_list, start_pos, end_pos):
         super(Param, self).__init__(module, code, set_vars, used_funcs,
@@ -1168,7 +1171,7 @@ class NamePart(str):
     """
     # Unfortunately there's no way to use slots for str (non-zero __itemsize__)
     # -> http://utcc.utoronto.ca/~cks/space/blog/python/IntSlotsPython3k
-    #__slots__ = ('_start_pos', 'parent') 
+    #__slots__ = ('_start_pos', 'parent')
     def __new__(cls, s, parent, start_pos):
         self = super(NamePart, cls).__new__(cls, s)
         self._start_pos = start_pos
@@ -1193,6 +1196,7 @@ class Name(Simple):
     would result in an array of [module, class, function]
     """
     __slots__ = ('names',)
+
     def __init__(self, module, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(module, start_pos, end_pos)
         self.names = tuple(n if isinstance(n, NamePart) else
@@ -1564,7 +1568,7 @@ class PyFuzzyParser(object):
                 elif tok == 'lambda':
                     params = []
                     start_pos = self.start_pos
-                    while tok !=':':
+                    while tok != ':':
                         param, tok = self._parse_statement(
                                     added_breaks=[':', ','], stmt_class=Param)
                         if param is None:
