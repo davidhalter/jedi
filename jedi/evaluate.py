@@ -649,19 +649,22 @@ class Execution(Executable):
         objects can be used for the executions, as if they were in the
         execution.
         """
-        # Copy all these lists into this local function.
-        attr = getattr(self.base, prop)
-        objects = []
-        for element in attr:
-            if element is None:
-                copied = element
-            else:
-                copied = helpers.fast_parent_copy(element)
-                copied.parent = self._scope_copy(copied.parent)
-                if isinstance(copied, parsing.Function):
-                    copied = Function(copied)
-            objects.append(copied)
-        return objects
+        try:
+            # Copy all these lists into this local function.
+            attr = getattr(self.base, prop)
+            objects = []
+            for element in attr:
+                if element is None:
+                    copied = element
+                else:
+                    copied = helpers.fast_parent_copy(element)
+                    copied.parent = self._scope_copy(copied.parent)
+                    if isinstance(copied, parsing.Function):
+                        copied = Function(copied)
+                objects.append(copied)
+            return objects
+        except AttributeError:
+            raise common.MultiLevelAttributeError(sys.exc_info())
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'imports']:
