@@ -119,7 +119,8 @@ use_filesystem_cache = True
 Use filesystem cache to save once parsed files with pickle.
 """
 
-jedi_cache_directory = '~/.jedi'
+import os
+jedi_cache_directory = os.getenv('HOME') + os.path.sep + '~/.jedi'
 """
 The path where all the caches can be found.
 """
