@@ -13,6 +13,11 @@ import evaluate
 import itertools
 import cache
 
+from _compatibility import is_py33
+if is_py33:
+    import importlib
+
+
 # for debugging purposes only
 imports_processed = 0
 
@@ -220,10 +225,13 @@ class ImportPath(parsing.Base):
             elif self.import_stmt.relative_count:
                 path = self.get_relative_path()
 
+            if path and not isinstance(path, list):
+                path = [path]
+
             global imports_processed
             imports_processed += 1
             if path is not None:
-                return imp.find_module(string, [path])
+                return imp.find_module(string, path)
             else:
                 debug.dbg('search_module', string, self.file_path)
                 # Override the sys.path. It works only good that way.
@@ -249,7 +257,24 @@ class ImportPath(parsing.Base):
         for i, s in enumerate(self.import_path):
             try:
                 current_namespace = follow_str(current_namespace[1], s)
-            except ImportError:
+                if not current_namespace[1] and is_py33:
+                    loader = importlib.find_loader(s)
+                    if loader.__name__ == 'BuiltinImporter':
+                        current_namespace = (current_namespace[0], s,
+                                             current_namespace[2])
+
+            except ImportError as ex:
+                if not i and is_py33:
+                    loader = importlib.find_loader(s)
+                    if 'NamespaceLoader' in repr(loader):
+                        try:
+                            m = __import__(s)
+                        except ImportError:
+                            pass
+                        else:
+                            current_namespace = (None, list(m.__path__), None)
+                            continue
+
                 if self.import_stmt.relative_count \
                                 and len(self.import_path) == 1:
                     # follow `from . import some_variable`
