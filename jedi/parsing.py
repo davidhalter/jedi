@@ -1240,8 +1240,8 @@ class PyFuzzyParser(object):
     This class is used to parse a Python file, it then divides them into a
     class structure of different scopes.
 
-    :param code: The codebase for the parser.
-    :type code: str
+    :param source: The codebase for the parser.
+    :type source: str
     :param module_path: The path of the module in the file system, may be None.
     :type module_path: str
     :param user_position: The line/column, the user is currently on.
@@ -1250,7 +1250,7 @@ class PyFuzzyParser(object):
     :param stop_on_scope: Stop if a scope appears -> for fast_parser
     :param top_module: Use this module as a parent instead of `self.module`.
     """
-    def __init__(self, code, module_path=None, user_position=None,
+    def __init__(self, source, module_path=None, user_position=None,
                         no_docstr=False, line_offset=0, stop_on_scope=None,
                         top_module=None):
         self.user_position = user_position
@@ -1269,8 +1269,8 @@ class PyFuzzyParser(object):
         # any errors of tokenize and just parse ahead.
         self._line_offset = line_offset
 
-        code = code + '\n'  # end with \n, because the parser needs it
-        buf = StringIO(code)
+        source = source + '\n'  # end with \n, because the parser needs it
+        buf = StringIO(source)
         self._gen = common.NoErrorTokenizer(buf.readline, line_offset,
                                                             stop_on_scope)
         self.top_module = top_module or self.module
