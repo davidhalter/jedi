@@ -154,7 +154,7 @@ def fast_parent_copy(obj):
         new_elements[obj] = new_obj
 
         try:
-            items = new_obj.__dict__.items()
+            items = list(new_obj.__dict__.items())
         except AttributeError:
             # __dict__ not available, because of __slots__
             items = []
