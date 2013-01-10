@@ -22,6 +22,13 @@ Completion output
 .. autodata:: no_completion_duplicates
 
 
+Filesystem cache
+~~~~~~~~~~~~~~~~
+
+.. autodata:: jedi_cache_directory
+.. autodata:: use_fs_cache
+
+
 Parser
 ~~~~~~
 
@@ -101,6 +108,20 @@ no_completion_duplicates = True
 """
 If set, completions with the same name don't appear in the output anymore,
 but are in the `same_name_completions` attribute.
+"""
+
+# ----------------
+# Filesystem cache
+# ----------------
+
+use_filesystem_cache = True
+"""
+Use filesystem cache to save once parsed files with pickle.
+"""
+
+jedi_cache_directory = '~/.jedi'
+"""
+The path where all the caches can be found.
 """
 
 # ----------------
