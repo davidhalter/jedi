@@ -47,18 +47,9 @@ class CachedModule(object):
     @property
     def parser(self):
         """ get the parser lazy """
-        if not self._parser:
-            try:
-                timestamp, parser = cache.module_cache[self.path or self.name]
-                if not self.path or os.path.getmtime(self.path) <= timestamp:
-                    self._parser = parser
-                else:
-                    # In case there is already a module cached and this module
-                    # has to be reparsed, we also need to invalidate the import
-                    # caches.
-                    cache.invalidate_star_import_cache(parser.module)
-                    raise KeyError()
-            except KeyError:
+        if self._parser is None:
+            self._parser = cache.load_module(self.path, self.name)
+            if self._parser is None:
                 self._load_module()
         return self._parser
 
@@ -69,10 +60,7 @@ class CachedModule(object):
         source = self._get_source()
         p = self.path or self.name
         self._parser = fast_parser.FastParser(source, p)
-        p_time = None if not self.path else os.path.getmtime(self.path)
-
-        if self.path or self.name:
-            cache.module_cache[self.path or self.name] = p_time, self._parser
+        cache.save_module(self.path, self.name, self._parser)
 
 
 class Parser(CachedModule):

@@ -1,4 +1,6 @@
 import time
+import os
+
 import settings
 
 # memoize caches will be deleted after every action
@@ -87,6 +89,7 @@ def time_cache(time_add_setting):
     def _temp(key_func):
         dct = {}
         time_caches.append(dct)
+
         def wrapper(optional_callable, *args, **kwargs):
             key = key_func(*args, **kwargs)
             value = None
@@ -144,3 +147,41 @@ def invalidate_star_import_cache(module, only_main=False):
         for key, (t, mods) in list(star_import_cache.items()):
             if module in mods:
                 invalidate_star_import_cache(key)
+
+
+def load_module(path, name):
+    """
+    Returns the module or None, if it fails.
+    """
+    if path is None and name is None:
+        return None
+
+    try:
+        timestamp, parser = module_cache[path or name]
+        if not path or os.path.getmtime(path) <= timestamp:
+            return parser
+        else:
+            # In case there is already a module cached and this module
+            # has to be reparsed, we also need to invalidate the import
+            # caches.
+            invalidate_star_import_cache(parser.module)
+            return None
+    except KeyError:
+        return load_pickle_module(path or name)
+
+
+def save_module(path, name, parser):
+    if path is None and name is None:
+        return
+
+    p_time = None if not path else os.path.getmtime(path)
+    module_cache[path or name] = p_time, parser
+    save_pickle_module(path or name)
+
+
+def load_pickle_module(path):
+    return None
+
+
+def save_pickle_module(path):
+    pass
