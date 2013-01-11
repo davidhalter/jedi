@@ -81,6 +81,9 @@ Various
 
 
 """
+import os
+import platform
+
 
 # ----------------
 # completion output settings
@@ -119,8 +122,11 @@ use_filesystem_cache = True
 Use filesystem cache to save once parsed files with pickle.
 """
 
-import os
-cache_directory = os.getenv('HOME') + os.path.sep + '.jedi'
+if platform.system() == 'Windows':
+    _cache_directory = os.path.join(os.getenv('APPDATA'), 'jedi')
+else:
+    _cache_directory = os.path.join(os.getenv('HOME'), '.jedi')
+cache_directory = _cache_directory
 """
 The path where all the caches can be found.
 """
