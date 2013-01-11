@@ -1188,7 +1188,7 @@ class NamePart(str):
         return self.start_pos[0], self.start_pos[1] + len(self)
 
     def __getnewargs__(self):
-        return self.__class__, self.parent, self._start_pos
+        return str(self), self.parent, self._start_pos
 
 
 class Name(Simple):
