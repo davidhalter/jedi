@@ -413,7 +413,6 @@ class Script(object):
                 return None
         debug.speed('func_call parsed')
 
-        debug.speed('func_call user_stmt')
         with common.scale_speed_settings(settings.scale_get_in_function_call):
             _callable = lambda: evaluate.follow_call(call)
             origins = cache.cache_get_in_function_call(_callable, user_stmt)
