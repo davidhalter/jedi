@@ -16,11 +16,9 @@ star_import_cache = {}
 
 # for fast_parser, should not be deleted
 parser_cache = {}
-# should also not be deleted
-module_cache = {}
 
 
-class ModuleCacheItem(object):
+class ParserCacheItem(object):
     def __init__(self, parser, change_time=None):
         self.parser = parser
         if change_time is None:
@@ -46,7 +44,6 @@ def clear_caches(delete_all=False):
         time_caches = []
         star_import_cache.clear()
         parser_cache.clear()
-        module_cache.clear()
     else:
         # normally just kill the expired entries, not all
         for tc in time_caches:
@@ -170,14 +167,14 @@ def load_module(path, name):
 
     tim = os.path.getmtime(path) if path else None
     try:
-        module_cache_item = module_cache[path or name]
-        if not path or tim <= module_cache_item.change_time:
-            return module_cache_item.parser
+        parser_cache_item = parser_cache[path or name]
+        if not path or tim <= parser_cache_item.change_time:
+            return parser_cache_item.parser
         else:
             # In case there is already a module cached and this module
             # has to be reparsed, we also need to invalidate the import
             # caches.
-            invalidate_star_import_cache(module_cache_item.parser.module)
+            invalidate_star_import_cache(parser_cache_item.parser.module)
     except KeyError:
         if settings.use_filesystem_cache:
             return ModulePickling.load_module(path or name, tim)
@@ -188,8 +185,8 @@ def save_module(path, name, parser, pickling=True):
         return
 
     p_time = None if not path else os.path.getmtime(path)
-    item = ModuleCacheItem(parser, p_time)
-    module_cache[path or name] = item
+    item = ParserCacheItem(parser, p_time)
+    parser_cache[path or name] = item
     if settings.use_filesystem_cache and pickling:
         ModulePickling.save_module(path or name, item)
 
@@ -210,15 +207,13 @@ class _ModulePickling(object):
             return None
 
         with open(self._get_hashed_path(path)) as f:
-            module_cache_item = pickle.load(f)
+            parser_cache_item = pickle.load(f)
 
-        parser = module_cache_item.parser
         debug.dbg('pickle loaded', path)
-        parser_cache[path] = parser
-        module_cache[path] = module_cache_item
-        return parser
+        parser_cache[path] = parser_cache_item
+        return parser_cache_item.parser
 
-    def save_module(self, path, module_cache_item):
+    def save_module(self, path, parser_cache_item):
         try:
             files = self._index[self.py_version]
         except KeyError:
@@ -226,8 +221,8 @@ class _ModulePickling(object):
             self._index[self.py_version] = files
 
         with open(self._get_hashed_path(path), 'w') as f:
-            pickle.dump(module_cache_item, f, pickle.HIGHEST_PROTOCOL)
-            files[path] = module_cache_item.change_time
+            pickle.dump(parser_cache_item, f, pickle.HIGHEST_PROTOCOL)
+            files[path] = parser_cache_item.change_time
 
         self._flush_index()
 

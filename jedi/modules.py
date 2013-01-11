@@ -64,7 +64,7 @@ class ModuleWithCursor(Module):
         """ get the parser lazy """
         if not self._parser:
             try:
-                parser = cache.module_cache[self.path].parser
+                parser = cache.parser_cache[self.path].parser
                 cache.invalidate_star_import_cache(parser.module)
             except KeyError:
                 pass

@@ -32,7 +32,7 @@ def get_directory_modules_for_name(mods, name):
     """
     def check_python_file(path):
         try:
-            return cache.module_cache[path].parser.module
+            return cache.parser_cache[path].parser.module
         except KeyError:
             try:
                 return check_fs(path)

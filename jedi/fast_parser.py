@@ -140,12 +140,13 @@ class CachedFastParser(type):
         if not settings.fast_parser:
             return parsing.PyFuzzyParser(source, module_path, user_position)
 
-        p = cache.parser_cache.get(module_path, None)
-        if p is None or isinstance(p, parsing.PyFuzzyParser):
+        pi = cache.parser_cache.get(module_path, None)
+        if pi is None or isinstance(pi.parser, parsing.PyFuzzyParser):
             p = super(CachedFastParser, self).__call__(source, module_path,
                                                             user_position)
             cache.parser_cache[module_path] = p
         else:
+            p = pi.parser  # pi is a `cache.ParserCacheItem`
             p.update(source, user_position)
         return p
 
