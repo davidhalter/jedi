@@ -376,7 +376,7 @@ class Script(object):
                 return None, 0
 
             try:
-                timestamp, parser = cache.module_cache[self.source_path]
+                parser = cache.module_cache[self.source_path].parser
             except KeyError:
                 return None, 0
             part_parser = self._module.get_part_parser()

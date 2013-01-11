@@ -172,3 +172,9 @@ try:
     from functools import reduce
 except ImportError:
     reduce = reduce
+
+try:
+    import json
+except ImportError:
+    # python 2.5
+    import simplejson as json

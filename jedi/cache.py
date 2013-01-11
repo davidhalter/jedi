@@ -1,7 +1,11 @@
 import time
 import os
+import sys
+import pickle
 
+from _compatibility import json
 import settings
+import debug
 
 # memoize caches will be deleted after every action
 memoize_caches = []
@@ -14,6 +18,14 @@ star_import_cache = {}
 parser_cache = {}
 # should also not be deleted
 module_cache = {}
+
+
+class ModuleCacheItem(object):
+    def __init__(self, parser, change_time=None):
+        self.parser = parser
+        if change_time is None:
+            change_time = time.time()
+        self.change_time = change_time
 
 
 def clear_caches(delete_all=False):
@@ -156,32 +168,100 @@ def load_module(path, name):
     if path is None and name is None:
         return None
 
+    tim = os.path.getmtime(path) if path else None
     try:
-        timestamp, parser = module_cache[path or name]
-        if not path or os.path.getmtime(path) <= timestamp:
-            return parser
+        module_cache_item = module_cache[path or name]
+        if not path or tim <= module_cache_item.change_time:
+            return module_cache_item.parser
         else:
             # In case there is already a module cached and this module
             # has to be reparsed, we also need to invalidate the import
             # caches.
-            invalidate_star_import_cache(parser.module)
-            return None
+            invalidate_star_import_cache(module_cache_item.parser.module)
     except KeyError:
-        return load_pickle_module(path or name)
+        if settings.use_filesystem_cache:
+            return ModulePickling.load_module(path or name, tim)
 
 
-def save_module(path, name, parser):
+def save_module(path, name, parser, pickling=True):
     if path is None and name is None:
         return
 
     p_time = None if not path else os.path.getmtime(path)
-    module_cache[path or name] = p_time, parser
-    save_pickle_module(path or name)
+    item = ModuleCacheItem(parser, p_time)
+    module_cache[path or name] = item
+    if settings.use_filesystem_cache and pickling:
+        ModulePickling.save_module(path or name, item)
 
 
-def load_pickle_module(path):
-    return None
+class _ModulePickling(object):
+    def __init__(self):
+        self.__index = None
+        self.py_version = '%s.%s' % sys.version_info[:2]
+
+    def load_module(self, path, original_changed_time):
+        try:
+            pickle_changed_time = self._index[self.py_version][path]
+        except KeyError:
+            return None
+        if original_changed_time is not None \
+                and pickle_changed_time < original_changed_time:
+            # the pickle file is outdated
+            return None
+
+        with open(self._get_hashed_path(path)) as f:
+            module_cache_item = pickle.load(f)
+
+        parser = module_cache_item.parser
+        debug.dbg('pickle loaded', path)
+        parser_cache[path] = parser
+        module_cache[path] = module_cache_item
+        return parser
+
+    def save_module(self, path, module_cache_item):
+        try:
+            files = self._index[self.py_version]
+        except KeyError:
+            files = {}
+            self._index[self.py_version] = files
+
+        with open(self._get_hashed_path(path), 'w') as f:
+            pickle.dump(module_cache_item, f, pickle.HIGHEST_PROTOCOL)
+            files[path] = module_cache_item.change_time
+
+        self._flush_index()
+
+    @property
+    def _index(self):
+        if self.__index is None:
+            try:
+                with open(self._get_path('index.json')) as f:
+                    self.__index = json.load(f)
+            except IOError:
+                self.__index = {}
+        return self.__index
+
+    def _remove_old_modules(self):
+        # TODO use
+        change = False
+        if change:
+            self._flush_index(self)
+            self._index  # reload index
+
+    def _flush_index(self):
+        with open(self._get_path('index.json'), 'w') as f:
+            json.dump(self._index, f)
+        self.__index = None
+
+    def _get_hashed_path(self, path):
+        return self._get_path('%s_%s.pkl' % (self.py_version, hash(path)))
+
+    def _get_path(self, file):
+        dir = settings.cache_directory
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        return dir + os.path.sep + file
 
 
-def save_pickle_module(path):
-    pass
+# is a singleton
+ModulePickling = _ModulePickling()

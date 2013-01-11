@@ -6,7 +6,6 @@ import re
 import tokenize
 import sys
 import os
-import time
 
 import cache
 import parsing
@@ -65,10 +64,8 @@ class ModuleWithCursor(Module):
         """ get the parser lazy """
         if not self._parser:
             try:
-                ts, parser = cache.module_cache[self.path]
+                parser = cache.module_cache[self.path].parser
                 cache.invalidate_star_import_cache(parser.module)
-
-                del cache.module_cache[self.path]
             except KeyError:
                 pass
             # Call the parser already here, because it will be used anyways.
@@ -76,9 +73,9 @@ class ModuleWithCursor(Module):
             # default), therefore fill the cache here.
             self._parser = fast_parser.FastParser(self.source, self.path,
                                                         self.position)
-            if self.path is not None:
-                cache.module_cache[self.path] = time.time(), \
-                                                        self._parser
+            # don't pickle that module, because it's changing fast
+            cache.save_module(self.path, self.name, self._parser,
+                                pickling=True)
         return self._parser
 
     def get_path_until_cursor(self):

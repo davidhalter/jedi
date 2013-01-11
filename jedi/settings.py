@@ -25,7 +25,7 @@ Completion output
 Filesystem cache
 ~~~~~~~~~~~~~~~~
 
-.. autodata:: jedi_cache_directory
+.. autodata:: cache_directory
 .. autodata:: use_fs_cache
 
 
@@ -120,7 +120,7 @@ Use filesystem cache to save once parsed files with pickle.
 """
 
 import os
-jedi_cache_directory = os.getenv('HOME') + os.path.sep + '~/.jedi'
+cache_directory = os.getenv('HOME') + os.path.sep + '.jedi'
 """
 The path where all the caches can be found.
 """

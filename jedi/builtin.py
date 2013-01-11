@@ -48,9 +48,8 @@ class CachedModule(object):
     def parser(self):
         """ get the parser lazy """
         if self._parser is None:
-            self._parser = cache.load_module(self.path, self.name)
-            if self._parser is None:
-                self._load_module()
+            self._parser = cache.load_module(self.path, self.name) \
+                                or self._load_module()
         return self._parser
 
     def _get_source(self):
@@ -59,8 +58,9 @@ class CachedModule(object):
     def _load_module(self):
         source = self._get_source()
         p = self.path or self.name
-        self._parser = fast_parser.FastParser(source, p)
-        cache.save_module(self.path, self.name, self._parser)
+        p = fast_parser.FastParser(source, p)
+        cache.save_module(self.path, self.name, p)
+        return p
 
 
 class Parser(CachedModule):
