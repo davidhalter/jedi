@@ -144,7 +144,6 @@ class CachedFastParser(type):
         if pi is None or isinstance(pi.parser, parsing.PyFuzzyParser):
             p = super(CachedFastParser, self).__call__(source, module_path,
                                                             user_position)
-            cache.parser_cache[module_path] = p
         else:
             p = pi.parser  # pi is a `cache.ParserCacheItem`
             p.update(source, user_position)
