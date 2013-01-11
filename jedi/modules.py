@@ -75,7 +75,7 @@ class ModuleWithCursor(Module):
                                                         self.position)
             # don't pickle that module, because it's changing fast
             cache.save_module(self.path, self.name, self._parser,
-                                pickling=True)
+                                                            pickling=False)
         return self._parser
 
     def get_path_until_cursor(self):
