@@ -1276,7 +1276,9 @@ class PyFuzzyParser(object):
         self.top_module = top_module or self.module
         try:
             self._parse()
-        except common.MultiLevelStopIteration:
+        except (common.MultiLevelStopIteration, StopIteration):
+            # StopIteration needs to be added as well, because python 2 has a
+            # strange way of handling StopIterations.
             # sometimes StopIteration isn't catched. Just ignore it.
             pass
 

@@ -207,7 +207,7 @@ class TestRegression(TestBase):
         assert check(self.get_in_function_call(s, (4, 31)), 'compile', 0)
         # jedi-vim #70
         s = """def foo("""
-        assert check(self.get_in_function_call(s), None, 0)
+        assert self.get_in_function_call(s) is None
 
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
