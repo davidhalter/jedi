@@ -166,8 +166,9 @@ def load_module(path, name):
         return None
 
     tim = os.path.getmtime(path) if path else None
+    n = name if path is None else path
     try:
-        parser_cache_item = parser_cache[path or name]
+        parser_cache_item = parser_cache[n]
         if not path or tim <= parser_cache_item.change_time:
             return parser_cache_item.parser
         else:
@@ -177,18 +178,16 @@ def load_module(path, name):
             invalidate_star_import_cache(parser_cache_item.parser.module)
     except KeyError:
         if settings.use_filesystem_cache:
-            return ModulePickling.load_module(path or name, tim)
+            return ModulePickling.load_module(n, tim)
 
 
 def save_module(path, name, parser, pickling=True):
-    if path is None and name is None:
-        return
-
     p_time = None if not path else os.path.getmtime(path)
+    n = name if path is None else path
     item = ParserCacheItem(parser, p_time)
-    parser_cache[path or name] = item
+    parser_cache[n] = item
     if settings.use_filesystem_cache and pickling:
-        ModulePickling.save_module(path or name, item)
+        ModulePickling.save_module(n, item)
 
 
 class _ModulePickling(object):
