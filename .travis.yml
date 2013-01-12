@@ -4,7 +4,8 @@ python:
     - 2.6
     - 2.7
     - 3.2
-install: echo "No external requirements"
+install:
+    - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install --use-mirrors simplejson; fi
 script:
     - cd test
     - ./test.sh
