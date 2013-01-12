@@ -210,7 +210,7 @@ class _ModulePickling(object):
             # the pickle file is outdated
             return None
 
-        with open(self._get_hashed_path(path)) as f:
+        with open(self._get_hashed_path(path), 'rb') as f:
             parser_cache_item = pickle.load(f)
 
         debug.dbg('pickle loaded', path)
@@ -224,7 +224,7 @@ class _ModulePickling(object):
             files = {}
             self._index[self.py_version] = files
 
-        with open(self._get_hashed_path(path), 'w') as f:
+        with open(self._get_hashed_path(path), 'wb') as f:
             pickle.dump(parser_cache_item, f, pickle.HIGHEST_PROTOCOL)
             files[path] = parser_cache_item.change_time
 
