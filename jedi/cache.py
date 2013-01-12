@@ -182,7 +182,12 @@ def load_module(path, name):
 
 
 def save_module(path, name, parser, pickling=True):
-    p_time = None if not path else os.path.getmtime(path)
+    try:
+        p_time = None if not path else os.path.getmtime(path)
+    except OSError:
+        p_time = None
+        pickling = False
+
     n = name if path is None else path
     item = ParserCacheItem(parser, p_time)
     parser_cache[n] = item
