@@ -81,6 +81,8 @@ Various
 
 
 """
+import os
+import platform
 
 # ----------------
 # completion output settings
@@ -119,8 +121,13 @@ use_filesystem_cache = True
 Use filesystem cache to save once parsed files with pickle.
 """
 
-import os
-cache_directory = os.getenv('HOME') + os.path.sep + '.jedi'
+if platform.system().lower() == 'windows':
+    _cache_directory = os.path.join(os.getenv('APPDATA') or '~', 'Jedi', 'Jedi')
+elif platform.system().lower() == 'darwin':
+    _cache_directory = os.path.join('~', '.jedi')
+else:
+    _cache_directory = os.path.join(os.getenv('XDG_CACHE_HOME', '~'), 'jedi')
+cache_directory = _cache_directory
 """
 The path where all the caches can be found.
 """
