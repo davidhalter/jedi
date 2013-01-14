@@ -101,6 +101,7 @@ class Script(object):
         if re.search('^\.|\.\.$', path):
             return []
         path, dot, like = self._get_completion_parts(path)
+        completion_line = self._module.get_line(self.pos[0])[:self.pos[1]]
 
         try:
             scopes = list(self._prepare_goto(path, True))
@@ -121,8 +122,7 @@ class Script(object):
                 else:
                     if isinstance(s, imports.ImportPath):
                         if like == 'import':
-                            l = self._module.get_line(self.pos[0])[:self.pos[1]]
-                            if not l.endswith('import import'):
+                            if not completion_line.endswith('import import'):
                                 continue
                         a = s.import_stmt.alias
                         if a and a.start_pos <= self.pos <= a.end_pos:
@@ -142,10 +142,17 @@ class Script(object):
                         completions.append((p.get_name(), p))
 
             # Do the completion if there is no path before and no import stmt.
-            if (not scopes or not isinstance(scopes[0], imports.ImportPath)) \
-                        and not path:
+            u = self._parser.user_stmt
+            bs = builtin.Builtin.scope
+            if isinstance(u, parsing.Import):
+                if (u.relative_count > 0 or u.from_ns) and not re.search(
+                               r'(,|from)\s*$|import\s+$', completion_line):
+                    completions += ((k, bs) for k
+                                            in keywords.get_keywords('import'))
+                    u = None
+
+            if not path and not isinstance(u, parsing.Import):
                 # add keywords
-                bs = builtin.Builtin.scope
                 completions += ((k, bs) for k in keywords.get_keywords(
                                                                     all=True))
 

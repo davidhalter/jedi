@@ -120,7 +120,7 @@ class TestRegression(TestBase):
         assert len(self.complete("import import", path='')) > 0
 
         # 111
-        assert self.complete("from datetime import") == []
+        assert self.complete("from datetime import")[0].word == 'import'
         assert self.complete("from datetime import ")
 
     def test_get_in_function_call(self):
