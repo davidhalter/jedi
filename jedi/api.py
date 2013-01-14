@@ -149,7 +149,6 @@ class Script(object):
                                r'(,|from)\s*$|import\s+$', completion_line):
                     completions += ((k, bs) for k
                                             in keywords.get_keywords('import'))
-                    u = None
 
             if not path and not isinstance(u, parsing.Import):
                 # add keywords
