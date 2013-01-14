@@ -81,21 +81,6 @@ class Script(object):
         :return: Completion objects, sorted by name and __ comes last.
         :rtype: list of :class:`api_classes.Completion`
         """
-        def follow_imports_if_possible(name):
-            # TODO remove this, or move to another place (not used)
-            par = name.parent
-            if isinstance(par, parsing.Import) and not \
-                        isinstance(self._parser.user_stmt, parsing.Import):
-                new = imports.ImportPath(par).follow(is_goto=True)
-                # Only remove the old entry if a new one has been found.
-                #print par, new, par.parent
-                if new:
-                    try:
-                        return new
-                    except AttributeError:  # .name undefined
-                        pass
-            return [name]
-
         debug.speed('complete start')
         path = self._module.get_path_until_cursor()
         if re.search('^\.|\.\.$', path):
