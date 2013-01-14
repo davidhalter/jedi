@@ -127,9 +127,12 @@ elif platform.system().lower() == 'darwin':
     _cache_directory = os.path.join('~', '.jedi')
 else:
     _cache_directory = os.path.join(os.getenv('XDG_CACHE_HOME', '~'), 'jedi')
-cache_directory = _cache_directory
+cache_directory = os.path.expanduser(_cache_directory)
 """
 The path where all the caches can be found.
+
+On Linux, this defaults to ``~/.cache/jedi/``, on OS X to ``~/.jedi/`` and on
+Windows to ``%APPDATA%\\Jedi\\Jedi\\``.
 """
 
 # ----------------
