@@ -121,7 +121,6 @@ class TestRegression(TestBase):
 
         # 111
         assert self.complete("from datetime import") == []
-        print self.complete("from datetime import ")
         assert self.complete("from datetime import ")
 
     def test_get_in_function_call(self):

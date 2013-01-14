@@ -46,7 +46,7 @@ class ImportPath(parsing.Base):
         self.import_stmt = import_stmt
         self.is_like_search = is_like_search
         self.direct_resolve = direct_resolve
-        self.is_partial_import = bool(kill_count)
+        self.is_partial_import = bool(max(0, kill_count))
         path = import_stmt.get_parent_until().path
         self.file_path = os.path.dirname(path) if path is not None else None
 
