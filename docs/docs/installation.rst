@@ -6,21 +6,36 @@ Installation and Configuration
 You can either include |jedi| as a submodule in your text editor plugin (like
 jedi-vim_ does by default), or you can install it systemwide.
 
+.. note:: This just installs the |jedi| library, not the :ref:`editor plugins
+    <editor-plugins>`. For information about how to make it work with your
+    editor, refer to the corresponding documentation.
+
 
 System-wide installation via a package manager
 ----------------------------------------------
 
-You can install |jedi| directly from pypi using pip::
+
+Arch Linux
+~~~~~~~~~~
+
+You can install jedi directly from AUR: `python-jedi at AUR
+<https://aur.archlinux.org/packages/python-jedi/>`__.
+
+(There is also a packaged version of the vim plugin available: `vim-jedi at AUR
+<https://aur.archlinux.org/packages/vim-jedi/>`__.)
+
+
+Others
+~~~~~~
+
+On any system can install |jedi| directly from the Python package index using
+pip::
 
     sudo pip install jedi
 
 If you want to install the current development version (master branch)::
 
     sudo pip install -e git://github.com/davidhalter/jedi.git#egg=jedi
-
-.. note:: This just installs the |jedi| library, not the :ref:`editor plugins
-    <editor-plugins>`. For information about how to make it work with your
-    editor, refer to the corresponding documentation.
 
 
 Manual installation from a downloaded package
