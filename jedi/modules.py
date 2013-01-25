@@ -328,11 +328,11 @@ def source_to_unicode(source, encoding=None):
         http://docs.python.org/2/reference/lexical_analysis.html#encoding-\
                                                                 declarations
         """
-        if source.startswith('\xef\xbb\xbf'):
+        if source.startswith(b'\xef\xbb\xbf'):
             # UTF-8 byte-order mark
             return 'utf-8'
 
-        first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', source).group(0)
+        first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', str(source)).group(0)
         possible_encoding = re.search(r"coding[=:]\s*([-\w.]+)", first_two_lines)
         if possible_encoding:
             return possible_encoding.group(1)
