@@ -328,20 +328,17 @@ def source_to_unicode(source, encoding=None):
         http://docs.python.org/2/reference/lexical_analysis.html#encoding-\
                                                                 declarations
         """
-        if encoding is not None:
-            return encoding
-
         if source.startswith('\xef\xbb\xbf'):
             # UTF-8 byte-order mark
             return 'utf-8'
 
         first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', source).group(0)
-        possible_encoding = re.match("coding[=:]\s*([-\w.]+)", first_two_lines)
+        possible_encoding = re.search(r"coding[=:]\s*([-\w.]+)", first_two_lines)
         if possible_encoding:
             return possible_encoding.group(1)
         else:
             # the default if nothing else has been set -> PEP 263
-            return 'iso-8859-1'
+            return encoding if encoding is not None else 'iso-8859-1'
 
     if isinstance(source, unicode):
         # only cast str/bytes
