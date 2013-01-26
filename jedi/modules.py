@@ -1,6 +1,6 @@
 from __future__ import with_statement
 
-from _compatibility import exec_function, unicode
+from _compatibility import exec_function, unicode, is_py25, literal_eval
 
 import re
 import tokenize
@@ -328,7 +328,8 @@ def source_to_unicode(source, encoding=None):
         http://docs.python.org/2/reference/lexical_analysis.html#encoding-\
                                                                 declarations
         """
-        if source.startswith(b'\xef\xbb\xbf'):
+        byte_mark = '\xef\xbb\xbf' if is_py25 else literal_eval(r"b'\xef\xbb\xbf'")
+        if source.startswith(byte_mark):
             # UTF-8 byte-order mark
             return 'utf-8'
 
