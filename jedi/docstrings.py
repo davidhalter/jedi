@@ -58,7 +58,10 @@ def search_param_in_docstr(docstr, param_str):
     for pattern in patterns:
         match = pattern.search(docstr)
         if match:
-            return match.group(1)
+            type_str = match.group(1)
+            if type_str.startswith(':class:'):
+                type_str = type_str[len(':class:'):].strip('`')
+            return type_str
 
     return None
 
