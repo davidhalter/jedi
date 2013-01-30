@@ -39,12 +39,29 @@ def follow_param(param):
 
 
 def search_param_in_docstr(docstr, param_str):
+    """
+    Search `docstr` for a type of `param_str`.
+
+    >>> search_param_in_docstr(':type param: int', 'param')
+    'int'
+    >>> search_param_in_docstr('@type param: int', 'param')
+    'int'
+    >>> search_param_in_docstr(
+    ...   ':type param: :class:`threading.Thread`', 'param')
+    'threading.Thread'
+    >>> search_param_in_docstr('no document', 'param') is None
+    True
+
+    """
     # look at #40 to see definitions of those params
     patterns = [ re.compile(p % re.escape(param_str)) for p in DOCSTRING_PARAM_PATTERNS ]
     for pattern in patterns:
         match = pattern.search(docstr)
         if match:
-            return match.group(1)
+            type_str = match.group(1)
+            if type_str.startswith(':class:'):
+                type_str = type_str[len(':class:'):].strip('`')
+            return type_str
 
     return None
 
