@@ -34,7 +34,6 @@ def follow_param(param):
 
         p = parsing.PyFuzzyParser(param_str, None, user_position,
                                   no_docstr=True)
-        p.user_stmt.parent = func
         return evaluate.follow_statement(p.user_stmt)
     return []
 
