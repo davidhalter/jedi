@@ -1,10 +1,12 @@
 """ Test docstrings in functions and classes, which are used to infer types """
 
-def f(a, b):
+def f(a, b, c, d):
     """ asdfasdf
     :param a: blablabla
     :type a: str
     :type b: (str, int)
+    :type c: threading.Thread
+    :type d: :class:`threading.Thread`
     :rtype: dict
     """
     #? str()
@@ -13,6 +15,10 @@ def f(a, b):
     b[0]
     #? int()
     b[1]
+    #? ['join']
+    c.join
+    #? ['join']
+    d.join
 
 #? dict()
 f()
