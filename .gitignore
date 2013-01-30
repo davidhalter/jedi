@@ -2,6 +2,7 @@
 *.swp
 *.swo
 .ropeproject
+.tox
 *.pyc
 /build/
 /docs/_build/
