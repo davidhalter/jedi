@@ -20,9 +20,20 @@ def follow_param(param):
     func = param.parent_function
     #print func, param, param.parent_function
     param_str = search_param_in_docstr(func.docstr, str(param.get_name()))
+    user_position = (1, 0)
 
     if param_str is not None:
-        p = parsing.PyFuzzyParser(param_str, None, (1, 0), no_docstr=True)
+
+        # Try to import module part in dotted name.
+        # (e.g., 'threading' in 'threading.Thread').
+        if '.' in param_str:
+            param_str = 'import {0}\n{1}'.format(
+                param_str.rsplit('.', 1)[0],
+                param_str)
+            user_position = (2, 0)
+
+        p = parsing.PyFuzzyParser(param_str, None, user_position,
+                                  no_docstr=True)
         p.user_stmt.parent = func
         return evaluate.follow_statement(p.user_stmt)
     return []
