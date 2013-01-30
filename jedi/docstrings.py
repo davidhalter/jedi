@@ -46,6 +46,9 @@ def search_param_in_docstr(docstr, param_str):
     'int'
     >>> search_param_in_docstr('@type param: int', 'param')
     'int'
+    >>> search_param_in_docstr(
+    ...   ':type param: :class:`threading.Thread`', 'param')
+    'threading.Thread'
     >>> search_param_in_docstr('no document', 'param') is None
     True
 
