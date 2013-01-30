@@ -27,7 +27,7 @@ def follow_param(param):
         # Try to import module part in dotted name.
         # (e.g., 'threading' in 'threading.Thread').
         if '.' in param_str:
-            param_str = 'import {0}\n{1}'.format(
+            param_str = 'import %s\n%s' % (
                 param_str.rsplit('.', 1)[0],
                 param_str)
             user_position = (2, 0)
