@@ -15,6 +15,8 @@ DOCSTRING_RETURN_PATTERNS = [
         re.compile(r'\s*@rtype:\s*([^\n]+)', re.M), # Epidoc
 ]
 
+REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
+
 #@cache.memoize_default()  # TODO add
 def follow_param(param):
     func = param.parent_function
@@ -58,12 +60,31 @@ def search_param_in_docstr(docstr, param_str):
     for pattern in patterns:
         match = pattern.search(docstr)
         if match:
-            type_str = match.group(1)
-            if type_str.startswith(':class:'):
-                type_str = type_str[len(':class:'):].strip('`')
-            return type_str
+            return strip_rest_role(match.group(1))
 
     return None
+
+
+def strip_rest_role(type_str):
+    """
+    Strip off the part looks like a ReST role in `type_str`.
+
+    >>> strip_rest_role(':class:`ClassName`')  # strip off :class:
+    'ClassName'
+    >>> strip_rest_role(':py:obj:`module.Object`')  # works with domain
+    'module.Object'
+    >>> strip_rest_role('ClassName')  # do nothing when not ReST role
+    'ClassName'
+
+    See also:
+    http://sphinx-doc.org/domains.html#cross-referencing-python-objects
+
+    """
+    match = REST_ROLE_PATTERN.match(type_str)
+    if match:
+        return match.group(1)
+    else:
+        return type_str
 
 
 def find_return_types(func):
