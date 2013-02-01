@@ -15,28 +15,76 @@ DOCSTRING_RETURN_PATTERNS = [
         re.compile(r'\s*@rtype:\s*([^\n]+)', re.M), # Epidoc
 ]
 
+REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
+
 #@cache.memoize_default()  # TODO add
 def follow_param(param):
     func = param.parent_function
     #print func, param, param.parent_function
     param_str = search_param_in_docstr(func.docstr, str(param.get_name()))
+    user_position = (1, 0)
 
     if param_str is not None:
-        p = parsing.PyFuzzyParser(param_str, None, (1, 0), no_docstr=True)
-        p.user_stmt.parent = func
+
+        # Try to import module part in dotted name.
+        # (e.g., 'threading' in 'threading.Thread').
+        if '.' in param_str:
+            param_str = 'import %s\n%s' % (
+                param_str.rsplit('.', 1)[0],
+                param_str)
+            user_position = (2, 0)
+
+        p = parsing.PyFuzzyParser(param_str, None, user_position,
+                                  no_docstr=True)
         return evaluate.follow_statement(p.user_stmt)
     return []
 
 
 def search_param_in_docstr(docstr, param_str):
+    """
+    Search `docstr` for a type of `param_str`.
+
+    >>> search_param_in_docstr(':type param: int', 'param')
+    'int'
+    >>> search_param_in_docstr('@type param: int', 'param')
+    'int'
+    >>> search_param_in_docstr(
+    ...   ':type param: :class:`threading.Thread`', 'param')
+    'threading.Thread'
+    >>> search_param_in_docstr('no document', 'param') is None
+    True
+
+    """
     # look at #40 to see definitions of those params
     patterns = [ re.compile(p % re.escape(param_str)) for p in DOCSTRING_PARAM_PATTERNS ]
     for pattern in patterns:
         match = pattern.search(docstr)
         if match:
-            return match.group(1)
+            return strip_rest_role(match.group(1))
 
     return None
+
+
+def strip_rest_role(type_str):
+    """
+    Strip off the part looks like a ReST role in `type_str`.
+
+    >>> strip_rest_role(':class:`ClassName`')  # strip off :class:
+    'ClassName'
+    >>> strip_rest_role(':py:obj:`module.Object`')  # works with domain
+    'module.Object'
+    >>> strip_rest_role('ClassName')  # do nothing when not ReST role
+    'ClassName'
+
+    See also:
+    http://sphinx-doc.org/domains.html#cross-referencing-python-objects
+
+    """
+    match = REST_ROLE_PATTERN.match(type_str)
+    if match:
+        return match.group(1)
+    else:
+        return type_str
 
 
 def find_return_types(func):
