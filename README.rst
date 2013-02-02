@@ -6,13 +6,12 @@ Jedi - an awesome Python auto-completion
     :target: http://travis-ci.org/davidhalter/jedi
     :alt: Travis-CI build status
 
-Jedi is an autocompletion tool for Python. It works. With and without syntax
-errors. Sometimes it sucks, but that's normal in dynamic languages. But it
-sucks less than other tools. It understands almost all of the basic Python
-syntax elements including many builtins.
+Jedi is an autocompletion tool for Python that can be used in IDEs/editors.
+Jedi works. Jedi is fast. It understands all of the basic Python syntax
+elements including many builtin functions.
 
-Jedi suports two different goto functions and has support for renaming.
-Probably it will also have some support for refactoring in the future.
+Additionaly, Jedi suports two different goto functions and has support for
+renaming as well as Pydoc support and some other IDE features.
 
 Jedi uses a very simple interface to connect with IDE's. As an reference, there
 is a VIM implementation, which uses Jedi's autocompletion. However, I encourage
