@@ -297,6 +297,27 @@ class TestRegression(TestBase):
         assert c[0].word == 'IndentationError'
         self.assertEqual(c[0].complete, 'or')
 
+    def test_docstrings_type_str(self):
+        s = """
+                def func(arg):
+                    '''
+                    :type arg: str
+                    '''
+                    arg."""
+
+        words = [c.word for c in self.complete(s)]
+        assert 'join' in words
+
+    def test_docstrings_type_dotted_import(self):
+        s = """
+                def func(arg):
+                    '''
+                    :type arg: threading.Thread
+                    '''
+                    arg."""
+        words = [c.word for c in self.complete(s)]
+        assert 'start' in words
+
 
 class TestFeature(TestBase):
     def test_full_name(self):
