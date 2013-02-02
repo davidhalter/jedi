@@ -23,7 +23,7 @@ Jedi can be used with the following plugins/software:
 
 - `VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_
 - `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_
-- `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_ **Under construction**
+- `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_
 - `wdb (web debugger) <https://github.com/Kozea/wdb>`_
 
 Here are some pictures:
