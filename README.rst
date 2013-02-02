@@ -13,15 +13,15 @@ elements including many builtin functions.
 Additionaly, Jedi suports two different goto functions and has support for
 renaming as well as Pydoc support and some other IDE features.
 
-Jedi uses a very simple interface to connect with IDE's. As an reference, there
-is a VIM implementation, which uses Jedi's autocompletion. However, I encourage
-you to use Jedi in your IDEs. Start writing plugins! If there are problems with
-licensing, just contact me.
+Jedi uses a very simple API to connect with IDE's. There's a reference
+implementation as a `VIM-Plugin Implementation
+<http://github.com/davidhalter/jedi-vim>`_, which uses Jedi's autocompletion.
+I encourage you to use Jedi in your IDEs. I'ts really easy. If there are any
+problems (also with licensing), just contact me.
 
-At the moment Jedi can be used as a 
-`VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_. So, if you want to test
-Jedi for now, you'll have to use VIM. But there are new plugins emerging:
+Jedi can be used with the following plugins/software:
 
+- `VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_
 - `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_
 - `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_ **Under construction**
 - `wdb (web debugger) <https://github.com/Kozea/wdb>`_
