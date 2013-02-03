@@ -1,9 +1,25 @@
 """
-Jedi is an autocompletion library for Python. It also offers additional
-services such as ``goto``, ``pydoc support`` and ``renaming`` as well as other
-IDE helpers.
+Jedi is an autocompletion tool for Python that can be used in IDEs/editors.
+Jedi works. Jedi is fast. It understands all of the basic Python syntax
+elements including many builtin functions.
 
-To give you a simple example how you can use the jedi library, here is an
+Additionaly, Jedi suports two different goto functions and has support for
+renaming as well as Pydoc support and some other IDE features.
+
+Jedi uses a very simple API to connect with IDE's. There's a reference
+implementation as a `VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_,
+which uses Jedi's autocompletion.  I encourage you to use Jedi in your IDEs.
+It's really easy. If there are any problems (also with licensing), just contact
+me.
+
+Jedi can be used with the following plugins/software:
+
+- `VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_
+- `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_
+- `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_
+- `wdb (web debugger) <https://github.com/Kozea/wdb>`_
+
+To give you a simple example how you can use the Jedi library, here is an
 example for the autocompletion feature:
 
 >>> import jedi
