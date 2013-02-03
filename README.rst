@@ -19,13 +19,6 @@ which uses Jedi's autocompletion.  I encourage you to use Jedi in your IDEs.
 It's really easy. If there are any problems (also with licensing), just contact
 me.
 
-Jedi can be used with the following plugins/software:
-
-- `VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_
-- `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_
-- `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_
-- `wdb (web debugger) <https://github.com/Kozea/wdb>`_
-
 Here are some pictures:
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_complete.png
