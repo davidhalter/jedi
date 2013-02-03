@@ -1,7 +1,7 @@
 """
 Jedi is an autocompletion library for Python. It also offers additional
-services such as goto / get_definition / pydoc support / get_in_function_call /
-related names.
+services such as ``goto``, ``pydoc support`` and ``renaming`` as well as other
+IDE helpers.
 
 To give you a simple example how you can use the jedi library, here is an
 example for the autocompletion feature:
