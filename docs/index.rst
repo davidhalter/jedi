@@ -23,6 +23,7 @@ Docs
    docs/installation
    docs/features
    docs/plugin-api
+   docs/history
 
 
 .. _resources:
