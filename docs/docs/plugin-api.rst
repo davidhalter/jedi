@@ -35,8 +35,6 @@ Settings Module
 ~~~~~~~~~~~~~~~
 
 .. automodule:: settings
-    :no-members:
-    :no-undoc-members:
 
 Examples
 --------

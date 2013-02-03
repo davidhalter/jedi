@@ -13,7 +13,7 @@ Jedi Development
 This page tries to address the fundamental demand for documentation of the
 |jedi| interals. Understanding a dynamic language is a complex task. Especially
 because type inference in Python can be a very recursive task. Therefore |jedi|
-couldn't get rid of complexity. We know that *simple is better than complex*,
+couldn't get rid of complexity. We know that **simple is better than complex**,
 but unfortunately it requires sometimes complex solutions to understand complex
 systems.
 
