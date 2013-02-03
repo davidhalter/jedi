@@ -1,7 +1,7 @@
 .. include global.rst
 
-Jedi
-====
+Jedi - an awesome autocompletion library for Python
+===================================================
 
 Release v\ |release|. (:doc:`Installation <docs/installation>`)
 
