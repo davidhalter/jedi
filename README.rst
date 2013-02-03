@@ -64,7 +64,8 @@ corresponding documentation.
 Feature Support and Caveats
 ===========================
 
-See https://jedi.readthedocs.org/en/latest/docs/features.html
+Jedi really understands your Python code, for a comprehensive list what Jedi
+understands, see: https://jedi.readthedocs.org/en/latest/docs/features.html.
 
 
 A little history
