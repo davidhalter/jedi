@@ -1,6 +1,6 @@
-########################################
-Jedi - an awesome Python auto-completion
-########################################
+###################################################
+Jedi - an awesome autocompletion library for Python
+###################################################
 
 .. image:: https://secure.travis-ci.org/davidhalter/jedi.png?branch=master
     :target: http://travis-ci.org/davidhalter/jedi
