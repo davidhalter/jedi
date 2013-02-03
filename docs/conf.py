@@ -267,4 +267,5 @@ todo_include_todos = False
 # -- Options for autodoc module ------------------------------------------------
 
 autodoc_member_order = 'bysource'
-autodoc_default_flags = ['members', 'undoc-members']
+autodoc_default_flags = []
+#autodoc_default_flags = ['members', 'undoc-members']

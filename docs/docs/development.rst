@@ -40,7 +40,6 @@ Parser (parsing.py)
 ~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: parsing
-   :no-members:
 
 .. _dev-evaluate:
 
@@ -48,7 +47,6 @@ Evaluation of python code (evaluate.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: evaluate
-   :no-members:
 
 
 
@@ -59,19 +57,16 @@ Modules (modules.py)
 ~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: module
-   :no-members:
 
 Builtin Modules (builtin.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: builtin
-   :no-members:
 
 Imports (imports.py)
 ~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: imports
-   :no-members:
 
 
 
@@ -82,7 +77,6 @@ Caching (cache.py)
 ~~~~~~~~~~~~~~~~~~
 
 .. automodule:: cache
-   :no-members:
 
 Recursions (recursion.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,19 +93,16 @@ Docstrings (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: docstrings
-   :no-members:
 
 Dynamic Arrays & Function Parameters (dynamic.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: dynamic
-   :no-members:
 
 Refactoring (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: refactoring
-   :no-members:
 
 
 
@@ -127,4 +118,3 @@ Python 2/3 compatibility (_compatibility.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: _compatibility
-   :no-members:

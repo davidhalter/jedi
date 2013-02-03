@@ -19,12 +19,17 @@ API Interface
 ~~~~~~~~~~~~~
 
 .. automodule:: api
+    :members:
+    :undoc-members:
+
 
 
 API Return Classes
 ~~~~~~~~~~~~~~~~~~
 
 .. automodule:: api_classes
+    :members:
+    :undoc-members:
 
 Settings Module
 ~~~~~~~~~~~~~~~
