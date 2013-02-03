@@ -49,8 +49,7 @@ Docs are available at `https://jedi.readthedocs.org/
 <https://jedi.readthedocs.org/>`_. Pull requests with documentation enhancements
 and/or fixes are awesome and most welcome.
 
-Jedi uses `semantic versioning <http://semver.org/>`_ starting with version
-0.6.0.
+Jedi uses `semantic versioning <http://semver.org/>`_.
 
 Installation
 ============
