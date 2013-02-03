@@ -1,37 +1,46 @@
 .. include:: ../global.rst
 
 Jedi Development
-==============
+================
 
 .. currentmodule:: jedi
 
 .. note:: This documentation is for Jedi developers, who want to improve Jedi
     itself, but have just no idea how Jedi works. If you want to use Jedi for 
-    your IDE, look at the `plugin api <plugin-api`.
+    your IDE, look at the `plugin api <plugin-api>`.
+
 
 
 Core
 ----
 
+The core of Jedi consists of three parts:
+
+- `API <dev-api>`
+- `Parser <dev-parser>`
+- `Python code evaluation <dev-evaluate>`
+
+.. _dev-api:
+
 API (api.py and api_classes.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Api
+API
 
-Parsing of python code (parsing.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _dev-parsing:
+
+Parser (parsing.py)
+~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: parsing
+
+.. _dev-evaluate:
 
 Evaluation of python code (evaluate.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: evaluate
 
-Caching (cache.py)
-~~~~~~~~~~~~~~~~~~
-
-.. automodule:: cache
 
 
 Imports and Modules
@@ -53,6 +62,23 @@ Imports (imports.py)
 .. automodule:: imports
 
 
+
+Caching and Recursions
+----------------------
+
+Caching (cache.py)
+~~~~~~~~~~~~~~~~~~
+
+.. automodule:: cache
+
+Recursions (recursion.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TODO need to refactor the recursion stuff out of helpers.py
+#.. automodule:: recursion
+
+
+
 Extensions
 ----------
 
@@ -70,6 +96,7 @@ Refactoring (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: refactoring
+
 
 
 Helpers Modules
