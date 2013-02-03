@@ -10,6 +10,9 @@ Jedi Development
     your IDE, look at the `plugin api <plugin-api.html>`_.
 
 
+Introduction
+------------
+
 This page tries to address the fundamental demand for documentation of the
 |jedi| interals. Understanding a dynamic language is a complex task. Especially
 because type inference in Python can be a very recursive task. Therefore |jedi|
@@ -18,8 +21,19 @@ but unfortunately it requires sometimes complex solutions to understand complex
 systems.
 
 
-Core
-----
+In five chapters we're trying to describe the internals of |jedi|:
+
+- :ref:`The Jedi Core <dev-core>`
+- :ref:`Imports & Modules <dev-imports-modules>`
+- :ref:`Caching & Recursions <dev-caching-recursions>`
+- :ref:`Extensions <dev-extensions>`
+- :ref:`Helper modules <dev-helpers>`
+
+
+.. _dev-core:
+
+The Jedi Core
+-------------
 
 The core of Jedi consists of three parts:
 
@@ -50,7 +64,9 @@ Evaluation of python code (evaluate.py)
 
 
 
-Imports and Modules
+.. _dev-imports-modules:
+
+Imports & Modules
 -------------------
 
 Modules (modules.py)
@@ -70,7 +86,9 @@ Imports (imports.py)
 
 
 
-Caching and Recursions
+.. _dev-caching-recursions:
+
+Caching & Recursions
 ----------------------
 
 Caching (cache.py)
@@ -85,6 +103,8 @@ TODO need to refactor the recursion stuff out of helpers.py
 #.. automodule:: recursion
 
 
+
+.. _dev-extensions:
 
 Extensions
 ----------
@@ -105,8 +125,9 @@ Refactoring (docstrings.py)
 .. automodule:: refactoring
 
 
+.. _dev-helpers:
 
-Helpers Modules
+Helper Modules
 ---------------
 
 There are some helper modules: `common.py`, `helpers.py`, `debug.py`,
