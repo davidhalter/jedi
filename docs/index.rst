@@ -24,6 +24,7 @@ Docs
    docs/features
    docs/plugin-api
    docs/history
+   docs/development
 
 
 .. _resources:
