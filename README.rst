@@ -16,7 +16,7 @@ renaming as well as Pydoc support and some other IDE features.
 Jedi uses a very simple API to connect with IDE's. There's a reference
 implementation as a `VIM-Plugin <http://github.com/davidhalter/jedi-vim>`_,
 which uses Jedi's autocompletion.  I encourage you to use Jedi in your IDEs.
-I'ts really easy. If there are any problems (also with licensing), just contact
+It's really easy. If there are any problems (also with licensing), just contact
 me.
 
 Jedi can be used with the following plugins/software:
