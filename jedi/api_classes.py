@@ -42,6 +42,7 @@ class BaseDefinition(object):
                'macpath': 'os.path',
                'genericpath': 'os.path',
                '_io': 'io',
+               '_functools': 'functools',
                '__builtin__': '',
                'builtins': '',
                }
