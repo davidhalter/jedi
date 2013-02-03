@@ -7,7 +7,7 @@ Jedi Development
 
 .. note:: This documentation is for Jedi developers, who want to improve Jedi
     itself, but have just no idea how Jedi works. If you want to use Jedi for 
-    your IDE, look at the `plugin api <plugin-api>`.
+    your IDE, look at the `plugin api <plugin-api.html>`_.
 
 
 
@@ -16,9 +16,9 @@ Core
 
 The core of Jedi consists of three parts:
 
-- `API <dev-api>`
-- `Parser <dev-parser>`
-- `Python code evaluation <dev-evaluate>`
+- :ref:`API <dev-api>`
+- :ref:`Parser <dev-parser>`
+- :ref:`Python code evaluation <dev-evaluate>`
 
 .. _dev-api:
 
@@ -33,6 +33,7 @@ Parser (parsing.py)
 ~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: parsing
+   :no-members:
 
 .. _dev-evaluate:
 
@@ -40,6 +41,7 @@ Evaluation of python code (evaluate.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: evaluate
+   :no-members:
 
 
 
@@ -50,16 +52,19 @@ Modules (modules.py)
 ~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: module
+   :no-members:
 
 Builtin Modules (builtin.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: builtin
+   :no-members:
 
 Imports (imports.py)
 ~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: imports
+   :no-members:
 
 
 
@@ -70,6 +75,7 @@ Caching (cache.py)
 ~~~~~~~~~~~~~~~~~~
 
 .. automodule:: cache
+   :no-members:
 
 Recursions (recursion.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,16 +92,19 @@ Docstrings (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: docstrings
+   :no-members:
 
 Dynamic Arrays & Function Parameters (dynamic.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: dynamic
+   :no-members:
 
 Refactoring (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: refactoring
+   :no-members:
 
 
 
@@ -111,3 +120,4 @@ Python 2/3 compatibility (_compatibility.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: _compatibility
+   :no-members:
