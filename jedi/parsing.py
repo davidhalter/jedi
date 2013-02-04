@@ -1317,7 +1317,7 @@ class Parser(object):
             else:
                 self.user_stmt = simple
 
-    def _parsedotname(self, pre_used_token=None):
+    def _parse_dot_name(self, pre_used_token=None):
         """
         The dot name parser parses a name, variable or function and returns
         their names.
@@ -1356,7 +1356,7 @@ class Parser(object):
                                                                 else None
         return n, token_type, tok
 
-    def _parseimportlist(self):
+    def _parse_import_list(self):
         """
         The parser for the imports. Unlike the class and function parse
         function, this returns no Import class, but rather an import list,
@@ -1386,12 +1386,12 @@ class Parser(object):
             if tok == '(':  # python allows only one `(` in the statement.
                 brackets = True
                 self.next()
-            i, token_type, tok = self._parsedotname(self.current)
+            i, token_type, tok = self._parse_dot_name(self.current)
             if not i:
                 defunct = True
             name2 = None
             if tok == 'as':
-                name2, token_type, tok = self._parsedotname()
+                name2, token_type, tok = self._parse_dot_name()
             imports.append((i, name2, defunct))
             while tok not in continue_kw:
                 token_type, tok = self.next()
@@ -1399,7 +1399,7 @@ class Parser(object):
                 break
         return imports
 
-    def _parseparen(self):
+    def _parse_parentheses(self):
         """
         Functions and Classes have params (which means for classes
         super-classes). They are parsed here and returned as Statements.
@@ -1428,7 +1428,7 @@ class Parser(object):
 
         return names
 
-    def _parsefunction(self):
+    def _parse_function(self):
         """
         The parser for a text functions. Process the tokens, which follow a
         function definition.
@@ -1447,7 +1447,7 @@ class Parser(object):
         token_type, open = self.next()
         if open != '(':
             return None
-        params = self._parseparen()
+        params = self._parse_parentheses()
 
         token_type, colon = self.next()
         annotation = None
@@ -1470,7 +1470,7 @@ class Parser(object):
             self.user_scope = scope
         return scope
 
-    def _parseclass(self):
+    def _parse_class(self):
         """
         The parser for a text class. Process the tokens, which follow a
         class definition.
@@ -1491,7 +1491,7 @@ class Parser(object):
         super = []
         token_type, next = self.next()
         if next == '(':
-            super = self._parseparen()
+            super = self._parse_parentheses()
             token_type, next = self.next()
 
         if next != ':':
@@ -1564,7 +1564,7 @@ class Parser(object):
                     string += " %s " % tok
                     token_type, tok = self.next()
                     if token_type == tokenize.NAME:
-                        n, token_type, tok = self._parsedotname(self.current)
+                        n, token_type, tok = self._parse_dot_name(self.current)
                         if n:
                             set_vars.append(n)
                         tok_list.append(n)
@@ -1650,7 +1650,7 @@ class Parser(object):
                         string += tok.get_code()
                         continue
                     else:
-                        n, token_type, tok = self._parsedotname(self.current)
+                        n, token_type, tok = self._parse_dot_name(self.current)
                         # removed last entry, because we add Name
                         tok_list.pop()
                         if n:
@@ -1774,7 +1774,7 @@ class Parser(object):
                                             SubModule) else self.scope
             first_pos = self.start_pos
             if tok == 'def':
-                func = self._parsefunction()
+                func = self._parse_function()
                 if func is None:
                     debug.warning("function: syntax error@%s" %
                                                         self.start_pos[0])
@@ -1783,7 +1783,7 @@ class Parser(object):
                 self.scope = self.scope.add_scope(func, self._decorators)
                 self._decorators = []
             elif tok == 'class':
-                cls = self._parseclass()
+                cls = self._parse_class()
                 if cls is None:
                     debug.warning("class: syntax error@%s" % self.start_pos[0])
                     continue
@@ -1792,7 +1792,7 @@ class Parser(object):
                 self._decorators = []
             # import stuff
             elif tok == 'import':
-                imports = self._parseimportlist()
+                imports = self._parse_import_list()
                 for m, alias, defunct in imports:
                     i = Import(self.module, first_pos, self.end_pos, m, alias,
                                                         defunct=defunct)
@@ -1813,7 +1813,7 @@ class Parser(object):
                         break
                     relative_count += 1
                 # the from import
-                mod, token_type, tok = self._parsedotname(self.current)
+                mod, token_type, tok = self._parse_dot_name(self.current)
                 if str(mod) == 'import' and relative_count:
                     self._gen.push_last_back()
                     tok = 'import'
@@ -1823,7 +1823,7 @@ class Parser(object):
                     defunct = True
                     if tok != 'import':
                         self._gen.push_last_back()
-                names = self._parseimportlist()
+                names = self._parse_import_list()
                 for name, alias, defunct2 in names:
                     star = name is not None and name.names[0] == '*'
                     if star:
@@ -1871,7 +1871,7 @@ class Parser(object):
                     if command == 'except' and tok in added_breaks:
                         # the except statement defines a var
                         # this is only true for python 2
-                        n, token_type, tok = self._parsedotname()
+                        n, token_type, tok = self._parse_dot_name()
                         if n:
                             statement.set_vars.append(n)
                             statement.code += ',' + n.get_code()
