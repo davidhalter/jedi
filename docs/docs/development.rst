@@ -68,11 +68,11 @@ Evaluation of python code (evaluate.py)
 API (api.py and api_classes.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The API has been designed to be as usable as possible. The documentation can be
-found `here <plugin-api.html>`_. The API itself contains little code that needs
-to be mentioned here. Generally I'm trying to be conservative with the API.
-I'd rather not add new API features if they are not necessary, because it's
-much harder to deprecate stuff than to add it later.
+The API has been designed to be as usable as possible. The API documentation
+can be found `here <plugin-api.html>`_. The API itself contains little code
+that needs to be mentioned here. Generally I'm trying to be conservative with
+the API.  I'd rather not add new API features if they are not necessary,
+because it's much harder to deprecate stuff than to add it later.
 
 
 
