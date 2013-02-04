@@ -45,9 +45,9 @@ The core of Jedi consists of three parts:
 - :ref:`Python code evaluation <evaluate>`
 - :ref:`API <dev-api>`
 
-Most people are probably interested in `code evaluation <evaluate>`, because
-that's where all the magic happens. I need to introduce the ref:`parser
-<parsing>` first, because evaluate uses it extensively.
+Most people are probably interested in :ref:`code evaluation <evaluate>`,
+because that's where all the magic happens. I need to introduce the
+:ref:`parser <parsing>` first, because evaluate uses it extensively.
 
 .. _parsing:
 
