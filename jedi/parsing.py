@@ -1,24 +1,41 @@
 """
-py_fuzzyparser parses python code, with the goal of a good representation of
+This module is split in two parts:
+
+- the Python parser itself
+- classes for the parser to save the information
+
+The parser tries to represent the available Python code in an easy to read
+format. The Python module ``tokenize`` is a very important part in the parser,
+because it splits the code into different words.
+
+The classes are not very hard to understand. They are being named like you
+would call them.
+
+A very central class is ``Scope``. It is not used direcdtly by the parser, but
+inherited. It's used by ``Function``, ``Class``, ``Flow``, etc. A ``Scope`` may
+have ``subscopes``, ``imports`` and ``statements``. The entire parser is based
+on scopes, because they also stand for indentation.
+
+
+
+In my opinion there's only one strange thing about the parser:
+
+- The Array class is two dimensional. This is mainly strange because
+
+speed optimization array/call
+
+
+
+parses python code, with the goal of a good representation of
 the code within a tree structure. Variables, Classes and Functions are defined
 within this tree structure, containing their exact locations in the code.
 It is also a primary goal to work with code which contains syntax errors.
 
 This behaviour may be used to refactor, modify, search and complete code.
 
-To understand this code it is extremely important to understand the behaviour
-of the python module 'tokenize'.
-
-This original codebase of this parser, which has been refactored and heavily
-changed, was programmed by Aaron Griffin <aaronmgriffin@gmail.com>.
 
 **The structure of the following script:**
 
-A Scope has:
-
-- imports (Import)
-- subscopes (Scope, Class, Function, Flow)
-- statements (Statement)
 
 All these objects have ``Name``. ``Call`` and ``Array`` are used as detail
 objects of a statement.
