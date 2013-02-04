@@ -1,6 +1,22 @@
 """
-This is the core part of jedi. Most of the logic, how to evaluate certain
-objects (imports, etc.) is here.
+.. warning:: I know this module is very messy. It's hard to write proper code
+        if so much of your work relies on try & error. Sometimes it's just not
+        possible for a small mind like mine to understand the problem, because
+        it happens after a 50 function calls deep recursion. I know refactoring
+        is necessary, but it's not that easy to find that time.
+
+Evaluation of Python code in |jedi| is based on three assumptions:
+
+* Code is recursive (to weaken this assumption, the :mod:`dynamic` module
+  exists).
+* No magic is being used:
+
+  - metaclasses
+  - ``setattr()`` / ``__import__()``
+  - writing to ``globals()``, ``locals()``, ``object.__dict__``
+* The programmer is not a total dick, e.g. like `this
+  <https://github.com/davidhalter/jedi/issues/24>`_ :-)
+
 
 The functions should be described in their docstrings. However, there are some
 classes, which are used to store the values. After those classes, there are the
