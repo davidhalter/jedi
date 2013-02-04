@@ -23,14 +23,14 @@ systems.
 
 In five chapters we're trying to describe the internals of |jedi|:
 
-- :ref:`The Jedi Core <dev-core>`
-- :ref:`Core Extensions <dev-extensions>`
-- :ref:`Imports & Modules <dev-imports-modules>`
-- :ref:`Caching & Recursions <dev-caching-recursions>`
+- :ref:`The Jedi Core <core>`
+- :ref:`Core Extensions <core-extensions>`
+- :ref:`Imports & Modules <imports-modules>`
+- :ref:`Caching & Recursions <caching-recursions>`
 - :ref:`Helper modules <dev-helpers>`
 
 
-.. _dev-core:
+.. _core:
 
 The Jedi Core
 -------------
@@ -38,8 +38,8 @@ The Jedi Core
 The core of Jedi consists of three parts:
 
 - :ref:`API <dev-api>`
-- :ref:`Parser <dev-parser>`
-- :ref:`Python code evaluation <dev-evaluate>`
+- :ref:`Parser <parsing>`
+- :ref:`Python code evaluation <evaluate>`
 
 .. _dev-api:
 
@@ -48,14 +48,14 @@ API (api.py and api_classes.py)
 
 API
 
-.. _dev-parsing:
+.. _parsing:
 
 Parser (parsing.py)
 ~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: parsing
 
-.. _dev-evaluate:
+.. _evaluate:
 
 Evaluation of python code (evaluate.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,16 +64,16 @@ Evaluation of python code (evaluate.py)
 
 
 
-.. _dev-extensions:
+.. _core-extensions:
 
 Core Extensions
 ---------------
 
 Core Extensions is a summary of the following topics:
 
-- :ref:`Dynamic Arrays & Function Parameters <dev-dynamic>`
-- :ref:`Docstrings <dev-docstrings>`
-- :ref:`Refactoring <dev-refactoring>`
+- :ref:`Dynamic Arrays & Function Parameters <dynamic>`
+- :ref:`Docstrings <docstrings>`
+- :ref:`Refactoring <refactoring>`
 
 These topics are very important to understand what Jedi additionally does, but
 they could be removed from Jedi and Jedi would still work. But logically
@@ -81,21 +81,21 @@ without refactoring support, docstrings and the understanding of the dynamic
 nature of Python.
 
 
-.. _dev-dynamic:
+.. _dynamic:
 
 Dynamic Arrays & Function Parameters (dynamic.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: dynamic
 
-.. _dev-docstrings:
+.. _docstrings:
 
 Docstrings (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: docstrings
 
-.. _dev-refactoring:
+.. _refactoring:
 
 Refactoring (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,33 +103,32 @@ Refactoring (docstrings.py)
 .. automodule:: refactoring
 
 
-.. _dev-imports-modules:
 
-
+.. _imports-modules:
 
 Imports & Modules
 -------------------
 
 
-- :ref:`Modules <dev-modules>`
-- :ref:`Builtin Modules <dev-builtin>`
-- :ref:`Imports <dev-imports>`
+- :ref:`Modules <modules>`
+- :ref:`Builtin Modules <builtin>`
+- :ref:`Imports <imports>`
 
-.. _dev-modules:
+.. _modules:
 
 Modules (modules.py)
 ~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: modules
 
-.. _dev-builtin:
+.. _builtin:
 
 Builtin Modules (builtin.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: builtin
 
-.. _dev-imports:
+.. _imports:
 
 Imports (imports.py)
 ~~~~~~~~~~~~~~~~~~~~
@@ -138,20 +137,23 @@ Imports (imports.py)
 
 
 
-.. _dev-caching-recursions:
+.. _caching-recursions:
 
 Caching & Recursions
 ----------------------
 
 
-- :ref:`Caching <dev-modules>`
-- :ref:`Recursions Modules <dev-builtin>`
+- :ref:`Caching <cache>`
+- :ref:`Recursions Modules <recursion>`
 
+.. _cache:
 
 Caching (cache.py)
 ~~~~~~~~~~~~~~~~~~
 
 .. automodule:: cache
+
+.. _recursion:
 
 Recursions (recursion.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
