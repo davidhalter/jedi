@@ -41,6 +41,7 @@ class BaseDefinition(object):
                'os2emxpath': 'os.path',
                'macpath': 'os.path',
                'genericpath': 'os.path',
+               'posix': 'os',
                '_io': 'io',
                '_functools': 'functools',
                '__builtin__': '',
