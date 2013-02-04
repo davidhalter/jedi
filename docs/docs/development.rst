@@ -24,9 +24,9 @@ systems.
 In five chapters we're trying to describe the internals of |jedi|:
 
 - :ref:`The Jedi Core <dev-core>`
+- :ref:`Core Extensions <dev-extensions>`
 - :ref:`Imports & Modules <dev-imports-modules>`
 - :ref:`Caching & Recursions <dev-caching-recursions>`
-- :ref:`Extensions <dev-extensions>`
 - :ref:`Helper modules <dev-helpers>`
 
 
@@ -64,7 +64,30 @@ Evaluation of python code (evaluate.py)
 
 
 
+.. _dev-extensions:
+
+Core Extensions
+---------------
+
+Docstrings (docstrings.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: docstrings
+
+Dynamic Arrays & Function Parameters (dynamic.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: dynamic
+
+Refactoring (docstrings.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: refactoring
+
+
 .. _dev-imports-modules:
+
+
 
 Imports & Modules
 -------------------
@@ -102,27 +125,6 @@ Recursions (recursion.py)
 TODO need to refactor the recursion stuff out of helpers.py
 #.. automodule:: recursion
 
-
-
-.. _dev-extensions:
-
-Extensions
-----------
-
-Docstrings (docstrings.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: docstrings
-
-Dynamic Arrays & Function Parameters (dynamic.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: dynamic
-
-Refactoring (docstrings.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: refactoring
 
 
 .. _dev-helpers:
