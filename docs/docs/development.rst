@@ -16,12 +16,16 @@ Introduction
 This page tries to address the fundamental demand for documentation of the
 |jedi| interals. Understanding a dynamic language is a complex task. Especially
 because type inference in Python can be a very recursive task. Therefore |jedi|
-couldn't get rid of complexity. We know that **simple is better than complex**,
+couldn't get rid of complexity. I know that **simple is better than complex**,
 but unfortunately it requires sometimes complex solutions to understand complex
 systems.
 
+Since most of the Jedi internals have been written by me (David Halter), this
+introduction will be written mostly by me, because no one else understands how
+Jedi works. Actually this is also the reason for exactly this part of the
+documentation. To make multiple people able to edit the Jedi core.
 
-In five chapters we're trying to describe the internals of |jedi|:
+In five chapters I'm trying to describe the internals of |jedi|:
 
 - :ref:`The Jedi Core <core>`
 - :ref:`Core Extensions <core-extensions>`
@@ -41,12 +45,20 @@ The core of Jedi consists of three parts:
 - :ref:`Parser <parsing>`
 - :ref:`Python code evaluation <evaluate>`
 
+Most people are probably interested in `code evaluation <evaluate>`, because
+that's where all the magic happens. I need to introduce the ref:`parser
+<parsing>` first, because evaluate uses it extensively.
+
 .. _dev-api:
 
 API (api.py and api_classes.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-API
+The API has been designed to be as usable as possible. The documentation can be
+found `here <plugin-api.html>`_. The API itself contains little code that needs
+to be mentioned here. Generally I'm trying to be conservative with the API.
+I'd rather not add new API features if they are not necessary, because it's
+much harder to deprecate stuff than to add it later.
 
 .. _parsing:
 
