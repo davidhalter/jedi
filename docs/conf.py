@@ -143,10 +143,10 @@ html_sidebars = {
     '**': [
 #        'sidebarlogo.html',
         'localtoc.html',
-        'relations.html',
+#        'relations.html',
         'ghbuttons.html',
-        'sourcelink.html',
-        'searchbox.html'
+#        'sourcelink.html',
+#        'searchbox.html'
     ]
 }
 
