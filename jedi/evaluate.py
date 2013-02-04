@@ -8,7 +8,7 @@ search functions `get_names_for_scope` and `get_scopes_for_name`. At the end
 there are the `follow_` functions, which evaluate a statement, or parts of a
 statement.
 
-TODO nonlocal statement, needed or can be ignored? (py3k)
+.. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
 from _compatibility import next, property, hasattr, is_py3k, use_metaclass, \
                             unicode
