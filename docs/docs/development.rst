@@ -41,24 +41,13 @@ The Jedi Core
 
 The core of Jedi consists of three parts:
 
-- :ref:`API <dev-api>`
 - :ref:`Parser <parsing>`
 - :ref:`Python code evaluation <evaluate>`
+- :ref:`API <dev-api>`
 
 Most people are probably interested in `code evaluation <evaluate>`, because
 that's where all the magic happens. I need to introduce the ref:`parser
 <parsing>` first, because evaluate uses it extensively.
-
-.. _dev-api:
-
-API (api.py and api_classes.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The API has been designed to be as usable as possible. The documentation can be
-found `here <plugin-api.html>`_. The API itself contains little code that needs
-to be mentioned here. Generally I'm trying to be conservative with the API.
-I'd rather not add new API features if they are not necessary, because it's
-much harder to deprecate stuff than to add it later.
 
 .. _parsing:
 
@@ -73,6 +62,17 @@ Evaluation of python code (evaluate.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: evaluate
+
+.. _dev-api:
+
+API (api.py and api_classes.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The API has been designed to be as usable as possible. The documentation can be
+found `here <plugin-api.html>`_. The API itself contains little code that needs
+to be mentioned here. Generally I'm trying to be conservative with the API.
+I'd rather not add new API features if they are not necessary, because it's
+much harder to deprecate stuff than to add it later.
 
 
 
