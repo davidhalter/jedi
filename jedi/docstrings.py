@@ -34,7 +34,7 @@ def follow_param(param):
                 param_str)
             user_position = (2, 0)
 
-        p = parsing.PyFuzzyParser(param_str, None, user_position,
+        p = parsing.Parser(param_str, None, user_position,
                                   no_docstr=True)
         return evaluate.follow_statement(p.user_stmt)
     return []
@@ -98,7 +98,7 @@ def find_return_types(func):
     if not type_str:
         return []
 
-    p = parsing.PyFuzzyParser(type_str, None, (1, 0), no_docstr=True)
+    p = parsing.Parser(type_str, None, (1, 0), no_docstr=True)
     p.user_stmt.parent = func
     return list(evaluate.follow_statement(p.user_stmt))
 

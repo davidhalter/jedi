@@ -218,7 +218,7 @@ class ModuleWithCursor(Module):
         length = settings.part_line_length
         offset = max(self.position[0] - length, 0)
         s = '\n'.join(self.source.splitlines()[offset:offset + length])
-        self._part_parser = parsing.PyFuzzyParser(s, self.path, self.position,
+        self._part_parser = parsing.Parser(s, self.path, self.position,
                                                         line_offset=offset)
         return self._part_parser
 

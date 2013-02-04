@@ -1235,7 +1235,7 @@ class ListComprehension(object):
         return "%s for %s in %s" % tuple(code)
 
 
-class PyFuzzyParser(object):
+class Parser(object):
     """
     This class is used to parse a Python file, it then divides them into a
     class structure of different scopes.

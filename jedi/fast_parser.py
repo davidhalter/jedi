@@ -138,10 +138,10 @@ class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
     def __call__(self, source, module_path=None, user_position=None):
         if not settings.fast_parser:
-            return parsing.PyFuzzyParser(source, module_path, user_position)
+            return parsing.Parser(source, module_path, user_position)
 
         pi = cache.parser_cache.get(module_path, None)
-        if pi is None or isinstance(pi.parser, parsing.PyFuzzyParser):
+        if pi is None or isinstance(pi.parser, parsing.Parser):
             p = super(CachedFastParser, self).__call__(source, module_path,
                                                             user_position)
         else:
@@ -248,7 +248,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                             p.user_scope = self.scan_user_scope(m) \
                                             or self.module
                 else:
-                    p = parsing.PyFuzzyParser(code[start:],
+                    p = parsing.Parser(code[start:],
                                 self.module_path, self.user_position,
                                 line_offset=line_offset, stop_on_scope=True,
                                 top_module=self.module)

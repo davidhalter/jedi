@@ -205,8 +205,7 @@ class Parser(CachedModule):
 
 def _generate_code(scope, mixin_funcs={}, depth=0):
     """
-    Generate a string, which uses python syntax as an input to the
-    PyFuzzyParser.
+    Generate a string, which uses python syntax as an input to the Parser.
     """
     def get_doc(obj, indent=False):
         doc = inspect.getdoc(obj)
@@ -461,7 +460,7 @@ class Builtin(object):
             class Container(object):
                 FunctionType = types.FunctionType
             source = _generate_code(Container, depth=0)
-            parser = parsing.PyFuzzyParser(source, None)
+            parser = parsing.Parser(source, None)
             module = parser.module
             module.parent = self.scope
             typ = evaluate.follow_path(iter(['FunctionType']), module, module)
