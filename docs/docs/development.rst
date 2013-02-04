@@ -84,14 +84,13 @@ Core Extensions
 Core Extensions is a summary of the following topics:
 
 - :ref:`Dynamic Arrays & Function Parameters <dynamic>`
+- :ref:`Fast Parser <fast_parser>`
 - :ref:`Docstrings <docstrings>`
 - :ref:`Refactoring <refactoring>`
 
 These topics are very important to understand what Jedi additionally does, but
-they could be removed from Jedi and Jedi would still work. But logically
-without refactoring support, docstrings and the understanding of the dynamic
-nature of Python.
-
+they could be removed from Jedi and Jedi would still work. But slower and
+without some features.
 
 .. _dynamic:
 
@@ -99,6 +98,14 @@ Dynamic Arrays & Function Parameters (dynamic.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: dynamic
+
+
+.. _fast_parser:
+
+Fast Parser (fast_parser.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: fast_parser
 
 .. _docstrings:
 
