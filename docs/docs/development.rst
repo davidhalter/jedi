@@ -69,15 +69,33 @@ Evaluation of python code (evaluate.py)
 Core Extensions
 ---------------
 
-Docstrings (docstrings.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Core Extensions is a summary of the following topics:
 
-.. automodule:: docstrings
+- :ref:`Dynamic Arrays & Function Parameters <dev-dynamic>`
+- :ref:`Docstrings <dev-docstrings>`
+- :ref:`Refactoring <dev-refactoring>`
+
+These topics are very important to understand what Jedi additionally does, but
+they could be removed from Jedi and Jedi would still work. But logically
+without refactoring support, docstrings and the understanding of the dynamic
+nature of Python.
+
+
+.. _dev-dynamic:
 
 Dynamic Arrays & Function Parameters (dynamic.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: dynamic
+
+.. _dev-docstrings:
+
+Docstrings (docstrings.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: docstrings
+
+.. _dev-refactoring:
 
 Refactoring (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
