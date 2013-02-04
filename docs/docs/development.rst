@@ -110,15 +110,26 @@ Refactoring (docstrings.py)
 Imports & Modules
 -------------------
 
+
+- :ref:`Modules <dev-modules>`
+- :ref:`Builtin Modules <dev-builtin>`
+- :ref:`Imports <dev-imports>`
+
+.. _dev-modules:
+
 Modules (modules.py)
 ~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: modules
 
+.. _dev-builtin:
+
 Builtin Modules (builtin.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: builtin
+
+.. _dev-imports:
 
 Imports (imports.py)
 ~~~~~~~~~~~~~~~~~~~~
@@ -131,6 +142,11 @@ Imports (imports.py)
 
 Caching & Recursions
 ----------------------
+
+
+- :ref:`Caching <dev-modules>`
+- :ref:`Recursions Modules <dev-builtin>`
+
 
 Caching (cache.py)
 ~~~~~~~~~~~~~~~~~~
