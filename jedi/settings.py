@@ -26,7 +26,7 @@ Filesystem cache
 ~~~~~~~~~~~~~~~~
 
 .. autodata:: cache_directory
-.. autodata:: use_fs_cache
+.. autodata:: use_filesystem_cache
 
 
 Parser

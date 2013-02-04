@@ -72,7 +72,7 @@ Imports & Modules
 Modules (modules.py)
 ~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: module
+.. automodule:: modules
 
 Builtin Modules (builtin.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

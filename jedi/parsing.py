@@ -1,7 +1,4 @@
 """
-Maintainer: David Halter <davidhalter88@gmail.com>
-Version: 0.1
-
 py_fuzzyparser parses python code, with the goal of a good representation of
 the code within a tree structure. Variables, Classes and Functions are defined
 within this tree structure, containing their exact locations in the code.
@@ -17,9 +14,9 @@ changed, was programmed by Aaron Griffin <aaronmgriffin@gmail.com>.
 
 **The structure of the following script:**
 A Scope has
- - imports (Import)
- - subscopes (Scope, Class, Function, Flow)
- - statements (Statement)
+- imports (Import)
+- subscopes (Scope, Class, Function, Flow)
+- statements (Statement)
 
 All these objects have `Name`s. `Call` and `Array` are used as detail objects
 of a statement.
