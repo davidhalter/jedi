@@ -241,7 +241,7 @@ class ImportPath(pr.Base):
             sys_path_mod = list(self.sys_path_with_modifications())
             sys_path_mod.insert(0, self.file_path)
         else:
-            sys_path_mod = list(builtin.get_sys_path())
+            sys_path_mod = list(modules.get_sys_path())
 
         current_namespace = (None, None, None)
         # now execute those paths

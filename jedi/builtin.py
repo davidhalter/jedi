@@ -9,61 +9,14 @@ if is_py3k:
 import types
 import inspect
 
-import cache
 import common
 import debug
 import parsing
-import fast_parser
 import evaluate
+import modules
 
 
-def get_sys_path():
-    def check_virtual_env(sys_path):
-        """ Add virtualenv's site-packages to the `sys.path`."""
-        venv = os.getenv('VIRTUAL_ENV')
-        if not venv:
-            return
-        venv = os.path.abspath(venv)
-        p = os.path.join(
-            venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
-        sys_path.insert(0, p)
-
-    p = sys.path[1:]
-    check_virtual_env(p)
-    return p
-
-
-class CachedModule(object):
-    """
-    The base type for all modules, which is not to be confused with
-    `parsing_representation.Module`. Caching happens here.
-    """
-
-    def __init__(self, path=None, name=None):
-        self.path = path and os.path.abspath(path)
-        self.name = name
-        self._parser = None
-
-    @property
-    def parser(self):
-        """ get the parser lazy """
-        if self._parser is None:
-            self._parser = cache.load_module(self.path, self.name) \
-                                or self._load_module()
-        return self._parser
-
-    def _get_source(self):
-        raise NotImplementedError()
-
-    def _load_module(self):
-        source = self._get_source()
-        p = self.path or self.name
-        p = fast_parser.FastParser(source, p)
-        cache.save_module(self.path, self.name, p)
-        return p
-
-
-class Parser(CachedModule):
+class Parser(modules.CachedModule):
     """
     This module is a parser for all builtin modules, which are programmed in
     C/C++. It should also work on third party modules.
@@ -93,7 +46,7 @@ class Parser(CachedModule):
 
     def __init__(self, path=None, name=None, sys_path=None):
         if sys_path is None:
-            sys_path = get_sys_path()
+            sys_path = modules.get_sys_path()
         if not name:
             name = os.path.basename(path)
             name = name.rpartition('.')[0]  # cut file type (normally .so)

@@ -11,12 +11,41 @@ import cache
 import parsing
 import parsing_representation as pr
 import fast_parser
-import builtin
 import debug
 import settings
 
 
-class Module(builtin.CachedModule):
+class CachedModule(object):
+    """
+    The base type for all modules, which is not to be confused with
+    `parsing_representation.Module`. Caching happens here.
+    """
+
+    def __init__(self, path=None, name=None):
+        self.path = path and os.path.abspath(path)
+        self.name = name
+        self._parser = None
+
+    @property
+    def parser(self):
+        """ get the parser lazy """
+        if self._parser is None:
+            self._parser = cache.load_module(self.path, self.name) \
+                                or self._load_module()
+        return self._parser
+
+    def _get_source(self):
+        raise NotImplementedError()
+
+    def _load_module(self):
+        source = self._get_source()
+        p = self.path or self.name
+        p = fast_parser.FastParser(source, p)
+        cache.save_module(self.path, self.name, p)
+        return p
+
+
+class Module(CachedModule):
     """
     Manages all files, that are parsed and caches them.
 
@@ -224,6 +253,22 @@ class ModuleWithCursor(Module):
         return self._part_parser
 
 
+def get_sys_path():
+    def check_virtual_env(sys_path):
+        """ Add virtualenv's site-packages to the `sys.path`."""
+        venv = os.getenv('VIRTUAL_ENV')
+        if not venv:
+            return
+        venv = os.path.abspath(venv)
+        p = os.path.join(
+            venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
+        sys_path.insert(0, p)
+
+    p = sys.path[1:]
+    check_virtual_env(p)
+    return p
+
+
 @cache.memoize_default([])
 def sys_path_with_modifications(module):
     def execute_code(code):
@@ -247,9 +292,9 @@ def sys_path_with_modifications(module):
         try:
             possible_stmts = module.used_names['path']
         except KeyError:
-            return builtin.get_sys_path()
+            return get_sys_path()
 
-        sys_path = list(builtin.get_sys_path())  # copy
+        sys_path = list(get_sys_path())  # copy
         for p in possible_stmts:
             try:
                 call = p.get_assignment_calls().get_only_subelement()
