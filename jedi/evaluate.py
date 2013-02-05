@@ -17,12 +17,61 @@ Evaluation of Python code in |jedi| is based on three assumptions:
 * The programmer is not a total dick, e.g. like `this
   <https://github.com/davidhalter/jedi/issues/24>`_ :-)
 
+That said, there's mainly one entry point in this script: ``follow_statement``.
+This is where autocompletion starts. Everything you want to complete is either
+a ``parsing.Statement`` or some special name like ``class``, which is easy to
+complete.
 
-The functions should be described in their docstrings. However, there are some
-classes, which are used to store the values. After those classes, there are the
-search functions `get_names_for_scope` and `get_scopes_for_name`. At the end
-there are the `follow_` functions, which evaluate a statement, or parts of a
-statement.
+Therefore you need to understand what follows after ``follow_statement``. Let's
+make an example:
+
+>>> import datetime
+>>> datetime.date.toda# <-- cursor here
+
+First of it all, this module doesn't care about completion. It really just
+cares about ``datetime.date``. At the end of the procedure
+``follow_statement`` will return the ``datetime`` class.
+
+To *visualize* this (simplified):
+
+- ``follow_statement`` - ``<Statement: datetime.date>``
+
+    - Unpacking of the statement into ``[[<Call: datetime.date>]]``
+- ``follow_call_list``, calls ``follow_call`` with ``<Call: datetime.date>``
+- ``follow_call`` - searches the ``datetime`` name within the module.
+
+This is exactly where it starts to get complicated. Now recursions start to
+kick in. The statement has not been resolved fully, but now we need to resolve
+the datetime import. So it continues
+
+- follow import, which happens in the :mod:imports module.
+- now the same ``follow_call`` as above calls ``follow_paths`` to follow the
+  second part of the statement ``date``.
+- After ``follow_paths`` returns with the desired ``datetime.date`` class, the
+  result is being returned and the recursion finishes.
+
+Now what would happen if we wanted ``datetime.date.foo.bar``? Just two more
+calls to ``follow_paths`` (which calls itself with a recursion). What if the
+import would contain another Statement like this:
+
+>>> from foo import bar
+>>> Date = bar.baz
+
+Well... You get it. Just another ``follow_statement`` recursion. It's really
+easy. Just that Python is not that easy sometimes. To understand tuple
+assignments and different class scopes, a lot more code had to be written.  Yet
+we're still not talking about Descriptors and Nested List Comprehensions, just
+the simple stuff.
+
+So if you want to change something, write a test and then just change what you
+want. This module has been tested by about 600 tests. Don't be afraid to break
+something. The tests are good enough.
+
+I need to mention now that this recursive approach is really good because it
+only *executes* what needs to be *executed*. All the statements and modules
+that are not used are just being ignored. It's a little bit similar to the
+backtracking algorithm.
+
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
