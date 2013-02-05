@@ -248,8 +248,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 supers.append(cls)
         if not supers and self.base.parent != builtin.Builtin.scope:
             # add `object` to classes
-            supers += evaluate.get_scopes_for_name(builtin.Builtin.scope,
-                                                    'object')
+            supers += evaluate.find_name(builtin.Builtin.scope, 'object')
         return supers
 
     @cache.memoize_default(default=[])
@@ -813,8 +812,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = evaluate.get_scopes_for_name(builtin.Builtin.scope,
-                                             self._array.type)[0]
+        scope = evaluate.find_name(builtin.Builtin.scope, self._array.type)[0]
         scope = Instance(scope)
         names = scope.get_defined_names()
         return [ArrayElement(n) for n in names]

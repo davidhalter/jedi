@@ -185,8 +185,8 @@ class ImportPath(pr.Base):
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
-                        evaluate.get_scopes_for_name(s, rest[0], is_goto=True)
-                            for s in scopes)
+                                evaluate.find_name(s, rest[0], is_goto=True)
+                                for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
                                         evaluate.follow_path(iter(rest), s, s)

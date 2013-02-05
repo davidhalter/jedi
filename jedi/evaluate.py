@@ -162,7 +162,7 @@ def get_names_of_scope(scope, position=None, star_search=True,
             yield builtin_scope, builtin_scope.get_defined_names()
 
 
-def get_scopes_for_name(scope, name_str, position=None, search_global=False,
+def find_name(scope, name_str, position=None, search_global=False,
                                                         is_goto=False):
     """
     This is the search function. The most important part to debug.
@@ -193,8 +193,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 if r.is_global():
                     for token_name in r.token_list[1:]:
                         if isinstance(token_name, pr.Name):
-                            add = get_scopes_for_name(r.parent,
-                                                            str(token_name))
+                            add = find_name(r.parent, str(token_name))
                 else:
                     # generated objects are used within executions, but these
                     # objects are in functions, and we have to dynamically
@@ -660,12 +659,12 @@ def follow_call_path(path, scope, position):
     else:
         if isinstance(current, pr.NamePart):
             # This is the first global lookup.
-            scopes = get_scopes_for_name(scope, current, position=position,
+            scopes = find_name(scope, current, position=position,
                                             search_global=True)
         else:
             if current.type in (pr.Call.STRING, pr.Call.NUMBER):
                 t = type(current.name).__name__
-                scopes = get_scopes_for_name(builtin.Builtin.scope, t)
+                scopes = find_name(builtin.Builtin.scope, t)
             else:
                 debug.warning('unknown type:', current.type, current)
                 scopes = []
@@ -734,7 +733,7 @@ def follow_path(path, scope, call_scope, position=None):
             # This is the typical lookup while chaining things.
             if filter_private_variable(scope, call_scope, current):
                 return []
-        result = imports.strip_imports(get_scopes_for_name(scope, current,
+        result = imports.strip_imports(find_name(scope, current,
                                                     position=position))
     return follow_paths(path, set(result), call_scope, position=position)
 
@@ -769,6 +768,6 @@ def goto(stmt, call_path=None):
         search_global = True
     follow_res = []
     for s in scopes:
-        follow_res += get_scopes_for_name(s, search, pos,
+        follow_res += find_name(s, search, pos,
                                     search_global=search_global, is_goto=True)
     return follow_res, search
