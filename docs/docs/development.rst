@@ -174,7 +174,7 @@ Caching & Recursions
 
 
 - :ref:`Caching <cache>`
-- :ref:`Recursions Modules <recursion>`
+- :ref:`Recursions <recursion>`
 
 .. _cache:
 
