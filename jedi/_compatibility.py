@@ -1,6 +1,10 @@
 """
-This is a compatibility module, to make it possible to use jedi also with older
-python versions.
+To ensure compatibility from Python ``2.5`` - ``3.2``, a module has been
+created. Clearly there is huge need to use conforming syntax. But many changes
+(e.g. ``property``, ``hasattr`` in ``2.5``) can be rewritten in pure python.
+
+Most of the code here is necessary to support Python 2.5. Once this dependency
+will be dropped, we'll get rid of most code.
 """
 import sys
 
