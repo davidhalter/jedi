@@ -142,7 +142,7 @@ class CachedFastParser(type):
             return parsing.Parser(source, module_path, user_position)
 
         pi = cache.parser_cache.get(module_path, None)
-        if pi is None or isinstance(pi.parser, pr.Parser):
+        if pi is None or isinstance(pi.parser, parsing.Parser):
             p = super(CachedFastParser, self).__call__(source, module_path,
                                                             user_position)
         else:

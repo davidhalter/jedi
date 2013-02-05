@@ -12,6 +12,7 @@ __all__ = ['Script', 'NotFoundError', 'set_debug_function', '_quick_complete']
 import re
 import os
 
+import parsing
 import parsing_representation as pr
 import dynamic
 import imports
@@ -188,7 +189,7 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        r = pr.Parser(cursor_txt, no_docstr=True)
+        r = parsing.Parser(cursor_txt, no_docstr=True)
         try:
             stmt = r.module.statements[0]
         except IndexError:
