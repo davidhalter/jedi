@@ -2,6 +2,9 @@
 Introduce some basic refactoring functions to |jedi|. This module is still in a
 very early development stage and needs much testing and improvement.
 
+.. warning:: I won't do too much here, but if anyone wants to step in, please
+             do.
+
 It uses the |jedi| `API <plugin-api.html>`_ and supports currently the
 following functions (sometimes bug-prone):
 
@@ -9,8 +12,6 @@ following functions (sometimes bug-prone):
 - extract variable
 - inline variable
 
-.. warning:: I won't do too much here, but if anyone wants to step in, please
-             do.
 """
 
 from __future__ import with_statement
