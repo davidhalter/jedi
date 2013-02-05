@@ -1,3 +1,21 @@
+"""
+This caching is very important for speed and memory optimizations. There's
+nothing really spectacular, just some decorators. The following cache types are
+available:
+
+- module caching (`load_module` and `save_module`), which uses pickle and is
+  really important to assure low load times of modules like ``numpy``.
+- the popular ``memoize_default`` works like a typical memoize and returns the
+  default otherwise.
+- ``CachedMetaClass`` uses ``memoize_default`` to do the same with classes.
+- ``time_cache`` can be used to cache something for just a limited time span,
+  which can be useful if there's user interaction and the user cannot react
+  faster than a certain time.
+
+This module is one of the reasons why |jedi| is not thread-safe. As you can see
+there are global variables, which are holding the cache information. Some of
+these variables are being cleaned after every API usage.
+"""
 from __future__ import with_statement
 
 import time
