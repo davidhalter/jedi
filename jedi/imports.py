@@ -117,7 +117,7 @@ class ImportPath(pr.Base):
                                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
                     names += self.get_module_names([pkg_path])
-                for s, scope_names in evaluate.get_names_for_scope(scope,
+                for s, scope_names in evaluate.get_names_of_scope(scope,
                                                     include_builtin=False):
                     for n in scope_names:
                         if self.import_stmt.from_ns is None \

@@ -94,7 +94,7 @@ class Script(object):
             scopes = list(self._prepare_goto(path, True))
         except NotFoundError:
             scopes = []
-            scope_generator = evaluate.get_names_for_scope(
+            scope_generator = evaluate.get_names_of_scope(
                                             self._parser.user_scope, self.pos)
             completions = []
             for scope, name_list in scope_generator:
