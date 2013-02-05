@@ -9,7 +9,8 @@ following functions (sometimes bug-prone):
 - extract variable
 - inline variable
 
-**I won't do too much here, but if anyone wants to step in, please do.**
+.. warning:: I won't do too much here, but if anyone wants to step in, please
+             do.
 """
 
 from __future__ import with_statement
