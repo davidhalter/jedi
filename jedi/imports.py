@@ -8,7 +8,7 @@ import sys
 import builtin
 import modules
 import debug
-import parsing
+import parsing_representation as pr
 import evaluate
 import itertools
 import cache
@@ -21,9 +21,9 @@ class ModuleNotFound(Exception):
     pass
 
 
-class ImportPath(parsing.Base):
+class ImportPath(pr.Base):
     """
-    An ImportPath is the path of a `parsing.Import` object.
+    An ImportPath is the path of a `pr.Import` object.
     """
     class _GlobalNamespace(object):
         def __init__(self):
@@ -86,8 +86,8 @@ class ImportPath(parsing.Base):
         # 0 (0 is not a valid line number).
         zero = (0, 0)
         names = i.namespace.names[1:]
-        n = parsing.Name(i.module, names, zero, zero, self.import_stmt)
-        new = parsing.Import(i.module, zero, zero, n)
+        n = pr.Name(i.module, names, zero, zero, self.import_stmt)
+        new = pr.Import(i.module, zero, zero, n)
         new.parent = parent
         debug.dbg('Generated a nested import: %s' % new)
         return new
@@ -113,7 +113,7 @@ class ImportPath(parsing.Base):
                         except IOError:
                             pass
             else:
-                if on_import_stmt and isinstance(scope, parsing.Module) \
+                if on_import_stmt and isinstance(scope, pr.Module) \
                                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
                     names += self.get_module_names([pkg_path])
@@ -141,7 +141,7 @@ class ImportPath(parsing.Base):
         names = []
         for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
             inf_pos = (float('inf'), float('inf'))
-            names.append(parsing.Name(self.GlobalNamespace, [(name, inf_pos)],
+            names.append(pr.Name(self.GlobalNamespace, [(name, inf_pos)],
                                         inf_pos, inf_pos, self.import_stmt))
         return names
 
@@ -295,7 +295,7 @@ def strip_imports(scopes):
     """
     result = []
     for s in scopes:
-        if isinstance(s, parsing.Import):
+        if isinstance(s, pr.Import):
             result += ImportPath(s).follow()
         else:
             result.append(s)

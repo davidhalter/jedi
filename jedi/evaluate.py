@@ -19,8 +19,7 @@ Evaluation of Python code in |jedi| is based on three assumptions:
 
 That said, there's mainly one entry point in this script: ``follow_statement``.
 This is where autocompletion starts. Everything you want to complete is either
-a ``parsing.Statement`` or some special name like ``class``, which is easy to
-complete.
+a ``Statement`` or some special name like ``class``, which is easy to complete.
 
 Therefore you need to understand what follows after ``follow_statement``. Let's
 make an example:
@@ -84,7 +83,7 @@ import copy
 
 import common
 import cache
-import parsing
+import parsing_representation as pr
 import debug
 import builtin
 import imports
@@ -100,13 +99,13 @@ class DecoratorNotFound(LookupError):
     pass
 
 
-class Executable(parsing.Base):
+class Executable(pr.Base):
     """ An instance is also an executable - because __init__ is called """
     def __init__(self, base, var_args=None):
         self.base = base
         # The param input array.
         if var_args is None:
-            var_args = parsing.Array(None, None)
+            var_args = pr.Array(None, None)
         self.var_args = var_args
 
     def get_parent_until(self, *args, **kwargs):
@@ -161,7 +160,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         # This loop adds the names of the self object, copies them and removes
         # the self.
         for sub in self.base.subscopes:
-            if isinstance(sub, parsing.Class):
+            if isinstance(sub, pr.Class):
                 continue
             # Get the self name, if there's one.
             self_name = self.get_func_self_name(sub)
@@ -256,9 +255,9 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
     variable (e.g. self.variable or class methods).
     """
     def __init__(self, instance, var, is_class_var=False):
-        if isinstance(var, parsing.Function):
+        if isinstance(var, pr.Function):
             var = Function(var)
-        elif isinstance(var, parsing.Class):
+        elif isinstance(var, pr.Class):
             var = Class(var)
         self.instance = instance
         self.var = var
@@ -269,15 +268,15 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
-                        or isinstance(par, parsing.Class) \
+                        or isinstance(par, pr.Class) \
                             and par == self.instance.base.base:
             par = self.instance
-        elif not isinstance(par, parsing.Module):
+        elif not isinstance(par, pr.Module):
             par = InstanceElement(self.instance, par, self.is_class_var)
         return par
 
     def get_parent_until(self, *args, **kwargs):
-        return parsing.Simple.get_parent_until(self, *args, **kwargs)
+        return pr.Simple.get_parent_until(self, *args, **kwargs)
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
@@ -306,9 +305,9 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
 
-class Class(use_metaclass(cache.CachedMetaClass, parsing.Base)):
+class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
     """
-    This class is not only important to extend `parsing.Class`, it is also a
+    This class is not only important to extend `pr.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
     """
     def __init__(self, base):
@@ -372,7 +371,7 @@ class Class(use_metaclass(cache.CachedMetaClass, parsing.Base)):
         return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
-class Function(use_metaclass(cache.CachedMetaClass, parsing.Base)):
+class Function(use_metaclass(cache.CachedMetaClass, pr.Base)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
@@ -419,7 +418,7 @@ class Function(use_metaclass(cache.CachedMetaClass, parsing.Base)):
                 f = wrappers[0]
 
                 debug.dbg('decorator end', f)
-        if f != self.base_func and isinstance(f, parsing.Function):
+        if f != self.base_func and isinstance(f, pr.Function):
             f = Function(f)
         return f
 
@@ -489,12 +488,12 @@ class Execution(Executable):
                     objects = follow_call_list([self.var_args[0]])
                     return [o.base for o in objects if isinstance(o, Instance)]
             elif func_name == 'super':
-                accept = (parsing.Function,)
+                accept = (pr.Function,)
                 func = self.var_args.parent_stmt.get_parent_until(accept)
                 if func.isinstance(*accept):
-                    cls = func.get_parent_until(accept + (parsing.Class,),
+                    cls = func.get_parent_until(accept + (pr.Class,),
                                                     include_current=False)
-                    if isinstance(cls, parsing.Class):
+                    if isinstance(cls, pr.Class):
                         cls = Class(cls)
                         su = cls.get_super_classes()
                         if su:
@@ -546,7 +545,7 @@ class Execution(Executable):
     def get_params(self):
         """
         This returns the params for an Execution/Instance and is injected as a
-        'hack' into the parsing.Function class.
+        'hack' into the pr.Function class.
         This needs to be here, because Instance can have __init__ functions,
         which act the same way as normal functions.
         """
@@ -556,7 +555,7 @@ class Execution(Executable):
             """
             parent_stmt = self.var_args.parent_stmt
             pos = parent_stmt.start_pos if parent_stmt else None
-            calls = parsing.Array(pos, parsing.Array.NOARRAY, parent_stmt)
+            calls = pr.Array(pos, pr.Array.NOARRAY, parent_stmt)
             calls.values = values
             calls.keys = keys
             calls.type = array_type
@@ -615,7 +614,7 @@ class Execution(Executable):
             array_type = None
             if assignment[0] == '*':
                 # *args param
-                array_type = parsing.Array.TUPLE
+                array_type = pr.Array.TUPLE
                 if value:
                     values.append(value)
                 for key, value in var_arg_iterator:
@@ -626,7 +625,7 @@ class Execution(Executable):
                     values.append(value)
             elif assignment[0] == '**':
                 # **kwargs param
-                array_type = parsing.Array.DICT
+                array_type = pr.Array.DICT
                 if non_matching_keys:
                     keys, values = zip(*non_matching_keys)
             else:
@@ -681,10 +680,10 @@ class Execution(Executable):
                         if hasattr(array, 'get_contents'):
                             for key, field in array.get_contents():
                                 # Take the first index.
-                                if isinstance(key, parsing.Name):
+                                if isinstance(key, pr.Name):
                                     name = key
                                 else:
-                                    # `parsing`.[Call|Function|Class] lookup.
+                                    # `pr`.[Call|Function|Class] lookup.
                                     name = key[0].name
                                 yield name, field
                 # Normal arguments (including key arguments).
@@ -705,7 +704,7 @@ class Execution(Executable):
         Call the default method with the own instance (self implements all
         the necessary functions). Add also the params.
         """
-        return self.get_params() + parsing.Scope.get_set_vars(self)
+        return self.get_params() + pr.Scope.get_set_vars(self)
 
     def copy_properties(self, prop):
         """
@@ -724,7 +723,7 @@ class Execution(Executable):
                 else:
                     copied = helpers.fast_parent_copy(element)
                     copied.parent = self._scope_copy(copied.parent)
-                    if isinstance(copied, parsing.Function):
+                    if isinstance(copied, pr.Function):
                         copied = Function(copied)
                 objects.append(copied)
             return objects
@@ -774,14 +773,14 @@ class Execution(Executable):
         return self.copy_properties('subscopes')
 
     def get_statement_for_position(self, pos):
-        return parsing.Scope.get_statement_for_position(self, pos)
+        return pr.Scope.get_statement_for_position(self, pos)
 
     def __repr__(self):
         return "<%s of %s>" % \
                 (type(self).__name__, self.base)
 
 
-class Generator(use_metaclass(cache.CachedMetaClass, parsing.Base)):
+class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
     """ Cares for `yield` statements. """
     def __init__(self, func, var_args):
         super(Generator, self).__init__()
@@ -797,7 +796,7 @@ class Generator(use_metaclass(cache.CachedMetaClass, parsing.Base)):
         none_pos = (0, 0)
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
-            name = parsing.Name(builtin.Builtin.scope, [(n, none_pos)],
+            name = pr.Name(builtin.Builtin.scope, [(n, none_pos)],
                                 none_pos, none_pos)
             if n in executes_generator:
                 name.parent = self
@@ -821,9 +820,9 @@ class Generator(use_metaclass(cache.CachedMetaClass, parsing.Base)):
         return "<%s of %s>" % (type(self).__name__, self.func)
 
 
-class Array(use_metaclass(cache.CachedMetaClass, parsing.Base)):
+class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
     """
-    Used as a mirror to parsing.Array, if needed. It defines some getter
+    Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.
     """
     def __init__(self, array):
@@ -858,7 +857,7 @@ class Array(use_metaclass(cache.CachedMetaClass, parsing.Base)):
 
     def get_exact_index_types(self, index):
         """ Here the index is an int. Raises IndexError/KeyError """
-        if self._array.type == parsing.Array.DICT:
+        if self._array.type == pr.Array.DICT:
             old_index = index
             index = None
             for i, key_elements in enumerate(self._array.keys):
@@ -885,7 +884,7 @@ class Array(use_metaclass(cache.CachedMetaClass, parsing.Base)):
 
     def get_defined_names(self):
         """
-        This method generates all ArrayElements for one parsing.Array.
+        This method generates all ArrayElements for one pr.Array.
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
@@ -949,7 +948,7 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
     # because class variables are always valid and the `self.` variables, too.
     if (not position or isinstance(scope, (Array, Instance))
                 or start_scope != scope
-                and isinstance(start_scope, (parsing.Function, Execution))):
+                and isinstance(start_scope, (pr.Function, Execution))):
         return names
     names_new = []
     for n in names:
@@ -966,13 +965,13 @@ def get_names_for_scope(scope, position=None, star_search=True,
     the whole thing would probably start a little recursive madness.
     """
     in_func_scope = scope
-    non_flow = scope.get_parent_until(parsing.Flow, reverse=True)
+    non_flow = scope.get_parent_until(pr.Flow, reverse=True)
     while scope:
-        # `parsing.Class` is used, because the parent is never `Class`.
+        # `pr.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
-        if not (scope != non_flow and scope.isinstance(parsing.Class)
-                    or scope.isinstance(parsing.Flow)
+        if not (scope != non_flow and scope.isinstance(pr.Class)
+                    or scope.isinstance(pr.Flow)
                     or scope.isinstance(Instance)
                         and non_flow.isinstance(Function)
                     ):
@@ -985,14 +984,14 @@ def get_names_for_scope(scope, position=None, star_search=True,
                                                     position, in_func_scope)
             except StopIteration:
                 raise common.MultiLevelStopIteration('StopIteration raised')
-        if scope.isinstance(parsing.ForFlow) and scope.is_list_comp:
+        if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
             # is a list comprehension
             yield scope, scope.get_set_vars(is_internal_call=True)
 
         scope = scope.parent
         # This is used, because subscopes (Flow scopes) would distort the
         # results.
-        if scope and scope.isinstance(Function, parsing.Function, Execution):
+        if scope and scope.isinstance(Function, pr.Function, Execution):
             in_func_scope = scope
 
     # Add star imports.
@@ -1028,7 +1027,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
         res_new = []
         for r in result:
             add = []
-            if r.isinstance(parsing.Statement):
+            if r.isinstance(pr.Statement):
                 check_instance = None
                 if isinstance(r, InstanceElement) and r.is_class_var:
                     check_instance = r.instance
@@ -1037,14 +1036,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 # Global variables handling.
                 if r.is_global():
                     for token_name in r.token_list[1:]:
-                        if isinstance(token_name, parsing.Name):
+                        if isinstance(token_name, pr.Name):
                             add = get_scopes_for_name(r.parent,
                                                             str(token_name))
                 else:
                     # generated objects are used within executions, but these
                     # objects are in functions, and we have to dynamically
                     # execute first.
-                    if isinstance(r, parsing.Param):
+                    if isinstance(r, pr.Param):
                         func = r.parent
                         # Instances are typically faked, if the instance is not
                         # called from outside. Here we check it for __init__
@@ -1075,13 +1074,13 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 if check_instance is not None:
                     # class renames
                     add = [InstanceElement(check_instance, a, True)
-                                if isinstance(a, (Function, parsing.Function))
+                                if isinstance(a, (Function, pr.Function))
                                 else a for a in add]
                 res_new += add
             else:
-                if isinstance(r, parsing.Class):
+                if isinstance(r, pr.Class):
                     r = Class(r)
-                elif isinstance(r, parsing.Function):
+                elif isinstance(r, pr.Function):
                     r = Function(r)
                 if r.isinstance(Function):
                     try:
@@ -1117,14 +1116,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
             no_break_scope = False
             par = name.parent
 
-            if par.isinstance(parsing.Flow):
+            if par.isinstance(pr.Flow):
                 if par.command == 'for':
                     result += handle_for_loops(par)
                 else:
                     debug.warning('Flow: Why are you here? %s' % par.command)
-            elif par.isinstance(parsing.Param) \
+            elif par.isinstance(pr.Param) \
                     and par.parent is not None \
-                    and par.parent.parent.isinstance(parsing.Class) \
+                    and par.parent.parent.isinstance(pr.Class) \
                     and par.position_nr == 0:
                 # This is where self gets added - this happens at another
                 # place, if the var_args are clear. But sometimes the class is
@@ -1136,14 +1135,14 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                     inst = Instance(Class(par.parent.parent))
                     inst.is_generated = True
                 result.append(inst)
-            elif par.isinstance(parsing.Statement):
+            elif par.isinstance(pr.Statement):
                 def is_execution(arr):
                     for a in arr:
                         a = a[0]  # rest is always empty with assignees
-                        if a.isinstance(parsing.Array):
+                        if a.isinstance(pr.Array):
                             if is_execution(a):
                                 return True
-                        elif a.isinstance(parsing.Call):
+                        elif a.isinstance(pr.Call):
                             # Compare start_pos, because names may be different
                             # because of executions.
                             if a.name.start_pos == name.start_pos \
@@ -1185,7 +1184,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
             for name in sorted(name_list, key=comparison_func, reverse=True):
                 p = name.parent.parent if name.parent else None
                 if isinstance(p, InstanceElement) \
-                            and isinstance(p.var, parsing.Class):
+                            and isinstance(p.var, pr.Class):
                     p = p.var
                 if name_str == name.get_code() and p not in break_scopes:
                     r, no_break_scope = process(name)
@@ -1249,7 +1248,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
         if isinstance(scope, Instance):
             scope_generator = scope.scope_generator()
         else:
-            if isinstance(scope, (Class, parsing.Module)):
+            if isinstance(scope, (Class, pr.Module)):
                 # classes are only available directly via chaining?
                 # strange stuff...
                 names = scope.get_defined_names()
@@ -1265,7 +1264,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
 def check_getattr(inst, name_str):
     result = []
     # str is important to lose the NamePart!
-    name = parsing.Call(str(name_str), parsing.Call.STRING, (0, 0), inst)
+    name = pr.Call(str(name_str), pr.Call.STRING, (0, 0), inst)
     args = helpers.generate_param_array([name])
     try:
         result = inst.execute_subscope_by_name('__getattr__', args)
@@ -1330,7 +1329,7 @@ def assign_tuples(tup, results, seek_name):
     Here, if seek_name is "a", the number type will be returned.
     The first part (before `=`) is the param tuples, the second one result.
 
-    :type tup: parsing.Array
+    :type tup: pr.Array
     """
     def eval_results(index):
         types = []
@@ -1347,10 +1346,10 @@ def assign_tuples(tup, results, seek_name):
         return types
 
     result = []
-    if tup.type == parsing.Array.NOARRAY:
+    if tup.type == pr.Array.NOARRAY:
         # Here we have unnessecary braces, which we just remove.
         arr = tup.get_only_subelement()
-        if type(arr) == parsing.Call:
+        if type(arr) == pr.Call:
             if arr.name.names[-1] == seek_name:
                 result = results
         else:
@@ -1364,7 +1363,7 @@ def assign_tuples(tup, results, seek_name):
             t = t[0]
 
             # Check the left part, if there are still tuples in it or a Call.
-            if isinstance(t, parsing.Array):
+            if isinstance(t, pr.Array):
                 # These are "sub"-tuples.
                 result += assign_tuples(t, eval_results(i), seek_name)
             else:
@@ -1382,7 +1381,7 @@ def follow_statement(stmt, seek_name=None):
     In case multiple names are defined in the statement, `seek_name` returns
     the result for this name.
 
-    :param stmt: A `parsing.Statement`.
+    :param stmt: A `pr.Statement`.
     :param seek_name: A string.
     """
     debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))
@@ -1409,28 +1408,27 @@ def follow_statement(stmt, seek_name=None):
 def follow_call_list(call_list, follow_array=False):
     """
     The call_list has a special structure.
-    This can be either `parsing.Array` or `list of list`.
+    This can be either `pr.Array` or `list of list`.
     It is used to evaluate a two dimensional object, that has calls, arrays and
     operators in it.
     """
     def evaluate_list_comprehension(lc, parent=None):
         input = lc.input
         nested_lc = lc.input.token_list[0]
-        if isinstance(nested_lc, parsing.ListComprehension):
+        if isinstance(nested_lc, pr.ListComprehension):
             # is nested LC
             input = nested_lc.stmt
         module = input.get_parent_until()
-        loop = parsing.ForFlow(module, [input], lc.stmt.start_pos,
+        loop = pr.ForFlow(module, [input], lc.stmt.start_pos,
                                                 lc.middle, True)
 
         loop.parent = lc.stmt.parent if parent is None else parent
 
-        if isinstance(nested_lc, parsing.ListComprehension):
+        if isinstance(nested_lc, pr.ListComprehension):
             loop = evaluate_list_comprehension(nested_lc, loop)
         return loop
 
-    if parsing.Array.is_type(call_list, parsing.Array.TUPLE,
-                                        parsing.Array.DICT):
+    if pr.Array.is_type(call_list, pr.Array.TUPLE, pr.Array.DICT):
         # Tuples can stand just alone without any braces. These would be
         # recognized as separate calls, but actually are a tuple.
         result = follow_call(call_list)
@@ -1439,9 +1437,9 @@ def follow_call_list(call_list, follow_array=False):
         for calls in call_list:
             calls_iterator = iter(calls)
             for call in calls_iterator:
-                if parsing.Array.is_type(call, parsing.Array.NOARRAY):
+                if pr.Array.is_type(call, pr.Array.NOARRAY):
                     result += follow_call_list(call, follow_array=True)
-                elif isinstance(call, parsing.ListComprehension):
+                elif isinstance(call, pr.ListComprehension):
                     loop = evaluate_list_comprehension(call)
                     stmt = copy.copy(call.stmt)
                     stmt.parent = loop
@@ -1449,7 +1447,7 @@ def follow_call_list(call_list, follow_array=False):
                     # comprehensions
                     result += follow_statement(stmt)
                 else:
-                    if isinstance(call, (parsing.Lambda)):
+                    if isinstance(call, (pr.Lambda)):
                         result.append(Function(call))
                     # With things like params, these can also be functions...
                     elif isinstance(call, (Function, Class, Instance,
@@ -1478,7 +1476,7 @@ def follow_call_list(call_list, follow_array=False):
                             # if it is an iterable, ignore * operations
                             next(calls_iterator)
 
-    if follow_array and isinstance(call_list, parsing.Array):
+    if follow_array and isinstance(call_list, pr.Array):
         # call_list can also be a two dimensional array
         call_path = call_list.generate_call_path()
         next(call_path, None)  # the first one has been used already
@@ -1497,18 +1495,18 @@ def follow_call(call):
 
 
 def follow_call_path(path, scope, position):
-    """ Follows a path generated by `parsing.Call.generate_call_path()` """
+    """ Follows a path generated by `pr.Call.generate_call_path()` """
     current = next(path)
 
-    if isinstance(current, parsing.Array):
+    if isinstance(current, pr.Array):
         result = [Array(current)]
     else:
-        if isinstance(current, parsing.NamePart):
+        if isinstance(current, pr.NamePart):
             # This is the first global lookup.
             scopes = get_scopes_for_name(scope, current, position=position,
                                             search_global=True)
         else:
-            if current.type in (parsing.Call.STRING, parsing.Call.NUMBER):
+            if current.type in (pr.Call.STRING, pr.Call.NUMBER):
                 t = type(current.name).__name__
                 scopes = get_scopes_for_name(builtin.Builtin.scope, t)
             else:
@@ -1559,12 +1557,12 @@ def follow_path(path, scope, call_scope, position=None):
     debug.dbg('follow %s in scope %s' % (current, scope))
 
     result = []
-    if isinstance(current, parsing.Array):
+    if isinstance(current, pr.Array):
         # This must be an execution, either () or [].
-        if current.type == parsing.Array.LIST:
+        if current.type == pr.Array.LIST:
             if hasattr(scope, 'get_index_types'):
                 result = scope.get_index_types(current)
-        elif current.type not in [parsing.Array.DICT]:
+        elif current.type not in [pr.Array.DICT]:
             # Scope must be a class or func - make an instance or execution.
             debug.dbg('exe', scope)
             result = Execution(scope, current).get_return_types()
@@ -1587,7 +1585,7 @@ def follow_path(path, scope, call_scope, position=None):
 def filter_private_variable(scope, call_scope, var_name):
     if isinstance(var_name, (str, unicode)) \
                 and var_name.startswith('__') and isinstance(scope, Instance):
-        s = call_scope.get_parent_until((parsing.Class, Instance))
+        s = call_scope.get_parent_until((pr.Class, Instance))
         if s != scope and s != scope.base.base:
             return True
     return False

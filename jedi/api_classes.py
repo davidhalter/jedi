@@ -15,7 +15,7 @@ import helpers
 import settings
 import evaluate
 import imports
-import parsing
+import parsing_representation as pr
 import keywords
 
 
@@ -195,9 +195,9 @@ class Completion(BaseDefinition):
             append = '('
 
         if settings.add_dot_after_module:
-            if isinstance(self.base, parsing.Module):
+            if isinstance(self.base, pr.Module):
                 append += '.'
-        if isinstance(self.base, parsing.Param):
+        if isinstance(self.base, pr.Param):
             append += '='
         return dot + self.name.names[-1][self.like_name_length:] + append
 
@@ -241,9 +241,9 @@ class Completion(BaseDefinition):
         numpy), it's just PITA-slow.
         """
         if self._followed_definitions is None:
-            if self.definition.isinstance(parsing.Statement):
+            if self.definition.isinstance(pr.Statement):
                 defs = evaluate.follow_statement(self.definition)
-            elif self.definition.isinstance(parsing.Import):
+            elif self.definition.isinstance(pr.Import):
                 defs = imports.strip_imports([self.definition])
             else:
                 return [self]
@@ -275,16 +275,16 @@ class Definition(BaseDefinition):
         d = self.definition
         if isinstance(d, evaluate.InstanceElement):
             d = d.var
-        if isinstance(d, evaluate.parsing.Name):
+        if isinstance(d, pr.Name):
             d = d.parent
 
         if isinstance(d, evaluate.Array):
             d = 'class ' + d.type
-        elif isinstance(d, (parsing.Class, evaluate.Class, evaluate.Instance)):
+        elif isinstance(d, (pr.Class, evaluate.Class, evaluate.Instance)):
             d = 'class ' + unicode(d.name)
-        elif isinstance(d, (evaluate.Function, evaluate.parsing.Function)):
+        elif isinstance(d, (evaluate.Function, pr.Function)):
             d = 'def ' + unicode(d.name)
-        elif isinstance(d, evaluate.parsing.Module):
+        elif isinstance(d, evaluate.pr.Module):
             # only show module name
             d = 'module %s' % self.module_name
         elif self.is_keyword:
@@ -305,7 +305,7 @@ class Definition(BaseDefinition):
             `module.class.function` path.
         """
         if self.module_path.endswith('.py') \
-                    and not isinstance(self.definition, parsing.Module):
+                    and not isinstance(self.definition, pr.Module):
             position = '@%s' % (self.line)
         else:
             # is a builtin or module

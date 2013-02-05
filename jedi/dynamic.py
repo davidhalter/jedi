@@ -10,7 +10,7 @@ from __future__ import with_statement
 import os
 
 import cache
-import parsing
+import parsing_representation as pr
 import modules
 import evaluate
 import helpers
@@ -124,7 +124,7 @@ def search_params(param):
                 return []
 
             for stmt in possible_stmts:
-                if not isinstance(stmt, parsing.Import):
+                if not isinstance(stmt, pr.Import):
                     calls = _scan_array(stmt.get_assignment_calls(), func_name)
                     for c in calls:
                         # no execution means that params cannot be set
@@ -141,10 +141,10 @@ def search_params(param):
                     result += evaluate.follow_statement(p.parent)
         return result
 
-    func = param.get_parent_until(parsing.Function)
+    func = param.get_parent_until(pr.Function)
     current_module = param.get_parent_until()
     func_name = str(func.name)
-    if func_name == '__init__' and isinstance(func.parent, parsing.Class):
+    if func_name == '__init__' and isinstance(func.parent, pr.Class):
         func_name = str(func.parent.name)
 
     # get the param name
@@ -189,13 +189,13 @@ def _scan_array(arr, search_name):
     result = []
     for sub in arr:
         for s in sub:
-            if isinstance(s, parsing.Array):
+            if isinstance(s, pr.Array):
                 result += _scan_array(s, search_name)
-            elif isinstance(s, parsing.Call):
+            elif isinstance(s, pr.Call):
                 s_new = s
                 while s_new is not None:
                     n = s_new.name
-                    if isinstance(n, parsing.Name) and search_name in n.names:
+                    if isinstance(n, pr.Name) and search_name in n.names:
                         result.append(s)
 
                     if s_new.execution is not None:
@@ -207,7 +207,7 @@ def _scan_array(arr, search_name):
 @cache.memoize_default([])
 def _check_array_additions(compare_array, module, is_list):
     """
-    Checks if a `parsing.Array` has "add" statements:
+    Checks if a `pr.Array` has "add" statements:
     >>> a = [""]
     >>> a.append(1)
     """
@@ -310,7 +310,7 @@ def check_array_instances(instance):
     return helpers.generate_param_array([ai], instance.var_args.parent_stmt)
 
 
-class ArrayInstance(parsing.Base):
+class ArrayInstance(pr.Base):
     """
     Used for the usage of set() and list().
     This is definitely a hack, but a good one :-)
@@ -364,7 +364,7 @@ def related_names(definitions, search_name, mods):
         follow = []  # There might be multiple search_name's in one call_path
         call_path = list(call.generate_call_path())
         for i, name in enumerate(call_path):
-            # name is `parsing.NamePart`.
+            # name is `pr.NamePart`.
             if name == search_name:
                 follow.append(call_path[:i + 1])
 
@@ -392,7 +392,7 @@ def related_names(definitions, search_name, mods):
         except KeyError:
             continue
         for stmt in stmts:
-            if isinstance(stmt, parsing.Import):
+            if isinstance(stmt, pr.Import):
                 count = 0
                 imps = []
                 for i in stmt.get_all_import_names():
@@ -420,7 +420,7 @@ def related_name_add_import_modules(definitions, search_name):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:
-        if isinstance(d.parent, parsing.Import):
+        if isinstance(d.parent, pr.Import):
             s = imports.ImportPath(d.parent, direct_resolve=True)
             try:
                 new.add(s.follow(is_goto=True)[0])
@@ -438,7 +438,7 @@ def check_flow_information(flow, search_name, pos):
     ensures that `k` is a string.
     """
     result = []
-    if isinstance(flow, (parsing.Scope, fast_parser.Module)) and not result:
+    if isinstance(flow, (pr.Scope, fast_parser.Module)) and not result:
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
@@ -446,7 +446,7 @@ def check_flow_information(flow, search_name, pos):
             if result:
                 break
 
-    if isinstance(flow, parsing.Flow) and not result:
+    if isinstance(flow, pr.Flow) and not result:
         if flow.command in ['if', 'while'] and len(flow.inits) == 1:
             result = check_statement_information(flow.inits[0], search_name)
     return result
@@ -459,7 +459,7 @@ def check_statement_information(stmt, search_name):
             call = ass.get_only_subelement()
         except AttributeError:
             assert False
-        assert type(call) == parsing.Call and str(call.name) == 'isinstance'
+        assert type(call) == pr.Call and str(call.name) == 'isinstance'
         assert bool(call.execution)
 
         # isinstance check
@@ -467,11 +467,11 @@ def check_statement_information(stmt, search_name):
         assert len(isinst) == 2  # has two params
         assert len(isinst[0]) == 1
         assert len(isinst[1]) == 1
-        assert isinstance(isinst[0][0], parsing.Call)
+        assert isinstance(isinst[0][0], pr.Call)
         # names fit?
         assert str(isinst[0][0].name) == search_name
         classes_call = isinst[1][0]  # class_or_type_or_tuple
-        assert isinstance(classes_call, parsing.Call)
+        assert isinstance(classes_call, pr.Call)
         result = []
         for c in evaluate.follow_call(classes_call):
             if isinstance(c, evaluate.Array):

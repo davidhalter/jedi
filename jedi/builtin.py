@@ -36,7 +36,7 @@ def get_sys_path():
 class CachedModule(object):
     """
     The base type for all modules, which is not to be confused with
-    `parsing.Module`. Caching happens here.
+    `parsing_representation.Module`. Caching happens here.
     """
 
     def __init__(self, path=None, name=None):

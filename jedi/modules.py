@@ -9,6 +9,7 @@ import os
 
 import cache
 import parsing
+import parsing_representation as pr
 import fast_parser
 import builtin
 import debug
@@ -255,7 +256,7 @@ def sys_path_with_modifications(module):
             except AttributeError:
                 continue
             n = call.name
-            if not isinstance(n, parsing.Name) or len(n.names) != 3:
+            if not isinstance(n, pr.Name) or len(n.names) != 3:
                 continue
             if n.names[:2] != ('sys', 'path'):
                 continue
@@ -268,7 +269,7 @@ def sys_path_with_modifications(module):
                 continue
 
             if array_cmd == 'insert':
-                exe_type, exe.type = exe.type, parsing.Array.NOARRAY
+                exe_type, exe.type = exe.type, pr.Array.NOARRAY
                 exe_pop = exe.values.pop(0)
                 res = execute_code(exe.get_code())
                 if res is not None:

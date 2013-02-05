@@ -4,10 +4,11 @@ import operator
 from _compatibility import use_metaclass, reduce, property
 import settings
 import parsing
+import parsing_representation as pr
 import cache
 
 
-class Module(parsing.Simple, parsing.Module):
+class Module(pr.Simple, pr.Module):
     def __init__(self, parsers):
         self._end_pos = None, None
         super(Module, self).__init__(self, (1,0))
@@ -141,7 +142,7 @@ class CachedFastParser(type):
             return parsing.Parser(source, module_path, user_position)
 
         pi = cache.parser_cache.get(module_path, None)
-        if pi is None or isinstance(pi.parser, parsing.Parser):
+        if pi is None or isinstance(pi.parser, pr.Parser):
             p = super(CachedFastParser, self).__call__(source, module_path,
                                                             user_position)
         else:
@@ -152,7 +153,7 @@ class CachedFastParser(type):
 
 class FastParser(use_metaclass(CachedFastParser)):
     def __init__(self, code, module_path=None, user_position=None):
-        # set values like `parsing.Module`.
+        # set values like `pr.Module`.
         self.module_path = module_path
         self.user_position = user_position
 
@@ -168,11 +169,11 @@ class FastParser(use_metaclass(CachedFastParser)):
             for p in self.parsers:
                 if p.user_scope:
                     if self._user_scope is not None and not \
-                            isinstance(self._user_scope, parsing.SubModule):
+                            isinstance(self._user_scope, pr.SubModule):
                         continue
                     self._user_scope = p.user_scope
 
-        if isinstance(self._user_scope, parsing.SubModule):
+        if isinstance(self._user_scope, pr.SubModule):
             self._user_scope = self.module
         return self._user_scope
 
@@ -193,10 +194,10 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def scan_user_scope(self, sub_module):
         """ Scan with self.user_position.
-        :type sub_module: parsing.SubModule
+        :type sub_module: pr.SubModule
         """
         for scope in sub_module.statements + sub_module.subscopes:
-            if isinstance(scope, parsing.Scope):
+            if isinstance(scope, pr.Scope):
                 if scope.start_pos <= self.user_position <= scope.end_pos:
                     return self.scan_user_scope(scope) or scope
         return None

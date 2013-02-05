@@ -12,7 +12,7 @@ __all__ = ['Script', 'NotFoundError', 'set_debug_function', '_quick_complete']
 import re
 import os
 
-import parsing
+import parsing_representation as pr
 import dynamic
 import imports
 import evaluate
@@ -129,13 +129,13 @@ class Script(object):
             # Do the completion if there is no path before and no import stmt.
             u = self._parser.user_stmt
             bs = builtin.Builtin.scope
-            if isinstance(u, parsing.Import):
+            if isinstance(u, pr.Import):
                 if (u.relative_count > 0 or u.from_ns) and not re.search(
                                r'(,|from)\s*$|import\s+$', completion_line):
                     completions += ((k, bs) for k
                                             in keywords.get_keywords('import'))
 
-            if not path and not isinstance(u, parsing.Import):
+            if not path and not isinstance(u, pr.Import):
                 # add keywords
                 completions += ((k, bs) for k in keywords.get_keywords(
                                                                     all=True))
@@ -179,7 +179,7 @@ class Script(object):
             # matched to much.
             return []
 
-        if isinstance(user_stmt, parsing.Import):
+        if isinstance(user_stmt, pr.Import):
             scopes = [self._get_on_import_stmt(is_like_search)[0]]
         else:
             # just parse one statement, take it and evaluate it
@@ -188,7 +188,7 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        r = parsing.Parser(cursor_txt, no_docstr=True)
+        r = pr.Parser(cursor_txt, no_docstr=True)
         try:
             stmt = r.module.statements[0]
         except IndexError:
@@ -260,7 +260,7 @@ class Script(object):
             """
             definitions = set(defs)
             for d in defs:
-                if isinstance(d.parent, parsing.Import) \
+                if isinstance(d.parent, pr.Import) \
                                         and d.start_pos == (0, 0):
                     i = imports.ImportPath(d.parent).follow(is_goto=True)
                     definitions.remove(d)
@@ -274,7 +274,7 @@ class Script(object):
             user_scope = self._parser.user_scope
             definitions = set([user_scope.name])
             search_name = unicode(user_scope.name)
-        elif isinstance(user_stmt, parsing.Import):
+        elif isinstance(user_stmt, pr.Import):
             s, name_part = self._get_on_import_stmt()
             try:
                 definitions = [s.follow(is_goto=True)[0]]
@@ -291,7 +291,7 @@ class Script(object):
             stmt = self._get_under_cursor_stmt(goto_path)
             defs, search_name = evaluate.goto(stmt)
             definitions = follow_inexistent_imports(defs)
-            if isinstance(user_stmt, parsing.Statement):
+            if isinstance(user_stmt, pr.Statement):
                 if user_stmt.get_assignment_calls().start_pos > self.pos:
                     # The cursor must be after the start, otherwise the
                     # statement is just an assignee.
@@ -311,12 +311,12 @@ class Script(object):
         """
         user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
-        if isinstance(user_stmt, parsing.Statement) \
+        if isinstance(user_stmt, pr.Statement) \
                     and self.pos < user_stmt.get_assignment_calls().start_pos:
             # the search_name might be before `=`
             definitions = [v for v in user_stmt.set_vars
                                 if unicode(v.names[-1]) == search_name]
-        if not isinstance(user_stmt, parsing.Import):
+        if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
             definitions = dynamic.related_name_add_import_modules(definitions,
                                                                 search_name)
@@ -326,7 +326,7 @@ class Script(object):
         names = dynamic.related_names(definitions, search_name, module)
 
         for d in set(definitions):
-            if isinstance(d, parsing.Module):
+            if isinstance(d, pr.Module):
                 names.append(api_classes.RelatedName(d, d))
             else:
                 names.append(api_classes.RelatedName(d.names[-1], d))
@@ -351,7 +351,7 @@ class Script(object):
         """
         def check_user_stmt(user_stmt):
             if user_stmt is None \
-                        or not isinstance(user_stmt, parsing.Statement):
+                        or not isinstance(user_stmt, pr.Statement):
                 return None, 0
             ass = helpers.fast_parent_copy(user_stmt.get_assignment_calls())
 

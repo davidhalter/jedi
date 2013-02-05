@@ -1,6 +1,6 @@
 import copy
 
-import parsing
+import parsing_representation as pr
 import evaluate
 import debug
 import builtin
@@ -72,7 +72,7 @@ class RecursionNode(object):
         # Don't check param instances, they are not causing recursions
         # The same's true for the builtins, because the builtins are really
         # simple.
-        self.is_ignored = isinstance(stmt, parsing.Param) \
+        self.is_ignored = isinstance(stmt, pr.Param) \
                                    or (self.script == builtin.Builtin.scope)
 
     def __eq__(self, other):
@@ -185,14 +185,14 @@ def fast_parent_copy(obj):
                 continue
             elif isinstance(value, list):
                 setattr(new_obj, key, list_rec(value))
-            elif isinstance(value, (parsing.Simple, parsing.Call)):
+            elif isinstance(value, (pr.Simple, pr.Call)):
                 setattr(new_obj, key, recursion(value))
         return new_obj
 
     def list_rec(list_obj):
         copied_list = list_obj[:]   # lists, tuples, strings, unicode
         for i, el in enumerate(copied_list):
-            if isinstance(el, (parsing.Simple, parsing.Call)):
+            if isinstance(el, (pr.Simple, pr.Call)):
                 copied_list[i] = recursion(el)
             elif isinstance(el, list):
                 copied_list[i] = list_rec(el)
@@ -209,7 +209,7 @@ def generate_param_array(args_tuple, parent_stmt=None):
         else:
             values.append([arg])
     pos = None
-    arr = parsing.Array(pos, parsing.Array.TUPLE, parent_stmt, values=values)
+    arr = pr.Array(pos, pr.Array.TUPLE, parent_stmt, values=values)
     return arr
 
 
@@ -229,9 +229,9 @@ def array_for_pos(arr, pos):
     result = arr
     for sub in arr:
         for s in sub:
-            if isinstance(s, parsing.Array):
+            if isinstance(s, pr.Array):
                 result = array_for_pos(s, pos)[0] or result
-            elif isinstance(s, parsing.Call):
+            elif isinstance(s, pr.Call):
                 if s.execution:
                     result = array_for_pos(s.execution, pos)[0] or result
                 if s.next:
@@ -250,13 +250,13 @@ def search_function_call(arr, pos):
     for sub in arr.values:
         call = None
         for s in sub:
-            if isinstance(s, parsing.Array):
+            if isinstance(s, pr.Array):
                 new = search_function_call(s, pos)
                 if new[0] is not None:
                     call, index, stop = new
                     if stop:
                         return call, index, stop
-            elif isinstance(s, parsing.Call):
+            elif isinstance(s, pr.Call):
                 start_s = s
                 # check parts of calls
                 while s is not None:
@@ -275,8 +275,7 @@ def search_function_call(arr, pos):
                             # next
                             reset = c or s
                             if reset.execution.type not in \
-                                        [parsing.Array.TUPLE,
-                                        parsing.Array.NOARRAY]:
+                                        [pr.Array.TUPLE, pr.Array.NOARRAY]:
                                 return start_s, index, False
 
                             reset.execution = None
