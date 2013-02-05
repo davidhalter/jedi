@@ -44,7 +44,7 @@ This is exactly where it starts to get complicated. Now recursions start to
 kick in. The statement has not been resolved fully, but now we need to resolve
 the datetime import. So it continues
 
-- follow import, which happens in the :mod:imports module.
+- follow import, which happens in the :mod:`imports` module.
 - now the same ``follow_call`` as above calls ``follow_paths`` to follow the
   second part of the statement ``date``.
 - After ``follow_paths`` returns with the desired ``datetime.date`` class, the
