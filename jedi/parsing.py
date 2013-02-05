@@ -305,12 +305,12 @@ class Parser(object):
                                                                 self.end_pos)
 
         super = []
-        token_type, next = self.next()
-        if next == '(':
+        token_type, _next = self.next()
+        if _next == '(':
             super = self._parse_parentheses()
-            token_type, next = self.next()
+            token_type, _next = self.next()
 
-        if next != ':':
+        if _next != ':':
             debug.warning("class syntax: %s@%s" % (cname, self.start_pos[0]))
             return None
 
