@@ -1,3 +1,14 @@
+"""
+Like described in the :mod:`parsing_representation` module, there's a need for
+an ast like module to represent the states of parsed modules.
+
+But now there are also structures in Python that need a little bit more than
+that. An ``Instance`` for example is only a ``Class`` before it is
+instantiated. This class represents these cases.
+
+So, why is there also a ``Class`` class here? Well, there are decorators and
+they change classes in Python 3.
+"""
 import sys
 import copy
 
