@@ -47,6 +47,8 @@ Dynamic stuff
 .. autodata:: additional_dynamic_modules
 
 
+.. _settings-recursion:
+
 Recursions
 ~~~~~~~~~~
 

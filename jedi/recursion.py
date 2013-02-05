@@ -1,3 +1,12 @@
+"""
+Recursions are the recipe of |jedi| to conquer Python code. However, someone
+must stop recursions going mad. Some settings are here to make |jedi| stop at
+the right time. You can read more about them :ref:`here <settings-recursion>`.
+
+Next to :mod:`cache` this module also makes |jedi| not thread-safe. Why?
+``ExecutionRecursionDecorator`` uses class variables to count the function
+calls.
+"""
 import parsing_representation as pr
 import evaluate_representation as er
 import debug
