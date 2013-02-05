@@ -101,7 +101,7 @@ def find_return_types(func):
 
     p = parsing.Parser(type_str, None, (1, 0), no_docstr=True)
     p.user_stmt.parent = func
-    return list(er.follow_statement(p.user_stmt))
+    return list(evaluate.follow_statement(p.user_stmt))
 
 def search_return_in_docstr(code):
     for p in DOCSTRING_RETURN_PATTERNS:

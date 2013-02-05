@@ -12,7 +12,7 @@ sys.path.append(sys.path[1] + '/thirdparty')
 # syntax err
 sys.path.append('a' +* '/thirdparty')
 
-#? ['evaluate']
+#? ['evaluate', 'evaluate_representation']
 import evaluate
 
 #? ['goto']
