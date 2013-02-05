@@ -740,7 +740,7 @@ def follow_path(path, scope, call_scope, position=None):
 
 def filter_private_variable(scope, call_scope, var_name):
     if isinstance(var_name, (str, unicode)) \
-                and var_name.startswith('__') and isinstance(scope, er.Instance):
+            and var_name.startswith('__') and isinstance(scope, er.Instance):
         s = call_scope.get_parent_until((pr.Class, er.Instance))
         if s != scope and s != scope.base.base:
             return True

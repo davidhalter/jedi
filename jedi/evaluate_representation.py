@@ -248,7 +248,8 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 supers.append(cls)
         if not supers and self.base.parent != builtin.Builtin.scope:
             # add `object` to classes
-            supers += evaluate.get_scopes_for_name(builtin.Builtin.scope, 'object')
+            supers += evaluate.get_scopes_for_name(builtin.Builtin.scope,
+                                                    'object')
         return supers
 
     @cache.memoize_default(default=[])
@@ -402,7 +403,8 @@ class Execution(Executable):
 
                     for name in names:
                         key = name.var_args.get_only_subelement()
-                        stmts += evaluate.follow_path(iter([key]), obj, self.base)
+                        stmts += evaluate.follow_path(iter([key]), obj,
+                                                        self.base)
                 return stmts
             elif func_name == 'type':
                 # otherwise it would be a metaclass
@@ -757,7 +759,8 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
             if index_call_list and [x for x in index_call_list if ':' in x]:
                 return [self]
 
-            index_possibilities = list(evaluate.follow_call_list(index_call_list))
+            index_possibilities = list(evaluate.follow_call_list(
+                                                        index_call_list))
             if len(index_possibilities) == 1:
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
@@ -810,7 +813,8 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = evaluate.get_scopes_for_name(builtin.Builtin.scope, self._array.type)[0]
+        scope = evaluate.get_scopes_for_name(builtin.Builtin.scope,
+                                             self._array.type)[0]
         scope = Instance(scope)
         names = scope.get_defined_names()
         return [ArrayElement(n) for n in names]
