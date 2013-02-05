@@ -102,9 +102,9 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
     names = scope.get_defined_names()
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    if (not position or isinstance(scope, (Array, Instance))
+    if (not position or isinstance(scope, (er.Array, er.Instance))
                 or start_scope != scope
-                and isinstance(start_scope, (pr.Function, Execution))):
+                and isinstance(start_scope, (pr.Function, er.Execution))):
         return names
     names_new = []
     for n in names:
@@ -128,11 +128,11 @@ def get_names_for_scope(scope, position=None, star_search=True,
         # InstanceElement of Class is ignored, if it is not the start scope.
         if not (scope != non_flow and scope.isinstance(pr.Class)
                     or scope.isinstance(pr.Flow)
-                    or scope.isinstance(Instance)
-                        and non_flow.isinstance(Function)
+                    or scope.isinstance(er.Instance)
+                        and non_flow.isinstance(er.Function)
                     ):
             try:
-                if isinstance(scope, Instance):
+                if isinstance(scope, er.Instance):
                     for g in scope.scope_generator():
                         yield g
                 else:
@@ -147,7 +147,7 @@ def get_names_for_scope(scope, position=None, star_search=True,
         scope = scope.parent
         # This is used, because subscopes (Flow scopes) would distort the
         # results.
-        if scope and scope.isinstance(Function, pr.Function, Execution):
+        if scope and scope.isinstance(er.Function, pr.Function, er.Execution):
             in_func_scope = scope
 
     # Add star imports.
@@ -185,7 +185,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
             add = []
             if r.isinstance(pr.Statement):
                 check_instance = None
-                if isinstance(r, InstanceElement) and r.is_class_var:
+                if isinstance(r, er.InstanceElement) and r.is_class_var:
                     check_instance = r.instance
                     r = r.var
 
@@ -204,7 +204,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                         # Instances are typically faked, if the instance is not
                         # called from outside. Here we check it for __init__
                         # functions and return.
-                        if isinstance(func, InstanceElement) \
+                        if isinstance(func, er.InstanceElement) \
                                 and func.instance.is_generated \
                                 and hasattr(func, 'name') \
                                 and str(func.name) == '__init__' \
@@ -229,19 +229,19 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
 
                 if check_instance is not None:
                     # class renames
-                    add = [InstanceElement(check_instance, a, True)
-                                if isinstance(a, (Function, pr.Function))
+                    add = [er.InstanceElement(check_instance, a, True)
+                                if isinstance(a, (er.Function, pr.Function))
                                 else a for a in add]
                 res_new += add
             else:
                 if isinstance(r, pr.Class):
-                    r = Class(r)
+                    r = er.Class(r)
                 elif isinstance(r, pr.Function):
-                    r = Function(r)
-                if r.isinstance(Function):
+                    r = er.Function(r)
+                if r.isinstance(er.Function):
                     try:
                         r = r.get_decorated_func()
-                    except DecoratorNotFound:
+                    except er.DecoratorNotFound:
                         continue
                 res_new.append(r)
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
@@ -285,10 +285,10 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                 # place, if the var_args are clear. But sometimes the class is
                 # not known. Therefore add a new instance for self. Otherwise
                 # take the existing.
-                if isinstance(scope, InstanceElement):
+                if isinstance(scope, er.InstanceElement):
                     inst = scope.instance
                 else:
-                    inst = Instance(Class(par.parent.parent))
+                    inst = er.Instance(er.Class(par.parent.parent))
                     inst.is_generated = True
                 result.append(inst)
             elif par.isinstance(pr.Statement):
@@ -320,7 +320,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                         no_break_scope = True
 
                     # TODO this makes self variables non-breakable. wanted?
-                    if isinstance(name, InstanceElement) \
+                    if isinstance(name, er.InstanceElement) \
                                                 and not name.is_class_var:
                         no_break_scope = True
 
@@ -339,7 +339,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):
                 p = name.parent.parent if name.parent else None
-                if isinstance(p, InstanceElement) \
+                if isinstance(p, er.InstanceElement) \
                             and isinstance(p.var, pr.Class):
                     p = p.var
                 if name_str == name.get_code() and p not in break_scopes:
@@ -352,7 +352,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
                     else:
                         result += r
                     # for comparison we need the raw class
-                    s = nscope.base if isinstance(nscope, Class) else nscope
+                    s = nscope.base if isinstance(nscope, er.Class) else nscope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
                     if result and not no_break_scope:
@@ -377,7 +377,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
             if result:
                 break
 
-        if not result and isinstance(nscope, Instance):
+        if not result and isinstance(nscope, er.Instance):
             # getattr() / __getattr__ / __getattribute__
             result += check_getattr(nscope, name_str)
         debug.dbg('sfn filter "%s" in %s: %s' % (name_str, nscope, result))
@@ -387,7 +387,7 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
         """ Processes descriptors """
         res_new = []
         for r in result:
-            if isinstance(scope, (Instance, Class)) \
+            if isinstance(scope, (er.Instance, er.Class)) \
                                 and hasattr(r, 'get_descriptor_return'):
                 # handle descriptors
                 try:
@@ -401,10 +401,10 @@ def get_scopes_for_name(scope, name_str, position=None, search_global=False,
     if search_global:
         scope_generator = get_names_for_scope(scope, position=position)
     else:
-        if isinstance(scope, Instance):
+        if isinstance(scope, er.Instance):
             scope_generator = scope.scope_generator()
         else:
-            if isinstance(scope, (Class, pr.Module)):
+            if isinstance(scope, (er.Class, pr.Module)):
                 # classes are only available directly via chaining?
                 # strange stuff...
                 names = scope.get_defined_names()
@@ -444,7 +444,7 @@ def get_iterator_types(inputs):
     # Take the first statement (for has always only
     # one, remember `in`). And follow it.
     for it in inputs:
-        if isinstance(it, (Generator, Array, dynamic.ArrayInstance)):
+        if isinstance(it, (er.Generator, er.Array, dynamic.ArrayInstance)):
             iterators.append(it)
         else:
             if not hasattr(it, 'execute_subscope_by_name'):
@@ -457,12 +457,12 @@ def get_iterator_types(inputs):
 
     result = []
     for gen in iterators:
-        if isinstance(gen, Array):
+        if isinstance(gen, er.Array):
             # Array is a little bit special, since this is an internal
             # array, but there's also the list builtin, which is
             # another thing.
             result += gen.get_index_types()
-        elif isinstance(gen, Instance):
+        elif isinstance(gen, er.Instance):
             # __iter__ returned an instance.
             name = '__next__' if is_py3k else 'next'
             try:
@@ -604,9 +604,9 @@ def follow_call_list(call_list, follow_array=False):
                     result += follow_statement(stmt)
                 else:
                     if isinstance(call, (pr.Lambda)):
-                        result.append(Function(call))
+                        result.append(er.Function(call))
                     # With things like params, these can also be functions...
-                    elif isinstance(call, (Function, Class, Instance,
+                    elif isinstance(call, (er.Function, er.Class, er.Instance,
                                                     dynamic.ArrayInstance)):
                         result.append(call)
                     # The string tokens are just operations (+, -, etc.)
@@ -626,8 +626,8 @@ def follow_call_list(call_list, follow_array=False):
                             continue
                         result += follow_call(call)
                     elif call == '*':
-                        if [r for r in result if isinstance(r, Array)
-                                        or isinstance(r, Instance)
+                        if [r for r in result if isinstance(r, er.Array)
+                                        or isinstance(r, er.Instance)
                                             and str(r.name) == 'str']:
                             # if it is an iterable, ignore * operations
                             next(calls_iterator)
@@ -655,7 +655,7 @@ def follow_call_path(path, scope, position):
     current = next(path)
 
     if isinstance(current, pr.Array):
-        result = [Array(current)]
+        result = [er.Array(current)]
     else:
         if isinstance(current, pr.NamePart):
             # This is the first global lookup.
@@ -670,7 +670,7 @@ def follow_call_path(path, scope, position):
                 scopes = []
             # Make instances of those number/string objects.
             arr = helpers.generate_param_array([current.name])
-            scopes = [Instance(s, arr) for s in scopes]
+            scopes = [er.Instance(s, arr) for s in scopes]
         result = imports.strip_imports(scopes)
 
     return follow_paths(path, result, scope, position=position)
@@ -721,13 +721,13 @@ def follow_path(path, scope, call_scope, position=None):
         elif current.type not in [pr.Array.DICT]:
             # Scope must be a class or func - make an instance or execution.
             debug.dbg('exe', scope)
-            result = Execution(scope, current).get_return_types()
+            result = er.Execution(scope, current).get_return_types()
         else:
             # Curly braces are not allowed, because they make no sense.
             debug.warning('strange function call with {}', current, scope)
     else:
         # The function must not be decorated with something else.
-        if scope.isinstance(Function):
+        if scope.isinstance(er.Function):
             scope = scope.get_magic_method_scope()
         else:
             # This is the typical lookup while chaining things.
@@ -740,8 +740,8 @@ def follow_path(path, scope, call_scope, position=None):
 
 def filter_private_variable(scope, call_scope, var_name):
     if isinstance(var_name, (str, unicode)) \
-                and var_name.startswith('__') and isinstance(scope, Instance):
-        s = call_scope.get_parent_until((pr.Class, Instance))
+                and var_name.startswith('__') and isinstance(scope, er.Instance):
+        s = call_scope.get_parent_until((pr.Class, er.Instance))
         if s != scope and s != scope.base.base:
             return True
     return False
