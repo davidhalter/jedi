@@ -1,10 +1,4 @@
 """
-.. warning:: I know this module is very messy. It's hard to write proper code
-        if so much of your work relies on try & error. Sometimes it's just not
-        possible for a small mind like mine to understand the problem, because
-        it happens after a 50 function calls deep recursion. I know refactoring
-        is necessary, but it's not that easy to find that time.
-
 Evaluation of Python code in |jedi| is based on three assumptions:
 
 * Code is recursive (to weaken this assumption, the :mod:`dynamic` module
