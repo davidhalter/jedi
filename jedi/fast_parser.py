@@ -1,3 +1,8 @@
+"""
+Basically a parser that is faster, because it tries to parse only parts and if
+anything changes, it only reparses the changed parts. But because it's not
+finished (and still not working as I want), I won't document it any further.
+"""
 import re
 import operator
 
