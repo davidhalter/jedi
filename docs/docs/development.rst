@@ -188,8 +188,7 @@ Caching (cache.py)
 Recursions (recursion.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO need to refactor the recursion stuff out of helpers.py
-#.. automodule:: recursion
+.. automodule:: recursion
 
 
 
