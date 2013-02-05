@@ -28,9 +28,9 @@ make an example:
 >>> import datetime
 >>> datetime.date.toda# <-- cursor here
 
-First of it all, this module doesn't care about completion. It really just
-cares about ``datetime.date``. At the end of the procedure
-``follow_statement`` will return the ``datetime`` class.
+First of all, this module doesn't care about completion. It really just cares
+about ``datetime.date``. At the end of the procedure ``follow_statement`` will
+return the ``datetime`` class.
 
 To *visualize* this (simplified):
 
@@ -68,7 +68,7 @@ want. This module has been tested by about 600 tests. Don't be afraid to break
 something. The tests are good enough.
 
 I need to mention now that this recursive approach is really good because it
-only *executes* what needs to be *executed*. All the statements and modules
+only *evaluates* what needs to be *evaluated*. All the statements and modules
 that are not used are just being ignored. It's a little bit similar to the
 backtracking algorithm.
 
