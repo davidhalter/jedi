@@ -1,7 +1,7 @@
 import sys
 import copy
 
-from _compatibility import property, use_metaclass
+from _compatibility import property, use_metaclass, next, hasattr
 import parsing_representation as pr
 import imports
 import docstrings
