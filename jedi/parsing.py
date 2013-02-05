@@ -6,10 +6,11 @@ This module is split in two parts:
 
 The ``Parser`` tries to represent the available Python code in an easy to read
 format. The Python module ``tokenize`` is a very important part in the
-``Parser``, because it splits the code into different words. Sometimes it looks
-a bit messy. Sorry for that! You might ask now: "Why didn't you use the ``ast``
-module for this? Well, ``ast`` does a very good job understanding proper Python
-code, but fails to work if there's only one single line of broken code.
+``Parser``, because it splits the code into different words (tokens).
+Sometimes it looks a bit messy. Sorry for that! You might ask now: "Why didn't
+you use the ``ast`` module for this? Well, ``ast`` does a very good job
+understanding proper Python code, but fails to work as soon as there's a single
+line of broken code.
 
 The classes are not very hard to understand. They are being named like you
 would call them: ``Import``, ``Class``, etc.
