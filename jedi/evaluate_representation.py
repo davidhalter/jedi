@@ -20,6 +20,7 @@ import cache
 import builtin
 import dynamic
 import helpers
+import recursion
 import debug
 import evaluate
 import common
@@ -388,7 +389,7 @@ class Execution(Executable):
     responsibility of the decorators.
     """
     @cache.memoize_default(default=[])
-    @helpers.ExecutionRecursionDecorator
+    @recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
         stmts = []

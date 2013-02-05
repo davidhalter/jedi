@@ -81,6 +81,7 @@ import evaluate_representation as er
 import debug
 import builtin
 import imports
+import recursion
 import helpers
 import dynamic
 import docstrings
@@ -522,7 +523,7 @@ def assign_tuples(tup, results, seek_name):
     return result
 
 
-@helpers.RecursionDecorator
+@recursion.RecursionDecorator
 @cache.memoize_default(default=[])
 def follow_statement(stmt, seek_name=None):
     """

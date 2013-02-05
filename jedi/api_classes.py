@@ -11,7 +11,7 @@ import warnings
 from _compatibility import unicode
 import cache
 import dynamic
-import helpers
+import recursion
 import settings
 import evaluate
 import imports
@@ -27,7 +27,7 @@ def _clear_caches():
     """
     cache.clear_caches()
     dynamic.search_param_cache.clear()
-    helpers.ExecutionRecursionDecorator.reset()
+    recursion.ExecutionRecursionDecorator.reset()
 
     evaluate.follow_statement.reset()
 
