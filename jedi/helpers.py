@@ -1,7 +1,7 @@
 import copy
 
 import parsing_representation as pr
-import evaluate
+import evaluate_representation as er
 import debug
 import builtin
 import settings
@@ -119,7 +119,7 @@ class ExecutionRecursionDecorator(object):
         if cls.execution_count > settings.max_executions:
             return True
 
-        if isinstance(execution.base, (evaluate.Generator, evaluate.Array)):
+        if isinstance(execution.base, (er.Generator, er.Array)):
             return False
         module = execution.get_parent_until()
         if evaluate_generator or module == builtin.Builtin.scope:

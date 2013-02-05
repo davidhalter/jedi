@@ -16,6 +16,7 @@ import settings
 import evaluate
 import imports
 import parsing_representation as pr
+import evaluate_representation as er
 import keywords
 
 
@@ -65,7 +66,7 @@ class BaseDefinition(object):
         """The type of the definition."""
         # generate the type
         stripped = self.definition
-        if isinstance(self.definition, evaluate.InstanceElement):
+        if isinstance(self.definition, er.InstanceElement):
             stripped = self.definition.var
         return type(stripped).__name__
 
@@ -242,7 +243,7 @@ class Completion(BaseDefinition):
         """
         if self._followed_definitions is None:
             if self.definition.isinstance(pr.Statement):
-                defs = evaluate.follow_statement(self.definition)
+                defs = er.follow_statement(self.definition)
             elif self.definition.isinstance(pr.Import):
                 defs = imports.strip_imports([self.definition])
             else:
@@ -273,18 +274,18 @@ class Definition(BaseDefinition):
         in testing. e.g. for ``isinstance`` it returns ``def isinstance``.
         """
         d = self.definition
-        if isinstance(d, evaluate.InstanceElement):
+        if isinstance(d, er.InstanceElement):
             d = d.var
         if isinstance(d, pr.Name):
             d = d.parent
 
-        if isinstance(d, evaluate.Array):
+        if isinstance(d, er.Array):
             d = 'class ' + d.type
-        elif isinstance(d, (pr.Class, evaluate.Class, evaluate.Instance)):
+        elif isinstance(d, (pr.Class, er.Class, er.Instance)):
             d = 'class ' + unicode(d.name)
-        elif isinstance(d, (evaluate.Function, pr.Function)):
+        elif isinstance(d, (er.Function, pr.Function)):
             d = 'def ' + unicode(d.name)
-        elif isinstance(d, evaluate.pr.Module):
+        elif isinstance(d, pr.Module):
             # only show module name
             d = 'module %s' % self.module_name
         elif self.is_keyword:
@@ -344,8 +345,8 @@ class CallDef(object):
 
     @property
     def params(self):
-        if self.executable.isinstance(evaluate.Function):
-            if isinstance(self.executable, evaluate.InstanceElement):
+        if self.executable.isinstance(er.Function):
+            if isinstance(self.executable, er.InstanceElement):
                 return self.executable.params[1:]
             return self.executable.params
         else:

@@ -14,6 +14,7 @@ import os
 
 import parsing
 import parsing_representation as pr
+import evaluate_representation as er
 import dynamic
 import imports
 import evaluate
@@ -103,7 +104,7 @@ class Script(object):
             completions = []
             debug.dbg('possible scopes', scopes)
             for s in scopes:
-                if s.isinstance(evaluate.Function):
+                if s.isinstance(er.Function):
                     names = s.get_magic_method_names()
                 else:
                     if isinstance(s, imports.ImportPath):

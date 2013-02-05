@@ -11,6 +11,7 @@ import os
 
 import cache
 import parsing_representation as pr
+import evaluate_representation as er
 import modules
 import evaluate
 import helpers
@@ -255,13 +256,13 @@ def _check_array_additions(compare_array, module, is_list):
 
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/Execution parent """
-        if isinstance(element, evaluate.Array):
+        if isinstance(element, er.Array):
             stmt = element._array.parent_stmt
         else:
             # must be instance
             stmt = element.var_args.parent_stmt
-        if isinstance(stmt, evaluate.InstanceElement):
-            stop_classes = list(stop_classes) + [evaluate.Function]
+        if isinstance(stmt, er.InstanceElement):
+            stop_classes = list(stop_classes) + [er.Function]
         return stmt.get_parent_until(stop_classes)
 
     temp_param_add = settings.dynamic_params_for_other_modules
@@ -269,7 +270,7 @@ def _check_array_additions(compare_array, module, is_list):
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
                                                             ['add', 'update']
-    comp_arr_parent = get_execution_parent(compare_array, evaluate.Execution)
+    comp_arr_parent = get_execution_parent(compare_array, er.Execution)
     possible_stmts = []
     res = []
     for n in search_names:
@@ -282,15 +283,15 @@ def _check_array_additions(compare_array, module, is_list):
             # can search for the same statement, that is in the module
             # dict. Executions are somewhat special in jedi, since they
             # literally copy the contents of a function.
-            if isinstance(comp_arr_parent, evaluate.Execution):
+            if isinstance(comp_arr_parent, er.Execution):
                 stmt = comp_arr_parent. \
                                 get_statement_for_position(stmt.start_pos)
                 if stmt is None:
                     continue
             # InstanceElements are special, because they don't get copied,
             # but have this wrapper around them.
-            if isinstance(comp_arr_parent, evaluate.InstanceElement):
-                stmt = evaluate.InstanceElement(comp_arr_parent.instance, stmt)
+            if isinstance(comp_arr_parent, er.InstanceElement):
+                stmt = er.InstanceElement(comp_arr_parent.instance, stmt)
 
             if evaluate.follow_statement.push_stmt(stmt):
                 # check recursion
@@ -327,7 +328,7 @@ class ArrayInstance(pr.Base):
         """
         items = []
         for array in evaluate.follow_call_list(self.var_args):
-            if isinstance(array, evaluate.Instance) and len(array.var_args):
+            if isinstance(array, er.Instance) and len(array.var_args):
                 temp = array.var_args[0][0]
                 if isinstance(temp, ArrayInstance):
                     # prevent recursions
@@ -474,12 +475,12 @@ def check_statement_information(stmt, search_name):
         assert isinstance(classes_call, pr.Call)
         result = []
         for c in evaluate.follow_call(classes_call):
-            if isinstance(c, evaluate.Array):
+            if isinstance(c, er.Array):
                 result += c.get_index_types()
             else:
                 result.append(c)
         for i, c in enumerate(result):
-            result[i] = evaluate.Instance(c)
+            result[i] = er.Instance(c)
         return result
     except AssertionError:
         return []

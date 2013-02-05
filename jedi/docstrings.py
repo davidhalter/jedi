@@ -3,8 +3,8 @@
 import re
 
 import evaluate
+import evaluate_representation as er
 import parsing
-import parsing_representation as pr
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)', # Sphinx
@@ -89,10 +89,10 @@ def strip_rest_role(type_str):
 
 
 def find_return_types(func):
-    if isinstance(func, evaluate.InstanceElement):
+    if isinstance(func, er.InstanceElement):
         func = func.var
 
-    if isinstance(func, evaluate.Function):
+    if isinstance(func, er.Function):
         func = func.base_func
 
     type_str = search_return_in_docstr(func.docstr)
@@ -101,7 +101,7 @@ def find_return_types(func):
 
     p = parsing.Parser(type_str, None, (1, 0), no_docstr=True)
     p.user_stmt.parent = func
-    return list(evaluate.follow_statement(p.user_stmt))
+    return list(er.follow_statement(p.user_stmt))
 
 def search_return_in_docstr(code):
     for p in DOCSTRING_RETURN_PATTERNS:
