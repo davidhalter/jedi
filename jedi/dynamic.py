@@ -1,9 +1,16 @@
 """
-For dynamic completion.
+For dynamic completions:
 
-Sorry to everyone who is reading this code. Especially the array parts are
-really cryptic and not understandable. It's just a hack, that turned out to be
-working quite good.
+- array operations
+
+    - inserting/appending/extending ``list``
+    - adding/updating ``set``
+- dynamic completion of parameters
+- if/while/isinstance type checks
+- related names searching
+
+I will write more about the process, once I cleaned up certain parts of this
+module.
 """
 from __future__ import with_statement
 
