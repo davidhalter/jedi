@@ -56,12 +56,23 @@ Parser (parsing.py)
 
 .. automodule:: parsing
 
+Parser Representation (parser_representation.py)
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+.. automodule:: parsing_representation
+
 .. _evaluate:
 
 Evaluation of python code (evaluate.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: evaluate
+
+Evaluation Representation (evaluate_representation.py)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+.. automodule:: evaluate_representation
+
 
 .. _dev-api:
 
