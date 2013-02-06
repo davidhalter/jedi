@@ -16,6 +16,7 @@ annotations.
 
 import re
 
+import cache
 import evaluate
 import evaluate_representation as er
 import parsing
@@ -33,11 +34,11 @@ DOCSTRING_RETURN_PATTERNS = [
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 
 
-#@cache.memoize_default()  # TODO add
+@cache.memoize_default()
 def follow_param(param):
     func = param.parent_function
     #print func, param, param.parent_function
-    param_str = search_param_in_docstr(func.docstr, str(param.get_name()))
+    param_str = _search_param_in_docstr(func.docstr, str(param.get_name()))
     user_position = (1, 0)
 
     if param_str is not None:
@@ -56,7 +57,7 @@ def follow_param(param):
     return []
 
 
-def search_param_in_docstr(docstr, param_str):
+def _search_param_in_docstr(docstr, param_str):
     """
     Search `docstr` for a type of `param_str`.
 
@@ -77,12 +78,12 @@ def search_param_in_docstr(docstr, param_str):
     for pattern in patterns:
         match = pattern.search(docstr)
         if match:
-            return strip_rest_role(match.group(1))
+            return _strip_rest_role(match.group(1))
 
     return None
 
 
-def strip_rest_role(type_str):
+def _strip_rest_role(type_str):
     """
     Strip off the part looks like a ReST role in `type_str`.
 
@@ -105,6 +106,12 @@ def strip_rest_role(type_str):
 
 
 def find_return_types(func):
+    def search_return_in_docstr(code):
+        for p in DOCSTRING_RETURN_PATTERNS:
+            match = p.search(code)
+            if match:
+                return match.group(1)
+
     if isinstance(func, er.InstanceElement):
         func = func.var
 
@@ -118,10 +125,3 @@ def find_return_types(func):
     p = parsing.Parser(type_str, None, (1, 0), no_docstr=True)
     p.user_stmt.parent = func
     return list(evaluate.follow_statement(p.user_stmt))
-
-
-def search_return_in_docstr(code):
-    for p in DOCSTRING_RETURN_PATTERNS:
-        match = p.search(code)
-        if match:
-            return match.group(1)
