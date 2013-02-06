@@ -1,3 +1,26 @@
+"""
+A big part of the Python standard libraries are unfortunately not only written
+in Python. The process works like this:
+
+- ``BuiltinModule`` imports the builtin module (e.g. ``sys``)
+- then ``BuiltinModule`` generates code with the docstrings of builtin
+  functions.
+- The :mod:`parsing` parser processes the generated code.
+
+This is possible, because many builtin functions supply docstrings, for example
+the method ``list.index`` has the following attribute ``__doc__``:
+
+    L.index(value, [start, [stop]]) -> integer -- return first index of value.
+        Raises ValueError if the value is not present.
+
+`PEP 257 <http://www.python.org/dev/peps/pep-0257/#one-line-docstrings>`_
+teaches how docstrings should look like for C functions.
+
+Additionally there's a ``Builtin``  instance in this module, to make it
+possible to access functions like ``list`` and ``int`` directly, the same way
+|jedi| access other functions.
+"""
+
 from __future__ import with_statement
 from _compatibility import exec_function, is_py3k
 
