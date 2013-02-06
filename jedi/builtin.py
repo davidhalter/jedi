@@ -251,7 +251,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
 
     # functions
     for name, func in funcs.items():
-        params, ret = parse_function_doc(func)
+        params, ret = _parse_function_doc(func)
         if depth > 0:
             params = 'self, ' + params
         doc_str = get_doc(func, indent=True)
@@ -322,7 +322,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
     return code
 
 
-def parse_function_doc(func):
+def _parse_function_doc(func):
     """
     Takes a function and returns the params and return value as a tuple.
     This is nothing more than a docstring parser.
