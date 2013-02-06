@@ -1,3 +1,18 @@
+"""
+:mod:`imports` is here to resolve import statements and return the
+modules/classes/functions/whatever, which they stand for. However there's not
+any actual importing done. This module is about finding modules in the
+filesystem. This can be quite tricky sometimes, because Python imports are not
+always that simple.
+
+Currently the import process uses ``imp`` to find modules. In the future, it's
+a goal to use ``importlib`` for this purpose. There's a `pull request
+<https://github.com/davidhalter/jedi/pull/109>`_ for that.
+
+This module also supports import autocompletion, which means to complete
+statements like ``from datetim`` (curser at the end would return ``datetime``).
+"""
+
 from __future__ import with_statement
 
 import os
