@@ -1,3 +1,18 @@
+"""
+Don't confuse these classes with :mod:`parsing_representation` modules, the
+modules here can access these representation with ``module.parser.module``.
+``Module`` exists mainly for caching purposes.
+
+Basically :mod:`modules` offers the classes:
+
+- ``CachedModule``, a base class for Cachedmodule.
+- ``Module`` the class for all normal Python modules (not builtins, they are at
+  home at :mod:`builtin`).
+- ``ModuleWithCursor``, holds the module information for :class:`api.Script`.
+
+Apart from those classes there's a ``sys.path`` fetching function, as well as
+`Virtual Env` and `Django` detection.
+"""
 from __future__ import with_statement
 
 from _compatibility import exec_function, unicode, is_py25, literal_eval
