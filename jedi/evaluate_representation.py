@@ -820,14 +820,14 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def get_defined_names(self):
         """
-        This method generates all ArrayElements for one pr.Array.
+        This method generates all `ArrayMethod` for one pr.Array.
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
         scope = evaluate.find_name(builtin.Builtin.scope, self._array.type)[0]
         scope = Instance(scope)
         names = scope.get_defined_names()
-        return [ArrayElement(n) for n in names]
+        return [ArrayMethod(n) for n in names]
 
     def get_contents(self):
         return self._array
@@ -851,12 +851,13 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         return "<e%s of %s>" % (type(self).__name__, self._array)
 
 
-class ArrayElement(object):
+class ArrayMethod(object):
     """
-    A name, e.g. `list.append`, it is used to access to original array methods.
+    A name, e.g. `list.append`, it is used to access the original array
+    methods.
     """
     def __init__(self, name):
-        super(ArrayElement, self).__init__()
+        super(ArrayMethod, self).__init__()
         self.name = name
 
     def __getattr__(self, name):
