@@ -65,6 +65,7 @@ def _rename(names, replace_str):
     """ For both rename and inline. """
     order = sorted(names, key=lambda x: (x.module_path, x.start_pos),
                             reverse=True)
+
     def process(path, old_lines, new_lines):
         if new_lines is not None:  # goto next file, save last
             dct[path] = path, old_lines, new_lines
@@ -130,7 +131,6 @@ def extract(script, new_name):
                 end_line = new_lines[end_pos[0] - 1]
                 text += '\n' + end_line[:end_pos[1]]
 
-
             # remove code from new lines
             t = text.lstrip()
             del_start = start_pos[1] + len(text) - len(t)
@@ -144,7 +144,7 @@ def extract(script, new_name):
                 e = e - del_end
             start_line = start_line[:del_start] + new_name + start_line[e:]
             new_lines[start_pos[0] - 1] = start_line
-            new_lines[start_pos[0]:end_pos[0]-1] = []
+            new_lines[start_pos[0]:end_pos[0] - 1] = []
 
             # add parentheses in multiline case
             open_brackets = ['(', '[', '{']
@@ -193,7 +193,6 @@ def inline(script):
         # if it's the only assignment, remove the statement
         if len(stmt.set_vars) == 1:
             line = line[:stmt.start_pos[1]] + line[stmt.end_pos[1]:]
-
 
         dct = _rename(inlines, replace_str)
         # remove the empty line

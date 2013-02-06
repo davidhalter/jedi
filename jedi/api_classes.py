@@ -205,7 +205,8 @@ class Completion(BaseDefinition):
     @property
     def word(self):
         """
-        Similar to :meth:`Completion.complete`, but return the whole word, e.g. ::
+        Similar to :meth:`Completion.complete`, but return the whole word, for
+        example::
 
             >>> isinstan
 
@@ -235,11 +236,11 @@ class Completion(BaseDefinition):
     def follow_definition(self):
         """
         Return the original definitions. I strongly recommend not using it for
-        your completions, because it might slow down |jedi|. If you want to read
-        only a few objects (<=20), it might be useful, especially to
-        get the original docstrings. The basic problem of this function is
-        that it follows all results. This means with 1000 completions (e.g.
-        numpy), it's just PITA-slow.
+        your completions, because it might slow down |jedi|. If you want to
+        read only a few objects (<=20), it might be useful, especially to get
+        the original docstrings. The basic problem of this function is that it
+        follows all results. This means with 1000 completions (e.g.  numpy),
+        it's just PITA-slow.
         """
         if self._followed_definitions is None:
             if self.definition.isinstance(pr.Statement):

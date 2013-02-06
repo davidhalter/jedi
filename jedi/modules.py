@@ -373,13 +373,15 @@ def source_to_unicode(source, encoding=None):
         http://docs.python.org/2/reference/lexical_analysis.html#encoding-\
                                                                 declarations
         """
-        byte_mark = '\xef\xbb\xbf' if is_py25 else literal_eval(r"b'\xef\xbb\xbf'")
+        byte_mark = '\xef\xbb\xbf' if is_py25 else \
+                                        literal_eval(r"b'\xef\xbb\xbf'")
         if source.startswith(byte_mark):
             # UTF-8 byte-order mark
             return 'utf-8'
 
         first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', str(source)).group(0)
-        possible_encoding = re.search(r"coding[=:]\s*([-\w.]+)", first_two_lines)
+        possible_encoding = re.search(r"coding[=:]\s*([-\w.]+)",
+                                                            first_two_lines)
         if possible_encoding:
             return possible_encoding.group(1)
         else:

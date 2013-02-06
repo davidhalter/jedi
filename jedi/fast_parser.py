@@ -16,7 +16,7 @@ import cache
 class Module(pr.Simple, pr.Module):
     def __init__(self, parsers):
         self._end_pos = None, None
-        super(Module, self).__init__(self, (1,0))
+        super(Module, self).__init__(self, (1, 0))
         self.parsers = parsers
         self.reset_caches()
         self.line_offset = 0
