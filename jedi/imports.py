@@ -281,9 +281,9 @@ class ImportPath(pr.Base):
             if path.endswith('.py'):
                 f = modules.Module(path, source)
             else:
-                f = builtin.Parser(path=path)
+                f = builtin.BuiltinModule(path=path)
         else:
-            f = builtin.Parser(name=path)
+            f = builtin.BuiltinModule(name=path)
 
         return f.parser.module, rest
 

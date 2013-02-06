@@ -16,7 +16,7 @@ import evaluate
 import modules
 
 
-class Parser(modules.CachedModule):
+class BuiltinModule(modules.CachedModule):
     """
     This module is a parser for all builtin modules, which are programmed in
     C/C++. It should also work on third party modules.
@@ -50,7 +50,7 @@ class Parser(modules.CachedModule):
         if not name:
             name = os.path.basename(path)
             name = name.rpartition('.')[0]  # cut file type (normally .so)
-        super(Parser, self).__init__(path=path, name=name)
+        super(BuiltinModule, self).__init__(path=path, name=name)
 
         self.sys_path = list(sys_path)
         self._module = None
@@ -376,7 +376,7 @@ def parse_function_doc(func):
         # New object -> object()
         ret_str = re.sub(r'[nN]ew (.*)', r'\1()', ret_str)
 
-        ret = Parser.map_types.get(ret_str, ret_str)
+        ret = BuiltinModule.map_types.get(ret_str, ret_str)
         if ret == ret_str and ret not in ['None', 'object', 'tuple', 'set']:
             debug.dbg('not working', ret_str)
         if ret != 'pass':
@@ -397,7 +397,7 @@ class Builtin(object):
     @property
     def builtin(self):
         if self._builtin is None:
-            self._builtin = Parser(name=self.name)
+            self._builtin = BuiltinModule(name=self.name)
         return self._builtin
 
     @property
