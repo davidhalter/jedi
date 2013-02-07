@@ -497,7 +497,6 @@ class Execution(Executable):
             new_param = copy.copy(param)
             if parent_stmt is not None:
                 new_param.parent = parent_stmt
-            new_param._assignment_calls_calculated = True
             new_param._assignment_calls = calls
             new_param.is_generated = True
             name = copy.copy(param.get_name())

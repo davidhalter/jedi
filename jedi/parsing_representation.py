@@ -45,33 +45,11 @@ class Base(object):
         return isinstance(self, cls)
 
 
-class Simple(Base):
-    """
-    The super class for Scope, Import, Name and Statement. Every object in
-    the parser tree inherits from this class.
-    """
-    __slots__ = ('parent', 'module', '_start_pos', 'use_as_parent', '_end_pos')
-
+class BasePosition(Base):
     def __init__(self, module, start_pos, end_pos=(None, None)):
+        self.module = module
         self._start_pos = start_pos
         self._end_pos = end_pos
-        self.parent = None
-        # use this attribute if parent should be something else than self.
-        self.use_as_parent = self
-        self.module = module
-
-    @Python3Method
-    def get_parent_until(self, classes=(), reverse=False,
-                                                    include_current=True):
-        """ Takes always the parent, until one class (not a Class) """
-        if type(classes) not in (tuple, list):
-            classes = (classes,)
-        scope = self if include_current else self.parent
-        while scope.parent is not None:
-            if classes and reverse != scope.isinstance(*classes):
-                break
-            scope = scope.parent
-        return scope
 
     @property
     def start_pos(self):
@@ -90,6 +68,33 @@ class Simple(Base):
     @end_pos.setter
     def end_pos(self, value):
         self._end_pos = value
+
+
+class Simple(BasePosition):
+    """
+    The super class for Scope, Import, Name and Statement. Every object in
+    the parser tree inherits from this class.
+    """
+    __slots__ = ('parent', 'module', '_start_pos', 'use_as_parent', '_end_pos')
+
+    def __init__(self, module, start_pos, end_pos=(None, None)):
+        super(Simple, self).__init__(module, start_pos, end_pos)
+        self.parent = None
+        # use this attribute if parent should be something else than self.
+        self.use_as_parent = self
+
+    @Python3Method
+    def get_parent_until(self, classes=(), reverse=False,
+                                                    include_current=True):
+        """ Takes always the parent, until one class (not a Class) """
+        if type(classes) not in (tuple, list):
+            classes = (classes,)
+        scope = self if include_current else self.parent
+        while scope.parent is not None:
+            if classes and reverse != scope.isinstance(*classes):
+                break
+            scope = scope.parent
+        return scope
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
@@ -658,8 +663,7 @@ class Statement(Simple):
     :type start_pos: tuple(int, int)
     """
     __slots__ = ('used_funcs', 'code', 'token_list', 'used_vars',
-                 'set_vars', '_assignment_calls', '_assignment_details',
-                 '_assignment_calls_calculated')
+                 'set_vars', '_assignment_calls', '_assignment_details')
 
     def __init__(self, module, code, set_vars, used_funcs, used_vars,
                                 token_list, start_pos, end_pos, parent=None):
@@ -678,7 +682,6 @@ class Statement(Simple):
         self._assignment_calls = None
         self._assignment_details = None
         # this is important for other scripts
-        self._assignment_calls_calculated = False
 
     def _remove_executions_from_set_vars(self, set_vars):
         """
@@ -735,6 +738,13 @@ class Statement(Simple):
         return str(self.token_list[0]) == "global"
 
     def get_assignment_calls(self):
+        if self._assignment_calls is None:
+            # TODO check
+            result = self._parse_statement()
+            self._assignment_calls = result
+        return self._assignment_calls
+
+    def _parse_statement(self):
         """
         This is not done in the main parser, because it might be slow and
         most of the statements won't need this data anyway. This is something
@@ -743,12 +753,6 @@ class Statement(Simple):
         This is not really nice written, sorry for that. If you plan to replace
         it and make it nicer, that would be cool :-)
         """
-        if self._assignment_calls_calculated:
-            return self._assignment_calls
-
-        brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
-        closing_brackets = [')', '}', ']']
-
         def parse_array(token_iterator, array_type, start_pos, add_el=None):
             arr = Array(start_pos, array_type)
             if add_el is not None:
@@ -797,13 +801,13 @@ class Statement(Simple):
             statement.parent = self.parent
             return statement
 
+        # initializations
         self._assignment_details = []
         result = []
         is_chain = False
         close_brackets = False
-
-        is_call = lambda: result and type(result[-1]) == Call
-        is_call_or_close = lambda: is_call() or close_brackets
+        brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
+        closing_brackets = [')', '}', ']']
 
         token_iterator = enumerate(self.token_list)
         for i, tok_temp in token_iterator:
@@ -842,24 +846,26 @@ class Statement(Simple):
                     elif token_type == tokenize.NUMBER:
                         c_type = Call.NUMBER
 
-                call = Call(tok, c_type, start_pos, parent=result)
+                call = Call(self.module, tok, c_type, start_pos, self)
                 if is_chain:
                     result[-1].set_next(call)
-                    is_chain = False
-                    close_brackets = False
                 else:
                     result.append(call)
+                is_chain = False
+                close_brackets = False
             elif tok in brackets.keys():
                 arr = parse_array(token_iterator, brackets[tok], start_pos)
-                if is_call_or_close():
+                if type(result[-1]) == Call or close_brackets:
                     result[-1].add_execution(arr)
                 else:
                     result.append(arr)
                 close_brackets = True
             elif tok == '.':
+                close_brackets = False
                 if result and isinstance(result[-1], Call):
                     is_chain = True
             elif tok == ',':  # implies a tuple
+                close_brackets = False
                 # rewrite `result`, because now the whole thing is a tuple
                 add_el = parse_statement(iter(result), start_pos)
                 arr = parse_array(token_iterator, Array.TUPLE, start_pos,
@@ -870,9 +876,6 @@ class Statement(Simple):
                 if tok != '\n':
                     result.append(tok)
 
-        # TODO check
-        self._assignment_calls_calculated = True
-        self._assignment_calls = result
         return result
 
 
@@ -908,7 +911,7 @@ class Param(Statement):
         return n[0]
 
 
-class Call(Base):
+class Call(BasePosition):
     """
     `Call` contains a call, e.g. `foo.bar` and owns the executions of those
     calls, which are `Array`s.
@@ -917,45 +920,24 @@ class Call(Base):
     NUMBER = 2
     STRING = 3
 
-    def __init__(self, name, type, start_pos, parent_stmt=None, parent=None):
+    def __init__(self, module, name, type, start_pos, parent=None):
+        super(Call, self).__init__(module, start_pos)
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
         self.parent = parent
         self.type = type
-        self.start_pos = start_pos
 
         self.next = None
         self.execution = None
-        self._parent_stmt = parent_stmt
-
-    @property
-    def start_pos(self):
-        offset = self.parent_stmt.module.line_offset
-        return offset + self._start_pos[0], self._start_pos[1]
-
-    @start_pos.setter
-    def start_pos(self, value):
-        self._start_pos = value
-
-    @property
-    def parent_stmt(self):
-        if self._parent_stmt is not None:
-            return self._parent_stmt
-        elif self.parent:
-            return self.parent.parent_stmt
-        else:
-            return None
-
-    @parent_stmt.setter
-    def parent_stmt(self, value):
-        self._parent_stmt = value
 
     def set_next(self, call):
         """ Adds another part of the statement"""
-        self.next = call
-        call.parent = self.parent
-        return call
+        if self.next is not None:
+            self.next.set_next(call)
+        else:
+            self.next = call
+            call.parent = self.parent
 
     def add_execution(self, call):
         """

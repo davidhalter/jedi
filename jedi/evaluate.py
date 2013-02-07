@@ -580,52 +580,52 @@ def follow_call_list(call_list, follow_array=False):
         return loop
 
     if pr.Array.is_type(call_list, pr.Array.TUPLE, pr.Array.DICT):
+        raise NotImplementedError('TODO')
         # Tuples can stand just alone without any braces. These would be
         # recognized as separate calls, but actually are a tuple.
         result = follow_call(call_list)
     else:
         result = []
-        for calls in call_list:
-            calls_iterator = iter(calls)
-            for call in calls_iterator:
-                if pr.Array.is_type(call, pr.Array.NOARRAY):
-                    result += follow_call_list(call, follow_array=True)
-                elif isinstance(call, pr.ListComprehension):
-                    loop = evaluate_list_comprehension(call)
-                    stmt = copy.copy(call.stmt)
-                    stmt.parent = loop
-                    # create a for loop which does the same as list
-                    # comprehensions
-                    result += follow_statement(stmt)
-                else:
-                    if isinstance(call, (pr.Lambda)):
-                        result.append(er.Function(call))
-                    # With things like params, these can also be functions...
-                    elif isinstance(call, (er.Function, er.Class, er.Instance,
-                                                    dynamic.ArrayInstance)):
-                        result.append(call)
-                    # The string tokens are just operations (+, -, etc.)
-                    elif not isinstance(call, (str, unicode)):
-                        if str(call.name) == 'if':
-                            # Ternary operators.
-                            while True:
-                                try:
-                                    call = next(calls_iterator)
-                                except StopIteration:
+        calls_iterator = iter(call_list)
+        for call in calls_iterator:
+            if pr.Array.is_type(call, pr.Array.NOARRAY):
+                result += follow_call_list(call, follow_array=True)
+            elif isinstance(call, pr.ListComprehension):
+                loop = evaluate_list_comprehension(call)
+                stmt = copy.copy(call.stmt)
+                stmt.parent = loop
+                # create a for loop which does the same as list
+                # comprehensions
+                result += follow_statement(stmt)
+            else:
+                if isinstance(call, (pr.Lambda)):
+                    result.append(er.Function(call))
+                # With things like params, these can also be functions...
+                elif isinstance(call, (er.Function, er.Class, er.Instance,
+                                                dynamic.ArrayInstance)):
+                    result.append(call)
+                # The string tokens are just operations (+, -, etc.)
+                elif not isinstance(call, (str, unicode)):
+                    if str(call.name) == 'if':
+                        # Ternary operators.
+                        while True:
+                            try:
+                                call = next(calls_iterator)
+                            except StopIteration:
+                                break
+                            try:
+                                if str(call.name) == 'else':
                                     break
-                                try:
-                                    if str(call.name) == 'else':
-                                        break
-                                except AttributeError:
-                                    pass
-                            continue
-                        result += follow_call(call)
-                    elif call == '*':
-                        if [r for r in result if isinstance(r, er.Array)
-                                        or isinstance(r, er.Instance)
-                                            and str(r.name) == 'str']:
-                            # if it is an iterable, ignore * operations
-                            next(calls_iterator)
+                            except AttributeError:
+                                pass
+                        continue
+                    result += follow_call(call)
+                elif call == '*':
+                    if [r for r in result if isinstance(r, er.Array)
+                                    or isinstance(r, er.Instance)
+                                        and str(r.name) == 'str']:
+                        # if it is an iterable, ignore * operations
+                        next(calls_iterator)
 
     if follow_array and isinstance(call_list, pr.Array):
         # call_list can also be a two dimensional array
