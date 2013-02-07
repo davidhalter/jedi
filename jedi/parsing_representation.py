@@ -724,22 +724,19 @@ class Statement(Simple):
         """ Get the names for the statement. """
         return list(self.set_vars)
 
-    @property
-    def assignment_details(self):
-        if self._assignment_details is None:
-            # normally, this calls sets this variable
-            self.get_assignment_calls()
-        # it may not have been set by get_assignment_calls -> just use an empty
-        # array
-        return self._assignment_details or []
-
     def is_global(self):
         # first keyword of the first token is global -> must be a global
         return str(self.token_list[0]) == "global"
 
+    @property
+    def assignment_details(self):
+        if self._assignment_calls is None:
+            # parse statement and therefore get the assignment details.
+            self._parse_statement()
+        return self._assignment_details
+
     def get_assignment_calls(self):
         if self._assignment_calls is None:
-            # TODO check
             result = self._parse_statement()
             self._assignment_calls = result
         return self._assignment_calls
@@ -759,6 +756,7 @@ class Statement(Simple):
                 arr.add_statement(add_el)
 
             maybe_dict = array_type == Array.SET
+            break_tok = ''
             while True:
                 statement, break_tok = parse_statement(token_iterator,
                                                         start_pos, maybe_dict)
@@ -769,6 +767,13 @@ class Statement(Simple):
                 # this is a really special case - empty brackets {} are
                 # always dictionaries and not sets.
                 arr.type = Array.DICT
+
+            arr.set_end_pos(start_pos, )
+            k, v = arr.keys, arr.values
+            latest = (v[-1] if v else k[-1] if k else None)
+            end_pos = latest.end_pos if latest is not None \
+                                     else start_pos[0], start_pos[1] + 1
+            arr.end_pos = end_pos[0], end_pos[1] + len(break_tok)
             return arr
 
         def parse_statement(token_iterator, start_pos, maybe_dict=False):
@@ -875,7 +880,6 @@ class Statement(Simple):
                 close_brackets = False
                 if tok != '\n':
                     result.append(tok)
-
         return result
 
 
@@ -1009,18 +1013,7 @@ class Array(Call):
         self.values = values if values else []
         self.arr_el_pos = []
         self.keys = []
-        self._end_pos = None, None
-
-    @property
-    def end_pos(self):
-        if None in self._end_pos:
-            return self._end_pos
-        offset = self.parent_stmt.module.line_offset
-        return offset + self._end_pos[0], self._end_pos[1]
-
-    @end_pos.setter
-    def end_pos(self, value):
-        self._end_pos = value
+        self.end_pos = None, None
 
     def add_field(self, start_pos):
         """
