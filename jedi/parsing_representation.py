@@ -662,8 +662,9 @@ class Statement(Simple):
                  '_assignment_calls_calculated')
 
     def __init__(self, module, code, set_vars, used_funcs, used_vars,
-                                            token_list, start_pos, end_pos):
+                                token_list, start_pos, end_pos, parent=None):
         super(Statement, self).__init__(module, start_pos, end_pos)
+        # TODO remove code -> much cleaner
         self.code = code
         self.used_funcs = used_funcs
         self.used_vars = used_vars
@@ -671,6 +672,7 @@ class Statement(Simple):
         for s in set_vars + used_funcs + used_vars:
             s.parent = self.use_as_parent
         self.set_vars = self._remove_executions_from_set_vars(set_vars)
+        self.parent = parent
 
         # cache
         self._assignment_calls = None
@@ -741,6 +743,49 @@ class Statement(Simple):
         This is not really nice written, sorry for that. If you plan to replace
         it and make it nicer, that would be cool :-)
         """
+        brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
+        closing_brackets = [')', '}', ']']
+
+        def parse_array(token_iterator, array_type, start_pos):
+            arr = Array(start_pos, array_type)
+            maybe_dict = array_type == Array.SET
+            while True:
+                statement, break_tok = parse_statement(token_iterator,
+                                                        start_pos, maybe_dict)
+                if statement is not None:
+                    is_key = maybe_dict and break_tok == ':'
+                    arr.add_statement(statement, is_key)
+            return arr
+
+        def parse_statement(token_iterator, start_pos, maybe_dict=False):
+            token_list = []
+            level = 0
+            tok = None
+            for i, tok_temp in token_iterator:
+                try:
+                    token_type, tok, start_tok_pos = tok_temp
+                except TypeError:
+                    # the token is a Name, which has already been parsed
+                    tok = tok_temp
+                    end_pos = tok.end_pos
+                else:
+                    if tok in closing_brackets:
+                        level -= 1
+                    elif tok in brackets.keys():
+                        level += 1
+
+                    if level == 0 and tok in closing_brackets + (',',):
+                        break
+                token_list.append(tok_temp)
+
+            if not token_list:
+                return None, tok
+
+            statement = Statement(self.module, "XXX" + self.code, [], [], [],
+                                            token_list, start_pos, end_pos)
+            statement.parent = self.parent
+            return statement
+
         if self._assignment_calls_calculated:
             return self._assignment_calls
         self._assignment_details = []
@@ -749,8 +794,11 @@ class Statement(Simple):
         is_chain = False
         close_brackets = False
 
-        tok_iter = enumerate(self.token_list)
-        for i, tok_temp in tok_iter:
+        is_call = lambda: type(result) == Call
+        is_call_or_close = lambda: is_call() or close_brackets
+
+        token_iterator = enumerate(self.token_list)
+        for i, tok_temp in token_iterator:
             #print 'tok', tok_temp, result
             if isinstance(tok_temp, ListComprehension):
                 result.add_to_current_field(tok_temp)
@@ -782,14 +830,18 @@ class Statement(Simple):
                     is_chain = False
                     continue
                 elif tok == 'as':
-                    next(tok_iter, None)
+                    next(token_iterator, None)
                     continue
 
-            # here starts the statement creation madness!
-            brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
-            is_call = lambda: type(result) == Call
-            is_call_or_close = lambda: is_call() or close_brackets
+            if level >= 0:
+                if tok in brackets.keys():  # brackets
+                    level += 1
+                elif tok in closing_brackets:
+                    level -= 1
+                if level == 0:
+                    pass
 
+            # here starts the statement creation madness!
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:
                 _tok = tok
@@ -847,7 +899,7 @@ class Statement(Simple):
                 # important - it cannot be empty anymore
                 if result.type == Array.NOARRAY:
                     result.type = Array.TUPLE
-            elif tok in [')', '}', ']']:
+            elif tok in closing_brackets:
                 while is_call_or_close():
                     result = result.parent
                     close_brackets = False
@@ -1021,7 +1073,7 @@ class Array(Call):
     below.
     :type array_type: int
     """
-    NOARRAY = None
+    NOARRAY = None  # just brackets, like `1 * (3 + 2)`
     TUPLE = 'tuple'
     LIST = 'list'
     DICT = 'dict'
@@ -1056,7 +1108,15 @@ class Array(Call):
         one array.
         """
         self.arr_el_pos.append(start_pos)
-        self.values.append([])
+        self.statements.append([])
+
+    def add_statement(self, statement, is_key=False):
+        """Just add a new statement"""
+        statement.parent = self
+        if is_key:
+            self.keys.append(statement)
+        else:
+            self.values.append(statement)
 
     def add_to_current_field(self, tok):
         """ Adds a token to the latest field (in content). """
