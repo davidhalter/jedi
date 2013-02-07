@@ -8,13 +8,12 @@ inherited. It's used by ``Function``, ``Class``, ``Flow``, etc. A ``Scope`` may
 have ``subscopes``, ``imports`` and ``statements``. The entire parser is based
 on scopes, because they also stand for indentation.
 
-One strange thing about the parser is that ``Array`` is two dimensional.  This
-has been caused by the fact that each array element can be defined by
-operations: ``[1, 2+33]``. So I chose to use a second dimension for ``2+33``,
-where each element would lie in the array like this: ``[2, '+', 33]``. In the
-future it might be useful to use Statements there, too (remove those crappy two
-dimensional arrays). This is also how ``Param`` works. Every single ``Param``
-is a ``Statement``.
+One special thing:
+
+``Array`` values are statements. But if you think about it, this makes sense.
+``[1, 2+33]`` for example would be an Array with two ``Statement`` inside. This
+is the easiest way to write a parser. The same behaviour applies to ``Param``,
+which is being used in a function definition.
 
 
 .. todo:: remove docstr params from Scope.__init__()
