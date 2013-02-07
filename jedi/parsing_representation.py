@@ -44,11 +44,21 @@ class Base(object):
         return isinstance(self, cls)
 
 
-class BasePosition(Base):
+class Simple(Base):
+    """
+    The super class for Scope, Import, Name and Statement. Every object in
+    the parser tree inherits from this class.
+    """
+    __slots__ = ('parent', 'module', '_start_pos', 'use_as_parent', '_end_pos')
+
     def __init__(self, module, start_pos, end_pos=(None, None)):
         self.module = module
         self._start_pos = start_pos
         self._end_pos = end_pos
+
+        self.parent = None
+        # use this attribute if parent should be something else than self.
+        self.use_as_parent = self
 
     @property
     def start_pos(self):
@@ -67,20 +77,6 @@ class BasePosition(Base):
     @end_pos.setter
     def end_pos(self, value):
         self._end_pos = value
-
-
-class Simple(BasePosition):
-    """
-    The super class for Scope, Import, Name and Statement. Every object in
-    the parser tree inherits from this class.
-    """
-    __slots__ = ('parent', 'module', '_start_pos', 'use_as_parent', '_end_pos')
-
-    def __init__(self, module, start_pos, end_pos=(None, None)):
-        super(Simple, self).__init__(module, start_pos, end_pos)
-        self.parent = None
-        # use this attribute if parent should be something else than self.
-        self.use_as_parent = self
 
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
@@ -811,7 +807,7 @@ class Statement(Simple):
         is_chain = False
         close_brackets = False
         brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
-        closing_brackets = [')', '}', ']']
+        closing_brackets = ')', '}', ']'
 
         token_iterator = enumerate(self.token_list)
         for i, tok_temp in token_iterator:
@@ -911,7 +907,7 @@ class Param(Statement):
         return n[0]
 
 
-class Call(BasePosition):
+class Call(Simple):
     """
     `Call` contains a call, e.g. `foo.bar` and owns the executions of those
     calls, which are `Array`s.
@@ -1001,10 +997,8 @@ class Array(Call):
     DICT = 'dict'
     SET = 'set'
 
-    def __init__(self,  start_pos, arr_type=NOARRAY, parent_stmt=None,
-                                                   parent=None, values=None):
-        super(Array, self).__init__(None, arr_type, start_pos, parent_stmt,
-                                                                    parent)
+    def __init__(self,  start_pos, arr_type=NOARRAY, parent=None, values=None):
+        super(Array, self).__init__(None, arr_type, start_pos, parent)
         self.values = values if values else []
         self.keys = []
         self.end_pos = None, None

@@ -639,10 +639,9 @@ def follow_call_list(call_list, follow_array=False):
 
 def follow_call(call):
     """Follow a call is following a function, variable, string, etc."""
-    scope = call.parent_stmt.parent
     path = call.generate_call_path()
-    position = call.parent_stmt.start_pos
-    return follow_call_path(path, scope, position)
+    scope = call.get_parent_until(pr.Scope)
+    return follow_call_path(path, scope, call.start_pos)
 
 
 def follow_call_path(path, scope, position):
