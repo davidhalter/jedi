@@ -252,6 +252,9 @@ if test_files or thirdparty:
     test_dir(completion_test_dir, thirdparty=True)
 
 base.print_summary()
+#from guppy import hpy
+#hpy()
+#print hpy().heap()
 
 exit_code = 1 if base.tests_fail else 0
 if sys.hexversion < 0x02060000 and base.tests_fail <= 9:
