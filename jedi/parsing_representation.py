@@ -817,9 +817,6 @@ class Statement(Simple):
         token_iterator = enumerate(self.token_list)
         for i, tok_temp in token_iterator:
             #print 'tok', tok_temp, result
-            if isinstance(tok_temp, ListComprehension):
-                result.add_to_current_field(tok_temp)
-                continue
             try:
                 token_type, tok, start_pos = tok_temp
             except TypeError:
@@ -1009,21 +1006,9 @@ class Array(Call):
                                                    parent=None, values=None):
         super(Array, self).__init__(None, arr_type, start_pos, parent_stmt,
                                                                     parent)
-
         self.values = values if values else []
-        self.arr_el_pos = []
         self.keys = []
         self.end_pos = None, None
-
-    def add_field(self, start_pos):
-        """
-        Just add a new field to the values.
-
-        Each value has a sub-array, because there may be different tokens in
-        one array.
-        """
-        self.arr_el_pos.append(start_pos)
-        self.statements.append([])
 
     def add_statement(self, statement, is_key=False):
         """Just add a new statement"""
@@ -1032,29 +1017,6 @@ class Array(Call):
             self.keys.append(statement)
         else:
             self.values.append(statement)
-
-    def add_to_current_field(self, tok):
-        """ Adds a token to the latest field (in content). """
-        if not self.values:
-            # An empty round brace is just a tuple, filled it is unnecessary.
-            if self.type == Array.TUPLE:
-                self.type = Array.NOARRAY
-            # Add the first field, this is done here, because if nothing
-            # gets added, the list is empty, which is also needed sometimes.
-            self.values.append([])
-        self.values[-1].append(tok)
-
-    def add_dictionary_key(self):
-        """
-        Only used for dictionaries, automatically adds the tokens added by now
-        from the values to keys, because the parser works this way.
-        """
-        if self.type in (Array.LIST, Array.TUPLE):
-            return  # these are basically code errors, just ignore
-        self.keys.append(self.values.pop())
-        if self.type == Array.SET:
-            self.type = Array.DICT
-        self.values.append([])
 
     def get_only_subelement(self):
         """
@@ -1070,6 +1032,7 @@ class Array(Call):
         """
         This is not only used for calls on the actual object, but for
         ducktyping, to invoke this function with anything as `self`.
+        TODO remove?
         """
         if isinstance(instance, Array):
             if instance.type in types:
@@ -1080,13 +1043,14 @@ class Array(Call):
         return len(self.values)
 
     def __getitem__(self, key):
+        if self.type == self.DICT:
+            raise NotImplementedError('no dicts allowed, yet')
         return self.values[key]
 
     def __iter__(self):
         if self.type == self.DICT:
-            return iter(zip(self.keys, self.values))
-        else:
-            return iter(self.values)
+            raise NotImplementedError('no dicts allowed, yet')
+        return iter(self.values)
 
     def get_code(self):
         def to_str(el):
