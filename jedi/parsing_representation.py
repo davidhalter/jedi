@@ -743,11 +743,17 @@ class Statement(Simple):
         This is not really nice written, sorry for that. If you plan to replace
         it and make it nicer, that would be cool :-)
         """
+        if self._assignment_calls_calculated:
+            return self._assignment_calls
+
         brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
         closing_brackets = [')', '}', ']']
 
-        def parse_array(token_iterator, array_type, start_pos):
+        def parse_array(token_iterator, array_type, start_pos, add_el=None):
             arr = Array(start_pos, array_type)
+            if add_el is not None:
+                arr.add_statement(add_el)
+
             maybe_dict = array_type == Array.SET
             while True:
                 statement, break_tok = parse_statement(token_iterator,
@@ -755,6 +761,10 @@ class Statement(Simple):
                 if statement is not None:
                     is_key = maybe_dict and break_tok == ':'
                     arr.add_statement(statement, is_key)
+            if not arr.values and maybe_dict:
+                # this is a really special case - empty brackets {} are
+                # always dictionaries and not sets.
+                arr.type = Array.DICT
             return arr
 
         def parse_statement(token_iterator, start_pos, maybe_dict=False):
@@ -764,6 +774,7 @@ class Statement(Simple):
             for i, tok_temp in token_iterator:
                 try:
                     token_type, tok, start_tok_pos = tok_temp
+                    end_pos = start_pos[0], start_pos[1] + len(tok)
                 except TypeError:
                     # the token is a Name, which has already been parsed
                     tok = tok_temp
@@ -786,15 +797,12 @@ class Statement(Simple):
             statement.parent = self.parent
             return statement
 
-        if self._assignment_calls_calculated:
-            return self._assignment_calls
         self._assignment_details = []
-        top = result = Array(self.start_pos, Array.NOARRAY, self)
-        level = 0
+        result = []
         is_chain = False
         close_brackets = False
 
-        is_call = lambda: type(result) == Call
+        is_call = lambda: result and type(result[-1]) == Call
         is_call_or_close = lambda: is_call() or close_brackets
 
         token_iterator = enumerate(self.token_list)
@@ -810,41 +818,22 @@ class Statement(Simple):
                 tok = tok_temp
                 token_type = None
                 start_pos = tok.start_pos
-            except ValueError:
-                debug.warning("unkown value, shouldn't happen",
-                                tok_temp, type(tok_temp))
-                raise
             else:
-                if level == 0 and tok.endswith('=') \
-                                and not tok in ['>=', '<=', '==', '!=']:
+                if tok.endswith('=') and not tok in ['>=', '<=', '==', '!=']:
                     # This means, there is an assignment here.
-
                     # Add assignments, which can be more than one
-                    self._assignment_details.append((tok, top))
-                    # All these calls wouldn't be important if nonlocal would
-                    # exist. -> Initialize the first items again.
-                    end_pos = start_pos[0], start_pos[1] + len(tok)
-                    top = result = Array(end_pos, Array.NOARRAY, self)
-                    level = 0
+                    self._assignment_details.append((tok, result))
+                    # nonlocal plz!
+                    result = []
                     close_brackets = False
                     is_chain = False
                     continue
-                elif tok == 'as':
+                elif tok == 'as':  # just ignore as
                     next(token_iterator, None)
                     continue
 
-            if level >= 0:
-                if tok in brackets.keys():  # brackets
-                    level += 1
-                elif tok in closing_brackets:
-                    level -= 1
-                if level == 0:
-                    pass
-
-            # here starts the statement creation madness!
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:
-                _tok = tok
                 c_type = Call.NAME
                 if is_literal:
                     tok = literal_eval(tok)
@@ -853,87 +842,38 @@ class Statement(Simple):
                     elif token_type == tokenize.NUMBER:
                         c_type = Call.NUMBER
 
+                call = Call(tok, c_type, start_pos, parent=result)
                 if is_chain:
-                    call = Call(tok, c_type, start_pos, parent=result)
-                    result = result.set_next_chain_call(call)
+                    result[-1].set_next(call)
                     is_chain = False
                     close_brackets = False
                 else:
-                    if close_brackets:
-                        result = result.parent
-                        close_brackets = False
-                    if type(result) == Call:
-                        result = result.parent
-                    call = Call(tok, c_type, start_pos, parent=result)
-                    result.add_to_current_field(call)
-                    result = call
-                tok = _tok
-            elif tok in brackets.keys():  # brackets
-                level += 1
+                    result.append(call)
+            elif tok in brackets.keys():
+                arr = parse_array(token_iterator, brackets[tok], start_pos)
                 if is_call_or_close():
-                    result = Array(start_pos, brackets[tok], parent=result)
-                    result = result.parent.add_execution(result)
-                    close_brackets = False
+                    result[-1].add_execution(arr)
                 else:
-                    result = Array(start_pos, brackets[tok], parent=result)
-                    result.parent.add_to_current_field(result)
-            elif tok == ':':
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                if result.type == Array.LIST:  # [:] lookups
-                    result.add_to_current_field(tok)
-                else:
-                    result.add_dictionary_key()
-            elif tok == '.':
-                if close_brackets and result.parent != top:
-                    # only get out of the array, if it is a array execution
-                    result = result.parent
-                    close_brackets = False
-                is_chain = True
-            elif tok == ',':
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                result.add_field((start_pos[0], start_pos[1] + 1))
-                # important - it cannot be empty anymore
-                if result.type == Array.NOARRAY:
-                    result.type = Array.TUPLE
-            elif tok in closing_brackets:
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                if tok == '}' and not len(result):
-                    # this is a really special case - empty brackets {} are
-                    # always dictionaries and not sets.
-                    result.type = Array.DICT
-                level -= 1
-                result.end_pos = start_pos[0], start_pos[1] + 1
+                    result.append(arr)
                 close_brackets = True
+            elif tok == '.':
+                if result and isinstance(result[-1], Call):
+                    is_chain = True
+            elif tok == ',':  # implies a tuple
+                # rewrite `result`, because now the whole thing is a tuple
+                add_el = parse_statement(iter(result), start_pos)
+                arr = parse_array(token_iterator, Array.TUPLE, start_pos,
+                                  add_el)
+                result = [arr]
             else:
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
+                close_brackets = False
                 if tok != '\n':
-                    result.add_to_current_field(tok)
+                    result.append(tok)
 
-        if level != 0:
-            debug.warning("Brackets don't match: %s."
-                          "This is not normal behaviour." % level)
-
-        if self.token_list:
-            while result is not None:
-                try:
-                    result.end_pos = start_pos[0], start_pos[1] + len(tok)
-                except TypeError:
-                    result.end_pos = tok.end_pos
-                result = result.parent
-        else:
-            result.end_pos = self.end_pos
-
+        # TODO check
         self._assignment_calls_calculated = True
-        self._assignment_calls = top
-        return top
+        self._assignment_calls = result
+        return result
 
 
 class Param(Statement):
@@ -1011,7 +951,7 @@ class Call(Base):
     def parent_stmt(self, value):
         self._parent_stmt = value
 
-    def set_next_chain_call(self, call):
+    def set_next(self, call):
         """ Adds another part of the statement"""
         self.next = call
         call.parent = self.parent
