@@ -658,7 +658,7 @@ class Statement(Simple):
     :type start_pos: tuple(int, int)
     """
     __slots__ = ('used_funcs', 'code', 'token_list', 'used_vars',
-                 'set_vars', '_assignment_calls', '_assignment_details')
+                 'set_vars', '_commands', '_assignment_details')
 
     def __init__(self, module, code, set_vars, used_funcs, used_vars,
                                 token_list, start_pos, end_pos, parent=None):
@@ -674,7 +674,7 @@ class Statement(Simple):
         self.parent = parent
 
         # cache
-        self._assignment_calls = None
+        self._commands = None
         self._assignment_details = None
         # this is important for other scripts
 
@@ -711,7 +711,7 @@ class Statement(Simple):
 
     def get_code(self, new_line=True):
         code = ''
-        for c in self.get_assignment_calls():
+        for c in self.get_commands():
             if isinstance(c, Call):
                 code += c.get_code()
             else:
@@ -731,7 +731,7 @@ class Statement(Simple):
         return str(self.token_list[0]) == "global"
 
     def get_command(self, index):
-        commands = self.get_assignment_calls()
+        commands = self.get_commands()
         try:
             return commands[index]
         except IndexError:
@@ -739,16 +739,16 @@ class Statement(Simple):
 
     @property
     def assignment_details(self):
-        if self._assignment_calls is None:
+        if self._commands is None:
             # parse statement and therefore get the assignment details.
             self._parse_statement()
         return self._assignment_details
 
-    def get_assignment_calls(self):
-        if self._assignment_calls is None:
+    def get_commands(self):
+        if self._commands is None:
             result = self._parse_statement()
-            self._assignment_calls = result
-        return self._assignment_calls
+            self._commands = result
+        return self._commands
 
     def _parse_statement(self):
         """

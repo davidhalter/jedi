@@ -355,9 +355,9 @@ class Script(object):
             if user_stmt is None \
                         or not isinstance(user_stmt, pr.Statement):
                 return None, 0
-            ass = helpers.fast_parent_copy(user_stmt.get_assignment_calls())
+            commands = helpers.fast_parent_copy(user_stmt.get_commands())
 
-            call, index, stop = helpers.search_function_call(ass, self.pos)
+            call, index, stop = helpers.search_function_call(commands, self.pos)
             return call, index
 
         def check_cache():

@@ -252,8 +252,8 @@ def find_name(scope, name_str, position=None, search_global=False,
                 return []
             result = get_iterator_types(follow_statement(loop.inits[0]))
             if len(loop.set_vars) > 1:
-                var_arr = loop.set_stmt.get_assignment_calls()
-                result = assign_tuples(var_arr, result, name_str)
+                commands = loop.set_stmt.get_commands()
+                result = assign_tuples(commands, result, name_str)
             return result
 
         def process(name):
@@ -534,11 +534,11 @@ def follow_statement(stmt, seek_name=None):
     :param seek_name: A string.
     """
     debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))
-    call_list = stmt.get_assignment_calls()
-    debug.dbg('calls: %s' % call_list)
+    commands = stmt.get_commands()
+    debug.dbg('calls: %s' % commands)
 
     try:
-        result = follow_call_list(call_list)
+        result = follow_call_list(commands)
     except AttributeError:
         # This is so evil! But necessary to propagate errors. The attribute
         # errors here must not be catched, because they shouldn't exist.
@@ -741,8 +741,9 @@ def filter_private_variable(scope, call_scope, var_name):
 
 def goto(stmt, call_path=None):
     if call_path is None:
-        arr = stmt.get_assignment_calls()
-        call = arr.get_only_subelement()
+        commands = stmt.get_commands()
+        assert len(commands) == 1
+        call = commands[0]
         call_path = list(call.generate_call_path())
 
     scope = stmt.parent

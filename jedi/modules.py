@@ -311,10 +311,9 @@ def sys_path_with_modifications(module):
 
         sys_path = list(get_sys_path())  # copy
         for p in possible_stmts:
-            try:
-                call = p.get_assignment_calls().get_only_subelement()
-            except AttributeError:
-                continue
+            commands = p.get_commands()
+            assert len(commands) == 1
+            call = commands[0]
             n = call.name
             if not isinstance(n, pr.Name) or len(n.names) != 3:
                 continue

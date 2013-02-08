@@ -215,9 +215,9 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
             return self
         return func
 
-    def get_assignment_calls(self):
+    def get_commands(self):
         # Copy and modify the array.
-        origin = self.var.get_assignment_calls()
+        origin = self.var.get_commands()
         # Delete parent, because it isn't used anymore.
         new = helpers.fast_parent_copy(origin)
         par = InstanceElement(self.instance, origin.parent_stmt,
@@ -548,8 +548,8 @@ class Execution(Executable):
                                                         values=[value]))
                 key, value = next(var_arg_iterator, (None, None))
 
-            assignments = param.get_assignment_calls().values
-            assignment = assignments[0]
+            commands = param.get_commands().values
+            assignment = commands[0]
             keys = []
             values = []
             array_type = None
@@ -576,7 +576,7 @@ class Execution(Executable):
                 else:
                     if param.assignment_details:
                         # No value: return the default values.
-                        values = assignments
+                        values = commands
                     else:
                         # If there is no assignment detail, that means there is
                         # no assignment, just the result. Therefore nothing has
@@ -774,7 +774,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
     def get_index_types(self, index_arr=None):
         """ Get the types of a specific index or all, if not given """
         if index_arr is not None:
-            if index_arr and [x for x in index_arr if ':' in x.get_assignment_calls()]:
+            if index_arr and [x for x in index_arr if ':' in x.get_commands()]:
                 # array slicing
                 return [self]
 
