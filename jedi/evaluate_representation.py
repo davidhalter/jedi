@@ -775,24 +775,20 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         """ Get the types of a specific index or all, if not given """
         # array slicing
         if index_call_list is not None:
-            print index_call_list
             if index_call_list and [x for x in index_call_list if ':' in x.token_list]:
                 return [self]
 
-            index_possibilities = [evaluate.follow_statement(i) for i in index_call_list]
+            index_possibilities = self._follow_values(index_call_list)
             if len(index_possibilities) == 1:
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
-                try:
-                    # Multiple elements in the array are not wanted. var_args
-                    # and get_only_subelement can raise AttributeErrors.
-                    i = index_possibilities[0].var_args.get_only_subelement()
-                except AttributeError:
-                    pass
-                else:
+                index = index_possibilities[0]
+                if isinstance(index, Instance) \
+                            and str(index.name) in ['int', 'str'] \
+                            and len(index.var_args) == 1:
                     try:
-                        return self.get_exact_index_types(i)
-                    except (IndexError, KeyError):
+                        return self.get_exact_index_types(index.var_args[0])
+                    except (KeyError, IndexError):
                         pass
 
         result = list(self._follow_values(self._array.values))
@@ -824,8 +820,8 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def _follow_values(self, values):
         """ helper function for the index getters """
-        return itertools.chain.from_iterable(evaluate.follow_statement(v)
-                                             for v in values)
+        return list(itertools.chain.from_iterable(evaluate.follow_statement(v)
+                                                  for v in values))
 
     def get_defined_names(self):
         """
