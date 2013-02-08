@@ -495,16 +495,20 @@ class Execution(Executable):
             """
             Create a param with the original scope (of varargs) as parent.
             """
-            parent_stmt = self.var_args.parent_stmt
-            pos = parent_stmt.start_pos if parent_stmt else None
-            calls = pr.Array(pos, pr.Array.NOARRAY, parent_stmt)
+            if isinstance(self.var_args, pr.Array):
+                parent = self.var_args.parent
+                start_pos = self.var_args.start_pos
+            else:
+                parent = self.base
+                start_pos = None
+            calls = pr.Array(start_pos, pr.Array.NOARRAY, parent)
             calls.values = values
             calls.keys = keys
             calls.type = array_type
             new_param = copy.copy(param)
-            if parent_stmt is not None:
-                new_param.parent = parent_stmt
-            new_param._assignment_calls = calls
+            if parent is not None:
+                new_param.parent = parent
+            new_param._commands = calls
             new_param.is_generated = True
             name = copy.copy(param.get_name())
             name.parent = new_param
@@ -548,12 +552,11 @@ class Execution(Executable):
                                                         values=[value]))
                 key, value = next(var_arg_iterator, (None, None))
 
-            commands = param.get_commands().values
-            assignment = commands[0]
+            commands = param.get_commands()
             keys = []
             values = []
             array_type = None
-            if assignment[0] == '*':
+            if commands[0] == '*':
                 # *args param
                 array_type = pr.Array.TUPLE
                 if value:
@@ -564,7 +567,7 @@ class Execution(Executable):
                         var_arg_iterator.push_back((key, value))
                         break
                     values.append(value)
-            elif assignment[0] == '**':
+            elif commands[0] == '**':
                 # **kwargs param
                 array_type = pr.Array.DICT
                 if non_matching_keys:
@@ -585,7 +588,7 @@ class Execution(Executable):
 
             # Just ignore all the params that are without a key, after one
             # keyword argument was set.
-            if not keys_only or assignment[0] == '**':
+            if not keys_only or commands[0] == '**':
                 keys_used.add(str(key))
                 result.append(gen_param_name_copy(param, keys=keys,
                                         values=values, array_type=array_type))
