@@ -795,13 +795,14 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         result += dynamic.check_array_additions(self)
         return set(result)
 
-    def get_exact_index_types(self, index):
+    def get_exact_index_types(self, mixed_index):
         """ Here the index is an int. Raises IndexError/KeyError """
-        if self._array.type == pr.Array.DICT:
-            old_index = index
+        index = mixed_index
+        if self.type == pr.Array.DICT:
             index = None
-            for i, key_elements in enumerate(self._array.keys):
+            for i, key_statement in enumerate(self._array.keys):
                 # Because we only want the key to be a string.
+                key_elements = key_statement.get_commands()
                 if len(key_elements) == 1:
                     try:
                         str_key = key_elements.get_code()
@@ -810,12 +811,12 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                             str_key = key_elements[0].name
                         except AttributeError:
                             str_key = None
-                    if old_index == str_key:
+                    if mixed_index == str_key:
                         index = i
                         break
             if index is None:
                 raise KeyError('No key found in dictionary')
-        values = [self._array[index]]
+        values = [self._array.values[index]]
         return self._follow_values(values)
 
     def _follow_values(self, values):

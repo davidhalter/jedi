@@ -822,8 +822,9 @@ class Statement(Simple):
                         level += 1
 
                     if level == 0 and tok in closing_brackets \
-                            or level == 1 and (tok == ',' or is_assignment(tok)
-                                                      and break_on_assignment):
+                        or level == 1 and (tok == ','
+                                or maybe_dict and tok == ':'
+                                or is_assignment(tok) and break_on_assignment):
                         break
                 token_list.append(tok_temp)
 
@@ -1038,6 +1039,7 @@ class Array(Call):
         """Just add a new statement"""
         statement.parent = self
         if is_key:
+            self.type = self.DICT
             self.keys.append(statement)
         else:
             self.values.append(statement)
@@ -1059,20 +1061,20 @@ class Array(Call):
 
     def __getitem__(self, key):
         if self.type == self.DICT:
-            raise NotImplementedError('no dicts allowed, yet')
+            raise TypeError('no dicts allowed')
         return self.values[key]
 
     def __iter__(self):
         if self.type == self.DICT:
-            raise NotImplementedError('no dicts allowed, yet')
+            raise TypeError('no dicts allowed')
         return iter(self.values)
 
     def get_code(self):
-        map = {Array.NOARRAY: '%s',
-               Array.TUPLE: '(%s)',
-               Array.LIST: '[%s]',
-               Array.DICT: '{%s}',
-               Array.SET: '{%s}'
+        map = {self.NOARRAY: '%s',
+               self.TUPLE: '(%s)',
+               self.LIST: '[%s]',
+               self.DICT: '{%s}',
+               self.SET: '{%s}'
               }
         inner = []
         for i, stmt in enumerate(self.values):
