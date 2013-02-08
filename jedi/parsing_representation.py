@@ -730,6 +730,13 @@ class Statement(Simple):
         # first keyword of the first token is global -> must be a global
         return str(self.token_list[0]) == "global"
 
+    def get_command(self, index):
+        commands = self.get_assignment_calls()
+        try:
+            return commands[index]
+        except IndexError:
+            return None
+
     @property
     def assignment_details(self):
         if self._assignment_calls is None:

@@ -771,14 +771,14 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
     def __init__(self, array):
         self._array = array
 
-    def get_index_types(self, index_call_list=None):
+    def get_index_types(self, index_arr=None):
         """ Get the types of a specific index or all, if not given """
-        # array slicing
-        if index_call_list is not None:
-            if index_call_list and [x for x in index_call_list if ':' in x.token_list]:
+        if index_arr is not None:
+            if index_arr and [x for x in index_arr if ':' in x.get_assignment_calls()]:
+                # array slicing
                 return [self]
 
-            index_possibilities = self._follow_values(index_call_list)
+            index_possibilities = self._follow_values(index_arr)
             if len(index_possibilities) == 1:
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
