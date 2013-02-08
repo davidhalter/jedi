@@ -661,7 +661,7 @@ def follow_call_path(path, scope, position):
                 debug.warning('unknown type:', current.type, current)
                 scopes = []
             # Make instances of those number/string objects.
-            scopes = [er.Instance(s, [current.name]) for s in scopes]
+            scopes = [er.Instance(s, (current.name,)) for s in scopes]
         result = imports.strip_imports(scopes)
 
     return follow_paths(path, result, scope, position=position)

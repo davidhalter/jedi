@@ -182,12 +182,12 @@ def search_params(param):
 
 def check_array_additions(array):
     """ Just a mapper function for the internal _check_array_additions """
-    if array._array.type not in ['list', 'set']:
+    if not pr.Array.is_type(array._array, pr.Array.LIST, pr.Array.SET):
         # TODO also check for dict updates
         return []
 
     is_list = array._array.type == 'list'
-    current_module = array._array.parent_stmt.get_parent_until()
+    current_module = array._array.get_parent_until()
     res = _check_array_additions(array, current_module, is_list)
     return res
 
@@ -264,10 +264,10 @@ def _check_array_additions(compare_array, module, is_list):
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/Execution parent """
         if isinstance(element, er.Array):
-            stmt = element._array.parent_stmt
+            stmt = element._array.parent
         else:
             # must be instance
-            stmt = element.var_args.parent_stmt
+            stmt = element.var_args.parent
         if isinstance(stmt, er.InstanceElement):
             stop_classes = list(stop_classes) + [er.Function]
         return stmt.get_parent_until(stop_classes)

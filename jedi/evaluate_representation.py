@@ -53,7 +53,7 @@ class Executable(pr.Base):
 
 class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
     """ This class is used to evaluate instances. """
-    def __init__(self, base, var_args=None):
+    def __init__(self, base, var_args=[]):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
                     and builtin.Builtin.scope == base.get_parent_until():
@@ -336,7 +336,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
 
-                wrappers = Execution(decorator, [old_func]).get_return_types()
+                wrappers = Execution(decorator, (old_func,)).get_return_types()
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
                     return None
