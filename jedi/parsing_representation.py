@@ -710,10 +710,17 @@ class Statement(Simple):
         return list(result)
 
     def get_code(self, new_line=True):
+        code = ''
+        for c in self.get_assignment_calls():
+            if isinstance(c, Call):
+                code += c.get_code()
+            else:
+                code += c
+
         if new_line:
-            return self.code + '\n'
+            return code + '\n'
         else:
-            return self.code
+            return code
 
     def get_set_vars(self):
         """ Get the names for the statement. """
@@ -760,6 +767,8 @@ class Statement(Simple):
                 else:
                     is_key = maybe_dict and break_tok == ':'
                     arr.add_statement(stmt, is_key)
+                    if break_tok in closing_brackets:
+                        break
             if not arr.values and maybe_dict:
                 # this is a really special case - empty brackets {} are
                 # always dictionaries and not sets.
@@ -775,7 +784,7 @@ class Statement(Simple):
 
         def parse_array_el(token_iterator, start_pos, maybe_dict=False):
             token_list = []
-            level = 0
+            level = 1
             tok = None
             for i, tok_temp in token_iterator:
                 try:
@@ -791,7 +800,7 @@ class Statement(Simple):
                     elif tok in brackets.keys():
                         level += 1
 
-                    if level == 0 and tok in closing_brackets + (',',):
+                    if level == 0 and tok in closing_brackets or level == 1 and tok == ',':
                         break
                 token_list.append(tok_temp)
 
@@ -854,10 +863,14 @@ class Statement(Simple):
                 close_brackets = False
             elif tok in brackets.keys():
                 arr = parse_array(token_iterator, brackets[tok], start_pos)
-                if result and (type(result[-1]) == Call or close_brackets):
+                if result and (isinstance(result[-1], Call) or close_brackets):
+                    print 'x', arr
                     result[-1].set_execution(arr)
                 else:
+                    print arr
+                    arr.parent = self
                     result.append(arr)
+                #print(tok, result)
                 close_brackets = True
             elif tok == '.':
                 close_brackets = False
@@ -866,7 +879,7 @@ class Statement(Simple):
             elif tok == ',':  # implies a tuple
                 close_brackets = False
                 # rewrite `result`, because now the whole thing is a tuple
-                add_el = parse_array_el(iter(result), start_pos)
+                add_el, t = parse_array_el(enumerate(result), start_pos)
                 arr = parse_array(token_iterator, Array.TUPLE, start_pos,
                                   add_el)
                 result = [arr]
@@ -1038,12 +1051,6 @@ class Array(Call):
         return iter(self.values)
 
     def get_code(self):
-        def to_str(el):
-            try:
-                return el.get_code()
-            except AttributeError:
-                return str(el)
-
         map = {Array.NOARRAY: '%s',
                Array.TUPLE: '(%s)',
                Array.LIST: '[%s]',
@@ -1051,17 +1058,15 @@ class Array(Call):
                Array.SET: '{%s}'
               }
         inner = []
-        for i, value in enumerate(self.values):
+        for i, stmt in enumerate(self.values):
             s = ''
             try:
                 key = self.keys[i]
             except IndexError:
                 pass
             else:
-                for el in key[i]:
-                    s += to_str(el)
-            for el in value:
-                s += to_str(el)
+                s += key.get_code(new_line=False) + ': '
+            s += stmt.get_code(new_line=False)
             inner.append(s)
         return map[self.type] % ', '.join(inner)
 
