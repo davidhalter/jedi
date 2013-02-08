@@ -816,7 +816,6 @@ class Statement(Simple):
         self._assignment_details = []
         result = []
         is_chain = False
-        close_brackets = False
         brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
         closing_brackets = ')', '}', ']'
 
@@ -835,9 +834,7 @@ class Statement(Simple):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
                     self._assignment_details.append((tok, result))
-                    # nonlocal plz!
                     result = []
-                    close_brackets = False
                     is_chain = False
                     continue
                 elif tok == 'as':  # just ignore as
@@ -860,31 +857,24 @@ class Statement(Simple):
                 else:
                     result.append(call)
                 is_chain = False
-                close_brackets = False
             elif tok in brackets.keys():
                 arr = parse_array(token_iterator, brackets[tok], start_pos)
-                if result and (isinstance(result[-1], Call) or close_brackets):
-                    print 'x', arr
+                if result and isinstance(result[-1], Call):
                     result[-1].set_execution(arr)
                 else:
-                    print arr
                     arr.parent = self
                     result.append(arr)
                 #print(tok, result)
-                close_brackets = True
             elif tok == '.':
-                close_brackets = False
                 if result and isinstance(result[-1], Call):
                     is_chain = True
             elif tok == ',':  # implies a tuple
-                close_brackets = False
                 # rewrite `result`, because now the whole thing is a tuple
                 add_el, t = parse_array_el(enumerate(result), start_pos)
                 arr = parse_array(token_iterator, Array.TUPLE, start_pos,
                                   add_el)
                 result = [arr]
             else:
-                close_brackets = False
                 if tok != '\n':
                     result.append(tok)
         return result

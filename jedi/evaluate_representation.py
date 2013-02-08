@@ -767,11 +767,11 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         """ Get the types of a specific index or all, if not given """
         # array slicing
         if index_call_list is not None:
-            if index_call_list and [x for x in index_call_list if ':' in x]:
+            print index_call_list
+            if index_call_list and [x for x in index_call_list if ':' in x.token_list]:
                 return [self]
 
-            index_possibilities = list(evaluate.follow_call_list(
-                                                        index_call_list))
+            index_possibilities = [evaluate.follow_statement(i) for i in index_call_list]
             if len(index_possibilities) == 1:
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
