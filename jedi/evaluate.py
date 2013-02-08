@@ -558,6 +558,7 @@ def follow_call_list(call_list, follow_array=False):
     It is used to evaluate a two dimensional object, that has calls, arrays and
     operators in it.
     """
+    # TODO remove follow_array?!
     def evaluate_list_comprehension(lc, parent=None):
         input = lc.input
         nested_lc = lc.input.token_list[0]
@@ -584,7 +585,8 @@ def follow_call_list(call_list, follow_array=False):
         calls_iterator = iter(call_list)
         for call in calls_iterator:
             if pr.Array.is_type(call, pr.Array.NOARRAY):
-                result += follow_call_list(call, follow_array=True)
+                result += itertools.chain.from_iterable(follow_statement(s)
+                                                        for s in call)
             elif isinstance(call, pr.ListComprehension):
                 loop = evaluate_list_comprehension(call)
                 stmt = copy.copy(call.stmt)

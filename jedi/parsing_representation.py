@@ -763,7 +763,8 @@ class Statement(Simple):
         it and make it nicer, that would be cool :-)
         """
         def is_assignment(tok):
-            return tok.endswith('=') and not tok in ['>=', '<=', '==', '!=']
+            return tok is not None and tok.endswith('=') \
+                    and not tok in ['>=', '<=', '==', '!=']
 
         def parse_array(token_iterator, array_type, start_pos, add_el=None):
             arr = Array(self.module, start_pos, array_type)
@@ -782,6 +783,8 @@ class Statement(Simple):
                     arr.add_statement(stmt, is_key)
                     if break_tok in closing_brackets or is_assignment(break_tok):
                         break
+            if arr.type == Array.TUPLE and len(arr) == 1 and break_tok != ',':
+                arr.type = Array.NOARRAY
             if not arr.values and maybe_dict:
                 # this is a really special case - empty brackets {} are
                 # always dictionaries and not sets.
@@ -802,13 +805,7 @@ class Statement(Simple):
             tok = None
             first = True
             for i, tok_temp in token_iterator:
-                try:
-                    token_type, tok, start_tok_pos = tok_temp
-                    end_pos = start_tok_pos[0], start_tok_pos[1] + len(tok)
-                    if first:
-                        first = False
-                        start_pos = start_tok_pos
-                except TypeError:
+                if isinstance(tok_temp, (Base)):
                     # the token is a Name, which has already been parsed
                     tok = tok_temp
                     if first:
@@ -816,6 +813,12 @@ class Statement(Simple):
                         first = False
                     end_pos = tok.end_pos
                 else:
+                    token_type, tok, start_tok_pos = tok_temp
+                    end_pos = start_tok_pos[0], start_tok_pos[1] + len(tok)
+                    if first:
+                        first = False
+                        start_pos = start_tok_pos
+
                     if tok in closing_brackets:
                         level -= 1
                     elif tok in brackets.keys():
