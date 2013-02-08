@@ -285,17 +285,16 @@ def find_name(scope, name_str, position=None, search_global=False,
                     inst.is_generated = True
                 result.append(inst)
             elif par.isinstance(pr.Statement):
-                def is_execution(arr):
-                    for a in arr:
-                        a = a[0]  # rest is always empty with assignees
-                        if a.isinstance(pr.Array):
-                            if is_execution(a):
+                def is_execution(calls):
+                    for c in calls:
+                        if c.isinstance(pr.Array):
+                            if is_execution(c):
                                 return True
-                        elif a.isinstance(pr.Call):
+                        elif c.isinstance(pr.Call):
                             # Compare start_pos, because names may be different
                             # because of executions.
-                            if a.name.start_pos == name.start_pos \
-                                                            and a.execution:
+                            if c.name.start_pos == name.start_pos \
+                                                            and c.execution:
                                 return True
                     return False
 

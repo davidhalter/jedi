@@ -311,11 +311,11 @@ def _check_array_additions(compare_array, module, is_list):
 
 
 def check_array_instances(instance):
-    """ Used for set() and list() instances. """
+    """Used for set() and list() instances."""
     if not settings.dynamic_arrays_instances:
         return instance.var_args
     ai = ArrayInstance(instance)
-    return helpers.generate_param_array([ai], instance.var_args.parent_stmt)
+    return [ai]
 
 
 class ArrayInstance(pr.Base):
