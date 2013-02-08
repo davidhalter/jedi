@@ -190,12 +190,12 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        r = parsing.Parser(cursor_txt, no_docstr=True)
+        offset = self.pos[0] - 1
+        r = parsing.Parser(cursor_txt, no_docstr=True, line_offset=offset)
         try:
             stmt = r.module.statements[0]
         except IndexError:
             raise NotFoundError()
-        stmt.start_pos = self.pos
         stmt.parent = self._parser.user_scope
         return stmt
 

@@ -760,8 +760,7 @@ class Statement(Simple):
             maybe_dict = array_type == Array.SET
             break_tok = ''
             while True:
-                stmt, break_tok = parse_array_el(token_iterator,
-                                                        start_pos, maybe_dict)
+                stmt, break_tok = parse_array_el(token_iterator, maybe_dict)
                 if stmt is None:
                     break
                 else:
@@ -782,17 +781,24 @@ class Statement(Simple):
                                                     else 0)
             return arr
 
-        def parse_array_el(token_iterator, start_pos, maybe_dict=False):
+        def parse_array_el(token_iterator, maybe_dict=False):
             token_list = []
             level = 1
             tok = None
+            first = True
             for i, tok_temp in token_iterator:
                 try:
                     token_type, tok, start_tok_pos = tok_temp
-                    end_pos = start_pos[0], start_pos[1] + len(tok)
+                    end_pos = start_tok_pos[0], start_tok_pos[1] + len(tok)
+                    if first:
+                        first = False
+                        start_pos = start_tok_pos
                 except TypeError:
                     # the token is a Name, which has already been parsed
                     tok = tok_temp
+                    if first:
+                        start_pos = tok.start_pos
+                        first = False
                     end_pos = tok.end_pos
                 else:
                     if tok in closing_brackets:
@@ -870,7 +876,7 @@ class Statement(Simple):
                     is_chain = True
             elif tok == ',':  # implies a tuple
                 # rewrite `result`, because now the whole thing is a tuple
-                add_el, t = parse_array_el(enumerate(result), start_pos)
+                add_el, t = parse_array_el(enumerate(result))
                 arr = parse_array(token_iterator, Array.TUPLE, start_pos,
                                   add_el)
                 result = [arr]
