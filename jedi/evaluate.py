@@ -546,6 +546,7 @@ def follow_statement(stmt, seek_name=None):
 
     # Assignment checking is only important if the statement defines multiple
     # variables.
+    print(seek_name, stmt, stmt.assignment_details)
     if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
         new_result = []
         for op, set_vars in stmt.assignment_details:

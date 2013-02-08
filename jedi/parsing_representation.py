@@ -675,7 +675,7 @@ class Statement(Simple):
 
         # cache
         self._commands = None
-        self._assignment_details = None
+        self._assignment_details = []
         # this is important for other scripts
 
     def _remove_executions_from_set_vars(self, set_vars):
@@ -710,12 +710,15 @@ class Statement(Simple):
         return list(result)
 
     def get_code(self, new_line=True):
-        code = ''
-        for c in self.get_commands():
-            if isinstance(c, Call):
-                code += c.get_code()
-            else:
-                code += c
+        def assemble(assignment, command_list):
+            pieces = [c.get_code() if isinstance(c, Call) else c
+                        for c in command_list]
+            if assignment is None:
+                return ''.join(pieces)
+            return '%s %s ' % (''.join(pieces), assignment)
+
+        code = ''.join(assemble(*a) for a in self._assignment_details)
+        code += assemble(None, self.get_commands())
 
         if new_line:
             return code + '\n'
@@ -739,13 +742,13 @@ class Statement(Simple):
 
     @property
     def assignment_details(self):
-        if self._commands is None:
-            # parse statement and therefore get the assignment details.
-            self._parse_statement()
+        # parse statement which creates the assignment details.
+        self.get_commands()
         return self._assignment_details
 
     def get_commands(self):
         if self._commands is None:
+            self._commands = ['time neeeeed']  # avoid recursions
             result = self._parse_statement()
             self._commands = result
         return self._commands
@@ -759,21 +762,25 @@ class Statement(Simple):
         This is not really nice written, sorry for that. If you plan to replace
         it and make it nicer, that would be cool :-)
         """
+        def is_assignment(tok):
+            return tok.endswith('=') and not tok in ['>=', '<=', '==', '!=']
+
         def parse_array(token_iterator, array_type, start_pos, add_el=None):
             arr = Array(self.module, start_pos, array_type)
             if add_el is not None:
                 arr.add_statement(add_el)
 
             maybe_dict = array_type == Array.SET
-            break_tok = ''
+            break_tok = None
             while True:
-                stmt, break_tok = parse_array_el(token_iterator, maybe_dict)
+                stmt, break_tok = parse_array_el(token_iterator, maybe_dict,
+                                             break_on_assignment=bool(add_el))
                 if stmt is None:
                     break
                 else:
                     is_key = maybe_dict and break_tok == ':'
                     arr.add_statement(stmt, is_key)
-                    if break_tok in closing_brackets:
+                    if break_tok in closing_brackets or is_assignment(break_tok):
                         break
             if not arr.values and maybe_dict:
                 # this is a really special case - empty brackets {} are
@@ -786,9 +793,10 @@ class Statement(Simple):
                                      else start_pos[0], start_pos[1] + 1
             arr.end_pos = end_pos[0], end_pos[1] + (len(break_tok) if break_tok
                                                     else 0)
-            return arr
+            return arr, break_tok
 
-        def parse_array_el(token_iterator, maybe_dict=False):
+        def parse_array_el(token_iterator, maybe_dict=False,
+                            break_on_assignment=False):
             token_list = []
             level = 1
             tok = None
@@ -813,7 +821,9 @@ class Statement(Simple):
                     elif tok in brackets.keys():
                         level += 1
 
-                    if level == 0 and tok in closing_brackets or level == 1 and tok == ',':
+                    if level == 0 and tok in closing_brackets \
+                            or level == 1 and (tok == ',' or is_assignment(tok)
+                                                      and break_on_assignment):
                         break
                 token_list.append(tok_temp)
 
@@ -826,7 +836,6 @@ class Statement(Simple):
             return statement, tok
 
         # initializations
-        self._assignment_details = []
         result = []
         is_chain = False
         brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
@@ -843,7 +852,7 @@ class Statement(Simple):
                 token_type = None
                 start_pos = tok.start_pos
             else:
-                if tok.endswith('=') and not tok in ['>=', '<=', '==', '!=']:
+                if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
                     self._assignment_details.append((tok, result))
@@ -871,7 +880,8 @@ class Statement(Simple):
                     result.append(call)
                 is_chain = False
             elif tok in brackets.keys():
-                arr = parse_array(token_iterator, brackets[tok], start_pos)
+                arr, is_ass = parse_array(token_iterator, brackets[tok],
+                                             start_pos)
                 if result and isinstance(result[-1], Call):
                     result[-1].set_execution(arr)
                 else:
@@ -884,9 +894,13 @@ class Statement(Simple):
             elif tok == ',':  # implies a tuple
                 # rewrite `result`, because now the whole thing is a tuple
                 add_el, t = parse_array_el(enumerate(result))
-                arr = parse_array(token_iterator, Array.TUPLE, start_pos,
-                                  add_el)
+                arr, break_tok = parse_array(token_iterator, Array.TUPLE,
+                                             start_pos, add_el)
                 result = [arr]
+                if is_assignment(break_tok):
+                    self._assignment_details.append((break_tok, result))
+                    result = []
+                    is_chain = False
             else:
                 if tok != '\n':
                     result.append(tok)
