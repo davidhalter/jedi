@@ -710,7 +710,7 @@ class Statement(Simple):
         return list(result)
 
     def get_code(self, new_line=True):
-        def assemble(assignment, command_list):
+        def assemble(command_list, assignment=None):
             pieces = [c.get_code() if isinstance(c, Call) else c
                         for c in command_list]
             if assignment is None:
@@ -718,7 +718,7 @@ class Statement(Simple):
             return '%s %s ' % (''.join(pieces), assignment)
 
         code = ''.join(assemble(*a) for a in self._assignment_details)
-        code += assemble(None, self.get_commands())
+        code += assemble(self.get_commands())
 
         if new_line:
             return code + '\n'
@@ -855,7 +855,7 @@ class Statement(Simple):
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
-                    self._assignment_details.append((tok, result))
+                    self._assignment_details.append((result, tok))
                     result = []
                     is_chain = False
                     continue
@@ -898,7 +898,7 @@ class Statement(Simple):
                                              start_pos, add_el)
                 result = [arr]
                 if is_assignment(break_tok):
-                    self._assignment_details.append((break_tok, result))
+                    self._assignment_details.append((result, break_tok))
                     result = []
                     is_chain = False
             else:

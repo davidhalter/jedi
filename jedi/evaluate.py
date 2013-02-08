@@ -299,7 +299,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                     return False
 
                 is_exe = False
-                for op, assignee in par.assignment_details:
+                for assignee, op in par.assignment_details:
                     is_exe |= is_execution(assignee)
 
                 if is_exe:
@@ -308,7 +308,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                     pass
                 else:
                     details = par.assignment_details
-                    if details and details[0][0] != '=':
+                    if details and details[0][1] != '=':
                         no_break_scope = True
 
                     # TODO this makes self variables non-breakable. wanted?
@@ -549,7 +549,7 @@ def follow_statement(stmt, seek_name=None):
     print(seek_name, stmt, stmt.assignment_details)
     if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
         new_result = []
-        for op, set_vars in stmt.assignment_details:
+        for set_vars, op in stmt.assignment_details:
             new_result += assign_tuples(set_vars, result, seek_name)
         result = new_result
     return set(result)
