@@ -418,7 +418,7 @@ def related_names(definitions, search_name, mods):
             else:
                 calls = _scan_array(stmt.get_commands(), search_name)
                 for d in stmt.assignment_details:
-                    calls += _scan_array(d[1], search_name)
+                    calls += _scan_array(d[0], search_name)
                 for call in calls:
                     names += check_call(call)
     return names

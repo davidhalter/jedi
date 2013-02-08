@@ -483,41 +483,38 @@ def assign_tuples(tup, results, seek_name):
     def eval_results(index):
         types = []
         for r in results:
-            if hasattr(r, "get_exact_index_types"):
-                try:
-                    types += r.get_exact_index_types(index)
-                except IndexError:
-                    pass
-            else:
+            try:
+                func = r.get_exact_index_types
+            except AttributeError:
                 debug.warning("invalid tuple lookup %s of result %s in %s"
                                     % (tup, results, seek_name))
-
+            else:
+                try:
+                    types += func(index)
+                except IndexError:
+                    pass
         return types
 
     result = []
-    if tup.type == pr.Array.NOARRAY:
-        # Here we have unnessecary braces, which we just remove.
-        arr = tup.get_only_subelement()
-        if type(arr) == pr.Call:
-            if arr.name.names[-1] == seek_name:
-                result = results
-        else:
-            result = assign_tuples(arr, results, seek_name)
-    else:
-        for i, t in enumerate(tup):
-            # Used in assignments. There is just one call and no other things,
-            # therefore we can just assume, that the first part is important.
-            if len(t) != 1:
-                raise AttributeError('Array length should be 1')
-            t = t[0]
+    for i, stmt in enumerate(tup):
+        # Used in assignments. There is just one call and no other things,
+        # therefore we can just assume, that the first part is important.
+        command = stmt.get_commands()[0]
 
-            # Check the left part, if there are still tuples in it or a Call.
-            if isinstance(t, pr.Array):
-                # These are "sub"-tuples.
-                result += assign_tuples(t, eval_results(i), seek_name)
-            else:
-                if t.name.names[-1] == seek_name:
-                    result += eval_results(i)
+        if tup.type == pr.Array.NOARRAY:
+
+                # unnessecary braces -> just remove.
+            r = results
+        else:
+            r = eval_results(i)
+
+        # are there still tuples or is it just a Call.
+        if isinstance(command, pr.Array):
+            # These are "sub"-tuples.
+            result += assign_tuples(command, r, seek_name)
+        else:
+            if command.name.names[-1] == seek_name:
+                result += r
     return result
 
 
@@ -549,8 +546,8 @@ def follow_statement(stmt, seek_name=None):
     print(seek_name, stmt, stmt.assignment_details)
     if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
         new_result = []
-        for set_vars, op in stmt.assignment_details:
-            new_result += assign_tuples(set_vars, result, seek_name)
+        for ass_commands, op in stmt.assignment_details:
+            new_result += assign_tuples(ass_commands[0], result, seek_name)
         result = new_result
     return set(result)
 

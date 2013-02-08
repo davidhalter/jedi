@@ -630,10 +630,10 @@ class Execution(Executable):
                 # Normal arguments (including key arguments).
                 else:
                     if stmt.assignment_detail:
-                        tok, key_arr = stmt.assignment_detail[0]
+                        key_arr, op = stmt.assignment_detail[0]
                         # named parameter
                         if key_arr and isinstance(key_arr[0], pr.Call):
-                            yield tok[0].name, stmt
+                            yield op[0].name, stmt
                     else:
                         yield None, stmt
 
