@@ -746,32 +746,34 @@ class Statement(Simple):
         it and make it nicer, that would be cool :-)
         """
         def parse_array(token_iterator, array_type, start_pos, add_el=None):
-            arr = Array(start_pos, array_type)
+            arr = Array(self.module, start_pos, array_type)
             if add_el is not None:
                 arr.add_statement(add_el)
 
             maybe_dict = array_type == Array.SET
             break_tok = ''
             while True:
-                statement, break_tok = parse_statement(token_iterator,
+                stmt, break_tok = parse_array_el(token_iterator,
                                                         start_pos, maybe_dict)
-                if statement is not None:
+                if stmt is None:
+                    break
+                else:
                     is_key = maybe_dict and break_tok == ':'
-                    arr.add_statement(statement, is_key)
+                    arr.add_statement(stmt, is_key)
             if not arr.values and maybe_dict:
                 # this is a really special case - empty brackets {} are
                 # always dictionaries and not sets.
                 arr.type = Array.DICT
 
-            arr.set_end_pos(start_pos, )
             k, v = arr.keys, arr.values
             latest = (v[-1] if v else k[-1] if k else None)
             end_pos = latest.end_pos if latest is not None \
                                      else start_pos[0], start_pos[1] + 1
-            arr.end_pos = end_pos[0], end_pos[1] + len(break_tok)
+            arr.end_pos = end_pos[0], end_pos[1] + (len(break_tok) if break_tok
+                                                    else 0)
             return arr
 
-        def parse_statement(token_iterator, start_pos, maybe_dict=False):
+        def parse_array_el(token_iterator, start_pos, maybe_dict=False):
             token_list = []
             level = 0
             tok = None
@@ -799,7 +801,7 @@ class Statement(Simple):
             statement = Statement(self.module, "XXX" + self.code, [], [], [],
                                             token_list, start_pos, end_pos)
             statement.parent = self.parent
-            return statement
+            return statement, tok
 
         # initializations
         self._assignment_details = []
@@ -852,8 +854,8 @@ class Statement(Simple):
                 close_brackets = False
             elif tok in brackets.keys():
                 arr = parse_array(token_iterator, brackets[tok], start_pos)
-                if type(result[-1]) == Call or close_brackets:
-                    result[-1].add_execution(arr)
+                if result and (type(result[-1]) == Call or close_brackets):
+                    result[-1].set_execution(arr)
                 else:
                     result.append(arr)
                 close_brackets = True
@@ -864,7 +866,7 @@ class Statement(Simple):
             elif tok == ',':  # implies a tuple
                 close_brackets = False
                 # rewrite `result`, because now the whole thing is a tuple
-                add_el = parse_statement(iter(result), start_pos)
+                add_el = parse_array_el(iter(result), start_pos)
                 arr = parse_array(token_iterator, Array.TUPLE, start_pos,
                                   add_el)
                 result = [arr]
@@ -935,19 +937,18 @@ class Call(Simple):
             self.next = call
             call.parent = self.parent
 
-    def add_execution(self, call):
+    def set_execution(self, call):
         """
         An execution is nothing else than brackets, with params in them, which
         shows access on the internals of this name.
         """
-        self.execution = call
-        # there might be multiple executions, like a()[0], in that case, they
-        # have the same parent. Otherwise it's not possible to parse proper.
-        if self.parent.execution == self:
-            call.parent = self.parent
+        if self.next is not None:
+            self.next.set_execution(call)
+        elif self.execution is not None:
+            self.execution.set_execution(call)
         else:
+            self.execution = call
             call.parent = self
-        return call
 
     def generate_call_path(self):
         """ Helps to get the order in which statements are executed. """
@@ -997,8 +998,8 @@ class Array(Call):
     DICT = 'dict'
     SET = 'set'
 
-    def __init__(self,  start_pos, arr_type=NOARRAY, parent=None, values=None):
-        super(Array, self).__init__(None, arr_type, start_pos, parent)
+    def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None, values=None):
+        super(Array, self).__init__(module, None, arr_type, start_pos, parent)
         self.values = values if values else []
         self.keys = []
         self.end_pos = None, None
@@ -1010,15 +1011,6 @@ class Array(Call):
             self.keys.append(statement)
         else:
             self.values.append(statement)
-
-    def get_only_subelement(self):
-        """
-        Returns the only element that an array contains. If it contains
-        more than one element, raise an exception.
-        """
-        if len(self.values) != 1 or len(self.values[0]) != 1:
-            raise AttributeError("More than one value found")
-        return self.values[0][0]
 
     @staticmethod
     def is_type(instance, *types):

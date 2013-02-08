@@ -11,6 +11,7 @@ they change classes in Python 3.
 """
 import sys
 import copy
+import itertools
 
 from _compatibility import property, use_metaclass, next, hasattr
 import parsing_representation as pr
@@ -786,7 +787,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                     except (IndexError, KeyError):
                         pass
 
-        result = list(self.follow_values(self._array.values))
+        result = list(self._follow_values(self._array.values))
         result += dynamic.check_array_additions(self)
         return set(result)
 
@@ -811,11 +812,12 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
             if index is None:
                 raise KeyError('No key found in dictionary')
         values = [self._array[index]]
-        return self.follow_values(values)
+        return self._follow_values(values)
 
-    def follow_values(self, values):
+    def _follow_values(self, values):
         """ helper function for the index getters """
-        return evaluate.follow_call_list(values)
+        return itertools.chain.from_iterable(evaluate.follow_statement(v)
+                                             for v in values)
 
     def get_defined_names(self):
         """
