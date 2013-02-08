@@ -60,19 +60,6 @@ def fast_parent_copy(obj):
     return recursion(obj)
 
 
-def generate_param_array(args_tuple, parent_stmt=None):
-    """ This generates an array, that can be used as a param. """
-    values = []
-    for arg in args_tuple:
-        if arg is None:
-            values.append([])
-        else:
-            values.append([arg])
-    pos = None
-    arr = pr.Array(pos, pr.Array.TUPLE, parent_stmt, values=values)
-    return arr
-
-
 def check_arr_index(arr, pos):
     positions = arr.arr_el_pos
     for index, comma_pos in enumerate(positions):

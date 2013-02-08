@@ -35,12 +35,12 @@ class DecoratorNotFound(LookupError):
 
 
 class Executable(pr.Base):
-    """ An instance is also an executable - because __init__ is called """
-    def __init__(self, base, var_args=None):
+    """
+    An instance is also an executable - because __init__ is called
+    :param var_args: The param input array, consist of `pr.Array` or list.
+    """
+    def __init__(self, base, var_args=[]):
         self.base = base
-        # The param input array.
-        if var_args is None:
-            var_args = pr.Array(None, None)
         self.var_args = var_args
 
     def get_parent_until(self, *args, **kwargs):
@@ -122,20 +122,15 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         sub = self.base.get_subscope_by_name(name)
         return InstanceElement(self, sub, True)
 
-    def execute_subscope_by_name(self, name, args=None):
-        if args is None:
-            args = helpers.generate_param_array([])
+    def execute_subscope_by_name(self, name, args=[]):
         method = self.get_subscope_by_name(name)
-        if args.parent_stmt is None:
-            args.parent_stmt = method
         return Execution(method, args).get_return_types()
 
     def get_descriptor_return(self, obj):
         """ Throws a KeyError if there's no method. """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        v = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
-        args = helpers.generate_param_array(v)
+        args = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
         return self.execute_subscope_by_name('__get__', args)
 
     @cache.memoize_default([])
@@ -165,7 +160,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         yield self, names
 
     def get_index_types(self, index=None):
-        args = helpers.generate_param_array([] if index is None else [index])
+        args = [] if index is None else [index]
         try:
             return self.execute_subscope_by_name('__getitem__', args)
         except KeyError:
@@ -340,9 +335,8 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 decorator = dec_results.pop()
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
-                params = helpers.generate_param_array([old_func], old_func)
 
-                wrappers = Execution(decorator, params).get_return_types()
+                wrappers = Execution(decorator, [old_func]).get_return_types()
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
                     return None
@@ -389,6 +383,17 @@ class Execution(Executable):
     multiple calls to functions and recursion has to be avoided. But this is
     responsibility of the decorators.
     """
+    def follow_var_arg(self, index):
+        try:
+            stmt = self.var_args[index]
+        except IndexError:
+            return []
+        else:
+            if isinstance(stmt, pr.Statement):
+                return evaluate.follow_statement(stmt)
+            else:
+                return [stmt]  # just some arbitrary object
+
     @cache.memoize_default(default=[])
     @recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
@@ -402,8 +407,8 @@ class Execution(Executable):
             if func_name == 'getattr':
                 # follow the first param
                 try:
-                    objects = evaluate.follow_call_list([self.var_args[0]])
-                    names = evaluate.follow_call_list([self.var_args[1]])
+                    objects = self.follow_var_arg(0)
+                    names = self.follow_var_arg(1)
                 except IndexError:
                     debug.warning('getattr() called with to few args.')
                     return []
@@ -421,11 +426,12 @@ class Execution(Executable):
             elif func_name == 'type':
                 # otherwise it would be a metaclass
                 if len(self.var_args) == 1:
-                    objects = evaluate.follow_call_list([self.var_args[0]])
+                    objects = self.follow_var_arg(0)
                     return [o.base for o in objects if isinstance(o, Instance)]
             elif func_name == 'super':
+                # TODO make this able to detect multiple inheritance supers
                 accept = (pr.Function,)
-                func = self.var_args.parent_stmt.get_parent_until(accept)
+                func = self.var_args.get_parent_until(accept)
                 if func.isinstance(*accept):
                     cls = func.get_parent_until(accept + (pr.Class,),
                                                     include_current=False)
@@ -597,20 +603,20 @@ class Execution(Executable):
         """
         def iterate():
             # `var_args` is typically an Array, and not a list.
-            for var_arg in self.var_args:
-                # empty var_arg
-                if len(var_arg) == 0:
-                    yield None, None
+            for stmt in self.var_args:
+                if not isinstance(stmt, pr.Statement):
+                    yield None, stmt
                 # *args
-                elif var_arg[0] == '*':
-                    arrays = evaluate.follow_call_list([var_arg[1:]])
+                elif stmt.token_list[0] == '*':
+                    arrays = evaluate.follow_call_list([stmt.token_list[1:]])
+                    # *args must be some sort of an array, otherwise -> ignore
                     for array in arrays:
                         if hasattr(array, 'get_contents'):
                             for field in array.get_contents():
                                 yield None, field
                 # **kwargs
-                elif var_arg[0] == '**':
-                    arrays = evaluate.follow_call_list([var_arg[1:]])
+                elif stmt[0] == '**':
+                    arrays = evaluate.follow_call_list([stmt.token_list[1:]])
                     for array in arrays:
                         if hasattr(array, 'get_contents'):
                             for key, field in array.get_contents():
@@ -623,11 +629,13 @@ class Execution(Executable):
                                 yield name, field
                 # Normal arguments (including key arguments).
                 else:
-                    if len(var_arg) > 1 and var_arg[1] == '=':
-                        # This is a named parameter (var_arg[0] is a Call).
-                        yield var_arg[0].name, var_arg[2:]
+                    if stmt.assignment_detail:
+                        tok, key_arr = stmt.assignment_detail[0]
+                        # named parameter
+                        if key_arr and isinstance(key_arr[0], pr.Call):
+                            yield tok[0].name, stmt
                     else:
-                        yield None, var_arg
+                        yield None, stmt
 
         return iter(common.PushBackIterator(iterate()))
 

@@ -82,7 +82,6 @@ import debug
 import builtin
 import imports
 import recursion
-import helpers
 import dynamic
 import docstrings
 
@@ -416,9 +415,8 @@ def check_getattr(inst, name_str):
     result = []
     # str is important to lose the NamePart!
     name = pr.Call(str(name_str), pr.Call.STRING, (0, 0), inst)
-    args = helpers.generate_param_array([name])
     try:
-        result = inst.execute_subscope_by_name('__getattr__', args)
+        result = inst.execute_subscope_by_name('__getattr__', [name])
     except KeyError:
         pass
     if not result:
@@ -427,7 +425,7 @@ def check_getattr(inst, name_str):
         # could be practical and the jedi would return wrong types. If
         # you ever have something, let me know!
         try:
-            result = inst.execute_subscope_by_name('__getattribute__', args)
+            result = inst.execute_subscope_by_name('__getattribute__', [name])
         except KeyError:
             pass
     return result
@@ -663,8 +661,7 @@ def follow_call_path(path, scope, position):
                 debug.warning('unknown type:', current.type, current)
                 scopes = []
             # Make instances of those number/string objects.
-            arr = helpers.generate_param_array([current.name])
-            scopes = [er.Instance(s, arr) for s in scopes]
+            scopes = [er.Instance(s, [current.name]) for s in scopes]
         result = imports.strip_imports(scopes)
 
     return follow_paths(path, result, scope, position=position)
