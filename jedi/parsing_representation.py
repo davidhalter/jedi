@@ -793,7 +793,7 @@ class Statement(Simple):
             k, v = arr.keys, arr.values
             latest = (v[-1] if v else k[-1] if k else None)
             end_pos = latest.end_pos if latest is not None \
-                                     else start_pos[0], start_pos[1] + 1
+                                     else (start_pos[0], start_pos[1] + 1)
             arr.end_pos = end_pos[0], end_pos[1] + (len(break_tok) if break_tok
                                                     else 0)
             return arr, break_tok
@@ -848,14 +848,13 @@ class Statement(Simple):
         token_iterator = enumerate(self.token_list)
         for i, tok_temp in token_iterator:
             #print 'tok', tok_temp, result
-            try:
-                token_type, tok, start_pos = tok_temp
-            except TypeError:
+            if isinstance(tok_temp, Base):
                 # the token is a Name, which has already been parsed
                 tok = tok_temp
                 token_type = None
                 start_pos = tok.start_pos
             else:
+                token_type, tok, start_pos = tok_temp
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
@@ -1003,9 +1002,9 @@ class Call(Simple):
         if self.type == Call.NAME:
             s = self.name.get_code()
         else:
-            s = repr(self.name)
+            s = '' if self.name is None else repr(self.name)
         if self.execution is not None:
-            s += '(%s)' % self.execution.get_code()
+            s += self.execution.get_code()
         if self.next is not None:
             s += self.next.get_code()
         return s
@@ -1022,8 +1021,8 @@ class Array(Call):
     http://docs.python.org/py3k/reference/grammar.html
     Array saves sub-arrays as well as normal operators and calls to methods.
 
-    :param array_type: The type of an array, which can be one of the constants\
-    below.
+    :param array_type: The type of an array, which can be one of the constants
+        below.
     :type array_type: int
     """
     NOARRAY = None  # just brackets, like `1 * (3 + 2)`
@@ -1052,7 +1051,6 @@ class Array(Call):
         """
         This is not only used for calls on the actual object, but for
         ducktyping, to invoke this function with anything as `self`.
-        TODO remove?
         """
         if isinstance(instance, Array):
             if instance.type in types:
@@ -1073,7 +1071,7 @@ class Array(Call):
         return iter(self.values)
 
     def get_code(self):
-        map = {self.NOARRAY: '%s',
+        map = {self.NOARRAY: '(%s)',
                self.TUPLE: '(%s)',
                self.LIST: '[%s]',
                self.DICT: '{%s}',
@@ -1090,7 +1088,8 @@ class Array(Call):
                 s += key.get_code(new_line=False) + ': '
             s += stmt.get_code(new_line=False)
             inner.append(s)
-        return map[self.type] % ', '.join(inner)
+        s = map[self.type] % ', '.join(inner)
+        return s + super(Array, self).get_code()
 
     def __repr__(self):
         if self.type == self.NOARRAY:
