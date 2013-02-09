@@ -701,6 +701,7 @@ class Execution(Executable):
     @property
     @cache.memoize_default()
     def returns(self):
+        print self.copy_properties('returns')[0].parent
         return self.copy_properties('returns')
 
     @property
@@ -841,18 +842,9 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
     def get_contents(self):
         return self._array
 
-    @property
-    def parent(self):
-        """
-        Return the builtin scope as parent, because the arrays are builtins
-        """
-        return builtin.Builtin.scope
-
-    def get_parent_until(self, *args, **kwargs):
-        return builtin.Builtin.scope
-
     def __getattr__(self, name):
-        if name not in ['type', 'start_pos', 'get_only_subelement']:
+        if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
+                        'get_parent_until']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
 
@@ -872,7 +864,7 @@ class ArrayMethod(object):
     def __getattr__(self, name):
         # Set access privileges:
         if name not in ['parent', 'names', 'start_pos', 'end_pos', 'get_code']:
-            raise AttributeError('Strange access: %s.' % name)
+            raise AttributeError('Strange accesson %s: %s.' % (self, name))
         return getattr(self.name, name)
 
     def get_parent_until(self):

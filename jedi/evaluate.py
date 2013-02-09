@@ -372,8 +372,8 @@ def find_name(scope, name_str, position=None, search_global=False,
         if not result and isinstance(nscope, er.Instance):
             # __getattr__ / __getattribute__
             result += check_getattr(nscope, name_str)
-        debug.dbg('sfn filter "%s" in %s: %s@%s' % (name_str, nscope, result,
-                                                    position))
+        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s' % (name_str, nscope,
+                                                scope, result, position))
         return result
 
     def descriptor_check(result):
