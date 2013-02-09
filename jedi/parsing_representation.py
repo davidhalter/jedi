@@ -1034,9 +1034,9 @@ class Array(Call):
     DICT = 'dict'
     SET = 'set'
 
-    def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None, values=None):
+    def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None):
         super(Array, self).__init__(module, None, arr_type, start_pos, parent)
-        self.values = values or []
+        self.values = []
         self.keys = []
         self.end_pos = None, None
 
