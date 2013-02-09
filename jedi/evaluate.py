@@ -372,8 +372,8 @@ def find_name(scope, name_str, position=None, search_global=False,
         if not result and isinstance(nscope, er.Instance):
             # __getattr__ / __getattribute__
             result += check_getattr(nscope, name_str)
-        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s' % (name_str, nscope,
-                                                scope, result, position))
+        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s' % (name_str, scope,
+                                                nscope, result, position))
         return result
 
     def descriptor_check(result):
@@ -632,7 +632,7 @@ def follow_call_list(call_list, follow_array=False):
 def follow_call(call):
     """Follow a call is following a function, variable, string, etc."""
     path = call.generate_call_path()
-    scope = call.get_parent_until(pr.Scope)
+    scope = call.get_parent_until((pr.Scope, er.Execution))
     return follow_call_path(path, scope, call.start_pos)
 
 

@@ -31,8 +31,7 @@ def fast_parent_copy(obj):
 
         for key, value in items:
             # replace parent (first try _parent and then parent)
-            if key in ['parent', '_parent', '_parent_stmt'] \
-                                                    and value is not None:
+            if key in ['parent', '_parent'] and value is not None:
                 if key == 'parent' and '_parent' in items:
                     # parent can be a property
                     continue
@@ -40,8 +39,7 @@ def fast_parent_copy(obj):
                     setattr(new_obj, key, new_elements[value])
                 except KeyError:
                     pass
-            elif key in ['parent_stmt', 'parent_function', 'use_as_parent',
-                            'module']:
+            elif key in ['parent_function', 'use_as_parent', 'module']:
                 continue
             elif isinstance(value, list):
                 setattr(new_obj, key, list_rec(value))

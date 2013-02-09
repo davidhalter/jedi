@@ -501,14 +501,16 @@ class Execution(Executable):
             else:
                 parent = self.base
                 start_pos = None
-            calls = pr.Array(start_pos, pr.Array.NOARRAY, parent)
-            calls.values = values
-            calls.keys = keys
-            calls.type = array_type
+            # create an Array (-> container for the statement)
+            arr = pr.Array(self.module, start_pos, pr.Array.NOARRAY, parent)
+            arr.values = values
+            arr.keys = keys
+            arr.type = array_type
+
             new_param = copy.copy(param)
             if parent is not None:
                 new_param.parent = parent
-            new_param._commands = calls
+            new_param._commands = [arr]
             new_param.is_generated = True
             name = copy.copy(param.get_name())
             name.parent = new_param
@@ -610,7 +612,7 @@ class Execution(Executable):
                 if not isinstance(stmt, pr.Statement):
                     yield None, stmt
                 # *args
-                elif stmt.token_list[0] == '*':
+                elif stmt.get_commands()[0] == '*':
                     arrays = evaluate.follow_call_list([stmt.token_list[1:]])
                     # *args must be some sort of an array, otherwise -> ignore
                     for array in arrays:
@@ -618,7 +620,7 @@ class Execution(Executable):
                             for field in array.get_contents():
                                 yield None, field
                 # **kwargs
-                elif stmt[0] == '**':
+                elif stmt.get_commands()[0] == '**':
                     arrays = evaluate.follow_call_list([stmt.token_list[1:]])
                     for array in arrays:
                         if hasattr(array, 'get_contents'):
@@ -632,8 +634,8 @@ class Execution(Executable):
                                 yield name, field
                 # Normal arguments (including key arguments).
                 else:
-                    if stmt.assignment_detail:
-                        key_arr, op = stmt.assignment_detail[0]
+                    if stmt.assignment_details:
+                        key_arr, op = stmt.assignment_details[0]
                         # named parameter
                         if key_arr and isinstance(key_arr[0], pr.Call):
                             yield op[0].name, stmt
@@ -677,7 +679,7 @@ class Execution(Executable):
             raise common.MultiLevelAttributeError(sys.exc_info())
 
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'imports']:
+        if name not in ['start_pos', 'end_pos', 'imports', 'module']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
@@ -701,7 +703,6 @@ class Execution(Executable):
     @property
     @cache.memoize_default()
     def returns(self):
-        print self.copy_properties('returns')[0].parent
         return self.copy_properties('returns')
 
     @property

@@ -711,7 +711,7 @@ class Statement(Simple):
 
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
-            pieces = [c.get_code() if isinstance(c, Call) else c
+            pieces = [c.get_code() if isinstance(c, Simple) else c
                         for c in command_list]
             if assignment is None:
                 return ''.join(pieces)
@@ -1036,7 +1036,7 @@ class Array(Call):
 
     def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None, values=None):
         super(Array, self).__init__(module, None, arr_type, start_pos, parent)
-        self.values = values if values else []
+        self.values = values or []
         self.keys = []
         self.end_pos = None, None
 
