@@ -773,17 +773,20 @@ class Statement(Simple):
 
             maybe_dict = array_type == Array.SET
             break_tok = None
+            is_array = None
             while True:
                 stmt, break_tok = parse_array_el(token_iterator, maybe_dict,
                                              break_on_assignment=bool(add_el))
                 if stmt is None:
                     break
                 else:
+                    if break_tok == ',':
+                        is_array = True
                     is_key = maybe_dict and break_tok == ':'
                     arr.add_statement(stmt, is_key)
                     if break_tok in closing_brackets or is_assignment(break_tok):
                         break
-            if arr.type == Array.TUPLE and len(arr) == 1 and break_tok != ',':
+            if arr.type == Array.TUPLE and len(arr) == 1 and not is_array:
                 arr.type = Array.NOARRAY
             if not arr.values and maybe_dict:
                 # this is a really special case - empty brackets {} are
@@ -1088,7 +1091,8 @@ class Array(Call):
                 s += key.get_code(new_line=False) + ': '
             s += stmt.get_code(new_line=False)
             inner.append(s)
-        s = map[self.type] % ', '.join(inner)
+        add = ',' if self.type == self.TUPLE and len(self) == 1 else ''
+        s = map[self.type] % (', '.join(inner) + add)
         return s + super(Array, self).get_code()
 
     def __repr__(self):
