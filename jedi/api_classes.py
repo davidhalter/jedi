@@ -41,7 +41,10 @@ class BaseDefinition(object):
                'os2emxpath': 'os.path',
                'macpath': 'os.path',
                'genericpath': 'os.path',
+               'posix': 'os',
                '_io': 'io',
+               '_functools': 'functools',
+               '_sqlite3': 'sqlite3',
                '__builtin__': '',
                'builtins': '',
                }
