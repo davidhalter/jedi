@@ -627,25 +627,24 @@ class Execution(Executable):
                     yield None, stmt
                 # *args
                 elif stmt.get_commands()[0] == '*':
-                    arrays = evaluate.follow_call_list([stmt.token_list[1:]])
+                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
                     # *args must be some sort of an array, otherwise -> ignore
                     for array in arrays:
-                        if hasattr(array, 'get_contents'):
-                            for field in array.get_contents():
-                                yield None, field
+                        for field_stmt in array:
+                            yield None, field_stmt
                 # **kwargs
                 elif stmt.get_commands()[0] == '**':
-                    arrays = evaluate.follow_call_list([stmt.token_list[1:]])
+                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
                     for array in arrays:
-                        if hasattr(array, 'get_contents'):
-                            for key, field in array.get_contents():
-                                # Take the first index.
-                                if isinstance(key, pr.Name):
-                                    name = key
-                                else:
-                                    # `pr`.[Call|Function|Class] lookup.
-                                    name = key[0].name
-                                yield name, field
+                        for key_stmt, value_stmt in array.items():
+                            # first index, is the key if syntactically correct
+                            call = key_stmt.get_commands()[0]
+                            if type(call) == pr.Call:
+                                yield call.name, value_stmt
+                            else:
+                                # `pr`.[Call|Function|Class] lookup.
+                                # TODO remove?
+                                yield key_stmt[0].name, value_stmt
                 # Normal arguments (including key arguments).
                 else:
                     if stmt.assignment_details:
@@ -855,9 +854,6 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]
 
-    def get_contents(self):
-        return self._array
-
     @property
     def parent(self):
         return builtin.Builtin.scope
@@ -867,7 +863,8 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def __getattr__(self, name):
         if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
-                        'get_parent_until']:
+                        'get_parent_until', 'items',
+                        '__iter__', '__len__', '__getitem__']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
 

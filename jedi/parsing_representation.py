@@ -1073,6 +1073,11 @@ class Array(Call):
             raise TypeError('no dicts allowed')
         return iter(self.values)
 
+    def items(self):
+        if self.type != self.DICT:
+            raise TypeError('only dicts allowed')
+        return zip(self.keys, self.values)
+
     def get_code(self):
         map = {self.NOARRAY: '(%s)',
                self.TUPLE: '(%s)',
