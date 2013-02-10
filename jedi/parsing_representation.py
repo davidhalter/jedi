@@ -24,7 +24,7 @@ import re
 import tokenize
 
 from _compatibility import next, literal_eval, cleandoc, Python3Method, \
-                            property
+                            property, unicode
 import common
 import debug
 
@@ -711,7 +711,7 @@ class Statement(Simple):
 
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
-            pieces = [c.get_code() if isinstance(c, Simple) else c
+            pieces = [c.get_code() if isinstance(c, Base) else c
                         for c in command_list]
             if assignment is None:
                 return ''.join(pieces)
@@ -763,7 +763,7 @@ class Statement(Simple):
         it and make it nicer, that would be cool :-)
         """
         def is_assignment(tok):
-            return tok is not None and tok.endswith('=') \
+            return isinstance(tok, (str, unicode)) and tok.endswith('=') \
                     and not tok in ['>=', '<=', '==', '!=']
 
         def parse_array(token_iterator, array_type, start_pos, add_el=None):

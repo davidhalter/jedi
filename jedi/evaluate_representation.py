@@ -495,23 +495,38 @@ class Execution(Executable):
             """
             Create a param with the original scope (of varargs) as parent.
             """
+            # TODO remove array and param and just put the values of the \
+            # statement into the values of the param - it's as simple as that.
             if isinstance(self.var_args, pr.Array):
                 parent = self.var_args.parent
                 start_pos = self.var_args.start_pos
             else:
                 parent = self.base
                 start_pos = None
-            # create an Array (-> container for the statement)
-            arr = pr.Array(self.module, start_pos, pr.Array.NOARRAY, parent)
-            arr.values = values
-            arr.keys = keys
-            arr.type = array_type
 
             new_param = copy.copy(param)
+            new_param.is_generated = True
             if parent is not None:
                 new_param.parent = parent
-            new_param._commands = [arr]
-            new_param.is_generated = True
+
+            if array_type is not None:
+                # create an Array (-> needed for *args/**kwargs tuples/dicts)
+                arr = pr.Array(self.module, start_pos, array_type, parent)
+                """
+                for i, value in enumerate(values):  # TODO delete?
+                    try:
+                        keys[i]
+                    except IndexError:
+                        pass
+                """
+                arr.values = values
+                arr.keys = keys
+                arr.type = array_type
+
+                new_param._commands = [arr]
+            else:
+                new_param._commands = values
+
             name = copy.copy(param.get_name())
             name.parent = new_param
             return name
