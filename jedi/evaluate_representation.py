@@ -423,8 +423,10 @@ class Execution(Executable):
                         debug.warning('getattr called without instance')
                         continue
 
-                    for name in names:
-                        key = name.var_args.get_only_subelement()
+                    for arr_name in names:
+                        if len(arr_name.var_args) != 1:
+                            debug.warning('jedi getattr is too simple')
+                        key = arr_name.var_args[0]
                         stmts += evaluate.follow_path(iter([key]), obj,
                                                         self.base)
                 return stmts
@@ -507,7 +509,7 @@ class Execution(Executable):
                 start_pos = self.var_args.start_pos
             else:
                 parent = self.base
-                start_pos = None
+                start_pos = 0, 0
 
             new_param = copy.copy(param)
             new_param.is_generated = True
@@ -628,10 +630,8 @@ class Execution(Executable):
         def iterate():
             # `var_args` is typically an Array, and not a list.
             for stmt in self.var_args:
-                if not isinstance(stmt, pr.Statement):
-                    yield None, stmt
                 # *args
-                elif stmt.get_commands()[0] == '*':
+                if stmt.get_commands()[0] == '*':
                     arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
                     # *args must be some sort of an array, otherwise -> ignore
                     for array in arrays:
