@@ -857,6 +857,13 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
     def get_contents(self):
         return self._array
 
+    @property
+    def parent(self):
+        return builtin.Builtin.scope
+
+    def get_parent_until(self):
+        return builtin.Builtin.scope
+
     def __getattr__(self, name):
         if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
                         'get_parent_until']:
