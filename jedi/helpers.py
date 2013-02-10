@@ -55,6 +55,9 @@ def fast_parent_copy(obj):
             elif isinstance(el, list):
                 copied_list[i] = list_rec(el)
         return copied_list
+
+    if isinstance(obj, list):
+        obj = tuple(obj)
     return recursion(obj)
 
 
@@ -85,49 +88,53 @@ def array_for_pos(arr, pos):
     return result, check_arr_index(result, pos)
 
 
-def search_function_call(arr, pos):
+def search_function_definition(stmt, pos):
     """
-    Returns the function Call that matches the position before `arr`.
-    This is somehow stupid, probably only the name of the function.
+    Returns the function Call that matches the position before.
     """
+    def shorten(call):
+        return call
+
     call = None
     stop = False
-    for sub in arr.values:
+    for command in stmt.get_commands():
         call = None
-        for s in sub:
-            if isinstance(s, pr.Array):
-                new = search_function_call(s, pos)
-                if new[0] is not None:
-                    call, index, stop = new
-                    if stop:
-                        return call, index, stop
-            elif isinstance(s, pr.Call):
-                start_s = s
-                # check parts of calls
-                while s is not None:
-                    if s.start_pos >= pos:
-                        return call, check_arr_index(arr, pos), stop
-                    elif s.execution is not None:
-                        end = s.execution.end_pos
-                        if s.execution.start_pos < pos and \
-                                (None in end or pos < end):
-                            c, index, stop = search_function_call(
-                                            s.execution, pos)
-                            if stop:
-                                return c, index, stop
+        command = 3
+        if isinstance(command, pr.Array):
+            new = search_function_definition(command, pos)
+            if new[0] is not None:
+                call, index, stop = new
+                if stop:
+                    return call, index, stop
+        elif isinstance(command, pr.Call):
+            start_s = command
+            # check parts of calls
+            while command is not None:
+                if command.start_pos >= pos:
+                    return call, check_arr_index(command, pos), stop
+                elif command.execution is not None:
+                    end = command.execution.end_pos
+                    if command.execution.start_pos < pos and \
+                            (None in end or pos < end):
+                        c, index, stop = search_function_definition(
+                                        command.execution, pos)
+                        if stop:
+                            return c, index, stop
 
-                            # call should return without execution and
-                            # next
-                            reset = c or s
-                            if reset.execution.type not in \
-                                        [pr.Array.TUPLE, pr.Array.NOARRAY]:
-                                return start_s, index, False
+                        # call should return without execution and
+                        # next
+                        reset = c or command
+                        if reset.execution.type not in \
+                                    [pr.Array.TUPLE, pr.Array.NOARRAY]:
+                            return start_s, index, False
 
-                            reset.execution = None
-                            reset.next = None
-                            return c or start_s, index, True
-                    s = s.next
+                        call = fast_parent_copy(c or start_s)
+                        reset.execution = None
+                        reset.next = None
+                        return call, index, True
+                command = command.next
 
     # The third return is just necessary for recursion inside, because
     # it needs to know when to stop iterating.
+    return None, 0, True # TODO remove
     return call, check_arr_index(arr, pos), stop
