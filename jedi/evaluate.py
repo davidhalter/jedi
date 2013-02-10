@@ -598,11 +598,12 @@ def follow_call_list(call_list, follow_array=False):
                 # comprehensions
                 result += follow_statement(stmt)
             else:
-                if isinstance(call, (pr.Lambda)):
+                if isinstance(call, pr.Lambda):
                     result.append(er.Function(call))
                 # With things like params, these can also be functions...
                 elif isinstance(call, (er.Function, er.Class, er.Instance,
                                                 dynamic.ArrayInstance)):
+                    # TODO this is just not very well readable -> fix, use pr.Base
                     result.append(call)
                 # The string tokens are just operations (+, -, etc.)
                 elif not isinstance(call, (str, unicode)):

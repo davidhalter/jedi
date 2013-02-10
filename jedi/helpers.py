@@ -55,9 +55,6 @@ def fast_parent_copy(obj):
             elif isinstance(el, list):
                 copied_list[i] = list_rec(el)
         return copied_list
-
-    if isinstance(obj, list):
-        obj = tuple(obj)
     return recursion(obj)
 
 

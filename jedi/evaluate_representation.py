@@ -305,7 +305,6 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.Base)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
-
     def __init__(self, func, is_decorated=False):
         """ This should not be called directly """
         self.base_func = func
@@ -639,7 +638,9 @@ class Execution(Executable):
                         for key_stmt, value_stmt in array.items():
                             # first index, is the key if syntactically correct
                             call = key_stmt.get_commands()[0]
-                            if type(call) == pr.Call:
+                            if isinstance(call, pr.Name):
+                                yield call, value_stmt
+                            elif type(call) == pr.Call:
                                 yield call.name, value_stmt
                             else:
                                 # `pr`.[Call|Function|Class] lookup.
