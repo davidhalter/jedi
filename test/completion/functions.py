@@ -109,10 +109,10 @@ def func(a=1, b=''):
     return a, b
 
 exe = func(b=list, a=tuple)
-#? tuple()
+#? tuple
 exe[0]
 
-#? list()
+#? list
 exe[1]
 
 # -----------------

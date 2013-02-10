@@ -585,7 +585,7 @@ class Execution(Executable):
                 array_type = pr.Array.DICT
                 if non_matching_keys:
                     keys, values = zip(*non_matching_keys)
-            else:
+            elif not keys_only:
                 # normal param
                 if value is not None:
                     values = [value]
