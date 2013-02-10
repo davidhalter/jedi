@@ -216,6 +216,8 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
         return func
 
     def get_commands(self):
+        """
+        # TODO delete ? 
         # Copy and modify the array.
         origin = self.var.get_commands()
         # Delete parent, because it isn't used anymore.
@@ -224,6 +226,10 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
                                                     self.is_class_var)
         new.parent_stmt = par
         return new
+        """
+        # Copy and modify the array.
+        return [InstanceElement(self.instance, command, self.is_class_var)
+                for command in self.var.get_commands()]
 
     def __getattr__(self, name):
         return getattr(self.var, name)
