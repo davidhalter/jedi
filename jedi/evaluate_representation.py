@@ -509,23 +509,19 @@ class Execution(Executable):
             if parent is not None:
                 new_param.parent = parent
 
-            if array_type is not None:
-                # create an Array (-> needed for *args/**kwargs tuples/dicts)
-                arr = pr.Array(self.module, start_pos, array_type, parent)
-                """
-                for i, value in enumerate(values):  # TODO delete?
-                    try:
-                        keys[i]
-                    except IndexError:
-                        pass
-                """
-                arr.values = values
-                arr.keys = keys
-                arr.type = array_type
+            # create an Array (-> needed for *args/**kwargs tuples/dicts)
+            arr = pr.Array(self.module, start_pos, array_type, parent)
+            arr.values = values
+            key_stmts = []
+            for key in keys:
+                stmt = pr.Statement(self.module, 'XXX code', [], [], [], [],
+                                    start_pos, None)
+                stmt._commands = [key]
+                key_stmts.append(stmt)
+            arr.keys = key_stmts
+            arr.type = array_type
 
-                new_param._commands = [arr]
-            else:
-                new_param._commands = values
+            new_param._commands = [arr]
 
             name = copy.copy(param.get_name())
             name.parent = new_param
@@ -573,6 +569,7 @@ class Execution(Executable):
             keys = []
             values = []
             array_type = None
+            ignore_creation = False
             if commands[0] == '*':
                 # *args param
                 array_type = pr.Array.TUPLE
@@ -591,12 +588,14 @@ class Execution(Executable):
                     keys, values = zip(*non_matching_keys)
             else:
                 # normal param
-                if value:
+                if value is not None:
                     values = [value]
                 else:
                     if param.assignment_details:
                         # No value: return the default values.
-                        values = commands
+                        ignore_creation = True
+                        result.append(param.get_name())
+                        param.is_generated=True
                     else:
                         # If there is no assignment detail, that means there is
                         # no assignment, just the result. Therefore nothing has
@@ -605,7 +604,7 @@ class Execution(Executable):
 
             # Just ignore all the params that are without a key, after one
             # keyword argument was set.
-            if not keys_only or commands[0] == '**':
+            if not ignore_creation and (not keys_only or commands[0] == '**'):
                 keys_used.add(str(key))
                 result.append(gen_param_name_copy(param, keys=keys,
                                         values=values, array_type=array_type))
@@ -653,7 +652,7 @@ class Execution(Executable):
                         key_arr, op = stmt.assignment_details[0]
                         # named parameter
                         if key_arr and isinstance(key_arr[0], pr.Call):
-                            yield op[0].name, stmt
+                            yield key_arr[0].name, stmt
                     else:
                         yield None, stmt
 
