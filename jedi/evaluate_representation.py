@@ -630,7 +630,7 @@ class Execution(Executable):
                     arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
                     # *args must be some sort of an array, otherwise -> ignore
                     for array in arrays:
-                        for field_stmt in array:
+                        for field_stmt in array:  # yield from plz!
                             yield None, field_stmt
                 # **kwargs
                 elif stmt.get_commands()[0] == '**':
@@ -863,10 +863,18 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def __getattr__(self, name):
         if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
-                        'get_parent_until', 'items',
-                        '__iter__', '__len__', '__getitem__']:
+                        'get_parent_until', 'items']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
+
+    def __getitem__(self):
+        return self._array.__getitem__()
+
+    def __iter__(self):
+        return self._array.__iter__()
+
+    def __len__(self):
+        return self._array.__len__()
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self._array)

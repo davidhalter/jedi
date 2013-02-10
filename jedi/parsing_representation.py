@@ -767,7 +767,7 @@ class Statement(Simple):
                     and not tok in ['>=', '<=', '==', '!=']
 
         def parse_array(token_iterator, array_type, start_pos, add_el=None):
-            arr = Array(self.module, start_pos, array_type)
+            arr = Array(self.module, start_pos, array_type, self)
             if add_el is not None:
                 arr.add_statement(add_el)
 
