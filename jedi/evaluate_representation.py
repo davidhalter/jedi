@@ -298,9 +298,9 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
         return self.base.name
 
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'parent', 'subscopes',
-                    'get_imports', 'get_parent_until', 'docstr', 'asserts']:
-            raise AttributeError("Don't touch this (%s)!" % name)
+        if name not in ['start_pos', 'end_pos', 'parent', 'asserts', 'docstr',
+                'get_imports', 'get_parent_until', 'get_code', 'subscopes']:
+            raise AttributeError("Don't touch this: %s of %s !" % (name, self))
         return getattr(self.base, name)
 
     def __repr__(self):
@@ -630,6 +630,16 @@ class Execution(Executable):
         def iterate():
             # `var_args` is typically an Array, and not a list.
             for stmt in self.var_args:
+                if not isinstance(stmt, pr.Statement):
+                    if stmt is None:
+                        yield None, None
+                        continue
+                    old = stmt
+                    # generate a statement if it's not already one.
+                    module = builtin.Builtin.scope
+                    stmt = pr.Statement(module, 'XXX code', [], [], [], [], (0, 0), None)
+                    stmt._commands = [old]
+
                 # *args
                 if stmt.get_commands()[0] == '*':
                     arrays = evaluate.follow_call_list(stmt.get_commands()[1:])

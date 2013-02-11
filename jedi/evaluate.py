@@ -416,10 +416,8 @@ def check_getattr(inst, name_str):
     # str is important to lose the NamePart!
     module = builtin.Builtin.scope
     name = pr.Call(module, str(name_str), pr.Call.STRING, (0, 0), inst)
-    stmt = pr.Statement(module, 'XXX code', [], [], [], [], (0, 0), None)
-    stmt._commands = [name]
     try:
-        result = inst.execute_subscope_by_name('__getattr__', [stmt])
+        result = inst.execute_subscope_by_name('__getattr__', [name])
     except KeyError:
         pass
     if not result:
@@ -428,7 +426,7 @@ def check_getattr(inst, name_str):
         # could be practical and the jedi would return wrong types. If
         # you ever have something, let me know!
         try:
-            result = inst.execute_subscope_by_name('__getattribute__', [stmt])
+            result = inst.execute_subscope_by_name('__getattribute__', [name])
         except KeyError:
             pass
     return result
