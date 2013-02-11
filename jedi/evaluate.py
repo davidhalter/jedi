@@ -520,7 +520,7 @@ def assign_tuples(tup, results, seek_name):
 
 
 @recursion.RecursionDecorator
-@cache.memoize_default(default=[])
+@cache.memoize_default(default=())
 def follow_statement(stmt, seek_name=None):
     """
     The starting point of the completion. A statement always owns a call list,

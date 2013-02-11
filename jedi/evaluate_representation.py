@@ -39,7 +39,7 @@ class Executable(pr.Base):
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of `pr.Array` or list.
     """
-    def __init__(self, base, var_args=[]):
+    def __init__(self, base, var_args=()):
         self.base = base
         self.var_args = var_args
 
@@ -53,7 +53,7 @@ class Executable(pr.Base):
 
 class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
     """ This class is used to evaluate instances. """
-    def __init__(self, base, var_args=[]):
+    def __init__(self, base, var_args=()):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
                     and builtin.Builtin.scope == base.get_parent_until():
@@ -122,7 +122,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         sub = self.base.get_subscope_by_name(name)
         return InstanceElement(self, sub, True)
 
-    def execute_subscope_by_name(self, name, args=[]):
+    def execute_subscope_by_name(self, name, args=()):
         method = self.get_subscope_by_name(name)
         return Execution(method, args).get_return_types()
 
@@ -249,7 +249,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
     def __init__(self, base):
         self.base = base
 
-    @cache.memoize_default(default=[])
+    @cache.memoize_default(default=())
     def get_super_classes(self):
         supers = []
         # TODO care for mro stuff (multiple super classes).
@@ -265,7 +265,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
             supers += evaluate.find_name(builtin.Builtin.scope, 'object')
         return supers
 
-    @cache.memoize_default(default=[])
+    @cache.memoize_default(default=())
     def get_defined_names(self):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
@@ -399,7 +399,7 @@ class Execution(Executable):
             else:
                 return [stmt]  # just some arbitrary object
 
-    @cache.memoize_default(default=[])
+    @cache.memoize_default(default=())
     @recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
@@ -490,7 +490,7 @@ class Execution(Executable):
                     stmts += evaluate.follow_statement(r)
             return stmts
 
-    @cache.memoize_default(default=[])
+    @cache.memoize_default(default=())
     def get_params(self):
         """
         This returns the params for an Execution/Instance and is injected as a
@@ -498,7 +498,7 @@ class Execution(Executable):
         This needs to be here, because Instance can have __init__ functions,
         which act the same way as normal functions.
         """
-        def gen_param_name_copy(param, keys=[], values=[], array_type=None):
+        def gen_param_name_copy(param, keys=(), values=(), array_type=None):
             """
             Create a param with the original scope (of varargs) as parent.
             """

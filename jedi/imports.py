@@ -318,7 +318,7 @@ def strip_imports(scopes):
 
 
 @cache.cache_star_import
-def remove_star_imports(scope, ignored_modules=[]):
+def remove_star_imports(scope, ignored_modules=()):
     """
     Check a module for star imports:
     >>> from module import *

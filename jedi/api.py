@@ -300,7 +300,7 @@ class Script(object):
                     definitions = [user_stmt]
         return definitions, search_name
 
-    def related_names(self, additional_module_paths=[]):
+    def related_names(self, additional_module_paths=()):
         """
         Return :class:`api_classes.RelatedName` objects, which contain all
         names that point to the definition of the name under the cursor. This
