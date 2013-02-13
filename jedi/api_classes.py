@@ -7,6 +7,7 @@ interesting information about completion and goto operations.
 import re
 import os
 import warnings
+import itertools
 
 from _compatibility import unicode
 import cache
@@ -296,16 +297,19 @@ class Definition(BaseDefinition):
         elif isinstance(d, pr.Module):
             return [self.module_name]
         elif isinstance(d, pr.Import):
-            try:
-                return [n.names[-1] for n in d.get_defined_names()]
-            except AttributeError:
-                pass
+            def getname(name):
+                try:
+                    return [name.names[-1]]
+                except AttributeError:
+                    return []
+            return list(itertools.chain(*map(getname, d.get_defined_names())))
         elif isinstance(d, pr.Statement):
-            try:
-                return [a.values[0][0].name.names[-1]
-                        for (_, a) in d.assignment_details]
-            except IndexError:
-                pass
+            def getname(assignment):
+                try:
+                    return [assignment[1].values[0][0].name.names[-1]]
+                except IndexError:
+                    return []
+            return list(itertools.chain(*map(getname, d.assignment_details)))
         return []
 
     @property
