@@ -29,7 +29,7 @@ na = numpy.array([1,2])
 #? ['shape']
 na.shape
 
-# shouldn't raise an error #29, jedi-vim
+# shouldn't raise an error #29, sith-vim
 # doesn't return something, because matplotlib uses __import__
 fig = pylab.figure()
 #? 

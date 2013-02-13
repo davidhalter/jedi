@@ -1,5 +1,5 @@
 """
-This is the core part of jedi. Most of the logic, how to evaluate certain
+This is the core part of sith. Most of the logic, how to evaluate certain
 objects (imports, etc.) is here.
 
 The functions should be described in their docstrings. However, there are some
@@ -529,7 +529,7 @@ class Execution(Executable):
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
             # Wrong value count is just ignored. If you try to test cases that
-            # are not allowed in Python, Jedi will maybe not show any
+            # are not allowed in Python, Sith will maybe not show any
             # completions.
             key, value = next(var_arg_iterator, (None, None))
             while key:
@@ -1207,7 +1207,7 @@ def check_getattr(inst, name_str):
     if not result:
         # this is a little bit special. `__getattribute__` is executed
         # before anything else. But: I know no use case, where this
-        # could be practical and the jedi would return wrong types. If
+        # could be practical and the sith would return wrong types. If
         # you ever have something, let me know!
         try:
             result = inst.execute_subscope_by_name('__getattribute__', args)

@@ -1,5 +1,5 @@
 """
-This is a compatibility module, to make it possible to use jedi also with older
+This is a compatibility module, to make it possible to use sith also with older
 python versions.
 """
 import sys

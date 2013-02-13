@@ -10,7 +10,7 @@ star_import_cache = {}
 
 
 def clear_caches():
-    """ Jedi caches many things, that should be completed after each completion
+    """ Sith caches many things, that should be completed after each completion
     finishes.
     """
     global memoize_caches

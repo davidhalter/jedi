@@ -1,5 +1,5 @@
 
-from jedi import functions, evaluate, parsing
+from sith import functions, evaluate, parsing
 
 el = functions.complete()[0]
 #? ['description']

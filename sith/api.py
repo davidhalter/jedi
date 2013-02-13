@@ -36,7 +36,7 @@ class NotFoundError(Exception):
 class Script(object):
     """
     A Script is the base for a completion, goto or whatever you want to do with
-    |jedi|.
+    |sith|.
 
     :param source: The source code of the current file, separated by newlines.
     :type source: string

@@ -22,7 +22,7 @@ import api_classes
 import fast_parser
 
 # This is something like the sys.path, but only for searching params. It means
-# that this is the order in which Jedi searches params.
+# that this is the order in which Sith searches params.
 search_param_modules = ['.']
 search_param_cache = {}
 
@@ -280,7 +280,7 @@ def _check_array_additions(compare_array, module, is_list):
         for stmt in possible_stmts:
             # Check if the original scope is an execution. If it is, one
             # can search for the same statement, that is in the module
-            # dict. Executions are somewhat special in jedi, since they
+            # dict. Executions are somewhat special in sith, since they
             # literally copy the contents of a function.
             if isinstance(comp_arr_parent, evaluate.Execution):
                 stmt = comp_arr_parent. \

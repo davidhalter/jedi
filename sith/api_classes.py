@@ -232,7 +232,7 @@ class Completion(BaseDefinition):
     def follow_definition(self):
         """
         Return the original definitions. I strongly recommend not using it for
-        your completions, because it might slow down |jedi|. If you want to read
+        your completions, because it might slow down |sith|. If you want to read
         only a few objects (<=20), it might be useful, especially to
         get the original docstrings. The basic problem of this function is
         that it follows all results. This means with 1000 completions (e.g.
