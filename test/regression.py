@@ -402,11 +402,18 @@ class TestGetDefinitions(TestBase):
             pass
         data = None
         """)
+        assert len(definitions) == 4
         assert definitions[0].names == ['module']
         assert definitions[1].names == ['Class']
         assert definitions[2].names == ['func']
         assert definitions[3].names == ['data']
 
+    def test_multiple_assignment(self):
+        definitions = api.get_definitions("""
+        x = y = None
+        """)
+        assert len(definitions) == 1
+        assert definitions[0].names == ['x', 'y']
 
 class TestSpeed(TestBase):
     def _check_speed(time_per_run, number=4, run_warm=True):
