@@ -296,7 +296,10 @@ class Definition(BaseDefinition):
         elif isinstance(d, pr.Module):
             return [self.module_name]
         elif isinstance(d, pr.Import):
-            return [n.names[-1] for n in d.get_defined_names()]
+            try:
+                return [n.names[-1] for n in d.get_defined_names()]
+            except AttributeError:
+                pass
         elif isinstance(d, pr.Statement):
             try:
                 return [a.values[0][0].name.names[-1]

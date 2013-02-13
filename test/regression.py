@@ -415,6 +415,17 @@ class TestGetDefinitions(TestBase):
         assert len(definitions) == 1
         assert definitions[0].names == ['x', 'y']
 
+    def test_multiple_imports(self):
+        definitions = api.get_definitions("""
+        from module import a, b
+        from another_module import *
+        """)
+        assert len(definitions) == 3
+        assert definitions[0].names == ['a']
+        assert definitions[1].names == ['b']
+        assert definitions[2].names == []
+
+
 class TestSpeed(TestBase):
     def _check_speed(time_per_run, number=4, run_warm=True):
         """ Speed checks should typically be very tolerant. Some machines are
