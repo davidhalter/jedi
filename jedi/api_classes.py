@@ -364,7 +364,7 @@ class Definition(BaseDefinition):
 
         :rtype: list of Definition
         """
-        return get_definitions(self._parser.scope)
+        return get_definitions(self.definition)
 
 
 def get_definitions(scope):

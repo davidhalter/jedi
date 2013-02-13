@@ -425,6 +425,20 @@ class TestGetDefinitions(TestBase):
         assert definitions[1].names == ['b']
         assert definitions[2].names == []
 
+    def test_nested_definitions(self):
+        definitions = api.get_definitions("""
+        class Class:
+            def f():
+                pass
+            def g():
+                pass
+        """)
+        assert len(definitions) == 1
+        assert definitions[0].names == ['Class']
+        subdefinitions = definitions[0].get_definitions()
+        assert subdefinitions[0].names == ['f']
+        assert subdefinitions[1].names == ['g']
+
 
 class TestSpeed(TestBase):
     def _check_speed(time_per_run, number=4, run_warm=True):
