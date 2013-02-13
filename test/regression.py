@@ -402,11 +402,10 @@ class TestGetDefinitions(TestBase):
             pass
         data = None
         """)
-        desc = lambda i: definitions[i].description
-        assert desc(0) == 'import module'
-        assert desc(1) == 'class Class'
-        assert desc(2) == 'def func'
-        assert desc(3) == 'data=None'
+        assert definitions[0].names == ['module']
+        assert definitions[1].names == ['Class']
+        assert definitions[2].names == ['func']
+        assert definitions[3].names == ['data']
 
 
 class TestSpeed(TestBase):

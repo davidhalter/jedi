@@ -272,6 +272,40 @@ class Definition(BaseDefinition):
         super(Definition, self).__init__(definition, definition.start_pos)
 
     @property
+    def names(self):
+        """
+        Name of variable/function/class/module.
+
+        For example, for ``isinstance`` it returns ``['isinstance']``.
+        As it is possible to have multiple definition in a statement,
+        this attribute returns a list of string.
+
+        :rtype: list of str
+        """
+        d = self.definition
+        if isinstance(d, er.InstanceElement):
+            d = d.var
+        if isinstance(d, pr.Name):
+            d = d.parent
+
+        if isinstance(d, er.Array):
+            return [unicode(d.type)]
+        elif isinstance(d, (pr.Class, er.Class, er.Instance,
+                            er.Function, pr.Function)):
+            return [unicode(d.name)]
+        elif isinstance(d, pr.Module):
+            return [self.module_name]
+        elif isinstance(d, pr.Import):
+            return [n.names[-1] for n in d.get_defined_names()]
+        elif isinstance(d, pr.Statement):
+            try:
+                return [a.values[0][0].name.names[-1]
+                        for (_, a) in d.assignment_details]
+            except IndexError:
+                pass
+        return []
+
+    @property
     def description(self):
         """
         A description of the :class:`.Definition` object, which is heavily used
