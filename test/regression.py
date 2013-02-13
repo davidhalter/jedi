@@ -391,6 +391,24 @@ class TestFeature(TestBase):
             self.assertEqual(quick_values, real_values)
 
 
+class TestGetDefinitions(TestBase):
+
+    def test_get_definitions_flat(self):
+        definitions = api.get_definitions("""
+        import module
+        class Class:
+            pass
+        def func():
+            pass
+        data = None
+        """)
+        desc = lambda i: definitions[i].description
+        assert desc(0) == 'import module'
+        assert desc(1) == 'class Class'
+        assert desc(2) == 'def func'
+        assert desc(3) == 'data=None'
+
+
 class TestSpeed(TestBase):
     def _check_speed(time_per_run, number=4, run_warm=True):
         """ Speed checks should typically be very tolerant. Some machines are

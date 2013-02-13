@@ -317,6 +317,32 @@ class Definition(BaseDefinition):
             position = ''
         return "%s:%s%s" % (self.module_name, self.description, position)
 
+    def get_definitions(self):
+        """
+        List sub-definitions (e.g., methods in class).
+
+        :rtype: list of Definition
+        """
+        return get_definitions(self._parser.scope)
+
+
+def get_definitions(scope):
+    """
+    List sub-definitions (e.g., methods in class).
+
+    :type scope: Scope
+    :rtype: list of Definition
+    """
+    def is_definition(s):
+        return isinstance(s, (pr.Import, pr.Function, pr.Class)) or \
+            isinstance(s, pr.Statement) and s.assignment_details
+    scopes = []
+    scopes.extend(scope.imports)
+    scopes.extend(scope.statements)
+    scopes.extend(scope.subscopes)
+    return map(Definition, sorted(filter(is_definition, scopes),
+                                  key=lambda s: s.start_pos))
+
 
 class RelatedName(BaseDefinition):
     """TODO: document this"""
