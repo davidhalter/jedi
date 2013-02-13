@@ -113,8 +113,7 @@ def extract(script, new_name):
     if user_stmt:
         pos = script.pos
         line_index = pos[0] - 1
-        arr, index = helpers.array_for_pos(user_stmt.get_assignment_calls(),
-                                            pos)
+        arr, index = helpers.array_for_pos(user_stmt.get_commands(), pos)
         if arr:
             s = arr.start_pos[0], arr.start_pos[1] + 1
             positions = [s] + arr.arr_el_pos + [arr.end_pos]
@@ -178,16 +177,16 @@ def inline(script):
                         if not stmt.start_pos <= r.start_pos <= stmt.end_pos]
         inlines = sorted(inlines, key=lambda x: (x.module_path, x.start_pos),
                                                 reverse=True)
-        ass = stmt.get_assignment_calls()
+        commands = stmt.get_commands()
         # don't allow multiline refactorings for now.
-        assert ass.start_pos[0] == ass.end_pos[0]
-        index = ass.start_pos[0] - 1
+        assert commands.start_pos[0] == commands.end_pos[0]
+        index = commands.start_pos[0] - 1
 
         line = new_lines[index]
-        replace_str = line[ass.start_pos[1]:ass.end_pos[1] + 1]
+        replace_str = line[commands.start_pos[1]:commands.end_pos[1] + 1]
         replace_str = replace_str.strip()
         # tuples need parentheses
-        if len(ass.values) > 1:
+        if len(commands.values) > 1:
             replace_str = '(%s)' % replace_str
 
         # if it's the only assignment, remove the statement

@@ -82,7 +82,6 @@ import debug
 import builtin
 import imports
 import recursion
-import helpers
 import dynamic
 import docstrings
 
@@ -253,8 +252,8 @@ def find_name(scope, name_str, position=None, search_global=False,
                 return []
             result = get_iterator_types(follow_statement(loop.inits[0]))
             if len(loop.set_vars) > 1:
-                var_arr = loop.set_stmt.get_assignment_calls()
-                result = assign_tuples(var_arr, result, name_str)
+                commands = loop.set_stmt.get_commands()
+                result = assign_tuples(commands, result, name_str)
             return result
 
         def process(name):
@@ -286,22 +285,21 @@ def find_name(scope, name_str, position=None, search_global=False,
                     inst.is_generated = True
                 result.append(inst)
             elif par.isinstance(pr.Statement):
-                def is_execution(arr):
-                    for a in arr:
-                        a = a[0]  # rest is always empty with assignees
-                        if a.isinstance(pr.Array):
-                            if is_execution(a):
+                def is_execution(calls):
+                    for c in calls:
+                        if c.isinstance(pr.Array):
+                            if is_execution(c):
                                 return True
-                        elif a.isinstance(pr.Call):
+                        elif c.isinstance(pr.Call):
                             # Compare start_pos, because names may be different
                             # because of executions.
-                            if a.name.start_pos == name.start_pos \
-                                                            and a.execution:
+                            if c.name.start_pos == name.start_pos \
+                                                            and c.execution:
                                 return True
                     return False
 
                 is_exe = False
-                for op, assignee in par.assignment_details:
+                for assignee, op in par.assignment_details:
                     is_exe |= is_execution(assignee)
 
                 if is_exe:
@@ -310,7 +308,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                     pass
                 else:
                     details = par.assignment_details
-                    if details and details[0][0] != '=':
+                    if details and details[0][1] != '=':
                         no_break_scope = True
 
                     # TODO this makes self variables non-breakable. wanted?
@@ -374,7 +372,8 @@ def find_name(scope, name_str, position=None, search_global=False,
         if not result and isinstance(nscope, er.Instance):
             # __getattr__ / __getattribute__
             result += check_getattr(nscope, name_str)
-        debug.dbg('sfn filter "%s" in %s: %s' % (name_str, nscope, result))
+        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s' % (name_str, scope,
+                                                nscope, result, position))
         return result
 
     def descriptor_check(result):
@@ -415,10 +414,10 @@ def check_getattr(inst, name_str):
     """Checks for both __getattr__ and __getattribute__ methods"""
     result = []
     # str is important to lose the NamePart!
-    name = pr.Call(str(name_str), pr.Call.STRING, (0, 0), inst)
-    args = helpers.generate_param_array([name])
+    module = builtin.Builtin.scope
+    name = pr.Call(module, str(name_str), pr.Call.STRING, (0, 0), inst)
     try:
-        result = inst.execute_subscope_by_name('__getattr__', args)
+        result = inst.execute_subscope_by_name('__getattr__', [name])
     except KeyError:
         pass
     if not result:
@@ -427,7 +426,7 @@ def check_getattr(inst, name_str):
         # could be practical and the jedi would return wrong types. If
         # you ever have something, let me know!
         try:
-            result = inst.execute_subscope_by_name('__getattribute__', args)
+            result = inst.execute_subscope_by_name('__getattribute__', [name])
         except KeyError:
             pass
     return result
@@ -485,46 +484,43 @@ def assign_tuples(tup, results, seek_name):
     def eval_results(index):
         types = []
         for r in results:
-            if hasattr(r, "get_exact_index_types"):
-                try:
-                    types += r.get_exact_index_types(index)
-                except IndexError:
-                    pass
-            else:
+            try:
+                func = r.get_exact_index_types
+            except AttributeError:
                 debug.warning("invalid tuple lookup %s of result %s in %s"
                                     % (tup, results, seek_name))
-
+            else:
+                try:
+                    types += func(index)
+                except IndexError:
+                    pass
         return types
 
     result = []
-    if tup.type == pr.Array.NOARRAY:
-        # Here we have unnessecary braces, which we just remove.
-        arr = tup.get_only_subelement()
-        if type(arr) == pr.Call:
-            if arr.name.names[-1] == seek_name:
-                result = results
-        else:
-            result = assign_tuples(arr, results, seek_name)
-    else:
-        for i, t in enumerate(tup):
-            # Used in assignments. There is just one call and no other things,
-            # therefore we can just assume, that the first part is important.
-            if len(t) != 1:
-                raise AttributeError('Array length should be 1')
-            t = t[0]
+    for i, stmt in enumerate(tup):
+        # Used in assignments. There is just one call and no other things,
+        # therefore we can just assume, that the first part is important.
+        command = stmt.get_commands()[0]
 
-            # Check the left part, if there are still tuples in it or a Call.
-            if isinstance(t, pr.Array):
-                # These are "sub"-tuples.
-                result += assign_tuples(t, eval_results(i), seek_name)
-            else:
-                if t.name.names[-1] == seek_name:
-                    result += eval_results(i)
+        if tup.type == pr.Array.NOARRAY:
+
+                # unnessecary braces -> just remove.
+            r = results
+        else:
+            r = eval_results(i)
+
+        # are there still tuples or is it just a Call.
+        if isinstance(command, pr.Array):
+            # These are "sub"-tuples.
+            result += assign_tuples(command, r, seek_name)
+        else:
+            if command.name.names[-1] == seek_name:
+                result += r
     return result
 
 
 @recursion.RecursionDecorator
-@cache.memoize_default(default=[])
+@cache.memoize_default(default=())
 def follow_statement(stmt, seek_name=None):
     """
     The starting point of the completion. A statement always owns a call list,
@@ -536,11 +532,11 @@ def follow_statement(stmt, seek_name=None):
     :param seek_name: A string.
     """
     debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))
-    call_list = stmt.get_assignment_calls()
-    debug.dbg('calls: %s' % call_list)
+    commands = stmt.get_commands()
+    debug.dbg('calls: %s' % commands)
 
     try:
-        result = follow_call_list(call_list)
+        result = follow_call_list(commands)
     except AttributeError:
         # This is so evil! But necessary to propagate errors. The attribute
         # errors here must not be catched, because they shouldn't exist.
@@ -550,8 +546,8 @@ def follow_statement(stmt, seek_name=None):
     # variables.
     if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
         new_result = []
-        for op, set_vars in stmt.assignment_details:
-            new_result += assign_tuples(set_vars, result, seek_name)
+        for ass_commands, op in stmt.assignment_details:
+            new_result += assign_tuples(ass_commands[0], result, seek_name)
         result = new_result
     return set(result)
 
@@ -580,69 +576,66 @@ def follow_call_list(call_list, follow_array=False):
         return loop
 
     if pr.Array.is_type(call_list, pr.Array.TUPLE, pr.Array.DICT):
+        raise NotImplementedError('TODO')
         # Tuples can stand just alone without any braces. These would be
         # recognized as separate calls, but actually are a tuple.
         result = follow_call(call_list)
     else:
         result = []
-        for calls in call_list:
-            calls_iterator = iter(calls)
-            for call in calls_iterator:
-                if pr.Array.is_type(call, pr.Array.NOARRAY):
-                    result += follow_call_list(call, follow_array=True)
-                elif isinstance(call, pr.ListComprehension):
-                    loop = evaluate_list_comprehension(call)
-                    stmt = copy.copy(call.stmt)
-                    stmt.parent = loop
-                    # create a for loop which does the same as list
-                    # comprehensions
-                    result += follow_statement(stmt)
-                else:
-                    if isinstance(call, (pr.Lambda)):
-                        result.append(er.Function(call))
-                    # With things like params, these can also be functions...
-                    elif isinstance(call, (er.Function, er.Class, er.Instance,
-                                                    dynamic.ArrayInstance)):
-                        result.append(call)
-                    # The string tokens are just operations (+, -, etc.)
-                    elif not isinstance(call, (str, unicode)):
-                        if str(call.name) == 'if':
-                            # Ternary operators.
-                            while True:
-                                try:
-                                    call = next(calls_iterator)
-                                except StopIteration:
+        calls_iterator = iter(call_list)
+        for call in calls_iterator:
+            if pr.Array.is_type(call, pr.Array.NOARRAY):
+                r = list(itertools.chain.from_iterable(follow_statement(s)
+                                                       for s in call))
+                call_path = call.generate_call_path()
+                next(call_path, None)  # the first one has been used already
+                result += follow_paths(call_path, r, call.parent,
+                                      position=call.start_pos)
+            elif isinstance(call, pr.ListComprehension):
+                loop = evaluate_list_comprehension(call)
+                stmt = copy.copy(call.stmt)
+                stmt.parent = loop
+                # create a for loop which does the same as list
+                # comprehensions
+                result += follow_statement(stmt)
+            else:
+                if isinstance(call, pr.Lambda):
+                    result.append(er.Function(call))
+                # With things like params, these can also be functions...
+                elif isinstance(call, (er.Function, er.Class, er.Instance,
+                                                dynamic.ArrayInstance)):
+                    # TODO this is just not very well readable -> fix, use pr.Base
+                    result.append(call)
+                # The string tokens are just operations (+, -, etc.)
+                elif not isinstance(call, (str, unicode)):
+                    if str(call.name) == 'if':
+                        # Ternary operators.
+                        while True:
+                            try:
+                                call = next(calls_iterator)
+                            except StopIteration:
+                                break
+                            try:
+                                if str(call.name) == 'else':
                                     break
-                                try:
-                                    if str(call.name) == 'else':
-                                        break
-                                except AttributeError:
-                                    pass
-                            continue
-                        result += follow_call(call)
-                    elif call == '*':
-                        if [r for r in result if isinstance(r, er.Array)
-                                        or isinstance(r, er.Instance)
-                                            and str(r.name) == 'str']:
-                            # if it is an iterable, ignore * operations
-                            next(calls_iterator)
-
-    if follow_array and isinstance(call_list, pr.Array):
-        # call_list can also be a two dimensional array
-        call_path = call_list.generate_call_path()
-        next(call_path, None)  # the first one has been used already
-        call_scope = call_list.parent_stmt
-        position = call_list.start_pos
-        result = follow_paths(call_path, result, call_scope, position=position)
+                            except AttributeError:
+                                pass
+                        continue
+                    result += follow_call(call)
+                elif call == '*':
+                    if [r for r in result if isinstance(r, er.Array)
+                                    or isinstance(r, er.Instance)
+                                        and str(r.name) == 'str']:
+                        # if it is an iterable, ignore * operations
+                        next(calls_iterator)
     return set(result)
 
 
 def follow_call(call):
     """Follow a call is following a function, variable, string, etc."""
-    scope = call.parent_stmt.parent
     path = call.generate_call_path()
-    position = call.parent_stmt.start_pos
-    return follow_call_path(path, scope, position)
+    scope = call.get_parent_until((pr.Scope, er.Execution))
+    return follow_call_path(path, scope, call.start_pos)
 
 
 def follow_call_path(path, scope, position):
@@ -664,8 +657,7 @@ def follow_call_path(path, scope, position):
                 debug.warning('unknown type:', current.type, current)
                 scopes = []
             # Make instances of those number/string objects.
-            arr = helpers.generate_param_array([current.name])
-            scopes = [er.Instance(s, arr) for s in scopes]
+            scopes = [er.Instance(s, (current.name,)) for s in scopes]
         result = imports.strip_imports(scopes)
 
     return follow_paths(path, result, scope, position=position)
@@ -745,8 +737,9 @@ def filter_private_variable(scope, call_scope, var_name):
 
 def goto(stmt, call_path=None):
     if call_path is None:
-        arr = stmt.get_assignment_calls()
-        call = arr.get_only_subelement()
+        commands = stmt.get_commands()
+        assert len(commands) == 1
+        call = commands[0]
         call_path = list(call.generate_call_path())
 
     scope = stmt.parent

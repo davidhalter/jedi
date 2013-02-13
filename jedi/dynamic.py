@@ -133,7 +133,7 @@ def search_params(param):
 
             for stmt in possible_stmts:
                 if not isinstance(stmt, pr.Import):
-                    calls = _scan_array(stmt.get_assignment_calls(), func_name)
+                    calls = _scan_array(stmt.get_commands(), func_name)
                     for c in calls:
                         # no execution means that params cannot be set
                         call_path = c.generate_call_path()
@@ -157,11 +157,11 @@ def search_params(param):
 
     # get the param name
     if param.assignment_details:
-        arr = param.assignment_details[0][1]
+        commands = param.assignment_details[0]
     else:
-        arr = param.get_assignment_calls()
-    offset = 1 if arr[0][0] in ['*', '**'] else 0
-    param_name = str(arr[0][offset].name)
+        commands = param.get_commands()
+    offset = 1 if commands[0] in ['*', '**'] else 0
+    param_name = str(commands[0][offset].name)
 
     # add the listener
     listener = ParamListener()
@@ -182,12 +182,12 @@ def search_params(param):
 
 def check_array_additions(array):
     """ Just a mapper function for the internal _check_array_additions """
-    if array._array.type not in ['list', 'set']:
+    if not pr.Array.is_type(array._array, pr.Array.LIST, pr.Array.SET):
         # TODO also check for dict updates
         return []
 
     is_list = array._array.type == 'list'
-    current_module = array._array.parent_stmt.get_parent_until()
+    current_module = array._array.get_parent_until()
     res = _check_array_additions(array, current_module, is_list)
     return res
 
@@ -264,10 +264,10 @@ def _check_array_additions(compare_array, module, is_list):
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/Execution parent """
         if isinstance(element, er.Array):
-            stmt = element._array.parent_stmt
+            stmt = element._array.parent
         else:
             # must be instance
-            stmt = element.var_args.parent_stmt
+            stmt = element.var_args.parent
         if isinstance(stmt, er.InstanceElement):
             stop_classes = list(stop_classes) + [er.Function]
         return stmt.get_parent_until(stop_classes)
@@ -303,7 +303,7 @@ def _check_array_additions(compare_array, module, is_list):
             if evaluate.follow_statement.push_stmt(stmt):
                 # check recursion
                 continue
-            res += check_calls(_scan_array(stmt.get_assignment_calls(), n), n)
+            res += check_calls(_scan_array(stmt.get_commands(), n), n)
             evaluate.follow_statement.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
@@ -311,11 +311,11 @@ def _check_array_additions(compare_array, module, is_list):
 
 
 def check_array_instances(instance):
-    """ Used for set() and list() instances. """
+    """Used for set() and list() instances."""
     if not settings.dynamic_arrays_instances:
         return instance.var_args
     ai = ArrayInstance(instance)
-    return helpers.generate_param_array([ai], instance.var_args.parent_stmt)
+    return [ai]
 
 
 class ArrayInstance(pr.Base):
@@ -416,9 +416,9 @@ def related_names(definitions, search_name, mods):
                     if set(f) & set(definitions):
                         names.append(api_classes.RelatedName(name_part, stmt))
             else:
-                calls = _scan_array(stmt.get_assignment_calls(), search_name)
+                calls = _scan_array(stmt.get_commands(), search_name)
                 for d in stmt.assignment_details:
-                    calls += _scan_array(d[1], search_name)
+                    calls += _scan_array(d[0], search_name)
                 for call in calls:
                     names += check_call(call)
     return names
@@ -462,9 +462,9 @@ def check_flow_information(flow, search_name, pos):
 
 def check_statement_information(stmt, search_name):
     try:
-        ass = stmt.get_assignment_calls()
+        commands = stmt.get_commands()
         try:
-            call = ass.get_only_subelement()
+            call = commands.get_only_subelement()
         except AttributeError:
             assert False
         assert type(call) == pr.Call and str(call.name) == 'isinstance'

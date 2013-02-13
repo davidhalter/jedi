@@ -35,7 +35,7 @@ class RecursionDecorator(object):
     def push_stmt(self, stmt):
         self.current = RecursionNode(stmt, self.current)
         if self._check_recursion():
-            debug.warning('catched recursion', stmt)
+            debug.warning('catched recursion', stmt, stmt.start_pos)
             self.pop_stmt()
             return True
         return False

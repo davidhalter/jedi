@@ -8,13 +8,12 @@ inherited. It's used by ``Function``, ``Class``, ``Flow``, etc. A ``Scope`` may
 have ``subscopes``, ``imports`` and ``statements``. The entire parser is based
 on scopes, because they also stand for indentation.
 
-One strange thing about the parser is that ``Array`` is two dimensional.  This
-has been caused by the fact that each array element can be defined by
-operations: ``[1, 2+33]``. So I chose to use a second dimension for ``2+33``,
-where each element would lie in the array like this: ``[2, '+', 33]``. In the
-future it might be useful to use Statements there, too (remove those crappy two
-dimensional arrays). This is also how ``Param`` works. Every single ``Param``
-is a ``Statement``.
+One special thing:
+
+``Array`` values are statements. But if you think about it, this makes sense.
+``[1, 2+33]`` for example would be an Array with two ``Statement`` inside. This
+is the easiest way to write a parser. The same behaviour applies to ``Param``,
+which is being used in a function definition.
 
 
 .. todo:: remove docstr params from Scope.__init__()
@@ -25,7 +24,7 @@ import re
 import tokenize
 
 from _compatibility import next, literal_eval, cleandoc, Python3Method, \
-                            property
+                            property, unicode
 import common
 import debug
 
@@ -53,25 +52,13 @@ class Simple(Base):
     __slots__ = ('parent', 'module', '_start_pos', 'use_as_parent', '_end_pos')
 
     def __init__(self, module, start_pos, end_pos=(None, None)):
+        self.module = module
         self._start_pos = start_pos
         self._end_pos = end_pos
+
         self.parent = None
         # use this attribute if parent should be something else than self.
         self.use_as_parent = self
-        self.module = module
-
-    @Python3Method
-    def get_parent_until(self, classes=(), reverse=False,
-                                                    include_current=True):
-        """ Takes always the parent, until one class (not a Class) """
-        if type(classes) not in (tuple, list):
-            classes = (classes,)
-        scope = self if include_current else self.parent
-        while scope.parent is not None:
-            if classes and reverse != scope.isinstance(*classes):
-                break
-            scope = scope.parent
-        return scope
 
     @property
     def start_pos(self):
@@ -90,6 +77,19 @@ class Simple(Base):
     @end_pos.setter
     def end_pos(self, value):
         self._end_pos = value
+
+    @Python3Method
+    def get_parent_until(self, classes=(), reverse=False,
+                                                    include_current=True):
+        """ Takes always the parent, until one class (not a Class) """
+        if type(classes) not in (tuple, list):
+            classes = (classes,)
+        scope = self if include_current else self.parent
+        while scope.parent is not None:
+            if classes and reverse != scope.isinstance(*classes):
+                break
+            scope = scope.parent
+        return scope
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
@@ -658,12 +658,12 @@ class Statement(Simple):
     :type start_pos: tuple(int, int)
     """
     __slots__ = ('used_funcs', 'code', 'token_list', 'used_vars',
-                 'set_vars', '_assignment_calls', '_assignment_details',
-                 '_assignment_calls_calculated')
+                 'set_vars', '_commands', '_assignment_details')
 
     def __init__(self, module, code, set_vars, used_funcs, used_vars,
-                                            token_list, start_pos, end_pos):
+                                token_list, start_pos, end_pos, parent=None):
         super(Statement, self).__init__(module, start_pos, end_pos)
+        # TODO remove code -> much cleaner
         self.code = code
         self.used_funcs = used_funcs
         self.used_vars = used_vars
@@ -671,12 +671,12 @@ class Statement(Simple):
         for s in set_vars + used_funcs + used_vars:
             s.parent = self.use_as_parent
         self.set_vars = self._remove_executions_from_set_vars(set_vars)
+        self.parent = parent
 
         # cache
-        self._assignment_calls = None
-        self._assignment_details = None
+        self._commands = None
+        self._assignment_details = []
         # this is important for other scripts
-        self._assignment_calls_calculated = False
 
     def _remove_executions_from_set_vars(self, set_vars):
         """
@@ -710,29 +710,50 @@ class Statement(Simple):
         return list(result)
 
     def get_code(self, new_line=True):
+        def assemble(command_list, assignment=None):
+            pieces = [c.get_code() if isinstance(c, Base) else c
+                        for c in command_list]
+            if assignment is None:
+                return ''.join(pieces)
+            return '%s %s ' % (''.join(pieces), assignment)
+
+        code = ''.join(assemble(*a) for a in self._assignment_details)
+        code += assemble(self.get_commands())
+
         if new_line:
-            return self.code + '\n'
+            return code + '\n'
         else:
-            return self.code
+            return code
 
     def get_set_vars(self):
         """ Get the names for the statement. """
         return list(self.set_vars)
 
-    @property
-    def assignment_details(self):
-        if self._assignment_details is None:
-            # normally, this calls sets this variable
-            self.get_assignment_calls()
-        # it may not have been set by get_assignment_calls -> just use an empty
-        # array
-        return self._assignment_details or []
-
     def is_global(self):
         # first keyword of the first token is global -> must be a global
         return str(self.token_list[0]) == "global"
 
-    def get_assignment_calls(self):
+    def get_command(self, index):
+        commands = self.get_commands()
+        try:
+            return commands[index]
+        except IndexError:
+            return None
+
+    @property
+    def assignment_details(self):
+        # parse statement which creates the assignment details.
+        self.get_commands()
+        return self._assignment_details
+
+    def get_commands(self):
+        if self._commands is None:
+            self._commands = ['time neeeeed']  # avoid recursions
+            result = self._parse_statement()
+            self._commands = result
+        return self._commands
+
+    def _parse_statement(self):
         """
         This is not done in the main parser, because it might be slow and
         most of the statements won't need this data anyway. This is something
@@ -741,58 +762,115 @@ class Statement(Simple):
         This is not really nice written, sorry for that. If you plan to replace
         it and make it nicer, that would be cool :-)
         """
-        if self._assignment_calls_calculated:
-            return self._assignment_calls
-        self._assignment_details = []
-        top = result = Array(self.start_pos, Array.NOARRAY, self)
-        level = 0
-        is_chain = False
-        close_brackets = False
+        def is_assignment(tok):
+            return isinstance(tok, (str, unicode)) and tok.endswith('=') \
+                    and not tok in ['>=', '<=', '==', '!=']
 
-        tok_iter = enumerate(self.token_list)
-        for i, tok_temp in tok_iter:
+        def parse_array(token_iterator, array_type, start_pos, add_el=None):
+            arr = Array(self.module, start_pos, array_type, self)
+            if add_el is not None:
+                arr.add_statement(add_el)
+
+            maybe_dict = array_type == Array.SET
+            break_tok = None
+            is_array = None
+            while True:
+                stmt, break_tok = parse_array_el(token_iterator, maybe_dict,
+                                             break_on_assignment=bool(add_el))
+                if stmt is None:
+                    break
+                else:
+                    if break_tok == ',':
+                        is_array = True
+                    is_key = maybe_dict and break_tok == ':'
+                    arr.add_statement(stmt, is_key)
+                    if break_tok in closing_brackets or is_assignment(break_tok):
+                        break
+            if arr.type == Array.TUPLE and len(arr) == 1 and not is_array:
+                arr.type = Array.NOARRAY
+            if not arr.values and maybe_dict:
+                # this is a really special case - empty brackets {} are
+                # always dictionaries and not sets.
+                arr.type = Array.DICT
+
+            k, v = arr.keys, arr.values
+            latest = (v[-1] if v else k[-1] if k else None)
+            end_pos = latest.end_pos if latest is not None \
+                                     else (start_pos[0], start_pos[1] + 1)
+            arr.end_pos = end_pos[0], end_pos[1] + (len(break_tok) if break_tok
+                                                    else 0)
+            return arr, break_tok
+
+        def parse_array_el(token_iterator, maybe_dict=False,
+                            break_on_assignment=False):
+            token_list = []
+            level = 1
+            tok = None
+            first = True
+            for i, tok_temp in token_iterator:
+                if isinstance(tok_temp, (Base)):
+                    # the token is a Name, which has already been parsed
+                    tok = tok_temp
+                    if first:
+                        start_pos = tok.start_pos
+                        first = False
+                    end_pos = tok.end_pos
+                else:
+                    token_type, tok, start_tok_pos = tok_temp
+                    end_pos = start_tok_pos[0], start_tok_pos[1] + len(tok)
+                    if first:
+                        first = False
+                        start_pos = start_tok_pos
+
+                    if tok in closing_brackets:
+                        level -= 1
+                    elif tok in brackets.keys():
+                        level += 1
+
+                    if level == 0 and tok in closing_brackets \
+                        or level == 1 and (tok == ','
+                                or maybe_dict and tok == ':'
+                                or is_assignment(tok) and break_on_assignment):
+                        break
+                token_list.append(tok_temp)
+
+            if not token_list:
+                return None, tok
+
+            statement = Statement(self.module, "XXX" + self.code, [], [], [],
+                                            token_list, start_pos, end_pos)
+            statement.parent = self.parent
+            return statement, tok
+
+        # initializations
+        result = []
+        is_chain = False
+        brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
+        closing_brackets = ')', '}', ']'
+
+        token_iterator = enumerate(self.token_list)
+        for i, tok_temp in token_iterator:
             #print 'tok', tok_temp, result
-            if isinstance(tok_temp, ListComprehension):
-                result.add_to_current_field(tok_temp)
-                continue
-            try:
-                token_type, tok, start_pos = tok_temp
-            except TypeError:
+            if isinstance(tok_temp, Base):
                 # the token is a Name, which has already been parsed
                 tok = tok_temp
                 token_type = None
                 start_pos = tok.start_pos
-            except ValueError:
-                debug.warning("unkown value, shouldn't happen",
-                                tok_temp, type(tok_temp))
-                raise
             else:
-                if level == 0 and tok.endswith('=') \
-                                and not tok in ['>=', '<=', '==', '!=']:
+                token_type, tok, start_pos = tok_temp
+                if is_assignment(tok):
                     # This means, there is an assignment here.
-
                     # Add assignments, which can be more than one
-                    self._assignment_details.append((tok, top))
-                    # All these calls wouldn't be important if nonlocal would
-                    # exist. -> Initialize the first items again.
-                    end_pos = start_pos[0], start_pos[1] + len(tok)
-                    top = result = Array(end_pos, Array.NOARRAY, self)
-                    level = 0
-                    close_brackets = False
+                    self._assignment_details.append((result, tok))
+                    result = []
                     is_chain = False
                     continue
-                elif tok == 'as':
-                    next(tok_iter, None)
+                elif tok == 'as':  # just ignore as
+                    next(token_iterator, None)
                     continue
-
-            # here starts the statement creation madness!
-            brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
-            is_call = lambda: type(result) == Call
-            is_call_or_close = lambda: is_call() or close_brackets
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:
-                _tok = tok
                 c_type = Call.NAME
                 if is_literal:
                     tok = literal_eval(tok)
@@ -801,87 +879,38 @@ class Statement(Simple):
                     elif token_type == tokenize.NUMBER:
                         c_type = Call.NUMBER
 
+                call = Call(self.module, tok, c_type, start_pos, self)
                 if is_chain:
-                    call = Call(tok, c_type, start_pos, parent=result)
-                    result = result.set_next_chain_call(call)
-                    is_chain = False
-                    close_brackets = False
+                    result[-1].set_next(call)
                 else:
-                    if close_brackets:
-                        result = result.parent
-                        close_brackets = False
-                    if type(result) == Call:
-                        result = result.parent
-                    call = Call(tok, c_type, start_pos, parent=result)
-                    result.add_to_current_field(call)
-                    result = call
-                tok = _tok
-            elif tok in brackets.keys():  # brackets
-                level += 1
-                if is_call_or_close():
-                    result = Array(start_pos, brackets[tok], parent=result)
-                    result = result.parent.add_execution(result)
-                    close_brackets = False
+                    result.append(call)
+                is_chain = False
+            elif tok in brackets.keys():
+                arr, is_ass = parse_array(token_iterator, brackets[tok],
+                                             start_pos)
+                if result and isinstance(result[-1], Call):
+                    result[-1].set_execution(arr)
                 else:
-                    result = Array(start_pos, brackets[tok], parent=result)
-                    result.parent.add_to_current_field(result)
-            elif tok == ':':
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                if result.type == Array.LIST:  # [:] lookups
-                    result.add_to_current_field(tok)
-                else:
-                    result.add_dictionary_key()
+                    arr.parent = self
+                    result.append(arr)
+                #print(tok, result)
             elif tok == '.':
-                if close_brackets and result.parent != top:
-                    # only get out of the array, if it is a array execution
-                    result = result.parent
-                    close_brackets = False
-                is_chain = True
-            elif tok == ',':
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                result.add_field((start_pos[0], start_pos[1] + 1))
-                # important - it cannot be empty anymore
-                if result.type == Array.NOARRAY:
-                    result.type = Array.TUPLE
-            elif tok in [')', '}', ']']:
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                if tok == '}' and not len(result):
-                    # this is a really special case - empty brackets {} are
-                    # always dictionaries and not sets.
-                    result.type = Array.DICT
-                level -= 1
-                result.end_pos = start_pos[0], start_pos[1] + 1
-                close_brackets = True
+                if result and isinstance(result[-1], Call):
+                    is_chain = True
+            elif tok == ',':  # implies a tuple
+                # rewrite `result`, because now the whole thing is a tuple
+                add_el, t = parse_array_el(enumerate(result))
+                arr, break_tok = parse_array(token_iterator, Array.TUPLE,
+                                             start_pos, add_el)
+                result = [arr]
+                if is_assignment(break_tok):
+                    self._assignment_details.append((result, break_tok))
+                    result = []
+                    is_chain = False
             else:
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
                 if tok != '\n':
-                    result.add_to_current_field(tok)
-
-        if level != 0:
-            debug.warning("Brackets don't match: %s."
-                          "This is not normal behaviour." % level)
-
-        if self.token_list:
-            while result is not None:
-                try:
-                    result.end_pos = start_pos[0], start_pos[1] + len(tok)
-                except TypeError:
-                    result.end_pos = tok.end_pos
-                result = result.parent
-        else:
-            result.end_pos = self.end_pos
-
-        self._assignment_calls_calculated = True
-        self._assignment_calls = top
-        return top
+                    result.append(tok)
+        return result
 
 
 class Param(Statement):
@@ -916,7 +945,7 @@ class Param(Statement):
         return n[0]
 
 
-class Call(Base):
+class Call(Simple):
     """
     `Call` contains a call, e.g. `foo.bar` and owns the executions of those
     calls, which are `Array`s.
@@ -925,59 +954,37 @@ class Call(Base):
     NUMBER = 2
     STRING = 3
 
-    def __init__(self, name, type, start_pos, parent_stmt=None, parent=None):
+    def __init__(self, module, name, type, start_pos, parent=None):
+        super(Call, self).__init__(module, start_pos)
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
         self.parent = parent
         self.type = type
-        self.start_pos = start_pos
 
         self.next = None
         self.execution = None
-        self._parent_stmt = parent_stmt
 
-    @property
-    def start_pos(self):
-        offset = self.parent_stmt.module.line_offset
-        return offset + self._start_pos[0], self._start_pos[1]
-
-    @start_pos.setter
-    def start_pos(self, value):
-        self._start_pos = value
-
-    @property
-    def parent_stmt(self):
-        if self._parent_stmt is not None:
-            return self._parent_stmt
-        elif self.parent:
-            return self.parent.parent_stmt
-        else:
-            return None
-
-    @parent_stmt.setter
-    def parent_stmt(self, value):
-        self._parent_stmt = value
-
-    def set_next_chain_call(self, call):
+    def set_next(self, call):
         """ Adds another part of the statement"""
-        self.next = call
-        call.parent = self.parent
-        return call
+        if self.next is not None:
+            self.next.set_next(call)
+        else:
+            self.next = call
+            call.parent = self.parent
 
-    def add_execution(self, call):
+    def set_execution(self, call):
         """
         An execution is nothing else than brackets, with params in them, which
         shows access on the internals of this name.
         """
-        self.execution = call
-        # there might be multiple executions, like a()[0], in that case, they
-        # have the same parent. Otherwise it's not possible to parse proper.
-        if self.parent.execution == self:
-            call.parent = self.parent
+        if self.next is not None:
+            self.next.set_execution(call)
+        elif self.execution is not None:
+            self.execution.set_execution(call)
         else:
+            self.execution = call
             call.parent = self
-        return call
 
     def generate_call_path(self):
         """ Helps to get the order in which statements are executed. """
@@ -998,9 +1005,9 @@ class Call(Base):
         if self.type == Call.NAME:
             s = self.name.get_code()
         else:
-            s = repr(self.name)
+            s = '' if self.name is None else repr(self.name)
         if self.execution is not None:
-            s += '(%s)' % self.execution.get_code()
+            s += self.execution.get_code()
         if self.next is not None:
             s += self.next.get_code()
         return s
@@ -1017,78 +1024,30 @@ class Array(Call):
     http://docs.python.org/py3k/reference/grammar.html
     Array saves sub-arrays as well as normal operators and calls to methods.
 
-    :param array_type: The type of an array, which can be one of the constants\
-    below.
+    :param array_type: The type of an array, which can be one of the constants
+        below.
     :type array_type: int
     """
-    NOARRAY = None
+    NOARRAY = None  # just brackets, like `1 * (3 + 2)`
     TUPLE = 'tuple'
     LIST = 'list'
     DICT = 'dict'
     SET = 'set'
 
-    def __init__(self,  start_pos, arr_type=NOARRAY, parent_stmt=None,
-                                                   parent=None, values=None):
-        super(Array, self).__init__(None, arr_type, start_pos, parent_stmt,
-                                                                    parent)
-
-        self.values = values if values else []
-        self.arr_el_pos = []
+    def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None):
+        super(Array, self).__init__(module, None, arr_type, start_pos, parent)
+        self.values = []
         self.keys = []
-        self._end_pos = None, None
+        self.end_pos = None, None
 
-    @property
-    def end_pos(self):
-        if None in self._end_pos:
-            return self._end_pos
-        offset = self.parent_stmt.module.line_offset
-        return offset + self._end_pos[0], self._end_pos[1]
-
-    @end_pos.setter
-    def end_pos(self, value):
-        self._end_pos = value
-
-    def add_field(self, start_pos):
-        """
-        Just add a new field to the values.
-
-        Each value has a sub-array, because there may be different tokens in
-        one array.
-        """
-        self.arr_el_pos.append(start_pos)
-        self.values.append([])
-
-    def add_to_current_field(self, tok):
-        """ Adds a token to the latest field (in content). """
-        if not self.values:
-            # An empty round brace is just a tuple, filled it is unnecessary.
-            if self.type == Array.TUPLE:
-                self.type = Array.NOARRAY
-            # Add the first field, this is done here, because if nothing
-            # gets added, the list is empty, which is also needed sometimes.
-            self.values.append([])
-        self.values[-1].append(tok)
-
-    def add_dictionary_key(self):
-        """
-        Only used for dictionaries, automatically adds the tokens added by now
-        from the values to keys, because the parser works this way.
-        """
-        if self.type in (Array.LIST, Array.TUPLE):
-            return  # these are basically code errors, just ignore
-        self.keys.append(self.values.pop())
-        if self.type == Array.SET:
-            self.type = Array.DICT
-        self.values.append([])
-
-    def get_only_subelement(self):
-        """
-        Returns the only element that an array contains. If it contains
-        more than one element, raise an exception.
-        """
-        if len(self.values) != 1 or len(self.values[0]) != 1:
-            raise AttributeError("More than one value found")
-        return self.values[0][0]
+    def add_statement(self, statement, is_key=False):
+        """Just add a new statement"""
+        statement.parent = self
+        if is_key:
+            self.type = self.DICT
+            self.keys.append(statement)
+        else:
+            self.values.append(statement)
 
     @staticmethod
     def is_type(instance, *types):
@@ -1105,41 +1064,41 @@ class Array(Call):
         return len(self.values)
 
     def __getitem__(self, key):
+        if self.type == self.DICT:
+            raise TypeError('no dicts allowed')
         return self.values[key]
 
     def __iter__(self):
         if self.type == self.DICT:
-            return iter(zip(self.keys, self.values))
-        else:
-            return iter(self.values)
+            raise TypeError('no dicts allowed')
+        return iter(self.values)
+
+    def items(self):
+        if self.type != self.DICT:
+            raise TypeError('only dicts allowed')
+        return zip(self.keys, self.values)
 
     def get_code(self):
-        def to_str(el):
-            try:
-                return el.get_code()
-            except AttributeError:
-                return str(el)
-
-        map = {Array.NOARRAY: '%s',
-               Array.TUPLE: '(%s)',
-               Array.LIST: '[%s]',
-               Array.DICT: '{%s}',
-               Array.SET: '{%s}'
+        map = {self.NOARRAY: '(%s)',
+               self.TUPLE: '(%s)',
+               self.LIST: '[%s]',
+               self.DICT: '{%s}',
+               self.SET: '{%s}'
               }
         inner = []
-        for i, value in enumerate(self.values):
+        for i, stmt in enumerate(self.values):
             s = ''
             try:
                 key = self.keys[i]
             except IndexError:
                 pass
             else:
-                for el in key[i]:
-                    s += to_str(el)
-            for el in value:
-                s += to_str(el)
+                s += key.get_code(new_line=False) + ': '
+            s += stmt.get_code(new_line=False)
             inner.append(s)
-        return map[self.type] % ', '.join(inner)
+        add = ',' if self.type == self.TUPLE and len(self) == 1 else ''
+        s = map[self.type] % (', '.join(inner) + add)
+        return s + super(Array, self).get_code()
 
     def __repr__(self):
         if self.type == self.NOARRAY:

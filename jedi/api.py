@@ -190,12 +190,12 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        r = parsing.Parser(cursor_txt, no_docstr=True)
+        offset = self.pos[0] - 1
+        r = parsing.Parser(cursor_txt, no_docstr=True, line_offset=offset)
         try:
             stmt = r.module.statements[0]
         except IndexError:
             raise NotFoundError()
-        stmt.start_pos = self.pos
         stmt.parent = self._parser.user_scope
         return stmt
 
@@ -300,7 +300,7 @@ class Script(object):
                     definitions = [user_stmt]
         return definitions, search_name
 
-    def related_names(self, additional_module_paths=[]):
+    def related_names(self, additional_module_paths=()):
         """
         Return :class:`api_classes.RelatedName` objects, which contain all
         names that point to the definition of the name under the cursor. This
@@ -355,9 +355,8 @@ class Script(object):
             if user_stmt is None \
                         or not isinstance(user_stmt, pr.Statement):
                 return None, 0
-            ass = helpers.fast_parent_copy(user_stmt.get_assignment_calls())
 
-            call, index, stop = helpers.search_function_call(ass, self.pos)
+            call, index, stop = helpers.search_function_definition(user_stmt, self.pos)
             return call, index
 
         def check_cache():
