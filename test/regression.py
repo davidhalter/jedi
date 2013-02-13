@@ -438,6 +438,8 @@ class TestGetDefinitions(TestBase):
         subdefinitions = definitions[0].get_definitions()
         assert subdefinitions[0].names == ['f']
         assert subdefinitions[1].names == ['g']
+        assert subdefinitions[0].full_name == 'Class.f'
+        assert subdefinitions[1].full_name == 'Class.g'
 
 
 class TestSpeed(TestBase):
