@@ -1,16 +1,16 @@
 """
-Jedi is an autocompletion library for Python. It also offers additional
+Sith is an autocompletion library for Python. It also offers additional
 services such as goto / get_definition / pydoc support / get_in_function_call /
 related names.
 
-To give you a simple example how you can use the jedi library, here is an
+To give you a simple example how you can use the sith library, here is an
 example for the autocompletion feature:
 
->>> import jedi
+>>> import sith
 >>> source = '''import json; json.l'''
->>> script = jedi.Script(source, 1, 19, '')
+>>> script = sith.Script(source, 1, 19, '')
 >>> script
-<jedi.api.Script at 0x7f6d40f3db90>
+<sith.api.Script at 0x7f6d40f3db90>
 >>> completions = script.complete()
 >>> completions
 [<Completion: load>, <Completion: loads>]
@@ -19,7 +19,7 @@ example for the autocompletion feature:
 >>> completions[0].word
 'load'
 
-As you see Jedi is pretty simple and allows you to concentrate on writing a
+As you see Sith is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.
 """
 

@@ -3,7 +3,7 @@ import sys
 import os
 from os import dirname
 
-sys.path.insert(0, '../../jedi')
+sys.path.insert(0, '../../sith')
 sys.path.append(dirname(os.path.abspath('thirdparty' + os.path.sep + 'asdf')))
 
 # modifications, that should fail:
@@ -18,8 +18,8 @@ import evaluate
 #? ['goto']
 evaluate.goto
 
-#? ['jedi_']
-import jedi_
+#? ['sith_']
+import sith_
 
 #? ['el']
-jedi_.el
+sith_.el

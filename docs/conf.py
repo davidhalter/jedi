@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Jedi documentation build configuration file, created by
+# Sith documentation build configuration file, created by
 # sphinx-quickstart on Wed Dec 26 00:11:34 2012.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -17,7 +17,7 @@ import sys, os, datetime
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0, os.path.abspath('../jedi'))
+sys.path.insert(0, os.path.abspath('../sith'))
 sys.path.append(os.path.abspath('_themes'))
 
 # -- General configuration -----------------------------------------------------
@@ -42,8 +42,8 @@ source_encoding = 'utf-8'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Jedi'
-copyright = u'2012 - {today.year}, Jedi contributors'.format(today=datetime.date.today())
+project = u'Sith'
+copyright = u'2012 - {today.year}, Sith contributors'.format(today=datetime.date.today())
 
 _path = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(_path, '../VERSION'), 'r') as f:
@@ -181,7 +181,7 @@ html_sidebars = {
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Jedidoc'
+htmlhelp_basename = 'Sithdoc'
 
 #html_style = 'default.css'  # Force usage of default template on RTD
 
@@ -202,8 +202,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Jedi.tex', u'Jedi Documentation',
-   u'Jedi contributors', 'manual'),
+  ('index', 'Sith.tex', u'Sith Documentation',
+   u'Sith contributors', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -232,8 +232,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'jedi', u'Jedi Documentation',
-     [u'Jedi contributors'], 1)
+    ('index', 'sith', u'Sith Documentation',
+     [u'Sith contributors'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -246,8 +246,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Jedi', u'Jedi Documentation',
-   u'Jedi contributors', 'Jedi', 'Awesome Python autocompletion library.',
+  ('index', 'Sith', u'Sith Documentation',
+   u'Sith contributors', 'Sith', 'Awesome Python autocompletion library.',
    'Miscellaneous'),
 ]
 

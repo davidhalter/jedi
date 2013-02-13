@@ -22,7 +22,7 @@ enable_notice = False
 
 # callback, interface: level, str
 debug_function = None
-ignored_modules = ['parsing', 'builtin', 'jedi.builtin', 'jedi.parsing']
+ignored_modules = ['parsing', 'builtin', 'sith.builtin', 'sith.parsing']
 
 
 def reset_time():

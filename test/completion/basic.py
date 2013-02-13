@@ -144,7 +144,7 @@ b = [b for arr in [[[1.0]]] for a in arr for b in a]
 #? float()
 b[0]
 
-# jedi issue #26
+# sith issue #26
 #? list()
 a = [[int(v) for v in line.strip().split() if v] for line in ["123", "123", "123"] if line]
 #? list()

@@ -3,13 +3,13 @@
 The Plugin API
 ==============
 
-.. currentmodule:: jedi
+.. currentmodule:: sith
 
 Note: This documentation is for Plugin developers, who want to improve their
 editors/IDE autocompletion 
 
-If you want to use |jedi|, you first need to
-``import jedi``. You then have direct access to the :class:`.Script`.
+If you want to use |sith|, you first need to
+``import sith``. You then have direct access to the :class:`.Script`.
 
 
 API documentation
@@ -40,11 +40,11 @@ Completions:
 
 .. sourcecode:: python
 
-   >>> import jedi
+   >>> import sith
    >>> source = '''import json; json.l'''
-   >>> script = jedi.Script(source, 1, 19, '')
+   >>> script = sith.Script(source, 1, 19, '')
    >>> script
-   <jedi.api.Script object at 0x2121b10>
+   <sith.api.Script object at 0x2121b10>
    >>> completions = script.complete()
    >>> completions
    [<Completion: load>, <Completion: loads>]
@@ -59,7 +59,7 @@ Definitions / Goto:
 
 .. sourcecode:: python
 
-    >>> import jedi
+    >>> import sith
     >>> source = '''def my_func():
     ...     print 'called'
     ... 
@@ -68,7 +68,7 @@ Definitions / Goto:
     ... inception = my_list[2]
     ... 
     ... inception()'''
-    >>> script = jedi.Script(source, 8, 1, '')
+    >>> script = sith.Script(source, 8, 1, '')
     >>>
     >>> script.goto()
     [<Definition inception=my_list[2]>]
@@ -80,13 +80,13 @@ Related names:
 
 .. sourcecode:: python
 
-    >>> import jedi
+    >>> import sith
     >>> source = '''x = 3
     ... if 1 == 2:
     ...     x = 4
     ... else:
     ...     del x'''
-    >>> script = jedi.Script(source, 5, 8, '')
+    >>> script = sith.Script(source, 5, 8, '')
     >>> rns = script.related_names()
     >>> rns
     [<RelatedName x@3,4>, <RelatedName x@1,0>]

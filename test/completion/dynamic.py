@@ -1,6 +1,6 @@
 """
 This is used for dynamic object completion.
-Jedi tries to guess the types with a backtracking approach.
+Sith tries to guess the types with a backtracking approach.
 """
 def func(a):
     #? int() str()

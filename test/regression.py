@@ -8,8 +8,8 @@ import time
 import functools
 import itertools
 
-sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../jedi'))
-os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
+sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../sith'))
+os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../sith')
 
 from _compatibility import is_py25, utf8, unicode
 import api
@@ -193,17 +193,17 @@ class TestRegression(Base):
         s = "import time; abc = time; abc.sleep("
         assert check(self.get_in_function_call(s), 'sleep', 0)
 
-        # jedi-vim #9
+        # sith-vim #9
         s = "with open("
         assert check(self.get_in_function_call(s), 'open', 0)
 
-        # jedi-vim #11
+        # sith-vim #11
         s1 = "for sorted("
         assert check(self.get_in_function_call(s1), 'sorted', 0)
         s2 = "for s in sorted("
         assert check(self.get_in_function_call(s2), 'sorted', 0)
 
-        # jedi #57
+        # sith #57
         s = "def func(alpha, beta): pass\n" \
             "func(alpha='101',"
         assert check(self.get_in_function_call(s, (2, 13)), 'func', 0)
@@ -246,7 +246,7 @@ class TestRegression(Base):
         assert result[0].description == 'class int'
 
     def test_named_import(self):
-        """ named import - jedi-vim issue #8 """
+        """ named import - sith-vim issue #8 """
         s = "import time as dt"
         assert len(api.Script(s, 1, 15, '/').get_definition()) == 1
         assert len(api.Script(s, 1, 10, '/').get_definition()) == 1
@@ -268,7 +268,7 @@ class TestRegression(Base):
         assert type(completions[0].description) is unicode
 
     def test_multibyte_script(self):
-        """ `jedi.Script` must accept multi-byte string source. """
+        """ `sith.Script` must accept multi-byte string source. """
         try:
             code = unicode("import datetime; datetime.d")
             comment = utf8("# multi-byte comment あいうえおä")
@@ -293,7 +293,7 @@ class TestRegression(Base):
         assert 'Import' not in types and 'Class' in types
 
     def test_keyword_definition_doc(self):
-        """ github jedi-vim issue #44 """
+        """ github sith-vim issue #44 """
         defs = self.get_def("print")
         assert [d.doc for d in defs]
 
@@ -341,8 +341,8 @@ class TestSpeed(Base):
     def _check_speed(time_per_run, number=4, run_warm=True):
         """ Speed checks should typically be very tolerant. Some machines are
         faster than others, but the tests should still pass. These tests are
-        here to assure that certain effects that kill jedi performance are not
-        reintroduced to Jedi."""
+        here to assure that certain effects that kill sith performance are not
+        reintroduced to Sith."""
         def decorated(func):
             @functools.wraps(func)
             def wrapper(self):

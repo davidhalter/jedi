@@ -6,8 +6,8 @@ import traceback
 import time
 from os.path import abspath, dirname
 
-sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../jedi'))
-os.chdir(dirname(abspath(__file__)) + '/../jedi')
+sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/../sith'))
+os.chdir(dirname(abspath(__file__)) + '/../sith')
 
 from _compatibility import unicode, StringIO, reduce, literal_eval, is_py25
 

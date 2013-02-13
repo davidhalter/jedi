@@ -1,7 +1,7 @@
 """
-This module contains variables with global |jedi| setting. To change the
-behavior of |jedi|, change the variables defined in
-:mod:`jedi.settings`.
+This module contains variables with global |sith| setting. To change the
+behavior of |sith|, change the variables defined in
+:mod:`sith.settings`.
 
 Plugins should expose an interface so that the user can adjust the
 configuration.
@@ -9,7 +9,7 @@ configuration.
 
 Example usage::
 
-    from jedi import settings
+    from sith import settings
     settings.case_insensitive_completion = True
 
 
@@ -48,7 +48,7 @@ recursive python code to go absolutely crazy. First of there is a
 global limit :data:`max_executions`. This limit is important, to set
 a maximum amount of time, the completion may use.
 
-The default values are based on experiments while completing the |jedi| library
+The default values are based on experiments while completing the |sith| library
 itself (inception!). But I don't think there's any other Python library that
 uses recursion in a similarly extreme way. These settings make the completion
 definitely worse in some cases. But a completion should also be fast.
@@ -154,7 +154,7 @@ Do the same for other modules.
 
 additional_dynamic_modules = []
 """
-Additional modules in which |jedi| checks if statements are to be found. This
+Additional modules in which |sith| checks if statements are to be found. This
 is practical for IDEs, that want to administrate their modules themselves.
 """
 
