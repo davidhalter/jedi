@@ -97,7 +97,11 @@ class Simple(Base):
                 (type(self).__name__, code, self.start_pos[0])
 
 
-class Scope(Simple):
+class IsScope(Base):
+    pass
+
+
+class Scope(Simple, IsScope):
     """
     Super class for the parser tree, which represents the state of a python
     text file.

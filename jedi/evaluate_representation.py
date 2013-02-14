@@ -34,7 +34,7 @@ class DecoratorNotFound(LookupError):
     pass
 
 
-class Executable(pr.Base):
+class Executable(pr.IsScope):
     """
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of `pr.Array` or list.
@@ -241,7 +241,7 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
 
-class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     """
     This class is not only important to extend `pr.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -307,7 +307,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
         return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
-class Function(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
