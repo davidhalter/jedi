@@ -265,7 +265,7 @@ class TestRegression(TestBase):
         completions1 = self.complete(s1)
         assert 'strip' in [c.word for c in completions1]
         s2 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n    name = "é"\n\nPerson().name.')
-        completions = self.complete(s2)
+        completions2 = self.complete(s2)
         assert 'strip' in [c.word for c in completions2]
 
     def test_os_nowait(self):

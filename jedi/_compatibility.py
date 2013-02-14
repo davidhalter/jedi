@@ -182,3 +182,8 @@ try:
 except ImportError:
     # python 2.5
     import simplejson as json
+
+try:
+    encoding = sys.stdout.encoding
+except AttributeError:
+    encoding = 'ascii'

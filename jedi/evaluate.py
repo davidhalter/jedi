@@ -68,7 +68,7 @@ backtracking algorithm.
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
-from _compatibility import next, hasattr, is_py3k, unicode
+from _compatibility import next, hasattr, is_py3k, unicode, utf8
 
 import sys
 import itertools

@@ -25,7 +25,7 @@ import re
 import tokenize
 
 from _compatibility import next, literal_eval, cleandoc, Python3Method, \
-                            property
+                            property, encoding
 import common
 import debug
 
@@ -92,9 +92,8 @@ class Simple(Base):
         self._end_pos = value
 
     def __repr__(self):
-        code = self.get_code().replace('\n', ' ')
-        return "<%s: %s@%s>" % \
-                (type(self).__name__, code, self.start_pos[0])
+        code = self.get_code().replace('\n', ' ').encode(encoding, 'replace')
+        return '<%s: %s@%s>' % (type(self).__name__, code, self.start_pos[0])
 
 
 class Scope(Simple):
