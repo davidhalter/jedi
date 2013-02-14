@@ -381,8 +381,8 @@ def get_definitions(scope):
     scopes.extend(scope.imports)
     scopes.extend(scope.statements)
     scopes.extend(scope.subscopes)
-    return map(Definition, sorted(filter(is_definition, scopes),
-                                  key=lambda s: s.start_pos))
+    dscopes = sorted(filter(is_definition, scopes), key=lambda s: s.start_pos)
+    return list(map(Definition, dscopes))
 
 
 class RelatedName(BaseDefinition):
