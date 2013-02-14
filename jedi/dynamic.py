@@ -161,7 +161,7 @@ def search_params(param):
     else:
         commands = param.get_commands()
     offset = 1 if commands[0] in ['*', '**'] else 0
-    param_name = str(commands[0][offset].name)
+    param_name = str(commands[offset].name)
 
     # add the listener
     listener = ParamListener()
