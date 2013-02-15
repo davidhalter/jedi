@@ -4,8 +4,8 @@ Docstrings are another source of information for functions and classes.
 parsing is much easier. There are two different types of docstrings that |jedi|
 understands:
 
-- Sphinx
-- Epidoc
+- `Sphinx <http://sphinx-doc.org/markup/desc.html#info-field-lists>`_
+- `Epydoc <http://epydoc.sourceforge.net/manual-fields.html>`_
 
 For example, the sphinx annotation ``:type foo: str`` clearly states that the
 type of ``foo`` is ``str``.
@@ -23,12 +23,12 @@ import parsing
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
-    r'\s*@type\s+%s:\s*([^\n]+)',  # Epidoc
+    r'\s*@type\s+%s:\s*([^\n]+)',  # Epydoc
 ]
 
 DOCSTRING_RETURN_PATTERNS = [
         re.compile(r'\s*:rtype:\s*([^\n]+)', re.M),  # Sphinx
-        re.compile(r'\s*@rtype:\s*([^\n]+)', re.M),  # Epidoc
+        re.compile(r'\s*@rtype:\s*([^\n]+)', re.M),  # Epydoc
 ]
 
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
