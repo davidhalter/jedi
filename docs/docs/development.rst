@@ -127,8 +127,8 @@ Docstrings (docstrings.py)
 
 .. _refactoring:
 
-Refactoring (docstrings.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Refactoring (refactoring.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: refactoring
 
