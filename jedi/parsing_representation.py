@@ -1166,12 +1166,23 @@ class Name(Simple):
         return len(self.names)
 
 
-class ListComprehension(object):
+class ListComprehension(Base):
     """ Helper class for list comprehensions """
-    def __init__(self, stmt, middle, input):
+    def __init__(self, stmt, middle, input, parent):
         self.stmt = stmt
         self.middle = middle
         self.input = input
+        for s in [stmt, middle, input]:
+            s.parent = self
+        self.parent = parent
+
+    @property
+    def start_pos(self):
+        return self.stmt.start_pos
+
+    @property
+    def end_pos(self):
+        return self.stmt.end_pos
 
     def __repr__(self):
         return "<%s: %s>" % \
