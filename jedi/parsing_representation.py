@@ -253,7 +253,7 @@ class Scope(Simple, IsScope):
                                     self.start_pos[0], self.end_pos[0])
 
 
-class Module(object):
+class Module(IsScope):
     """ For isinstance checks. fast_parser.Module also inherits from this. """
     pass
 
