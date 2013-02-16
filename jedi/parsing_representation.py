@@ -49,10 +49,10 @@ class Simple(Base):
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
     """
-    __slots__ = ('parent', 'module', '_start_pos', 'use_as_parent', '_end_pos')
+    __slots__ = ('parent', '_sub_module', '_start_pos', 'use_as_parent', '_end_pos')
 
     def __init__(self, module, start_pos, end_pos=(None, None)):
-        self.module = module
+        self._sub_module = module
         self._start_pos = start_pos
         self._end_pos = end_pos
 
@@ -62,7 +62,7 @@ class Simple(Base):
 
     @property
     def start_pos(self):
-        return self.module.line_offset + self._start_pos[0], self._start_pos[1]
+        return self._sub_module.line_offset + self._start_pos[0], self._start_pos[1]
 
     @start_pos.setter
     def start_pos(self, value):
@@ -72,7 +72,7 @@ class Simple(Base):
     def end_pos(self):
         if None in self._end_pos:
             return self._end_pos
-        return self.module.line_offset + self._end_pos[0], self._end_pos[1]
+        return self._sub_module.line_offset + self._end_pos[0], self._end_pos[1]
 
     @end_pos.setter
     def end_pos(self, value):
@@ -621,7 +621,7 @@ class Import(Simple):
             return [self.alias]
         if len(self.namespace) > 1:
             o = self.namespace
-            n = Name(self.module, [(o.names[0], o.start_pos)], o.start_pos,
+            n = Name(self._sub_module, [(o.names[0], o.start_pos)], o.start_pos,
                                                 o.end_pos, parent=o.parent)
             return [n]
         else:
@@ -771,7 +771,7 @@ class Statement(Simple):
                     and not tok in ['>=', '<=', '==', '!=']
 
         def parse_array(token_iterator, array_type, start_pos, add_el=None):
-            arr = Array(self.module, start_pos, array_type, self)
+            arr = Array(self._sub_module, start_pos, array_type, self)
             if add_el is not None:
                 arr.add_statement(add_el)
 
@@ -841,7 +841,7 @@ class Statement(Simple):
             if not token_list:
                 return None, tok
 
-            statement = Statement(self.module, "XXX" + self.code, [], [], [],
+            statement = Statement(self._sub_module, "XXX" + self.code, [], [], [],
                                             token_list, start_pos, end_pos)
             statement.parent = self.parent
             return statement, tok
@@ -883,7 +883,7 @@ class Statement(Simple):
                     elif token_type == tokenize.NUMBER:
                         c_type = Call.NUMBER
 
-                call = Call(self.module, tok, c_type, start_pos, self)
+                call = Call(self._sub_module, tok, c_type, start_pos, self)
                 if is_chain:
                     result[-1].set_next(call)
                 else:

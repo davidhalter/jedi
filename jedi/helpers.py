@@ -39,7 +39,7 @@ def fast_parent_copy(obj):
                     setattr(new_obj, key, new_elements[value])
                 except KeyError:
                     pass
-            elif key in ['parent_function', 'use_as_parent', 'module']:
+            elif key in ['parent_function', 'use_as_parent', '_sub_module']:
                 continue
             elif isinstance(value, list):
                 setattr(new_obj, key, list_rec(value))

@@ -517,11 +517,11 @@ class Execution(Executable):
                 new_param.parent = parent
 
             # create an Array (-> needed for *args/**kwargs tuples/dicts)
-            arr = pr.Array(self.module, start_pos, array_type, parent)
+            arr = pr.Array(self._sub_module, start_pos, array_type, parent)
             arr.values = values
             key_stmts = []
             for key in keys:
-                stmt = pr.Statement(self.module, 'XXX code', [], [], [], [],
+                stmt = pr.Statement(self._sub_module, 'XXX code', [], [], [], [],
                                     start_pos, None)
                 stmt._commands = [key]
                 key_stmts.append(stmt)
@@ -709,7 +709,7 @@ class Execution(Executable):
             raise common.MultiLevelAttributeError(sys.exc_info())
 
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'imports', 'module']:
+        if name not in ['start_pos', 'end_pos', 'imports', '_sub_module']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
