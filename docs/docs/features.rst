@@ -13,7 +13,8 @@ General Features
 - ignores syntax errors and wrong indentation
 - can deal with complex module / function / class structures
 - virtualenv support
-- can infer function arguments from sphinx and epydoc docstrings
+- can infer function arguments from sphinx and epydoc docstrings (:ref:`type
+  hinting <type-hinting>`)
 
 
 Supported Python Features
