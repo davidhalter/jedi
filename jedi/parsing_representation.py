@@ -715,7 +715,7 @@ class Statement(Simple):
 
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
-            pieces = [c.get_code() if isinstance(c, Base) else c
+            pieces = [c.get_code() if isinstance(c, Simple) else unicode(c)
                         for c in command_list]
             if assignment is None:
                 return ''.join(pieces)
