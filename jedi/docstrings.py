@@ -10,7 +10,7 @@ understands:
 For example, the sphinx annotation ``:type foo: str`` clearly states that the
 type of ``foo`` is ``str``.
 
-As an addition to parameter searching, this module also providees return
+As an addition to parameter searching, this module also provides return
 annotations.
 """
 
