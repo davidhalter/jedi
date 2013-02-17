@@ -311,6 +311,8 @@ def sys_path_with_modifications(module):
 
         sys_path = list(get_sys_path())  # copy
         for p in possible_stmts:
+            if not isinstance(p, pr.Statement):
+                continue
             commands = p.get_commands()
             assert len(commands) == 1
             call = commands[0]

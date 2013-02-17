@@ -457,21 +457,21 @@ class Flow(Scope):
 
     :param command: The flow command, if, while, else, etc.
     :type command: str
-    :param inits: The initializations of a flow -> while 'statement'.
-    :type inits: list(Statement)
+    :param inputs: The initializations of a flow -> while 'statement'.
+    :type inputs: list(Statement)
     :param start_pos: Position (line, column) of the Flow statement.
     :type start_pos: tuple(int, int)
     :param set_vars: Local variables used in the for loop (only there).
     :type set_vars: list
     """
-    def __init__(self, module, command, inits, start_pos, set_vars=None):
+    def __init__(self, module, command, inputs, start_pos, set_vars=None):
         self.next = None
         self.command = command
         super(Flow, self).__init__(module, start_pos)
         self._parent = None
         # These have to be statements, because of with, which takes multiple.
-        self.inits = inits
-        for s in inits:
+        self.inputs = inputs
+        for s in inputs:
             s.parent = self.use_as_parent
         if set_vars is None:
             self.set_vars = []
@@ -493,7 +493,7 @@ class Flow(Scope):
 
     def get_code(self, first_indent=False, indention='    '):
         stmts = []
-        for s in self.inits:
+        for s in self.inputs:
             stmts.append(s.get_code(new_line=False))
         stmt = ', '.join(stmts)
         string = "%s %s:\n" % (self.command, stmt)
@@ -512,7 +512,7 @@ class Flow(Scope):
         """
         if is_internal_call:
             n = list(self.set_vars)
-            for s in self.inits:
+            for s in self.inputs:
                 n += s.set_vars
             if self.next:
                 n += self.next.get_set_vars(is_internal_call)
@@ -541,8 +541,8 @@ class ForFlow(Flow):
     """
     Used for the for loop, because there are two statement parts.
     """
-    def __init__(self, module, inits, start_pos, set_stmt, is_list_comp=False):
-        super(ForFlow, self).__init__(module, 'for', inits, start_pos,
+    def __init__(self, module, inputs, start_pos, set_stmt, is_list_comp=False):
+        super(ForFlow, self).__init__(module, 'for', inputs, start_pos,
                                         set_stmt.used_vars)
         self.set_stmt = set_stmt
         self.is_list_comp = is_list_comp
@@ -550,7 +550,7 @@ class ForFlow(Flow):
     def get_code(self, first_indent=False, indention=" " * 4):
         vars = ",".join(x.get_code() for x in self.set_vars)
         stmts = []
-        for s in self.inits:
+        for s in self.inputs:
             stmts.append(s.get_code(new_line=False))
         stmt = ', '.join(stmts)
         s = "for %s in %s:\n" % (vars, stmt)

@@ -194,9 +194,10 @@ def check_array_additions(array):
 
 def _scan_array(arr, search_name):
     """ Returns the function Call that match search_name in an Array. """
+    print arr
     result = []
-    for sub in arr:
-        for s in sub:
+    for stmt in arr:
+        for s in stmt.get_commands():
             if isinstance(s, pr.Array):
                 result += _scan_array(s, search_name)
             elif isinstance(s, pr.Call):
@@ -461,8 +462,8 @@ def check_flow_information(flow, search_name, pos):
                 break
 
     if isinstance(flow, pr.Flow) and not result:
-        if flow.command in ['if', 'while'] and len(flow.inits) == 1:
-            result = check_statement_information(flow.inits[0], search_name)
+        if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
+            result = check_statement_information(flow.inputs[0], search_name)
     return result
 
 

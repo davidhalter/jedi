@@ -658,8 +658,8 @@ class Parser(object):
                 command = tok
                 if command in ['except', 'with']:
                     added_breaks.append(',')
-                # multiple statements because of with
-                inits = []
+                # multiple inputs because of with
+                inputs = []
                 first = True
                 while first or command == 'with' \
                                             and tok not in [':', '\n']:
@@ -673,11 +673,11 @@ class Parser(object):
                             statement.set_vars.append(n)
                             statement.code += ',' + n.get_code()
                     if statement:
-                        inits.append(statement)
+                        inputs.append(statement)
                     first = False
 
                 if tok == ':':
-                    f = pr.Flow(self.module, command, inits, first_pos)
+                    f = pr.Flow(self.module, command, inputs, first_pos)
                     if command in extended_flow:
                         # the last statement has to be another part of
                         # the flow statement, because a dedent releases the
@@ -691,7 +691,7 @@ class Parser(object):
                         s = self.scope.add_statement(f)
                     self.scope = s
                 else:
-                    for i in inits:
+                    for i in inputs:
                         i.parent = use_as_parent_scope
                     debug.warning('syntax err, flow started @%s',
                                                         self.start_pos[0])

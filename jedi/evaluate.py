@@ -248,12 +248,13 @@ def find_name(scope, name_str, position=None, search_global=False,
         def handle_for_loops(loop):
             # Take the first statement (for has always only
             # one, remember `in`). And follow it.
-            if not len(loop.inits):
+            if not loop.inputs:
                 return []
-            result = get_iterator_types(follow_statement(loop.inits[0]))
+            result = get_iterator_types(follow_statement(loop.inputs[0]))
             if len(loop.set_vars) > 1:
                 commands = loop.set_stmt.get_commands()
-                result = assign_tuples(commands, result, name_str)
+                # loops with loop.set_vars > 0 only have one command
+                result = assign_tuples(commands[0], result, name_str)
             return result
 
         def process(name):
