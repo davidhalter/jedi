@@ -267,6 +267,8 @@ def _check_array_additions(compare_array, module, is_list):
             stmt = element._array.parent
         else:
             # must be instance
+            if isinstance(element.var_args, list):
+                return None  # TODO check if this is ok
             stmt = element.var_args.parent
         if isinstance(stmt, er.InstanceElement):
             stop_classes = list(stop_classes) + [er.Function]
@@ -278,6 +280,9 @@ def _check_array_additions(compare_array, module, is_list):
     search_names = ['append', 'extend', 'insert'] if is_list else \
                                                             ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array, er.Execution)
+    if comp_arr_parent is None:
+        return []  # TODO check if this is ok
+
     possible_stmts = []
     res = []
     for n in search_names:
@@ -334,23 +339,24 @@ class ArrayInstance(pr.Base):
         lists/sets are too complicated too handle that.
         """
         items = []
-        for array in evaluate.follow_call_list(self.var_args):
-            if isinstance(array, er.Instance) and len(array.var_args):
-                temp = array.var_args[0][0]
-                if isinstance(temp, ArrayInstance):
-                    # prevent recursions
-                    # TODO compare Modules
-                    if self.var_args.start_pos != temp.var_args.start_pos:
-                        items += temp.iter_content()
-                    else:
-                        debug.warning('ArrayInstance recursion', self.var_args)
-                    continue
-            items += evaluate.get_iterator_types([array])
+        for stmt in self.var_args:
+            for typ in evaluate.follow_statement(stmt):
+                if isinstance(typ, er.Instance) and len(typ.var_args):
+                    array = typ.var_args[0][0]
+                    if isinstance(array, ArrayInstance):
+                        # prevent recursions
+                        # TODO compare Modules
+                        if self.var_args.start_pos != array.var_args.start_pos:
+                            items += array.iter_content()
+                        else:
+                            debug.warning('ArrayInstance recursion', self.var_args)
+                        continue
+                items += evaluate.get_iterator_types([typ])
 
-        if self.var_args.parent_stmt is None:
+        if self.var_args.parent is None:
             return []  # generated var_args should not be checked for arrays
 
-        module = self.var_args.parent_stmt.get_parent_until()
+        module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self.instance, module, is_list)
         return items
