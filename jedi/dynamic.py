@@ -133,7 +133,9 @@ def search_params(param):
 
             for stmt in possible_stmts:
                 if not isinstance(stmt, pr.Import):
-                    calls = _scan_array(stmt.get_commands(), func_name)
+                    arr = [c for c in stmt.get_commands()
+                                    if isinstance(c, pr.Statement)]
+                    calls = _scan_array(arr, func_name)
                     for c in calls:
                         # no execution means that params cannot be set
                         call_path = c.generate_call_path()
@@ -157,7 +159,8 @@ def search_params(param):
 
     # get the param name
     if param.assignment_details:
-        commands = param.assignment_details[0]
+        # first assignment details, others would be a syntax error
+        commands, op = param.assignment_details[0]
     else:
         commands = param.get_commands()
     offset = 1 if commands[0] in ['*', '**'] else 0
@@ -194,7 +197,6 @@ def check_array_additions(array):
 
 def _scan_array(arr, search_name):
     """ Returns the function Call that match search_name in an Array. """
-    print arr
     result = []
     for stmt in arr:
         for s in stmt.get_commands():
