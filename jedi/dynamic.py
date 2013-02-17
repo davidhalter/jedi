@@ -21,7 +21,6 @@ import parsing_representation as pr
 import evaluate_representation as er
 import modules
 import evaluate
-import helpers
 import settings
 import debug
 import imports
@@ -133,9 +132,7 @@ def search_params(param):
 
             for stmt in possible_stmts:
                 if not isinstance(stmt, pr.Import):
-                    arr = [c for c in stmt.get_commands()
-                                    if isinstance(c, pr.Statement)]
-                    calls = _scan_array(arr, func_name)
+                    calls = _scan_statement(stmt, func_name)
                     for c in calls:
                         # no execution means that params cannot be set
                         call_path = c.generate_call_path()
@@ -195,23 +192,37 @@ def check_array_additions(array):
     return res
 
 
-def _scan_array(arr, search_name):
+def _scan_statement(stmt, search_name, assignment_details=False):
     """ Returns the function Call that match search_name in an Array. """
-    result = []
-    for stmt in arr:
-        for s in stmt.get_commands():
-            if isinstance(s, pr.Array):
-                result += _scan_array(s, search_name)
-            elif isinstance(s, pr.Call):
-                s_new = s
-                while s_new is not None:
-                    n = s_new.name
-                    if isinstance(n, pr.Name) and search_name in n.names:
-                        result.append(s)
+    def scan_array(arr, search_name):
+        result = []
+        if arr.type == pr.Array.DICT:
+            for key_stmt, value_stmt in arr.items():
+                result += _scan_statement(key_stmt, search_name)
+                result += _scan_statement(value_stmt, search_name)
+        else:
+            for stmt in arr:
+                result += _scan_statement(stmt, search_name)
+        return result
 
-                    if s_new.execution is not None:
-                        result += _scan_array(s_new.execution, search_name)
-                    s_new = s_new.next
+    result = []
+    for c in stmt.get_commands():
+        if isinstance(c, pr.Array):
+            result += scan_array(c, search_name)
+        elif isinstance(c, pr.Call):
+            s_new = c
+            while s_new is not None:
+                n = s_new.name
+                if isinstance(n, pr.Name) and search_name in n.names:
+                    result.append(c)
+
+                if s_new.execution is not None:
+                    result += scan_array(s_new.execution, search_name)
+                s_new = s_new.next
+
+    if assignment_details:
+        for stmt, op in stmt.assignment_details:
+            result += _scan_statement(stmt, search_name)
     return result
 
 
@@ -241,7 +252,7 @@ def _check_array_additions(compare_array, module, is_list):
             backtrack_path = iter(call_path[:separate_index])
 
             position = c.start_pos
-            scope = c.parent_stmt.parent
+            scope = c.get_parent_until(pr.IsScope)
 
             found = evaluate.follow_call_path(backtrack_path, scope, position)
             if not compare_array in found:
@@ -251,16 +262,18 @@ def _check_array_additions(compare_array, module, is_list):
             if not params.values:
                 continue  # no params: just ignore it
             if add_name in ['append', 'add']:
-                result += evaluate.follow_call_list(params)
+                for param in params:
+                    result += evaluate.follow_call_list(param.get_commands())
             elif add_name in ['insert']:
                 try:
                     second_param = params[1]
                 except IndexError:
                     continue
                 else:
-                    result += evaluate.follow_call_list([second_param])
+                    result += evaluate.follow_call_list(second_param.get_comands())
             elif add_name in ['extend', 'update']:
-                iterators = evaluate.follow_call_list(params)
+                for param in params:
+                    iterators = evaluate.follow_call_list(param.get_commands())
                 result += evaluate.get_iterator_types(iterators)
         return result
 
@@ -311,7 +324,7 @@ def _check_array_additions(compare_array, module, is_list):
             if evaluate.follow_statement.push_stmt(stmt):
                 # check recursion
                 continue
-            res += check_calls(_scan_array(stmt.get_commands(), n), n)
+            res += check_calls(_scan_statement(stmt, n), n)
             evaluate.follow_statement.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
@@ -345,7 +358,7 @@ class ArrayInstance(pr.Base):
         for stmt in self.var_args:
             for typ in evaluate.follow_statement(stmt):
                 if isinstance(typ, er.Instance) and len(typ.var_args):
-                    array = typ.var_args[0][0]
+                    array = typ.var_args[0]
                     if isinstance(array, ArrayInstance):
                         # prevent recursions
                         # TODO compare Modules
@@ -425,10 +438,8 @@ def related_names(definitions, search_name, mods):
                     if set(f) & set(definitions):
                         names.append(api_classes.RelatedName(name_part, stmt))
             else:
-                calls = _scan_array(stmt.get_commands(), search_name)
-                for d in stmt.assignment_details:
-                    calls += _scan_array(d[0], search_name)
-                for call in calls:
+                for call in _scan_statement(stmt, search_name,
+                                            assignment_details=True):
                     names += check_call(call)
     return names
 

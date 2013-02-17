@@ -555,8 +555,7 @@ def follow_statement(stmt, seek_name=None):
 
 def follow_call_list(call_list, follow_array=False):
     """
-    The call_list has a special structure.
-    This can be either `pr.Array` or `list of list`.
+    `call_list` can be either `pr.Array` or `list of list`.
     It is used to evaluate a two dimensional object, that has calls, arrays and
     operators in it.
     """
