@@ -205,8 +205,13 @@ def _scan_statement(stmt, search_name, assignment_details=False):
                 result += _scan_statement(stmt, search_name)
         return result
 
+    check = list(stmt.get_commands())
+    if assignment_details:
+        for commands, op in stmt.assignment_details:
+            check +=  commands
+
     result = []
-    for c in stmt.get_commands():
+    for c in check:
         if isinstance(c, pr.Array):
             result += scan_array(c, search_name)
         elif isinstance(c, pr.Call):
@@ -220,9 +225,6 @@ def _scan_statement(stmt, search_name, assignment_details=False):
                     result += scan_array(s_new.execution, search_name)
                 s_new = s_new.next
 
-    if assignment_details:
-        for stmt, op in stmt.assignment_details:
-            result += _scan_statement(stmt, search_name)
     return result
 
 
@@ -395,13 +397,13 @@ def related_names(definitions, search_name, mods):
                 follow.append(call_path[:i + 1])
 
         for f in follow:
-            follow_res, search = evaluate.goto(call.parent_stmt, f)
+            follow_res, search = evaluate.goto(call.parent, f)
             follow_res = related_name_add_import_modules(follow_res, search)
 
             compare_follow_res = compare_array(follow_res)
             # compare to see if they match
             if any(r in compare_definitions for r in compare_follow_res):
-                scope = call.parent_stmt
+                scope = call.parent
                 result.append(api_classes.RelatedName(search, scope))
 
         return result

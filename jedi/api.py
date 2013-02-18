@@ -314,7 +314,7 @@ class Script(object):
         user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
         if isinstance(user_stmt, pr.Statement) \
-                    and self.pos < user_stmt.get_assignment_calls().start_pos:
+                    and self.pos < user_stmt.get_commands()[0].start_pos:
             # the search_name might be before `=`
             definitions = [v for v in user_stmt.set_vars
                                 if unicode(v.names[-1]) == search_name]
