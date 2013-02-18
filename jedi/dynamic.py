@@ -263,17 +263,17 @@ def _check_array_additions(compare_array, module, is_list):
                 continue  # no params: just ignore it
             if add_name in ['append', 'add']:
                 for param in params:
-                    result += evaluate.follow_call_list(param.get_commands())
+                    result += evaluate.follow_statement(param)
             elif add_name in ['insert']:
                 try:
                     second_param = params[1]
                 except IndexError:
                     continue
                 else:
-                    result += evaluate.follow_call_list(second_param.get_comands())
+                    result += evaluate.follow_statement(second_param)
             elif add_name in ['extend', 'update']:
                 for param in params:
-                    iterators = evaluate.follow_call_list(param.get_commands())
+                    iterators = evaluate.follow_statement(param)
                 result += evaluate.get_iterator_types(iterators)
         return result
 
