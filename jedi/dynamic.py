@@ -479,31 +479,31 @@ def check_flow_information(flow, search_name, pos):
 def check_statement_information(stmt, search_name):
     try:
         commands = stmt.get_commands()
-        try:
-            call = commands.get_only_subelement()
-        except AttributeError:
-            assert False
+        # this might be removed if we analyze and, etc
+        assert len(commands) == 1
+        call = commands[0]
         assert type(call) == pr.Call and str(call.name) == 'isinstance'
         assert bool(call.execution)
 
         # isinstance check
         isinst = call.execution.values
         assert len(isinst) == 2  # has two params
-        assert len(isinst[0]) == 1
-        assert len(isinst[1]) == 1
-        assert isinstance(isinst[0][0], pr.Call)
+        obj, classes = [stmt.get_commands() for stmt in isinst]
+        assert len(obj) == 1
+        assert len(classes) == 1
+        assert isinstance(obj[0], pr.Call)
         # names fit?
-        assert str(isinst[0][0].name) == search_name
-        classes_call = isinst[1][0]  # class_or_type_or_tuple
-        assert isinstance(classes_call, pr.Call)
-        result = []
-        for c in evaluate.follow_call(classes_call):
-            if isinstance(c, er.Array):
-                result += c.get_index_types()
-            else:
-                result.append(c)
-        for i, c in enumerate(result):
-            result[i] = er.Instance(c)
-        return result
+        assert str(obj[0].name) == search_name
+        assert isinstance(classes[0], pr.Call)  # can be type or tuple
     except AssertionError:
         return []
+
+    result = []
+    for c in evaluate.follow_call(classes[0]):
+        if isinstance(c, er.Array):
+            result += c.get_index_types()
+        else:
+            result.append(c)
+    for i, c in enumerate(result):
+        result[i] = er.Instance(c)
+    return result
