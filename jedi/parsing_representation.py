@@ -1128,7 +1128,7 @@ class NamePart(str):
 
     @property
     def start_pos(self):
-        offset = self.parent.module.line_offset
+        offset = self.parent._sub_module.line_offset
         return offset + self._start_pos[0], self._start_pos[1]
 
     @property

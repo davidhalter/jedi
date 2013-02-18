@@ -294,7 +294,7 @@ class Script(object):
             defs, search_name = evaluate.goto(stmt)
             definitions = follow_inexistent_imports(defs)
             if isinstance(user_stmt, pr.Statement):
-                if user_stmt.get_assignment_calls().start_pos > self.pos:
+                if user_stmt.get_commands()[0].start_pos > self.pos:
                     # The cursor must be after the start, otherwise the
                     # statement is just an assignee.
                     definitions = [user_stmt]
