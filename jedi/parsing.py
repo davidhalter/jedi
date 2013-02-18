@@ -47,7 +47,7 @@ class Parser(object):
     :param top_module: Use this module as a parent instead of `self.module`.
     """
     def __init__(self, source, module_path=None, user_position=None,
-                        no_docstr=False, line_offset=0, stop_on_scope=None,
+                        no_docstr=False, offset=(0, 0), stop_on_scope=None,
                         top_module=None):
         self.user_position = user_position
         self.user_scope = None
@@ -55,21 +55,17 @@ class Parser(object):
         self.no_docstr = no_docstr
 
         # initialize global Scope
-        self.module = pr.SubModule(module_path, (line_offset + 1, 0),
+        self.module = pr.SubModule(module_path, (offset[0] + 1, offset[1]),
                                                             top_module)
         self.scope = self.module
         self.current = (None, None)
         self.start_pos = 1, 0
         self.end_pos = 1, 0
 
-        # Stuff to fix tokenize errors. The parser is pretty good in tolerating
-        # any errors of tokenize and just parse ahead.
-        self._line_offset = line_offset
-
         source = source + '\n'  # end with \n, because the parser needs it
         buf = StringIO(source)
-        self._gen = common.NoErrorTokenizer(buf.readline, line_offset,
-                                                            stop_on_scope)
+        self._gen = common.NoErrorTokenizer(buf.readline, offset,
+                                            stop_on_scope)
         self.top_module = top_module or self.module
         try:
             self._parse()

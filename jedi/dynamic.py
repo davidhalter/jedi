@@ -282,10 +282,7 @@ def _check_array_additions(compare_array, module, is_list):
         if isinstance(element, er.Array):
             stmt = element._array.parent
         else:
-            # must be instance
-            if isinstance(element.var_args, list):
-                return None  # TODO check if this is ok
-            stmt = element.var_args.parent
+            return None
         if isinstance(stmt, er.InstanceElement):
             stop_classes = list(stop_classes) + [er.Function]
         return stmt.get_parent_until(stop_classes)
@@ -296,8 +293,6 @@ def _check_array_additions(compare_array, module, is_list):
     search_names = ['append', 'extend', 'insert'] if is_list else \
                                                             ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array, er.Execution)
-    if comp_arr_parent is None:
-        return []  # TODO check if this is ok
 
     possible_stmts = []
     res = []
@@ -311,14 +306,14 @@ def _check_array_additions(compare_array, module, is_list):
             # can search for the same statement, that is in the module
             # dict. Executions are somewhat special in jedi, since they
             # literally copy the contents of a function.
-            if isinstance(comp_arr_parent, er.Execution):
+            if compare_array and isinstance(comp_arr_parent, er.Execution):
                 stmt = comp_arr_parent. \
                                 get_statement_for_position(stmt.start_pos)
                 if stmt is None:
                     continue
             # InstanceElements are special, because they don't get copied,
             # but have this wrapper around them.
-            if isinstance(comp_arr_parent, er.InstanceElement):
+            if compare_array and isinstance(comp_arr_parent, er.InstanceElement):
                 stmt = er.InstanceElement(comp_arr_parent.instance, stmt)
 
             if evaluate.follow_statement.push_stmt(stmt):

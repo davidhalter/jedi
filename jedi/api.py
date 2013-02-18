@@ -190,8 +190,8 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        offset = self.pos[0] - 1
-        r = parsing.Parser(cursor_txt, no_docstr=True, line_offset=offset)
+        offset = self.pos[0] - 1, self.pos[1]
+        r = parsing.Parser(cursor_txt, no_docstr=True, offset=offset)
         try:
             stmt = r.module.statements[0]
         except IndexError:

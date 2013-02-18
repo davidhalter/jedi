@@ -82,6 +82,9 @@ for i in list([1,'']):
     #? int() str()
     i
 
+#? int() str()
+for x in [1,'']: x
+
 a = []
 b = [1.0,'']
 for i in b:

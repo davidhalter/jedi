@@ -264,7 +264,7 @@ class ModuleWithCursor(Module):
         offset = max(self.position[0] - length, 0)
         s = '\n'.join(self.source.splitlines()[offset:offset + length])
         self._part_parser = parsing.Parser(s, self.path, self.position,
-                                                        line_offset=offset)
+                                           offset=(offset, 0))
         return self._part_parser
 
 
