@@ -327,6 +327,44 @@ class TestRegression(TestBase):
         words = [c.word for c in self.complete(s)]
         assert 'start' in words
 
+    def test_get_in_function_cache_problem(self):
+        code = """
+import unittest
+
+class TestEvent(unittest.TestCase):
+
+    def test_constructability(self):
+
+        foo = object()
+
+        self.assertTrue(True)
+
+    def test_event_string_repr(self):
+
+        self.assertEqual(
+            str(foo),
+            "<SystemError><longTag>blabla_import.log.event_test.TestEvent.test_event_string_repr:51</longTag>\\n<systemMessage>system &lt;error&gt; bla bla</systemMessage>\\n<shortTag>ei.l.et.TE.tesr:51</shortTag>\\n<className>TestEvent</className>\\n<timestamp>%s</timestamp>\\n<orgUnit></orgUnit>\\n<methodName>test_event_string_repr</methodName>\\n<lineNr>51</lineNr>\\n<processingPhase>phase1</processingPhase>\\n<moduleName>blabla_import.log.event_test</moduleName>\\n<message>message</message>\\n<filePath>/opt/blabla-import-program/lib/blabla_import/log/event_test.py</filePath>\\n</SystemError>\\n" % timestamp
+        )
+
+    def test_event_tag(self):
+        self.assertEqual(
+            "blabla_import.log.event_test.TestEvent.test_event_tag:61",
+            unittest.BaseTestSuite
+        )
+        self.assertEqual(
+            "ei.l.et.TE.tet:61",
+            unittest.BaseTestSuite
+        )
+        self.assertIsInstance( """
+        script = api.Script(code, 28, 31, '')
+        self.assertEqual('self.assertIsInstance', str(
+            script.get_in_function_call().call.name
+        ))
+        script = api.Script(code, 28, 27, '')
+        self.assertEqual('assertIsInstance', str(
+            script.get_definition()[0].definition.name
+        ))
+
 
 class TestFeature(TestBase):
     def test_full_name(self):
