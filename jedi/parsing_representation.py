@@ -1176,6 +1176,9 @@ class ListComprehension(Base):
             s.parent = self
         self.parent = parent
 
+    def get_parent_until(self, *args, **kwargs):
+        return Simple.get_parent_until(self, *args, **kwargs)
+
     @property
     def start_pos(self):
         return self.stmt.start_pos
