@@ -101,8 +101,8 @@ class ImportPath(pr.Base):
         # 0 (0 is not a valid line number).
         zero = (0, 0)
         names = i.namespace.names[1:]
-        n = pr.Name(i.module, names, zero, zero, self.import_stmt)
-        new = pr.Import(i.module, zero, zero, n)
+        n = pr.Name(i._sub_module, names, zero, zero, self.import_stmt)
+        new = pr.Import(i._sub_module, zero, zero, n)
         new.parent = parent
         debug.dbg('Generated a nested import: %s' % new)
         return new
