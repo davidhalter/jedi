@@ -87,8 +87,12 @@ class RecursionNode(object):
     def __eq__(self, other):
         if not other:
             return None
+
+        is_list_comp = lambda x: isinstance(x, pr.ForFlow) and x.is_list_comp
         return self.script == other.script \
                     and self.position == other.position \
+                    and not is_list_comp(self.stmt.parent) \
+                    and not is_list_comp(other.parent) \
                     and not self.is_ignored and not other.is_ignored
 
 
