@@ -568,7 +568,7 @@ def follow_call_list(call_list, follow_array=False):
         # create a for loop, which does the same as list comprehensions
         loop = pr.ForFlow(module, [input], lc.stmt.start_pos, lc.middle, True)
 
-        loop.parent = lc.parent if parent is None else parent
+        loop.parent = parent or lc.get_parent_until(pr.IsScope)
 
         if isinstance(nested_lc, pr.ListComprehension):
             loop = evaluate_list_comprehension(nested_lc, loop)

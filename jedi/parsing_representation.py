@@ -93,8 +93,9 @@ class Simple(Base):
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
+        # TODO (this todo doesn't belong here) positions are not added right.
         return "<%s: %s@%s,%s>" % \
-            (type(self).__name__, code, self.start_pos[0], self.start_pos[0])
+            (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
 
 
 class IsScope(Base):
@@ -1174,13 +1175,13 @@ class Name(Simple):
 
 class ListComprehension(Base):
     """ Helper class for list comprehensions """
-    def __init__(self, stmt, middle, input):
+    def __init__(self, stmt, middle, input, parent):
         self.stmt = stmt
         self.middle = middle
         self.input = input
         for s in [stmt, middle, input]:
             s.parent = self
-        self.parent = None
+        self.parent = parent
 
     def get_parent_until(self, *args, **kwargs):
         return Simple.get_parent_until(self, *args, **kwargs)

@@ -435,7 +435,8 @@ class Parser(object):
                         st = pr.Statement(self.module, src, [], [], [],
                                         toks, first_pos, self.end_pos)
 
-                        tok = pr.ListComprehension(st, middle, in_clause)
+                        tok = pr.ListComprehension(st, middle, in_clause,
+                                                   self.scope)
                         tok_list.append(tok)
                         if list_comp:
                             string = ''
