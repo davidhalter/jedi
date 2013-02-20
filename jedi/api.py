@@ -121,7 +121,7 @@ class Script(object):
                 for c in names:
                     completions.append((c, s))
 
-        if not dot:  # named_params have no dots
+        if not dot:  # named params have no dots
             call_def = self.get_in_function_call()
             if call_def:
                 if not call_def.module.is_builtin():

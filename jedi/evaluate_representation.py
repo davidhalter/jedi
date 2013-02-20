@@ -838,16 +838,17 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
             for i, key_statement in enumerate(self._array.keys):
                 # Because we only want the key to be a string.
                 key_commands = key_statement.get_commands()
-                if len(key_commands) == 1:
-                    key = key_commands[0]
-                    key.get_code()
-                    try:
-                        str_key = key.get_code()
-                    except AttributeError:
-                        str_key = None
-                    if mixed_index == str_key:
-                        index = i
-                        break
+                if len(key_commands) != 1:  # cannot deal with complex strings
+                    continue
+                key = key_commands[0]
+                if isinstance(key, pr.Call) and key.type == pr.Call.STRING:
+                    str_key = key.name
+                elif isinstance(key, pr.Name):
+                    str_key = str(key)
+
+                if mixed_index == str_key:
+                    index = i
+                    break
             if index is None:
                 raise KeyError('No key found in dictionary')
 
