@@ -744,7 +744,7 @@ def goto(stmt, call_path=None):
         call = commands[0]
         call_path = list(call.generate_call_path())
 
-    scope = stmt.parent
+    scope = stmt.get_parent_until(pr.IsScope)
     pos = stmt.start_pos
     call_path, search = call_path[:-1], call_path[-1]
     pos = pos[0], pos[1] + 1
