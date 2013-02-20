@@ -812,7 +812,7 @@ class Statement(Simple):
             tok = None
             first = True
             for i, tok_temp in token_iterator:
-                if isinstance(tok_temp, (Base)):
+                if isinstance(tok_temp, Base):
                     # the token is a Name, which has already been parsed
                     tok = tok_temp
                     if first:
@@ -851,10 +851,10 @@ class Statement(Simple):
         is_chain = False
         brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
         closing_brackets = ')', '}', ']'
+        start = 0
 
         token_iterator = enumerate(self.token_list)
         for i, tok_temp in token_iterator:
-            #print 'tok', tok_temp, result
             if isinstance(tok_temp, Base):
                 # the token is a Name, which has already been parsed
                 tok = tok_temp
@@ -868,6 +868,7 @@ class Statement(Simple):
                     self._assignment_details.append((result, tok))
                     result = []
                     is_chain = False
+                    start = i + 1
                     continue
                 elif tok == 'as':  # just ignore as
                     next(token_iterator, None)
@@ -897,20 +898,20 @@ class Statement(Simple):
                 else:
                     arr.parent = self
                     result.append(arr)
-                #print(tok, result)
             elif tok == '.':
                 if result and isinstance(result[-1], Call):
                     is_chain = True
             elif tok == ',':  # implies a tuple
                 # rewrite `result`, because now the whole thing is a tuple
-                add_el, t = parse_array_el(enumerate(result))
+                add_el, t = parse_array_el(enumerate(self.token_list[start:i]))
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
-                                             start_pos, add_el)
+                                             add_el.start_pos, add_el)
                 result = [arr]
                 if is_assignment(break_tok):
                     self._assignment_details.append((result, break_tok))
                     result = []
                     is_chain = False
+                    start = i + 1
             else:
                 if tok != '\n':
                     result.append(tok)

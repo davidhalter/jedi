@@ -37,7 +37,7 @@ class RecursionDecorator(object):
         check = self._check_recursion()
         if check:
             debug.warning('catched stmt recursion: %s against %s @%s'
-                                % (stmt, stmt.start_pos, check.stmt))
+                                % (stmt, check.stmt, stmt.start_pos))
             self.pop_stmt()
             return True
         return False
