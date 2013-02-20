@@ -72,7 +72,6 @@ from _compatibility import next, hasattr, is_py3k, unicode
 
 import sys
 import itertools
-import copy
 
 import common
 import cache
@@ -566,10 +565,10 @@ def follow_call_list(call_list, follow_array=False):
             # is nested LC
             input = nested_lc.stmt
         module = input.get_parent_until()
-        loop = pr.ForFlow(module, [input], lc.stmt.start_pos,
-                                                lc.middle, True)
+        # create a for loop, which does the same as list comprehensions
+        loop = pr.ForFlow(module, [input], lc.stmt.start_pos, lc.middle, True)
 
-        loop.parent = lc.stmt.parent if parent is None else parent
+        loop.parent = lc.parent if parent is None else parent
 
         if isinstance(nested_lc, pr.ListComprehension):
             loop = evaluate_list_comprehension(nested_lc, loop)
@@ -593,11 +592,10 @@ def follow_call_list(call_list, follow_array=False):
                                       position=call.start_pos)
             elif isinstance(call, pr.ListComprehension):
                 loop = evaluate_list_comprehension(call)
-                stmt = copy.copy(call.stmt)
-                stmt.parent = loop
-                # create a for loop which does the same as list
-                # comprehensions
-                result += follow_statement(stmt)
+                # Caveat: parents are being changed, but this doesn't matter,
+                # because nothing else uses it.
+                call.stmt.parent = loop
+                result += follow_statement(call.stmt)
             else:
                 if isinstance(call, pr.Lambda):
                     result.append(er.Function(call))

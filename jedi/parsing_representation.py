@@ -93,8 +93,8 @@ class Simple(Base):
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
-        return "<%s: %s@%s>" % \
-                (type(self).__name__, code, self.start_pos[0])
+        return "<%s: %s@%s,%s>" % \
+            (type(self).__name__, code, self.start_pos[0], self.start_pos[0])
 
 
 class IsScope(Base):
@@ -479,6 +479,7 @@ class Flow(Scope):
             self.set_vars = set_vars
             for s in self.set_vars:
                 s.parent.parent = self.use_as_parent
+                # TODO strange!!! don't know why this exist
                 s.parent = self.use_as_parent
 
     @property
@@ -545,6 +546,7 @@ class ForFlow(Flow):
         super(ForFlow, self).__init__(module, 'for', inputs, start_pos,
                                         set_stmt.used_vars)
         self.set_stmt = set_stmt
+        set_stmt.parent = self.use_as_parent
         self.is_list_comp = is_list_comp
 
     def get_code(self, first_indent=False, indention=" " * 4):
@@ -819,6 +821,9 @@ class Statement(Simple):
                         start_pos = tok.start_pos
                         first = False
                     end_pos = tok.end_pos
+                    if isinstance(tok, ListComprehension):
+                        # it's not possible to set it earlier
+                        tok.parent = self
                 else:
                     token_type, tok, start_tok_pos = tok_temp
                     end_pos = start_tok_pos[0], start_tok_pos[1] + len(tok)
@@ -1169,13 +1174,13 @@ class Name(Simple):
 
 class ListComprehension(Base):
     """ Helper class for list comprehensions """
-    def __init__(self, stmt, middle, input, parent):
+    def __init__(self, stmt, middle, input):
         self.stmt = stmt
         self.middle = middle
         self.input = input
         for s in [stmt, middle, input]:
             s.parent = self
-        self.parent = parent
+        self.parent = None
 
     def get_parent_until(self, *args, **kwargs):
         return Simple.get_parent_until(self, *args, **kwargs)
