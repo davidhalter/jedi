@@ -116,7 +116,7 @@ def extract(script, new_name):
         arr, index = helpers.array_for_pos(user_stmt, pos)
         if arr is not None:
             s = arr.start_pos[0], arr.start_pos[1] + 1
-            positions = [s] + arr.arr_el_pos + [arr.end_pos]
+            positions = [s] + [a.start_pos for a in arr] + [arr.end_pos]
             start_pos = positions[index]
             end_pos = positions[index + 1][0], positions[index + 1][1] - 1
 
@@ -179,14 +179,14 @@ def inline(script):
                                                 reverse=True)
         commands = stmt.get_commands()
         # don't allow multiline refactorings for now.
-        assert commands.start_pos[0] == commands.end_pos[0]
-        index = commands.start_pos[0] - 1
+        assert stmt.start_pos[0] == stmt.end_pos[0]
+        index = stmt.start_pos[0] - 1
 
         line = new_lines[index]
-        replace_str = line[commands.start_pos[1]:commands.end_pos[1] + 1]
+        replace_str = line[stmt.start_pos[1]:stmt.end_pos[1] + 1]
         replace_str = replace_str.strip()
         # tuples need parentheses
-        if len(commands.values) > 1:
+        if len(commands) > 1:
             replace_str = '(%s)' % replace_str
 
         # if it's the only assignment, remove the statement
