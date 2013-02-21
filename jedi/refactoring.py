@@ -3,7 +3,7 @@ Introduce some basic refactoring functions to |jedi|. This module is still in a
 very early development stage and needs much testing and improvement.
 
 .. warning:: I won't do too much here, but if anyone wants to step in, please
-             do.
+             do. Refactoring is none of my priorities
 
 It uses the |jedi| `API <plugin-api.html>`_ and supports currently the
 following functions (sometimes bug-prone):
@@ -115,10 +115,8 @@ def extract(script, new_name):
         line_index = pos[0] - 1
         arr, index = helpers.array_for_pos(user_stmt, pos)
         if arr is not None:
-            s = arr.start_pos[0], arr.start_pos[1] + 1
-            positions = [s] + [a.start_pos for a in arr] + [arr.end_pos]
-            start_pos = positions[index]
-            end_pos = positions[index + 1][0], positions[index + 1][1] - 1
+            start_pos = arr[index].start_pos
+            end_pos = arr[index].end_pos
 
             # take full line if the start line is different from end line
             e = end_pos[1] if end_pos[0] == start_pos[0] else None
