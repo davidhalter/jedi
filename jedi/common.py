@@ -63,6 +63,7 @@ class NoErrorTokenizer(object):
         self.stop_on_scope = stop_on_scope
         self.first_scope = False
         self.closed = False
+        self.first = True
 
     def push_last_back(self):
         self.gen.push_back(self.current)
@@ -107,8 +108,13 @@ class NoErrorTokenizer(object):
             elif c[1] != '@':
                 self.first_scope = True
 
-        c[2] = self.offset[0] + c[2][0], self.offset[1] + c[2][1]
-        c[3] = self.offset[0] + c[3][0], self.offset[1] + c[3][1]
+        if self.first:
+            c[2] = self.offset[0] + c[2][0], self.offset[1] + c[2][1]
+            c[3] = self.offset[0] + c[3][0], self.offset[1] + c[3][1]
+            self.first = False
+        else:
+            c[2] = self.offset[0] + c[2][0], c[2][1]
+            c[3] = self.offset[0] + c[3][0], c[3][1]
         return c
 
 

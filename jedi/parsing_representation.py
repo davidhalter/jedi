@@ -90,7 +90,6 @@ class Simple(Base):
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
-        # TODO (this todo doesn't belong here) positions are not added right.
         return "<%s: %s@%s,%s>" % \
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
 
