@@ -170,7 +170,7 @@ class Script(object):
                                             x.word.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):
-        """ Base for complete, goto and get_definition. Basically it returns
+        """ Base for complete, goto and definition. Basically it returns
         the resolved scopes under cursor. """
         debug.dbg('start: %s in %s' % (goto_path, self._parser.user_scope))
 
@@ -202,10 +202,19 @@ class Script(object):
 
     def get_definition(self):
         """
+        .. deprecated:: 0.5.0
+           Use :attr:`.function_definition` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use line instead.", DeprecationWarning)
+        return self.definition()
+
+    def definition(self):
+        """
         Return the definitions of a the path under the cursor. This is not a
         goto function! This follows complicated paths and returns the end, not
         the first definition. The big difference between :meth:`goto` and
-        :meth:`get_definition` is that :meth:`goto` doesn't follow imports and
+        :meth:`definition` is that :meth:`goto` doesn't follow imports and
         statements. Multiple objects may be returned, because Python itself is
         a dynamic language, which means depending on an option you can have two
         different versions of a function.

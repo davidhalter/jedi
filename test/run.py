@@ -36,7 +36,7 @@ def run_definition_test(script, should_str, line_nr):
     Runs tests for definitions.
     Return if the test was a fail or not, with 1 for fail and 0 for success.
     """
-    result = script.get_definition()
+    result = script.definition()
     is_str = set(r.desc_with_module for r in result)
     if is_str != should_str:
         print('Solution @%s not right, received %s, wanted %s' \
@@ -120,10 +120,10 @@ def run_test(source, f_name, lines_to_execute):
     >>> #? int()
     >>> ab = 3; ab
     """
-    def get_defs(correct, correct_start, path):
+    def definition(correct, correct_start, path):
         def defs(line_nr, indent):
             script = jedi.Script(source, line_nr, indent, path)
-            return set(script.get_definition())
+            return set(script.definition())
 
         should_be = set()
         number = 0
@@ -166,7 +166,7 @@ def run_test(source, f_name, lines_to_execute):
             else:
                 index = len(line) - 1  # -1 for the \n
             # if a list is wanted, use the completion test, otherwise the
-            # get_definition test
+            # definition test
             path = completion_test_dir + os.path.sep + f_name
             try:
                 script = jedi.Script(source, line_nr, index, path)
@@ -177,7 +177,7 @@ def run_test(source, f_name, lines_to_execute):
                 elif correct.startswith('['):
                     fails += run_completion_test(script, correct, line_nr)
                 else:
-                    should_str = get_defs(correct, start, path)
+                    should_str = definition(correct, start, path)
                     fails += run_definition_test(script, should_str, line_nr)
             except Exception:
                 print(traceback.format_exc())

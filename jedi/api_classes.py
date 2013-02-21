@@ -263,7 +263,7 @@ class Completion(BaseDefinition):
 class Definition(BaseDefinition):
     """
     *Definition* objects are returned from :meth:`api.Script.goto` or
-    :meth:`api.Script.get_definition`.
+    :meth:`api.Script.definition`.
     """
     def __init__(self, definition):
         super(Definition, self).__init__(definition, definition.start_pos)
