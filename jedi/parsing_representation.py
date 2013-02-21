@@ -14,9 +14,6 @@ One special thing:
 ``[1, 2+33]`` for example would be an Array with two ``Statement`` inside. This
 is the easiest way to write a parser. The same behaviour applies to ``Param``,
 which is being used in a function definition.
-
-
-.. todo:: remove docstr params from Scope.__init__()
 """
 
 import os
@@ -112,8 +109,6 @@ class Scope(Simple, IsScope):
 
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
-    :param docstr: The docstring for the current Scope.
-    :type docstr: str
     """
     def __init__(self, module, start_pos):
         super(Scope, self).__init__(module, start_pos)
@@ -358,8 +353,6 @@ class Function(Scope):
     :type params: list
     :param start_pos: The start position (line, column) the Function.
     :type start_pos: tuple(int, int)
-    :param docstr: The docstring for the current Scope.
-    :type docstr: str
     """
     def __init__(self, module, name, params, start_pos, annotation):
         super(Function, self).__init__(module, start_pos)
