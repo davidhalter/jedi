@@ -649,9 +649,6 @@ class Statement(Simple):
     stores pretty much all the Python code, except functions, classes, imports,
     and flow functions like if, for, etc.
 
-    :param code: The full code of a statement. This is import, if one wants \
-    to execute the code at some level.
-    :param code: str
     :param set_vars: The variables which are defined by the statement.
     :param set_vars: str
     :param used_funcs: The functions which are used by the statement.
@@ -663,14 +660,12 @@ class Statement(Simple):
     :param start_pos: Position (line, column) of the Statement.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('used_funcs', 'code', 'token_list', 'used_vars',
+    __slots__ = ('used_funcs', 'token_list', 'used_vars',
                  'set_vars', '_commands', '_assignment_details')
 
-    def __init__(self, module, code, set_vars, used_funcs, used_vars,
+    def __init__(self, module, set_vars, used_funcs, used_vars,
                                 token_list, start_pos, end_pos, parent=None):
         super(Statement, self).__init__(module, start_pos, end_pos)
-        # TODO remove code -> much cleaner
-        self.code = code
         self.used_funcs = used_funcs
         self.used_vars = used_vars
         self.token_list = token_list
@@ -847,8 +842,8 @@ class Statement(Simple):
             if not token_list:
                 return None, tok
 
-            statement = Statement(self._sub_module, "XXX" + self.code, [], [], [],
-                                            token_list, start_pos, end_pos)
+            statement = Statement(self._sub_module, [], [], [],
+                                  token_list, start_pos, end_pos)
             statement.parent = self.parent
             return statement, tok
 
@@ -932,9 +927,9 @@ class Param(Statement):
     __slots__ = ('position_nr', 'is_generated', 'annotation_stmt',
                  'parent_function')
 
-    def __init__(self, module, code, set_vars, used_funcs, used_vars,
+    def __init__(self, module, set_vars, used_funcs, used_vars,
                  token_list, start_pos, end_pos):
-        super(Param, self).__init__(module, code, set_vars, used_funcs,
+        super(Param, self).__init__(module, set_vars, used_funcs,
                                 used_vars, token_list, start_pos, end_pos)
 
         # this is defined by the parser later on, not at the initialization

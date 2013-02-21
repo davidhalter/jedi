@@ -14,12 +14,10 @@ being parsed completely. ``Statement`` is just a representation of the tokens
 within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
-
 """
-from _compatibility import next, StringIO, unicode
+from _compatibility import next, StringIO
 
 import tokenize
-import re
 import keyword
 
 import debug
@@ -313,8 +311,6 @@ class Parser(object):
         :return: Statement + last parsed token.
         :rtype: (Statement, str)
         """
-
-        string = unicode('')
         set_vars = []
         used_funcs = []
         used_vars = []
@@ -350,18 +346,15 @@ class Parser(object):
                 or tok in not_first_break and not tok_list
                 or tok in breaks and level <= 0):
             try:
-                set_string = None
                 #print 'parse_stmt', tok, tokenize.tok_name[token_type]
                 tok_list.append(self.current + (self.start_pos,))
                 if tok == 'as':
-                    string += " %s " % tok
                     token_type, tok = self.next()
                     if token_type == tokenize.NAME:
                         n, token_type, tok = self._parse_dot_name(self.current)
                         if n:
                             set_vars.append(n)
                         tok_list.append(n)
-                        string += ".".join(n.names)
                     continue
                 elif tok == 'lambda':
                     params = []
@@ -428,19 +421,12 @@ class Parser(object):
                             i = 0
 
                         tok_list, toks = tok_list[:-i], tok_list[-i:-1]
-                        src = ''
-                        for t in toks:
-                            src += t[1] if isinstance(t, tuple) \
-                                        else t.get_code()
-                        st = pr.Statement(self.module, src, [], [], [],
+                        st = pr.Statement(self.module, [], [], [],
                                         toks, first_pos, self.end_pos)
 
                         tok = pr.ListComprehension(st, middle, in_clause,
                                                    self.scope)
                         tok_list.append(tok)
-                        if list_comp:
-                            string = ''
-                        string += tok.get_code()
                         continue
                     else:
                         n, token_type, tok = self._parse_dot_name(self.current)
@@ -453,9 +439,6 @@ class Parser(object):
                                 used_funcs.append(n)
                             else:
                                 used_vars.append(n)
-                            if string and re.match(r'[\w\d\'"]', string[-1]):
-                                string += ' '
-                            string += ".".join(n.names)
                         continue
                 elif tok.endswith('=') and tok not in ['>=', '<=', '==', '!=']:
                     # there has been an assignement -> change vars
@@ -467,21 +450,20 @@ class Parser(object):
                 elif tok in closing_brackets:
                     level -= 1
 
-                string = set_string if set_string is not None else string + tok
                 token_type, tok = self.next()
             except (StopIteration, common.MultiLevelStopIteration):
                 # comes from tokenizer
                 break
 
-        if not string:
+        if not tok_list:
             return None, tok
-        #print 'new_stat', string, set_vars, used_funcs, used_vars
+        #print 'new_stat', set_vars, used_funcs, used_vars
         if self.freshscope and not self.no_docstr and len(tok_list) == 1 \
                     and self.last_token[0] == tokenize.STRING:
             self.scope.add_docstr(self.last_token[1])
             return None, tok
         else:
-            stmt = stmt_class(self.module, string, set_vars, used_funcs,
+            stmt = stmt_class(self.module, set_vars, used_funcs,
                             used_vars, tok_list, first_pos, self.end_pos)
 
             self._check_user_stmt(stmt)
@@ -667,7 +649,6 @@ class Parser(object):
                         n, token_type, tok = self._parse_dot_name()
                         if n:
                             statement.set_vars.append(n)
-                            statement.code += ',' + n.get_code()
                     if statement:
                         inputs.append(statement)
                     first = False
