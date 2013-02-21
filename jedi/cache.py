@@ -135,8 +135,8 @@ def time_cache(time_add_setting):
     return _temp
 
 
-@time_cache("get_in_function_call_validity")
-def cache_get_in_function_call(stmt):
+@time_cache("function_definition_validity")
+def cache_function_definition(stmt):
     module_path = stmt.get_parent_until().path
     return None if module_path is None else (module_path, stmt.start_pos)
 

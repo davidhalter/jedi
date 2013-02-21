@@ -11,6 +11,7 @@ __all__ = ['Script', 'NotFoundError', 'set_debug_function', '_quick_complete']
 
 import re
 import os
+import warnings
 
 import parsing
 import parsing_representation as pr
@@ -122,7 +123,7 @@ class Script(object):
                     completions.append((c, s))
 
         if not dot:  # named params have no dots
-            call_def = self.get_in_function_call()
+            call_def = self.function_definition()
             if call_def:
                 if not call_def.module.is_builtin():
                     for p in call_def.params:
@@ -337,6 +338,15 @@ class Script(object):
 
     def get_in_function_call(self):
         """
+        .. deprecated:: 0.5.0
+           Use :attr:`.function_definition` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use line instead.", DeprecationWarning)
+        return self.function_definition()
+
+    def function_definition(self):
+        """
         Return the function object of the call you're currently in.
 
         E.g. if the cursor is here::
@@ -391,7 +401,7 @@ class Script(object):
 
         debug.speed('func_call start')
         call = None
-        if settings.use_get_in_function_call_cache:
+        if settings.use_function_definition_cache:
             try:
                 call, index = check_cache()
             except NotFoundError:
@@ -405,9 +415,9 @@ class Script(object):
                 return None
         debug.speed('func_call parsed')
 
-        with common.scale_speed_settings(settings.scale_get_in_function_call):
+        with common.scale_speed_settings(settings.scale_function_definition):
             _callable = lambda: evaluate.follow_call(call)
-            origins = cache.cache_get_in_function_call(_callable, user_stmt)
+            origins = cache.cache_function_definition(_callable, user_stmt)
         debug.speed('func_call followed')
 
         if len(origins) == 0:

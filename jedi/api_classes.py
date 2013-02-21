@@ -336,9 +336,11 @@ class RelatedName(BaseDefinition):
 
 
 class CallDef(object):
-    """ `CallDef` objects is the return value of `Script.get_in_function_call`.
+    """
+    `CallDef` objects is the return value of `Script.function_definition`.
     It knows what functions you are currently in. e.g. `isinstance(` would
-    return the `isinstance` function. without `(` it would return nothing."""
+    return the `isinstance` function. without `(` it would return nothing.
+    """
     def __init__(self, executable, index, call):
         self.executable = executable
         self.index = index

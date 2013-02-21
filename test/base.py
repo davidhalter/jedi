@@ -65,9 +65,9 @@ class TestBase(unittest.TestCase):
         script = self.get_script(src, pos)
         return script.goto()
 
-    def get_in_function_call(self, src, pos=None):
+    def function_definition(self, src, pos=None):
         script = self.get_script(src, pos)
-        return script.get_in_function_call()
+        return script.function_definition()
 
 def print_summary():
     print('\nSummary: (%s fails of %s tests) in %.3fs' % \

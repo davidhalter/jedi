@@ -35,11 +35,11 @@ class TestRegression(TestBase):
         self.assertEqual(length, 1)
 
     def test_part_parser(self):
-        """ test the get_in_function_call speedups """
+        """ test the function_definition speedups """
         s = '\n' * 100 + 'abs('
         pos = 101, 4
-        self.get_in_function_call(s, pos)
-        assert self.get_in_function_call(s, pos)
+        self.function_definition(s, pos)
+        assert self.function_definition(s, pos)
 
     def test_get_definition_cursor(self):
 
@@ -123,7 +123,7 @@ class TestRegression(TestBase):
         assert self.complete("from datetime import")[0].word == 'import'
         assert self.complete("from datetime import ")
 
-    def test_get_in_function_call(self):
+    def test_function_definition(self):
         def check(call_def, name, index):
             return call_def and call_def.call_name == name \
                             and call_def.index == index
@@ -139,54 +139,54 @@ class TestRegression(TestBase):
         s7 = "str().upper().center("
         s8 = "str(int[zip("
 
-        assert check(self.get_in_function_call(s, (1, 4)), 'abs', 0)
-        assert check(self.get_in_function_call(s, (1, 6)), 'abs', 1)
-        assert check(self.get_in_function_call(s, (1, 7)), 'abs', 1)
-        assert check(self.get_in_function_call(s, (1, 8)), 'abs', 1)
-        assert check(self.get_in_function_call(s, (1, 11)), 'str', 0)
+        assert check(self.function_definition(s, (1, 4)), 'abs', 0)
+        assert check(self.function_definition(s, (1, 6)), 'abs', 1)
+        assert check(self.function_definition(s, (1, 7)), 'abs', 1)
+        assert check(self.function_definition(s, (1, 8)), 'abs', 1)
+        assert check(self.function_definition(s, (1, 11)), 'str', 0)
 
-        assert check(self.get_in_function_call(s2, (1, 4)), 'abs', 0)
-        assert self.get_in_function_call(s2, (1, 5)) is None
-        assert self.get_in_function_call(s2) is None
+        assert check(self.function_definition(s2, (1, 4)), 'abs', 0)
+        assert self.function_definition(s2, (1, 5)) is None
+        assert self.function_definition(s2) is None
 
-        assert self.get_in_function_call(s3, (1, 5)) is None
-        assert self.get_in_function_call(s3) is None
+        assert self.function_definition(s3, (1, 5)) is None
+        assert self.function_definition(s3) is None
 
-        assert self.get_in_function_call(s4, (1, 3)) is None
-        assert check(self.get_in_function_call(s4, (1, 4)), 'abs', 0)
-        assert check(self.get_in_function_call(s4, (1, 8)), 'zip', 0)
-        assert check(self.get_in_function_call(s4, (1, 9)), 'abs', 0)
-        #assert check(self.get_in_function_call(s4, (1, 10)), 'abs', 1)
+        assert self.function_definition(s4, (1, 3)) is None
+        assert check(self.function_definition(s4, (1, 4)), 'abs', 0)
+        assert check(self.function_definition(s4, (1, 8)), 'zip', 0)
+        assert check(self.function_definition(s4, (1, 9)), 'abs', 0)
+        #assert check(self.function_definition(s4, (1, 10)), 'abs', 1)
 
-        assert check(self.get_in_function_call(s5, (1, 4)), 'abs', 0)
-        assert check(self.get_in_function_call(s5, (1, 6)), 'abs', 1)
+        assert check(self.function_definition(s5, (1, 4)), 'abs', 0)
+        assert check(self.function_definition(s5, (1, 6)), 'abs', 1)
 
-        assert check(self.get_in_function_call(s6), 'center', 0)
-        assert check(self.get_in_function_call(s6, (1, 4)), 'str', 0)
+        assert check(self.function_definition(s6), 'center', 0)
+        assert check(self.function_definition(s6, (1, 4)), 'str', 0)
 
-        assert check(self.get_in_function_call(s7), 'center', 0)
-        assert check(self.get_in_function_call(s8), 'zip', 0)
-        assert check(self.get_in_function_call(s8, (1, 8)), 'str', 0)
+        assert check(self.function_definition(s7), 'center', 0)
+        assert check(self.function_definition(s8), 'zip', 0)
+        assert check(self.function_definition(s8, (1, 8)), 'str', 0)
 
         s = "import time; abc = time; abc.sleep("
-        assert check(self.get_in_function_call(s), 'sleep', 0)
+        assert check(self.function_definition(s), 'sleep', 0)
 
         # jedi-vim #9
         s = "with open("
-        assert check(self.get_in_function_call(s), 'open', 0)
+        assert check(self.function_definition(s), 'open', 0)
 
         # jedi-vim #11
         s1 = "for sorted("
-        assert check(self.get_in_function_call(s1), 'sorted', 0)
+        assert check(self.function_definition(s1), 'sorted', 0)
         s2 = "for s in sorted("
-        assert check(self.get_in_function_call(s2), 'sorted', 0)
+        assert check(self.function_definition(s2), 'sorted', 0)
 
         # jedi #57
         s = "def func(alpha, beta): pass\n" \
             "func(alpha='101',"
-        assert check(self.get_in_function_call(s, (2, 13)), 'func', 0)
+        assert check(self.function_definition(s, (2, 13)), 'func', 0)
 
-    def test_get_in_function_call_complex(self):
+    def test_function_definition_complex(self):
         def check(call_def, name, index):
             return call_def and call_def.call_name == name \
                             and call_def.index == index
@@ -201,17 +201,17 @@ class TestRegression(TestBase):
                 if 1:
                     pass
             """
-        assert check(self.get_in_function_call(s, (6, 24)), 'abc', 0)
+        assert check(self.function_definition(s, (6, 24)), 'abc', 0)
         s = """
                 import re
                 def huhu(it):
                     re.compile(
                     return it * 2
             """
-        assert check(self.get_in_function_call(s, (4, 31)), 'compile', 0)
+        assert check(self.function_definition(s, (4, 31)), 'compile', 0)
         # jedi-vim #70
         s = """def foo("""
-        assert self.get_in_function_call(s) is None
+        assert self.function_definition(s) is None
 
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
@@ -389,7 +389,7 @@ class TestSpeed(TestBase):
     def test_scipy_speed(self):
         s = 'import scipy.weave; scipy.weave.inline('
         script = jedi.Script(s, 1, len(s), '')
-        script.get_in_function_call()
+        script.function_definition()
         #print(jedi.imports.imports_processed)
 
 if __name__ == '__main__':
