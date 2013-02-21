@@ -113,8 +113,8 @@ def extract(script, new_name):
     if user_stmt:
         pos = script.pos
         line_index = pos[0] - 1
-        arr, index = helpers.array_for_pos(user_stmt.get_commands(), pos)
-        if arr:
+        arr, index = helpers.array_for_pos(user_stmt, pos)
+        if arr is not None:
             s = arr.start_pos[0], arr.start_pos[1] + 1
             positions = [s] + arr.arr_el_pos + [arr.end_pos]
             start_pos = positions[index]

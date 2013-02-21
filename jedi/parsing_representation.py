@@ -339,7 +339,7 @@ class Class(Scope):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
         string += 'class %s' % (self.name)
         if len(self.supers) > 0:
-            sup = ','.join(stmt.code for stmt in self.supers)
+            sup = ','.join(stmt.get_code() for stmt in self.supers)
             string += '(%s)' % sup
         string += ':\n'
         string += super(Class, self).get_code(True, indention)
@@ -381,7 +381,7 @@ class Function(Scope):
 
     def get_code(self, first_indent=False, indention='    '):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
-        params = ','.join([stmt.code for stmt in self.params])
+        params = ','.join([stmt.get_code() for stmt in self.params])
         string += "def %s(%s):\n" % (self.name, params)
         string += super(Function, self).get_code(True, indention)
         if self.is_empty():
@@ -433,7 +433,7 @@ class Lambda(Function):
         super(Lambda, self).__init__(module, None, params, start_pos, None)
 
     def get_code(self, first_indent=False, indention='    '):
-        params = ','.join([stmt.code for stmt in self.params])
+        params = ','.join([stmt.get_code() for stmt in self.params])
         string = "lambda %s:" % params
         return string + super(Function, self).get_code(indention=indention)
 
@@ -841,6 +841,7 @@ class Statement(Simple):
                         or level == 1 and (tok == ','
                                 or maybe_dict and tok == ':'
                                 or is_assignment(tok) and break_on_assignment):
+                        end_pos = end_pos[0], end_pos[1] - 1
                         break
                 token_list.append(tok_temp)
 
@@ -978,24 +979,24 @@ class Call(Simple):
 
     def set_next(self, call):
         """ Adds another part of the statement"""
+        call.parent = self
         if self.next is not None:
             self.next.set_next(call)
         else:
             self.next = call
-            call.parent = self.parent
 
     def set_execution(self, call):
         """
         An execution is nothing else than brackets, with params in them, which
         shows access on the internals of this name.
         """
+        call.parent = self
         if self.next is not None:
             self.next.set_execution(call)
         elif self.execution is not None:
             self.execution.set_execution(call)
         else:
             self.execution = call
-            call.parent = self
 
     def generate_call_path(self):
         """ Helps to get the order in which statements are executed. """
@@ -1020,7 +1021,7 @@ class Call(Simple):
         if self.execution is not None:
             s += self.execution.get_code()
         if self.next is not None:
-            s += self.next.get_code()
+            s += '.' + self.next.get_code()
         return s
 
     def __repr__(self):
