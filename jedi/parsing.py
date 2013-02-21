@@ -312,7 +312,6 @@ class Parser(object):
         :rtype: (Statement, str)
         """
         set_vars = []
-        used_funcs = []
         used_vars = []
         level = 0  # The level of parentheses
 
@@ -421,7 +420,7 @@ class Parser(object):
                             i = 0
 
                         tok_list, toks = tok_list[:-i], tok_list[-i:-1]
-                        st = pr.Statement(self.module, [], [], [],
+                        st = pr.Statement(self.module, [], [],
                                         toks, first_pos, self.end_pos)
 
                         tok = pr.ListComprehension(st, middle, in_clause,
@@ -434,11 +433,7 @@ class Parser(object):
                         tok_list.pop()
                         if n:
                             tok_list.append(n)
-                            if tok == '(':
-                                # it must be a function
-                                used_funcs.append(n)
-                            else:
-                                used_vars.append(n)
+                            used_vars.append(n)
                         continue
                 elif tok.endswith('=') and tok not in ['>=', '<=', '==', '!=']:
                     # there has been an assignement -> change vars
@@ -457,14 +452,14 @@ class Parser(object):
 
         if not tok_list:
             return None, tok
-        #print 'new_stat', set_vars, used_funcs, used_vars
+        #print 'new_stat', set_vars, used_vars
         if self.freshscope and not self.no_docstr and len(tok_list) == 1 \
                     and self.last_token[0] == tokenize.STRING:
             self.scope.add_docstr(self.last_token[1])
             return None, tok
         else:
-            stmt = stmt_class(self.module, set_vars, used_funcs,
-                            used_vars, tok_list, first_pos, self.end_pos)
+            stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
+                              first_pos, self.end_pos)
 
             self._check_user_stmt(stmt)
 
