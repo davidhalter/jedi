@@ -216,17 +216,6 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
         return func
 
     def get_commands(self):
-        """
-        # TODO delete ? 
-        # Copy and modify the array.
-        origin = self.var.get_commands()
-        # Delete parent, because it isn't used anymore.
-        new = helpers.fast_parent_copy(origin)
-        par = InstanceElement(self.instance, origin.parent_stmt,
-                                                    self.is_class_var)
-        new.parent_stmt = par
-        return new
-        """
         # Copy and modify the array.
         return [InstanceElement(self.instance, command, self.is_class_var)
                 for command in self.var.get_commands()]
@@ -502,8 +491,6 @@ class Execution(Executable):
             """
             Create a param with the original scope (of varargs) as parent.
             """
-            # TODO remove array and param and just put the values of the \
-            # statement into the values of the param - it's as simple as that.
             if isinstance(self.var_args, pr.Array):
                 parent = self.var_args.parent
                 start_pos = self.var_args.start_pos
@@ -658,10 +645,6 @@ class Execution(Executable):
                                 yield call, value_stmt
                             elif type(call) == pr.Call:
                                 yield call.name, value_stmt
-                            else:
-                                # `pr`.[Call|Function|Class] lookup.
-                                # TODO remove?
-                                yield key_stmt[0].name, value_stmt
                 # Normal arguments (including key arguments).
                 else:
                     if stmt.assignment_details:

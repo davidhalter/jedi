@@ -480,7 +480,6 @@ class Flow(Scope):
             self.set_vars = set_vars
             for s in self.set_vars:
                 s.parent.parent = self.use_as_parent
-                # TODO strange!!! don't know why this exist
                 s.parent = self.use_as_parent
 
     @property
@@ -1000,7 +999,6 @@ class Call(Simple):
 
     def generate_call_path(self):
         """ Helps to get the order in which statements are executed. """
-        # TODO include previous nodes? As an option?
         try:
             for name_part in self.name.names:
                 yield name_part
