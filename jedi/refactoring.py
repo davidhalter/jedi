@@ -11,7 +11,6 @@ following functions (sometimes bug-prone):
 - rename
 - extract variable
 - inline variable
-
 """
 
 from __future__ import with_statement
@@ -19,6 +18,7 @@ from __future__ import with_statement
 import modules
 import difflib
 import helpers
+import parsing_representation as pr
 
 
 class Refactoring(object):
@@ -183,11 +183,13 @@ def inline(script):
         index = stmt.start_pos[0] - 1
 
         line = new_lines[index]
-        replace_str = line[stmt.start_pos[1]:stmt.end_pos[1] + 1]
+        replace_str = line[commands[0].start_pos[1]:stmt.end_pos[1] + 1]
         replace_str = replace_str.strip()
         # tuples need parentheses
-        if len(commands) > 1:
-            replace_str = '(%s)' % replace_str
+        if commands and isinstance(commands[0], pr.Array):
+            arr = commands[0]
+            if replace_str[0] not in ['(', '[', '{'] and len(arr) > 1:
+                replace_str = '(%s)' % replace_str
 
         # if it's the only assignment, remove the statement
         if len(stmt.set_vars) == 1:
