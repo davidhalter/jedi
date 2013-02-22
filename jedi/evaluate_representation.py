@@ -589,7 +589,7 @@ class Execution(Executable):
                         # No value: return the default values.
                         ignore_creation = True
                         result.append(param.get_name())
-                        param.is_generated=True
+                        param.is_generated = True
                     else:
                         # If there is no assignment detail, that means there is
                         # no assignment, just the result. Therefore nothing has

@@ -46,7 +46,8 @@ class Simple(Base):
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
     """
-    __slots__ = ('parent', '_sub_module', '_start_pos', 'use_as_parent', '_end_pos')
+    __slots__ = ('parent', '_sub_module', '_start_pos', 'use_as_parent',
+                 '_end_pos')
 
     def __init__(self, module, start_pos, end_pos=(None, None)):
         self._sub_module = module
@@ -59,7 +60,8 @@ class Simple(Base):
 
     @property
     def start_pos(self):
-        return self._sub_module.line_offset + self._start_pos[0], self._start_pos[1]
+        return self._sub_module.line_offset + self._start_pos[0], \
+               self._start_pos[1]
 
     @start_pos.setter
     def start_pos(self, value):
@@ -69,7 +71,8 @@ class Simple(Base):
     def end_pos(self):
         if None in self._end_pos:
             return self._end_pos
-        return self._sub_module.line_offset + self._end_pos[0], self._end_pos[1]
+        return self._sub_module.line_offset + self._end_pos[0], \
+               self._end_pos[1]
 
     @end_pos.setter
     def end_pos(self, value):
@@ -536,7 +539,8 @@ class ForFlow(Flow):
     """
     Used for the for loop, because there are two statement parts.
     """
-    def __init__(self, module, inputs, start_pos, set_stmt, is_list_comp=False):
+    def __init__(self, module, inputs, start_pos, set_stmt,
+                 is_list_comp=False):
         super(ForFlow, self).__init__(module, 'for', inputs, start_pos,
                                         set_stmt.used_vars)
         self.set_stmt = set_stmt
@@ -617,8 +621,8 @@ class Import(Simple):
             return [self.alias]
         if len(self.namespace) > 1:
             o = self.namespace
-            n = Name(self._sub_module, [(o.names[0], o.start_pos)], o.start_pos,
-                                                o.end_pos, parent=o.parent)
+            n = Name(self._sub_module, [(o.names[0], o.start_pos)],
+                     o.start_pos, o.end_pos, parent=o.parent)
             return [n]
         else:
             return [self.namespace]
@@ -885,7 +889,8 @@ class Statement(Simple):
 
         def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
             def parse_stmt_or_arr(token_iterator, added_breaks=()):
-                stmt, tok = parse_stmt(token_iterator, added_breaks=added_breaks)
+                stmt, tok = parse_stmt(token_iterator,
+                                       added_breaks=added_breaks)
                 if not stmt:
                     return None, tok
                 if tok == ',':
@@ -908,7 +913,8 @@ class Statement(Simple):
             st = Statement(self._sub_module, [], [], token_list, start_pos,
                            end_pos)
 
-            middle, tok = parse_stmt_or_arr(token_iterator, added_breaks=['in'])
+            middle, tok = parse_stmt_or_arr(token_iterator,
+                                            added_breaks=['in'])
             if tok != 'in' or middle is None:
                 debug.warning('list comprehension middle @%s' % str(start_pos))
                 return None, tok
@@ -997,7 +1003,6 @@ class Statement(Simple):
                 stmt = Statement(self._sub_module, [], [], result,
                                        start_pos, end_pos, self.parent)
                 stmt._commands = result
-                #add_el, t = parse_stmt(enumerate(self.token_list[start:i - 1]))
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
                                              stmt.start_pos, stmt)
                 result = [arr]
