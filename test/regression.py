@@ -240,7 +240,8 @@ class TestRegression(TestBase):
 
         s = utf8("author='öä'; author")
         completions = self.complete(s)
-        assert type(completions[0].description) is unicode
+        x = completions[0].description
+        assert type(x) is unicode
 
         s = utf8("#-*- coding: iso-8859-1 -*-\nauthor='öä'; author")
         s = s.encode('latin-1')

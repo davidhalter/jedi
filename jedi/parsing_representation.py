@@ -21,7 +21,7 @@ import re
 import tokenize
 
 from _compatibility import next, literal_eval, cleandoc, Python3Method, \
-                            property, unicode
+                            property, unicode, is_py3k
 import common
 import debug
 
@@ -910,48 +910,14 @@ class Statement(Simple):
 
             middle, tok = parse_stmt_or_arr(token_iterator, added_breaks=['in'])
             if tok != 'in' or middle is None:
-                #if middle is None:
-                #    level -= 1
-                #else:
-                    #middle.parent = self.scope
-                debug.warning('list comprehension formatting @%s' %
-                                                    start_pos[0])
+                debug.warning('list comprehension middle @%s' % str(start_pos))
                 return None, tok
 
             in_clause, tok = parse_stmt_or_arr(token_iterator)
-            """
-            if tok not in b or in_clause is None:
-                #middle.parent = self.scope
-                if in_clause is None:
-                    self._gen.push_last_back()
-                #else:
-                #    in_clause.parent = self.scope
-                #    in_clause.parent = self.scope
-                debug.warning('list comprehension in_clause %s@%s'
-                                % (repr(tok), start_pos[0]))
+            if in_clause is None:
+                debug.warning('list comprehension in @%s' % str(start_pos))
                 return None, tok
-            """
-            """
-            other_level = 0
 
-            for i, tok in enumerate(reversed(token_list)):
-                if not isinstance(tok, (Name, ListComprehension)):
-                    tok = tok[1]
-                if tok in closing_brackets:
-                    other_level -= 1
-                elif tok in brackets.keys():
-                    other_level += 1
-                if other_level > 0:
-                    break
-            else:
-                # could not detect brackets -> nested list comp
-                i = 0
-"""
-            #token_list, toks = token_list[:-i], token_list[-i:-1]
-
-
-            if middle is None or in_clause is None:
-                return None, tok
             return ListComprehension(st, middle, in_clause, self), tok
 
         # initializations
@@ -1136,7 +1102,12 @@ class Call(Simple):
         if self.type == Call.NAME:
             s = self.name.get_code()
         else:
-            s = '' if self.name is None else repr(self.name)
+            if isinstance(self.name, str) and "'" not in self.name:
+                # This is a very rough spot, because of repr not supporting
+                # unicode signs, see `test_unicode_script`.
+                s = "'%s'" % unicode(self.name, 'UTF-8')
+            else:
+                s = '' if self.name is None else repr(self.name)
         if self.execution is not None:
             s += self.execution.get_code()
         if self.next is not None:
