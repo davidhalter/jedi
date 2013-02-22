@@ -427,7 +427,7 @@ class Lambda(Function):
 
     def get_code(self, first_indent=False, indention='    '):
         params = ','.join([stmt.get_code() for stmt in self.params])
-        string = "lambda %s:" % params
+        string = "lambda %s: " % params
         return string + super(Function, self).get_code(indention=indention)
 
     def __repr__(self):
@@ -827,7 +827,7 @@ class Statement(Simple):
                         start_pos = start_tok_pos
 
                     if tok == 'lambda':
-                        lambd = parse_lambda(token_iterator)
+                        lambd, tok = parse_lambda(token_iterator)
                         if lambd is not None:
                             token_list.append(lambd)
                     elif tok == 'for':
@@ -870,7 +870,7 @@ class Statement(Simple):
                 if tok == ':':
                     break
             if tok != ':':
-                return None
+                return None, tok
 
             # since lambda is a Function scope, it needs Scope parents
             parent = self.get_parent_until(IsScope)
@@ -881,7 +881,7 @@ class Statement(Simple):
                 ret.parent = lambd
                 lambd.returns.append(ret)
             lambd.end_pos = self.end_pos
-            return lambd
+            return lambd, tok
 
         def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
             def parse_stmt_or_arr(token_iterator, added_breaks=()):
@@ -959,9 +959,8 @@ class Statement(Simple):
         is_chain = False
         brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
         closing_brackets = ')', '}', ']'
-        start = 0
 
-        token_iterator = enumerate(self.token_list)
+        token_iterator = common.PushBackIterator(enumerate(self.token_list))
         for i, tok_temp in token_iterator:
             if isinstance(tok_temp, Base):
                 # the token is a Name, which has already been parsed
@@ -976,18 +975,18 @@ class Statement(Simple):
                     self._assignment_details.append((result, tok))
                     result = []
                     is_chain = False
-                    start = i + 1
                     continue
                 elif tok == 'as':  # just ignore as, because it sets values
                     next(token_iterator, None)
                     continue
 
-            is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if tok == 'lambda':
-                lambd = parse_lambda(token_iterator)
+                lambd, tok = parse_lambda(token_iterator)
                 if lambd is not None:
                     result.append(lambd)
-            elif isinstance(tok, Name) or is_literal:
+
+            is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
+            if isinstance(tok, Name) or is_literal:
                 c_type = Call.NAME
                 if is_literal:
                     tok = literal_eval(tok)
@@ -1014,16 +1013,32 @@ class Statement(Simple):
                 if result and isinstance(result[-1], Call):
                     is_chain = True
             elif tok == ',':  # implies a tuple
-                # rewrite `result`, because now the whole thing is a tuple
-                add_el, t = parse_stmt(enumerate(self.token_list[start:i]))
+                # commands is now an array not a statement anymore
+                t = result[0]
+                start_pos = t[2] if isinstance(t, tuple) else t.start_pos
+
+                # get the correct index
+                i, tok = next(token_iterator, (len(self.token_list), None))
+                if tok is not None:
+                    token_iterator.push_back((i, tok))
+                t = self.token_list[i - 1]
+                try:
+                    end_pos = t.end_pos
+                except AttributeError:
+                    end_pos = (t[2][0], t[2][1] + len(t[1])) \
+                                if isinstance(t, tuple) else t.start_pos
+
+                stmt = Statement(self._sub_module, [], [], result,
+                                       start_pos, end_pos, self.parent)
+                stmt._commands = result
+                #add_el, t = parse_stmt(enumerate(self.token_list[start:i - 1]))
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
-                                             add_el.start_pos, add_el)
+                                             stmt.start_pos, stmt)
                 result = [arr]
                 if is_assignment(break_tok):
                     self._assignment_details.append((result, break_tok))
                     result = []
                     is_chain = False
-                    start = i + 1
             else:
                 if tok != '\n':
                     result.append(tok)

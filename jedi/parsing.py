@@ -358,7 +358,7 @@ class Parser(object):
                 elif tok in ['lambda', 'for', 'in']:
                     # don't parse these keywords, parse later in stmt.
                     if tok == 'lambda':
-                        breaks.remove(':')
+                        breaks.discard(':')
                 elif token_type == tokenize.NAME:
                     n, token_type, tok = self._parse_dot_name(self.current)
                     # removed last entry, because we add Name
