@@ -421,8 +421,9 @@ class Function(Scope):
 
 
 class Lambda(Function):
-    def __init__(self, module, params, start_pos):
+    def __init__(self, module, params, start_pos, parent):
         super(Lambda, self).__init__(module, None, params, start_pos, None)
+        self.parent = parent
 
     def get_code(self, first_indent=False, indention='    '):
         params = ','.join([stmt.get_code() for stmt in self.params])
@@ -852,7 +853,7 @@ class Statement(Simple):
             if not token_list:
                 return None, tok
 
-            statement = Statement(self._sub_module, [], [], token_list,
+            statement = stmt_class(self._sub_module, [], [], token_list,
                                   start_pos, end_pos, self.parent)
             statement.used_vars = used_vars
             return statement, tok
@@ -860,25 +861,27 @@ class Statement(Simple):
         def parse_lambda(token_iterator):
             params = []
             start_pos = self.start_pos
-            tok = next(token_iterator)
-            while tok != ':':
-                param, tok = parse_stmt(token_iterator,
-                                    added_breaks=[':', ','], stmt_class=Param)
+            while True:
+                param, tok = parse_stmt(token_iterator, added_breaks=[':'],
+                                        stmt_class=Param)
                 if param is None:
                     break
                 params.append(param)
+                if tok == ':':
+                    break
             if tok != ':':
-                return None, tok
+                return None
 
-            lambd = Lambda(self.module, params, start_pos)
-            ret, tok = self._parse_statement(added_breaks=[','])
+            # since lambda is a Function scope, it needs Scope parents
+            parent = self.get_parent_until(IsScope)
+            lambd = Lambda(self._sub_module, params, start_pos, parent)
+
+            ret, tok = parse_stmt(token_iterator)
             if ret is not None:
                 ret.parent = lambd
                 lambd.returns.append(ret)
-            lambd.parent = self.scope
             lambd.end_pos = self.end_pos
             return lambd
-
 
         def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
             def parse_stmt_or_arr(token_iterator, added_breaks=()):
@@ -980,7 +983,11 @@ class Statement(Simple):
                     continue
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
-            if isinstance(tok, Name) or is_literal:
+            if tok == 'lambda':
+                lambd = parse_lambda(token_iterator)
+                if lambd is not None:
+                    result.append(lambd)
+            elif isinstance(tok, Name) or is_literal:
                 c_type = Call.NAME
                 if is_literal:
                     tok = literal_eval(tok)
@@ -1032,9 +1039,9 @@ class Param(Statement):
                  'parent_function')
 
     def __init__(self, module, set_vars, used_vars, token_list,
-                 start_pos, end_pos):
+                 start_pos, end_pos, parent=None):
         super(Param, self).__init__(module, set_vars, used_vars, token_list,
-                                    start_pos, end_pos)
+                                    start_pos, end_pos, parent)
 
         # this is defined by the parser later on, not at the initialization
         # it is the position in the call (first argument, second...)

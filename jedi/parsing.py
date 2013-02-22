@@ -333,12 +333,12 @@ class Parser(object):
         # will even break in parentheses. This is true for typical flow
         # commands like def and class and the imports, which will never be used
         # in a statement.
-        breaks = ['\n', ':', ')']
+        breaks = set(['\n', ':', ')'])
         always_break = [';', 'import', 'from', 'class', 'def', 'try', 'except',
                         'finally', 'while', 'return', 'yield']
         not_first_break = ['del', 'raise']
         if added_breaks:
-            breaks += added_breaks
+            breaks |= set(added_breaks)
 
         tok_list = []
         while not (tok in always_break
@@ -356,7 +356,9 @@ class Parser(object):
                         tok_list.append(n)
                     continue
                 elif tok in ['lambda', 'for', 'in']:
-                    pass  # don't parse these keywords, parse later in stmt. 
+                    # don't parse these keywords, parse later in stmt.
+                    if tok == 'lambda':
+                        breaks.remove(':')
                 elif token_type == tokenize.NAME:
                     n, token_type, tok = self._parse_dot_name(self.current)
                     # removed last entry, because we add Name
