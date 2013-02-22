@@ -883,6 +883,8 @@ class Statement(Simple):
         def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
             def parse_stmt_or_arr(token_iterator, added_breaks=()):
                 stmt, tok = parse_stmt(token_iterator, added_breaks=added_breaks)
+                if not stmt:
+                    return None, tok
                 if tok == ',':
                     arr, tok = parse_array(token_iterator, Array.TUPLE,
                                            stmt.start_pos, stmt,
@@ -945,6 +947,8 @@ class Statement(Simple):
             #token_list, toks = token_list[:-i], token_list[-i:-1]
 
 
+            if middle is None or in_clause is None:
+                return None, tok
             return ListComprehension(st, middle, in_clause, self), tok
 
         # initializations
