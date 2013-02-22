@@ -499,9 +499,10 @@ class Flow(Scope):
         """
         Get the names for the flow. This includes also a call to the super
         class.
-        :param is_internal_call: defines an option for internal files to crawl\
-        through this class. Normally it will just call its superiors, to\
-        generate the output.
+
+        :param is_internal_call: defines an option for internal files to crawl
+            through this class. Normally it will just call its superiors, to
+            generate the output.
         """
         if is_internal_call:
             n = list(self.set_vars)
@@ -521,7 +522,7 @@ class Flow(Scope):
         return i
 
     def set_next(self, next):
-        """ Set the next element in the flow, those are else, except, etc. """
+        """Set the next element in the flow, those are else, except, etc."""
         if self.next:
             return self.next.set_next(next)
         else:
@@ -756,7 +757,8 @@ class Statement(Simple):
             return isinstance(tok, (str, unicode)) and tok.endswith('=') \
                     and not tok in ['>=', '<=', '==', '!=']
 
-        def parse_array(token_iterator, array_type, start_pos, add_el=None):
+        def parse_array(token_iterator, array_type, start_pos, add_el=None,
+                        added_breaks=()):
             arr = Array(self._sub_module, start_pos, array_type, self)
             if add_el is not None:
                 arr.add_statement(add_el)
@@ -765,8 +767,9 @@ class Statement(Simple):
             break_tok = None
             is_array = None
             while True:
-                stmt, break_tok = parse_array_el(token_iterator, maybe_dict,
-                                             break_on_assignment=bool(add_el))
+                stmt, break_tok = parse_stmt(token_iterator, maybe_dict,
+                                             break_on_assignment=bool(add_el),
+                                             added_breaks=added_breaks)
                 if stmt is None:
                     break
                 else:
@@ -774,7 +777,9 @@ class Statement(Simple):
                         is_array = True
                     is_key = maybe_dict and break_tok == ':'
                     arr.add_statement(stmt, is_key)
-                    if break_tok in closing_brackets or is_assignment(break_tok):
+                    if break_tok in closing_brackets \
+                            or break_tok in added_breaks \
+                            or is_assignment(break_tok):
                         break
             if arr.type == Array.TUPLE and len(arr) == 1 and not is_array:
                 arr.type = Array.NOARRAY
@@ -791,12 +796,14 @@ class Statement(Simple):
                                                     else 0)
             return arr, break_tok
 
-        def parse_array_el(token_iterator, maybe_dict=False,
-                            break_on_assignment=False):
+        def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
+                       break_on_assignment=False, stmt_class=Statement):
             token_list = []
+            used_vars = []
             level = 1
             tok = None
             first = True
+            end_pos = None
             for i, tok_temp in token_iterator:
                 if isinstance(tok_temp, Base):
                     # the token is a Name, which has already been parsed
@@ -808,12 +815,25 @@ class Statement(Simple):
                     if isinstance(tok, ListComprehension):
                         # it's not possible to set it earlier
                         tok.parent = self
+                    if isinstance(tok, Name):
+                        used_vars.append(tok)
                 else:
                     token_type, tok, start_tok_pos = tok_temp
+                    last_end_pos = end_pos
                     end_pos = start_tok_pos[0], start_tok_pos[1] + len(tok)
                     if first:
                         first = False
                         start_pos = start_tok_pos
+
+                    if tok == 'lambda':
+                        lambd = parse_lambda(token_iterator)
+                        if lambd is not None:
+                            token_list.append(lambd)
+                    elif tok == 'for':
+                        list_comp, tok = parse_list_comp(token_iterator,
+                                         token_list, start_pos, last_end_pos)
+                        if list_comp is not None:
+                            token_list = [list_comp]
 
                     if tok in closing_brackets:
                         level -= 1
@@ -821,7 +841,8 @@ class Statement(Simple):
                         level += 1
 
                     if level == 0 and tok in closing_brackets \
-                        or level == 1 and (tok == ','
+                            or tok in added_breaks \
+                            or level == 1 and (tok == ','
                                 or maybe_dict and tok == ':'
                                 or is_assignment(tok) and break_on_assignment):
                         end_pos = end_pos[0], end_pos[1] - 1
@@ -831,10 +852,100 @@ class Statement(Simple):
             if not token_list:
                 return None, tok
 
-            statement = Statement(self._sub_module, [], [],
-                                  token_list, start_pos, end_pos)
-            statement.parent = self.parent
+            statement = Statement(self._sub_module, [], [], token_list,
+                                  start_pos, end_pos, self.parent)
+            statement.used_vars = used_vars
             return statement, tok
+
+        def parse_lambda(token_iterator):
+            params = []
+            start_pos = self.start_pos
+            tok = next(token_iterator)
+            while tok != ':':
+                param, tok = parse_stmt(token_iterator,
+                                    added_breaks=[':', ','], stmt_class=Param)
+                if param is None:
+                    break
+                params.append(param)
+            if tok != ':':
+                return None, tok
+
+            lambd = Lambda(self.module, params, start_pos)
+            ret, tok = self._parse_statement(added_breaks=[','])
+            if ret is not None:
+                ret.parent = lambd
+                lambd.returns.append(ret)
+            lambd.parent = self.scope
+            lambd.end_pos = self.end_pos
+            return lambd
+
+
+        def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
+            def parse_stmt_or_arr(token_iterator, added_breaks=()):
+                stmt, tok = parse_stmt(token_iterator, added_breaks=added_breaks)
+                if tok == ',':
+                    arr, tok = parse_array(token_iterator, Array.TUPLE,
+                                           stmt.start_pos, stmt,
+                                           added_breaks=added_breaks)
+                    used_vars = []
+                    for stmt in arr:
+                        used_vars += stmt.used_vars
+                    start_pos = arr.start_pos[0], arr.start_pos[1] - 1
+                    stmt = Statement(self._sub_module, [], used_vars, [],
+                                     start_pos, arr.end_pos)
+                    arr.parent = stmt
+                    stmt.token_list = stmt._commands = [arr]
+                else:
+                    for v in stmt.used_vars:
+                        v.parent = stmt
+                return stmt, tok
+
+            st = Statement(self._sub_module, [], [], token_list, start_pos,
+                           end_pos)
+
+            middle, tok = parse_stmt_or_arr(token_iterator, added_breaks=['in'])
+            if tok != 'in' or middle is None:
+                #if middle is None:
+                #    level -= 1
+                #else:
+                    #middle.parent = self.scope
+                debug.warning('list comprehension formatting @%s' %
+                                                    start_pos[0])
+                return None, tok
+
+            in_clause, tok = parse_stmt_or_arr(token_iterator)
+            """
+            if tok not in b or in_clause is None:
+                #middle.parent = self.scope
+                if in_clause is None:
+                    self._gen.push_last_back()
+                #else:
+                #    in_clause.parent = self.scope
+                #    in_clause.parent = self.scope
+                debug.warning('list comprehension in_clause %s@%s'
+                                % (repr(tok), start_pos[0]))
+                return None, tok
+            """
+            """
+            other_level = 0
+
+            for i, tok in enumerate(reversed(token_list)):
+                if not isinstance(tok, (Name, ListComprehension)):
+                    tok = tok[1]
+                if tok in closing_brackets:
+                    other_level -= 1
+                elif tok in brackets.keys():
+                    other_level += 1
+                if other_level > 0:
+                    break
+            else:
+                # could not detect brackets -> nested list comp
+                i = 0
+"""
+            #token_list, toks = token_list[:-i], token_list[-i:-1]
+
+
+            return ListComprehension(st, middle, in_clause, self), tok
 
         # initializations
         result = []
@@ -860,7 +971,7 @@ class Statement(Simple):
                     is_chain = False
                     start = i + 1
                     continue
-                elif tok == 'as':  # just ignore as
+                elif tok == 'as':  # just ignore as, because it sets values
                     next(token_iterator, None)
                     continue
 
@@ -893,7 +1004,7 @@ class Statement(Simple):
                     is_chain = True
             elif tok == ',':  # implies a tuple
                 # rewrite `result`, because now the whole thing is a tuple
-                add_el, t = parse_array_el(enumerate(self.token_list[start:i]))
+                add_el, t = parse_stmt(enumerate(self.token_list[start:i]))
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
                                              add_el.start_pos, add_el)
                 result = [arr]

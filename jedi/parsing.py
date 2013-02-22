@@ -297,7 +297,7 @@ class Parser(object):
         return scope
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
-                            stmt_class=pr.Statement, list_comp=False):
+                            stmt_class=pr.Statement):
         """
         Parses statements like:
 
@@ -355,86 +355,16 @@ class Parser(object):
                             set_vars.append(n)
                         tok_list.append(n)
                     continue
-                elif tok == 'lambda':
-                    params = []
-                    start_pos = self.start_pos
-                    while tok != ':':
-                        param, tok = self._parse_statement(
-                                added_breaks=[':', ','], stmt_class=pr.Param)
-                        if param is None:
-                            break
-                        params.append(param)
-                    if tok != ':':
-                        continue
-
-                    lambd = pr.Lambda(self.module, params, start_pos)
-                    ret, tok = self._parse_statement(added_breaks=[','])
-                    if ret is not None:
-                        ret.parent = lambd
-                        lambd.returns.append(ret)
-                    lambd.parent = self.scope
-                    lambd.end_pos = self.end_pos
-                    tok_list[-1] = lambd
-                    continue
+                elif tok in ['lambda', 'for', 'in']:
+                    pass  # don't parse these keywords, parse later in stmt. 
                 elif token_type == tokenize.NAME:
-                    if tok == 'for':
-                        # list comprehensions!
-                        middle, tok = self._parse_statement(
-                                                        added_breaks=['in'])
-                        if tok != 'in' or middle is None:
-                            if middle is None:
-                                level -= 1
-                            else:
-                                middle.parent = self.scope
-                            debug.warning('list comprehension formatting @%s' %
-                                                            self.start_pos[0])
-                            continue
-
-                        b = [')', ']']
-                        in_clause, tok = self._parse_statement(added_breaks=b,
-                                                                list_comp=True)
-                        if tok not in b or in_clause is None:
-                            middle.parent = self.scope
-                            if in_clause is None:
-                                self._gen.push_last_back()
-                            else:
-                                in_clause.parent = self.scope
-                                in_clause.parent = self.scope
-                            debug.warning('list comprehension in_clause %s@%s'
-                                            % (repr(tok), self.start_pos[0]))
-                            continue
-                        other_level = 0
-
-                        for i, tok in enumerate(reversed(tok_list)):
-                            if not isinstance(tok, (pr.Name,
-                                                    pr.ListComprehension)):
-                                tok = tok[1]
-                            if tok in closing_brackets:
-                                other_level -= 1
-                            elif tok in opening_brackets:
-                                other_level += 1
-                            if other_level > 0:
-                                break
-                        else:
-                            # could not detect brackets -> nested list comp
-                            i = 0
-
-                        tok_list, toks = tok_list[:-i], tok_list[-i:-1]
-                        st = pr.Statement(self.module, [], [],
-                                        toks, first_pos, self.end_pos)
-
-                        tok = pr.ListComprehension(st, middle, in_clause,
-                                                   self.scope)
-                        tok_list.append(tok)
-                        continue
-                    else:
-                        n, token_type, tok = self._parse_dot_name(self.current)
-                        # removed last entry, because we add Name
-                        tok_list.pop()
-                        if n:
-                            tok_list.append(n)
-                            used_vars.append(n)
-                        continue
+                    n, token_type, tok = self._parse_dot_name(self.current)
+                    # removed last entry, because we add Name
+                    tok_list.pop()
+                    if n:
+                        tok_list.append(n)
+                        used_vars.append(n)
+                    continue
                 elif tok.endswith('=') and tok not in ['>=', '<=', '==', '!=']:
                     # there has been an assignement -> change vars
                     if level == 0:
