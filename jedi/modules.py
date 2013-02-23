@@ -264,7 +264,7 @@ class ModuleWithCursor(Module):
         offset = max(self.position[0] - length, 0)
         s = '\n'.join(self.source.splitlines()[offset:offset + length])
         self._part_parser = parsing.Parser(s, self.path, self.position,
-                                                        line_offset=offset)
+                                           offset=(offset, 0))
         return self._part_parser
 
 
@@ -311,10 +311,12 @@ def sys_path_with_modifications(module):
 
         sys_path = list(get_sys_path())  # copy
         for p in possible_stmts:
-            try:
-                call = p.get_assignment_calls().get_only_subelement()
-            except AttributeError:
+            if not isinstance(p, pr.Statement):
                 continue
+            commands = p.get_commands()
+            if len(commands) != 1:  # sys.path command is just one thing.
+                continue
+            call = commands[0]
             n = call.name
             if not isinstance(n, pr.Name) or len(n.names) != 3:
                 continue

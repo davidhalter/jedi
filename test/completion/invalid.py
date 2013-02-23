@@ -101,7 +101,7 @@ a[0]
 
 a = [a for a in [1,2]
 def break(): pass
-#? list()
+#? int()
 a[0]
 
 #? []

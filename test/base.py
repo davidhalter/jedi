@@ -32,6 +32,7 @@ sys.argv = sys.argv[:1] + args
 summary = []
 tests_fail = 0
 
+
 def get_test_list():
 # get test list, that should be executed
     test_files = {}
@@ -46,6 +47,7 @@ def get_test_list():
             last = arg
     return test_files
 
+
 class TestBase(unittest.TestCase):
     def get_script(self, src, pos, path=None):
         if pos is None:
@@ -53,9 +55,9 @@ class TestBase(unittest.TestCase):
             pos = len(lines), len(lines[-1])
         return jedi.Script(src, pos[0], pos[1], path)
 
-    def get_def(self, src, pos=None):
+    def definition(self, src, pos=None):
         script = self.get_script(src, pos)
-        return script.get_definition()
+        return script.definition()
 
     def complete(self, src, pos=None, path=None):
         script = self.get_script(src, pos, path)
@@ -65,13 +67,13 @@ class TestBase(unittest.TestCase):
         script = self.get_script(src, pos)
         return script.goto()
 
-    def get_in_function_call(self, src, pos=None):
+    def function_definition(self, src, pos=None):
         script = self.get_script(src, pos)
-        return script.get_in_function_call()
+        return script.function_definition()
+
 
 def print_summary():
     print('\nSummary: (%s fails of %s tests) in %.3fs' % \
                                 (tests_fail, test_sum, time.time() - t_start))
     for s in summary:
         print(s)
-

@@ -256,7 +256,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 else:
                     p = parsing.Parser(code[start:],
                                 self.module_path, self.user_position,
-                                line_offset=line_offset, stop_on_scope=True,
+                                offset=(line_offset, 0), stop_on_scope=True,
                                 top_module=self.module)
 
                     p.hash = h

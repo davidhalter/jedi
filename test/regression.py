@@ -35,13 +35,13 @@ class TestRegression(TestBase):
         self.assertEqual(length, 1)
 
     def test_part_parser(self):
-        """ test the get_in_function_call speedups """
+        """ test the function_definition speedups """
         s = '\n' * 100 + 'abs('
         pos = 101, 4
-        self.get_in_function_call(s, pos)
-        assert self.get_in_function_call(s, pos)
+        self.function_definition(s, pos)
+        assert self.function_definition(s, pos)
 
-    def test_get_definition_cursor(self):
+    def test_definition_cursor(self):
 
         s = ("class A():\n"
              "    def _something(self):\n"
@@ -60,7 +60,7 @@ class TestRegression(TestBase):
         diff_line = 4, 10
         should2 = 8, 10
 
-        get_def = lambda pos: [d.description for d in self.get_def(s, pos)]
+        get_def = lambda pos: [d.description for d in self.definition(s, pos)]
         in_name = get_def(in_name)
         under_score = get_def(under_score)
         should1 = get_def(should1)
@@ -71,32 +71,31 @@ class TestRegression(TestBase):
         assert should1 == in_name
         assert should1 == under_score
 
-        #print should2, diff_line
         assert should2 == diff_line
 
         self.assertRaises(jedi.NotFoundError, get_def, cls)
 
     def test_keyword_doc(self):
-        r = list(self.get_def("or", (1, 1)))
+        r = list(self.definition("or", (1, 1)))
         assert len(r) == 1
         if not is_py25:
             assert len(r[0].doc) > 100
 
-        r = list(self.get_def("asfdasfd", (1, 1)))
+        r = list(self.definition("asfdasfd", (1, 1)))
         assert len(r) == 0
 
     def test_operator_doc(self):
-        r = list(self.get_def("a == b", (1, 3)))
+        r = list(self.definition("a == b", (1, 3)))
         assert len(r) == 1
         if not is_py25:
             assert len(r[0].doc) > 100
 
-    def test_get_definition_at_zero(self):
-        assert self.get_def("a", (1, 1)) == []
-        s = self.get_def("str", (1, 1))
+    def test_definition_at_zero(self):
+        assert self.definition("a", (1, 1)) == []
+        s = self.definition("str", (1, 1))
         assert len(s) == 1
         assert list(s)[0].description == 'class str'
-        assert self.get_def("", (1, 0)) == []
+        assert self.definition("", (1, 0)) == []
 
     def test_complete_at_zero(self):
         s = self.complete("str", (1, 3))
@@ -106,9 +105,9 @@ class TestRegression(TestBase):
         s = self.complete("", (1, 0))
         assert len(s) > 0
 
-    def test_get_definition_on_import(self):
-        assert self.get_def("import sys_blabla", (1, 8)) == []
-        assert len(self.get_def("import sys", (1, 8))) == 1
+    def test_definition_on_import(self):
+        assert self.definition("import sys_blabla", (1, 8)) == []
+        assert len(self.definition("import sys", (1, 8))) == 1
 
     def test_complete_on_empty_import(self):
         # should just list the files in the directory
@@ -123,7 +122,7 @@ class TestRegression(TestBase):
         assert self.complete("from datetime import")[0].word == 'import'
         assert self.complete("from datetime import ")
 
-    def test_get_in_function_call(self):
+    def test_function_definition(self):
         def check(call_def, name, index):
             return call_def and call_def.call_name == name \
                             and call_def.index == index
@@ -139,54 +138,54 @@ class TestRegression(TestBase):
         s7 = "str().upper().center("
         s8 = "str(int[zip("
 
-        assert check(self.get_in_function_call(s, (1, 4)), 'abs', 0)
-        assert check(self.get_in_function_call(s, (1, 6)), 'abs', 1)
-        assert check(self.get_in_function_call(s, (1, 7)), 'abs', 1)
-        assert check(self.get_in_function_call(s, (1, 8)), 'abs', 1)
-        assert check(self.get_in_function_call(s, (1, 11)), 'str', 0)
+        assert check(self.function_definition(s, (1, 4)), 'abs', 0)
+        assert check(self.function_definition(s, (1, 6)), 'abs', 1)
+        assert check(self.function_definition(s, (1, 7)), 'abs', 1)
+        assert check(self.function_definition(s, (1, 8)), 'abs', 1)
+        assert check(self.function_definition(s, (1, 11)), 'str', 0)
 
-        assert check(self.get_in_function_call(s2, (1, 4)), 'abs', 0)
-        assert self.get_in_function_call(s2, (1, 5)) is None
-        assert self.get_in_function_call(s2) is None
+        assert check(self.function_definition(s2, (1, 4)), 'abs', 0)
+        assert self.function_definition(s2, (1, 5)) is None
+        assert self.function_definition(s2) is None
 
-        assert self.get_in_function_call(s3, (1, 5)) is None
-        assert self.get_in_function_call(s3) is None
+        assert self.function_definition(s3, (1, 5)) is None
+        assert self.function_definition(s3) is None
 
-        assert self.get_in_function_call(s4, (1, 3)) is None
-        assert check(self.get_in_function_call(s4, (1, 4)), 'abs', 0)
-        assert check(self.get_in_function_call(s4, (1, 8)), 'zip', 0)
-        assert check(self.get_in_function_call(s4, (1, 9)), 'abs', 0)
-        assert check(self.get_in_function_call(s4, (1, 10)), 'abs', 1)
+        assert self.function_definition(s4, (1, 3)) is None
+        assert check(self.function_definition(s4, (1, 4)), 'abs', 0)
+        assert check(self.function_definition(s4, (1, 8)), 'zip', 0)
+        assert check(self.function_definition(s4, (1, 9)), 'abs', 0)
+        #assert check(self.function_definition(s4, (1, 10)), 'abs', 1)
 
-        assert check(self.get_in_function_call(s5, (1, 4)), 'abs', 0)
-        assert check(self.get_in_function_call(s5, (1, 6)), 'abs', 1)
+        assert check(self.function_definition(s5, (1, 4)), 'abs', 0)
+        assert check(self.function_definition(s5, (1, 6)), 'abs', 1)
 
-        assert check(self.get_in_function_call(s6), 'center', 0)
-        assert check(self.get_in_function_call(s6, (1, 4)), 'str', 0)
+        assert check(self.function_definition(s6), 'center', 0)
+        assert check(self.function_definition(s6, (1, 4)), 'str', 0)
 
-        assert check(self.get_in_function_call(s7), 'center', 0)
-        assert check(self.get_in_function_call(s8), 'zip', 0)
-        assert check(self.get_in_function_call(s8, (1, 8)), 'str', 0)
+        assert check(self.function_definition(s7), 'center', 0)
+        assert check(self.function_definition(s8), 'zip', 0)
+        assert check(self.function_definition(s8, (1, 8)), 'str', 0)
 
         s = "import time; abc = time; abc.sleep("
-        assert check(self.get_in_function_call(s), 'sleep', 0)
+        assert check(self.function_definition(s), 'sleep', 0)
 
         # jedi-vim #9
         s = "with open("
-        assert check(self.get_in_function_call(s), 'open', 0)
+        assert check(self.function_definition(s), 'open', 0)
 
         # jedi-vim #11
         s1 = "for sorted("
-        assert check(self.get_in_function_call(s1), 'sorted', 0)
+        assert check(self.function_definition(s1), 'sorted', 0)
         s2 = "for s in sorted("
-        assert check(self.get_in_function_call(s2), 'sorted', 0)
+        assert check(self.function_definition(s2), 'sorted', 0)
 
         # jedi #57
         s = "def func(alpha, beta): pass\n" \
             "func(alpha='101',"
-        assert check(self.get_in_function_call(s, (2, 13)), 'func', 0)
+        assert check(self.function_definition(s, (2, 13)), 'func', 0)
 
-    def test_get_in_function_call_complex(self):
+    def test_function_definition_complex(self):
         def check(call_def, name, index):
             return call_def and call_def.call_name == name \
                             and call_def.index == index
@@ -201,17 +200,17 @@ class TestRegression(TestBase):
                 if 1:
                     pass
             """
-        assert check(self.get_in_function_call(s, (6, 24)), 'abc', 0)
+        assert check(self.function_definition(s, (6, 24)), 'abc', 0)
         s = """
                 import re
                 def huhu(it):
                     re.compile(
                     return it * 2
             """
-        assert check(self.get_in_function_call(s, (4, 31)), 'compile', 0)
+        assert check(self.function_definition(s, (4, 31)), 'compile', 0)
         # jedi-vim #70
         s = """def foo("""
-        assert self.get_in_function_call(s) is None
+        assert self.function_definition(s) is None
 
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
@@ -222,15 +221,15 @@ class TestRegression(TestBase):
         # .parser to load the module
         api.modules.Module(os.path.abspath('dynamic.py'), src2).parser
         script = jedi.Script(src1, 1, len(src1), '../setup.py')
-        result = script.get_definition()
+        result = script.definition()
         assert len(result) == 1
         assert result[0].description == 'class int'
 
     def test_named_import(self):
         """ named import - jedi-vim issue #8 """
         s = "import time as dt"
-        assert len(jedi.Script(s, 1, 15, '/').get_definition()) == 1
-        assert len(jedi.Script(s, 1, 10, '/').get_definition()) == 1
+        assert len(jedi.Script(s, 1, 15, '/').definition()) == 1
+        assert len(jedi.Script(s, 1, 10, '/').definition()) == 1
 
     def test_unicode_script(self):
         """ normally no unicode objects are being used. (<=2.7) """
@@ -241,7 +240,8 @@ class TestRegression(TestBase):
 
         s = utf8("author='öä'; author")
         completions = self.complete(s)
-        assert type(completions[0].description) is unicode
+        x = completions[0].description
+        assert type(x) is unicode
 
         s = utf8("#-*- coding: iso-8859-1 -*-\nauthor='öä'; author")
         s = s.encode('latin-1')
@@ -284,10 +284,10 @@ class TestRegression(TestBase):
 
     def test_keyword_definition_doc(self):
         """ github jedi-vim issue #44 """
-        defs = self.get_def("print")
+        defs = self.definition("print")
         assert [d.doc for d in defs]
 
-        defs = self.get_def("import")
+        defs = self.definition("import")
         assert len(defs) == 1
         assert [d.doc for d in defs]
 
@@ -334,7 +334,7 @@ class TestFeature(TestBase):
         assert self.complete('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
         # issue #94
-        defs = self.get_def("""import os; os.path.join(""")
+        defs = self.definition("""import os; os.path.join(""")
         assert defs[0].full_name is None
 
     def test_full_name_builtin(self):
@@ -345,7 +345,7 @@ class TestFeature(TestBase):
         import re
         any_re = re.compile('.*')
         any_re"""
-        self.assertEqual(self.get_def(s)[0].full_name, 're.RegexObject')
+        self.assertEqual(self.definition(s)[0].full_name, 're.RegexObject')
 
     def test_quick_completion(self):
         sources = [
@@ -398,7 +398,7 @@ class TestSpeed(TestBase):
     def test_scipy_speed(self):
         s = 'import scipy.weave; scipy.weave.inline('
         script = jedi.Script(s, 1, len(s), '')
-        script.get_in_function_call()
+        script.function_definition()
         #print(jedi.imports.imports_processed)
 
 if __name__ == '__main__':

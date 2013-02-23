@@ -21,7 +21,6 @@ import parsing_representation as pr
 import evaluate_representation as er
 import modules
 import evaluate
-import helpers
 import settings
 import debug
 import imports
@@ -133,7 +132,7 @@ def search_params(param):
 
             for stmt in possible_stmts:
                 if not isinstance(stmt, pr.Import):
-                    calls = _scan_array(stmt.get_assignment_calls(), func_name)
+                    calls = _scan_statement(stmt, func_name)
                     for c in calls:
                         # no execution means that params cannot be set
                         call_path = c.generate_call_path()
@@ -157,11 +156,12 @@ def search_params(param):
 
     # get the param name
     if param.assignment_details:
-        arr = param.assignment_details[0][1]
+        # first assignment details, others would be a syntax error
+        commands, op = param.assignment_details[0]
     else:
-        arr = param.get_assignment_calls()
-    offset = 1 if arr[0][0] in ['*', '**'] else 0
-    param_name = str(arr[0][offset].name)
+        commands = param.get_commands()
+    offset = 1 if commands[0] in ['*', '**'] else 0
+    param_name = str(commands[offset].name)
 
     # add the listener
     listener = ParamListener()
@@ -182,33 +182,49 @@ def search_params(param):
 
 def check_array_additions(array):
     """ Just a mapper function for the internal _check_array_additions """
-    if array._array.type not in ['list', 'set']:
+    if not pr.Array.is_type(array._array, pr.Array.LIST, pr.Array.SET):
         # TODO also check for dict updates
         return []
 
     is_list = array._array.type == 'list'
-    current_module = array._array.parent_stmt.get_parent_until()
+    current_module = array._array.get_parent_until()
     res = _check_array_additions(array, current_module, is_list)
     return res
 
 
-def _scan_array(arr, search_name):
+def _scan_statement(stmt, search_name, assignment_details=False):
     """ Returns the function Call that match search_name in an Array. """
-    result = []
-    for sub in arr:
-        for s in sub:
-            if isinstance(s, pr.Array):
-                result += _scan_array(s, search_name)
-            elif isinstance(s, pr.Call):
-                s_new = s
-                while s_new is not None:
-                    n = s_new.name
-                    if isinstance(n, pr.Name) and search_name in n.names:
-                        result.append(s)
+    def scan_array(arr, search_name):
+        result = []
+        if arr.type == pr.Array.DICT:
+            for key_stmt, value_stmt in arr.items():
+                result += _scan_statement(key_stmt, search_name)
+                result += _scan_statement(value_stmt, search_name)
+        else:
+            for stmt in arr:
+                result += _scan_statement(stmt, search_name)
+        return result
 
-                    if s_new.execution is not None:
-                        result += _scan_array(s_new.execution, search_name)
-                    s_new = s_new.next
+    check = list(stmt.get_commands())
+    if assignment_details:
+        for commands, op in stmt.assignment_details:
+            check +=  commands
+
+    result = []
+    for c in check:
+        if isinstance(c, pr.Array):
+            result += scan_array(c, search_name)
+        elif isinstance(c, pr.Call):
+            s_new = c
+            while s_new is not None:
+                n = s_new.name
+                if isinstance(n, pr.Name) and search_name in n.names:
+                    result.append(c)
+
+                if s_new.execution is not None:
+                    result += scan_array(s_new.execution, search_name)
+                s_new = s_new.next
+
     return result
 
 
@@ -238,7 +254,7 @@ def _check_array_additions(compare_array, module, is_list):
             backtrack_path = iter(call_path[:separate_index])
 
             position = c.start_pos
-            scope = c.parent_stmt.parent
+            scope = c.get_parent_until(pr.IsScope)
 
             found = evaluate.follow_call_path(backtrack_path, scope, position)
             if not compare_array in found:
@@ -248,26 +264,28 @@ def _check_array_additions(compare_array, module, is_list):
             if not params.values:
                 continue  # no params: just ignore it
             if add_name in ['append', 'add']:
-                result += evaluate.follow_call_list(params)
+                for param in params:
+                    result += evaluate.follow_statement(param)
             elif add_name in ['insert']:
                 try:
                     second_param = params[1]
                 except IndexError:
                     continue
                 else:
-                    result += evaluate.follow_call_list([second_param])
+                    result += evaluate.follow_statement(second_param)
             elif add_name in ['extend', 'update']:
-                iterators = evaluate.follow_call_list(params)
+                for param in params:
+                    iterators = evaluate.follow_statement(param)
                 result += evaluate.get_iterator_types(iterators)
         return result
 
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/Execution parent """
         if isinstance(element, er.Array):
-            stmt = element._array.parent_stmt
+            stmt = element._array.parent
         else:
-            # must be instance
-            stmt = element.var_args.parent_stmt
+            # is an Instance with an ArrayInstance inside
+            stmt = element.var_args[0].var_args.parent
         if isinstance(stmt, er.InstanceElement):
             stop_classes = list(stop_classes) + [er.Function]
         return stmt.get_parent_until(stop_classes)
@@ -278,6 +296,7 @@ def _check_array_additions(compare_array, module, is_list):
     search_names = ['append', 'extend', 'insert'] if is_list else \
                                                             ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array, er.Execution)
+
     possible_stmts = []
     res = []
     for n in search_names:
@@ -303,7 +322,7 @@ def _check_array_additions(compare_array, module, is_list):
             if evaluate.follow_statement.push_stmt(stmt):
                 # check recursion
                 continue
-            res += check_calls(_scan_array(stmt.get_assignment_calls(), n), n)
+            res += check_calls(_scan_statement(stmt, n), n)
             evaluate.follow_statement.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
@@ -311,11 +330,11 @@ def _check_array_additions(compare_array, module, is_list):
 
 
 def check_array_instances(instance):
-    """ Used for set() and list() instances. """
+    """Used for set() and list() instances."""
     if not settings.dynamic_arrays_instances:
         return instance.var_args
     ai = ArrayInstance(instance)
-    return helpers.generate_param_array([ai], instance.var_args.parent_stmt)
+    return [ai]
 
 
 class ArrayInstance(pr.Base):
@@ -334,23 +353,24 @@ class ArrayInstance(pr.Base):
         lists/sets are too complicated too handle that.
         """
         items = []
-        for array in evaluate.follow_call_list(self.var_args):
-            if isinstance(array, er.Instance) and len(array.var_args):
-                temp = array.var_args[0][0]
-                if isinstance(temp, ArrayInstance):
-                    # prevent recursions
-                    # TODO compare Modules
-                    if self.var_args.start_pos != temp.var_args.start_pos:
-                        items += temp.iter_content()
-                    else:
-                        debug.warning('ArrayInstance recursion', self.var_args)
-                    continue
-            items += evaluate.get_iterator_types([array])
+        for stmt in self.var_args:
+            for typ in evaluate.follow_statement(stmt):
+                if isinstance(typ, er.Instance) and len(typ.var_args):
+                    array = typ.var_args[0]
+                    if isinstance(array, ArrayInstance):
+                        # prevent recursions
+                        # TODO compare Modules
+                        if self.var_args.start_pos != array.var_args.start_pos:
+                            items += array.iter_content()
+                        else:
+                            debug.warning('ArrayInstance recursion', self.var_args)
+                        continue
+                items += evaluate.get_iterator_types([typ])
 
-        if self.var_args.parent_stmt is None:
+        if self.var_args.parent is None:
             return []  # generated var_args should not be checked for arrays
 
-        module = self.var_args.parent_stmt.get_parent_until()
+        module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self.instance, module, is_list)
         return items
@@ -377,13 +397,13 @@ def related_names(definitions, search_name, mods):
                 follow.append(call_path[:i + 1])
 
         for f in follow:
-            follow_res, search = evaluate.goto(call.parent_stmt, f)
+            follow_res, search = evaluate.goto(call.parent, f)
             follow_res = related_name_add_import_modules(follow_res, search)
 
             compare_follow_res = compare_array(follow_res)
             # compare to see if they match
             if any(r in compare_definitions for r in compare_follow_res):
-                scope = call.parent_stmt
+                scope = call.parent
                 result.append(api_classes.RelatedName(search, scope))
 
         return result
@@ -416,10 +436,8 @@ def related_names(definitions, search_name, mods):
                     if set(f) & set(definitions):
                         names.append(api_classes.RelatedName(name_part, stmt))
             else:
-                calls = _scan_array(stmt.get_assignment_calls(), search_name)
-                for d in stmt.assignment_details:
-                    calls += _scan_array(d[1], search_name)
-                for call in calls:
+                for call in _scan_statement(stmt, search_name,
+                                            assignment_details=True):
                     names += check_call(call)
     return names
 
@@ -455,39 +473,39 @@ def check_flow_information(flow, search_name, pos):
                 break
 
     if isinstance(flow, pr.Flow) and not result:
-        if flow.command in ['if', 'while'] and len(flow.inits) == 1:
-            result = check_statement_information(flow.inits[0], search_name)
+        if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
+            result = check_statement_information(flow.inputs[0], search_name)
     return result
 
 
 def check_statement_information(stmt, search_name):
     try:
-        ass = stmt.get_assignment_calls()
-        try:
-            call = ass.get_only_subelement()
-        except AttributeError:
-            assert False
+        commands = stmt.get_commands()
+        # this might be removed if we analyze and, etc
+        assert len(commands) == 1
+        call = commands[0]
         assert type(call) == pr.Call and str(call.name) == 'isinstance'
         assert bool(call.execution)
 
         # isinstance check
         isinst = call.execution.values
         assert len(isinst) == 2  # has two params
-        assert len(isinst[0]) == 1
-        assert len(isinst[1]) == 1
-        assert isinstance(isinst[0][0], pr.Call)
+        obj, classes = [stmt.get_commands() for stmt in isinst]
+        assert len(obj) == 1
+        assert len(classes) == 1
+        assert isinstance(obj[0], pr.Call)
         # names fit?
-        assert str(isinst[0][0].name) == search_name
-        classes_call = isinst[1][0]  # class_or_type_or_tuple
-        assert isinstance(classes_call, pr.Call)
-        result = []
-        for c in evaluate.follow_call(classes_call):
-            if isinstance(c, er.Array):
-                result += c.get_index_types()
-            else:
-                result.append(c)
-        for i, c in enumerate(result):
-            result[i] = er.Instance(c)
-        return result
+        assert str(obj[0].name) == search_name
+        assert isinstance(classes[0], pr.Call)  # can be type or tuple
     except AssertionError:
         return []
+
+    result = []
+    for c in evaluate.follow_call(classes[0]):
+        if isinstance(c, er.Array):
+            result += c.get_index_types()
+        else:
+            result.append(c)
+    for i, c in enumerate(result):
+        result[i] = er.Instance(c)
+    return result

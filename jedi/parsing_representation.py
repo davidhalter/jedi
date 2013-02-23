@@ -8,16 +8,12 @@ inherited. It's used by ``Function``, ``Class``, ``Flow``, etc. A ``Scope`` may
 have ``subscopes``, ``imports`` and ``statements``. The entire parser is based
 on scopes, because they also stand for indentation.
 
-One strange thing about the parser is that ``Array`` is two dimensional.  This
-has been caused by the fact that each array element can be defined by
-operations: ``[1, 2+33]``. So I chose to use a second dimension for ``2+33``,
-where each element would lie in the array like this: ``[2, '+', 33]``. In the
-future it might be useful to use Statements there, too (remove those crappy two
-dimensional arrays). This is also how ``Param`` works. Every single ``Param``
-is a ``Statement``.
+One special thing:
 
-
-.. todo:: remove docstr params from Scope.__init__()
+``Array`` values are statements. But if you think about it, this makes sense.
+``[1, 2+33]`` for example would be an Array with two ``Statement`` inside. This
+is the easiest way to write a parser. The same behaviour applies to ``Param``,
+which is being used in a function definition.
 """
 
 import os
@@ -25,7 +21,7 @@ import re
 import tokenize
 
 from _compatibility import next, literal_eval, cleandoc, Python3Method, \
-                            property, encoding
+                            encoding, property, unicode, is_py3k
 import common
 import debug
 
@@ -50,15 +46,37 @@ class Simple(Base):
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
     """
-    __slots__ = ('parent', 'module', '_start_pos', 'use_as_parent', '_end_pos')
+    __slots__ = ('parent', '_sub_module', '_start_pos', 'use_as_parent',
+                 '_end_pos')
 
     def __init__(self, module, start_pos, end_pos=(None, None)):
+        self._sub_module = module
         self._start_pos = start_pos
         self._end_pos = end_pos
+
         self.parent = None
         # use this attribute if parent should be something else than self.
         self.use_as_parent = self
-        self.module = module
+
+    @property
+    def start_pos(self):
+        return self._sub_module.line_offset + self._start_pos[0], \
+               self._start_pos[1]
+
+    @start_pos.setter
+    def start_pos(self, value):
+        self._start_pos = value
+
+    @property
+    def end_pos(self):
+        if None in self._end_pos:
+            return self._end_pos
+        return self._sub_module.line_offset + self._end_pos[0], \
+               self._end_pos[1]
+
+    @end_pos.setter
+    def end_pos(self, value):
+        self._end_pos = value
 
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
@@ -73,30 +91,17 @@ class Simple(Base):
             scope = scope.parent
         return scope
 
-    @property
-    def start_pos(self):
-        return self.module.line_offset + self._start_pos[0], self._start_pos[1]
-
-    @start_pos.setter
-    def start_pos(self, value):
-        self._start_pos = value
-
-    @property
-    def end_pos(self):
-        if None in self._end_pos:
-            return self._end_pos
-        return self.module.line_offset + self._end_pos[0], self._end_pos[1]
-
-    @end_pos.setter
-    def end_pos(self, value):
-        self._end_pos = value
-
     def __repr__(self):
         code = self.get_code().replace('\n', ' ').encode(encoding, 'replace')
-        return '<%s: %s@%s>' % (type(self).__name__, code, self.start_pos[0])
+        return "<%s: %s@%s,%s>" % \
+            (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
 
 
-class Scope(Simple):
+class IsScope(Base):
+    pass
+
+
+class Scope(Simple, IsScope):
     """
     Super class for the parser tree, which represents the state of a python
     text file.
@@ -106,8 +111,6 @@ class Scope(Simple):
 
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
-    :param docstr: The docstring for the current Scope.
-    :type docstr: str
     """
     def __init__(self, module, start_pos):
         super(Scope, self).__init__(module, start_pos)
@@ -248,7 +251,7 @@ class Scope(Simple):
                                     self.start_pos[0], self.end_pos[0])
 
 
-class Module(object):
+class Module(IsScope):
     """ For isinstance checks. fast_parser.Module also inherits from this. """
     pass
 
@@ -333,7 +336,7 @@ class Class(Scope):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
         string += 'class %s' % (self.name)
         if len(self.supers) > 0:
-            sup = ','.join(stmt.code for stmt in self.supers)
+            sup = ','.join(stmt.get_code() for stmt in self.supers)
             string += '(%s)' % sup
         string += ':\n'
         string += super(Class, self).get_code(True, indention)
@@ -352,8 +355,6 @@ class Function(Scope):
     :type params: list
     :param start_pos: The start position (line, column) the Function.
     :type start_pos: tuple(int, int)
-    :param docstr: The docstring for the current Scope.
-    :type docstr: str
     """
     def __init__(self, module, name, params, start_pos, annotation):
         super(Function, self).__init__(module, start_pos)
@@ -375,7 +376,7 @@ class Function(Scope):
 
     def get_code(self, first_indent=False, indention='    '):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
-        params = ','.join([stmt.code for stmt in self.params])
+        params = ','.join([stmt.get_code() for stmt in self.params])
         string += "def %s(%s):\n" % (self.name, params)
         string += super(Function, self).get_code(True, indention)
         if self.is_empty():
@@ -423,12 +424,13 @@ class Function(Scope):
 
 
 class Lambda(Function):
-    def __init__(self, module, params, start_pos):
+    def __init__(self, module, params, start_pos, parent):
         super(Lambda, self).__init__(module, None, params, start_pos, None)
+        self.parent = parent
 
     def get_code(self, first_indent=False, indention='    '):
-        params = ','.join([stmt.code for stmt in self.params])
-        string = "lambda %s:" % params
+        params = ','.join([stmt.get_code() for stmt in self.params])
+        string = "lambda %s: " % params
         return string + super(Function, self).get_code(indention=indention)
 
     def __repr__(self):
@@ -452,21 +454,21 @@ class Flow(Scope):
 
     :param command: The flow command, if, while, else, etc.
     :type command: str
-    :param inits: The initializations of a flow -> while 'statement'.
-    :type inits: list(Statement)
+    :param inputs: The initializations of a flow -> while 'statement'.
+    :type inputs: list(Statement)
     :param start_pos: Position (line, column) of the Flow statement.
     :type start_pos: tuple(int, int)
     :param set_vars: Local variables used in the for loop (only there).
     :type set_vars: list
     """
-    def __init__(self, module, command, inits, start_pos, set_vars=None):
+    def __init__(self, module, command, inputs, start_pos, set_vars=None):
         self.next = None
         self.command = command
         super(Flow, self).__init__(module, start_pos)
         self._parent = None
         # These have to be statements, because of with, which takes multiple.
-        self.inits = inits
-        for s in inits:
+        self.inputs = inputs
+        for s in inputs:
             s.parent = self.use_as_parent
         if set_vars is None:
             self.set_vars = []
@@ -488,7 +490,7 @@ class Flow(Scope):
 
     def get_code(self, first_indent=False, indention='    '):
         stmts = []
-        for s in self.inits:
+        for s in self.inputs:
             stmts.append(s.get_code(new_line=False))
         stmt = ', '.join(stmts)
         string = "%s %s:\n" % (self.command, stmt)
@@ -501,13 +503,14 @@ class Flow(Scope):
         """
         Get the names for the flow. This includes also a call to the super
         class.
-        :param is_internal_call: defines an option for internal files to crawl\
-        through this class. Normally it will just call its superiors, to\
-        generate the output.
+
+        :param is_internal_call: defines an option for internal files to crawl
+            through this class. Normally it will just call its superiors, to
+            generate the output.
         """
         if is_internal_call:
             n = list(self.set_vars)
-            for s in self.inits:
+            for s in self.inputs:
                 n += s.set_vars
             if self.next:
                 n += self.next.get_set_vars(is_internal_call)
@@ -523,7 +526,7 @@ class Flow(Scope):
         return i
 
     def set_next(self, next):
-        """ Set the next element in the flow, those are else, except, etc. """
+        """Set the next element in the flow, those are else, except, etc."""
         if self.next:
             return self.next.set_next(next)
         else:
@@ -536,16 +539,18 @@ class ForFlow(Flow):
     """
     Used for the for loop, because there are two statement parts.
     """
-    def __init__(self, module, inits, start_pos, set_stmt, is_list_comp=False):
-        super(ForFlow, self).__init__(module, 'for', inits, start_pos,
+    def __init__(self, module, inputs, start_pos, set_stmt,
+                 is_list_comp=False):
+        super(ForFlow, self).__init__(module, 'for', inputs, start_pos,
                                         set_stmt.used_vars)
         self.set_stmt = set_stmt
+        set_stmt.parent = self.use_as_parent
         self.is_list_comp = is_list_comp
 
     def get_code(self, first_indent=False, indention=" " * 4):
         vars = ",".join(x.get_code() for x in self.set_vars)
         stmts = []
-        for s in self.inits:
+        for s in self.inputs:
             stmts.append(s.get_code(new_line=False))
         stmt = ', '.join(stmts)
         s = "for %s in %s:\n" % (vars, stmt)
@@ -616,8 +621,8 @@ class Import(Simple):
             return [self.alias]
         if len(self.namespace) > 1:
             o = self.namespace
-            n = Name(self.module, [(o.names[0], o.start_pos)], o.start_pos,
-                                                o.end_pos, parent=o.parent)
+            n = Name(self._sub_module, [(o.names[0], o.start_pos)],
+                     o.start_pos, o.end_pos, parent=o.parent)
             return [n]
         else:
             return [self.namespace]
@@ -642,13 +647,8 @@ class Statement(Simple):
     stores pretty much all the Python code, except functions, classes, imports,
     and flow functions like if, for, etc.
 
-    :param code: The full code of a statement. This is import, if one wants \
-    to execute the code at some level.
-    :param code: str
     :param set_vars: The variables which are defined by the statement.
     :param set_vars: str
-    :param used_funcs: The functions which are used by the statement.
-    :param used_funcs: str
     :param used_vars: The variables which are used by the statement.
     :param used_vars: str
     :param token_list: Token list which is also peppered with Name.
@@ -656,26 +656,23 @@ class Statement(Simple):
     :param start_pos: Position (line, column) of the Statement.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('used_funcs', 'code', 'token_list', 'used_vars',
-                 'set_vars', '_assignment_calls', '_assignment_details',
-                 '_assignment_calls_calculated')
+    __slots__ = ('token_list', 'used_vars',
+                 'set_vars', '_commands', '_assignment_details')
 
-    def __init__(self, module, code, set_vars, used_funcs, used_vars,
-                                            token_list, start_pos, end_pos):
+    def __init__(self, module, set_vars, used_vars, token_list,
+                 start_pos, end_pos, parent=None):
         super(Statement, self).__init__(module, start_pos, end_pos)
-        self.code = code
-        self.used_funcs = used_funcs
         self.used_vars = used_vars
         self.token_list = token_list
-        for s in set_vars + used_funcs + used_vars:
+        for s in set_vars + used_vars:
             s.parent = self.use_as_parent
         self.set_vars = self._remove_executions_from_set_vars(set_vars)
+        self.parent = parent
 
         # cache
-        self._assignment_calls = None
-        self._assignment_details = None
+        self._commands = None
+        self._assignment_details = []
         # this is important for other scripts
-        self._assignment_calls_calculated = False
 
     def _remove_executions_from_set_vars(self, set_vars):
         """
@@ -709,29 +706,50 @@ class Statement(Simple):
         return list(result)
 
     def get_code(self, new_line=True):
+        def assemble(command_list, assignment=None):
+            pieces = [c.get_code() if isinstance(c, Simple) else unicode(c)
+                        for c in command_list]
+            if assignment is None:
+                return ''.join(pieces)
+            return '%s %s ' % (''.join(pieces), assignment)
+
+        code = ''.join(assemble(*a) for a in self._assignment_details)
+        code += assemble(self.get_commands())
+
         if new_line:
-            return self.code + '\n'
+            return code + '\n'
         else:
-            return self.code
+            return code
 
     def get_set_vars(self):
         """ Get the names for the statement. """
         return list(self.set_vars)
 
-    @property
-    def assignment_details(self):
-        if self._assignment_details is None:
-            # normally, this calls sets this variable
-            self.get_assignment_calls()
-        # it may not have been set by get_assignment_calls -> just use an empty
-        # array
-        return self._assignment_details or []
-
     def is_global(self):
         # first keyword of the first token is global -> must be a global
         return str(self.token_list[0]) == "global"
 
-    def get_assignment_calls(self):
+    def get_command(self, index):
+        commands = self.get_commands()
+        try:
+            return commands[index]
+        except IndexError:
+            return None
+
+    @property
+    def assignment_details(self):
+        # parse statement which creates the assignment details.
+        self.get_commands()
+        return self._assignment_details
+
+    def get_commands(self):
+        if self._commands is None:
+            self._commands = ['time neeeeed']  # avoid recursions
+            result = self._parse_statement()
+            self._commands = result
+        return self._commands
+
+    def _parse_statement(self):
         """
         This is not done in the main parser, because it might be slow and
         most of the statements won't need this data anyway. This is something
@@ -740,58 +758,207 @@ class Statement(Simple):
         This is not really nice written, sorry for that. If you plan to replace
         it and make it nicer, that would be cool :-)
         """
-        if self._assignment_calls_calculated:
-            return self._assignment_calls
-        self._assignment_details = []
-        top = result = Array(self.start_pos, Array.NOARRAY, self)
-        level = 0
-        is_chain = False
-        close_brackets = False
+        def is_assignment(tok):
+            return isinstance(tok, (str, unicode)) and tok.endswith('=') \
+                    and not tok in ['>=', '<=', '==', '!=']
 
-        tok_iter = enumerate(self.token_list)
-        for i, tok_temp in tok_iter:
-            #print 'tok', tok_temp, result
-            if isinstance(tok_temp, ListComprehension):
-                result.add_to_current_field(tok_temp)
-                continue
-            try:
-                token_type, tok, start_pos = tok_temp
-            except TypeError:
+        def parse_array(token_iterator, array_type, start_pos, add_el=None,
+                        added_breaks=()):
+            arr = Array(self._sub_module, start_pos, array_type, self)
+            if add_el is not None:
+                arr.add_statement(add_el)
+
+            maybe_dict = array_type == Array.SET
+            break_tok = None
+            is_array = None
+            while True:
+                stmt, break_tok = parse_stmt(token_iterator, maybe_dict,
+                                             break_on_assignment=bool(add_el),
+                                             added_breaks=added_breaks)
+                if stmt is None:
+                    break
+                else:
+                    if break_tok == ',':
+                        is_array = True
+                    is_key = maybe_dict and break_tok == ':'
+                    arr.add_statement(stmt, is_key)
+                    if break_tok in closing_brackets \
+                            or break_tok in added_breaks \
+                            or is_assignment(break_tok):
+                        break
+            if arr.type == Array.TUPLE and len(arr) == 1 and not is_array:
+                arr.type = Array.NOARRAY
+            if not arr.values and maybe_dict:
+                # this is a really special case - empty brackets {} are
+                # always dictionaries and not sets.
+                arr.type = Array.DICT
+
+            k, v = arr.keys, arr.values
+            latest = (v[-1] if v else k[-1] if k else None)
+            end_pos = latest.end_pos if latest is not None \
+                                     else (start_pos[0], start_pos[1] + 1)
+            arr.end_pos = end_pos[0], end_pos[1] + (len(break_tok) if break_tok
+                                                    else 0)
+            return arr, break_tok
+
+        def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
+                       break_on_assignment=False, stmt_class=Statement):
+            token_list = []
+            used_vars = []
+            level = 1
+            tok = None
+            first = True
+            end_pos = None
+            for i, tok_temp in token_iterator:
+                if isinstance(tok_temp, Base):
+                    # the token is a Name, which has already been parsed
+                    tok = tok_temp
+                    if first:
+                        start_pos = tok.start_pos
+                        first = False
+                    end_pos = tok.end_pos
+                    if isinstance(tok, ListComprehension):
+                        # it's not possible to set it earlier
+                        tok.parent = self
+                    if isinstance(tok, Name):
+                        used_vars.append(tok)
+                else:
+                    token_type, tok, start_tok_pos = tok_temp
+                    last_end_pos = end_pos
+                    end_pos = start_tok_pos[0], start_tok_pos[1] + len(tok)
+                    if first:
+                        first = False
+                        start_pos = start_tok_pos
+
+                    if tok == 'lambda':
+                        lambd, tok = parse_lambda(token_iterator)
+                        if lambd is not None:
+                            token_list.append(lambd)
+                    elif tok == 'for':
+                        list_comp, tok = parse_list_comp(token_iterator,
+                                         token_list, start_pos, last_end_pos)
+                        if list_comp is not None:
+                            token_list = [list_comp]
+
+                    if tok in closing_brackets:
+                        level -= 1
+                    elif tok in brackets.keys():
+                        level += 1
+
+                    if level == 0 and tok in closing_brackets \
+                            or tok in added_breaks \
+                            or level == 1 and (tok == ','
+                                or maybe_dict and tok == ':'
+                                or is_assignment(tok) and break_on_assignment):
+                        end_pos = end_pos[0], end_pos[1] - 1
+                        break
+                token_list.append(tok_temp)
+
+            if not token_list:
+                return None, tok
+
+            statement = stmt_class(self._sub_module, [], [], token_list,
+                                  start_pos, end_pos, self.parent)
+            statement.used_vars = used_vars
+            return statement, tok
+
+        def parse_lambda(token_iterator):
+            params = []
+            start_pos = self.start_pos
+            while True:
+                param, tok = parse_stmt(token_iterator, added_breaks=[':'],
+                                        stmt_class=Param)
+                if param is None:
+                    break
+                params.append(param)
+                if tok == ':':
+                    break
+            if tok != ':':
+                return None, tok
+
+            # since lambda is a Function scope, it needs Scope parents
+            parent = self.get_parent_until(IsScope)
+            lambd = Lambda(self._sub_module, params, start_pos, parent)
+
+            ret, tok = parse_stmt(token_iterator)
+            if ret is not None:
+                ret.parent = lambd
+                lambd.returns.append(ret)
+            lambd.end_pos = self.end_pos
+            return lambd, tok
+
+        def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
+            def parse_stmt_or_arr(token_iterator, added_breaks=()):
+                stmt, tok = parse_stmt(token_iterator,
+                                       added_breaks=added_breaks)
+                if not stmt:
+                    return None, tok
+                if tok == ',':
+                    arr, tok = parse_array(token_iterator, Array.TUPLE,
+                                           stmt.start_pos, stmt,
+                                           added_breaks=added_breaks)
+                    used_vars = []
+                    for stmt in arr:
+                        used_vars += stmt.used_vars
+                    start_pos = arr.start_pos[0], arr.start_pos[1] - 1
+                    stmt = Statement(self._sub_module, [], used_vars, [],
+                                     start_pos, arr.end_pos)
+                    arr.parent = stmt
+                    stmt.token_list = stmt._commands = [arr]
+                else:
+                    for v in stmt.used_vars:
+                        v.parent = stmt
+                return stmt, tok
+
+            st = Statement(self._sub_module, [], [], token_list, start_pos,
+                           end_pos)
+
+            middle, tok = parse_stmt_or_arr(token_iterator,
+                                            added_breaks=['in'])
+            if tok != 'in' or middle is None:
+                debug.warning('list comprehension middle @%s' % str(start_pos))
+                return None, tok
+
+            in_clause, tok = parse_stmt_or_arr(token_iterator)
+            if in_clause is None:
+                debug.warning('list comprehension in @%s' % str(start_pos))
+                return None, tok
+
+            return ListComprehension(st, middle, in_clause, self), tok
+
+        # initializations
+        result = []
+        is_chain = False
+        brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
+        closing_brackets = ')', '}', ']'
+
+        token_iterator = common.PushBackIterator(enumerate(self.token_list))
+        for i, tok_temp in token_iterator:
+            if isinstance(tok_temp, Base):
                 # the token is a Name, which has already been parsed
                 tok = tok_temp
                 token_type = None
                 start_pos = tok.start_pos
-            except ValueError:
-                debug.warning("unkown value, shouldn't happen",
-                                tok_temp, type(tok_temp))
-                raise
             else:
-                if level == 0 and tok.endswith('=') \
-                                and not tok in ['>=', '<=', '==', '!=']:
+                token_type, tok, start_pos = tok_temp
+                if is_assignment(tok):
                     # This means, there is an assignment here.
-
                     # Add assignments, which can be more than one
-                    self._assignment_details.append((tok, top))
-                    # All these calls wouldn't be important if nonlocal would
-                    # exist. -> Initialize the first items again.
-                    end_pos = start_pos[0], start_pos[1] + len(tok)
-                    top = result = Array(end_pos, Array.NOARRAY, self)
-                    level = 0
-                    close_brackets = False
+                    self._assignment_details.append((result, tok))
+                    result = []
                     is_chain = False
                     continue
-                elif tok == 'as':
-                    next(tok_iter, None)
+                elif tok == 'as':  # just ignore as, because it sets values
+                    next(token_iterator, None)
                     continue
 
-            # here starts the statement creation madness!
-            brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
-            is_call = lambda: type(result) == Call
-            is_call_or_close = lambda: is_call() or close_brackets
+            if tok == 'lambda':
+                lambd, tok = parse_lambda(token_iterator)
+                if lambd is not None:
+                    result.append(lambd)
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:
-                _tok = tok
                 c_type = Call.NAME
                 if is_literal:
                     tok = literal_eval(tok)
@@ -800,87 +967,53 @@ class Statement(Simple):
                     elif token_type == tokenize.NUMBER:
                         c_type = Call.NUMBER
 
+                call = Call(self._sub_module, tok, c_type, start_pos, self)
                 if is_chain:
-                    call = Call(tok, c_type, start_pos, parent=result)
-                    result = result.set_next_chain_call(call)
-                    is_chain = False
-                    close_brackets = False
+                    result[-1].set_next(call)
                 else:
-                    if close_brackets:
-                        result = result.parent
-                        close_brackets = False
-                    if type(result) == Call:
-                        result = result.parent
-                    call = Call(tok, c_type, start_pos, parent=result)
-                    result.add_to_current_field(call)
-                    result = call
-                tok = _tok
-            elif tok in brackets.keys():  # brackets
-                level += 1
-                if is_call_or_close():
-                    result = Array(start_pos, brackets[tok], parent=result)
-                    result = result.parent.add_execution(result)
-                    close_brackets = False
+                    result.append(call)
+                is_chain = False
+            elif tok in brackets.keys():
+                arr, is_ass = parse_array(token_iterator, brackets[tok],
+                                             start_pos)
+                if result and isinstance(result[-1], Call):
+                    result[-1].set_execution(arr)
                 else:
-                    result = Array(start_pos, brackets[tok], parent=result)
-                    result.parent.add_to_current_field(result)
-            elif tok == ':':
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                if result.type == Array.LIST:  # [:] lookups
-                    result.add_to_current_field(tok)
-                else:
-                    result.add_dictionary_key()
+                    arr.parent = self
+                    result.append(arr)
             elif tok == '.':
-                if close_brackets and result.parent != top:
-                    # only get out of the array, if it is a array execution
-                    result = result.parent
-                    close_brackets = False
-                is_chain = True
-            elif tok == ',':
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                result.add_field((start_pos[0], start_pos[1] + 1))
-                # important - it cannot be empty anymore
-                if result.type == Array.NOARRAY:
-                    result.type = Array.TUPLE
-            elif tok in [')', '}', ']']:
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                if tok == '}' and not len(result):
-                    # this is a really special case - empty brackets {} are
-                    # always dictionaries and not sets.
-                    result.type = Array.DICT
-                level -= 1
-                result.end_pos = start_pos[0], start_pos[1] + 1
-                close_brackets = True
-            else:
-                while is_call_or_close():
-                    result = result.parent
-                    close_brackets = False
-                if tok != '\n':
-                    result.add_to_current_field(tok)
+                if result and isinstance(result[-1], Call):
+                    is_chain = True
+            elif tok == ',':  # implies a tuple
+                # commands is now an array not a statement anymore
+                t = result[0]
+                start_pos = t[2] if isinstance(t, tuple) else t.start_pos
 
-        if level != 0:
-            debug.warning("Brackets don't match: %s."
-                          "This is not normal behaviour." % level)
-
-        if self.token_list:
-            while result is not None:
+                # get the correct index
+                i, tok = next(token_iterator, (len(self.token_list), None))
+                if tok is not None:
+                    token_iterator.push_back((i, tok))
+                t = self.token_list[i - 1]
                 try:
-                    result.end_pos = start_pos[0], start_pos[1] + len(tok)
-                except TypeError:
-                    result.end_pos = tok.end_pos
-                result = result.parent
-        else:
-            result.end_pos = self.end_pos
+                    end_pos = t.end_pos
+                except AttributeError:
+                    end_pos = (t[2][0], t[2][1] + len(t[1])) \
+                                if isinstance(t, tuple) else t.start_pos
 
-        self._assignment_calls_calculated = True
-        self._assignment_calls = top
-        return top
+                stmt = Statement(self._sub_module, [], [], result,
+                                       start_pos, end_pos, self.parent)
+                stmt._commands = result
+                arr, break_tok = parse_array(token_iterator, Array.TUPLE,
+                                             stmt.start_pos, stmt)
+                result = [arr]
+                if is_assignment(break_tok):
+                    self._assignment_details.append((result, break_tok))
+                    result = []
+                    is_chain = False
+            else:
+                if tok != '\n':
+                    result.append(tok)
+        return result
 
 
 class Param(Statement):
@@ -891,10 +1024,10 @@ class Param(Statement):
     __slots__ = ('position_nr', 'is_generated', 'annotation_stmt',
                  'parent_function')
 
-    def __init__(self, module, code, set_vars, used_funcs, used_vars,
-                 token_list, start_pos, end_pos):
-        super(Param, self).__init__(module, code, set_vars, used_funcs,
-                                used_vars, token_list, start_pos, end_pos)
+    def __init__(self, module, set_vars, used_vars, token_list,
+                 start_pos, end_pos, parent=None):
+        super(Param, self).__init__(module, set_vars, used_vars, token_list,
+                                    start_pos, end_pos, parent)
 
         # this is defined by the parser later on, not at the initialization
         # it is the position in the call (first argument, second...)
@@ -915,7 +1048,7 @@ class Param(Statement):
         return n[0]
 
 
-class Call(Base):
+class Call(Simple):
     """
     `Call` contains a call, e.g. `foo.bar` and owns the executions of those
     calls, which are `Array`s.
@@ -924,63 +1057,40 @@ class Call(Base):
     NUMBER = 2
     STRING = 3
 
-    def __init__(self, name, type, start_pos, parent_stmt=None, parent=None):
+    def __init__(self, module, name, type, start_pos, parent=None):
+        super(Call, self).__init__(module, start_pos)
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
         self.parent = parent
         self.type = type
-        self.start_pos = start_pos
 
         self.next = None
         self.execution = None
-        self._parent_stmt = parent_stmt
 
-    @property
-    def start_pos(self):
-        offset = self.parent_stmt.module.line_offset
-        return offset + self._start_pos[0], self._start_pos[1]
-
-    @start_pos.setter
-    def start_pos(self, value):
-        self._start_pos = value
-
-    @property
-    def parent_stmt(self):
-        if self._parent_stmt is not None:
-            return self._parent_stmt
-        elif self.parent:
-            return self.parent.parent_stmt
-        else:
-            return None
-
-    @parent_stmt.setter
-    def parent_stmt(self, value):
-        self._parent_stmt = value
-
-    def set_next_chain_call(self, call):
+    def set_next(self, call):
         """ Adds another part of the statement"""
-        self.next = call
-        call.parent = self.parent
-        return call
+        call.parent = self
+        if self.next is not None:
+            self.next.set_next(call)
+        else:
+            self.next = call
 
-    def add_execution(self, call):
+    def set_execution(self, call):
         """
         An execution is nothing else than brackets, with params in them, which
         shows access on the internals of this name.
         """
-        self.execution = call
-        # there might be multiple executions, like a()[0], in that case, they
-        # have the same parent. Otherwise it's not possible to parse proper.
-        if self.parent.execution == self:
-            call.parent = self.parent
+        call.parent = self
+        if self.next is not None:
+            self.next.set_execution(call)
+        elif self.execution is not None:
+            self.execution.set_execution(call)
         else:
-            call.parent = self
-        return call
+            self.execution = call
 
     def generate_call_path(self):
         """ Helps to get the order in which statements are executed. """
-        # TODO include previous nodes? As an option?
         try:
             for name_part in self.name.names:
                 yield name_part
@@ -997,11 +1107,17 @@ class Call(Base):
         if self.type == Call.NAME:
             s = self.name.get_code()
         else:
-            s = repr(self.name)
+            if not is_py3k and isinstance(self.name, str)\
+                        and "'" not in self.name:
+                # This is a very rough spot, because of repr not supporting
+                # unicode signs, see `test_unicode_script`.
+                s = "'%s'" % unicode(self.name, 'UTF-8')
+            else:
+                s = '' if self.name is None else repr(self.name)
         if self.execution is not None:
-            s += '(%s)' % self.execution.get_code()
+            s += self.execution.get_code()
         if self.next is not None:
-            s += self.next.get_code()
+            s += '.' + self.next.get_code()
         return s
 
     def __repr__(self):
@@ -1016,78 +1132,30 @@ class Array(Call):
     http://docs.python.org/py3k/reference/grammar.html
     Array saves sub-arrays as well as normal operators and calls to methods.
 
-    :param array_type: The type of an array, which can be one of the constants\
-    below.
+    :param array_type: The type of an array, which can be one of the constants
+        below.
     :type array_type: int
     """
-    NOARRAY = None
+    NOARRAY = None  # just brackets, like `1 * (3 + 2)`
     TUPLE = 'tuple'
     LIST = 'list'
     DICT = 'dict'
     SET = 'set'
 
-    def __init__(self,  start_pos, arr_type=NOARRAY, parent_stmt=None,
-                                                   parent=None, values=None):
-        super(Array, self).__init__(None, arr_type, start_pos, parent_stmt,
-                                                                    parent)
-
-        self.values = values if values else []
-        self.arr_el_pos = []
+    def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None):
+        super(Array, self).__init__(module, None, arr_type, start_pos, parent)
+        self.values = []
         self.keys = []
-        self._end_pos = None, None
+        self.end_pos = None, None
 
-    @property
-    def end_pos(self):
-        if None in self._end_pos:
-            return self._end_pos
-        offset = self.parent_stmt.module.line_offset
-        return offset + self._end_pos[0], self._end_pos[1]
-
-    @end_pos.setter
-    def end_pos(self, value):
-        self._end_pos = value
-
-    def add_field(self, start_pos):
-        """
-        Just add a new field to the values.
-
-        Each value has a sub-array, because there may be different tokens in
-        one array.
-        """
-        self.arr_el_pos.append(start_pos)
-        self.values.append([])
-
-    def add_to_current_field(self, tok):
-        """ Adds a token to the latest field (in content). """
-        if not self.values:
-            # An empty round brace is just a tuple, filled it is unnecessary.
-            if self.type == Array.TUPLE:
-                self.type = Array.NOARRAY
-            # Add the first field, this is done here, because if nothing
-            # gets added, the list is empty, which is also needed sometimes.
-            self.values.append([])
-        self.values[-1].append(tok)
-
-    def add_dictionary_key(self):
-        """
-        Only used for dictionaries, automatically adds the tokens added by now
-        from the values to keys, because the parser works this way.
-        """
-        if self.type in (Array.LIST, Array.TUPLE):
-            return  # these are basically code errors, just ignore
-        self.keys.append(self.values.pop())
-        if self.type == Array.SET:
-            self.type = Array.DICT
-        self.values.append([])
-
-    def get_only_subelement(self):
-        """
-        Returns the only element that an array contains. If it contains
-        more than one element, raise an exception.
-        """
-        if len(self.values) != 1 or len(self.values[0]) != 1:
-            raise AttributeError("More than one value found")
-        return self.values[0][0]
+    def add_statement(self, statement, is_key=False):
+        """Just add a new statement"""
+        statement.parent = self
+        if is_key:
+            self.type = self.DICT
+            self.keys.append(statement)
+        else:
+            self.values.append(statement)
 
     @staticmethod
     def is_type(instance, *types):
@@ -1104,41 +1172,41 @@ class Array(Call):
         return len(self.values)
 
     def __getitem__(self, key):
+        if self.type == self.DICT:
+            raise TypeError('no dicts allowed')
         return self.values[key]
 
     def __iter__(self):
         if self.type == self.DICT:
-            return iter(zip(self.keys, self.values))
-        else:
-            return iter(self.values)
+            raise TypeError('no dicts allowed')
+        return iter(self.values)
+
+    def items(self):
+        if self.type != self.DICT:
+            raise TypeError('only dicts allowed')
+        return zip(self.keys, self.values)
 
     def get_code(self):
-        def to_str(el):
-            try:
-                return el.get_code()
-            except AttributeError:
-                return str(el)
-
-        map = {Array.NOARRAY: '%s',
-               Array.TUPLE: '(%s)',
-               Array.LIST: '[%s]',
-               Array.DICT: '{%s}',
-               Array.SET: '{%s}'
+        map = {self.NOARRAY: '(%s)',
+               self.TUPLE: '(%s)',
+               self.LIST: '[%s]',
+               self.DICT: '{%s}',
+               self.SET: '{%s}'
               }
         inner = []
-        for i, value in enumerate(self.values):
+        for i, stmt in enumerate(self.values):
             s = ''
             try:
                 key = self.keys[i]
             except IndexError:
                 pass
             else:
-                for el in key[i]:
-                    s += to_str(el)
-            for el in value:
-                s += to_str(el)
+                s += key.get_code(new_line=False) + ': '
+            s += stmt.get_code(new_line=False)
             inner.append(s)
-        return map[self.type] % ', '.join(inner)
+        add = ',' if self.type == self.TUPLE and len(self) == 1 else ''
+        s = map[self.type] % (', '.join(inner) + add)
+        return s + super(Array, self).get_code()
 
     def __repr__(self):
         if self.type == self.NOARRAY:
@@ -1164,7 +1232,7 @@ class NamePart(str):
 
     @property
     def start_pos(self):
-        offset = self.parent.module.line_offset
+        offset = self.parent._sub_module.line_offset
         return offset + self._start_pos[0], self._start_pos[1]
 
     @property
@@ -1202,12 +1270,26 @@ class Name(Simple):
         return len(self.names)
 
 
-class ListComprehension(object):
+class ListComprehension(Base):
     """ Helper class for list comprehensions """
-    def __init__(self, stmt, middle, input):
+    def __init__(self, stmt, middle, input, parent):
         self.stmt = stmt
         self.middle = middle
         self.input = input
+        for s in [stmt, middle, input]:
+            s.parent = self
+        self.parent = parent
+
+    def get_parent_until(self, *args, **kwargs):
+        return Simple.get_parent_until(self, *args, **kwargs)
+
+    @property
+    def start_pos(self):
+        return self.stmt.start_pos
+
+    @property
+    def end_pos(self):
+        return self.stmt.end_pos
 
     def __repr__(self):
         return "<%s: %s>" % \

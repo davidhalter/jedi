@@ -11,6 +11,7 @@ __all__ = ['Script', 'NotFoundError', 'set_debug_function', '_quick_complete']
 
 import re
 import os
+import warnings
 
 import parsing
 import parsing_representation as pr
@@ -121,8 +122,8 @@ class Script(object):
                 for c in names:
                     completions.append((c, s))
 
-        if not dot:  # named_params have no dots
-            call_def = self.get_in_function_call()
+        if not dot:  # named params have no dots
+            call_def = self.function_definition()
             if call_def:
                 if not call_def.module.is_builtin():
                     for p in call_def.params:
@@ -169,7 +170,7 @@ class Script(object):
                                             x.word.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):
-        """ Base for complete, goto and get_definition. Basically it returns
+        """ Base for complete, goto and definition. Basically it returns
         the resolved scopes under cursor. """
         debug.dbg('start: %s in %s' % (goto_path, self._parser.user_scope))
 
@@ -190,21 +191,30 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        r = parsing.Parser(cursor_txt, no_docstr=True)
+        offset = self.pos[0] - 1, self.pos[1]
+        r = parsing.Parser(cursor_txt, no_docstr=True, offset=offset)
         try:
             stmt = r.module.statements[0]
         except IndexError:
             raise NotFoundError()
-        stmt.start_pos = self.pos
         stmt.parent = self._parser.user_scope
         return stmt
 
     def get_definition(self):
         """
+        .. deprecated:: 0.5.0
+           Use :attr:`.function_definition` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use line instead.", DeprecationWarning)
+        return self.definition()
+
+    def definition(self):
+        """
         Return the definitions of a the path under the cursor. This is not a
         goto function! This follows complicated paths and returns the end, not
         the first definition. The big difference between :meth:`goto` and
-        :meth:`get_definition` is that :meth:`goto` doesn't follow imports and
+        :meth:`definition` is that :meth:`goto` doesn't follow imports and
         statements. Multiple objects may be returned, because Python itself is
         a dynamic language, which means depending on an option you can have two
         different versions of a function.
@@ -294,13 +304,13 @@ class Script(object):
             defs, search_name = evaluate.goto(stmt)
             definitions = follow_inexistent_imports(defs)
             if isinstance(user_stmt, pr.Statement):
-                if user_stmt.get_assignment_calls().start_pos > self.pos:
+                if user_stmt.get_commands()[0].start_pos > self.pos:
                     # The cursor must be after the start, otherwise the
                     # statement is just an assignee.
                     definitions = [user_stmt]
         return definitions, search_name
 
-    def related_names(self, additional_module_paths=[]):
+    def related_names(self, additional_module_paths=()):
         """
         Return :class:`api_classes.RelatedName` objects, which contain all
         names that point to the definition of the name under the cursor. This
@@ -314,7 +324,7 @@ class Script(object):
         user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
         if isinstance(user_stmt, pr.Statement) \
-                    and self.pos < user_stmt.get_assignment_calls().start_pos:
+                    and self.pos < user_stmt.get_commands()[0].start_pos:
             # the search_name might be before `=`
             definitions = [v for v in user_stmt.set_vars
                                 if unicode(v.names[-1]) == search_name]
@@ -337,6 +347,15 @@ class Script(object):
 
     def get_in_function_call(self):
         """
+        .. deprecated:: 0.5.0
+           Use :attr:`.function_definition` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use line instead.", DeprecationWarning)
+        return self.function_definition()
+
+    def function_definition(self):
+        """
         Return the function object of the call you're currently in.
 
         E.g. if the cursor is here::
@@ -355,9 +374,8 @@ class Script(object):
             if user_stmt is None \
                         or not isinstance(user_stmt, pr.Statement):
                 return None, 0
-            ass = helpers.fast_parent_copy(user_stmt.get_assignment_calls())
 
-            call, index, stop = helpers.search_function_call(ass, self.pos)
+            call, index, stop = helpers.search_function_definition(user_stmt, self.pos)
             return call, index
 
         def check_cache():
@@ -392,7 +410,7 @@ class Script(object):
 
         debug.speed('func_call start')
         call = None
-        if settings.use_get_in_function_call_cache:
+        if settings.use_function_definition_cache:
             try:
                 call, index = check_cache()
             except NotFoundError:
@@ -406,9 +424,9 @@ class Script(object):
                 return None
         debug.speed('func_call parsed')
 
-        with common.scale_speed_settings(settings.scale_get_in_function_call):
+        with common.scale_speed_settings(settings.scale_function_definition):
             _callable = lambda: evaluate.follow_call(call)
-            origins = cache.cache_get_in_function_call(_callable, user_stmt)
+            origins = cache.cache_function_definition(_callable, user_stmt)
         debug.speed('func_call followed')
 
         if len(origins) == 0:

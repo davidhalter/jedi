@@ -11,6 +11,7 @@ they change classes in Python 3.
 """
 import sys
 import copy
+import itertools
 
 from _compatibility import property, use_metaclass, next, hasattr
 import parsing_representation as pr
@@ -33,13 +34,13 @@ class DecoratorNotFound(LookupError):
     pass
 
 
-class Executable(pr.Base):
-    """ An instance is also an executable - because __init__ is called """
-    def __init__(self, base, var_args=None):
+class Executable(pr.IsScope):
+    """
+    An instance is also an executable - because __init__ is called
+    :param var_args: The param input array, consist of `pr.Array` or list.
+    """
+    def __init__(self, base, var_args=()):
         self.base = base
-        # The param input array.
-        if var_args is None:
-            var_args = pr.Array(None, None)
         self.var_args = var_args
 
     def get_parent_until(self, *args, **kwargs):
@@ -52,7 +53,7 @@ class Executable(pr.Base):
 
 class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
     """ This class is used to evaluate instances. """
-    def __init__(self, base, var_args=None):
+    def __init__(self, base, var_args=()):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
                     and builtin.Builtin.scope == base.get_parent_until():
@@ -121,20 +122,15 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         sub = self.base.get_subscope_by_name(name)
         return InstanceElement(self, sub, True)
 
-    def execute_subscope_by_name(self, name, args=None):
-        if args is None:
-            args = helpers.generate_param_array([])
+    def execute_subscope_by_name(self, name, args=()):
         method = self.get_subscope_by_name(name)
-        if args.parent_stmt is None:
-            args.parent_stmt = method
         return Execution(method, args).get_return_types()
 
     def get_descriptor_return(self, obj):
         """ Throws a KeyError if there's no method. """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        v = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
-        args = helpers.generate_param_array(v)
+        args = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
         return self.execute_subscope_by_name('__get__', args)
 
     @cache.memoize_default([])
@@ -164,7 +160,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         yield self, names
 
     def get_index_types(self, index=None):
-        args = helpers.generate_param_array([] if index is None else [index])
+        args = [] if index is None else [index]
         try:
             return self.execute_subscope_by_name('__getitem__', args)
         except KeyError:
@@ -219,15 +215,10 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
             return self
         return func
 
-    def get_assignment_calls(self):
+    def get_commands(self):
         # Copy and modify the array.
-        origin = self.var.get_assignment_calls()
-        # Delete parent, because it isn't used anymore.
-        new = helpers.fast_parent_copy(origin)
-        par = InstanceElement(self.instance, origin.parent_stmt,
-                                                    self.is_class_var)
-        new.parent_stmt = par
-        return new
+        return [InstanceElement(self.instance, command, self.is_class_var)
+                for command in self.var.get_commands()]
 
     def __getattr__(self, name):
         return getattr(self.var, name)
@@ -239,7 +230,7 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
 
-class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     """
     This class is not only important to extend `pr.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -247,7 +238,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
     def __init__(self, base):
         self.base = base
 
-    @cache.memoize_default(default=[])
+    @cache.memoize_default(default=())
     def get_super_classes(self):
         supers = []
         # TODO care for mro stuff (multiple super classes).
@@ -263,7 +254,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
             supers += evaluate.find_name(builtin.Builtin.scope, 'object')
         return supers
 
-    @cache.memoize_default(default=[])
+    @cache.memoize_default(default=())
     def get_defined_names(self):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
@@ -296,20 +287,19 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.Base)):
         return self.base.name
 
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'parent', 'subscopes',
-                    'get_imports', 'get_parent_until', 'docstr', 'asserts']:
-            raise AttributeError("Don't touch this (%s)!" % name)
+        if name not in ['start_pos', 'end_pos', 'parent', 'asserts', 'docstr',
+                'get_imports', 'get_parent_until', 'get_code', 'subscopes']:
+            raise AttributeError("Don't touch this: %s of %s !" % (name, self))
         return getattr(self.base, name)
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
-class Function(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
-
     def __init__(self, func, is_decorated=False):
         """ This should not be called directly """
         self.base_func = func
@@ -339,9 +329,8 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 decorator = dec_results.pop()
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
-                params = helpers.generate_param_array([old_func], old_func)
 
-                wrappers = Execution(decorator, params).get_return_types()
+                wrappers = Execution(decorator, (old_func,)).get_return_types()
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
                     return None
@@ -388,7 +377,18 @@ class Execution(Executable):
     multiple calls to functions and recursion has to be avoided. But this is
     responsibility of the decorators.
     """
-    @cache.memoize_default(default=[])
+    def follow_var_arg(self, index):
+        try:
+            stmt = self.var_args[index]
+        except IndexError:
+            return []
+        else:
+            if isinstance(stmt, pr.Statement):
+                return evaluate.follow_statement(stmt)
+            else:
+                return [stmt]  # just some arbitrary object
+
+    @cache.memoize_default(default=())
     @recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
@@ -401,8 +401,8 @@ class Execution(Executable):
             if func_name == 'getattr':
                 # follow the first param
                 try:
-                    objects = evaluate.follow_call_list([self.var_args[0]])
-                    names = evaluate.follow_call_list([self.var_args[1]])
+                    objects = self.follow_var_arg(0)
+                    names = self.follow_var_arg(1)
                 except IndexError:
                     debug.warning('getattr() called with to few args.')
                     return []
@@ -412,19 +412,22 @@ class Execution(Executable):
                         debug.warning('getattr called without instance')
                         continue
 
-                    for name in names:
-                        key = name.var_args.get_only_subelement()
+                    for arr_name in names:
+                        if len(arr_name.var_args) != 1:
+                            debug.warning('jedi getattr is too simple')
+                        key = arr_name.var_args[0]
                         stmts += evaluate.follow_path(iter([key]), obj,
                                                         self.base)
                 return stmts
             elif func_name == 'type':
                 # otherwise it would be a metaclass
                 if len(self.var_args) == 1:
-                    objects = evaluate.follow_call_list([self.var_args[0]])
+                    objects = self.follow_var_arg(0)
                     return [o.base for o in objects if isinstance(o, Instance)]
             elif func_name == 'super':
+                # TODO make this able to detect multiple inheritance supers
                 accept = (pr.Function,)
-                func = self.var_args.parent_stmt.get_parent_until(accept)
+                func = self.var_args.get_parent_until(accept)
                 if func.isinstance(*accept):
                     cls = func.get_parent_until(accept + (pr.Class,),
                                                     include_current=False)
@@ -476,7 +479,7 @@ class Execution(Executable):
                     stmts += evaluate.follow_statement(r)
             return stmts
 
-    @cache.memoize_default(default=[])
+    @cache.memoize_default(default=())
     def get_params(self):
         """
         This returns the params for an Execution/Instance and is injected as a
@@ -484,22 +487,36 @@ class Execution(Executable):
         This needs to be here, because Instance can have __init__ functions,
         which act the same way as normal functions.
         """
-        def gen_param_name_copy(param, keys=[], values=[], array_type=None):
+        def gen_param_name_copy(param, keys=(), values=(), array_type=None):
             """
             Create a param with the original scope (of varargs) as parent.
             """
-            parent_stmt = self.var_args.parent_stmt
-            pos = parent_stmt.start_pos if parent_stmt else None
-            calls = pr.Array(pos, pr.Array.NOARRAY, parent_stmt)
-            calls.values = values
-            calls.keys = keys
-            calls.type = array_type
+            if isinstance(self.var_args, pr.Array):
+                parent = self.var_args.parent
+                start_pos = self.var_args.start_pos
+            else:
+                parent = self.base
+                start_pos = 0, 0
+
             new_param = copy.copy(param)
-            if parent_stmt is not None:
-                new_param.parent = parent_stmt
-            new_param._assignment_calls_calculated = True
-            new_param._assignment_calls = calls
             new_param.is_generated = True
+            if parent is not None:
+                new_param.parent = parent
+
+            # create an Array (-> needed for *args/**kwargs tuples/dicts)
+            arr = pr.Array(self._sub_module, start_pos, array_type, parent)
+            arr.values = values
+            key_stmts = []
+            for key in keys:
+                stmt = pr.Statement(self._sub_module, [], [], [],
+                                    start_pos, None)
+                stmt._commands = [key]
+                key_stmts.append(stmt)
+            arr.keys = key_stmts
+            arr.type = array_type
+
+            new_param._commands = [arr]
+
             name = copy.copy(param.get_name())
             name.parent = new_param
             return name
@@ -542,12 +559,12 @@ class Execution(Executable):
                                                         values=[value]))
                 key, value = next(var_arg_iterator, (None, None))
 
-            assignments = param.get_assignment_calls().values
-            assignment = assignments[0]
+            commands = param.get_commands()
             keys = []
             values = []
             array_type = None
-            if assignment[0] == '*':
+            ignore_creation = False
+            if commands[0] == '*':
                 # *args param
                 array_type = pr.Array.TUPLE
                 if value:
@@ -558,19 +575,21 @@ class Execution(Executable):
                         var_arg_iterator.push_back((key, value))
                         break
                     values.append(value)
-            elif assignment[0] == '**':
+            elif commands[0] == '**':
                 # **kwargs param
                 array_type = pr.Array.DICT
                 if non_matching_keys:
                     keys, values = zip(*non_matching_keys)
-            else:
+            elif not keys_only:
                 # normal param
-                if value:
+                if value is not None:
                     values = [value]
                 else:
                     if param.assignment_details:
                         # No value: return the default values.
-                        values = assignments
+                        ignore_creation = True
+                        result.append(param.get_name())
+                        param.is_generated = True
                     else:
                         # If there is no assignment detail, that means there is
                         # no assignment, just the result. Therefore nothing has
@@ -579,7 +598,7 @@ class Execution(Executable):
 
             # Just ignore all the params that are without a key, after one
             # keyword argument was set.
-            if not keys_only or assignment[0] == '**':
+            if not ignore_creation and (not keys_only or commands[0] == '**'):
                 keys_used.add(str(key))
                 result.append(gen_param_name_copy(param, keys=keys,
                                         values=values, array_type=array_type))
@@ -597,37 +616,44 @@ class Execution(Executable):
         """
         def iterate():
             # `var_args` is typically an Array, and not a list.
-            for var_arg in self.var_args:
-                # empty var_arg
-                if len(var_arg) == 0:
-                    yield None, None
+            for stmt in self.var_args:
+                if not isinstance(stmt, pr.Statement):
+                    if stmt is None:
+                        yield None, None
+                        continue
+                    old = stmt
+                    # generate a statement if it's not already one.
+                    module = builtin.Builtin.scope
+                    stmt = pr.Statement(module, [], [], [], (0, 0), None)
+                    stmt._commands = [old]
+
                 # *args
-                elif var_arg[0] == '*':
-                    arrays = evaluate.follow_call_list([var_arg[1:]])
+                if stmt.get_commands()[0] == '*':
+                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
+                    # *args must be some sort of an array, otherwise -> ignore
                     for array in arrays:
-                        if hasattr(array, 'get_contents'):
-                            for field in array.get_contents():
-                                yield None, field
+                        for field_stmt in array:  # yield from plz!
+                            yield None, field_stmt
                 # **kwargs
-                elif var_arg[0] == '**':
-                    arrays = evaluate.follow_call_list([var_arg[1:]])
+                elif stmt.get_commands()[0] == '**':
+                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
                     for array in arrays:
-                        if hasattr(array, 'get_contents'):
-                            for key, field in array.get_contents():
-                                # Take the first index.
-                                if isinstance(key, pr.Name):
-                                    name = key
-                                else:
-                                    # `pr`.[Call|Function|Class] lookup.
-                                    name = key[0].name
-                                yield name, field
+                        for key_stmt, value_stmt in array.items():
+                            # first index, is the key if syntactically correct
+                            call = key_stmt.get_commands()[0]
+                            if isinstance(call, pr.Name):
+                                yield call, value_stmt
+                            elif type(call) == pr.Call:
+                                yield call.name, value_stmt
                 # Normal arguments (including key arguments).
                 else:
-                    if len(var_arg) > 1 and var_arg[1] == '=':
-                        # This is a named parameter (var_arg[0] is a Call).
-                        yield var_arg[0].name, var_arg[2:]
+                    if stmt.assignment_details:
+                        key_arr, op = stmt.assignment_details[0]
+                        # named parameter
+                        if key_arr and isinstance(key_arr[0], pr.Call):
+                            yield key_arr[0].name, stmt
                     else:
-                        yield None, var_arg
+                        yield None, stmt
 
         return iter(common.PushBackIterator(iterate()))
 
@@ -666,7 +692,7 @@ class Execution(Executable):
             raise common.MultiLevelAttributeError(sys.exc_info())
 
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'imports']:
+        if name not in ['start_pos', 'end_pos', 'imports', '_sub_module']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
@@ -763,60 +789,60 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
     def __init__(self, array):
         self._array = array
 
-    def get_index_types(self, index_call_list=None):
+    def get_index_types(self, index_arr=None):
         """ Get the types of a specific index or all, if not given """
-        # array slicing
-        if index_call_list is not None:
-            if index_call_list and [x for x in index_call_list if ':' in x]:
+        if index_arr is not None:
+            if index_arr and [x for x in index_arr if ':' in x.get_commands()]:
+                # array slicing
                 return [self]
 
-            index_possibilities = list(evaluate.follow_call_list(
-                                                        index_call_list))
+            index_possibilities = self._follow_values(index_arr)
             if len(index_possibilities) == 1:
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
-                try:
-                    # Multiple elements in the array are not wanted. var_args
-                    # and get_only_subelement can raise AttributeErrors.
-                    i = index_possibilities[0].var_args.get_only_subelement()
-                except AttributeError:
-                    pass
-                else:
+                index = index_possibilities[0]
+                if isinstance(index, Instance) \
+                            and str(index.name) in ['int', 'str'] \
+                            and len(index.var_args) == 1:
                     try:
-                        return self.get_exact_index_types(i)
-                    except (IndexError, KeyError):
+                        return self.get_exact_index_types(index.var_args[0])
+                    except (KeyError, IndexError):
                         pass
 
-        result = list(self.follow_values(self._array.values))
+        result = list(self._follow_values(self._array.values))
         result += dynamic.check_array_additions(self)
         return set(result)
 
-    def get_exact_index_types(self, index):
-        """ Here the index is an int. Raises IndexError/KeyError """
-        if self._array.type == pr.Array.DICT:
-            old_index = index
+    def get_exact_index_types(self, mixed_index):
+        """ Here the index is an int/str. Raises IndexError/KeyError """
+        index = mixed_index
+        if self.type == pr.Array.DICT:
             index = None
-            for i, key_elements in enumerate(self._array.keys):
+            for i, key_statement in enumerate(self._array.keys):
                 # Because we only want the key to be a string.
-                if len(key_elements) == 1:
-                    try:
-                        str_key = key_elements.get_code()
-                    except AttributeError:
-                        try:
-                            str_key = key_elements[0].name
-                        except AttributeError:
-                            str_key = None
-                    if old_index == str_key:
-                        index = i
-                        break
+                key_commands = key_statement.get_commands()
+                if len(key_commands) != 1:  # cannot deal with complex strings
+                    continue
+                key = key_commands[0]
+                if isinstance(key, pr.Call) and key.type == pr.Call.STRING:
+                    str_key = key.name
+                elif isinstance(key, pr.Name):
+                    str_key = str(key)
+
+                if mixed_index == str_key:
+                    index = i
+                    break
             if index is None:
                 raise KeyError('No key found in dictionary')
-        values = [self._array[index]]
-        return self.follow_values(values)
 
-    def follow_values(self, values):
+        # Can raise an IndexError
+        values = [self._array.values[index]]
+        return self._follow_values(values)
+
+    def _follow_values(self, values):
         """ helper function for the index getters """
-        return evaluate.follow_call_list(values)
+        return list(itertools.chain.from_iterable(evaluate.follow_statement(v)
+                                                  for v in values))
 
     def get_defined_names(self):
         """
@@ -829,23 +855,27 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]
 
-    def get_contents(self):
-        return self._array
-
     @property
     def parent(self):
-        """
-        Return the builtin scope as parent, because the arrays are builtins
-        """
         return builtin.Builtin.scope
 
-    def get_parent_until(self, *args, **kwargs):
+    def get_parent_until(self):
         return builtin.Builtin.scope
 
     def __getattr__(self, name):
-        if name not in ['type', 'start_pos', 'get_only_subelement']:
+        if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
+                        'get_parent_until', 'items']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
+
+    def __getitem__(self):
+        return self._array.__getitem__()
+
+    def __iter__(self):
+        return self._array.__iter__()
+
+    def __len__(self):
+        return self._array.__len__()
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self._array)
@@ -863,7 +893,7 @@ class ArrayMethod(object):
     def __getattr__(self, name):
         # Set access privileges:
         if name not in ['parent', 'names', 'start_pos', 'end_pos', 'get_code']:
-            raise AttributeError('Strange access: %s.' % name)
+            raise AttributeError('Strange accesson %s: %s.' % (self, name))
         return getattr(self.name, name)
 
     def get_parent_until(self):
