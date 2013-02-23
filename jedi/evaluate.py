@@ -153,6 +153,8 @@ def get_names_of_scope(scope, position=None, star_search=True,
     >>> pairs[2]                                        #doctest: +ELLIPSIS
     (<Module: ...builtin...>, [<Name: ...>, ...])
 
+    :rtype: [(pr.Scope, [pr.Name])]
+    :return: Return an generator that yields a pair of scope and names.
     """
     in_func_scope = scope
     non_flow = scope.get_parent_until(pr.Flow, reverse=True)
