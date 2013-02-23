@@ -405,6 +405,14 @@ class TestGetDefinitions(TestBase):
         self.assertEqual([d.name for d in definitions],
                          ['module', 'Class', 'func', 'data'])
 
+    def test_dotted_assignment(self):
+        definitions = api.get_definitions("""
+        x = Class()
+        x.y.z = None
+        """)
+        self.assertEqual([d.name for d in definitions],
+                         ['x'])
+
     def test_multiple_assignment(self):
         definitions = api.get_definitions("""
         x = y = None
