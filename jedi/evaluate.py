@@ -115,7 +115,7 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
 
 
 def get_names_of_scope(scope, position=None, star_search=True,
-                                                        include_builtin=True):
+                       include_builtin=True, include_parent=True):
     """
     Get all completions (names) possible for the current scope.
     The star search option is only here to provide an optimization. Otherwise
@@ -177,6 +177,9 @@ def get_names_of_scope(scope, position=None, star_search=True,
         if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
             # is a list comprehension
             yield scope, scope.get_set_vars(is_internal_call=True)
+
+        if not include_parent:
+            return
 
         scope = scope.parent
         # This is used, because subscopes (Flow scopes) would distort the
