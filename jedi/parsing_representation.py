@@ -1107,7 +1107,8 @@ class Call(Simple):
         if self.type == Call.NAME:
             s = self.name.get_code()
         else:
-            if isinstance(self.name, str) and "'" not in self.name:
+            if not is_py3k and isinstance(self.name, str)\
+                        and "'" not in self.name:
                 # This is a very rough spot, because of repr not supporting
                 # unicode signs, see `test_unicode_script`.
                 s = "'%s'" % unicode(self.name, 'UTF-8')
