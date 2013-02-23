@@ -1,16 +1,54 @@
 """
-For dynamic completions:
+To understand Python on a deeper level, |jedi| needs to understand some of the
+dynamic features of Python, however this probably the most complicated part:
 
-- array operations
+- Array modifications (e.g. `list.append`)
+- Parameter completion in functions
+- Flow checks (e.g. `if isinstance(a, str)` -> a is a str)
 
-    - inserting/appending/extending ``list``
-    - adding/updating ``set``
-- dynamic completion of parameters
-- if/while/isinstance type checks
-- related names searching
+Array modifications
+*******************
 
-I will write more about the process, once I cleaned up certain parts of this
-module.
+If the content of an array (`set`/`list`) is wanted somewhere, the current
+module will be checked for appearances of `arr.append`, `arr.insert`, etc. If
+the `arr` name points to an actual array, the content will be added
+
+This can be really cpu intensive, as you can imagine. Because |jedi| has to
+follow **every** `append`. However this works pretty good, because in *slow*
+cases, the recursion detector and other settings will stop this process.
+
+It is important to note that:
+
+1. Array modfications work only in the current module
+2. Only Array additions are being checked, `list.pop`, etc. is being ignored.
+
+Parameter completion
+********************
+
+One of the really important features of |jedi| is to have an option to
+understand code like this:
+
+>>> def foo(bar):
+>>>     bar. # completion here
+>>> foo(1)
+
+There's no doubt wheter bar is an ``int`` or not, but if there's also a call
+like ``foo('str')``, what would happen? Well, we'll just show both. Because
+that's what a human would expect.
+
+It works as follows::
+- A param is being encountered
+- search for function calls named ``foo``
+- execute these calls and check the injected params. This work with an
+  ``ParamListener``.
+
+Flow checks
+***********
+
+Flow checks are not really mature. There's only a check for ``isinstance``.  It
+would check whether a flow has the form of ``if isinstance(a, type_or_tuple)``.
+Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
+check for -> a is a string). There's big potential in these checks.
 """
 from __future__ import with_statement
 
