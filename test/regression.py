@@ -402,28 +402,23 @@ class TestGetDefinitions(TestBase):
             pass
         data = None
         """)
-        assert len(definitions) == 4
-        assert definitions[0].names == ['module']
-        assert definitions[1].names == ['Class']
-        assert definitions[2].names == ['func']
-        assert definitions[3].names == ['data']
+        self.assertEqual([d.name for d in definitions],
+                         ['module', 'Class', 'func', 'data'])
 
     def test_multiple_assignment(self):
         definitions = api.get_definitions("""
         x = y = None
         """)
-        assert len(definitions) == 1
-        assert definitions[0].names == ['x', 'y']
+        self.assertEqual([d.name for d in definitions],
+                         ['x', 'y'])
 
     def test_multiple_imports(self):
         definitions = api.get_definitions("""
         from module import a, b
         from another_module import *
         """)
-        assert len(definitions) == 3
-        assert definitions[0].names == ['a']
-        assert definitions[1].names == ['b']
-        assert definitions[2].names == []
+        self.assertEqual([d.name for d in definitions],
+                         ['a', 'b'])
 
     def test_nested_definitions(self):
         definitions = api.get_definitions("""
@@ -433,13 +428,13 @@ class TestGetDefinitions(TestBase):
             def g():
                 pass
         """)
-        assert len(definitions) == 1
-        assert definitions[0].names == ['Class']
+        self.assertEqual([d.name for d in definitions],
+                         ['Class'])
         subdefinitions = definitions[0].get_definitions()
-        assert subdefinitions[0].names == ['f']
-        assert subdefinitions[1].names == ['g']
-        assert subdefinitions[0].full_name == 'Class.f'
-        assert subdefinitions[1].full_name == 'Class.g'
+        self.assertEqual([d.name for d in subdefinitions],
+                         ['f', 'g'])
+        self.assertEqual([d.full_name for d in subdefinitions],
+                         ['Class.f', 'Class.g'])
 
 
 class TestSpeed(TestBase):

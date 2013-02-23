@@ -7,9 +7,8 @@ interesting information about completion and goto operations.
 import re
 import os
 import warnings
-import itertools
 
-from _compatibility import unicode
+from _compatibility import unicode, reduce
 import cache
 import dynamic
 import recursion
@@ -59,6 +58,9 @@ class BaseDefinition(object):
     def __init__(self, definition, start_pos):
         self.start_pos = start_pos
         self.definition = definition
+        """
+        An instance of :class:`jedi.parsing_representation.Base` subclass.
+        """
         self.is_keyword = isinstance(definition, keywords.Keyword)
 
         # generate a path to the definition
@@ -273,44 +275,38 @@ class Definition(BaseDefinition):
         super(Definition, self).__init__(definition, definition.start_pos)
 
     @property
-    def names(self):
+    def name(self):
         """
         Name of variable/function/class/module.
 
-        For example, for ``isinstance`` it returns ``['isinstance']``.
-        As it is possible to have multiple definition in a statement,
-        this attribute returns a list of string.
+        For example, for ``x = None`` it returns ``'x'``.
 
-        :rtype: list of str
+        :rtype: str or None
         """
         d = self.definition
         if isinstance(d, er.InstanceElement):
             d = d.var
-        if isinstance(d, pr.Name):
-            d = d.parent
 
-        if isinstance(d, er.Array):
-            return [unicode(d.type)]
+        if isinstance(d, pr.Name):
+            return d.names[-1] if d.names else None
+        elif isinstance(d, er.Array):
+            return unicode(d.type)
         elif isinstance(d, (pr.Class, er.Class, er.Instance,
                             er.Function, pr.Function)):
-            return [unicode(d.name)]
+            return unicode(d.name)
         elif isinstance(d, pr.Module):
-            return [self.module_name]
+            return self.module_name
         elif isinstance(d, pr.Import):
-            def getname(name):
-                try:
-                    return [name.names[-1]]
-                except AttributeError:
-                    return []
-            return list(itertools.chain(*map(getname, d.get_defined_names())))
+            try:
+                return d.get_defined_names()[0].names[-1]
+            except AttributeError, IndexError:
+                return None
         elif isinstance(d, pr.Statement):
-            def getname(assignment):
-                try:
-                    return [assignment[1].values[0][0].name.names[-1]]
-                except IndexError:
-                    return []
-            return list(itertools.chain(*map(getname, d.assignment_details)))
-        return []
+            try:
+                return d.assignment_details[0][1].values[0][0].name.names[-1]
+            except IndexError:
+                return None
+        return None
 
     @property
     def description(self):
@@ -364,7 +360,12 @@ class Definition(BaseDefinition):
 
         :rtype: list of Definition
         """
-        return get_definitions(self.definition)
+        d = self.definition
+        if isinstance(d, er.InstanceElement):
+            d = d.var
+        if isinstance(d, pr.Name):
+            d = d.parent
+        return get_definitions(d)
 
 
 def get_definitions(scope):
@@ -374,15 +375,10 @@ def get_definitions(scope):
     :type scope: Scope
     :rtype: list of Definition
     """
-    def is_definition(s):
-        return isinstance(s, (pr.Import, pr.Function, pr.Class)) or \
-            isinstance(s, pr.Statement) and s.assignment_details
-    scopes = []
-    scopes.extend(scope.imports)
-    scopes.extend(scope.statements)
-    scopes.extend(scope.subscopes)
-    dscopes = sorted(filter(is_definition, scopes), key=lambda s: s.start_pos)
-    return list(map(Definition, dscopes))
+    tuples = evaluate.get_names_of_scope(
+        scope, star_search=False, include_builtin=False)
+    names = reduce(lambda x, y: x + y[1], tuples, [])
+    return list(map(Definition, sorted(names, key=lambda s: s.start_pos)))
 
 
 class RelatedName(BaseDefinition):
