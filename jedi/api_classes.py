@@ -299,7 +299,7 @@ class Definition(BaseDefinition):
         elif isinstance(d, pr.Import):
             try:
                 return d.get_defined_names()[0].names[-1]
-            except AttributeError, IndexError:
+            except (AttributeError, IndexError):
                 return None
         elif isinstance(d, pr.Statement):
             try:
