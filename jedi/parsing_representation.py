@@ -92,7 +92,9 @@ class Simple(Base):
         return scope
 
     def __repr__(self):
-        code = self.get_code().replace('\n', ' ').encode(encoding, 'replace')
+        code = self.get_code().replace('\n', ' ')
+        if not is_py3k:
+            code = code.encode(encoding, 'replace')
         return "<%s: %s@%s,%s>" % \
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
 
