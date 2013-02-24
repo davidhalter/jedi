@@ -395,6 +395,22 @@ class Parser(object):
 
             self._check_user_stmt(stmt)
 
+        # Attribute docstring (PEP 257) support
+        try:
+            # If string literal is being parsed
+            first_tok = stmt.token_list[0]
+            if (not stmt.set_vars and
+                not stmt.used_vars and
+                len(stmt.token_list) == 1 and
+                first_tok[0] == tokenize.STRING):
+                # ... and the last statement was assignment
+                last_stmt = self.scope.statements[-1]
+                if last_stmt.assignment_details[0][1] == '=':
+                    # ... then set it as a docstring
+                    last_stmt.add_docstr(first_tok[1])
+        except (IndexError, AttributeError):
+            pass
+
         if tok in always_break + not_first_break:
             self._gen.push_last_back()
         return stmt, tok
