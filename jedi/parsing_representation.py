@@ -1271,6 +1271,11 @@ class Name(Simple):
         """ Returns the names in a full string format """
         return ".".join(self.names)
 
+    @property
+    def docstr(self):
+        """Return attribute docstring (PEP 257) if exists."""
+        return self.parent.docstr
+
     def __str__(self):
         return self.get_code()
 
