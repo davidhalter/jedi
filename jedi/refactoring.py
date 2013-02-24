@@ -3,7 +3,7 @@ Introduce some basic refactoring functions to |jedi|. This module is still in a
 very early development stage and needs much testing and improvement.
 
 .. warning:: I won't do too much here, but if anyone wants to step in, please
-             do.
+             do. Refactoring is none of my priorities
 
 It uses the |jedi| `API <plugin-api.html>`_ and supports currently the
 following functions (sometimes bug-prone):
@@ -11,7 +11,6 @@ following functions (sometimes bug-prone):
 - rename
 - extract variable
 - inline variable
-
 """
 
 from __future__ import with_statement
@@ -19,6 +18,7 @@ from __future__ import with_statement
 import modules
 import difflib
 import helpers
+import parsing_representation as pr
 
 
 class Refactoring(object):
@@ -113,13 +113,10 @@ def extract(script, new_name):
     if user_stmt:
         pos = script.pos
         line_index = pos[0] - 1
-        arr, index = helpers.array_for_pos(user_stmt.get_assignment_calls(),
-                                            pos)
-        if arr:
-            s = arr.start_pos[0], arr.start_pos[1] + 1
-            positions = [s] + arr.arr_el_pos + [arr.end_pos]
-            start_pos = positions[index]
-            end_pos = positions[index + 1][0], positions[index + 1][1] - 1
+        arr, index = helpers.array_for_pos(user_stmt, pos)
+        if arr is not None:
+            start_pos = arr[index].start_pos
+            end_pos = arr[index].end_pos
 
             # take full line if the start line is different from end line
             e = end_pos[1] if end_pos[0] == start_pos[0] else None
@@ -178,17 +175,19 @@ def inline(script):
                         if not stmt.start_pos <= r.start_pos <= stmt.end_pos]
         inlines = sorted(inlines, key=lambda x: (x.module_path, x.start_pos),
                                                 reverse=True)
-        ass = stmt.get_assignment_calls()
+        commands = stmt.get_commands()
         # don't allow multiline refactorings for now.
-        assert ass.start_pos[0] == ass.end_pos[0]
-        index = ass.start_pos[0] - 1
+        assert stmt.start_pos[0] == stmt.end_pos[0]
+        index = stmt.start_pos[0] - 1
 
         line = new_lines[index]
-        replace_str = line[ass.start_pos[1]:ass.end_pos[1] + 1]
+        replace_str = line[commands[0].start_pos[1]:stmt.end_pos[1] + 1]
         replace_str = replace_str.strip()
         # tuples need parentheses
-        if len(ass.values) > 1:
-            replace_str = '(%s)' % replace_str
+        if commands and isinstance(commands[0], pr.Array):
+            arr = commands[0]
+            if replace_str[0] not in ['(', '[', '{'] and len(arr) > 1:
+                replace_str = '(%s)' % replace_str
 
         # if it's the only assignment, remove the statement
         if len(stmt.set_vars) == 1:

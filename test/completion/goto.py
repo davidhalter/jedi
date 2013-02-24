@@ -1,23 +1,23 @@
-# goto command test are a different in syntax
+# goto command tests are a different in syntax
 
 definition = 3
-##! 0 ['a=definition']
+#! 0 ['a = definition']
 a = definition
 
 #! []
 b
-#! ['a=definition']
+#! ['a = definition']
 a
 
 b = a
 c = b
-#! ['c=b']
+#! ['c = b']
 c
 
 cd = 1
-#! 1 ['cd=c']
+#! 1 ['cd = c']
 cd = c
-#! 0 ['cd=e']
+#! 0 ['cd = e']
 cd = e
 
 #! ['module math']
@@ -27,12 +27,12 @@ math
 
 #! ['import math']
 b = math
-#! ['b=math']
+#! ['b = math']
 b
 
 class C(object):
     def b(self):
-        #! ['b=math']
+        #! ['b = math']
         b
         #! ['def b']
         self.b
@@ -45,7 +45,7 @@ class C(object):
     #! ['def b']
     b
 
-#! ['b=math']
+#! ['b = math']
 b
 
 #! ['def b']
@@ -63,9 +63,9 @@ D.b
 #! ['def b']
 D().b
 
-#! 0 ['D=C']
+#! 0 ['D = C']
 D().b
-#! 0 ['D=C']
+#! 0 ['D = C']
 D().b
 
 def c():
@@ -82,43 +82,43 @@ c()
 
 #! ['module import_tree']
 import import_tree
-#! ['a=""']
+#! ["a = ''"]
 import_tree.a
 
 #! ['module mod1']
 import import_tree.mod1
-#! ['a=1']
+#! ['a = 1']
 import_tree.mod1.a
 
 #! ['module pkg']
 import import_tree.pkg
-#! ['a=list']
+#! ['a = list']
 import_tree.pkg.a
 
 #! ['module mod1']
 import import_tree.pkg.mod1
-#! ['a=1.0']
+#! ['a = 1.0']
 import_tree.pkg.mod1.a
-#! ['a=""']
+#! ["a = ''"]
 import_tree.a
 
 #! ['module mod1']
 from import_tree.pkg import mod1
-#! ['a=1.0']
+#! ['a = 1.0']
 mod1.a
 
 #! ['module mod1']
 from import_tree import mod1
-#! ['a=1']
+#! ['a = 1']
 mod1.a
 
-#! ['a=1.0']
+#! ['a = 1.0']
 from import_tree.pkg.mod1 import a
 
 #! ['import os']
 from .imports import os
 
-#! ['some_variable=1']
+#! ['some_variable = 1']
 from . import some_variable
 
 # -----------------
@@ -151,7 +151,7 @@ param = ClassDef
 def ab1(param): pass
 #! 9 ['param']
 def ab2(param): pass
-#! 11 ['param=ClassDef']
+#! 11 ['param = ClassDef']
 def ab3(a=param): pass
 
 ab1(ClassDef);ab2(ClassDef);ab3(ClassDef)

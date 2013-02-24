@@ -34,8 +34,10 @@ class RecursionDecorator(object):
 
     def push_stmt(self, stmt):
         self.current = RecursionNode(stmt, self.current)
-        if self._check_recursion():
-            debug.warning('catched recursion', stmt)
+        check = self._check_recursion()
+        if check:# TODO remove False!!!!
+            debug.warning('catched stmt recursion: %s against %s @%s'
+                                % (stmt, check.stmt, stmt.start_pos))
             self.pop_stmt()
             return True
         return False
@@ -51,7 +53,7 @@ class RecursionDecorator(object):
         while True:
             test = test.parent
             if self.current == test:
-                return True
+                return test
             if not test:
                 return False
 
@@ -85,8 +87,12 @@ class RecursionNode(object):
     def __eq__(self, other):
         if not other:
             return None
+
+        is_list_comp = lambda x: isinstance(x, pr.ForFlow) and x.is_list_comp
         return self.script == other.script \
                     and self.position == other.position \
+                    and not is_list_comp(self.stmt.parent) \
+                    and not is_list_comp(other.parent) \
                     and not self.is_ignored and not other.is_ignored
 
 

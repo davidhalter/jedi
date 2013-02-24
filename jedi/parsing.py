@@ -14,12 +14,10 @@ being parsed completely. ``Statement`` is just a representation of the tokens
 within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
-
 """
-from _compatibility import next, StringIO, unicode
+from _compatibility import next, StringIO
 
 import tokenize
-import re
 import keyword
 
 import debug
@@ -47,7 +45,7 @@ class Parser(object):
     :param top_module: Use this module as a parent instead of `self.module`.
     """
     def __init__(self, source, module_path=None, user_position=None,
-                        no_docstr=False, line_offset=0, stop_on_scope=None,
+                        no_docstr=False, offset=(0, 0), stop_on_scope=None,
                         top_module=None):
         self.user_position = user_position
         self.user_scope = None
@@ -55,21 +53,17 @@ class Parser(object):
         self.no_docstr = no_docstr
 
         # initialize global Scope
-        self.module = pr.SubModule(module_path, (line_offset + 1, 0),
+        self.module = pr.SubModule(module_path, (offset[0] + 1, offset[1]),
                                                             top_module)
         self.scope = self.module
         self.current = (None, None)
         self.start_pos = 1, 0
         self.end_pos = 1, 0
 
-        # Stuff to fix tokenize errors. The parser is pretty good in tolerating
-        # any errors of tokenize and just parse ahead.
-        self._line_offset = line_offset
-
         source = source + '\n'  # end with \n, because the parser needs it
         buf = StringIO(source)
-        self._gen = common.NoErrorTokenizer(buf.readline, line_offset,
-                                                            stop_on_scope)
+        self._gen = common.NoErrorTokenizer(buf.readline, offset,
+                                            stop_on_scope)
         self.top_module = top_module or self.module
         try:
             self._parse()
@@ -303,7 +297,7 @@ class Parser(object):
         return scope
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
-                            stmt_class=pr.Statement, list_comp=False):
+                            stmt_class=pr.Statement):
         """
         Parses statements like:
 
@@ -317,10 +311,7 @@ class Parser(object):
         :return: Statement + last parsed token.
         :rtype: (Statement, str)
         """
-
-        string = unicode('')
         set_vars = []
-        used_funcs = []
         used_vars = []
         level = 0  # The level of parentheses
 
@@ -342,126 +333,40 @@ class Parser(object):
         # will even break in parentheses. This is true for typical flow
         # commands like def and class and the imports, which will never be used
         # in a statement.
-        breaks = ['\n', ':', ')']
+        breaks = set(['\n', ':', ')'])
         always_break = [';', 'import', 'from', 'class', 'def', 'try', 'except',
                         'finally', 'while', 'return', 'yield']
         not_first_break = ['del', 'raise']
         if added_breaks:
-            breaks += added_breaks
+            breaks |= set(added_breaks)
 
         tok_list = []
         while not (tok in always_break
                 or tok in not_first_break and not tok_list
                 or tok in breaks and level <= 0):
             try:
-                set_string = None
                 #print 'parse_stmt', tok, tokenize.tok_name[token_type]
                 tok_list.append(self.current + (self.start_pos,))
                 if tok == 'as':
-                    string += " %s " % tok
                     token_type, tok = self.next()
                     if token_type == tokenize.NAME:
                         n, token_type, tok = self._parse_dot_name(self.current)
                         if n:
                             set_vars.append(n)
                         tok_list.append(n)
-                        string += ".".join(n.names)
                     continue
-                elif tok == 'lambda':
-                    params = []
-                    start_pos = self.start_pos
-                    while tok != ':':
-                        param, tok = self._parse_statement(
-                                added_breaks=[':', ','], stmt_class=pr.Param)
-                        if param is None:
-                            break
-                        params.append(param)
-                    if tok != ':':
-                        continue
-
-                    lambd = pr.Lambda(self.module, params, start_pos)
-                    ret, tok = self._parse_statement(added_breaks=[','])
-                    if ret is not None:
-                        ret.parent = lambd
-                        lambd.returns.append(ret)
-                    lambd.parent = self.scope
-                    lambd.end_pos = self.end_pos
-                    tok_list[-1] = lambd
-                    continue
+                elif tok in ['lambda', 'for', 'in']:
+                    # don't parse these keywords, parse later in stmt.
+                    if tok == 'lambda':
+                        breaks.discard(':')
                 elif token_type == tokenize.NAME:
-                    if tok == 'for':
-                        # list comprehensions!
-                        middle, tok = self._parse_statement(
-                                                        added_breaks=['in'])
-                        if tok != 'in' or middle is None:
-                            if middle is None:
-                                level -= 1
-                            else:
-                                middle.parent = self.scope
-                            debug.warning('list comprehension formatting @%s' %
-                                                            self.start_pos[0])
-                            continue
-
-                        b = [')', ']']
-                        in_clause, tok = self._parse_statement(added_breaks=b,
-                                                                list_comp=True)
-                        if tok not in b or in_clause is None:
-                            middle.parent = self.scope
-                            if in_clause is None:
-                                self._gen.push_last_back()
-                            else:
-                                in_clause.parent = self.scope
-                                in_clause.parent = self.scope
-                            debug.warning('list comprehension in_clause %s@%s'
-                                            % (repr(tok), self.start_pos[0]))
-                            continue
-                        other_level = 0
-
-                        for i, tok in enumerate(reversed(tok_list)):
-                            if not isinstance(tok, (pr.Name,
-                                                    pr.ListComprehension)):
-                                tok = tok[1]
-                            if tok in closing_brackets:
-                                other_level -= 1
-                            elif tok in opening_brackets:
-                                other_level += 1
-                            if other_level > 0:
-                                break
-                        else:
-                            # could not detect brackets -> nested list comp
-                            i = 0
-
-                        tok_list, toks = tok_list[:-i], tok_list[-i:-1]
-                        src = ''
-                        for t in toks:
-                            src += t[1] if isinstance(t, tuple) \
-                                        else t.get_code()
-                        st = pr.Statement(self.module, src, [], [], [],
-                                        toks, first_pos, self.end_pos)
-
-                        for s in [st, middle, in_clause]:
-                            s.parent = self.scope
-                        tok = pr.ListComprehension(st, middle, in_clause)
-                        tok_list.append(tok)
-                        if list_comp:
-                            string = ''
-                        string += tok.get_code()
-                        continue
-                    else:
-                        n, token_type, tok = self._parse_dot_name(self.current)
-                        # removed last entry, because we add Name
-                        tok_list.pop()
-                        if n:
-                            tok_list.append(n)
-                            if tok == '(':
-                                # it must be a function
-                                used_funcs.append(n)
-                            else:
-                                used_vars.append(n)
-                            if string and re.match(r'[\w\d\'"]', string[-1]):
-                                string += ' '
-                            string += ".".join(n.names)
-                        continue
+                    n, token_type, tok = self._parse_dot_name(self.current)
+                    # removed last entry, because we add Name
+                    tok_list.pop()
+                    if n:
+                        tok_list.append(n)
+                        used_vars.append(n)
+                    continue
                 elif tok.endswith('=') and tok not in ['>=', '<=', '==', '!=']:
                     # there has been an assignement -> change vars
                     if level == 0:
@@ -472,22 +377,21 @@ class Parser(object):
                 elif tok in closing_brackets:
                     level -= 1
 
-                string = set_string if set_string is not None else string + tok
                 token_type, tok = self.next()
             except (StopIteration, common.MultiLevelStopIteration):
                 # comes from tokenizer
                 break
 
-        if not string:
+        if not tok_list:
             return None, tok
-        #print 'new_stat', string, set_vars, used_funcs, used_vars
+        #print 'new_stat', set_vars, used_vars
         if self.freshscope and not self.no_docstr and len(tok_list) == 1 \
                     and self.last_token[0] == tokenize.STRING:
             self.scope.add_docstr(self.last_token[1])
             return None, tok
         else:
-            stmt = stmt_class(self.module, string, set_vars, used_funcs,
-                            used_vars, tok_list, first_pos, self.end_pos)
+            stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
+                              first_pos, self.end_pos)
 
             self._check_user_stmt(stmt)
 
@@ -659,8 +563,8 @@ class Parser(object):
                 command = tok
                 if command in ['except', 'with']:
                     added_breaks.append(',')
-                # multiple statements because of with
-                inits = []
+                # multiple inputs because of with
+                inputs = []
                 first = True
                 while first or command == 'with' \
                                             and tok not in [':', '\n']:
@@ -672,13 +576,12 @@ class Parser(object):
                         n, token_type, tok = self._parse_dot_name()
                         if n:
                             statement.set_vars.append(n)
-                            statement.code += ',' + n.get_code()
                     if statement:
-                        inits.append(statement)
+                        inputs.append(statement)
                     first = False
 
                 if tok == ':':
-                    f = pr.Flow(self.module, command, inits, first_pos)
+                    f = pr.Flow(self.module, command, inputs, first_pos)
                     if command in extended_flow:
                         # the last statement has to be another part of
                         # the flow statement, because a dedent releases the
@@ -692,7 +595,7 @@ class Parser(object):
                         s = self.scope.add_statement(f)
                     self.scope = s
                 else:
-                    for i in inits:
+                    for i in inputs:
                         i.parent = use_as_parent_scope
                     debug.warning('syntax err, flow started @%s',
                                                         self.start_pos[0])

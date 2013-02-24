@@ -31,8 +31,7 @@ def fast_parent_copy(obj):
 
         for key, value in items:
             # replace parent (first try _parent and then parent)
-            if key in ['parent', '_parent', '_parent_stmt'] \
-                                                    and value is not None:
+            if key in ['parent', '_parent'] and value is not None:
                 if key == 'parent' and '_parent' in items:
                     # parent can be a property
                     continue
@@ -40,8 +39,7 @@ def fast_parent_copy(obj):
                     setattr(new_obj, key, new_elements[value])
                 except KeyError:
                     pass
-            elif key in ['parent_stmt', 'parent_function', 'use_as_parent',
-                            'module']:
+            elif key in ['parent_function', 'use_as_parent', '_sub_module']:
                 continue
             elif isinstance(value, list):
                 setattr(new_obj, key, list_rec(value))
@@ -60,19 +58,6 @@ def fast_parent_copy(obj):
     return recursion(obj)
 
 
-def generate_param_array(args_tuple, parent_stmt=None):
-    """ This generates an array, that can be used as a param. """
-    values = []
-    for arg in args_tuple:
-        if arg is None:
-            values.append([])
-        else:
-            values.append([arg])
-    pos = None
-    arr = pr.Array(pos, pr.Array.TUPLE, parent_stmt, values=values)
-    return arr
-
-
 def check_arr_index(arr, pos):
     positions = arr.arr_el_pos
     for index, comma_pos in enumerate(positions):
@@ -81,68 +66,57 @@ def check_arr_index(arr, pos):
     return len(positions)
 
 
-def array_for_pos(arr, pos):
-    if arr.start_pos >= pos \
-            or arr.end_pos[0] is not None and pos >= arr.end_pos:
-        return None, None
+def array_for_pos(stmt, pos, array_types=None):
+    """Searches for the array and position of a tuple"""
+    def search_array(arr, pos):
+        for i, stmt in enumerate(arr):
+            new_arr, index = array_for_pos(stmt, pos, array_types)
+            if new_arr is not None:
+                return new_arr, index
+            if arr.start_pos < pos <= stmt.end_pos:
+                if not array_types or arr.type in array_types:
+                    return arr, i
+        if len(arr) == 0 and arr.start_pos < pos < arr.end_pos:
+            if not array_types or arr.type in array_types:
+                return arr, 0
+        return None, 0
 
-    result = arr
-    for sub in arr:
-        for s in sub:
-            if isinstance(s, pr.Array):
-                result = array_for_pos(s, pos)[0] or result
-            elif isinstance(s, pr.Call):
-                if s.execution:
-                    result = array_for_pos(s.execution, pos)[0] or result
-                if s.next:
-                    result = array_for_pos(s.next, pos)[0] or result
+    def search_call(call, pos):
+        arr, index = None, 0
+        if call.next is not None:
+            if isinstance(call.next, pr.Array):
+                arr, index = search_array(call.next, pos)
+            else:
+                arr, index = search_call(call.next, pos)
+        if not arr and call.execution is not None:
+            arr, index = search_array(call.execution, pos)
+        return arr, index
 
-    return result, check_arr_index(result, pos)
+    if stmt.start_pos >= pos >= stmt.end_pos:
+        return None, 0
+
+    for command in stmt.get_commands():
+        arr = None
+        if isinstance(command, pr.Array):
+            arr, index = search_array(command, pos)
+        elif isinstance(command, pr.Call):
+            arr, index = search_call(command, pos)
+        if arr is not None:
+            return arr, index
+    return None, 0
 
 
-def search_function_call(arr, pos):
+def search_function_definition(stmt, pos):
     """
-    Returns the function Call that matches the position before `arr`.
-    This is somehow stupid, probably only the name of the function.
+    Returns the function Call that matches the position before.
     """
-    call = None
-    stop = False
-    for sub in arr.values:
-        call = None
-        for s in sub:
-            if isinstance(s, pr.Array):
-                new = search_function_call(s, pos)
-                if new[0] is not None:
-                    call, index, stop = new
-                    if stop:
-                        return call, index, stop
-            elif isinstance(s, pr.Call):
-                start_s = s
-                # check parts of calls
-                while s is not None:
-                    if s.start_pos >= pos:
-                        return call, check_arr_index(arr, pos), stop
-                    elif s.execution is not None:
-                        end = s.execution.end_pos
-                        if s.execution.start_pos < pos and \
-                                (None in end or pos < end):
-                            c, index, stop = search_function_call(
-                                            s.execution, pos)
-                            if stop:
-                                return c, index, stop
-
-                            # call should return without execution and
-                            # next
-                            reset = c or s
-                            if reset.execution.type not in \
-                                        [pr.Array.TUPLE, pr.Array.NOARRAY]:
-                                return start_s, index, False
-
-                            reset.execution = None
-                            reset.next = None
-                            return c or start_s, index, True
-                    s = s.next
-
-    # The third return is just necessary for recursion inside, because
-    # it needs to know when to stop iterating.
-    return call, check_arr_index(arr, pos), stop
+    # some parts will of the statement will be removed
+    stmt = fast_parent_copy(stmt)
+    arr, index = array_for_pos(stmt, pos, [pr.Array.TUPLE, pr.Array.NOARRAY])
+    if arr is not None and isinstance(arr.parent, pr.Call):
+        call = arr.parent
+        while isinstance(call.parent, pr.Call):
+            call = call.parent
+        arr.parent.execution = None
+        return call, index, False
+    return None, 0, False

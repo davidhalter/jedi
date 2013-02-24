@@ -56,13 +56,14 @@ class PushBackIterator(object):
 
 
 class NoErrorTokenizer(object):
-    def __init__(self, readline, line_offset=0, stop_on_scope=False):
+    def __init__(self, readline, offset=(0, 0), stop_on_scope=False):
         self.readline = readline
         self.gen = PushBackIterator(tokenize.generate_tokens(readline))
-        self.line_offset = line_offset
+        self.offset = offset
         self.stop_on_scope = stop_on_scope
         self.first_scope = False
         self.closed = False
+        self.first = True
 
     def push_last_back(self):
         self.gen.push_back(self.current)
@@ -90,7 +91,8 @@ class NoErrorTokenizer(object):
             debug.warning('indentation error on line %s, ignoring it' %
                                                         self.current[2][0])
             # add the starting line of the last position
-            self.line_offset += self.current[2][0]
+            self.offset = (self.offset[0] + self.current[2][0],
+                           self.current[2][1])
             self.gen = PushBackIterator(tokenize.generate_tokens(
                                                                 self.readline))
             return self.__next__()
@@ -106,8 +108,13 @@ class NoErrorTokenizer(object):
             elif c[1] != '@':
                 self.first_scope = True
 
-        c[2] = self.line_offset + c[2][0], c[2][1]
-        c[3] = self.line_offset + c[3][0], c[3][1]
+        if self.first:
+            c[2] = self.offset[0] + c[2][0], self.offset[1] + c[2][1]
+            c[3] = self.offset[0] + c[3][0], self.offset[1] + c[3][1]
+            self.first = False
+        else:
+            c[2] = self.offset[0] + c[2][0], c[2][1]
+            c[3] = self.offset[0] + c[3][0], c[3][1]
         return c
 
 
