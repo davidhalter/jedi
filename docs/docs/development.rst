@@ -61,6 +61,22 @@ Parser Representation (parser_representation.py)
 
 .. automodule:: parsing_representation
 
+.. inheritance-diagram::
+   SubModule
+   Class
+   Function
+   Lambda
+   Flow
+   ForFlow
+   Import
+   Statement
+   Param
+   Call
+   Array
+   Name
+   ListComprehension
+   :parts: 1
+
 .. _evaluate:
 
 Evaluation of python code (evaluate.py)
@@ -73,6 +89,16 @@ Evaluation Representation (evaluate_representation.py)
 
 .. automodule:: evaluate_representation
 
+.. inheritance-diagram::
+   Executable
+   Instance
+   InstanceElement
+   Class
+   Function
+   Execution
+   Generator
+   Array
+   :parts: 1
 
 .. _dev-api:
 
