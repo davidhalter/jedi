@@ -328,6 +328,16 @@ class TestRegression(TestBase):
         assert 'start' in words
 
 
+class TestDocstring(TestBase):
+
+    def test_function_doc(self):
+        defs = self.definition("""
+        def func():
+            '''Docstring of `func`.'''
+        func""")
+        self.assertEqual(defs[0].raw_doc, 'Docstring of `func`.')
+
+
 class TestFeature(TestBase):
     def test_full_name(self):
         """ feature request #61"""
