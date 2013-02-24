@@ -338,8 +338,7 @@ class TestDocstring(TestBase):
         self.assertEqual(defs[0].raw_doc, 'Docstring of `func`.')
 
     def test_attribute_docstring(self):
-        # TODO: use self.definition
-        defs = self.goto("""
+        defs = self.definition("""
         x = None
         '''Docstring of `x`.'''
         x""")
