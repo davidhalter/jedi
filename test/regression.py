@@ -344,6 +344,16 @@ class TestDocstring(TestBase):
         x""")
         self.assertEqual(defs[0].raw_doc, 'Docstring of `x`.')
 
+    def test_multiple_docstrings(self):
+        defs = self.definition("""
+        def func():
+            '''Original docstring.'''
+        x = func
+        '''Docstring of `x`.'''
+        x""")
+        docs = [d.raw_doc for d in defs]
+        self.assertEqual(docs, ['Original docstring.', 'Docstring of `x`.'])
+
 
 class TestFeature(TestBase):
     def test_full_name(self):
