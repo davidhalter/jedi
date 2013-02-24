@@ -659,7 +659,8 @@ class Statement(Simple):
     :type start_pos: tuple(int, int)
     """
     __slots__ = ('token_list', 'used_vars',
-                 'set_vars', '_commands', '_assignment_details')
+                 'set_vars', '_commands', '_assignment_details',
+                 'docstr')
 
     def __init__(self, module, set_vars, used_vars, token_list,
                  start_pos, end_pos, parent=None):
@@ -670,11 +671,16 @@ class Statement(Simple):
             s.parent = self.use_as_parent
         self.set_vars = self._remove_executions_from_set_vars(set_vars)
         self.parent = parent
+        self.docstr = ''
 
         # cache
         self._commands = None
         self._assignment_details = []
         # this is important for other scripts
+
+    def add_docstr(self, string):
+        """ Clean up a docstring """
+        self.docstr = cleandoc(literal_eval(string))
 
     def _remove_executions_from_set_vars(self, set_vars):
         """
