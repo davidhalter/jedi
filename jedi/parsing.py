@@ -403,11 +403,8 @@ class Parser(object):
                 not stmt.used_vars and
                 len(stmt.token_list) == 1 and
                 first_tok[0] == tokenize.STRING):
-                # ... and the last statement was assignment
-                last_stmt = self.scope.statements[-1]
-                if last_stmt.assignment_details[0][1] == '=':
-                    # ... then set it as a docstring
-                    last_stmt.add_docstr(first_tok[1])
+                # ... then set it as a docstring
+                self.scope.statements[-1].add_docstr(first_tok[1])
         except (IndexError, AttributeError):
             pass
 
