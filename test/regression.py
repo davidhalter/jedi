@@ -98,6 +98,15 @@ class TestRegression(TestBase):
         doc = defs[0].doc
         assert "f(x, y = 1, z = 'a')" in doc
 
+    def test_class_call_signature(self):
+        defs = self.definition("""
+        class Foo:
+            def __init__(self, x, y=1, z='a'):
+                pass
+        Foo""")
+        doc = defs[0].doc
+        assert "Foo(self, x, y = 1, z = 'a')" in doc
+
     def test_definition_at_zero(self):
         assert self.definition("a", (1, 1)) == []
         s = self.definition("str", (1, 1))
