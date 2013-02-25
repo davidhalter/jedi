@@ -90,6 +90,14 @@ class TestRegression(TestBase):
         if not is_py25:
             assert len(r[0].doc) > 100
 
+    def test_function_call_signature(self):
+        defs = self.definition("""
+        def f(x, y=1, z='a'):
+            pass
+        f""")
+        doc = defs[0].doc
+        assert "f(x, y = 1, z = 'a')" in doc
+
     def test_definition_at_zero(self):
         assert self.definition("a", (1, 1)) == []
         s = self.definition("str", (1, 1))

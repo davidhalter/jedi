@@ -715,7 +715,7 @@ class Statement(Simple):
                 return ''.join(pieces)
             return '%s %s ' % (''.join(pieces), assignment)
 
-        code = ''.join(assemble(*a) for a in self._assignment_details)
+        code = ''.join(assemble(*a) for a in self.assignment_details)
         code += assemble(self.get_commands())
 
         if new_line:
