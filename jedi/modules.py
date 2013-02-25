@@ -92,8 +92,10 @@ class ModuleWithCursor(Module):
     :param position: The position, the user is currently in. Only important \
     for the main file.
     """
-    def __init__(self, path, source, position):
+    def __init__(self, path, source, position, fast):
         super(ModuleWithCursor, self).__init__(path, source)
+        self._parserclass = fast_parser.FastParser if fast else \
+                            parsing.Parser
         self.position = position
 
         # this two are only used, because there is no nonlocal in Python 2
@@ -112,7 +114,7 @@ class ModuleWithCursor(Module):
             # Call the parser already here, because it will be used anyways.
             # Also, the position is here important (which will not be used by
             # default), therefore fill the cache here.
-            self._parser = fast_parser.FastParser(self.source, self.path,
+            self._parser = self._parserclass(self.source, self.path,
                                                         self.position)
             # don't pickle that module, because it's changing fast
             cache.save_module(self.path, self.name, self._parser,

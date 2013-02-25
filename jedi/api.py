@@ -54,13 +54,13 @@ class Script(object):
     :type source_encoding: str
     """
     def __init__(self, source, line, column, source_path,
-                                 source_encoding='utf-8'):
+                 source_encoding='utf-8', fast=True):
         api_classes._clear_caches()
         debug.reset_time()
         self.source = modules.source_to_unicode(source, source_encoding)
         self.pos = line, column
-        self._module = modules.ModuleWithCursor(source_path,
-                                        source=self.source, position=self.pos)
+        self._module = modules.ModuleWithCursor(
+            source_path, source=self.source, position=self.pos, fast=fast)
         self._source_path = source_path
         self.source_path = None if source_path is None \
                                     else os.path.abspath(source_path)
@@ -501,6 +501,59 @@ class Script(object):
         # Note: `or ''` below is required because `module_path` could be
         #       None and you can't compare None and str in Python 3.
         return sorted(d, key=lambda x: (x.module_path or '', x.start_pos))
+
+
+class Interpreter(Script):
+
+    """
+    Jedi API for Python REPLs.
+
+    >>> from itertools import chain
+    >>> script = Interpreter('cha', [locals()])
+    >>> script.complete()
+    [<Completion: chain>]
+
+    """
+
+    def __init__(self, source, namespaces=[], line=None, column=None,
+                 source_path=None, source_encoding='utf-8'):
+        lines = source.splitlines()
+        line = len(lines) if line is None else line
+        column = len(lines[-1]) if column is None else column
+        super(Interpreter, self).__init__(
+            source, line, column, source_path, source_encoding, fast=False)
+        for ns in namespaces:
+            self._import_raw_namespace(ns)
+
+    def _import_raw_namespace(self, raw_namespace):
+        for (variable, obj) in raw_namespace.items():
+            try:
+                module = obj.__module__
+            except:
+                continue
+            fakeimport = self._make_fakeimport(variable, module)
+            self._parser.scope.imports.append(fakeimport)
+
+    def _make_fakeimport(self, variable, module):
+        submodule = self._parser.scope._sub_module
+        varname = pr.Name(
+            module=submodule,
+            names=[(variable, (0, 0))],
+            start_pos=(0, 0),
+            end_pos=(None, None))
+        modname = pr.Name(
+            module=submodule,
+            names=[(module, (0, 0))],
+            start_pos=(0, 0),
+            end_pos=(None, None))
+        fakeimport = pr.Import(
+            module=submodule,
+            namespace=varname,
+            from_ns=modname,
+            start_pos=(0, 0),
+            end_pos=(None, None))
+        fakeimport.parent = submodule
+        return fakeimport
 
 
 def defined_names(source, source_path=None, source_encoding='utf-8'):
