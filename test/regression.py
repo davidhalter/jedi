@@ -96,7 +96,6 @@ class TestRegression(TestBase):
             pass
         f""")
         doc = defs[0].doc
-        doc = defs[0].doc  # removing this line won't work
         assert "f(x, y = 1, z = 'a')" in doc
 
     def test_definition_at_zero(self):
