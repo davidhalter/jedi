@@ -346,6 +346,18 @@ class Class(Scope):
             string += "pass\n"
         return string
 
+    @property
+    def doc(self):
+        """
+        Return a document string including call signature of __init__.
+        """
+        for sub in self.subscopes:
+            if sub.name.names[-1] == '__init__':
+                return '%s\n\n%s' % (
+                    sub.get_call_signature(funcname=self.name.names[-1]),
+                    self.docstr)
+        return self.docstr
+
 
 class Function(Scope):
     """
@@ -394,16 +406,18 @@ class Function(Scope):
                 debug.warning("multiple names in param %s" % n)
         return n
 
-    def get_call_signature(self, width=72):
+    def get_call_signature(self, width=72, funcname=None):
         """
         Generate call signature of this function.
 
         :param width: Fold lines if a line is longer than this value.
         :type width: int
+        :arg funcname: Override function name when given.
+        :type funcname: str
 
         :rtype: str
         """
-        l = self.name.names[-1] + '('
+        l = (funcname or self.name.names[-1]) + '('
         lines = []
         for (i, p) in enumerate(self.params):
             code = p.get_code(False)
