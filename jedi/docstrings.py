@@ -61,14 +61,14 @@ def _search_param_in_docstr(docstr, param_str):
     """
     Search `docstr` for a type of `param_str`.
 
-    >>> search_param_in_docstr(':type param: int', 'param')
+    >>> _search_param_in_docstr(':type param: int', 'param')
     'int'
-    >>> search_param_in_docstr('@type param: int', 'param')
+    >>> _search_param_in_docstr('@type param: int', 'param')
     'int'
-    >>> search_param_in_docstr(
+    >>> _search_param_in_docstr(
     ...   ':type param: :class:`threading.Thread`', 'param')
     'threading.Thread'
-    >>> search_param_in_docstr('no document', 'param') is None
+    >>> _search_param_in_docstr('no document', 'param') is None
     True
 
     """
@@ -87,11 +87,11 @@ def _strip_rest_role(type_str):
     """
     Strip off the part looks like a ReST role in `type_str`.
 
-    >>> strip_rest_role(':class:`ClassName`')  # strip off :class:
+    >>> _strip_rest_role(':class:`ClassName`')  # strip off :class:
     'ClassName'
-    >>> strip_rest_role(':py:obj:`module.Object`')  # works with domain
+    >>> _strip_rest_role(':py:obj:`module.Object`')  # works with domain
     'module.Object'
-    >>> strip_rest_role('ClassName')  # do nothing when not ReST role
+    >>> _strip_rest_role('ClassName')  # do nothing when not ReST role
     'ClassName'
 
     See also:

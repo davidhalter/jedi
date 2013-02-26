@@ -6,6 +6,7 @@ python:
     - 3.2
 install:
     - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install --use-mirrors simplejson; fi
+    - pip install --use-mirrors nose
 script:
     - cd test
     - ./test.sh
