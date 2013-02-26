@@ -84,8 +84,9 @@ class ImportPath(pr.Base):
     def is_nested_import(self):
         """
         This checks for the special case of nested imports, without aliases and
-        from statement:
-        >>> import foo.bar
+        from statement::
+
+            import foo.bar
         """
         return not self.import_stmt.alias and not self.import_stmt.from_ns \
                 and len(self.import_stmt.namespace.names) > 1 \
