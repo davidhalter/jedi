@@ -16,10 +16,10 @@ This is where autocompletion starts. Everything you want to complete is either
 a ``Statement`` or some special name like ``class``, which is easy to complete.
 
 Therefore you need to understand what follows after ``follow_statement``. Let's
-make an example:
+make an example::
 
->>> import datetime
->>> datetime.date.toda# <-- cursor here
+    import datetime
+    datetime.date.toda# <-- cursor here
 
 First of all, this module doesn't care about completion. It really just cares
 about ``datetime.date``. At the end of the procedure ``follow_statement`` will
@@ -45,10 +45,10 @@ the datetime import. So it continues
 
 Now what would happen if we wanted ``datetime.date.foo.bar``? Just two more
 calls to ``follow_paths`` (which calls itself with a recursion). What if the
-import would contain another Statement like this:
+import would contain another Statement like this::
 
->>> from foo import bar
->>> Date = bar.baz
+    from foo import bar
+    Date = bar.baz
 
 Well... You get it. Just another ``follow_statement`` recursion. It's really
 easy. Just that Python is not that easy sometimes. To understand tuple
@@ -681,8 +681,9 @@ def follow_paths(path, results, call_scope, position=None):
 
 def follow_path(path, scope, call_scope, position=None):
     """
-    Uses a generator and tries to complete the path, e.g.
-    >>> foo.bar.baz
+    Uses a generator and tries to complete the path, e.g.::
+
+        foo.bar.baz
 
     `follow_path` is only responsible for completing `.bar.baz`, the rest is
     done in the `follow_call` function.

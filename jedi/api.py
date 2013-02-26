@@ -360,11 +360,11 @@ class Script(object):
 
         E.g. if the cursor is here::
 
-            >>> abs(# <-- cursor is here
+            abs(# <-- cursor is here
 
         This would return the ``abs`` function. On the other hand::
 
-            >>> abs()# <-- cursor is here
+            abs()# <-- cursor is here
 
         This would return ``None``.
 
