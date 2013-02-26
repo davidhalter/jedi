@@ -485,10 +485,12 @@ def _quick_complete(source):
     """
     Convenience function to complete a source string at the end.
 
-    Example::
+    Example:
 
-        >>> _quick_complete('import json\\njson.l')
-        [<Completion: load>, <Completion: loads>]
+    >>> _quick_complete('''
+    ... import datetime
+    ... datetime.da''')                                 #doctest: +ELLIPSIS
+    [<Completion: date>, <Completion: datetime>, ...]
 
     :param source: The source code to be completed.
     :type source: string
