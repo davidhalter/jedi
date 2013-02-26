@@ -23,10 +23,10 @@ example for the autocompletion feature:
 >>> completions = script.complete()
 >>> completions
 [<Completion: load>, <Completion: loads>]
->>> completions[0].complete
-'oad'
->>> completions[0].word
-'load'
+>>> print(completions[0].complete)
+oad
+>>> print(completions[0].word)
+load
 
 As you see Jedi is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.
