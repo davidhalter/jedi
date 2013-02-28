@@ -8,11 +8,25 @@ it is just stupid to write 200'000 unittests in the manner of
 the internal data structures. That's why |jedi| uses mostly these kind of
 tests.
 
-So basically there are different kind of tests:
+There are different kind of tests:
 
 - complete / definitions ``#?``
 - goto: ``#!``
 - related names: ``#<``
+
+How to run tests?
++++++++++++++++++
+
+Basically ``run.py`` searches the ``completion`` directory for files with lines
+starting with the symbol above. There is also support for third party
+libraries. In a normal test run (``./run.py``) they are not being executed, you
+have to provide a ``--thirdparty`` option.
+
+Now it's much more important, that you know how test only one file (``./run.py
+classes``, where ``classes`` is the name of the file to test) or even one test
+(``./run.py classes 90``, which would just execute the test on line 90).
+
+If you want to debug a test, just use the --debug option.
 
 Auto-Completion
 +++++++++++++++
@@ -82,14 +96,15 @@ def run_definition_test(script, should_str, line_nr):
 
 def run_goto_test(script, correct, line_nr):
     """
-    Runs tests for gotos.
-    Tests look like this:
+    Runs tests for gotos. Tests look like this:
+
     >>> abc = 1
     >>> #! ['abc=1']
     >>> abc
 
     Additionally it is possible to add a number which describes to position of
     the test (otherwise it's just end of line.
+
     >>> #! 2 ['abc=1']
     >>> abc
 
@@ -108,8 +123,8 @@ def run_goto_test(script, correct, line_nr):
 
 def run_related_name_test(script, correct, line_nr):
     """
-    Runs tests for gotos.
-    Tests look like this:
+    Runs tests for gotos.  Tests look like this:
+
     >>> abc = 1
     >>> #< abc@1,0 abc@3,0
     >>> abc
@@ -149,6 +164,7 @@ def run_test(source, f_name, lines_to_execute):
     row symbolizes the cursor.
 
     For example:
+
     >>> #? ['ab']
     >>> ab = 3; a
 
