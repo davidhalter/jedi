@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""
+Unit tests to avoid errors of the past. Makes use of Python's ``unittest``
+module.
+"""
+
 # -*- coding: utf-8 -*-
 import unittest
 import time
