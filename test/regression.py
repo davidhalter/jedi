@@ -1,10 +1,10 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Unit tests to avoid errors of the past. Makes use of Python's ``unittest``
 module.
 """
 
-# -*- coding: utf-8 -*-
 import unittest
 import time
 import functools
