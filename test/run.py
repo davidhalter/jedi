@@ -66,8 +66,19 @@ sys.path.pop(0)  # pop again, because it might affect the completion
 
 def run_completion_test(script, correct, line_nr):
     """
-    Runs tests for completions.
-    Return if the test was a fail or not, with 1 for fail and 0 for success.
+    Uses comments to specify a test in the next line. The comment says, which
+    results are expected. The comment always begins with `#?`. The last row
+    symbolizes the cursor.
+
+    For example:
+
+    >>> #? ['real']
+    >>> a = 3; a.rea
+
+    Because it follows ``a.rea`` and a is an ``int``, which has a ``real``
+    property.
+
+    Returns 1 for fail and 0 for success.
     """
     completions = script.complete()
     #import cProfile; cProfile.run('script.complete()')
@@ -82,8 +93,13 @@ def run_completion_test(script, correct, line_nr):
 
 def run_definition_test(script, should_str, line_nr):
     """
-    Runs tests for definitions.
-    Return if the test was a fail or not, with 1 for fail and 0 for success.
+    Definition tests use the same symbols like completion tests. This is
+    possible because the completion tests are defined with a list.
+
+    >>> #? int()
+    >>> ab = 3; ab
+
+    Returns 1 for fail and 0 for success.
     """
     result = script.definition()
     is_str = set(r.desc_with_module for r in result)
@@ -96,21 +112,19 @@ def run_definition_test(script, should_str, line_nr):
 
 def run_goto_test(script, correct, line_nr):
     """
-    Runs tests for gotos. Tests look like this:
+    Tests look like this:
 
     >>> abc = 1
     >>> #! ['abc=1']
     >>> abc
 
     Additionally it is possible to add a number which describes to position of
-    the test (otherwise it's just end of line.
+    the test (otherwise it's just end of line).
 
     >>> #! 2 ['abc=1']
     >>> abc
 
-    For the tests the important things in the end are the positions.
-
-    Return if the test was a fail or not, with 1 for fail and 0 for success.
+    Returns 1 for fail and 0 for success.
     """
     result = script.goto()
     comp_str = str(sorted(str(r.description) for r in result))
@@ -123,13 +137,13 @@ def run_goto_test(script, correct, line_nr):
 
 def run_related_name_test(script, correct, line_nr):
     """
-    Runs tests for gotos.  Tests look like this:
+    Tests look like this:
 
     >>> abc = 1
     >>> #< abc@1,0 abc@3,0
     >>> abc
 
-    Return if the test was a fail or not, with 1 for fail and 0 for success.
+    Returns 1 for fail and 0 for success.
     """
     result = script.related_names()
     correct = correct.strip()
@@ -159,17 +173,6 @@ def run_test(source, f_name, lines_to_execute):
     """
     This is the completion test for some cases. The tests are not unit test
     like, they are rather integration tests.
-    It uses comments to specify a test in the next line. The comment also says,
-    which results are expected. The comment always begins with `#?`. The last
-    row symbolizes the cursor.
-
-    For example:
-
-    >>> #? ['ab']
-    >>> ab = 3; a
-
-    >>> #? int()
-    >>> ab = 3; ab
     """
     def definition(correct, correct_start, path):
         def defs(line_nr, indent):
