@@ -33,6 +33,9 @@ In five chapters I'm trying to describe the internals of |jedi|:
 - :ref:`Caching & Recursions <caching-recursions>`
 - :ref:`Helper modules <dev-helpers>`
 
+.. note:: Testing is not documented here, you'll find that
+   `here <testing.html>`_.
+
 
 .. _core:
 
