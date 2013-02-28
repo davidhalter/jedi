@@ -4,8 +4,8 @@ Jedi Testing
 ============
 
 You want to add a test for |jedi|? Great! We love that. Normally you should
-write your tests as :ref:`Blackbox Tests <blackbox>` tests. Most tests would
-fit in there.
+write your tests as :ref:`Blackbox Tests <blackbox>`. Most tests would
+fit right in there.
 
 .. _blackbox:
 
