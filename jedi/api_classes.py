@@ -187,7 +187,7 @@ class Completion(BaseDefinition):
         """
         Return the rest of the word, e.g. completing ``isinstance``::
 
-            >>> isinstan# <-- Cursor is here
+            isinstan# <-- Cursor is here
 
         would return the string 'ce'. It also adds additional stuff, depending
         on your `settings.py`.
@@ -211,7 +211,7 @@ class Completion(BaseDefinition):
         Similar to :meth:`Completion.complete`, but return the whole word, for
         example::
 
-            >>> isinstan
+            isinstan
 
         would return 'isinstance'.
         """
