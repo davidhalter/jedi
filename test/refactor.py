@@ -101,10 +101,11 @@ def test_dir(refactoring_test_dir):
             base.summary.append(s)
 
 
-refactoring_test_dir = '../test/refactor'
-test_files = base.get_test_list()
-test_dir(refactoring_test_dir)
+if __name__ == '__main__':
+    refactoring_test_dir = '../test/refactor'
+    test_files = base.get_test_list()
+    test_dir(refactoring_test_dir)
 
-base.print_summary()
+    base.print_summary()
 
-sys.exit(1 if base.tests_fail else 0)
+    sys.exit(1 if base.tests_fail else 0)

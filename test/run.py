@@ -10,9 +10,9 @@ tests.
 
 So basically there are different kind of tests:
 
-- complete / definitions: ``#? ``
-- goto: ``#! ``
-- related names: ``#< ``
+- complete / definitions ``#?``
+- goto: ``#!``
+- related names: ``#<``
 
 Auto-Completion
 +++++++++++++++
@@ -268,32 +268,34 @@ def test_dir(completion_test_dir, thirdparty=False):
             print(s)
             base.summary.append(s)
 
-try:
-    i = sys.argv.index('--thirdparty')
-    thirdparty = True
-    sys.argv = sys.argv[:i] + sys.argv[i + 1:]
-except ValueError:
-    thirdparty = False
 
-test_files = base.get_test_list()
+if __name__ == '__main__':
+    try:
+        i = sys.argv.index('--thirdparty')
+        thirdparty = True
+        sys.argv = sys.argv[:i] + sys.argv[i + 1:]
+    except ValueError:
+        thirdparty = False
 
-# completion tests:
-completion_test_dir = '../test/completion'
+    test_files = base.get_test_list()
 
-# execute tests
-test_dir(completion_test_dir)
-if test_files or thirdparty:
-    completion_test_dir += '/thirdparty'
-    test_dir(completion_test_dir, thirdparty=True)
+    # completion tests:
+    completion_test_dir = '../test/completion'
 
-base.print_summary()
-#from guppy import hpy
-#hpy()
-#print hpy().heap()
+    # execute tests
+    test_dir(completion_test_dir)
+    if test_files or thirdparty:
+        completion_test_dir += '/thirdparty'
+        test_dir(completion_test_dir, thirdparty=True)
 
-exit_code = 1 if base.tests_fail else 0
-if sys.hexversion < 0x02060000 and base.tests_fail <= 9:
-    # Python 2.5 has major incompabillities (e.g. no property.setter),
-    # therefore it is not possible to pass all tests.
-    exit_code = 0
-sys.exit(exit_code)
+    base.print_summary()
+    #from guppy import hpy
+    #hpy()
+    #print hpy().heap()
+
+    exit_code = 1 if base.tests_fail else 0
+    if sys.hexversion < 0x02060000 and base.tests_fail <= 9:
+        # Python 2.5 has major incompabillities (e.g. no property.setter),
+        # therefore it is not possible to pass all tests.
+        exit_code = 0
+    sys.exit(exit_code)
