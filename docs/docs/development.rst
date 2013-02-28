@@ -34,7 +34,7 @@ In five chapters I'm trying to describe the internals of |jedi|:
 - :ref:`Helper modules <dev-helpers>`
 
 .. note:: Testing is not documented here, you'll find that
-   `here <testing.html>`_.
+   `right here <testing.html>`_.
 
 
 .. _core:

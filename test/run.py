@@ -1,4 +1,39 @@
 #!/usr/bin/env python
+"""
+|jedi| is mostly being tested by what I would call "Blackbox Tests". These
+tests are just testing the interface and do input/output testing. This makes a
+lot of sense for |jedi|. Jedi supports so many different code structures, that
+it is just stupid to write 200'000 unittests in the manner of
+``regression.py``. Also, it is impossible to do doctests/unittests on most of
+the internal data structures. That's why |jedi| uses mostly these kind of
+tests.
+
+So basically there are different kind of tests:
+
+- complete / definitions: ``#? ``
+- goto: ``#! ``
+- related names: ``#< ``
+
+Auto-Completion
++++++++++++++++
+
+.. autofunction:: run_completion_test
+
+Definition
+++++++++++
+
+.. autofunction:: run_definition_test
+
+Goto
+++++
+
+.. autofunction:: run_goto_test
+
+Related Names
++++++++++++++
+
+.. autofunction:: run_related_name_test
+"""
 import os
 import sys
 import re

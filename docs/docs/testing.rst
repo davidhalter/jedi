@@ -3,19 +3,23 @@
 Jedi Testing
 ============
 
-.. currentmodule:: test
+You want to add a test for |jedi|? Great! We love that. Normally you should
+write your tests as :ref:`Blackbox Tests <blackbox>` tests. Most tests would
+fit in there.
+
+.. _blackbox:
 
 Blackbox Tests (run.py)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: run
+.. automodule:: test.run
 
 Regression Tests (regression.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: regression
+.. automodule:: test.regression
 
 Refactoring Tests (refactor.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: refactor
+.. automodule:: test.refactor
