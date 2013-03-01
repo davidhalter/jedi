@@ -70,10 +70,10 @@ def run_completion_test(script, correct, line_nr):
     results are expected. The comment always begins with `#?`. The last row
     symbolizes the cursor.
 
-    For example:
+    For example::
 
-    >>> #? ['real']
-    >>> a = 3; a.rea
+        #? ['real']
+        a = 3; a.rea
 
     Because it follows ``a.rea`` and a is an ``int``, which has a ``real``
     property.
@@ -94,10 +94,10 @@ def run_completion_test(script, correct, line_nr):
 def run_definition_test(script, should_str, line_nr):
     """
     Definition tests use the same symbols like completion tests. This is
-    possible because the completion tests are defined with a list.
+    possible because the completion tests are defined with a list::
 
-    >>> #? int()
-    >>> ab = 3; ab
+        #? int()
+        ab = 3; ab
 
     Returns 1 for fail and 0 for success.
     """
@@ -112,17 +112,17 @@ def run_definition_test(script, should_str, line_nr):
 
 def run_goto_test(script, correct, line_nr):
     """
-    Tests look like this:
+    Tests look like this::
 
-    >>> abc = 1
-    >>> #! ['abc=1']
-    >>> abc
+        abc = 1
+        #! ['abc=1']
+        abc
 
     Additionally it is possible to add a number which describes to position of
-    the test (otherwise it's just end of line).
+    the test (otherwise it's just end of line)::
 
-    >>> #! 2 ['abc=1']
-    >>> abc
+        #! 2 ['abc=1']
+        abc
 
     Returns 1 for fail and 0 for success.
     """
@@ -137,11 +137,11 @@ def run_goto_test(script, correct, line_nr):
 
 def run_related_name_test(script, correct, line_nr):
     """
-    Tests look like this:
+    Tests look like this::
 
-    >>> abc = 1
-    >>> #< abc@1,0 abc@3,0
-    >>> abc
+        abc = 1
+        #< abc@1,0 abc@3,0
+        abc
 
     Returns 1 for fail and 0 for success.
     """

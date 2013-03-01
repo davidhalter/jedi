@@ -23,12 +23,13 @@ def run_test(source, f_name, lines_to_execute):
     which results are expected. The comment always begins with `#?`. The last
     row symbolizes the cursor.
 
-    For example:
-    >>> #? ['ab']
-    >>> ab = 3; a
+    For example::
 
-    >>> #? int()
-    >>> ab = 3; ab
+        #? ['ab']
+        ab = 3; a
+
+        #? int()
+        ab = 3; ab
     """
     fails = 0
     tests = 0
