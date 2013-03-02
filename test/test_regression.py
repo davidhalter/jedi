@@ -539,6 +539,32 @@ class TestSpeed(TestBase):
         #print(jedi.imports.imports_processed)
 
 
+class TestInterpreterAPI(unittest.TestCase):
+
+    def check_interpreter_complete(self, source, namespace, completions,
+                                   **kwds):
+        cs = api.Interpreter(source, [namespace], **kwds).complete()
+        actual = [c.word for c in cs]
+        self.assertEqual(actual, completions)
+
+    def test_complete_raw_function(self):
+        self.check_interpreter_complete('join().up',
+                                        {'join': os.path.join},
+                                        ['upper'])
+
+    def test_complete_raw_module(self):
+        self.check_interpreter_complete('os.path.join().up',
+                                        {'os': os},
+                                        ['upper'])
+
+    def test_complete_raw_instance(self):
+        import datetime
+        dt = datetime.datetime(2013, 1, 1)
+        self.check_interpreter_complete('dt.strftime("%Y").up',
+                                        {'dt': dt},
+                                        ['upper'])
+
+
 def test_settings_module():
     """
     jedi.settings and jedi.cache.settings must be the same module.
