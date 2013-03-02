@@ -508,10 +508,16 @@ class Interpreter(Script):
     """
     Jedi API for Python REPLs.
 
-    >>> from itertools import chain
-    >>> script = Interpreter('cha', [locals()])
-    >>> script.complete()
-    [<Completion: chain>]
+    In addition to completion of simple attribute access, Jedi
+    supports code completion based on static code analysis.
+    Jedi can complete attributes of object which is not initialized
+    yet.
+
+    >>> from os.path import join
+    >>> namespace = locals()
+    >>> script = Interpreter('join().up', [namespace])
+    >>> print(script.complete()[0].word)
+    upper
 
     """
 
@@ -529,7 +535,7 @@ class Interpreter(Script):
         for (variable, obj) in raw_namespace.items():
             try:
                 module = obj.__module__
-            except:
+            except AttributeError:
                 continue
             fakeimport = self._make_fakeimport(variable, module)
             self._parser.scope.imports.append(fakeimport)
