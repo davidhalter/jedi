@@ -533,31 +533,45 @@ class Interpreter(Script):
 
     def _import_raw_namespace(self, raw_namespace):
         for (variable, obj) in raw_namespace.items():
-            try:
-                module = obj.__module__
-            except AttributeError:
+            module = getattr(obj, '__module__', None)
+            if module:
+                fakeimport = self._make_fakeimport(module, variable)
+                self._parser.scope.imports.append(fakeimport)
                 continue
-            fakeimport = self._make_fakeimport(variable, module)
-            self._parser.scope.imports.append(fakeimport)
 
-    def _make_fakeimport(self, variable, module):
+            if getattr(obj, '__file__', None):
+                fakeimport = self._make_fakeimport(obj.__name__)
+                self._parser.scope.imports.append(fakeimport)
+                continue
+
+    def _make_fakeimport(self, module, variable=None):
         submodule = self._parser.scope._sub_module
-        varname = pr.Name(
-            module=submodule,
-            names=[(variable, (0, 0))],
-            start_pos=(0, 0),
-            end_pos=(None, None))
+        if variable:
+            varname = pr.Name(
+                module=submodule,
+                names=[(variable, (0, 0))],
+                start_pos=(0, 0),
+                end_pos=(None, None))
+        else:
+            varname = None
         modname = pr.Name(
             module=submodule,
             names=[(module, (0, 0))],
             start_pos=(0, 0),
             end_pos=(None, None))
-        fakeimport = pr.Import(
-            module=submodule,
-            namespace=varname,
-            from_ns=modname,
-            start_pos=(0, 0),
-            end_pos=(None, None))
+        if varname:
+            fakeimport = pr.Import(
+                module=submodule,
+                namespace=varname,
+                from_ns=modname,
+                start_pos=(0, 0),
+                end_pos=(None, None))
+        else:
+            fakeimport = pr.Import(
+                module=submodule,
+                namespace=modname,
+                start_pos=(0, 0),
+                end_pos=(None, None))
         fakeimport.parent = submodule
         return fakeimport
 
