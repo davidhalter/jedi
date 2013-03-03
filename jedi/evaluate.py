@@ -120,6 +120,39 @@ def get_names_of_scope(scope, position=None, star_search=True,
     Get all completions (names) possible for the current scope.
     The star search option is only here to provide an optimization. Otherwise
     the whole thing would probably start a little recursive madness.
+
+    This function is used to include names from outer scopes.  For example,
+    when the current scope is function:
+
+    >>> from jedi.parsing import Parser
+    >>> parser = Parser('''
+    ... x = ['a', 'b', 'c']
+    ... def func():
+    ...     y = None
+    ... ''')
+    >>> scope = parser.scope.subscopes[0]
+    >>> scope
+    <Function: func@3-6>
+
+    `get_names_of_scope` is a generator.  First it yields names from
+    most inner scope.
+
+    >>> pairs = list(get_names_of_scope(scope))
+    >>> pairs[0]
+    (<Function: func@3-6>, [<Name: y@4,4>])
+
+    Then it yield the names from one level outer scope.  For this
+    example, this is the most outer scope.
+
+    >>> pairs[1]
+    (<SubModule: None@1-6>, [<Name: x@2,0>, <Name: func@3,4>])
+
+    Finally, it yields names from builtin, if `include_builtin` is
+    true (default).
+
+    >>> pairs[2]                                        #doctest: +ELLIPSIS
+    (<Module: __builtin__@...>, [<Name: ...>, ...])
+
     """
     in_func_scope = scope
     non_flow = scope.get_parent_until(pr.Flow, reverse=True)
