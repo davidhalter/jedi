@@ -696,11 +696,11 @@ class Statement(Simple):
 
     def _remove_executions_from_set_vars(self, set_vars):
         """
-        Important mainly for assosiative arrays:
+        Important mainly for assosiative arrays::
 
-        >>> a = 3
-        >>> b = {}
-        >>> b[a] = 3
+            a = 3
+            b = {}
+            b[a] = 3
 
         `a` is in this case not a set_var, it is used to index the dict.
         """
