@@ -543,9 +543,10 @@ class TestInterpreterAPI(unittest.TestCase):
 
     def check_interpreter_complete(self, source, namespace, completions,
                                    **kwds):
-        cs = api.Interpreter(source, [namespace], **kwds).complete()
+        script = api.Interpreter(source, [namespace], **kwds)
+        cs = script.complete()
         actual = [c.word for c in cs]
-        self.assertEqual(actual, completions)
+        self.assertEqual(sorted(actual), sorted(completions))
 
     def test_complete_raw_function(self):
         self.check_interpreter_complete('join().up',
@@ -560,9 +561,9 @@ class TestInterpreterAPI(unittest.TestCase):
     def test_complete_raw_instance(self):
         import datetime
         dt = datetime.datetime(2013, 1, 1)
-        self.check_interpreter_complete('dt.strftime("%Y").up',
+        self.check_interpreter_complete('(dt - dt).ti',
                                         {'dt': dt},
-                                        ['upper'])
+                                        ['time', 'timetz', 'timetuple'])
 
 
 def test_settings_module():
