@@ -212,7 +212,7 @@ class Scope(Simple, IsScope):
     def get_set_vars(self):
         """
         Get all the names, that are active and accessible in the current
-        scope.
+        scope.  See :meth:`get_defined_names` for examples.
 
         :return: list of Name
         :rtype: list
@@ -233,6 +233,26 @@ class Scope(Simple, IsScope):
         return n
 
     def get_defined_names(self):
+        """
+        Get all defined names in this scope.
+
+        >>> from jedi.parsing import Parser
+        >>> parser = Parser('''
+        ... a = x
+        ... b = y
+        ... b.c = z
+        ... ''')
+        >>> parser.scope.get_defined_names()
+        [<Name: a@2,0>, <Name: b@3,0>]
+
+        Note that unlike :meth:`get_set_vars`, assignment to object
+        attribute does not change the result because it does not change
+        the defined names in this scope.
+
+        >>> parser.scope.get_set_vars()
+        [<Name: a@2,0>, <Name: b@3,0>, <Name: b.c@4,0>]
+
+        """
         return [n for n in self.get_set_vars()
                   if isinstance(n, Import) or len(n) == 1]
 
