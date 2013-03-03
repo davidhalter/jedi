@@ -549,25 +549,28 @@ class TestInterpreterAPI(unittest.TestCase):
         self.assertEqual(sorted(actual), sorted(completions))
 
     def test_complete_raw_function(self):
+        from os.path import join
         self.check_interpreter_complete('join().up',
-                                        {'join': os.path.join},
+                                        locals(),
                                         ['upper'])
 
     def test_complete_raw_function_different_name(self):
+        from os.path import join as pjoin
         self.check_interpreter_complete('pjoin().up',
-                                        {'pjoin': os.path.join},
+                                        locals(),
                                         ['upper'])
 
     def test_complete_raw_module(self):
+        import os
         self.check_interpreter_complete('os.path.join().up',
-                                        {'os': os},
+                                        locals(),
                                         ['upper'])
 
     def test_complete_raw_instance(self):
         import datetime
         dt = datetime.datetime(2013, 1, 1)
         self.check_interpreter_complete('(dt - dt).ti',
-                                        {'dt': dt},
+                                        locals(),
                                         ['time', 'timetz', 'timetuple'])
 
 

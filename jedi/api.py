@@ -576,17 +576,18 @@ class Interpreter(Script):
         """
         scope = self._parser.scope
         for (variable, obj) in raw_namespace.items():
+            objname = getattr(obj, '__name__', None)
+
             # Import functions and classes
             module = getattr(obj, '__module__', None)
-            if module:
-                fakeimport = self._make_fakeimport(module, obj.__name__,
-                                                   variable)
+            if module and objname:
+                fakeimport = self._make_fakeimport(module, objname, variable)
                 scope.add_import(fakeimport)
                 continue
 
             # Import modules
-            if getattr(obj, '__file__', None):
-                fakeimport = self._make_fakeimport(obj.__name__)
+            if getattr(obj, '__file__', None) and objname:
+                fakeimport = self._make_fakeimport(objname)
                 scope.add_import(fakeimport)
                 continue
 
