@@ -545,7 +545,7 @@ class Interpreter(Script):
                 scope.add_import(fakeimport)
                 continue
 
-    def _make_fakeimport(self, module, variable=None):
+    def _make_fakeimport(self, module, variable=None, alias=None):
         submodule = self._parser.scope._sub_module
         if variable:
             varname = pr.Name(
@@ -560,17 +560,27 @@ class Interpreter(Script):
             names=[(module, (0, 0))],
             start_pos=(0, 0),
             end_pos=(None, None))
+        if alias:
+            aliasname = pr.Name(
+                module=submodule,
+                names=[(alias, (0, 0))],
+                start_pos=(0, 0),
+                end_pos=(None, None))
+        else:
+            aliasname = None
         if varname:
             fakeimport = pr.Import(
                 module=submodule,
                 namespace=varname,
                 from_ns=modname,
+                alias=aliasname,
                 start_pos=(0, 0),
                 end_pos=(None, None))
         else:
             fakeimport = pr.Import(
                 module=submodule,
                 namespace=modname,
+                alias=aliasname,
                 start_pos=(0, 0),
                 end_pos=(None, None))
         return fakeimport
