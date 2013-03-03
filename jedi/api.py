@@ -542,8 +542,7 @@ class Interpreter(Script):
             source, line, column, source_path, source_encoding, fast=False)
 
         count = itertools.count()
-        fmt = '*jedi-{0}*'.format
-        self._genname = lambda: fmt(next(count))
+        self._genname = lambda: '*jedi-%s*' % next(count)
         """
         Generate unique variable names to avoid name collision.
         To avoid name collision to already defined names, generated
