@@ -663,14 +663,18 @@ class Statement(Simple):
     stores pretty much all the Python code, except functions, classes, imports,
     and flow functions like if, for, etc.
 
-    :param set_vars: The variables which are defined by the statement.
-    :param set_vars: str
-    :param used_vars: The variables which are used by the statement.
-    :param used_vars: str
-    :param token_list: Token list which is also peppered with Name.
-    :param token_list: list
-    :param start_pos: Position (line, column) of the Statement.
-    :type start_pos: tuple(int, int)
+    :type    set_vars: list of :class:`Name`
+    :param   set_vars: The variables which are defined by the statement.
+    :type   used_vars: list of :class:`Name`
+    :param  used_vars: The variables which are used by the statement.
+    :type  token_list: list
+    :param token_list:
+        List of tokens or names.  Each element is either an instance
+        of :class:`Name` or a tuple of token type value (e.g.,
+        :data:`tokenize.NUMBER`), token string (e.g., ``'='``), and
+        start position (e.g., ``(1, 0)``).
+    :type   start_pos: 2-tuple of int
+    :param  start_pos: Position (line, column) of the Statement.
     """
     __slots__ = ('token_list', 'used_vars',
                  'set_vars', '_commands', '_assignment_details')
