@@ -269,12 +269,22 @@ class Module(IsScope):
 
 
 class SubModule(Scope, Module):
+
     """
     The top scope, which is always a module.
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
+
     def __init__(self, path, start_pos=(1, 0), top_module=None):
+        """
+        Initialize :class:`SubModule`.
+
+        :type path: str
+        :arg  path: File path to this module.
+
+        .. todo:: Document `top_module`.
+        """
         super(SubModule, self).__init__(self, start_pos)
         self.path = path
         self.global_vars = []
