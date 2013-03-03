@@ -525,6 +525,16 @@ class Interpreter(Script):
 
     def __init__(self, source, namespaces=[], line=None, column=None,
                  source_path=None, source_encoding='utf-8'):
+        """
+        Parse `source` and mixin interpreted Python objects from `namespaces`.
+
+        :type source: str
+        :arg  source:
+        :type namespaces: list of dict
+        :arg  namespaces:
+
+        Other optional arguments are same as the ones for :class:`Script`.
+        """
         lines = source.splitlines()
         line = len(lines) if line is None else line
         column = len(lines[-1]) if column is None else column
@@ -540,6 +550,12 @@ class Interpreter(Script):
             self._import_raw_namespace(ns)
 
     def _import_raw_namespace(self, raw_namespace):
+        """
+        Import interpreted Python objects in a namespace.
+
+        :type raw_namespace: dict
+        :arg  raw_namespace: e.g., the dict given by `locals`
+        """
         scope = self._parser.scope
         for (variable, obj) in raw_namespace.items():
             module = getattr(obj, '__module__', None)
@@ -565,6 +581,25 @@ class Interpreter(Script):
                 continue
 
     def _make_fakeimport(self, module, variable=None, alias=None):
+        """
+        Make a fake import object.
+
+        The following statements are created depending on what parameters
+        are given:
+
+        - only `module` is given: ``import <module>``
+        - `module` and `variable` are given: ``from <module> import <variable>``
+        - all params are given: ``from <module> import <variable> as <alias>``
+
+        :type   module: str
+        :arg    module: ``<module>`` part in ``from <module> import ...``
+        :type variable: str
+        :arg  variable: ``<variable>`` part in ``from ... import <variable>``
+        :type    alias: str
+        :arg     alias: ``<alias>`` part in ``... import ... as <alias>``.
+
+        :rtype: :class:`parsing_representation.Import`
+        """
         submodule = self._parser.scope._sub_module
         if variable:
             varname = pr.Name(
@@ -607,6 +642,10 @@ class Interpreter(Script):
     def _make_fakestatement(self, lhs, rhs, call=False):
         """
         Make a fake statement object that represents ``lhs = rhs``.
+
+        :type call: bool
+        :arg  call: When `call` is true, make a fake statement that represents
+                   ``lhs = rhs()``.
 
         :rtype: :class:`parsing_representation.Statement`
         """
