@@ -553,6 +553,11 @@ class TestInterpreterAPI(unittest.TestCase):
                                         {'join': os.path.join},
                                         ['upper'])
 
+    def test_complete_raw_function_different_name(self):
+        self.check_interpreter_complete('pjoin().up',
+                                        {'pjoin': os.path.join},
+                                        ['upper'])
+
     def test_complete_raw_module(self):
         self.check_interpreter_complete('os.path.join().up',
                                         {'os': os},

@@ -576,7 +576,8 @@ class Interpreter(Script):
             # Import functions and classes
             module = getattr(obj, '__module__', None)
             if module:
-                fakeimport = self._make_fakeimport(module, variable)
+                fakeimport = self._make_fakeimport(module, obj.__name__,
+                                                   variable)
                 scope.add_import(fakeimport)
                 continue
 
