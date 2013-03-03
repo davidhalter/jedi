@@ -569,21 +569,21 @@ class Interpreter(Script):
         if variable:
             varname = pr.Name(
                 module=submodule,
-                names=[(variable, (0, 0))],
-                start_pos=(0, 0),
+                names=[(variable, (-1, 0))],
+                start_pos=(-1, 0),
                 end_pos=(None, None))
         else:
             varname = None
         modname = pr.Name(
             module=submodule,
-            names=[(module, (0, 0))],
-            start_pos=(0, 0),
+            names=[(module, (-1, 0))],
+            start_pos=(-1, 0),
             end_pos=(None, None))
         if alias:
             aliasname = pr.Name(
                 module=submodule,
-                names=[(alias, (0, 0))],
-                start_pos=(0, 0),
+                names=[(alias, (-1, 0))],
+                start_pos=(-1, 0),
                 end_pos=(None, None))
         else:
             aliasname = None
@@ -593,14 +593,14 @@ class Interpreter(Script):
                 namespace=varname,
                 from_ns=modname,
                 alias=aliasname,
-                start_pos=(0, 0),
+                start_pos=(-1, 0),
                 end_pos=(None, None))
         else:
             fakeimport = pr.Import(
                 module=submodule,
                 namespace=modname,
                 alias=aliasname,
-                start_pos=(0, 0),
+                start_pos=(-1, 0),
                 end_pos=(None, None))
         return fakeimport
 
