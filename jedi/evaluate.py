@@ -87,9 +87,17 @@ import docstrings
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):
     """
-    Deletes all names that are ahead of the position, except for some special
-    objects like instances, where the position doesn't matter.
+    Return filtered version of ``scope.get_defined_names()``.
 
+    This function basically does what :meth:`scope.get_defined_names
+    <parsing_representation.Scope.get_defined_names>` does.
+
+    - If `position` is given, delete all names defined after `position`.
+    - For special objects like instances, `position` is ignored and all
+      names are returned.
+
+    :type     scope: :class:`parsing_representation.IsScope`
+    :param    scope: Scope in which names are searched.
     :param position: the position as a line/column tuple, default is infinity.
     """
     names = scope.get_defined_names()
