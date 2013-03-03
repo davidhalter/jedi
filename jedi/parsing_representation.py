@@ -50,6 +50,16 @@ class Simple(Base):
                  '_end_pos')
 
     def __init__(self, module, start_pos, end_pos=(None, None)):
+        """
+        Initialize :class:`Simple`.
+
+        :type      module: :class:`SubModule`
+        :param     module: The module in which this Python object locates.
+        :type   start_pos: 2-tuple of int
+        :param  start_pos: Position (line, column) of the Statement.
+        :type     end_pos: 2-tuple of int
+        :param    end_pos: Same as `start_pos`.
+        """
         self._sub_module = module
         self._start_pos = start_pos
         self._end_pos = end_pos
