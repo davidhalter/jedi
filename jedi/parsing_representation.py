@@ -14,6 +14,25 @@ One special thing:
 ``[1, 2+33]`` for example would be an Array with two ``Statement`` inside. This
 is the easiest way to write a parser. The same behaviour applies to ``Param``,
 which is being used in a function definition.
+
+The easiest way to play with this module is to use :class:`parsing.Parser`.
+:attr:`parsing.Parser.scope` holds an instance of :class:`SubModule`:
+
+>>> from jedi.parsing import Parser
+>>> parser = Parser('import os', 'example.py')
+>>> submodule = parser.scope
+>>> submodule
+<SubModule: example.py@1-2>
+
+Any subclasses of :class:`Scope`, including :class:`SubModule` has
+attribute :attr:`imports <Scope.imports>`.  This attribute has import
+statements in this scope.  Check this out:
+
+>>> submodule.imports
+[<Import: import os @1,0>]
+
+See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
+
 """
 
 import os
