@@ -553,22 +553,40 @@ class Interpreter(Script):
         """
         Import interpreted Python objects in a namespace.
 
+        Three kinds of objects are treated here.
+
+        1. Functions and classes.  The objects imported like this::
+
+               from os.path import join
+
+        2. Modules.  The objects imported like this::
+
+               import os
+
+        3. Instances.  The objects created like this::
+
+               from datetime import datetime
+               dt = datetime(2013, 1, 1)
+
         :type raw_namespace: dict
         :arg  raw_namespace: e.g., the dict given by `locals`
         """
         scope = self._parser.scope
         for (variable, obj) in raw_namespace.items():
+            # Import functions and classes
             module = getattr(obj, '__module__', None)
             if module:
                 fakeimport = self._make_fakeimport(module, variable)
                 scope.add_import(fakeimport)
                 continue
 
+            # Import modules
             if getattr(obj, '__file__', None):
                 fakeimport = self._make_fakeimport(obj.__name__)
                 scope.add_import(fakeimport)
                 continue
 
+            # Import instances
             objclass = getattr(obj, '__class__', None)
             module = getattr(objclass, '__module__', None)
             if objclass and module:
