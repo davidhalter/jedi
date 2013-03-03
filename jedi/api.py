@@ -544,7 +544,11 @@ class Interpreter(Script):
         count = itertools.count()
         fmt = '*jedi-{0}*'.format
         self._genname = lambda: fmt(next(count))
-        """Generate unique variable names to avoid name collision."""
+        """
+        Generate unique variable names to avoid name collision.
+        To avoid name collision to already defined names, generated
+        names are invalid as Python identifier.
+        """
 
         for ns in namespaces:
             self._import_raw_namespace(ns)
