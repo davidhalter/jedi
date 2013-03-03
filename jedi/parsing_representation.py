@@ -587,9 +587,6 @@ class Import(Simple):
     """
     Stores the imports of any Scopes.
 
-    >>> 1+1
-    2
-
     :param start_pos: Position (line, column) of the Import.
     :type start_pos: tuple(int, int)
     :param namespace: The import, can be empty if a star is given
