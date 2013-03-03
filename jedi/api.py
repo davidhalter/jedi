@@ -11,6 +11,8 @@ from __future__ import with_statement
 import re
 import os
 import warnings
+import itertools
+import tokenize
 
 from jedi import parsing
 from jedi import parsing_representation as pr
@@ -528,6 +530,12 @@ class Interpreter(Script):
         column = len(lines[-1]) if column is None else column
         super(Interpreter, self).__init__(
             source, line, column, source_path, source_encoding, fast=False)
+
+        count = itertools.count()
+        fmt = '*jedi-{0}*'.format
+        self._genname = lambda: fmt(next(count))
+        """Generate unique variable names to avoid name collision."""
+
         for ns in namespaces:
             self._import_raw_namespace(ns)
 
@@ -543,6 +551,17 @@ class Interpreter(Script):
             if getattr(obj, '__file__', None):
                 fakeimport = self._make_fakeimport(obj.__name__)
                 scope.add_import(fakeimport)
+                continue
+
+            objclass = getattr(obj, '__class__', None)
+            module = getattr(objclass, '__module__', None)
+            if objclass and module:
+                alias = self._genname()
+                fakeimport = self._make_fakeimport(module, objclass.__name__,
+                                                   alias)
+                fakestmt = self._make_fakestatement(variable, alias, call=True)
+                scope.add_import(fakeimport)
+                scope.add_statement(fakestmt)
                 continue
 
     def _make_fakeimport(self, module, variable=None, alias=None):
@@ -584,6 +603,37 @@ class Interpreter(Script):
                 start_pos=(0, 0),
                 end_pos=(None, None))
         return fakeimport
+
+    def _make_fakestatement(self, lhs, rhs, call=False):
+        """
+        Make a fake statement object that represents ``lhs = rhs``.
+
+        :rtype: :class:`parsing_representation.Statement`
+        """
+        submodule = self._parser.scope._sub_module
+        lhsname = pr.Name(
+            module=submodule,
+            names=[(lhs, (0, 0))],
+            start_pos=(0, 0),
+            end_pos=(None, None))
+        rhsname = pr.Name(
+            module=submodule,
+            names=[(rhs, (0, 0))],
+            start_pos=(0, 0),
+            end_pos=(None, None))
+        token_list = [lhsname, (tokenize.OP, '=', (0, 0)), rhsname]
+        if call:
+            token_list.extend([
+                (tokenize.OP, '(', (0, 0)),
+                (tokenize.OP, ')', (0, 0)),
+            ])
+        return pr.Statement(
+            module=submodule,
+            set_vars=[lhsname],
+            used_vars=[rhsname],
+            token_list=token_list,
+            start_pos=(0, 0),
+            end_pos=(None, None))
 
 
 def defined_names(source, source_path=None, source_encoding='utf-8'):
