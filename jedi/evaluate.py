@@ -16,10 +16,10 @@ This is where autocompletion starts. Everything you want to complete is either
 a ``Statement`` or some special name like ``class``, which is easy to complete.
 
 Therefore you need to understand what follows after ``follow_statement``. Let's
-make an example:
+make an example::
 
->>> import datetime
->>> datetime.date.toda# <-- cursor here
+    import datetime
+    datetime.date.toda# <-- cursor here
 
 First of all, this module doesn't care about completion. It really just cares
 about ``datetime.date``. At the end of the procedure ``follow_statement`` will
@@ -45,10 +45,10 @@ the datetime import. So it continues
 
 Now what would happen if we wanted ``datetime.date.foo.bar``? Just two more
 calls to ``follow_paths`` (which calls itself with a recursion). What if the
-import would contain another Statement like this:
+import would contain another Statement like this::
 
->>> from foo import bar
->>> Date = bar.baz
+    from foo import bar
+    Date = bar.baz
 
 Well... You get it. Just another ``follow_statement`` recursion. It's really
 easy. Just that Python is not that easy sometimes. To understand tuple
@@ -87,9 +87,17 @@ import docstrings
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):
     """
-    Deletes all names that are ahead of the position, except for some special
-    objects like instances, where the position doesn't matter.
+    Return filtered version of ``scope.get_defined_names()``.
 
+    This function basically does what :meth:`scope.get_defined_names
+    <parsing_representation.Scope.get_defined_names>` does.
+
+    - If `position` is given, delete all names defined after `position`.
+    - For special objects like instances, `position` is ignored and all
+      names are returned.
+
+    :type     scope: :class:`parsing_representation.IsScope`
+    :param    scope: Scope in which names are searched.
     :param position: the position as a line/column tuple, default is infinity.
     """
     names = scope.get_defined_names()
@@ -112,6 +120,39 @@ def get_names_of_scope(scope, position=None, star_search=True,
     Get all completions (names) possible for the current scope.
     The star search option is only here to provide an optimization. Otherwise
     the whole thing would probably start a little recursive madness.
+
+    This function is used to include names from outer scopes.  For example,
+    when the current scope is function:
+
+    >>> from jedi.parsing import Parser
+    >>> parser = Parser('''
+    ... x = ['a', 'b', 'c']
+    ... def func():
+    ...     y = None
+    ... ''')
+    >>> scope = parser.scope.subscopes[0]
+    >>> scope
+    <Function: func@3-6>
+
+    `get_names_of_scope` is a generator.  First it yields names from
+    most inner scope.
+
+    >>> pairs = list(get_names_of_scope(scope))
+    >>> pairs[0]
+    (<Function: func@3-6>, [<Name: y@4,4>])
+
+    Then it yield the names from one level outer scope.  For this
+    example, this is the most outer scope.
+
+    >>> pairs[1]
+    (<SubModule: None@1-6>, [<Name: x@2,0>, <Name: func@3,4>])
+
+    Finally, it yields names from builtin, if `include_builtin` is
+    true (default).
+
+    >>> pairs[2]                                        #doctest: +ELLIPSIS
+    (<Module: ...builtin...>, [<Name: ...>, ...])
+
     """
     in_func_scope = scope
     non_flow = scope.get_parent_until(pr.Flow, reverse=True)
@@ -681,8 +722,9 @@ def follow_paths(path, results, call_scope, position=None):
 
 def follow_path(path, scope, call_scope, position=None):
     """
-    Uses a generator and tries to complete the path, e.g.
-    >>> foo.bar.baz
+    Uses a generator and tries to complete the path, e.g.::
+
+        foo.bar.baz
 
     `follow_path` is only responsible for completing `.bar.baz`, the rest is
     done in the `follow_call` function.

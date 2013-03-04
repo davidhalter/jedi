@@ -169,7 +169,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'name', 'get_imports',
-                                                        'docstr', 'asserts']:
+                'doc', 'docstr', 'asserts']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                     % (self, name))
         return getattr(self.base, name)
@@ -288,7 +288,8 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'asserts', 'docstr',
-                'get_imports', 'get_parent_until', 'get_code', 'subscopes']:
+                'doc', 'get_imports', 'get_parent_until', 'get_code',
+                'subscopes']:
             raise AttributeError("Don't touch this: %s of %s !" % (name, self))
         return getattr(self.base, name)
 

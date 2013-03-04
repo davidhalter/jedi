@@ -299,10 +299,10 @@ class Parser(object):
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
                             stmt_class=pr.Statement):
         """
-        Parses statements like:
+        Parses statements like::
 
-        >>> a = test(b)
-        >>> a += 3 - 2 or b
+            a = test(b)
+            a += 3 - 2 or b
 
         and so on. One line at a time.
 

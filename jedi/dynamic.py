@@ -26,11 +26,11 @@ Parameter completion
 ********************
 
 One of the really important features of |jedi| is to have an option to
-understand code like this:
+understand code like this::
 
->>> def foo(bar):
->>>     bar. # completion here
->>> foo(1)
+    def foo(bar):
+        bar. # completion here
+    foo(1)
 
 There's no doubt wheter bar is an ``int`` or not, but if there's also a call
 like ``foo('str')``, what would happen? Well, we'll just show both. Because
@@ -496,9 +496,10 @@ def related_name_add_import_modules(definitions, search_name):
 
 def check_flow_information(flow, search_name, pos):
     """ Try to find out the type of a variable just with the information that
-    is given by the flows: e.g. It is also responsible for assert checks.
-    >>> if isinstance(k, str):
-    >>>     k.  # <- completion here
+    is given by the flows: e.g. It is also responsible for assert checks.::
+
+        if isinstance(k, str):
+            k.  # <- completion here
 
     ensures that `k` is a string.
     """

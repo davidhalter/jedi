@@ -26,6 +26,7 @@ Docs
    docs/plugin-api
    docs/history
    docs/development
+   docs/testing
 
 
 .. _resources:

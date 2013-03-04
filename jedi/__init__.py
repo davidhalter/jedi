@@ -16,17 +16,19 @@ To give you a simple example how you can use the Jedi library, here is an
 example for the autocompletion feature:
 
 >>> import jedi
->>> source = '''import json; json.l'''
->>> script = jedi.Script(source, 1, 19, 'example.py')
+>>> source = '''
+... import datetime
+... datetime.da'''
+>>> script = jedi.Script(source, 3, len('datetime.da'), 'example.py')
 >>> script
 <Script: 'example.py'>
 >>> completions = script.complete()
->>> completions
-[<Completion: load>, <Completion: loads>]
->>> completions[0].complete
-'oad'
->>> completions[0].word
-'load'
+>>> completions                                         #doctest: +ELLIPSIS
+[<Completion: date>, <Completion: datetime>, ...]
+>>> print(completions[0].complete)
+te
+>>> print(completions[0].word)
+date
 
 As you see Jedi is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.

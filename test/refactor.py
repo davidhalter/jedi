@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+Refactoring tests work a little bit similar to Black Box tests. But the idea is
+here to compare two versions of code.
+"""
 from __future__ import with_statement
 import sys
 import os
@@ -19,12 +23,13 @@ def run_test(source, f_name, lines_to_execute):
     which results are expected. The comment always begins with `#?`. The last
     row symbolizes the cursor.
 
-    For example:
-    >>> #? ['ab']
-    >>> ab = 3; a
+    For example::
 
-    >>> #? int()
-    >>> ab = 3; ab
+        #? ['ab']
+        ab = 3; a
+
+        #? int()
+        ab = 3; ab
     """
     fails = 0
     tests = 0
@@ -101,10 +106,11 @@ def test_dir(refactoring_test_dir):
             base.summary.append(s)
 
 
-refactoring_test_dir = '../test/refactor'
-test_files = base.get_test_list()
-test_dir(refactoring_test_dir)
+if __name__ == '__main__':
+    refactoring_test_dir = '../test/refactor'
+    test_files = base.get_test_list()
+    test_dir(refactoring_test_dir)
 
-base.print_summary()
+    base.print_summary()
 
-sys.exit(1 if base.tests_fail else 0)
+    sys.exit(1 if base.tests_fail else 0)
