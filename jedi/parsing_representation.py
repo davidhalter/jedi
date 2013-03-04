@@ -14,6 +14,25 @@ One special thing:
 ``[1, 2+33]`` for example would be an Array with two ``Statement`` inside. This
 is the easiest way to write a parser. The same behaviour applies to ``Param``,
 which is being used in a function definition.
+
+The easiest way to play with this module is to use :class:`parsing.Parser`.
+:attr:`parsing.Parser.scope` holds an instance of :class:`SubModule`:
+
+>>> from jedi.parsing import Parser
+>>> parser = Parser('import os', 'example.py')
+>>> submodule = parser.scope
+>>> submodule
+<SubModule: example.py@1-2>
+
+Any subclasses of :class:`Scope`, including :class:`SubModule` has
+attribute :attr:`imports <Scope.imports>`.  This attribute has import
+statements in this scope.  Check this out:
+
+>>> submodule.imports
+[<Import: import os @1,0>]
+
+See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
+
 """
 
 import os
@@ -50,6 +69,16 @@ class Simple(Base):
                  '_end_pos')
 
     def __init__(self, module, start_pos, end_pos=(None, None)):
+        """
+        Initialize :class:`Simple`.
+
+        :type      module: :class:`SubModule`
+        :param     module: The module in which this Python object locates.
+        :type   start_pos: 2-tuple of int
+        :param  start_pos: Position (line, column) of the Statement.
+        :type     end_pos: 2-tuple of int
+        :param    end_pos: Same as `start_pos`.
+        """
         self._sub_module = module
         self._start_pos = start_pos
         self._end_pos = end_pos
@@ -183,7 +212,7 @@ class Scope(Simple, IsScope):
     def get_set_vars(self):
         """
         Get all the names, that are active and accessible in the current
-        scope.
+        scope.  See :meth:`get_defined_names` for examples.
 
         :return: list of Name
         :rtype: list
@@ -204,6 +233,26 @@ class Scope(Simple, IsScope):
         return n
 
     def get_defined_names(self):
+        """
+        Get all defined names in this scope.
+
+        >>> from jedi.parsing import Parser
+        >>> parser = Parser('''
+        ... a = x
+        ... b = y
+        ... b.c = z
+        ... ''')
+        >>> parser.scope.get_defined_names()
+        [<Name: a@2,0>, <Name: b@3,0>]
+
+        Note that unlike :meth:`get_set_vars`, assignment to object
+        attribute does not change the result because it does not change
+        the defined names in this scope.
+
+        >>> parser.scope.get_set_vars()
+        [<Name: a@2,0>, <Name: b@3,0>, <Name: b.c@4,0>]
+
+        """
         return [n for n in self.get_set_vars()
                   if isinstance(n, Import) or len(n) == 1]
 
@@ -259,12 +308,22 @@ class Module(IsScope):
 
 
 class SubModule(Scope, Module):
+
     """
     The top scope, which is always a module.
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
+
     def __init__(self, path, start_pos=(1, 0), top_module=None):
+        """
+        Initialize :class:`SubModule`.
+
+        :type path: str
+        :arg  path: File path to this module.
+
+        .. todo:: Document `top_module`.
+        """
         super(SubModule, self).__init__(self, start_pos)
         self.path = path
         self.global_vars = []
@@ -577,9 +636,6 @@ class Import(Simple):
     """
     Stores the imports of any Scopes.
 
-    >>> 1+1
-    2
-
     :param start_pos: Position (line, column) of the Import.
     :type start_pos: tuple(int, int)
     :param namespace: The import, can be empty if a star is given
@@ -663,14 +719,18 @@ class Statement(Simple):
     stores pretty much all the Python code, except functions, classes, imports,
     and flow functions like if, for, etc.
 
-    :param set_vars: The variables which are defined by the statement.
-    :param set_vars: str
-    :param used_vars: The variables which are used by the statement.
-    :param used_vars: str
-    :param token_list: Token list which is also peppered with Name.
-    :param token_list: list
-    :param start_pos: Position (line, column) of the Statement.
-    :type start_pos: tuple(int, int)
+    :type    set_vars: list of :class:`Name`
+    :param   set_vars: The variables which are defined by the statement.
+    :type   used_vars: list of :class:`Name`
+    :param  used_vars: The variables which are used by the statement.
+    :type  token_list: list
+    :param token_list:
+        List of tokens or names.  Each element is either an instance
+        of :class:`Name` or a tuple of token type value (e.g.,
+        :data:`tokenize.NUMBER`), token string (e.g., ``'='``), and
+        start position (e.g., ``(1, 0)``).
+    :type   start_pos: 2-tuple of int
+    :param  start_pos: Position (line, column) of the Statement.
     """
     __slots__ = ('token_list', 'used_vars',
                  'set_vars', '_commands', '_assignment_details')
@@ -692,11 +752,11 @@ class Statement(Simple):
 
     def _remove_executions_from_set_vars(self, set_vars):
         """
-        Important mainly for assosiative arrays:
+        Important mainly for assosiative arrays::
 
-        >>> a = 3
-        >>> b = {}
-        >>> b[a] = 3
+            a = 3
+            b = {}
+            b[a] = 3
 
         `a` is in this case not a set_var, it is used to index the dict.
         """
