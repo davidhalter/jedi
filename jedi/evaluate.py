@@ -151,7 +151,7 @@ def get_names_of_scope(scope, position=None, star_search=True,
     true (default).
 
     >>> pairs[2]                                        #doctest: +ELLIPSIS
-    (<Module: __builtin__@...>, [<Name: ...>, ...])
+    (<Module: ...builtin...>, [<Name: ...>, ...])
 
     """
     in_func_scope = scope
