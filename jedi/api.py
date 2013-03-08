@@ -370,6 +370,26 @@ class Script(object):
 
         :rtype: :class:`api_classes.CallDef`
         """
+
+        try:
+            (call, index) = self._get_function_call_and_param_index_at_point()
+        except NotFoundError:
+            return None
+
+        user_stmt = self._parser.user_stmt
+        with common.scale_speed_settings(settings.scale_function_definition):
+            _callable = lambda: evaluate.follow_call(call)
+            origins = cache.cache_function_definition(_callable, user_stmt)
+        debug.speed('func_call followed')
+
+        if len(origins) == 0:
+            return None
+        # just take entry zero, because we need just one.
+        executable = origins[0]
+
+        return api_classes.CallDef(executable, index, call)
+
+    def _get_function_call_and_param_index_at_point(self):
         def check_user_stmt(user_stmt):
             if user_stmt is None \
                         or not isinstance(user_stmt, pr.Statement):
@@ -409,32 +429,14 @@ class Script(object):
                 raise NotFoundError()
 
         debug.speed('func_call start')
-        call = None
         if settings.use_function_definition_cache:
-            try:
-                call, index = check_cache()
-            except NotFoundError:
-                return None
-
-        user_stmt = self._parser.user_stmt
+            call, index = check_cache()
         if call is None:
-            # This is a backup, if the above is not successful.
-            call, index = check_user_stmt(user_stmt)
-            if call is None:
-                return None
+            call, index = check_user_stmt(self._parser.user_stmt)
+        if call is None:
+            raise NotFoundError()
         debug.speed('func_call parsed')
-
-        with common.scale_speed_settings(settings.scale_function_definition):
-            _callable = lambda: evaluate.follow_call(call)
-            origins = cache.cache_function_definition(_callable, user_stmt)
-        debug.speed('func_call followed')
-
-        if len(origins) == 0:
-            return None
-        # just take entry zero, because we need just one.
-        executable = origins[0]
-
-        return api_classes.CallDef(executable, index, call)
+        return call, index
 
     def _get_on_import_stmt(self, is_like_search=False):
         """ Resolve the user statement, if it is an import. Only resolve the
