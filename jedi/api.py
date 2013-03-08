@@ -231,13 +231,40 @@ class Script(object):
         goto_path = self._module.get_path_under_cursor()
 
         context = self._module.get_context()
+        scopes = set()
+        lower_priority_operators = ('(', ',')
+        """Operators that could hide callee."""
         if next(context) in ('class', 'def'):
             scopes = set([self._module.parser.user_scope])
         elif not goto_path:
             op = self._module.get_operator_under_cursor()
-            scopes = set([keywords.get_operator(op, self.pos)] if op else [])
-        else:
-            scopes = set(self._prepare_goto(goto_path))
+            if op and op not in lower_priority_operators:
+                scopes = set([keywords.get_operator(op, self.pos)])
+
+        # Fetch definition of callee
+        if not goto_path:
+            try:
+                (call, _) = self._get_function_call_and_param_index_at_point()
+            except NotFoundError:
+                call = None
+            if call is not None:
+                while call.next is not None:
+                    call = call.next
+                # reset cursor position:
+                (row, col) = call.name.end_pos
+                self.pos = (row, max(col - 1, 0))
+                self._module = modules.ModuleWithCursor(
+                    self._source_path,
+                    source=self.source,
+                    position=self.pos)
+                # then try to find the path again
+                goto_path = self._module.get_path_under_cursor()
+
+        if not scopes:
+            if goto_path:
+                scopes = set(self._prepare_goto(goto_path))
+            elif op in lower_priority_operators:
+                scopes = set([keywords.get_operator(op, self.pos)])
 
         scopes = resolve_import_paths(scopes)
 
