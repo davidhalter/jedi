@@ -232,7 +232,7 @@ class Script(object):
 
         context = self._module.get_context()
         scopes = set()
-        lower_priority_operators = ('(', ',')
+        lower_priority_operators = ('()', '(', ',')
         """Operators that could hide callee."""
         if next(context) in ('class', 'def'):
             scopes = set([self._module.parser.user_scope])

@@ -122,6 +122,10 @@ class TestRegression(TestBase):
         defs = self.definition_when_in_function_call('f(1, ')
         self.assertEqual(defs[0].description, 'def f')
 
+    def test_definition_when_in_function_call_empty_paren(self):
+        defs = self.definition_when_in_function_call('f(', ')')
+        self.assertEqual(defs[0].description, 'def f')
+
     def test_function_call_signature(self):
         defs = self.definition("""
         def f(x, y=1, z='a'):
