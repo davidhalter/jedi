@@ -17,6 +17,7 @@ from base import TestBase, cwd_at
 import jedi
 from jedi._compatibility import is_py25, utf8, unicode
 from jedi import api
+from jedi import api_classes
 
 #jedi.set_debug_function(jedi.debug.print_to_stdout)
 
@@ -410,9 +411,12 @@ class TestFeature(TestBase):
         """ feature request #61"""
         assert self.complete('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
-        # issue #94
-        defs = self.definition("""import os; os.path.join(""")
-        assert defs[0].full_name is None
+
+    def test_keyword_full_name_should_be_none(self):
+        """issue #94"""
+        from jedi.keywords import Keyword
+        d = api_classes.Definition(Keyword('(', (0, 0)))
+        assert d.full_name is None
 
     def test_full_name_builtin(self):
         self.assertEqual(self.complete('type')[0].full_name, 'type')
