@@ -8,7 +8,7 @@ import re
 import os
 import warnings
 
-from _compatibility import unicode, reduce
+from _compatibility import unicode, next
 import cache
 import dynamic
 import recursion
