@@ -6,12 +6,12 @@ import os
 from os.path import abspath, dirname
 import functools
 
+test_dir = dirname(abspath(__file__))
+root_dir = dirname(test_dir)
+sys.path.insert(0, root_dir)
+
 import jedi
 from jedi import debug
-
-
-test_dir = dirname(abspath(__file__))
-
 
 test_sum = 0
 t_start = time.time()
