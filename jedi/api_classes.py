@@ -378,7 +378,7 @@ def get_definitions(scope):
     tuples = evaluate.get_names_of_scope(
         scope, star_search=False, include_builtin=False, include_parent=False)
     names = reduce(lambda x, y: x + y[1], tuples, [])
-    return list(map(Definition, sorted(names, key=lambda s: s.start_pos)))
+    return [Definition(d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class RelatedName(BaseDefinition):
