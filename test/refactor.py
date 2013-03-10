@@ -31,20 +31,21 @@ class RefactoringCase(object):
         self.start_line_test = start_line_test
         self.desired = desired
 
-    def run(self):
-        (source, line_nr, index, path, f_name, new_name, start_line_test) \
-            = (self.source, self.line_nr, self.index, self.path, self.f_name,
-               self.new_name, self.start_line_test)
-        script = jedi.Script(source, line_nr, index, path)
+    def refactor(self):
+        script = jedi.Script(self.source, self.line_nr, self.index, self.path)
+        f_name = os.path.basename(self.path)
         refactor_func = getattr(refactoring, f_name.replace('.py', ''))
-        args = (script, new_name) if new_name else (script,)
-        refactor_object = refactor_func(*args)
+        args = (self.new_name,) if self.new_name else ()
+        return refactor_func(script, *args)
+
+    def run(self):
+        refactor_object = self.refactor()
 
         # try to get the right excerpt of the newfile
-        f = refactor_object.new_files()[path]
-        lines = f.splitlines()[start_line_test:]
+        f = refactor_object.new_files()[self.path]
+        lines = f.splitlines()[self.start_line_test:]
 
-        end = start_line_test + len(lines)
+        end = self.start_line_test + len(lines)
         pop_start = None
         for i, l in enumerate(lines):
             if l.startswith('# +++'):
