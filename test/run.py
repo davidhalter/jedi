@@ -354,7 +354,7 @@ if __name__ == '__main__':
     test_files = base.get_test_list()
 
     # completion tests:
-    completion_test_dir = '../test/completion'
+    completion_test_dir = os.path.join(base.test_dir, 'completion')
 
     # execute tests
     test_dir(completion_test_dir)

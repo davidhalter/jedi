@@ -11,7 +11,7 @@ import functools
 import itertools
 import os
 
-from base import TestBase
+from base import TestBase, cwd_at
 
 import jedi
 from jedi._compatibility import is_py25, utf8, unicode
@@ -131,6 +131,7 @@ class TestRegression(TestBase):
         assert self.definition("import sys_blabla", (1, 8)) == []
         assert len(self.definition("import sys", (1, 8))) == 1
 
+    @cwd_at('jedi')
     def test_complete_on_empty_import(self):
         # should just list the files in the directory
         assert 10 < len(self.complete("from .", path='')) < 30
@@ -234,6 +235,7 @@ class TestRegression(TestBase):
         s = """def foo("""
         assert self.function_definition(s) is None
 
+    @cwd_at('jedi')
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
         # Fictional module that defines a function.

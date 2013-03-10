@@ -107,7 +107,7 @@ def test_dir(refactoring_test_dir):
 
 
 if __name__ == '__main__':
-    refactoring_test_dir = '../test/refactor'
+    refactoring_test_dir = os.path.join(base.test_dir, 'refactor')
     test_files = base.get_test_list()
     test_dir(refactoring_test_dir)
 
