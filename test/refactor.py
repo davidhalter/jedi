@@ -19,14 +19,13 @@ from jedi import refactoring
 
 class RefactoringCase(object):
 
-    def __init__(self, name, source, line_nr, index, path, f_name,
+    def __init__(self, name, source, line_nr, index, path,
                  new_name, start_line_test, desired):
         self.name = name
         self.source = source
         self.line_nr = line_nr
         self.index = index
         self.path = path
-        self.f_name = f_name
         self.new_name = new_name
         self.start_line_test = start_line_test
         self.desired = desired
@@ -87,8 +86,8 @@ def collect_file_tests(source, f_name, lines_to_execute):
         if lines_to_execute and line_nr - 1 not in lines_to_execute:
             continue
 
-        path = os.path.abspath(refactoring_test_dir + os.path.sep + f_name)
-        yield RefactoringCase(name, source, line_nr, index, path, f_name,
+        path = os.path.join(os.path.abspath(refactoring_test_dir), f_name)
+        yield RefactoringCase(name, source, line_nr, index, path,
                               new_name, start_line_test, second)
 
 
