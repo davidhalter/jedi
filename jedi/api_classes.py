@@ -354,7 +354,7 @@ class Definition(BaseDefinition):
             position = ''
         return "%s:%s%s" % (self.module_name, self.description, position)
 
-    def get_definitions(self):
+    def defined_names(self):
         """
         List sub-definitions (e.g., methods in class).
 
@@ -365,10 +365,10 @@ class Definition(BaseDefinition):
             d = d.var
         if isinstance(d, pr.Name):
             d = d.parent
-        return get_definitions(d)
+        return defined_names(d)
 
 
-def get_definitions(scope):
+def defined_names(scope):
     """
     List sub-definitions (e.g., methods in class).
 

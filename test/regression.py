@@ -394,7 +394,7 @@ class TestFeature(TestBase):
 class TestGetDefinitions(TestBase):
 
     def test_get_definitions_flat(self):
-        definitions = api.get_definitions("""
+        definitions = api.defined_names("""
         import module
         class Class:
             pass
@@ -406,7 +406,7 @@ class TestGetDefinitions(TestBase):
                          ['module', 'Class', 'func', 'data'])
 
     def test_dotted_assignment(self):
-        definitions = api.get_definitions("""
+        definitions = api.defined_names("""
         x = Class()
         x.y.z = None
         """)
@@ -414,14 +414,14 @@ class TestGetDefinitions(TestBase):
                          ['x'])
 
     def test_multiple_assignment(self):
-        definitions = api.get_definitions("""
+        definitions = api.defined_names("""
         x = y = None
         """)
         self.assertEqual([d.name for d in definitions],
                          ['x', 'y'])
 
     def test_multiple_imports(self):
-        definitions = api.get_definitions("""
+        definitions = api.defined_names("""
         from module import a, b
         from another_module import *
         """)
@@ -429,7 +429,7 @@ class TestGetDefinitions(TestBase):
                          ['a', 'b'])
 
     def test_nested_definitions(self):
-        definitions = api.get_definitions("""
+        definitions = api.defined_names("""
         class Class:
             def f():
                 pass
@@ -438,7 +438,7 @@ class TestGetDefinitions(TestBase):
         """)
         self.assertEqual([d.name for d in definitions],
                          ['Class'])
-        subdefinitions = definitions[0].get_definitions()
+        subdefinitions = definitions[0].defined_names()
         self.assertEqual([d.name for d in subdefinitions],
                          ['f', 'g'])
         self.assertEqual([d.full_name for d in subdefinitions],

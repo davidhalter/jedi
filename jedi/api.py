@@ -468,14 +468,14 @@ class Script(object):
         api_classes._clear_caches()
 
 
-def get_definitions(source, source_path=None, source_encoding='utf-8'):
+def defined_names(source, source_path=None, source_encoding='utf-8'):
     """
     Get all definitions in `source` sorted by its position.
 
     This functions can be used for listing functions, classes and
     data defined in a file.  This can be useful if you want to list
     them in "sidebar".  Each element in the returned list also has
-    `get_definition` method which can be used to get sub-definitions
+    `defined_names` method which can be used to get sub-definitions
     (e.g., methods in class).
 
     :rtype: list of api_classes.Definition
@@ -484,7 +484,7 @@ def get_definitions(source, source_path=None, source_encoding='utf-8'):
         modules.source_to_unicode(source, source_encoding),
         module_path=source_path,
     )
-    return api_classes.get_definitions(parser.scope)
+    return api_classes.defined_names(parser.scope)
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
