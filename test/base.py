@@ -1,7 +1,9 @@
-import unittest
-
 import time
 import sys
+if sys.hexversion < 0x02070000:
+    import unittest2 as unittest
+else:
+    import unittest
 import os
 from os.path import abspath, dirname
 import functools

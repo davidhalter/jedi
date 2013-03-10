@@ -5,14 +5,13 @@ Unit tests to avoid errors of the past. Makes use of Python's ``unittest``
 module.
 """
 
-import unittest
 import time
 import functools
 import itertools
 import os
 import textwrap
 
-from base import TestBase, cwd_at
+from base import TestBase, unittest, cwd_at
 
 import jedi
 from jedi._compatibility import is_py25, utf8, unicode
@@ -130,11 +129,7 @@ class TestRegression(TestBase):
         defs = self.definition_when_in_function_call('f( ', ')')
         desc = defs[0].description
         if desc == 'keyword )':
-            try:
-                self.skipTest('finding definition at ``f( |)`` does not work')
-            except AttributeError:
-                # old unittest does not support skip
-                pass
+            self.skipTest('finding definition at ``f( |)`` does not work')
         else:
             self.assertEqual(desc, 'def f')
 
