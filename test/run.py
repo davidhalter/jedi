@@ -227,7 +227,7 @@ class IntegrationTestCase(object):
     def __repr__(self):
         name = os.path.basename(self.path) if self.path else None
         return '<%s: %s:%s:%s>' % (self.__class__.__name__,
-                                   name, self.line_nr, self.line.rstrip())
+                                   name, self.line_nr - 1, self.line.rstrip())
 
     def script(self):
         return jedi.Script(self.source, self.line_nr, self.column, self.path)
