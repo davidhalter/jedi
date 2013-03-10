@@ -96,47 +96,6 @@ class TestRegression(TestBase):
         if not is_py25:
             assert len(r[0].doc) > 100
 
-    def definition_when_in_function_call(self, pre_cursor, post_cursor=''):
-        source = textwrap.dedent("""
-        def f():
-            pass
-        %s%s""" % (pre_cursor, post_cursor))
-        lines = source.splitlines()
-        pos = (len(lines), len(pre_cursor))
-        return list(self.definition(source, pos))
-
-    def test_definition_when_in_function_call_right_after_open_paren(self):
-        defs = self.definition_when_in_function_call('f(')
-        self.assertEqual(defs[0].description, 'def f')
-
-    def test_definition_when_in_function_call_after_open_paren_and_space(self):
-        defs = self.definition_when_in_function_call('f( ')
-        self.assertEqual(defs[0].description, 'def f')
-
-    def test_definition_when_in_function_call_right_after_comma(self):
-        defs = self.definition_when_in_function_call('f(1,')
-        self.assertEqual(defs[0].description, 'def f')
-
-    def test_definition_when_in_function_call_after_comma_and_space(self):
-        defs = self.definition_when_in_function_call('f(1, ')
-        self.assertEqual(defs[0].description, 'def f')
-
-    def test_definition_when_in_function_call_empty_paren(self):
-        defs = self.definition_when_in_function_call('f(', ')')
-        self.assertEqual(defs[0].description, 'def f')
-
-    def test_definition_when_in_function_call_empty_paren_pre_space(self):
-        defs = self.definition_when_in_function_call('f( ', ')')
-        desc = defs[0].description
-        if desc == 'keyword )':
-            self.skipTest('finding definition at ``f( |)`` does not work')
-        else:
-            self.assertEqual(desc, 'def f')
-
-    def test_definition_when_in_function_call_empty_paren_post_space(self):
-        defs = self.definition_when_in_function_call('f(', ' )')
-        self.assertEqual(defs[0].description, 'def f')
-
     def test_function_call_signature(self):
         defs = self.definition("""
         def f(x, y=1, z='a'):
