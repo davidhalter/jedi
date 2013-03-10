@@ -4,9 +4,11 @@ import time
 import sys
 import os
 from os.path import abspath, dirname
+import functools
 
-sys.path.insert(0, abspath(dirname(abspath(__file__)) + '/..'))
-os.chdir(os.path.dirname(os.path.abspath(__file__)) + '/../jedi')
+test_dir = dirname(abspath(__file__))
+root_dir = dirname(test_dir)
+sys.path.insert(0, root_dir)
 
 import jedi
 from jedi import debug
@@ -77,3 +79,24 @@ def print_summary():
                                 (tests_fail, test_sum, time.time() - t_start))
     for s in summary:
         print(s)
+
+
+def cwd_at(path):
+    """
+    Decorator to run function at `path`.
+
+    :type path: str
+    :arg  path: relative path from repository root (e.g., ``'jedi'``).
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwds):
+            try:
+                oldcwd = os.getcwd()
+                repo_root = os.path.dirname(test_dir)
+                os.chdir(os.path.join(repo_root, path))
+                return func(*args, **kwds)
+            finally:
+                os.chdir(oldcwd)
+        return wrapper
+    return decorator
