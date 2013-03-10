@@ -280,6 +280,15 @@ class TestRegression(TestBase):
         s = """def foo("""
         assert self.function_definition(s) is None
 
+    @unittest.skip("function_definition at ``f( |)`` does not work")
+    def test_function_definition_empty_paren_pre_space(self):
+        s = textwrap.dedent("""\
+        def f(a, b):
+            pass
+        f( )""")
+        call_def = self.function_definition(s, (3, 3))
+        self.assert_call_def(call_def, 'f', 0)
+
     @cwd_at('jedi')
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
