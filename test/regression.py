@@ -192,10 +192,15 @@ class TestRegression(TestBase):
         assert self.complete("from datetime import")[0].word == 'import'
         assert self.complete("from datetime import ")
 
+    def assert_call_def(self, call_def, name, index):
+        self.assertEqual(
+            {'call_name': getattr(call_def, 'call_name', None),
+             'index': getattr(call_def, 'index', None)},
+            {'call_name': name, 'index': index},
+        )
+
     def test_function_definition(self):
-        def check(call_def, name, index):
-            return call_def and call_def.call_name == name \
-                            and call_def.index == index
+        check = self.assert_call_def
 
         # simple
         s = "abs(a, str("
@@ -208,13 +213,13 @@ class TestRegression(TestBase):
         s7 = "str().upper().center("
         s8 = "str(int[zip("
 
-        assert check(self.function_definition(s, (1, 4)), 'abs', 0)
-        assert check(self.function_definition(s, (1, 6)), 'abs', 1)
-        assert check(self.function_definition(s, (1, 7)), 'abs', 1)
-        assert check(self.function_definition(s, (1, 8)), 'abs', 1)
-        assert check(self.function_definition(s, (1, 11)), 'str', 0)
+        check(self.function_definition(s, (1, 4)), 'abs', 0)
+        check(self.function_definition(s, (1, 6)), 'abs', 1)
+        check(self.function_definition(s, (1, 7)), 'abs', 1)
+        check(self.function_definition(s, (1, 8)), 'abs', 1)
+        check(self.function_definition(s, (1, 11)), 'str', 0)
 
-        assert check(self.function_definition(s2, (1, 4)), 'abs', 0)
+        check(self.function_definition(s2, (1, 4)), 'abs', 0)
         assert self.function_definition(s2, (1, 5)) is None
         assert self.function_definition(s2) is None
 
@@ -222,43 +227,41 @@ class TestRegression(TestBase):
         assert self.function_definition(s3) is None
 
         assert self.function_definition(s4, (1, 3)) is None
-        assert check(self.function_definition(s4, (1, 4)), 'abs', 0)
-        assert check(self.function_definition(s4, (1, 8)), 'zip', 0)
-        assert check(self.function_definition(s4, (1, 9)), 'abs', 0)
-        #assert check(self.function_definition(s4, (1, 10)), 'abs', 1)
+        check(self.function_definition(s4, (1, 4)), 'abs', 0)
+        check(self.function_definition(s4, (1, 8)), 'zip', 0)
+        check(self.function_definition(s4, (1, 9)), 'abs', 0)
+        #check(self.function_definition(s4, (1, 10)), 'abs', 1)
 
-        assert check(self.function_definition(s5, (1, 4)), 'abs', 0)
-        assert check(self.function_definition(s5, (1, 6)), 'abs', 1)
+        check(self.function_definition(s5, (1, 4)), 'abs', 0)
+        check(self.function_definition(s5, (1, 6)), 'abs', 1)
 
-        assert check(self.function_definition(s6), 'center', 0)
-        assert check(self.function_definition(s6, (1, 4)), 'str', 0)
+        check(self.function_definition(s6), 'center', 0)
+        check(self.function_definition(s6, (1, 4)), 'str', 0)
 
-        assert check(self.function_definition(s7), 'center', 0)
-        assert check(self.function_definition(s8), 'zip', 0)
-        assert check(self.function_definition(s8, (1, 8)), 'str', 0)
+        check(self.function_definition(s7), 'center', 0)
+        check(self.function_definition(s8), 'zip', 0)
+        check(self.function_definition(s8, (1, 8)), 'str', 0)
 
         s = "import time; abc = time; abc.sleep("
-        assert check(self.function_definition(s), 'sleep', 0)
+        check(self.function_definition(s), 'sleep', 0)
 
         # jedi-vim #9
         s = "with open("
-        assert check(self.function_definition(s), 'open', 0)
+        check(self.function_definition(s), 'open', 0)
 
         # jedi-vim #11
         s1 = "for sorted("
-        assert check(self.function_definition(s1), 'sorted', 0)
+        check(self.function_definition(s1), 'sorted', 0)
         s2 = "for s in sorted("
-        assert check(self.function_definition(s2), 'sorted', 0)
+        check(self.function_definition(s2), 'sorted', 0)
 
         # jedi #57
         s = "def func(alpha, beta): pass\n" \
             "func(alpha='101',"
-        assert check(self.function_definition(s, (2, 13)), 'func', 0)
+        check(self.function_definition(s, (2, 13)), 'func', 0)
 
     def test_function_definition_complex(self):
-        def check(call_def, name, index):
-            return call_def and call_def.call_name == name \
-                            and call_def.index == index
+        check = self.assert_call_def
 
         s = """
                 def abc(a,b):
@@ -270,14 +273,14 @@ class TestRegression(TestBase):
                 if 1:
                     pass
             """
-        assert check(self.function_definition(s, (6, 24)), 'abc', 0)
+        check(self.function_definition(s, (6, 24)), 'abc', 0)
         s = """
                 import re
                 def huhu(it):
                     re.compile(
                     return it * 2
             """
-        assert check(self.function_definition(s, (4, 31)), 'compile', 0)
+        check(self.function_definition(s, (4, 31)), 'compile', 0)
         # jedi-vim #70
         s = """def foo("""
         assert self.function_definition(s) is None
