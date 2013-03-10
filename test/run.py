@@ -70,7 +70,7 @@ TEST_ASSIGNMENTS = 2
 TEST_USAGES = 3
 
 
-def run_completion_test(script, correct, line_nr, *_):
+def run_completion_test(case):
     """
     Uses comments to specify a test in the next line. The comment says, which
     results are expected. The comment always begins with `#?`. The last row
@@ -86,6 +86,7 @@ def run_completion_test(script, correct, line_nr, *_):
 
     Returns 1 for fail and 0 for success.
     """
+    (script, correct, line_nr) = (case.script(), case.correct, case.line_nr)
     completions = script.complete()
     #import cProfile; cProfile.run('script.complete()')
 
@@ -97,7 +98,7 @@ def run_completion_test(script, correct, line_nr, *_):
     return 0
 
 
-def run_definition_test(script, correct, line_nr, column, start, line):
+def run_definition_test(case):
     """
     Definition tests use the same symbols like completion tests. This is
     possible because the completion tests are defined with a list::
@@ -136,6 +137,9 @@ def run_definition_test(script, correct, line_nr, column, start, line):
                                                 % (line_nr - 1, should_str))
         return should_str
 
+    (correct, line_nr, column, start, line) = \
+        (case.correct, case.line_nr, case.column, case.start, case.line)
+    script = case.script()
     should_str = definition(correct, start, script.source_path)
     result = script.definition()
     is_str = set(r.desc_with_module for r in result)
@@ -146,7 +150,7 @@ def run_definition_test(script, correct, line_nr, column, start, line):
     return 0
 
 
-def run_goto_test(script, correct, line_nr, *_):
+def run_goto_test(case):
     """
     Tests look like this::
 
@@ -162,6 +166,7 @@ def run_goto_test(script, correct, line_nr, *_):
 
     Returns 1 for fail and 0 for success.
     """
+    (script, correct, line_nr) = (case.script(), case.correct, case.line_nr)
     result = script.goto()
     comp_str = str(sorted(str(r.description) for r in result))
     if comp_str != correct:
@@ -171,7 +176,7 @@ def run_goto_test(script, correct, line_nr, *_):
     return 0
 
 
-def run_related_name_test(script, correct, line_nr, *_):
+def run_related_name_test(case):
     """
     Tests look like this::
 
@@ -181,6 +186,7 @@ def run_related_name_test(script, correct, line_nr, *_):
 
     Returns 1 for fail and 0 for success.
     """
+    (script, correct, line_nr) = (case.script(), case.correct, case.line_nr)
     result = script.related_names()
     correct = correct.strip()
     compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
@@ -205,8 +211,30 @@ def run_related_name_test(script, correct, line_nr, *_):
     return 0
 
 
+class IntegrationTestCase(object):
+
+    def __init__(self, test_type, correct, line_nr, column, start, line,
+                 path=None):
+        self.test_type = test_type
+        self.correct = correct
+        self.line_nr = line_nr
+        self.column = column
+        self.start = start
+        self.line = line
+        self.path = path
+
+    def __repr__(self):
+        name = os.path.basename(self.path) if self.path else None
+        return '<%s: %s:%s:%s>' % (self.__class__.__name__,
+                                   name, self.line_nr, self.line.rstrip())
+
+    def script(self):
+        return jedi.Script(self.source, self.line_nr, self.column, self.path)
+
+
 def collect_tests(lines, lines_to_execute):
-    makecase = lambda t: (t, correct, line_nr, column, start, line)
+    makecase = lambda t: IntegrationTestCase(t, correct, line_nr, column,
+                                             start, line)
     start = None
     correct = None
     test_type = None
@@ -261,14 +289,14 @@ def run_test(source, f_name, lines_to_execute):
     fails = 0
     path = completion_test_dir + os.path.sep + f_name
     for case in collect_tests(StringIO(source), lines_to_execute):
-        (test_type, correct, line_nr, column, start, line) = case
+        case.path = path
+        case.source = source
         tests += 1
         try:
-            script = jedi.Script(source, line_nr, column, path)
-            fails += testers[test_type](script, *case[1:])
+            fails += testers[case.test_type](case)
         except Exception:
             print(traceback.format_exc())
-            print('test @%s: %s' % (line_nr - 1, line))
+            print(case)
             fails += 1
     return tests, fails
 
