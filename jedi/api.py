@@ -243,7 +243,7 @@ class Script(object):
 
         # Fetch definition of callee
         if not goto_path:
-            (call, _) = self._get_function_call_and_param_index_at_point()
+            (call, _) = self._func_call_and_param_index()
             if call is not None:
                 while call.next is not None:
                     call = call.next
@@ -395,7 +395,7 @@ class Script(object):
         :rtype: :class:`api_classes.CallDef`
         """
 
-        (call, index) = self._get_function_call_and_param_index_at_point()
+        (call, index) = self._func_call_and_param_index()
         if call is None:
             return None
 
@@ -412,7 +412,7 @@ class Script(object):
 
         return api_classes.CallDef(executable, index, call)
 
-    def _get_function_call_and_param_index_at_point(self):
+    def _func_call_and_param_index(self):
         def check_user_stmt(user_stmt):
             if user_stmt is None \
                         or not isinstance(user_stmt, pr.Statement):
