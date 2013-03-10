@@ -64,6 +64,12 @@ from jedi import debug
 sys.path.pop(0)  # pop again, because it might affect the completion
 
 
+TEST_COMPLETIONS = 0
+TEST_DEFINITIONS = 1
+TEST_ASSIGNMENTS = 2
+TEST_USAGES = 3
+
+
 def run_completion_test(script, correct, line_nr):
     """
     Uses comments to specify a test in the next line. The comment says, which
@@ -169,6 +175,46 @@ def run_related_name_test(script, correct, line_nr):
     return 0
 
 
+def collect_tests(lines, lines_to_execute):
+    makecase = lambda t: (t, correct, line_nr, column, start, line)
+    start = None
+    correct = None
+    test_type = None
+    for line_nr, line in enumerate(lines):
+        line_nr += 1  # py2.5 doesn't know about the additional enumerate param
+        line = unicode(line)
+        if correct:
+            r = re.match('^(\d+)\s*(.*)$', correct)
+            if r:
+                column = int(r.group(1))
+                correct = r.group(2)
+                start += r.regs[2][0]  # second group, start index
+            else:
+                column = len(line) - 1  # -1 for the \n
+            if test_type == '!':
+                yield makecase(TEST_ASSIGNMENTS)
+            elif test_type == '<':
+                yield makecase(TEST_USAGES)
+            elif correct.startswith('['):
+                yield makecase(TEST_COMPLETIONS)
+            else:
+                yield makecase(TEST_DEFINITIONS)
+            correct = None
+        else:
+            try:
+                r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]+)', line)
+                # test_type is ? for completion and ! for goto
+                test_type = r.group(1)
+                correct = r.group(2)
+                start = r.start()
+            except AttributeError:
+                correct = None
+            else:
+                # skip the test, if this is not specified test
+                if lines_to_execute and line_nr not in lines_to_execute:
+                    correct = None
+
+
 def run_test(source, f_name, lines_to_execute):
     """
     This is the completion test for some cases. The tests are not unit test
@@ -203,55 +249,30 @@ def run_test(source, f_name, lines_to_execute):
                                                 % (line_nr - 1, should_str))
         return should_str
 
-    fails = 0
+    def run_definition_test_wrapper(script, correct, line_nr):
+        should_str = definition(correct, start, path)
+        return run_definition_test(script, should_str, line_nr)
+
+    testers = {
+        TEST_COMPLETIONS: run_completion_test,
+        TEST_DEFINITIONS: run_definition_test_wrapper,
+        TEST_ASSIGNMENTS: run_goto_test,
+        TEST_USAGES: run_related_name_test,
+    }
+
     tests = 0
-    correct = None
-    test_type = None
-    start = None
-    for line_nr, line in enumerate(StringIO(source)):
-        line_nr += 1  # py2.5 doesn't know about the additional enumerate param
-        line = unicode(line)
-        if correct:
-            r = re.match('^(\d+)\s*(.*)$', correct)
-            if r:
-                index = int(r.group(1))
-                correct = r.group(2)
-                start += r.regs[2][0]  # second group, start index
-            else:
-                index = len(line) - 1  # -1 for the \n
-            # if a list is wanted, use the completion test, otherwise the
-            # definition test
-            path = completion_test_dir + os.path.sep + f_name
-            try:
-                script = jedi.Script(source, line_nr, index, path)
-                if test_type == '!':
-                    fails += run_goto_test(script, correct, line_nr)
-                elif test_type == '<':
-                    fails += run_related_name_test(script, correct, line_nr)
-                elif correct.startswith('['):
-                    fails += run_completion_test(script, correct, line_nr)
-                else:
-                    should_str = definition(correct, start, path)
-                    fails += run_definition_test(script, should_str, line_nr)
-            except Exception:
-                print(traceback.format_exc())
-                print('test @%s: %s' % (line_nr - 1, line))
-                fails += 1
-            correct = None
-            tests += 1
-        else:
-            try:
-                r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]+)', line)
-                # test_type is ? for completion and ! for goto
-                test_type = r.group(1)
-                correct = r.group(2)
-                start = r.start()
-            except AttributeError:
-                correct = None
-            else:
-                # reset the test, if only one specific test is wanted
-                if lines_to_execute and line_nr not in lines_to_execute:
-                    correct = None
+    fails = 0
+    cases = collect_tests(StringIO(source), lines_to_execute)
+    path = completion_test_dir + os.path.sep + f_name
+    for (test_type, correct, line_nr, column, start, line) in cases:
+        tests += 1
+        try:
+            script = jedi.Script(source, line_nr, column, path)
+            fails += testers[test_type](script, correct, line_nr)
+        except Exception:
+            print(traceback.format_exc())
+            print('test @%s: %s' % (line_nr - 1, line))
+            fails += 1
     return tests, fails
 
 
