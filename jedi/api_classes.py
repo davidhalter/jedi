@@ -8,7 +8,7 @@ import re
 import os
 import warnings
 
-from _compatibility import unicode
+from _compatibility import unicode, next
 import cache
 import dynamic
 import recursion
@@ -58,6 +58,9 @@ class BaseDefinition(object):
     def __init__(self, definition, start_pos):
         self.start_pos = start_pos
         self.definition = definition
+        """
+        An instance of :class:`jedi.parsing_representation.Base` subclass.
+        """
         self.is_keyword = isinstance(definition, keywords.Keyword)
 
         # generate a path to the definition
@@ -272,6 +275,40 @@ class Definition(BaseDefinition):
         super(Definition, self).__init__(definition, definition.start_pos)
 
     @property
+    def name(self):
+        """
+        Name of variable/function/class/module.
+
+        For example, for ``x = None`` it returns ``'x'``.
+
+        :rtype: str or None
+        """
+        d = self.definition
+        if isinstance(d, er.InstanceElement):
+            d = d.var
+
+        if isinstance(d, pr.Name):
+            return d.names[-1] if d.names else None
+        elif isinstance(d, er.Array):
+            return unicode(d.type)
+        elif isinstance(d, (pr.Class, er.Class, er.Instance,
+                            er.Function, pr.Function)):
+            return unicode(d.name)
+        elif isinstance(d, pr.Module):
+            return self.module_name
+        elif isinstance(d, pr.Import):
+            try:
+                return d.get_defined_names()[0].names[-1]
+            except (AttributeError, IndexError):
+                return None
+        elif isinstance(d, pr.Statement):
+            try:
+                return d.assignment_details[0][1].values[0][0].name.names[-1]
+            except IndexError:
+                return None
+        return None
+
+    @property
     def description(self):
         """
         A description of the :class:`.Definition` object, which is heavily used
@@ -316,6 +353,32 @@ class Definition(BaseDefinition):
             # is a builtin or module
             position = ''
         return "%s:%s%s" % (self.module_name, self.description, position)
+
+    def defined_names(self):
+        """
+        List sub-definitions (e.g., methods in class).
+
+        :rtype: list of Definition
+        """
+        d = self.definition
+        if isinstance(d, er.InstanceElement):
+            d = d.var
+        if isinstance(d, pr.Name):
+            d = d.parent
+        return defined_names(d)
+
+
+def defined_names(scope):
+    """
+    List sub-definitions (e.g., methods in class).
+
+    :type scope: Scope
+    :rtype: list of Definition
+    """
+    pair = next(evaluate.get_names_of_scope(
+        scope, star_search=False, include_builtin=False), None)
+    names = pair[1] if pair else []
+    return [Definition(d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class RelatedName(BaseDefinition):
