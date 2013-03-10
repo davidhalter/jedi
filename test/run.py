@@ -70,7 +70,7 @@ TEST_ASSIGNMENTS = 2
 TEST_USAGES = 3
 
 
-def run_completion_test(script, correct, line_nr):
+def run_completion_test(script, correct, line_nr, *_):
     """
     Uses comments to specify a test in the next line. The comment says, which
     results are expected. The comment always begins with `#?`. The last row
@@ -97,7 +97,7 @@ def run_completion_test(script, correct, line_nr):
     return 0
 
 
-def run_definition_test(script, should_str, line_nr):
+def run_definition_test(script, correct, line_nr, column, start, line):
     """
     Definition tests use the same symbols like completion tests. This is
     possible because the completion tests are defined with a list::
@@ -107,6 +107,36 @@ def run_definition_test(script, should_str, line_nr):
 
     Returns 1 for fail and 0 for success.
     """
+    def definition(correct, correct_start, path):
+        def defs(line_nr, indent):
+            s = jedi.Script(script.source, line_nr, indent, path)
+            return set(s.definition())
+
+        should_be = set()
+        number = 0
+        for index in re.finditer('(?: +|$)', correct):
+            if correct == ' ':
+                continue
+            # -1 for the comment, +3 because of the comment start `#? `
+            start = index.start()
+            if base.print_debug:
+                jedi.set_debug_function(None)
+            number += 1
+            try:
+                should_be |= defs(line_nr - 1, start + correct_start)
+            except Exception:
+                print('could not resolve %s indent %s' % (line_nr - 1, start))
+                raise
+            if base.print_debug:
+                jedi.set_debug_function(debug.print_to_stdout)
+        # because the objects have different ids, `repr` it, then compare it.
+        should_str = set(r.desc_with_module for r in should_be)
+        if len(should_str) < number:
+            raise Exception('Solution @%s not right, too few test results: %s'
+                                                % (line_nr - 1, should_str))
+        return should_str
+
+    should_str = definition(correct, start, script.source_path)
     result = script.definition()
     is_str = set(r.desc_with_module for r in result)
     if is_str != should_str:
@@ -116,7 +146,7 @@ def run_definition_test(script, should_str, line_nr):
     return 0
 
 
-def run_goto_test(script, correct, line_nr):
+def run_goto_test(script, correct, line_nr, *_):
     """
     Tests look like this::
 
@@ -141,7 +171,7 @@ def run_goto_test(script, correct, line_nr):
     return 0
 
 
-def run_related_name_test(script, correct, line_nr):
+def run_related_name_test(script, correct, line_nr, *_):
     """
     Tests look like this::
 
@@ -220,55 +250,22 @@ def run_test(source, f_name, lines_to_execute):
     This is the completion test for some cases. The tests are not unit test
     like, they are rather integration tests.
     """
-    def definition(correct, correct_start, path):
-        def defs(line_nr, indent):
-            script = jedi.Script(source, line_nr, indent, path)
-            return set(script.definition())
-
-        should_be = set()
-        number = 0
-        for index in re.finditer('(?: +|$)', correct):
-            if correct == ' ':
-                continue
-            # -1 for the comment, +3 because of the comment start `#? `
-            start = index.start()
-            if base.print_debug:
-                jedi.set_debug_function(None)
-            number += 1
-            try:
-                should_be |= defs(line_nr - 1, start + correct_start)
-            except Exception:
-                print('could not resolve %s indent %s' % (line_nr - 1, start))
-                raise
-            if base.print_debug:
-                jedi.set_debug_function(debug.print_to_stdout)
-        # because the objects have different ids, `repr` it, then compare it.
-        should_str = set(r.desc_with_module for r in should_be)
-        if len(should_str) < number:
-            raise Exception('Solution @%s not right, too few test results: %s'
-                                                % (line_nr - 1, should_str))
-        return should_str
-
-    def run_definition_test_wrapper(script, correct, line_nr):
-        should_str = definition(correct, start, path)
-        return run_definition_test(script, should_str, line_nr)
-
     testers = {
         TEST_COMPLETIONS: run_completion_test,
-        TEST_DEFINITIONS: run_definition_test_wrapper,
+        TEST_DEFINITIONS: run_definition_test,
         TEST_ASSIGNMENTS: run_goto_test,
         TEST_USAGES: run_related_name_test,
     }
 
     tests = 0
     fails = 0
-    cases = collect_tests(StringIO(source), lines_to_execute)
     path = completion_test_dir + os.path.sep + f_name
-    for (test_type, correct, line_nr, column, start, line) in cases:
+    for case in collect_tests(StringIO(source), lines_to_execute):
+        (test_type, correct, line_nr, column, start, line) = case
         tests += 1
         try:
             script = jedi.Script(source, line_nr, column, path)
-            fails += testers[test_type](script, correct, line_nr)
+            fails += testers[test_type](script, *case[1:])
         except Exception:
             print(traceback.format_exc())
             print('test @%s: %s' % (line_nr - 1, line))
