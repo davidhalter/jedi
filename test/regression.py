@@ -434,7 +434,9 @@ class TestFeature(TestBase):
 
     def test_keyword_full_name_should_be_none(self):
         """issue #94"""
-        from jedi.keywords import Keyword
+        # Using `from jedi.keywords import Keyword` here does NOT work
+        # in Python 3.  This is due to the import hack jedi using.
+        Keyword = api_classes.keywords.Keyword
         d = api_classes.Definition(Keyword('(', (0, 0)))
         assert d.full_name is None
 
