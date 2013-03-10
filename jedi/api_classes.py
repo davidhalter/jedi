@@ -376,7 +376,7 @@ def get_definitions(scope):
     :rtype: list of Definition
     """
     tuples = evaluate.get_names_of_scope(
-        scope, star_search=False, include_builtin=False, include_parent=False)
+        scope, star_search=False, include_builtin=False)
     names = reduce(lambda x, y: x + y[1], tuples, [])
     return [Definition(d) for d in sorted(names, key=lambda s: s.start_pos)]
 
