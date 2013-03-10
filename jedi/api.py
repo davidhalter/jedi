@@ -243,10 +243,7 @@ class Script(object):
 
         # Fetch definition of callee
         if not goto_path:
-            try:
-                (call, _) = self._get_function_call_and_param_index_at_point()
-            except NotFoundError:
-                call = None
+            (call, _) = self._get_function_call_and_param_index_at_point()
             if call is not None:
                 while call.next is not None:
                     call = call.next
@@ -398,9 +395,8 @@ class Script(object):
         :rtype: :class:`api_classes.CallDef`
         """
 
-        try:
-            (call, index) = self._get_function_call_and_param_index_at_point()
-        except NotFoundError:
+        (call, index) = self._get_function_call_and_param_index_at_point()
+        if call is None:
             return None
 
         user_stmt = self._parser.user_stmt
@@ -456,12 +452,18 @@ class Script(object):
                 raise NotFoundError()
 
         debug.speed('func_call start')
+        call = None
+        index = 0
         if settings.use_function_definition_cache:
-            call, index = check_cache()
+            try:
+                call, index = check_cache()
+            except NotFoundError:
+                pass
         if call is None:
-            call, index = check_user_stmt(self._parser.user_stmt)
-        if call is None:
-            raise NotFoundError()
+            try:
+                call, index = check_user_stmt(self._parser.user_stmt)
+            except NotFoundError:
+                pass
         debug.speed('func_call parsed')
         return call, index
 
