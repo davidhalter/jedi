@@ -447,23 +447,15 @@ class Script(object):
                     if repr(old_call) == repr(call):
                         # return the index of the part_parser
                         return old_call, index
-                return None, 0
-            else:
-                raise NotFoundError()
+            return None, 0
 
         debug.speed('func_call start')
         call = None
         index = 0
         if settings.use_function_definition_cache:
-            try:
-                call, index = check_cache()
-            except NotFoundError:
-                pass
+            call, index = check_cache()
         if call is None:
-            try:
-                call, index = check_user_stmt(self._parser.user_stmt)
-            except NotFoundError:
-                pass
+            call, index = check_user_stmt(self._parser.user_stmt)
         debug.speed('func_call parsed')
         return call, index
 
