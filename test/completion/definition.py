@@ -4,8 +4,14 @@ Fallback to callee definition when definition not found.
 - https://github.com/davidhalter/jedi/pull/149
 """
 
+"""Parenthesis closed at next line."""
+
 #? isinstance
 isinstance(
+)
+
+#? isinstance
+isinstance( 
 )
 
 #? isinstance
@@ -15,6 +21,8 @@ isinstance(None,
 #? isinstance
 isinstance(None, 
 )
+
+"""Parenthesis closed at same line."""
 
 # Note: len('isinstance(') == 11
 #? 11 isinstance
@@ -35,3 +43,23 @@ isinstance(None, )
 # Note: len('isinstance( ') == 12
 ##? 12 isinstance
 isinstance( )
+
+"""Unclosed parenthesis."""
+
+#? isinstance
+isinstance(
+
+def x(): pass  # acts like EOF
+
+##? isinstance
+isinstance( 
+
+def x(): pass  # acts like EOF
+
+#? isinstance
+isinstance(None,
+
+def x(): pass  # acts like EOF
+
+#? isinstance
+isinstance(None, 
