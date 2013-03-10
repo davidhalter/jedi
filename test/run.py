@@ -52,6 +52,7 @@ import os
 import sys
 import re
 import traceback
+import itertools
 
 import base
 
@@ -232,7 +233,7 @@ class IntegrationTestCase(object):
         return jedi.Script(self.source, self.line_nr, self.column, self.path)
 
 
-def collect_tests(lines, lines_to_execute):
+def collect_file_tests(lines, lines_to_execute):
     makecase = lambda t: IntegrationTestCase(t, correct, line_nr, column,
                                              start, line)
     start = None
@@ -273,7 +274,25 @@ def collect_tests(lines, lines_to_execute):
                     correct = None
 
 
-def run_test(source, f_name, lines_to_execute):
+def collect_dir_tests(base_dir, test_files, thirdparty=False):
+    for f_name in os.listdir(base_dir):
+        files_to_execute = [a for a in test_files.items() if a[0] in f_name]
+        lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
+        if f_name.endswith(".py") and (not test_files or files_to_execute):
+            # for python2.5 certain tests are not being done, because it
+            # only has these features partially.
+            if is_py25 and f_name in ['generators.py', 'types.py']:
+                continue
+            path = os.path.join(base_dir, f_name)
+            source = open(path).read()
+            for case in collect_file_tests(StringIO(source),
+                                           lines_to_execute):
+                case.path = path
+                case.source = source
+                yield case
+
+
+def run_test(cases):
     """
     This is the completion test for some cases. The tests are not unit test
     like, they are rather integration tests.
@@ -287,10 +306,7 @@ def run_test(source, f_name, lines_to_execute):
 
     tests = 0
     fails = 0
-    path = completion_test_dir + os.path.sep + f_name
-    for case in collect_tests(StringIO(source), lines_to_execute):
-        case.path = path
-        case.source = source
+    for case in cases:
         tests += 1
         try:
             fails += testers[case.test_type](case)
@@ -302,36 +318,29 @@ def run_test(source, f_name, lines_to_execute):
 
 
 def test_dir(completion_test_dir, thirdparty=False):
-    for f_name in os.listdir(completion_test_dir):
-        files_to_execute = [a for a in test_files.items() if a[0] in f_name]
-        lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
-        if f_name.endswith(".py") and (not test_files or files_to_execute):
-            # for python2.5 certain tests are not being done, because it
-            # only has these features partially.
-            if is_py25 and f_name in ['generators.py', 'types.py']:
+    for (path, cases) in itertools.groupby(
+            collect_dir_tests(completion_test_dir, test_files, thirdparty),
+            lambda case: case.path):
+        f_name = os.path.basename(path)
+
+        if thirdparty:
+            lib = f_name.replace('_.py', '')
+            try:
+                # there is always an underline at the end.
+                # It looks like: completion/thirdparty/pylab_.py
+                __import__(lib)
+            except ImportError:
+                base.summary.append('Thirdparty-Library %s not found.' %
+                                                                f_name)
                 continue
 
-            if thirdparty:
-                lib = f_name.replace('_.py', '')
-                try:
-                    # there is always an underline at the end.
-                    # It looks like: completion/thirdparty/pylab_.py
-                    __import__(lib)
-                except ImportError:
-                    base.summary.append('Thirdparty-Library %s not found.' %
-                                                                    f_name)
-                    continue
+        num_tests, fails = run_test(cases)
+        base.test_sum += num_tests
 
-            path = os.path.join(completion_test_dir, f_name)
-            f = open(path)
-            num_tests, fails = run_test(f.read(), f_name, lines_to_execute)
-            global test_sum
-            base.test_sum += num_tests
-
-            s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
-            base.tests_fail += fails
-            print(s)
-            base.summary.append(s)
+        s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
+        base.tests_fail += fails
+        print(s)
+        base.summary.append(s)
 
 
 if __name__ == '__main__':
