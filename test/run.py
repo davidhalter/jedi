@@ -52,6 +52,7 @@ import os
 import sys
 import re
 import traceback
+import itertools
 
 import base
 
@@ -64,7 +65,13 @@ from jedi import debug
 sys.path.pop(0)  # pop again, because it might affect the completion
 
 
-def run_completion_test(script, correct, line_nr):
+TEST_COMPLETIONS = 0
+TEST_DEFINITIONS = 1
+TEST_ASSIGNMENTS = 2
+TEST_USAGES = 3
+
+
+def run_completion_test(case):
     """
     Uses comments to specify a test in the next line. The comment says, which
     results are expected. The comment always begins with `#?`. The last row
@@ -80,6 +87,7 @@ def run_completion_test(script, correct, line_nr):
 
     Returns 1 for fail and 0 for success.
     """
+    (script, correct, line_nr) = (case.script(), case.correct, case.line_nr)
     completions = script.complete()
     #import cProfile; cProfile.run('script.complete()')
 
@@ -91,7 +99,7 @@ def run_completion_test(script, correct, line_nr):
     return 0
 
 
-def run_definition_test(script, should_str, line_nr):
+def run_definition_test(case):
     """
     Definition tests use the same symbols like completion tests. This is
     possible because the completion tests are defined with a list::
@@ -101,83 +109,10 @@ def run_definition_test(script, should_str, line_nr):
 
     Returns 1 for fail and 0 for success.
     """
-    result = script.definition()
-    is_str = set(r.desc_with_module for r in result)
-    if is_str != should_str:
-        print('Solution @%s not right, received %s, wanted %s' \
-                    % (line_nr - 1, is_str, should_str))
-        return 1
-    return 0
-
-
-def run_goto_test(script, correct, line_nr):
-    """
-    Tests look like this::
-
-        abc = 1
-        #! ['abc=1']
-        abc
-
-    Additionally it is possible to add a number which describes to position of
-    the test (otherwise it's just end of line)::
-
-        #! 2 ['abc=1']
-        abc
-
-    Returns 1 for fail and 0 for success.
-    """
-    result = script.goto()
-    comp_str = str(sorted(str(r.description) for r in result))
-    if comp_str != correct:
-        print('Solution @%s not right, received %s, wanted %s'\
-                    % (line_nr - 1, comp_str, correct))
-        return 1
-    return 0
-
-
-def run_related_name_test(script, correct, line_nr):
-    """
-    Tests look like this::
-
-        abc = 1
-        #< abc@1,0 abc@3,0
-        abc
-
-    Returns 1 for fail and 0 for success.
-    """
-    result = script.related_names()
-    correct = correct.strip()
-    compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
-                                                            for r in result)
-    wanted = []
-    if not correct:
-        positions = []
-    else:
-        positions = literal_eval(correct)
-    for pos_tup in positions:
-        if type(pos_tup[0]) == str:
-            # this means that there is a module specified
-            wanted.append(pos_tup)
-        else:
-            wanted.append(('renaming', line_nr + pos_tup[0], pos_tup[1]))
-
-    wanted = sorted(wanted)
-    if compare != wanted:
-        print('Solution @%s not right, received %s, wanted %s'\
-                    % (line_nr - 1, compare, wanted))
-        return 1
-    return 0
-
-
-def run_test(source, f_name, lines_to_execute):
-    """
-    This is the completion test for some cases. The tests are not unit test
-    like, they are rather integration tests.
-    """
     def definition(correct, correct_start, path):
         def defs(line_nr, indent):
-            script = jedi.Script(source, line_nr, indent, path)
-            return set(script.definition())
+            s = jedi.Script(script.source, line_nr, indent, path)
+            return set(s.definition())
 
         should_be = set()
         number = 0
@@ -203,42 +138,127 @@ def run_test(source, f_name, lines_to_execute):
                                                 % (line_nr - 1, should_str))
         return should_str
 
-    fails = 0
-    tests = 0
+    (correct, line_nr, column, start, line) = \
+        (case.correct, case.line_nr, case.column, case.start, case.line)
+    script = case.script()
+    should_str = definition(correct, start, script.source_path)
+    result = script.definition()
+    is_str = set(r.desc_with_module for r in result)
+    if is_str != should_str:
+        print('Solution @%s not right, received %s, wanted %s' \
+                    % (line_nr - 1, is_str, should_str))
+        return 1
+    return 0
+
+
+def run_goto_test(case):
+    """
+    Tests look like this::
+
+        abc = 1
+        #! ['abc=1']
+        abc
+
+    Additionally it is possible to add a number which describes to position of
+    the test (otherwise it's just end of line)::
+
+        #! 2 ['abc=1']
+        abc
+
+    Returns 1 for fail and 0 for success.
+    """
+    (script, correct, line_nr) = (case.script(), case.correct, case.line_nr)
+    result = script.goto()
+    comp_str = str(sorted(str(r.description) for r in result))
+    if comp_str != correct:
+        print('Solution @%s not right, received %s, wanted %s'\
+                    % (line_nr - 1, comp_str, correct))
+        return 1
+    return 0
+
+
+def run_related_name_test(case):
+    """
+    Tests look like this::
+
+        abc = 1
+        #< abc@1,0 abc@3,0
+        abc
+
+    Returns 1 for fail and 0 for success.
+    """
+    (script, correct, line_nr) = (case.script(), case.correct, case.line_nr)
+    result = script.related_names()
+    correct = correct.strip()
+    compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
+                                                            for r in result)
+    wanted = []
+    if not correct:
+        positions = []
+    else:
+        positions = literal_eval(correct)
+    for pos_tup in positions:
+        if type(pos_tup[0]) == str:
+            # this means that there is a module specified
+            wanted.append(pos_tup)
+        else:
+            wanted.append(('renaming', line_nr + pos_tup[0], pos_tup[1]))
+
+    wanted = sorted(wanted)
+    if compare != wanted:
+        print('Solution @%s not right, received %s, wanted %s'\
+                    % (line_nr - 1, compare, wanted))
+        return 1
+    return 0
+
+
+class IntegrationTestCase(object):
+
+    def __init__(self, test_type, correct, line_nr, column, start, line,
+                 path=None):
+        self.test_type = test_type
+        self.correct = correct
+        self.line_nr = line_nr
+        self.column = column
+        self.start = start
+        self.line = line
+        self.path = path
+
+    def __repr__(self):
+        name = os.path.basename(self.path) if self.path else None
+        return '<%s: %s:%s:%s>' % (self.__class__.__name__,
+                                   name, self.line_nr - 1, self.line.rstrip())
+
+    def script(self):
+        return jedi.Script(self.source, self.line_nr, self.column, self.path)
+
+
+def collect_file_tests(lines, lines_to_execute):
+    makecase = lambda t: IntegrationTestCase(t, correct, line_nr, column,
+                                             start, line)
+    start = None
     correct = None
     test_type = None
-    start = None
-    for line_nr, line in enumerate(StringIO(source)):
+    for line_nr, line in enumerate(lines):
         line_nr += 1  # py2.5 doesn't know about the additional enumerate param
         line = unicode(line)
         if correct:
             r = re.match('^(\d+)\s*(.*)$', correct)
             if r:
-                index = int(r.group(1))
+                column = int(r.group(1))
                 correct = r.group(2)
                 start += r.regs[2][0]  # second group, start index
             else:
-                index = len(line) - 1  # -1 for the \n
-            # if a list is wanted, use the completion test, otherwise the
-            # definition test
-            path = completion_test_dir + os.path.sep + f_name
-            try:
-                script = jedi.Script(source, line_nr, index, path)
-                if test_type == '!':
-                    fails += run_goto_test(script, correct, line_nr)
-                elif test_type == '<':
-                    fails += run_related_name_test(script, correct, line_nr)
-                elif correct.startswith('['):
-                    fails += run_completion_test(script, correct, line_nr)
-                else:
-                    should_str = definition(correct, start, path)
-                    fails += run_definition_test(script, should_str, line_nr)
-            except Exception:
-                print(traceback.format_exc())
-                print('test @%s: %s' % (line_nr - 1, line))
-                fails += 1
+                column = len(line) - 1  # -1 for the \n
+            if test_type == '!':
+                yield makecase(TEST_ASSIGNMENTS)
+            elif test_type == '<':
+                yield makecase(TEST_USAGES)
+            elif correct.startswith('['):
+                yield makecase(TEST_COMPLETIONS)
+            else:
+                yield makecase(TEST_DEFINITIONS)
             correct = None
-            tests += 1
         else:
             try:
                 r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]+)', line)
@@ -249,14 +269,13 @@ def run_test(source, f_name, lines_to_execute):
             except AttributeError:
                 correct = None
             else:
-                # reset the test, if only one specific test is wanted
+                # skip the test, if this is not specified test
                 if lines_to_execute and line_nr not in lines_to_execute:
                     correct = None
-    return tests, fails
 
 
-def test_dir(completion_test_dir, thirdparty=False):
-    for f_name in os.listdir(completion_test_dir):
+def collect_dir_tests(base_dir, test_files, thirdparty=False):
+    for f_name in os.listdir(base_dir):
         files_to_execute = [a for a in test_files.items() if a[0] in f_name]
         lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
         if f_name.endswith(".py") and (not test_files or files_to_execute):
@@ -264,28 +283,64 @@ def test_dir(completion_test_dir, thirdparty=False):
             # only has these features partially.
             if is_py25 and f_name in ['generators.py', 'types.py']:
                 continue
+            path = os.path.join(base_dir, f_name)
+            source = open(path).read()
+            for case in collect_file_tests(StringIO(source),
+                                           lines_to_execute):
+                case.path = path
+                case.source = source
+                yield case
 
-            if thirdparty:
-                lib = f_name.replace('_.py', '')
-                try:
-                    # there is always an underline at the end.
-                    # It looks like: completion/thirdparty/pylab_.py
-                    __import__(lib)
-                except ImportError:
-                    base.summary.append('Thirdparty-Library %s not found.' %
-                                                                    f_name)
-                    continue
 
-            path = os.path.join(completion_test_dir, f_name)
-            f = open(path)
-            num_tests, fails = run_test(f.read(), f_name, lines_to_execute)
-            global test_sum
-            base.test_sum += num_tests
+def run_test(cases):
+    """
+    This is the completion test for some cases. The tests are not unit test
+    like, they are rather integration tests.
+    """
+    testers = {
+        TEST_COMPLETIONS: run_completion_test,
+        TEST_DEFINITIONS: run_definition_test,
+        TEST_ASSIGNMENTS: run_goto_test,
+        TEST_USAGES: run_related_name_test,
+    }
 
-            s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
-            base.tests_fail += fails
-            print(s)
-            base.summary.append(s)
+    tests = 0
+    fails = 0
+    for case in cases:
+        tests += 1
+        try:
+            fails += testers[case.test_type](case)
+        except Exception:
+            print(traceback.format_exc())
+            print(case)
+            fails += 1
+    return tests, fails
+
+
+def test_dir(completion_test_dir, thirdparty=False):
+    for (path, cases) in itertools.groupby(
+            collect_dir_tests(completion_test_dir, test_files, thirdparty),
+            lambda case: case.path):
+        f_name = os.path.basename(path)
+
+        if thirdparty:
+            lib = f_name.replace('_.py', '')
+            try:
+                # there is always an underline at the end.
+                # It looks like: completion/thirdparty/pylab_.py
+                __import__(lib)
+            except ImportError:
+                base.summary.append('Thirdparty-Library %s not found.' %
+                                                                f_name)
+                continue
+
+        num_tests, fails = run_test(cases)
+        base.test_sum += num_tests
+
+        s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
+        base.tests_fail += fails
+        print(s)
+        base.summary.append(s)
 
 
 if __name__ == '__main__':
@@ -299,7 +354,7 @@ if __name__ == '__main__':
     test_files = base.get_test_list()
 
     # completion tests:
-    completion_test_dir = '../test/completion'
+    completion_test_dir = os.path.join(base.test_dir, 'completion')
 
     # execute tests
     test_dir(completion_test_dir)
