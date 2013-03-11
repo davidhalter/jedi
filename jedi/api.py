@@ -231,13 +231,37 @@ class Script(object):
         goto_path = self._module.get_path_under_cursor()
 
         context = self._module.get_context()
+        scopes = set()
+        lower_priority_operators = ('()', '(', ',')
+        """Operators that could hide callee."""
         if next(context) in ('class', 'def'):
             scopes = set([self._module.parser.user_scope])
         elif not goto_path:
             op = self._module.get_operator_under_cursor()
-            scopes = set([keywords.get_operator(op, self.pos)] if op else [])
-        else:
-            scopes = set(self._prepare_goto(goto_path))
+            if op and op not in lower_priority_operators:
+                scopes = set([keywords.get_operator(op, self.pos)])
+
+        # Fetch definition of callee
+        if not goto_path:
+            (call, _) = self._func_call_and_param_index()
+            if call is not None:
+                while call.next is not None:
+                    call = call.next
+                # reset cursor position:
+                (row, col) = call.name.end_pos
+                self.pos = (row, max(col - 1, 0))
+                self._module = modules.ModuleWithCursor(
+                    self._source_path,
+                    source=self.source,
+                    position=self.pos)
+                # then try to find the path again
+                goto_path = self._module.get_path_under_cursor()
+
+        if not scopes:
+            if goto_path:
+                scopes = set(self._prepare_goto(goto_path))
+            elif op in lower_priority_operators:
+                scopes = set([keywords.get_operator(op, self.pos)])
 
         scopes = resolve_import_paths(scopes)
 
@@ -370,6 +394,25 @@ class Script(object):
 
         :rtype: :class:`api_classes.CallDef`
         """
+
+        (call, index) = self._func_call_and_param_index()
+        if call is None:
+            return None
+
+        user_stmt = self._parser.user_stmt
+        with common.scale_speed_settings(settings.scale_function_definition):
+            _callable = lambda: evaluate.follow_call(call)
+            origins = cache.cache_function_definition(_callable, user_stmt)
+        debug.speed('func_call followed')
+
+        if len(origins) == 0:
+            return None
+        # just take entry zero, because we need just one.
+        executable = origins[0]
+
+        return api_classes.CallDef(executable, index, call)
+
+    def _func_call_and_param_index(self):
         def check_user_stmt(user_stmt):
             if user_stmt is None \
                         or not isinstance(user_stmt, pr.Statement):
@@ -404,37 +447,17 @@ class Script(object):
                     if repr(old_call) == repr(call):
                         # return the index of the part_parser
                         return old_call, index
-                return None, 0
-            else:
-                raise NotFoundError()
+            return None, 0
 
         debug.speed('func_call start')
         call = None
+        index = 0
         if settings.use_function_definition_cache:
-            try:
-                call, index = check_cache()
-            except NotFoundError:
-                return None
-
-        user_stmt = self._parser.user_stmt
+            call, index = check_cache()
         if call is None:
-            # This is a backup, if the above is not successful.
-            call, index = check_user_stmt(user_stmt)
-            if call is None:
-                return None
+            call, index = check_user_stmt(self._parser.user_stmt)
         debug.speed('func_call parsed')
-
-        with common.scale_speed_settings(settings.scale_function_definition):
-            _callable = lambda: evaluate.follow_call(call)
-            origins = cache.cache_function_definition(_callable, user_stmt)
-        debug.speed('func_call followed')
-
-        if len(origins) == 0:
-            return None
-        # just take entry zero, because we need just one.
-        executable = origins[0]
-
-        return api_classes.CallDef(executable, index, call)
+        return call, index
 
     def _get_on_import_stmt(self, is_like_search=False):
         """ Resolve the user statement, if it is an import. Only resolve the
