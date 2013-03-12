@@ -6,7 +6,7 @@ python:
     - 3.2
 install:
     - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then
-      pip install --use-mirrors ssl;
+      pip install --use-mirrors --insecure ssl;
       fi
     - pip install --use-mirrors tox
 script:
