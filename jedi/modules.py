@@ -279,9 +279,8 @@ def get_sys_path():
             venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
         sys_path.insert(0, p)
 
-    p = sys.path[1:]
-    check_virtual_env(p)
-    return p
+    check_virtual_env(sys.path)
+    return [p for p in sys.path if p != ""]
 
 
 @cache.memoize_default([])
