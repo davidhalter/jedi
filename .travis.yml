@@ -5,11 +5,8 @@ python:
     - 2.7
     - 3.2
 install:
-    # See: http://stackoverflow.com/questions/3241658/
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then
-      sudo apt-get install libbluetooth-dev &&
-      pip install --use-mirrors ssl;
-      fi
+    # Needed only for Python 2.5:
+    - export PIP_INSECURE=t
     - pip install --use-mirrors tox
 script:
     - export TOXENV=$(echo "$TRAVIS_PYTHON_VERSION" |
