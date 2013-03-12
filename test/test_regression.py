@@ -11,7 +11,9 @@ import itertools
 import os
 import textwrap
 
-from base import TestBase, unittest, cwd_at
+import pytest
+
+from .base import TestBase, unittest, cwd_at
 
 import jedi
 from jedi._compatibility import is_py25, utf8, unicode
@@ -523,6 +525,17 @@ class TestSpeed(TestBase):
         script = jedi.Script(s, 1, len(s), '')
         script.function_definition()
         #print(jedi.imports.imports_processed)
+
+
+@pytest.mark.skipif("sys.version_info >= (3,0)")
+def test_settings_module():
+    """
+    jedi.settings and jedi.cache.settings must be the same module.
+    """
+    from jedi import cache
+    from jedi import settings
+    assert cache.settings is settings
+
 
 if __name__ == '__main__':
     unittest.main()
