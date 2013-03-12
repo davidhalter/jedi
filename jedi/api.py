@@ -529,11 +529,14 @@ class Interpreter(Script):
         Parse `source` and mixin interpreted Python objects from `namespaces`.
 
         :type source: str
-        :arg  source:
+        :arg  source: Code to parse.
         :type namespaces: list of dict
-        :arg  namespaces:
+        :arg  namespaces: a list of namespace dictionaries such as the one
+                          returned by :func:`locals`.
 
         Other optional arguments are same as the ones for :class:`Script`.
+        If `line` and `column` are None, they are assumed be at the end of
+        `source`.
         """
         lines = source.splitlines()
         line = len(lines) if line is None else line
