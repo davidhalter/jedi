@@ -17,16 +17,36 @@ There are different kind of tests:
 How to run tests?
 +++++++++++++++++
 
-Basically ``run.py`` searches the ``completion`` directory for files with lines
-starting with the symbol above. There is also support for third party
-libraries. In a normal test run (``./run.py``) they are not being executed, you
-have to provide a ``--thirdparty`` option.
+Jedi uses pytest_ to run unit and integration tests.  To run tests,
+simply run ``py.test``.  You can also use tox_ to run tests for
+multiple Python versions.
 
-Now it's much more important, that you know how test only one file (``./run.py
-classes``, where ``classes`` is the name of the file to test) or even one test
-(``./run.py classes 90``, which would just execute the test on line 90).
+.. _pytest: http://pytest.org
+.. _tox: http://testrun.org/tox
 
-If you want to debug a test, just use the --debug option.
+Integration test cases are located in ``test/completion`` directory
+and each test cases are indicated by the comment ``#?`` (complete /
+definitions), ``#!`` (assignments) and ``#<`` (usages).  There is also
+support for third party libraries. In a normal test run they are not
+being executed, you have to provide a ``--thirdparty`` option.
+
+In addition to standard `-k` and `-m` options in py.test, you can use
+`-T` (`--test-files`) option to specify integration test cases to run.
+It takes the format of ``FILE_NAME[:LINE[,LINE[,...]]]`` where
+``FILE_NAME`` is a file in ``test/completion`` and ``LINE`` is a line
+number of the test comment.  Here is some recipes:
+
+Run tests only in ``basic.py`` and ``imports.py``::
+
+    py.test test/test_integration.py -T basic.py -T imports.py
+
+Run test at line 4, 6, and 8 in ``basic.py``::
+
+    py.test test/test_integration.py -T basic.py:4,6,8
+
+See ``py.test --help`` for more information.
+
+If you want to debug a test, just use the --pdb option.
 
 Auto-Completion
 +++++++++++++++
