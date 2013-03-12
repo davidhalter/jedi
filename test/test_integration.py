@@ -1,6 +1,7 @@
 import os
 import re
 
+import base
 from run import \
     TEST_COMPLETIONS, TEST_DEFINITIONS, TEST_ASSIGNMENTS, TEST_USAGES
 
@@ -92,7 +93,7 @@ def run_related_name_test(case):
 
 
 def test_integration(case, monkeypatch, pytestconfig):
-    repo_root = os.path.dirname(os.path.dirname(pytestconfig.option.base_dir))
+    repo_root = base.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
     testers = {
         TEST_COMPLETIONS: run_completion_test,
