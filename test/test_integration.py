@@ -9,16 +9,28 @@ import jedi
 from jedi._compatibility import literal_eval
 
 
+def assert_case_equal(case, actual, desired):
+    """
+    Assert ``actual == desired`` with formatted message.
+
+    This is not needed for typical py.test use case, but as we need
+    ``--assert=plain`` (see ../pytest.ini) to workaround some issue
+    due to py.test magic, let's format the message by hand.
+    """
+    assert actual == desired, """
+Test %r failed.
+actual = %s
+desired = %s
+""" % (case, actual, desired)
+
+
 def run_completion_test(case):
     (script, correct, line_nr) = (case.script(), case.correct, case.line_nr)
     completions = script.complete()
     #import cProfile; cProfile.run('script.complete()')
 
     comp_str = set([c.word for c in completions])
-    if comp_str != set(literal_eval(correct)):
-        raise AssertionError(
-            'Solution @%s not right, received %s, wanted %s'\
-            % (line_nr - 1, comp_str, correct))
+    assert_case_equal(case, comp_str, set(literal_eval(correct)))
 
 
 def run_definition_test(case):
@@ -53,19 +65,14 @@ def run_definition_test(case):
     should_str = definition(correct, start, script.source_path)
     result = script.definition()
     is_str = set(r.desc_with_module for r in result)
-    if is_str != should_str:
-        raise AssertionError(
-            'Solution @%s not right, received %s, wanted %s'
-            % (line_nr - 1, is_str, should_str))
+    assert_case_equal(case, is_str, should_str)
 
 
 def run_goto_test(case):
     (script, correct, line_nr) = (case.script(), case.correct, case.line_nr)
     result = script.goto()
     comp_str = str(sorted(str(r.description) for r in result))
-    if comp_str != correct:
-        raise AssertionError('Solution @%s not right, received %s, wanted %s'
-                             % (line_nr - 1, comp_str, correct))
+    assert_case_equal(case, comp_str, correct)
 
 
 def run_related_name_test(case):
@@ -86,10 +93,7 @@ def run_related_name_test(case):
         else:
             wanted.append(('renaming', line_nr + pos_tup[0], pos_tup[1]))
 
-    wanted = sorted(wanted)
-    if compare != wanted:
-        raise AssertionError('Solution @%s not right, received %s, wanted %s'
-                             % (line_nr - 1, compare, wanted))
+    assert_case_equal(case, compare, sorted(wanted))
 
 
 def test_integration(case, monkeypatch, pytestconfig):
@@ -111,5 +115,5 @@ def test_refactor(refactor_case):
     :type refactor_case: :class:`.refactor.RefactoringCase`
     """
     refactor_case.run()
-    result, desired = refactor_case.result, refactor_case.desired
-    assert result == desired, "Refactoring test %r fails" % refactor_case
+    assert_case_equal(refactor_case,
+                      refactor_case.result, refactor_case.desired)
