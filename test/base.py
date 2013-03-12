@@ -7,13 +7,14 @@ import os
 from os.path import abspath, dirname
 import functools
 
-test_dir = dirname(abspath(__file__))
-root_dir = dirname(test_dir)
-
 import pytest
 
 import jedi
 from jedi._compatibility import is_py25
+
+
+test_dir = dirname(abspath(__file__))
+root_dir = dirname(test_dir)
 
 
 sample_int = 1  # This is used in completion/imports.py

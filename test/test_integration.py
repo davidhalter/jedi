@@ -1,8 +1,6 @@
 import os
 import re
 
-import pytest
-
 from . import base
 from .run import \
     TEST_COMPLETIONS, TEST_DEFINITIONS, TEST_ASSIGNMENTS, TEST_USAGES

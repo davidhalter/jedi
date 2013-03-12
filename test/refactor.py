@@ -4,11 +4,8 @@ Refactoring tests work a little bit similar to Black Box tests. But the idea is
 here to compare two versions of code.
 """
 from __future__ import with_statement
-import sys
 import os
-import traceback
 import re
-import itertools
 
 from jedi._compatibility import reduce
 import jedi
