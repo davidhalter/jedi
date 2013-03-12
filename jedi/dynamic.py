@@ -57,14 +57,16 @@ import os
 
 from . import cache
 from . import parsing_representation as pr
-from . import evaluate_representation as er
 from . import modules
-from . import evaluate
 from . import settings
 from . import debug
 from . import imports
 from . import api_classes
 from . import fast_parser
+
+import evaluate_representation as er
+import evaluate
+
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.

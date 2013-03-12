@@ -75,14 +75,15 @@ import itertools
 from . import common
 from . import cache
 from . import parsing_representation as pr
-from . import evaluate_representation as er
 from . import debug
-from . import builtin
-from . import imports
 from . import recursion
-from . import dynamic
 from . import docstrings
 from ._compatibility import next, hasattr, is_py3k, unicode, reraise
+
+import evaluate_representation as er
+import builtin
+import imports
+import dynamic
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):

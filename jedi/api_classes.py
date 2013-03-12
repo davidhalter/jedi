@@ -10,14 +10,15 @@ import warnings
 
 from ._compatibility import unicode, next
 from . import cache
-from . import dynamic
 from . import recursion
 from . import settings
 from . import evaluate
 from . import imports
 from . import parsing_representation as pr
-from . import evaluate_representation as er
 from . import keywords
+
+import dynamic
+import evaluate_representation as er
 
 
 def _clear_caches():

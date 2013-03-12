@@ -21,12 +21,13 @@ import imp
 import sys
 import itertools
 
-from . import builtin
 from . import modules
 from . import debug
 from . import parsing_representation as pr
-from . import evaluate
 from . import cache
+
+import builtin
+import evaluate
 
 # for debugging purposes only
 imports_processed = 0

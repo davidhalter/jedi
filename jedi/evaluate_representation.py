@@ -14,16 +14,17 @@ import itertools
 
 from ._compatibility import property, use_metaclass, next, hasattr
 from . import parsing_representation as pr
-from . import imports
-from . import docstrings
 from . import cache
-from . import builtin
 from . import dynamic
 from . import helpers
 from . import recursion
 from . import debug
-from . import evaluate
 from . import common
+
+import imports
+import builtin
+import evaluate
+import docstrings
 
 
 class DecoratorNotFound(LookupError):

@@ -35,8 +35,9 @@ import inspect
 from . import common
 from . import debug
 from . import parsing
-from . import evaluate
 from . import modules
+
+import evaluate
 
 
 class BuiltinModule(modules.CachedModule):

@@ -8,10 +8,11 @@ Next to :mod:`cache` this module also makes |jedi| not thread-safe. Why?
 calls.
 """
 from . import parsing_representation as pr
-from . import evaluate_representation as er
 from . import debug
-from . import builtin
 from . import settings
+
+import evaluate_representation as er
+import builtin
 
 
 class RecursionDecorator(object):
