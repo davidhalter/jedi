@@ -5,8 +5,9 @@ python:
     - 2.7
     - 3.2
 install:
-    # Needed only for Python 2.5:
-    - export PIP_INSECURE=t
+    - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then
+      export PIP_INSECURE=t;
+      fi
     - pip install --use-mirrors tox
 script:
     - export TOXENV=$(echo "$TRAVIS_PYTHON_VERSION" |
