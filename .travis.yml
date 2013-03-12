@@ -5,13 +5,9 @@ python:
     - 2.7
     - 3.2
 install:
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then
-      pip install --use-mirrors simplejson unittest2;
-      fi
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then
-      pip install --use-mirrors unittest2;
-      fi
-    - pip install --use-mirrors nose
+    - pip install --use-mirrors tox
 script:
-    - cd test
-    - ./test.sh
+    - export TOXENV=$(echo "$TRAVIS_PYTHON_VERSION" |
+                      sed --regexp-extended 's/([0-9])\.([0-9])/py\1\2/g')
+    - echo "TOXENV=$TOXENV"
+    - tox
