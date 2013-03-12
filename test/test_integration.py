@@ -101,7 +101,7 @@ def test_integration(case, monkeypatch, pytestconfig):
         TEST_ASSIGNMENTS: run_goto_test,
         TEST_USAGES: run_related_name_test,
     }
-    testers[case.test_type](case)
+    base.skip_py25_fails(testers[case.test_type])(case)
 
 
 def test_refactor(refactor_case):
