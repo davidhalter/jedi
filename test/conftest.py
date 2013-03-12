@@ -25,7 +25,7 @@ def pytest_addoption(parser):
             "For example: -T generators.py:10,13,19. "
             "Note that you can use -m to specify the test case by id."))
     parser.addoption(
-        "--thirdparty",
+        "--thirdparty", action='store_true',
         help="Include integration tests that requires third party modules.")
 
 
@@ -53,9 +53,11 @@ def pytest_generate_tests(metafunc):
     if 'case' in metafunc.fixturenames:
         base_dir = metafunc.config.option.integration_case_dir
         thirdparty = metafunc.config.option.thirdparty
-        metafunc.parametrize(
-            'case',
-            run.collect_dir_tests(base_dir, test_files, thirdparty))
+        cases = list(run.collect_dir_tests(base_dir, test_files))
+        if thirdparty:
+            cases.extend(run.collect_dir_tests(
+                os.path.join(base_dir, 'thirdparty'), test_files))
+        metafunc.parametrize('case', cases)
     if 'refactor_case' in metafunc.fixturenames:
         base_dir = metafunc.config.option.refactor_case_dir
         metafunc.parametrize(
