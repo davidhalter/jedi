@@ -10,8 +10,7 @@ import traceback
 import re
 import itertools
 
-from . import base
-
+from . import base  # required to setup import path
 from jedi._compatibility import reduce
 import jedi
 from jedi import refactoring
@@ -100,60 +99,3 @@ def collect_dir_tests(base_dir, test_files):
                 source = f.read()
             for case in collect_file_tests(source, path, lines_to_execute):
                 yield case
-
-
-def run_test(cases):
-    """
-    This is the completion test for some cases. The tests are not unit test
-    like, they are rather integration tests.
-    It uses comments to specify a test in the next line. The comment also says,
-    which results are expected. The comment always begins with `#?`. The last
-    row symbolizes the cursor.
-
-    For example::
-
-        #? ['ab']
-        ab = 3; a
-
-        #? int()
-        ab = 3; ab
-    """
-    fails = 0
-    tests = 0
-    for case in cases:
-        try:
-            if not case.check():
-                print(case)
-                print('    ' + repr(str(case.result)))
-                print('    ' + repr(case.desired))
-                fails += 1
-        except Exception:
-            print(traceback.format_exc())
-            print(case)
-            fails += 1
-        tests += 1
-    return tests, fails
-
-
-def test_dir(refactoring_test_dir):
-    for (path, cases) in itertools.groupby(
-            collect_dir_tests(refactoring_test_dir, test_files),
-            lambda case: case.path):
-        num_tests, fails = run_test(cases)
-
-        base.test_sum += num_tests
-        f_name = os.path.basename(path)
-        s = 'run %s tests with %s fails (%s)' % (num_tests, fails, f_name)
-        base.tests_fail += fails
-        print(s)
-        base.summary.append(s)
-
-
-if __name__ == '__main__':
-    refactoring_test_dir = os.path.join(base.test_dir, 'refactor')
-    test_files = base.get_test_list()
-    test_dir(refactoring_test_dir)
-
-    base.print_summary()
-
-    sys.exit(1 if base.tests_fail else 0)
