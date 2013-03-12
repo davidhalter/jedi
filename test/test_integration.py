@@ -1,6 +1,8 @@
 import os
 import re
 
+import pytest
+
 from . import base
 from .run import \
     TEST_COMPLETIONS, TEST_DEFINITIONS, TEST_ASSIGNMENTS, TEST_USAGES
@@ -97,6 +99,8 @@ def run_related_name_test(case):
 
 
 def test_integration(case, monkeypatch, pytestconfig):
+    if case.skip is not None:
+        pytest.skip(case.skip)
     repo_root = base.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
     testers = {
