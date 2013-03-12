@@ -91,9 +91,13 @@ class ModuleWithCursor(Module):
     :param path: The module path of the file or None.
     :param position: The position, the user is currently in. Only important \
     for the main file.
+    :param fast: Use `fast_parser.FastParser` or not.  If None, respect
+                 `settings.fast_parser`.
     """
-    def __init__(self, path, source, position, fast=True):
+    def __init__(self, path, source, position, fast=None):
         super(ModuleWithCursor, self).__init__(path, source)
+        if fast is None:
+            fast = settings.fast_parser
         self._parserclass = fast_parser.FastParser if fast else \
                             parsing.Parser
         self.position = position

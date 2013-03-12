@@ -56,7 +56,7 @@ class Script(object):
     :type source_encoding: str
     """
     def __init__(self, source, line, column, source_path,
-                 source_encoding='utf-8', fast=True):
+                 source_encoding='utf-8', fast=None):
         api_classes._clear_caches()
         debug.reset_time()
         self.source = modules.source_to_unicode(source, source_encoding)
