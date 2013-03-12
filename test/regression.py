@@ -11,7 +11,7 @@ import itertools
 import os
 import textwrap
 
-from base import TestBase, unittest, cwd_at
+from .base import TestBase, unittest, cwd_at
 
 import jedi
 from jedi._compatibility import is_py25, utf8, unicode

@@ -10,7 +10,7 @@ import traceback
 import re
 import itertools
 
-import base
+from . import base
 
 from jedi._compatibility import reduce
 import jedi

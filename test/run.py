@@ -54,7 +54,7 @@ import re
 import traceback
 import itertools
 
-import base
+from . import base
 
 from jedi._compatibility import unicode, StringIO, reduce, literal_eval, is_py25
 

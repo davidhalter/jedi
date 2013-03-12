@@ -1,8 +1,8 @@
 import os
 
-import base
-import run
-import refactor
+from . import base
+from . import run
+from . import refactor
 
 
 def pytest_addoption(parser):
