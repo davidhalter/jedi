@@ -2,6 +2,7 @@ from os.path import join, dirname, abspath
 default_base_dir = join(dirname(abspath(__file__)), 'completion')
 
 import run
+import refactor
 
 
 def pytest_addoption(parser):
@@ -38,11 +39,15 @@ def pytest_generate_tests(metafunc):
     """
     :type metafunc: _pytest.python.Metafunc
     """
+    base_dir = metafunc.config.option.base_dir
+    test_files = dict(map(parse_test_files_option,
+                          metafunc.config.option.test_files))
     if 'case' in metafunc.fixturenames:
-        base_dir = metafunc.config.option.base_dir
-        test_files = dict(map(parse_test_files_option,
-                              metafunc.config.option.test_files))
         thirdparty = metafunc.config.option.thirdparty
         metafunc.parametrize(
             'case',
             run.collect_dir_tests(base_dir, test_files, thirdparty))
+    if 'refactor_case' in metafunc.fixturenames:
+        metafunc.parametrize(
+            'refactor_case',
+            refactor.collect_dir_tests(base_dir, test_files))

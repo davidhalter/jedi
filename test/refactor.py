@@ -64,7 +64,7 @@ class RefactoringCase(object):
                                 self.name, self.line_nr - 1)
 
 
-def collect_file_tests(source, f_name, lines_to_execute):
+def collect_file_tests(source, path, lines_to_execute):
     r = r'^# --- ?([^\n]*)\n((?:(?!\n# \+\+\+).)*)' \
         r'\n# \+\+\+((?:(?!\n# ---).)*)'
     for match in re.finditer(r, source, re.DOTALL | re.MULTILINE):
@@ -86,7 +86,6 @@ def collect_file_tests(source, f_name, lines_to_execute):
         if lines_to_execute and line_nr - 1 not in lines_to_execute:
             continue
 
-        path = os.path.join(os.path.abspath(refactoring_test_dir), f_name)
         yield RefactoringCase(name, source, line_nr, index, path,
                               new_name, start_line_test, second)
 
@@ -96,10 +95,10 @@ def collect_dir_tests(base_dir, test_files):
         files_to_execute = [a for a in test_files.items() if a[0] in f_name]
         lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
         if f_name.endswith(".py") and (not test_files or files_to_execute):
-            path = os.path.join(refactoring_test_dir, f_name)
+            path = os.path.join(base_dir, f_name)
             with open(path) as f:
                 source = f.read()
-            for case in collect_file_tests(source, f_name, lines_to_execute):
+            for case in collect_file_tests(source, path, lines_to_execute):
                 yield case
 
 

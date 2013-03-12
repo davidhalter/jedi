@@ -101,3 +101,14 @@ def test_integration(case, monkeypatch, pytestconfig):
         TEST_USAGES: run_related_name_test,
     }
     testers[case.test_type](case)
+
+
+def test_refactor(refactor_case):
+    """
+    Run refactoring test case.
+
+    :type refactor_case: :class:`.refactor.RefactoringCase`
+    """
+    refactor_case.run()
+    result, desired = refactor_case.result, refactor_case.desired
+    assert result == desired, "Refactoring test %r fails" % refactor_case
