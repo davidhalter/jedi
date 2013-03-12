@@ -16,10 +16,10 @@ annotations.
 
 import re
 
-import cache
-import evaluate
-import evaluate_representation as er
-import parsing
+from . import cache
+from . import evaluate
+from . import evaluate_representation as er
+from . import parsing
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx

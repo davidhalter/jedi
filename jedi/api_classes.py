@@ -8,16 +8,16 @@ import re
 import os
 import warnings
 
-from _compatibility import unicode, next
-import cache
-import dynamic
-import recursion
-import settings
-import evaluate
-import imports
-import parsing_representation as pr
-import evaluate_representation as er
-import keywords
+from ._compatibility import unicode, next
+from . import cache
+from . import dynamic
+from . import recursion
+from . import settings
+from . import evaluate
+from . import imports
+from . import parsing_representation as pr
+from . import evaluate_representation as er
+from . import keywords
 
 
 def _clear_caches():

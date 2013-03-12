@@ -32,11 +32,11 @@ if is_py3k:
 import types
 import inspect
 
-import common
-import debug
-import parsing
-import evaluate
-import modules
+from . import common
+from . import debug
+from . import parsing
+from . import evaluate
+from . import modules
 
 
 class BuiltinModule(modules.CachedModule):

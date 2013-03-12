@@ -6,11 +6,11 @@ finished (and still not working as I want), I won't document it any further.
 import re
 import operator
 
-from _compatibility import use_metaclass, reduce, property
-import settings
-import parsing
-import parsing_representation as pr
-import cache
+from ._compatibility import use_metaclass, reduce, property
+from . import settings
+from . import parsing
+from . import parsing_representation as pr
+from . import cache
 
 
 class Module(pr.Simple, pr.Module):

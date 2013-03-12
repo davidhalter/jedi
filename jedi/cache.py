@@ -23,9 +23,9 @@ import os
 import sys
 import pickle
 
-from _compatibility import json
-import settings
-import debug
+from ._compatibility import json
+from . import settings
+from . import debug
 
 # memoize caches will be deleted after every action
 memoize_caches = []

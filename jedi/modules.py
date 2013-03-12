@@ -22,12 +22,12 @@ import tokenize
 import sys
 import os
 
-import cache
-import parsing
-import parsing_representation as pr
-import fast_parser
-import debug
-import settings
+from . import cache
+from . import parsing
+from . import parsing_representation as pr
+from . import fast_parser
+from . import debug
+from . import settings
 
 
 class CachedModule(object):

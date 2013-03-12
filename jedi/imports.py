@@ -19,14 +19,14 @@ import os
 import pkgutil
 import imp
 import sys
-
-import builtin
-import modules
-import debug
-import parsing_representation as pr
-import evaluate
 import itertools
-import cache
+
+from . import builtin
+from . import modules
+from . import debug
+from . import parsing_representation as pr
+from . import evaluate
+from . import cache
 
 # for debugging purposes only
 imports_processed = 0

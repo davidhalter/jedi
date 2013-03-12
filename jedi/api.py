@@ -13,23 +13,22 @@ import re
 import os
 import warnings
 
-import parsing
-import parsing_representation as pr
-import evaluate_representation as er
-import dynamic
-import imports
-import evaluate
-import modules
-import debug
-import settings
-import keywords
-import helpers
-import common
-import builtin
-import api_classes
-import cache
-
-from _compatibility import next, unicode
+from . import parsing
+from . import parsing_representation as pr
+from . import evaluate_representation as er
+from . import dynamic
+from . import imports
+from . import evaluate
+from . import modules
+from . import debug
+from . import settings
+from . import keywords
+from . import helpers
+from . import common
+from . import builtin
+from . import api_classes
+from . import cache
+from ._compatibility import next, unicode
 
 
 class NotFoundError(Exception):

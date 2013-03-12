@@ -1,6 +1,6 @@
 import copy
 
-import parsing_representation as pr
+from . import parsing_representation as pr
 
 
 def fast_parent_copy(obj):
