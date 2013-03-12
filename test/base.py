@@ -17,6 +17,9 @@ import jedi
 from jedi._compatibility import is_py25
 
 
+sample_int = 1  # This is used in completion/imports.py
+
+
 class TestBase(unittest.TestCase):
     def get_script(self, src, pos, path=None):
         if pos is None:
