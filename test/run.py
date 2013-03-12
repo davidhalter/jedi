@@ -97,15 +97,10 @@ Tests look like this::
     abc
 """
 import os
-import sys
 import re
 
-from . import base  # required to setup import path
 import jedi
 from jedi._compatibility import unicode, StringIO, reduce, is_py25
-
-
-sys.path.pop(0)  # pop again, because it might affect the completion
 
 
 TEST_COMPLETIONS = 0

@@ -9,7 +9,6 @@ import functools
 
 test_dir = dirname(abspath(__file__))
 root_dir = dirname(test_dir)
-sys.path.insert(0, root_dir)
 
 import pytest
 

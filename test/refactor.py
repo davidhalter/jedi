@@ -10,7 +10,6 @@ import traceback
 import re
 import itertools
 
-from . import base  # required to setup import path
 from jedi._compatibility import reduce
 import jedi
 from jedi import refactoring
