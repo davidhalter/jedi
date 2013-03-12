@@ -14,10 +14,10 @@ Blackbox Tests (run.py)
 
 .. automodule:: test.run
 
-Regression Tests (regression.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Regression Tests (test_regression.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: test.regression
+.. automodule:: test.test_regression
 
 Refactoring Tests (refactor.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
