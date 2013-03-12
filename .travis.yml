@@ -8,6 +8,12 @@ install:
     - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then
       export PIP_INSECURE=t;
       fi
+    - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then
+      sudo apt-get install python-pyqt4;
+      fi
+    - if [[ $TRAVIS_PYTHON_VERSION == '3.2' ]]; then
+      sudo apt-get install python3-pyqt4;
+      fi
     - pip install --use-mirrors tox
 script:
     - export TOXENV=$(echo "$TRAVIS_PYTHON_VERSION" |
