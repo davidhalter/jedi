@@ -1,4 +1,8 @@
 import os
+import shutil
+import tempfile
+
+import pytest
 
 from . import base
 from . import run
@@ -57,3 +61,25 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize(
             'refactor_case',
             refactor.collect_dir_tests(base_dir, test_files))
+
+
+@pytest.fixture(scope='session')
+def clean_jedi_cache(request):
+    """
+    Set `jedi.settings.cache_directory` to a temporary directory during test.
+
+    Note that you can't use built-in `tmpdir` and `monkeypatch`
+    fixture here because their scope is 'function', which is not used
+    in 'session' scope fixture.
+
+    This fixture is activated in ../pytest.ini.
+    """
+    settings = base.jedi.settings
+    old = settings.cache_directory
+    tmp = tempfile.mkdtemp(prefix='jedi-test-')
+    settings.cache_directory = tmp
+
+    @request.addfinalizer
+    def restore():
+        settings.cache_directory = old
+        shutil.rmtree(tmp)
