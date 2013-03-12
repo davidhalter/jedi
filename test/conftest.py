@@ -56,7 +56,7 @@ def pytest_generate_tests(metafunc):
         cases = list(run.collect_dir_tests(base_dir, test_files))
         if thirdparty:
             cases.extend(run.collect_dir_tests(
-                os.path.join(base_dir, 'thirdparty'), test_files))
+                os.path.join(base_dir, 'thirdparty'), test_files, True))
         metafunc.parametrize('case', cases)
     if 'refactor_case' in metafunc.fixturenames:
         base_dir = metafunc.config.option.refactor_case_dir

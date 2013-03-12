@@ -120,6 +120,7 @@ class IntegrationTestCase(object):
         self.start = start
         self.line = line
         self.path = path
+        self.skip = None
 
     def __repr__(self):
         name = os.path.basename(self.path) if self.path else None
@@ -171,7 +172,7 @@ def collect_file_tests(lines, lines_to_execute):
                     correct = None
 
 
-def collect_dir_tests(base_dir, test_files):
+def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
     for f_name in os.listdir(base_dir):
         files_to_execute = [a for a in test_files.items() if a[0] in f_name]
         lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
@@ -180,10 +181,23 @@ def collect_dir_tests(base_dir, test_files):
             # only has these features partially.
             if is_py25 and f_name in ['generators.py', 'types.py']:
                 continue
+
+            skip = None
+            if check_thirdparty:
+                lib = f_name.replace('_.py', '')
+                try:
+                    # there is always an underline at the end.
+                    # It looks like: completion/thirdparty/pylab_.py
+                    __import__(lib)
+                except ImportError:
+                    skip = 'Thirdparty-Library %s not found.' % lib
+
             path = os.path.join(base_dir, f_name)
             source = open(path).read()
             for case in collect_file_tests(StringIO(source),
                                            lines_to_execute):
                 case.path = path
                 case.source = source
+                if skip:
+                    case.skip = skip
                 yield case
