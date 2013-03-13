@@ -9,7 +9,6 @@ instantiated. This class represents these cases.
 So, why is there also a ``Class`` class here? Well, there are decorators and
 they change classes in Python 3.
 """
-import sys
 import copy
 import itertools
 
@@ -668,6 +667,7 @@ class Execution(Executable):
         """
         return self.get_params() + pr.Scope.get_set_vars(self)
 
+    @common.rethrow_uncaught
     def copy_properties(self, prop):
         """
         Literally copies a property of a Function. Copying is very expensive,
@@ -675,22 +675,19 @@ class Execution(Executable):
         objects can be used for the executions, as if they were in the
         execution.
         """
-        try:
-            # Copy all these lists into this local function.
-            attr = getattr(self.base, prop)
-            objects = []
-            for element in attr:
-                if element is None:
-                    copied = element
-                else:
-                    copied = helpers.fast_parent_copy(element)
-                    copied.parent = self._scope_copy(copied.parent)
-                    if isinstance(copied, pr.Function):
-                        copied = Function(copied)
-                objects.append(copied)
-            return objects
-        except AttributeError:
-            raise common.MultiLevelAttributeError(sys.exc_info())
+        # Copy all these lists into this local function.
+        attr = getattr(self.base, prop)
+        objects = []
+        for element in attr:
+            if element is None:
+                copied = element
+            else:
+                copied = helpers.fast_parent_copy(element)
+                copied.parent = self._scope_copy(copied.parent)
+                if isinstance(copied, pr.Function):
+                    copied = Function(copied)
+            objects.append(copied)
+        return objects
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'imports', '_sub_module']:
@@ -698,21 +695,19 @@ class Execution(Executable):
         return getattr(self.base, name)
 
     @cache.memoize_default()
+    @common.rethrow_uncaught
     def _scope_copy(self, scope):
-        try:
-            """ Copies a scope (e.g. if) in an execution """
-            # TODO method uses different scopes than the subscopes property.
+        """ Copies a scope (e.g. if) in an execution """
+        # TODO method uses different scopes than the subscopes property.
 
-            # just check the start_pos, sometimes it's difficult with closures
-            # to compare the scopes directly.
-            if scope.start_pos == self.start_pos:
-                return self
-            else:
-                copied = helpers.fast_parent_copy(scope)
-                copied.parent = self._scope_copy(copied.parent)
-                return copied
-        except AttributeError:
-            raise common.MultiLevelAttributeError(sys.exc_info())
+        # just check the start_pos, sometimes it's difficult with closures
+        # to compare the scopes directly.
+        if scope.start_pos == self.start_pos:
+            return self
+        else:
+            copied = helpers.fast_parent_copy(scope)
+            copied.parent = self._scope_copy(copied.parent)
+            return copied
 
     @property
     @cache.memoize_default()

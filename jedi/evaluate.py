@@ -581,12 +581,7 @@ def follow_statement(stmt, seek_name=None):
     commands = stmt.get_commands()
     debug.dbg('calls: %s' % commands)
 
-    try:
-        result = follow_call_list(commands)
-    except AttributeError:
-        # This is so evil! But necessary to propagate errors. The attribute
-        # errors here must not be catched, because they shouldn't exist.
-        raise common.MultiLevelAttributeError(sys.exc_info())
+    result = follow_call_list(commands)
 
     # Assignment checking is only important if the statement defines multiple
     # variables.
@@ -598,6 +593,7 @@ def follow_statement(stmt, seek_name=None):
     return set(result)
 
 
+@common.rethrow_uncaught
 def follow_call_list(call_list, follow_array=False):
     """
     `call_list` can be either `pr.Array` or `list of list`.
