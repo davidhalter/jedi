@@ -27,13 +27,6 @@ class UncaughtAttributeError(Exception):
 
     :param base: return values of sys.exc_info().
     """
-    def __init__(self, base=None):
-        self.base = base
-
-    def __str__(self):
-        import traceback
-        tb = traceback.format_exception(*self.base)
-        return 'Original:\n\n' + ''.join(tb)
 
 
 def rethrow_uncaught(func):
@@ -62,7 +55,7 @@ def rethrow_uncaught(func):
             return func(*args, **kwds)
         except AttributeError:
             exc_info = sys.exc_info()
-            reraise(UncaughtAttributeError, exc_info[2])
+            reraise(UncaughtAttributeError(exc_info[1]), exc_info[2])
     return wrapper
 
 
