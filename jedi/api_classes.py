@@ -69,7 +69,53 @@ class BaseDefinition(object):
 
     @property
     def type(self):
-        """The type of the definition."""
+        """
+        The type of the definition.
+
+        Here is an example of the value of this attribute.  Let's consider
+        the following source.  As what is in ``variable`` is unambiguous
+        to Jedi, :meth:`api.Script.definition` should return a list of
+        definition for ``sys``, ``f``, ``C`` and ``x``.
+
+        >>> from jedi import Script
+        >>> source = '''
+        ... import sys
+        ...
+        ... class C:
+        ...     pass
+        ...
+        ... class D:
+        ...     pass
+        ...
+        ... x = D()
+        ...
+        ... def f():
+        ...     pass
+        ...
+        ... variable = sys or f or C or x'''
+        >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
+        >>> defs = script.definition()
+
+        Before showing what is in ``defs``, let's sort it by :attr:`line`
+        so that it is easy to relate the result to the source code.
+
+        >>> defs = sorted(defs, key=lambda d: d.line)
+        >>> defs                           # doctest: +NORMALIZE_WHITESPACE
+        [<Definition module sys>, <Definition class C>,
+         <Definition class D>, <Definition def f>]
+
+        Finally, here is what you can get from :attr:`type`:
+
+        >>> defs[0].type
+        'Module'
+        >>> defs[1].type
+        'Class'
+        >>> defs[2].type
+        'Instance'
+        >>> defs[3].type
+        'Function'
+
+        """
         # generate the type
         stripped = self.definition
         if isinstance(self.definition, er.InstanceElement):
