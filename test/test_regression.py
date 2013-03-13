@@ -11,8 +11,6 @@ import itertools
 import os
 import textwrap
 
-import pytest
-
 from .base import TestBase, unittest, cwd_at
 
 import jedi
@@ -402,9 +400,7 @@ class TestFeature(TestBase):
 
     def test_keyword_full_name_should_be_none(self):
         """issue #94"""
-        # Using `from jedi.keywords import Keyword` here does NOT work
-        # in Python 3.  This is due to the import hack jedi using.
-        Keyword = api_classes.keywords.Keyword
+        from jedi.keywords import Keyword
         d = api_classes.Definition(Keyword('(', (0, 0)))
         assert d.full_name is None
 
@@ -527,7 +523,6 @@ class TestSpeed(TestBase):
         #print(jedi.imports.imports_processed)
 
 
-@pytest.mark.skipif("sys.version_info >= (3,0)")
 def test_settings_module():
     """
     jedi.settings and jedi.cache.settings must be the same module.
