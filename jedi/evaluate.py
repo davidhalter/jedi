@@ -68,7 +68,7 @@ backtracking algorithm.
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
-from _compatibility import next, hasattr, is_py3k, unicode, utf8
+from _compatibility import next, hasattr, is_py3k, unicode, reraise
 
 import sys
 import itertools
@@ -175,7 +175,7 @@ def get_names_of_scope(scope, position=None, star_search=True,
                     yield scope, get_defined_names_for_position(scope,
                                                     position, in_func_scope)
             except StopIteration:
-                raise common.MultiLevelStopIteration('StopIteration raised')
+                reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
         if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
             # is a list comprehension
             yield scope, scope.get_set_vars(is_internal_call=True)
