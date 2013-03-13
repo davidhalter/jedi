@@ -91,6 +91,15 @@ def reraise(exception, traceback):
     raise exception, None, traceback
 """, 'blub', 'exec'))
 
+reraise.__doc__ = """
+Re-raise `exception` with a `traceback` object.
+
+Usage::
+
+    reraise(Exception, sys.exc_info()[2])
+
+"""
+
 # StringIO (Python 2.5 has no io module), so use io only for py3k
 try:
     from StringIO import StringIO

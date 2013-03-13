@@ -21,8 +21,9 @@ class UncaughtAttributeError(Exception):
     Important, because `__getattr__` and `hasattr` catch AttributeErrors
     implicitly. This is really evil (mainly because of `__getattr__`).
     `hasattr` in Python 2 is even more evil, because it catches ALL exceptions.
-    Therefore this class has to be a `BaseException` and not an `Exception`.
-    But because I rewrote hasattr, we can now switch back to `Exception`.
+    Therefore this class originally had to be derived from `BaseException`
+    instead of `Exception`.  But because I removed relevant `hasattr` from
+    the code base, we can now switch back to `Exception`.
 
     :param base: return values of sys.exc_info().
     """
@@ -36,6 +37,25 @@ class UncaughtAttributeError(Exception):
 
 
 def rethrow_uncaught(func):
+    """
+    Re-throw uncaught `AttributeError`.
+
+    Usage:  Put ``@rethrow_uncaught`` in front of the function
+    which does **not** suppose to raise `AttributeError`.
+
+    AttributeError is easily get caught by `hasattr` and another
+    ``except AttributeError`` clause.  This becomes problem when you use
+    a lot of "dynamic" attributes (e.g., using ``@property``) because you
+    can't distinguish if the property does not exist for real or some code
+    inside of the "dynamic" attribute through that error.  In a well
+    written code, such error should not exist but getting there is very
+    difficult.  This decorator is to help us getting there by changing
+    `AttributeError` to `UncaughtAttributeError` to avoid unexpected catch.
+    This helps us noticing bugs earlier and facilitates debugging.
+
+    .. note:: Treating StopIteration here is easy.
+              Add that feature when needed.
+    """
     @functools.wraps(func)
     def wrapper(*args, **kwds):
         try:
