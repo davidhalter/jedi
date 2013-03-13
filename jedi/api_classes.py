@@ -171,7 +171,31 @@ class BaseDefinition(object):
 
     @property
     def doc(self):
-        """Return a document string for this completion object."""
+        r"""
+        Return a document string for this completion object.
+
+        Example:
+
+        >>> from jedi import Script
+        >>> source = '''\
+        ... def f(a, b=1):
+        ...     "Document for function f."
+        ... '''
+        >>> script = Script(source, 1, len('def f'), 'example.py')
+        >>> d = script.definition()[0]
+        >>> print(d.doc)
+        f(a, b = 1)
+        <BLANKLINE>
+        Document for function f.
+
+        Notice that useful extra information is added to the actual
+        docstring.  For function, it is call signature.  If you need
+        actual docstring, use :attr:`raw_doc` instead.
+
+        >>> print(d.raw_doc)
+        Document for function f.
+
+        """
         try:
             return self.definition.doc
         except AttributeError:
@@ -179,7 +203,11 @@ class BaseDefinition(object):
 
     @property
     def raw_doc(self):
-        """The raw docstring ``__doc__`` for any object."""
+        """
+        The raw docstring ``__doc__`` for any object.
+
+        See :attr:`doc` for example.
+        """
         try:
             return unicode(self.definition.docstr)
         except AttributeError:
