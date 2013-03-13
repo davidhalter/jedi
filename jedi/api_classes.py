@@ -230,13 +230,13 @@ class BaseDefinition(object):
         ...
         ... variable = f or C'''
         >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
-        >>> defs = script.definition()
-        >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> defs
+        >>> defs = script.definition()                      # doctest: +SKIP
+        >>> defs = sorted(defs, key=lambda d: d.line)       # doctest: +SKIP
+        >>> defs                                            # doctest: +SKIP
         [<Definition def f>, <Definition class C>]
-        >>> defs[0].description
+        >>> defs[0].description                             # doctest: +SKIP
         'def f'
-        >>> defs[1].description
+        >>> defs[1].description                             # doctest: +SKIP
         'class C'
 
         """
