@@ -215,7 +215,31 @@ class BaseDefinition(object):
 
     @property
     def description(self):
-        """A textual description of the object."""
+        """
+        A textual description of the object.
+
+        Example:
+
+        >>> from jedi import Script
+        >>> source = '''
+        ... def f():
+        ...     pass
+        ...
+        ... class C:
+        ...     pass
+        ...
+        ... variable = f or C'''
+        >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
+        >>> defs = script.definition()
+        >>> defs = sorted(defs, key=lambda d: d.line)
+        >>> defs
+        [<Definition def f>, <Definition class C>]
+        >>> defs[0].description
+        'def f'
+        >>> defs[1].description
+        'class C'
+
+        """
         return unicode(self.definition)
 
     @property
