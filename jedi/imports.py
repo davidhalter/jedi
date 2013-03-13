@@ -26,8 +26,9 @@ from . import debug
 from . import parsing_representation as pr
 from . import cache
 
-import builtin
-import evaluate
+from .deferredimport import deferred_import
+builtin = deferred_import(__name__, 'builtin')
+evaluate = deferred_import(__name__, 'evaluate')
 
 # for debugging purposes only
 imports_processed = 0

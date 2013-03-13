@@ -80,10 +80,11 @@ from . import recursion
 from . import docstrings
 from ._compatibility import next, hasattr, is_py3k, unicode, reraise
 
-import evaluate_representation as er
-import builtin
-import imports
-import dynamic
+from .deferredimport import deferred_import
+er = deferred_import(__name__, 'evaluate_representation', 'er')
+builtin = deferred_import(__name__, 'builtin')
+imports = deferred_import(__name__, 'imports')
+dynamic = deferred_import(__name__, 'dynamic')
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):

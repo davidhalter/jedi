@@ -21,10 +21,11 @@ from . import recursion
 from . import debug
 from . import common
 
-import imports
-import builtin
-import evaluate
-import docstrings
+from .deferredimport import deferred_import
+imports = deferred_import(__name__, 'imports')
+builtin = deferred_import(__name__, 'builtin')
+evaluate = deferred_import(__name__, 'evaluate')
+docstrings = deferred_import(__name__, 'docstrings')
 
 
 class DecoratorNotFound(LookupError):

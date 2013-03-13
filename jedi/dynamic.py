@@ -64,8 +64,9 @@ from . import imports
 from . import api_classes
 from . import fast_parser
 
-import evaluate_representation as er
-import evaluate
+from .deferredimport import deferred_import
+er = deferred_import(__name__, 'evaluate_representation', 'er')
+evaluate = deferred_import(__name__, 'evaluate')
 
 
 # This is something like the sys.path, but only for searching params. It means

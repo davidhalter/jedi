@@ -37,7 +37,8 @@ from . import debug
 from . import parsing
 from . import modules
 
-import evaluate
+from .deferredimport import deferred_import
+evaluate = deferred_import(__name__, 'evaluate')
 
 
 class BuiltinModule(modules.CachedModule):

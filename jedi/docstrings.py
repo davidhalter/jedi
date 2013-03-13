@@ -19,8 +19,9 @@ import re
 from . import cache
 from . import parsing
 
-import evaluate_representation as er
-import evaluate
+from .deferredimport import deferred_import
+er = deferred_import(__name__, 'evaluate_representation', 'er')
+evaluate = deferred_import(__name__, 'evaluate')
 
 
 DOCSTRING_PARAM_PATTERNS = [

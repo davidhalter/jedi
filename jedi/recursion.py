@@ -11,8 +11,9 @@ from . import parsing_representation as pr
 from . import debug
 from . import settings
 
-import evaluate_representation as er
-import builtin
+from .deferredimport import deferred_import
+er = deferred_import(__name__, 'evaluate_representation', 'er')
+builtin = deferred_import(__name__, 'builtin')
 
 
 class RecursionDecorator(object):

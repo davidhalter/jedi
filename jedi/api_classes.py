@@ -17,8 +17,9 @@ from . import imports
 from . import parsing_representation as pr
 from . import keywords
 
-import dynamic
-import evaluate_representation as er
+from .deferredimport import deferred_import
+dynamic = deferred_import(__name__, 'dynamic')
+er = deferred_import(__name__, 'evaluate_representation', 'er')
 
 
 def _clear_caches():
