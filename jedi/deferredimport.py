@@ -3,9 +3,18 @@ import sys
 deferred_modules = {}
 
 
+class DummyModule(object):
+
+    def __getattr__(self, _):
+        raise ValueError(
+            "Trying to use deferred imported module before "
+            "Jedi is fully imported.")
+
+
 def deferred_import(current_name, submodule, alias=None):
     module_list = deferred_modules.setdefault(current_name, [])
     module_list.append((submodule, alias or submodule))
+    return DummyModule()
 
 
 def import_all():
