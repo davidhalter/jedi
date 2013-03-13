@@ -22,7 +22,7 @@ possible to access functions like ``list`` and ``int`` directly, the same way
 """
 
 from __future__ import with_statement
-from _compatibility import exec_function, is_py3k
+from ._compatibility import exec_function, is_py3k
 
 import re
 import sys
