@@ -151,7 +151,7 @@ class BaseDefinition(object):
         """
         path = self.module_path
         sep = os.path.sep
-        p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', path)
+        p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.(py|so)$' % sep, r'\1', path)
         return p
 
     def in_builtin_module(self):
