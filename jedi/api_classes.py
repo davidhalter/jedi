@@ -244,7 +244,27 @@ class BaseDefinition(object):
 
     @property
     def full_name(self):
-        """The path to a certain class/function, see #61."""
+        """
+        Dot-separated path of this object.
+
+        It is in the form of ``<module>[.<submodule>[...]][.<object>]``.
+        It is useful when you want to look up Python manual of the
+        object at hand.
+
+        Example:
+
+        >>> from jedi import Script
+        >>> source = '''
+        ... import os
+        ... os.path.join'''
+        >>> script = Script(source, 3, len('os.path.join'), 'example.py')
+        >>> print(script.definition()[0].full_name)
+        os.path.join
+
+        Notice that it correctly returns ``'os.path.join'`` instead of
+        (for example) ``'posixpath.join'``.
+
+        """
         path = [unicode(p) for p in self.path]
         # TODO add further checks, the mapping should only occur on stdlib.
         if not path:
