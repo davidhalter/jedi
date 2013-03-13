@@ -138,7 +138,17 @@ class BaseDefinition(object):
 
     @property
     def module_name(self):
-        """The module name."""
+        """
+        The module name.
+
+        >>> from jedi import Script
+        >>> source = 'import datetime'
+        >>> script = Script(source, 1, len(source), 'example.py')
+        >>> d = script.definition()[0]
+        >>> print(d.module_name)                       # doctest: +ELLIPSIS
+        datetime
+
+        """
         path = self.module_path
         sep = os.path.sep
         p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', path)
