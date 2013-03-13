@@ -1,8 +1,10 @@
 """ A universal module with functions / classes without dependencies. """
+import sys
 import contextlib
+import functools
 import tokenize
 
-from _compatibility import next
+from _compatibility import next, reraise
 import debug
 import settings
 
@@ -31,6 +33,17 @@ class MultiLevelAttributeError(Exception):
         import traceback
         tb = traceback.format_exception(*self.base)
         return 'Original:\n\n' + ''.join(tb)
+
+
+def rethrow_uncaught(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwds):
+        try:
+            return func(*args, **kwds)
+        except AttributeError:
+            exc_info = sys.exc_info()
+            reraise(MultiLevelAttributeError, exc_info[2])
+    return wrapper
 
 
 class PushBackIterator(object):
