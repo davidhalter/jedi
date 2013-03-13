@@ -16,7 +16,7 @@ class MultiLevelStopIteration(Exception):
     pass
 
 
-class MultiLevelAttributeError(Exception):
+class UncaughtAttributeError(Exception):
     """
     Important, because `__getattr__` and `hasattr` catch AttributeErrors
     implicitly. This is really evil (mainly because of `__getattr__`).
@@ -42,7 +42,7 @@ def rethrow_uncaught(func):
             return func(*args, **kwds)
         except AttributeError:
             exc_info = sys.exc_info()
-            reraise(MultiLevelAttributeError, exc_info[2])
+            reraise(UncaughtAttributeError, exc_info[2])
     return wrapper
 
 
