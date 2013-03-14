@@ -1,3 +1,5 @@
+import pytest
+
 from jedi import settings
 from jedi.cache import ParserCacheItem, _ModulePickling
 
@@ -5,6 +7,7 @@ from jedi.cache import ParserCacheItem, _ModulePickling
 ModulePickling = _ModulePickling()
 
 
+@pytest.mark.skipif("sys.version_info >= (3,0)")
 def test_modulepickling_change_cache_dir(monkeypatch, tmpdir):
     """
     ModulePickling should not save old cache when cache_directory is changed.
