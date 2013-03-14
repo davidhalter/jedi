@@ -365,10 +365,10 @@ class Definition(BaseDefinition):
             d = d.var
         if isinstance(d, pr.Name):
             d = d.parent
-        return defined_names(d)
+        return _defined_names(d)
 
 
-def defined_names(scope):
+def _defined_names(scope):
     """
     List sub-definitions (e.g., methods in class).
 
