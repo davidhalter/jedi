@@ -32,7 +32,6 @@ statements in this scope.  Check this out:
 [<Import: import os @1,0>]
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
-
 """
 
 import os

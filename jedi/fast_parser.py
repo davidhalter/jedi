@@ -207,8 +207,73 @@ class FastParser(use_metaclass(CachedFastParser)):
                     return self.scan_user_scope(scope) or scope
         return None
 
+    def _split_parts(self, code):
+        """
+        Split the code into different parts. This makes it possible to parse
+        each part seperately and therefore cache parts of the file and not
+        everything.
+        """
+        def add_part():
+            txt = '\n'.join(current_lines)
+            if txt:
+                parts.append(txt)
+                current_lines[:] = []
+
+        flows = ['if', 'else', 'elif', 'while', 'with', 'try', 'except',
+                 'finally']
+        r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(flows)
+
+        lines = code.splitlines()
+        current_lines = []
+        parts = []
+        is_generator = False
+        current_indent = 0
+        new_indent = False
+        is_flow = False
+        # All things within flows are simply being ignored.
+        for i, l in enumerate(lines):
+            # check for dedents
+            m = re.match('^([\t ]*)(.?)', l)
+            indent = len(m.group(1))
+            if m.group(2) in ['', '#']:
+                current_lines.append(l)  # just ignore comments and blank lines
+                continue
+
+            if indent < current_indent:  # -> dedent
+                current_indent = indent
+                new_indent = False
+                if not is_flow:
+                    add_part()
+                is_flow = False
+            elif new_indent:
+                current_indent = indent
+                new_indent = False
+
+            # Check lines for functions/classes and split the code there.
+            if not is_flow:
+                m = re.match(r_keyword, l)
+                if m:
+                    is_flow = m.group(1) in flows
+                    if not is_generator and not is_flow:
+                        add_part()
+                        current_lines = []
+                    is_generator = '@' == m.group(1)
+                    if not is_generator:
+                        current_indent += 1  # it must be higher
+                        new_indent = True
+
+            current_lines.append(l)
+        add_part()
+
+
+        print parts[1]
+        print [p[:20] for p in parts]
+        exit()
+        return parts
+
     def _parse(self, code):
         """ :type code: str """
+        parts = self._split_parts(code)
         r = r'(?:\n(?:def|class|@.*?\n(?:def|class))|^).*?' \
             r'(?=\n(?:def|class|@)|$)'
         parts = re.findall(r, code, re.DOTALL)
