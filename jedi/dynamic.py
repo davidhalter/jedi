@@ -55,14 +55,14 @@ from __future__ import with_statement
 
 import os
 
-from . import cache
-from . import parsing_representation as pr
-from . import modules
-from . import settings
-from . import debug
-from . import imports
-from . import api_classes
-from . import fast_parser
+from jedi import cache
+from jedi import parsing_representation as pr
+from jedi import modules
+from jedi import settings
+from jedi import debug
+from jedi import imports
+from jedi import api_classes
+from jedi import fast_parser
 
 from .deferredimport import deferred_import
 er = deferred_import(__name__, 'evaluate_representation', 'er')

@@ -72,13 +72,13 @@ backtracking algorithm.
 import sys
 import itertools
 
-from . import common
-from . import cache
-from . import parsing_representation as pr
-from . import debug
-from . import recursion
-from . import docstrings
-from ._compatibility import next, hasattr, is_py3k, unicode, reraise
+from jedi import common
+from jedi import cache
+from jedi import parsing_representation as pr
+from jedi import debug
+from jedi import recursion
+from jedi import docstrings
+from jedi._compatibility import next, hasattr, is_py3k, unicode, reraise
 
 from .deferredimport import deferred_import
 er = deferred_import(__name__, 'evaluate_representation', 'er')

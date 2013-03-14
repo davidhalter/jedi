@@ -21,10 +21,10 @@ import imp
 import sys
 import itertools
 
-from . import modules
-from . import debug
-from . import parsing_representation as pr
-from . import cache
+from jedi import modules
+from jedi import debug
+from jedi import parsing_representation as pr
+from jedi import cache
 
 from .deferredimport import deferred_import
 builtin = deferred_import(__name__, 'builtin')

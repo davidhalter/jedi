@@ -17,9 +17,9 @@ from __future__ import with_statement
 
 import difflib
 
-from . import modules
-from . import helpers
-from . import parsing_representation as pr
+from jedi import modules
+from jedi import helpers
+from jedi import parsing_representation as pr
 
 
 class Refactoring(object):

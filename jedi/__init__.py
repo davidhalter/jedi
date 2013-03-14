@@ -35,7 +35,7 @@ good text editor, while still having very good IDE features for Python.
 """
 
 from jedi.api import *  # Python 2.5 does not support `from .api import *`
-from . import settings
+from jedi import settings
 
 from .deferredimport import import_all
 import_all()

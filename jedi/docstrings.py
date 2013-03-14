@@ -16,8 +16,8 @@ annotations.
 
 import re
 
-from . import cache
-from . import parsing
+from jedi import cache
+from jedi import parsing
 
 from .deferredimport import deferred_import
 er = deferred_import(__name__, 'evaluate_representation', 'er')

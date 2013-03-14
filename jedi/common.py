@@ -4,9 +4,9 @@ import contextlib
 import functools
 import tokenize
 
-from ._compatibility import next, reraise
-from . import debug
-from . import settings
+from jedi._compatibility import next, reraise
+from jedi import debug
+from jedi import settings
 
 
 class MultiLevelStopIteration(Exception):

@@ -12,14 +12,14 @@ they change classes in Python 3.
 import copy
 import itertools
 
-from ._compatibility import property, use_metaclass, next, hasattr
-from . import parsing_representation as pr
-from . import cache
-from . import dynamic
-from . import helpers
-from . import recursion
-from . import debug
-from . import common
+from jedi._compatibility import property, use_metaclass, next, hasattr
+from jedi import parsing_representation as pr
+from jedi import cache
+from jedi import dynamic
+from jedi import helpers
+from jedi import recursion
+from jedi import debug
+from jedi import common
 
 from .deferredimport import deferred_import
 imports = deferred_import(__name__, 'imports')

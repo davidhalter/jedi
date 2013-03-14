@@ -1,7 +1,7 @@
 import keyword
 
-from ._compatibility import is_py3k
-from . import builtin
+from jedi._compatibility import is_py3k
+from jedi import builtin
 
 import pydoc
 try:

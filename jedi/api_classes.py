@@ -8,14 +8,14 @@ import re
 import os
 import warnings
 
-from ._compatibility import unicode, next
-from . import cache
-from . import recursion
-from . import settings
-from . import evaluate
-from . import imports
-from . import parsing_representation as pr
-from . import keywords
+from jedi._compatibility import unicode, next
+from jedi import cache
+from jedi import recursion
+from jedi import settings
+from jedi import evaluate
+from jedi import imports
+from jedi import parsing_representation as pr
+from jedi import keywords
 
 from .deferredimport import deferred_import
 dynamic = deferred_import(__name__, 'dynamic')

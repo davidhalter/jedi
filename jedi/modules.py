@@ -20,13 +20,13 @@ import tokenize
 import sys
 import os
 
-from ._compatibility import exec_function, unicode, is_py25, literal_eval
-from . import cache
-from . import parsing
-from . import parsing_representation as pr
-from . import fast_parser
-from . import debug
-from . import settings
+from jedi._compatibility import exec_function, unicode, is_py25, literal_eval
+from jedi import cache
+from jedi import parsing
+from jedi import parsing_representation as pr
+from jedi import fast_parser
+from jedi import debug
+from jedi import settings
 
 
 class CachedModule(object):
