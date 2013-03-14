@@ -34,7 +34,7 @@ As you see Jedi is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.
 """
 
-from .api import Script, NotFoundError, set_debug_function, _quick_complete
+from jedi.api import *  # Python 2.5 does not support `from .api import *`
 from . import settings
 
 from .deferredimport import import_all
