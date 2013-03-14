@@ -69,7 +69,53 @@ class BaseDefinition(object):
 
     @property
     def type(self):
-        """The type of the definition."""
+        """
+        The type of the definition.
+
+        Here is an example of the value of this attribute.  Let's consider
+        the following source.  As what is in ``variable`` is unambiguous
+        to Jedi, :meth:`api.Script.definition` should return a list of
+        definition for ``sys``, ``f``, ``C`` and ``x``.
+
+        >>> from jedi import Script
+        >>> source = '''
+        ... import sys
+        ...
+        ... class C:
+        ...     pass
+        ...
+        ... class D:
+        ...     pass
+        ...
+        ... x = D()
+        ...
+        ... def f():
+        ...     pass
+        ...
+        ... variable = sys or f or C or x'''
+        >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
+        >>> defs = script.definition()
+
+        Before showing what is in ``defs``, let's sort it by :attr:`line`
+        so that it is easy to relate the result to the source code.
+
+        >>> defs = sorted(defs, key=lambda d: d.line)
+        >>> defs                           # doctest: +NORMALIZE_WHITESPACE
+        [<Definition module sys>, <Definition class C>,
+         <Definition class D>, <Definition def f>]
+
+        Finally, here is what you can get from :attr:`type`:
+
+        >>> defs[0].type
+        'Module'
+        >>> defs[1].type
+        'Class'
+        >>> defs[2].type
+        'Instance'
+        >>> defs[3].type
+        'Function'
+
+        """
         # generate the type
         stripped = self.definition
         if isinstance(self.definition, er.InstanceElement):
@@ -92,10 +138,20 @@ class BaseDefinition(object):
 
     @property
     def module_name(self):
-        """The module name."""
+        """
+        The module name.
+
+        >>> from jedi import Script
+        >>> source = 'import datetime'
+        >>> script = Script(source, 1, len(source), 'example.py')
+        >>> d = script.definition()[0]
+        >>> print(d.module_name)                       # doctest: +ELLIPSIS
+        datetime
+
+        """
         path = self.module_path
         sep = os.path.sep
-        p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.py$' % sep, r'\1', path)
+        p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.(py|so)$' % sep, r'\1', path)
         return p
 
     def in_builtin_module(self):
@@ -125,7 +181,31 @@ class BaseDefinition(object):
 
     @property
     def doc(self):
-        """Return a document string for this completion object."""
+        r"""
+        Return a document string for this completion object.
+
+        Example:
+
+        >>> from jedi import Script
+        >>> source = '''\
+        ... def f(a, b=1):
+        ...     "Document for function f."
+        ... '''
+        >>> script = Script(source, 1, len('def f'), 'example.py')
+        >>> d = script.definition()[0]
+        >>> print(d.doc)
+        f(a, b = 1)
+        <BLANKLINE>
+        Document for function f.
+
+        Notice that useful extra information is added to the actual
+        docstring.  For function, it is call signature.  If you need
+        actual docstring, use :attr:`raw_doc` instead.
+
+        >>> print(d.raw_doc)
+        Document for function f.
+
+        """
         try:
             return self.definition.doc
         except AttributeError:
@@ -133,7 +213,11 @@ class BaseDefinition(object):
 
     @property
     def raw_doc(self):
-        """The raw docstring ``__doc__`` for any object."""
+        """
+        The raw docstring ``__doc__`` for any object.
+
+        See :attr:`doc` for example.
+        """
         try:
             return unicode(self.definition.docstr)
         except AttributeError:
@@ -141,12 +225,56 @@ class BaseDefinition(object):
 
     @property
     def description(self):
-        """A textual description of the object."""
+        """
+        A textual description of the object.
+
+        Example:
+
+        >>> from jedi import Script
+        >>> source = '''
+        ... def f():
+        ...     pass
+        ...
+        ... class C:
+        ...     pass
+        ...
+        ... variable = f or C'''
+        >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
+        >>> defs = script.definition()                      # doctest: +SKIP
+        >>> defs = sorted(defs, key=lambda d: d.line)       # doctest: +SKIP
+        >>> defs                                            # doctest: +SKIP
+        [<Definition def f>, <Definition class C>]
+        >>> defs[0].description                             # doctest: +SKIP
+        'def f'
+        >>> defs[1].description                             # doctest: +SKIP
+        'class C'
+
+        """
         return unicode(self.definition)
 
     @property
     def full_name(self):
-        """The path to a certain class/function, see #61."""
+        """
+        Dot-separated path of this object.
+
+        It is in the form of ``<module>[.<submodule>[...]][.<object>]``.
+        It is useful when you want to look up Python manual of the
+        object at hand.
+
+        Example:
+
+        >>> from jedi import Script
+        >>> source = '''
+        ... import os
+        ... os.path.join'''
+        >>> script = Script(source, 3, len('os.path.join'), 'example.py')
+        >>> print(script.definition()[0].full_name)
+        os.path.join
+
+        Notice that it correctly returns ``'os.path.join'`` instead of
+        (for example) ``'posixpath.join'``.
+
+        """
         path = [unicode(p) for p in self.path]
         # TODO add further checks, the mapping should only occur on stdlib.
         if not path:
