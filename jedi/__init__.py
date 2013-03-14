@@ -40,7 +40,7 @@ import sys
 # imports and circular imports... Just avoid it:
 sys.path.insert(0, __path__[0])
 
-from .api import Script, NotFoundError, set_debug_function, _quick_complete
+from jedi.api import *  # Python 2.5 does not support `from .api import *`
 from . import settings
 
 sys.path.pop(0)
