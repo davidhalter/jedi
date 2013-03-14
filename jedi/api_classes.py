@@ -7,6 +7,7 @@ interesting information about completion and goto operations.
 import re
 import os
 import warnings
+import functools
 
 from _compatibility import unicode, next
 import cache
@@ -32,6 +33,18 @@ def _clear_caches():
     evaluate.follow_statement.reset()
 
     imports.imports_processed = 0
+
+
+def _clear_caches_after_call(func):
+    """
+    Clear caches just before returning a value.
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwds):
+        result = func(*args, **kwds)
+        _clear_caches()
+        return result
+    return wrapper
 
 
 class BaseDefinition(object):
