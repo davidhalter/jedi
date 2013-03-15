@@ -514,7 +514,7 @@ class TestSpeed(TestBase):
             return wrapper
         return decorated
 
-    @_check_speed(0.1)
+    @_check_speed(0.2)
     def test_os_path_join(self):
         s = "from posixpath import join; join('', '')."
         assert len(self.complete(s)) > 10  # is a str completion

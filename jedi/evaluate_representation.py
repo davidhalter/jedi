@@ -13,17 +13,17 @@ import copy
 import itertools
 
 from _compatibility import property, use_metaclass, next, hasattr
-import parsing_representation as pr
-import imports
+from jedi import parsing_representation as pr
+from jedi import cache
+from jedi import helpers
+from jedi import debug
+from jedi import common
+import recursion
 import docstrings
-import cache
+import imports
+import evaluate
 import builtin
 import dynamic
-import helpers
-import recursion
-import debug
-import evaluate
-import common
 
 
 class DecoratorNotFound(LookupError):

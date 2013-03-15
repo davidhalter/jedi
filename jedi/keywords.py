@@ -1,9 +1,9 @@
+import pydoc
 import keyword
 
-from _compatibility import is_py3k
-import builtin
+from jedi._compatibility import is_py3k
+from jedi import builtin
 
-import pydoc
 try:
     from pydoc_data import topics as pydoc_topics
 except ImportError:

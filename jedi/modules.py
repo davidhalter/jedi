@@ -22,12 +22,12 @@ import tokenize
 import sys
 import os
 
-import cache
-import parsing
-import parsing_representation as pr
-import fast_parser
-import debug
-import settings
+from jedi import cache
+from jedi import parsing
+from jedi import parsing_representation as pr
+from jedi import fast_parser
+from jedi import debug
+from jedi import settings
 
 
 class CachedModule(object):
