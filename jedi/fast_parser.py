@@ -265,25 +265,30 @@ class FastParser(use_metaclass(CachedFastParser)):
             current_lines.append(l)
         add_part()
 
-
-        print parts[1]
-        print [p[:20] for p in parts]
-        exit()
         return parts
 
     def _parse(self, code):
         """ :type code: str """
-        parts = self._split_parts(code)
-        r = r'(?:\n(?:def|class|@.*?\n(?:def|class))|^).*?' \
-            r'(?=\n(?:def|class|@)|$)'
-        parts = re.findall(r, code, re.DOTALL)
+        def set_parent(module):
+            def get_indent(module):
+                try:
+                    el = module.subscopes[0]
+                except IndexError:
+                    try:
+                        el = module.statements[0]
+                    except IndexError:
+                        el = module.imports[0]
+                return el.start_pos[1]
 
-        if len(parts) > 1 and not re.match('def|class|@', parts[0]):
-            # Merge the first two because `common.NoErrorTokenizer` is not able
-            # to know if there's a class/func or not.
-            # Therefore every part has it's own class/func. Exactly one.
-            parts[0] += parts[1]
-            parts.pop(1)
+            if self.parsers:
+                new_indent = get_indent(module)
+                old_indent = get_indent(self.parsers[-1].module)
+                if old_indent < new_indent:
+                    module.parent = self.parsers[-1].module.subscopes[0]
+                    return
+            p.module.parent = self.module
+
+        parts = self._split_parts(code)
 
         if settings.fast_parser_always_reparse:
             self.parsers[:] = []
@@ -321,12 +326,12 @@ class FastParser(use_metaclass(CachedFastParser)):
                 else:
                     p = parsing.Parser(code[start:],
                                 self.module_path, self.user_position,
-                                offset=(line_offset, 0), stop_on_scope=True,
+                                offset=(line_offset, 0), is_fast_parser=True,
                                 top_module=self.module)
 
                     p.hash = h
                     p.code = code_part
-                    p.module.parent = self.module
+                    set_parent(p.module)
                 self.parsers.insert(parser_order, p)
 
                 parser_order += 1
