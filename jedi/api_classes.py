@@ -133,6 +133,8 @@ class BaseDefinition(object):
         stripped = self.definition
         if isinstance(self.definition, er.InstanceElement):
             stripped = self.definition.var
+        if isinstance(stripped, pr.Name):
+            stripped = stripped.parent
         return type(stripped).__name__.lower()
 
     @property
