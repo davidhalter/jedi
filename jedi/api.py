@@ -271,7 +271,7 @@ class Script(object):
 
         d = set([api_classes.Definition(s) for s in scopes
                     if not isinstance(s, imports.ImportPath._GlobalNamespace)])
-        return sorted(d, key=lambda x: (x.module_path, x.start_pos))
+        return self._sorted_defs(d)
 
     @api_classes._clear_caches_after_call
     def goto(self):
@@ -284,7 +284,7 @@ class Script(object):
         :rtype: list of :class:`api_classes.Definition`
         """
         d = [api_classes.Definition(d) for d in set(self._goto()[0])]
-        return sorted(d, key=lambda x: (x.module_path, x.start_pos))
+        return self._sorted_defs(d)
 
     def _goto(self, add_import_name=False):
         """
@@ -370,7 +370,7 @@ class Script(object):
             else:
                 names.append(api_classes.RelatedName(d.names[-1], d))
 
-        return sorted(set(names), key=lambda x: (x.module_path, x.start_pos))
+        return self._sorted_defs(set(names))
 
     def get_in_function_call(self):
         """
@@ -490,6 +490,12 @@ class Script(object):
         """
         match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
         return match.groups()
+
+    @staticmethod
+    def _sorted_defs(d):
+        # Note: `or ''` below is required because `module_path` could be
+        #       None and you can't compare None and str in Python 3.
+        return sorted(d, key=lambda x: (x.module_path or '', x.start_pos))
 
 
 def defined_names(source, source_path=None, source_encoding='utf-8'):
