@@ -20,14 +20,14 @@ from jedi import settings
 from jedi import helpers
 from jedi import common
 from jedi import cache
-from jedi import api_classes
 from jedi import modules
-from jedi import keywords
 from jedi._compatibility import next, unicode
+import evaluate
+import keywords
+import api_classes
 import evaluate_representation as er
 import dynamic
 import imports
-import evaluate
 import builtin
 
 

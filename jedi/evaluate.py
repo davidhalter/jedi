@@ -77,9 +77,9 @@ from jedi import common
 from jedi import cache
 from jedi import parsing_representation as pr
 from jedi import debug
-from jedi import recursion
-import docstrings
 import evaluate_representation as er
+import recursion
+import docstrings
 import builtin
 import imports
 import dynamic

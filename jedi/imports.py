@@ -19,11 +19,11 @@ import os
 import pkgutil
 import imp
 import sys
+import itertools
 
 from jedi import modules
 from jedi import debug
 from jedi import parsing_representation as pr
-from jedi import itertools
 from jedi import cache
 import builtin
 import evaluate

@@ -60,8 +60,8 @@ from jedi import parsing_representation as pr
 from jedi import modules
 from jedi import settings
 from jedi import debug
-from jedi import api_classes
 from jedi import fast_parser
+import api_classes
 import evaluate
 import imports
 import evaluate_representation as er

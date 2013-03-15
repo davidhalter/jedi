@@ -15,8 +15,9 @@ following functions (sometimes bug-prone):
 
 from __future__ import with_statement
 
+import difflib
+
 from jedi import modules
-from jedi import difflib
 from jedi import helpers
 from jedi import parsing_representation as pr
 

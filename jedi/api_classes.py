@@ -10,11 +10,11 @@ import warnings
 import functools
 
 from jedi._compatibility import unicode, next
-from jedi import recursion
 from jedi import settings
 from jedi import parsing_representation as pr
-from jedi import keywords
 from jedi import cache
+import keywords
+import recursion
 import dynamic
 import evaluate
 import imports

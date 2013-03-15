@@ -8,9 +8,9 @@ Next to :mod:`cache` this module also makes |jedi| not thread-safe. Why?
 calls.
 """
 from jedi import parsing_representation as pr
-from jedi import evaluate_representation as er
 from jedi import debug
 from jedi import settings
+import evaluate_representation as er
 import builtin
 
 

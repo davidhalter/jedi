@@ -18,7 +18,7 @@ from jedi import cache
 from jedi import helpers
 from jedi import debug
 from jedi import common
-from jedi import recursion
+import recursion
 import docstrings
 import imports
 import evaluate
