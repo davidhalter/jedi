@@ -76,6 +76,7 @@ class Script(object):
         """ lazy parser."""
         return self._module.parser
 
+    @api_classes._clear_caches_after_call
     def complete(self):
         """
         Return :class:`api_classes.Completion` objects. Those objects contain
@@ -209,6 +210,7 @@ class Script(object):
         warnings.warn("Use line instead.", DeprecationWarning)
         return self.definition()
 
+    @api_classes._clear_caches_after_call
     def definition(self):
         """
         Return the definitions of a the path under the cursor. This is not a
@@ -272,6 +274,7 @@ class Script(object):
                     if not isinstance(s, imports.ImportPath._GlobalNamespace)])
         return sorted(d, key=lambda x: (x.module_path, x.start_pos))
 
+    @api_classes._clear_caches_after_call
     def goto(self):
         """
         Return the first definition found by goto. Imports and statements
@@ -334,6 +337,7 @@ class Script(object):
                     definitions = [user_stmt]
         return definitions, search_name
 
+    @api_classes._clear_caches_after_call
     def related_names(self, additional_module_paths=()):
         """
         Return :class:`api_classes.RelatedName` objects, which contain all
@@ -378,6 +382,7 @@ class Script(object):
         warnings.warn("Use line instead.", DeprecationWarning)
         return self.function_definition()
 
+    @api_classes._clear_caches_after_call
     def function_definition(self):
         """
         Return the function object of the call you're currently in.
@@ -486,9 +491,6 @@ class Script(object):
         """
         match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
         return match.groups()
-
-    def __del__(self):
-        api_classes._clear_caches()
 
 
 def defined_names(source, source_path=None, source_encoding='utf-8'):
