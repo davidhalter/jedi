@@ -2,14 +2,13 @@ Main Authors
 ============
 
 David Halter (@davidhalter)
-
+Takafumi Arakaki (@tkf)
 
 Code Contributors
 =================
 
 Danilo Bargen (@dbrgn)
 tek (@tek)
-Takafumi Arakaki (@tkf)
 Yasha Borevich (@jjay)
 Aaron Griffin
 andviro (@andviro)
