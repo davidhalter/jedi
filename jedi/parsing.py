@@ -41,11 +41,11 @@ class Parser(object):
     :param user_position: The line/column, the user is currently on.
     :type user_position: tuple(int, int)
     :param no_docstr: If True, a string at the beginning is not a docstr.
-    :param stop_on_scope: Stop if a scope appears -> for fast_parser
+    :param is_fast_parser: -> for fast_parser
     :param top_module: Use this module as a parent instead of `self.module`.
     """
     def __init__(self, source, module_path=None, user_position=None,
-                        no_docstr=False, offset=(0, 0), stop_on_scope=None,
+                        no_docstr=False, offset=(0, 0), is_fast_parser=None,
                         top_module=None):
         self.user_position = user_position
         self.user_scope = None
@@ -63,7 +63,7 @@ class Parser(object):
         source = source + '\n'  # end with \n, because the parser needs it
         buf = StringIO(source)
         self._gen = common.NoErrorTokenizer(buf.readline, offset,
-                                            stop_on_scope)
+                                            is_fast_parser)
         self.top_module = top_module or self.module
         try:
             self._parse()
