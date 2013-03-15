@@ -120,20 +120,20 @@ class BaseDefinition(object):
         Finally, here is what you can get from :attr:`type`:
 
         >>> defs[0].type
-        'Module'
+        'module'
         >>> defs[1].type
-        'Class'
+        'class'
         >>> defs[2].type
-        'Instance'
+        'instance'
         >>> defs[3].type
-        'Function'
+        'function'
 
         """
         # generate the type
         stripped = self.definition
         if isinstance(self.definition, er.InstanceElement):
             stripped = self.definition.var
-        return type(stripped).__name__
+        return type(stripped).__name__.lower()
 
     @property
     def path(self):
