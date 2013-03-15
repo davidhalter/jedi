@@ -21,13 +21,18 @@ def make_definitions():
 
     def f():
         pass
+
+    def g():
+        yield
+
+    h = lambda: None
     """)
 
     definitions = []
     definitions += api.defined_names(source)
 
     source += textwrap.dedent("""
-    variable = sys or C or x or f""")
+    variable = sys or C or x or f or g or h""")
     lines = source.splitlines()
     script = api.Script(source, len(lines), len('variable'), None)
     definitions += script.definition()
