@@ -319,7 +319,7 @@ class TestRegression(TestBase):
         # attributes
         objs = itertools.chain.from_iterable(r.follow_definition() for r in c)
         types = [o.type for o in objs]
-        assert 'Import' not in types and 'Class' in types
+        assert 'import' not in types and 'class' in types
 
     def test_keyword_definition_doc(self):
         """ github jedi-vim issue #44 """
