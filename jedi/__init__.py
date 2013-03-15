@@ -34,13 +34,9 @@ As you see Jedi is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.
 """
 
-import sys
-
-# python imports are hell sometimes. Especially the combination of relative
-# imports and circular imports... Just avoid it:
-sys.path.insert(0, __path__[0])
-
-from .api import Script, NotFoundError, set_debug_function, _quick_complete
+from jedi.api import *  # Python 2.5 does not support `from .api import *`
 from . import settings
 
-sys.path.pop(0)
+from .deferredimport import import_all
+import_all()
+del import_all

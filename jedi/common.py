@@ -4,9 +4,9 @@ import contextlib
 import functools
 import tokenize
 
-from _compatibility import next, reraise
-import debug
-import settings
+from ._compatibility import next, reraise
+from . import debug
+from . import settings
 
 
 class MultiLevelStopIteration(Exception):

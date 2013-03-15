@@ -15,14 +15,14 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
-from _compatibility import next, StringIO
 
 import tokenize
 import keyword
 
-import debug
-import common
-import parsing_representation as pr
+from ._compatibility import next, StringIO
+from . import debug
+from . import common
+from . import parsing_representation as pr
 
 
 class ParserError(Exception):

@@ -15,19 +15,18 @@ Apart from those classes there's a ``sys.path`` fetching function, as well as
 """
 from __future__ import with_statement
 
-from _compatibility import exec_function, unicode, is_py25, literal_eval
-
 import re
 import tokenize
 import sys
 import os
 
-import cache
-import parsing
-import parsing_representation as pr
-import fast_parser
-import debug
-import settings
+from ._compatibility import exec_function, unicode, is_py25, literal_eval
+from . import cache
+from . import parsing
+from . import parsing_representation as pr
+from . import fast_parser
+from . import debug
+from . import settings
 
 
 class CachedModule(object):

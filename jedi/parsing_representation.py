@@ -39,10 +39,10 @@ import os
 import re
 import tokenize
 
-from _compatibility import next, literal_eval, cleandoc, Python3Method, \
+from ._compatibility import next, literal_eval, cleandoc, Python3Method, \
                             encoding, property, unicode, is_py3k
-import common
-import debug
+from . import common
+from . import debug
 
 
 class Base(object):

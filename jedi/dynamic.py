@@ -55,16 +55,19 @@ from __future__ import with_statement
 
 import os
 
-import cache
-import parsing_representation as pr
-import evaluate_representation as er
-import modules
-import evaluate
-import settings
-import debug
-import imports
-import api_classes
-import fast_parser
+from . import cache
+from . import parsing_representation as pr
+from . import modules
+from . import settings
+from . import debug
+from . import imports
+from . import api_classes
+from . import fast_parser
+
+from .deferredimport import deferred_import
+er = deferred_import(__name__, 'evaluate_representation', 'er')
+evaluate = deferred_import(__name__, 'evaluate')
+
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.

@@ -19,14 +19,16 @@ import os
 import pkgutil
 import imp
 import sys
-
-import builtin
-import modules
-import debug
-import parsing_representation as pr
-import evaluate
 import itertools
-import cache
+
+from . import modules
+from . import debug
+from . import parsing_representation as pr
+from . import cache
+
+from .deferredimport import deferred_import
+builtin = deferred_import(__name__, 'builtin')
+evaluate = deferred_import(__name__, 'evaluate')
 
 # for debugging purposes only
 imports_processed = 0
