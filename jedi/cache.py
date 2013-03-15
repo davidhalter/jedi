@@ -238,6 +238,7 @@ class _ModulePickling(object):
         return parser_cache_item.parser
 
     def save_module(self, path, parser_cache_item):
+        self.__index = None
         try:
             files = self._index[self.py_version]
         except KeyError:
