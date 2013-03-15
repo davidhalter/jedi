@@ -35,10 +35,14 @@ def make_definitions():
     script2 = api.Script(source, 4, len('class C'), None)
     definitions += script2.related_names()
 
+    source_param = "def f(a): return a"
+    script_param = api.Script(source_param, 1, len(source_param), None)
+    definitions += script_param.goto()
+
     return definitions
 
 
 @pytest.mark.parametrize('definition', make_definitions())
 def test_basedefinition_type(definition):
     assert definition.type in ('module', 'class', 'instance', 'function',
-                               'statement', 'import')
+                               'statement', 'import', 'param')
