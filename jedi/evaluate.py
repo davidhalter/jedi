@@ -73,16 +73,16 @@ from _compatibility import next, hasattr, is_py3k, unicode, reraise
 import sys
 import itertools
 
-import common
-import cache
-import parsing_representation as pr
+from jedi import common
+from jedi import cache
+from jedi import parsing_representation as pr
+from jedi import debug
 import evaluate_representation as er
-import debug
+import recursion
+import docstrings
 import builtin
 import imports
-import recursion
 import dynamic
-import docstrings
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):

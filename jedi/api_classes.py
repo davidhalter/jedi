@@ -9,16 +9,16 @@ import os
 import warnings
 import functools
 
-from _compatibility import unicode, next
-import cache
-import dynamic
+from jedi._compatibility import unicode, next
+from jedi import settings
+from jedi import parsing_representation as pr
+from jedi import cache
+import keywords
 import recursion
-import settings
+import dynamic
 import evaluate
 import imports
-import parsing_representation as pr
 import evaluate_representation as er
-import keywords
 
 
 def _clear_caches():
