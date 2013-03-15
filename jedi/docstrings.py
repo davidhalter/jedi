@@ -16,10 +16,13 @@ annotations.
 
 import re
 
-import cache
-import evaluate
-import evaluate_representation as er
-import parsing
+from jedi import cache
+from jedi import parsing
+
+from .deferredimport import deferred_import
+er = deferred_import(__name__, 'evaluate_representation', 'er')
+evaluate = deferred_import(__name__, 'evaluate')
+
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx

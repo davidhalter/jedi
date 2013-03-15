@@ -12,18 +12,20 @@ they change classes in Python 3.
 import copy
 import itertools
 
-from _compatibility import property, use_metaclass, next, hasattr
-import parsing_representation as pr
-import imports
-import docstrings
-import cache
-import builtin
-import dynamic
-import helpers
-import recursion
-import debug
-import evaluate
-import common
+from jedi._compatibility import property, use_metaclass, next, hasattr
+from jedi import parsing_representation as pr
+from jedi import cache
+from jedi import dynamic
+from jedi import helpers
+from jedi import recursion
+from jedi import debug
+from jedi import common
+
+from .deferredimport import deferred_import
+imports = deferred_import(__name__, 'imports')
+builtin = deferred_import(__name__, 'builtin')
+evaluate = deferred_import(__name__, 'evaluate')
+docstrings = deferred_import(__name__, 'docstrings')
 
 
 class DecoratorNotFound(LookupError):

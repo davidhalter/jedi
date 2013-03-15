@@ -68,21 +68,23 @@ backtracking algorithm.
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
-from _compatibility import next, hasattr, is_py3k, unicode, reraise
 
 import sys
 import itertools
 
-import common
-import cache
-import parsing_representation as pr
-import evaluate_representation as er
-import debug
-import builtin
-import imports
-import recursion
-import dynamic
-import docstrings
+from jedi import common
+from jedi import cache
+from jedi import parsing_representation as pr
+from jedi import debug
+from jedi import recursion
+from jedi import docstrings
+from jedi._compatibility import next, hasattr, is_py3k, unicode, reraise
+
+from .deferredimport import deferred_import
+er = deferred_import(__name__, 'evaluate_representation', 'er')
+builtin = deferred_import(__name__, 'builtin')
+imports = deferred_import(__name__, 'imports')
+dynamic = deferred_import(__name__, 'dynamic')
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):

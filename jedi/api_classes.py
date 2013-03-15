@@ -9,16 +9,18 @@ import os
 import warnings
 import functools
 
-from _compatibility import unicode, next
-import cache
-import dynamic
-import recursion
-import settings
-import evaluate
-import imports
-import parsing_representation as pr
-import evaluate_representation as er
-import keywords
+from jedi._compatibility import unicode, next
+from jedi import cache
+from jedi import recursion
+from jedi import settings
+from jedi import evaluate
+from jedi import imports
+from jedi import parsing_representation as pr
+from jedi import keywords
+
+from .deferredimport import deferred_import
+dynamic = deferred_import(__name__, 'dynamic')
+er = deferred_import(__name__, 'evaluate_representation', 'er')
 
 
 def _clear_caches():
