@@ -32,7 +32,7 @@ def make_definitions():
     definitions += api.defined_names(source)
 
     source += textwrap.dedent("""
-    variable = sys or C or x or f or g or h""")
+    variable = sys or C or x or f or g or g() or h""")
     lines = source.splitlines()
     script = api.Script(source, len(lines), len('variable'), None)
     definitions += script.definition()
