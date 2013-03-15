@@ -20,13 +20,13 @@ import pkgutil
 import imp
 import sys
 
+from jedi import modules
+from jedi import debug
+from jedi import parsing_representation as pr
+from jedi import itertools
+from jedi import cache
 import builtin
-import modules
-import debug
-import parsing_representation as pr
 import evaluate
-import itertools
-import cache
 
 # for debugging purposes only
 imports_processed = 0

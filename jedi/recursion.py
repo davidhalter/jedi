@@ -7,11 +7,11 @@ Next to :mod:`cache` this module also makes |jedi| not thread-safe. Why?
 ``ExecutionRecursionDecorator`` uses class variables to count the function
 calls.
 """
-import parsing_representation as pr
-import evaluate_representation as er
-import debug
+from jedi import parsing_representation as pr
+from jedi import evaluate_representation as er
+from jedi import debug
+from jedi import settings
 import builtin
-import settings
 
 
 class RecursionDecorator(object):

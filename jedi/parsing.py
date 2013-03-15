@@ -20,9 +20,9 @@ from _compatibility import next, StringIO
 import tokenize
 import keyword
 
-import debug
-import common
-import parsing_representation as pr
+from jedi import debug
+from jedi import common
+from jedi import parsing_representation as pr
 
 
 class ParserError(Exception):

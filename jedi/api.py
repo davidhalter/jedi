@@ -13,23 +13,22 @@ import re
 import os
 import warnings
 
-import parsing
-import parsing_representation as pr
+from jedi import parsing
+from jedi import parsing_representation as pr
+from jedi import debug
+from jedi import settings
+from jedi import helpers
+from jedi import common
+from jedi import cache
+from jedi import api_classes
+from jedi import modules
+from jedi import keywords
+from jedi._compatibility import next, unicode
 import evaluate_representation as er
 import dynamic
 import imports
 import evaluate
-import modules
-import debug
-import settings
-import keywords
-import helpers
-import common
 import builtin
-import api_classes
-import cache
-
-from _compatibility import next, unicode
 
 
 class NotFoundError(Exception):

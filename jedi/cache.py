@@ -23,9 +23,9 @@ import os
 import sys
 import pickle
 
-from _compatibility import json
-import settings
-import debug
+from jedi._compatibility import json
+from jedi import settings
+from jedi import debug
 
 # memoize caches will be deleted after every action
 memoize_caches = []
