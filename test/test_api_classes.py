@@ -50,4 +50,4 @@ def make_definitions():
 @pytest.mark.parametrize('definition', make_definitions())
 def test_basedefinition_type(definition):
     assert definition.type in ('module', 'class', 'instance', 'function',
-                               'statement', 'import', 'param')
+                               'generator', 'statement', 'import', 'param')

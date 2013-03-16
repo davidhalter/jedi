@@ -773,6 +773,9 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
     def parent(self):
         return self.func.parent
 
+    def __getattr__(self, name):
+        return getattr(self.func, name)
+
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.func)
 
