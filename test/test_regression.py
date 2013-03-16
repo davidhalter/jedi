@@ -11,8 +11,6 @@ import itertools
 import os
 import textwrap
 
-import pytest
-
 from .base import TestBase, unittest, cwd_at
 
 import jedi
@@ -527,7 +525,6 @@ class TestSpeed(TestBase):
         #print(jedi.imports.imports_processed)
 
 
-@pytest.mark.skipif("sys.version_info >= (3,0)")
 def test_settings_module():
     """
     jedi.settings and jedi.cache.settings must be the same module.
