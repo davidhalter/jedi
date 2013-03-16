@@ -565,6 +565,10 @@ def test_no_duplicate_modules():
     modules = list(filter(is_submodule, sys.modules.values()))
     top_modules = [m for m in modules if not m.__name__.startswith('jedi.')]
     for m in modules:
+        if m is jedi:
+            # py.test automatically improts `jedi.*` when --doctest-modules
+            # is given.  So this test cannot succeeds.
+            continue
         for tm in top_modules:
             try:
                 imported = getattr(m, tm.__name__)
