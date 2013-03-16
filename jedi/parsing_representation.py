@@ -193,15 +193,16 @@ class Scope(Simple, IsScope):
         string = ""
         if len(self.docstr) > 0:
             string += '"""' + self.docstr + '"""\n'
-        for i in self.imports:
-            string += i.get_code()
-        for sub in self.subscopes:
-            string += sub.get_code(first_indent=True, indention=indention)
 
         returns = self.returns if hasattr(self, 'returns') else []
-        ret_str = '' if isinstance(self, Lambda) else 'return '
-        for stmt in self.statements + returns:
-            string += (ret_str if stmt in returns else '') + stmt.get_code()
+        objs = self.subscopes + self.imports + self.statements + returns
+        for obj in sorted(objs, key=lambda x: x.start_pos):
+            if isinstance(obj, Scope):
+                string += obj.get_code(first_indent=True, indention=indention)
+            else:
+                if obj in returns and not isinstance(self, Lambda):
+                    string += 'yield ' if self.is_generator else 'return '
+                string += obj.get_code()
 
         if first_indent:
             string = common.indent_block(string, indention=indention)
@@ -396,7 +397,7 @@ class Class(Scope):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
         string += 'class %s' % (self.name)
         if len(self.supers) > 0:
-            sup = ','.join(stmt.get_code() for stmt in self.supers)
+            sup = ', '.join(stmt.get_code(False) for stmt in self.supers)
             string += '(%s)' % sup
         string += ':\n'
         string += super(Class, self).get_code(True, indention)
@@ -448,7 +449,7 @@ class Function(Scope):
 
     def get_code(self, first_indent=False, indention='    '):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
-        params = ','.join([stmt.get_code() for stmt in self.params])
+        params = ', '.join([stmt.get_code(False) for stmt in self.params])
         string += "def %s(%s):\n" % (self.name, params)
         string += super(Function, self).get_code(True, indention)
         if self.is_empty():
