@@ -68,11 +68,11 @@ backtracking algorithm.
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
-from _compatibility import next, hasattr, is_py3k, unicode, reraise
 
 import sys
 import itertools
 
+from jedi._compatibility import next, hasattr, is_py3k, unicode, reraise
 from jedi import common
 from jedi import cache
 from jedi import parsing_representation as pr

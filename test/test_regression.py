@@ -18,7 +18,7 @@ from .base import TestBase, unittest, cwd_at
 import jedi
 from jedi._compatibility import is_py25, utf8, unicode
 from jedi import api
-from jedi import api_classes
+api_classes = api.api_classes
 
 #jedi.set_debug_function(jedi.debug.print_to_stdout)
 

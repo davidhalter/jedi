@@ -2,7 +2,7 @@ import pydoc
 import keyword
 
 from jedi._compatibility import is_py3k
-from jedi import builtin
+import builtin
 
 try:
     from pydoc_data import topics as pydoc_topics

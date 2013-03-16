@@ -15,13 +15,12 @@ Apart from those classes there's a ``sys.path`` fetching function, as well as
 """
 from __future__ import with_statement
 
-from _compatibility import exec_function, unicode, is_py25, literal_eval
-
 import re
 import tokenize
 import sys
 import os
 
+from jedi._compatibility import exec_function, unicode, is_py25, literal_eval
 from jedi import cache
 from jedi import parsing
 from jedi import parsing_representation as pr
