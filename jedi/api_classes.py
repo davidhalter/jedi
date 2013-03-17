@@ -393,7 +393,7 @@ class Completion(BaseDefinition):
         """
         if self._followed_definitions is None:
             if self.definition.isinstance(pr.Statement):
-                defs = er.follow_statement(self.definition)
+                defs = evaluate.follow_statement(self.definition)
             elif self.definition.isinstance(pr.Import):
                 defs = imports.strip_imports([self.definition])
             else:
