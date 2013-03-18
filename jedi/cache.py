@@ -23,9 +23,9 @@ import os
 import sys
 import pickle
 
-from _compatibility import json
-import settings
-import debug
+from jedi._compatibility import json
+from jedi import settings
+from jedi import debug
 
 # memoize caches will be deleted after every action
 memoize_caches = []
@@ -238,6 +238,7 @@ class _ModulePickling(object):
         return parser_cache_item.parser
 
     def save_module(self, path, parser_cache_item):
+        self.__index = None
         try:
             files = self._index[self.py_version]
         except KeyError:

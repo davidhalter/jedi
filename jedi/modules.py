@@ -15,19 +15,18 @@ Apart from those classes there's a ``sys.path`` fetching function, as well as
 """
 from __future__ import with_statement
 
-from _compatibility import exec_function, unicode, is_py25, literal_eval
-
 import re
 import tokenize
 import sys
 import os
 
-import cache
-import parsing
-import parsing_representation as pr
-import fast_parser
-import debug
-import settings
+from jedi._compatibility import exec_function, unicode, is_py25, literal_eval
+from jedi import cache
+from jedi import parsing
+from jedi import parsing_representation as pr
+from jedi import fast_parser
+from jedi import debug
+from jedi import settings
 
 
 class CachedModule(object):
@@ -279,9 +278,8 @@ def get_sys_path():
             venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
         sys_path.insert(0, p)
 
-    p = sys.path[1:]
-    check_virtual_env(p)
-    return p
+    check_virtual_env(sys.path)
+    return [p for p in sys.path if p != ""]
 
 
 @cache.memoize_default([])

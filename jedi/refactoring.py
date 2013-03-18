@@ -15,10 +15,11 @@ following functions (sometimes bug-prone):
 
 from __future__ import with_statement
 
-import modules
 import difflib
-import helpers
-import parsing_representation as pr
+
+from jedi import modules
+from jedi import helpers
+from jedi import parsing_representation as pr
 
 
 class Refactoring(object):

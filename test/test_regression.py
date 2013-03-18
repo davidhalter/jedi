@@ -5,17 +5,18 @@ Unit tests to avoid errors of the past. Makes use of Python's ``unittest``
 module.
 """
 
-import unittest
 import time
 import functools
 import itertools
 import os
+import textwrap
 
-from base import TestBase
+from .base import TestBase, unittest, cwd_at
 
 import jedi
 from jedi._compatibility import is_py25, utf8, unicode
 from jedi import api
+api_classes = api.api_classes
 
 #jedi.set_debug_function(jedi.debug.print_to_stdout)
 
@@ -131,6 +132,7 @@ class TestRegression(TestBase):
         assert self.definition("import sys_blabla", (1, 8)) == []
         assert len(self.definition("import sys", (1, 8))) == 1
 
+    @cwd_at('jedi')
     def test_complete_on_empty_import(self):
         # should just list the files in the directory
         assert 10 < len(self.complete("from .", path='')) < 30
@@ -144,10 +146,15 @@ class TestRegression(TestBase):
         assert self.complete("from datetime import")[0].word == 'import'
         assert self.complete("from datetime import ")
 
+    def assert_call_def(self, call_def, name, index):
+        self.assertEqual(
+            {'call_name': getattr(call_def, 'call_name', None),
+             'index': getattr(call_def, 'index', None)},
+            {'call_name': name, 'index': index},
+        )
+
     def test_function_definition(self):
-        def check(call_def, name, index):
-            return call_def and call_def.call_name == name \
-                            and call_def.index == index
+        check = self.assert_call_def
 
         # simple
         s = "abs(a, str("
@@ -160,13 +167,13 @@ class TestRegression(TestBase):
         s7 = "str().upper().center("
         s8 = "str(int[zip("
 
-        assert check(self.function_definition(s, (1, 4)), 'abs', 0)
-        assert check(self.function_definition(s, (1, 6)), 'abs', 1)
-        assert check(self.function_definition(s, (1, 7)), 'abs', 1)
-        assert check(self.function_definition(s, (1, 8)), 'abs', 1)
-        assert check(self.function_definition(s, (1, 11)), 'str', 0)
+        check(self.function_definition(s, (1, 4)), 'abs', 0)
+        check(self.function_definition(s, (1, 6)), 'abs', 1)
+        check(self.function_definition(s, (1, 7)), 'abs', 1)
+        check(self.function_definition(s, (1, 8)), 'abs', 1)
+        check(self.function_definition(s, (1, 11)), 'str', 0)
 
-        assert check(self.function_definition(s2, (1, 4)), 'abs', 0)
+        check(self.function_definition(s2, (1, 4)), 'abs', 0)
         assert self.function_definition(s2, (1, 5)) is None
         assert self.function_definition(s2) is None
 
@@ -174,43 +181,41 @@ class TestRegression(TestBase):
         assert self.function_definition(s3) is None
 
         assert self.function_definition(s4, (1, 3)) is None
-        assert check(self.function_definition(s4, (1, 4)), 'abs', 0)
-        assert check(self.function_definition(s4, (1, 8)), 'zip', 0)
-        assert check(self.function_definition(s4, (1, 9)), 'abs', 0)
-        #assert check(self.function_definition(s4, (1, 10)), 'abs', 1)
+        check(self.function_definition(s4, (1, 4)), 'abs', 0)
+        check(self.function_definition(s4, (1, 8)), 'zip', 0)
+        check(self.function_definition(s4, (1, 9)), 'abs', 0)
+        #check(self.function_definition(s4, (1, 10)), 'abs', 1)
 
-        assert check(self.function_definition(s5, (1, 4)), 'abs', 0)
-        assert check(self.function_definition(s5, (1, 6)), 'abs', 1)
+        check(self.function_definition(s5, (1, 4)), 'abs', 0)
+        check(self.function_definition(s5, (1, 6)), 'abs', 1)
 
-        assert check(self.function_definition(s6), 'center', 0)
-        assert check(self.function_definition(s6, (1, 4)), 'str', 0)
+        check(self.function_definition(s6), 'center', 0)
+        check(self.function_definition(s6, (1, 4)), 'str', 0)
 
-        assert check(self.function_definition(s7), 'center', 0)
-        assert check(self.function_definition(s8), 'zip', 0)
-        assert check(self.function_definition(s8, (1, 8)), 'str', 0)
+        check(self.function_definition(s7), 'center', 0)
+        check(self.function_definition(s8), 'zip', 0)
+        check(self.function_definition(s8, (1, 8)), 'str', 0)
 
         s = "import time; abc = time; abc.sleep("
-        assert check(self.function_definition(s), 'sleep', 0)
+        check(self.function_definition(s), 'sleep', 0)
 
         # jedi-vim #9
         s = "with open("
-        assert check(self.function_definition(s), 'open', 0)
+        check(self.function_definition(s), 'open', 0)
 
         # jedi-vim #11
         s1 = "for sorted("
-        assert check(self.function_definition(s1), 'sorted', 0)
+        check(self.function_definition(s1), 'sorted', 0)
         s2 = "for s in sorted("
-        assert check(self.function_definition(s2), 'sorted', 0)
+        check(self.function_definition(s2), 'sorted', 0)
 
         # jedi #57
         s = "def func(alpha, beta): pass\n" \
             "func(alpha='101',"
-        assert check(self.function_definition(s, (2, 13)), 'func', 0)
+        check(self.function_definition(s, (2, 13)), 'func', 0)
 
     def test_function_definition_complex(self):
-        def check(call_def, name, index):
-            return call_def and call_def.call_name == name \
-                            and call_def.index == index
+        check = self.assert_call_def
 
         s = """
                 def abc(a,b):
@@ -222,18 +227,28 @@ class TestRegression(TestBase):
                 if 1:
                     pass
             """
-        assert check(self.function_definition(s, (6, 24)), 'abc', 0)
+        check(self.function_definition(s, (6, 24)), 'abc', 0)
         s = """
                 import re
                 def huhu(it):
                     re.compile(
                     return it * 2
             """
-        assert check(self.function_definition(s, (4, 31)), 'compile', 0)
+        check(self.function_definition(s, (4, 31)), 'compile', 0)
         # jedi-vim #70
         s = """def foo("""
         assert self.function_definition(s) is None
 
+    @unittest.skip("function_definition at ``f( |)`` does not work")
+    def test_function_definition_empty_paren_pre_space(self):
+        s = textwrap.dedent("""\
+        def f(a, b):
+            pass
+        f( )""")
+        call_def = self.function_definition(s, (3, 3))
+        self.assert_call_def(call_def, 'f', 0)
+
+    @cwd_at('jedi')
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
         # Fictional module that defines a function.
@@ -302,7 +317,7 @@ class TestRegression(TestBase):
         # attributes
         objs = itertools.chain.from_iterable(r.follow_definition() for r in c)
         types = [o.type for o in objs]
-        assert 'Import' not in types and 'Class' in types
+        assert 'import' not in types and 'class' in types
 
     def test_keyword_definition_doc(self):
         """ github jedi-vim issue #44 """
@@ -388,14 +403,46 @@ class TestEvent(unittest.TestCase):
         ))
 
 
+class TestDocstring(TestBase):
+
+    def test_function_doc(self):
+        defs = self.definition("""
+        def func():
+            '''Docstring of `func`.'''
+        func""")
+        self.assertEqual(defs[0].raw_doc, 'Docstring of `func`.')
+
+    def test_attribute_docstring(self):
+        defs = self.definition("""
+        x = None
+        '''Docstring of `x`.'''
+        x""")
+        self.assertEqual(defs[0].raw_doc, 'Docstring of `x`.')
+
+    def test_multiple_docstrings(self):
+        defs = self.definition("""
+        def func():
+            '''Original docstring.'''
+        x = func
+        '''Docstring of `x`.'''
+        x""")
+        docs = [d.raw_doc for d in defs]
+        self.assertEqual(docs, ['Original docstring.', 'Docstring of `x`.'])
+
+
 class TestFeature(TestBase):
     def test_full_name(self):
         """ feature request #61"""
         assert self.complete('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
-        # issue #94
-        defs = self.definition("""import os; os.path.join(""")
-        assert defs[0].full_name is None
+
+    def test_keyword_full_name_should_be_none(self):
+        """issue #94"""
+        # Using `from jedi.keywords import Keyword` here does NOT work
+        # in Python 3.  This is due to the import hack jedi using.
+        Keyword = api_classes.keywords.Keyword
+        d = api_classes.Definition(Keyword('(', (0, 0)))
+        assert d.full_name is None
 
     def test_full_name_builtin(self):
         self.assertEqual(self.complete('type')[0].full_name, 'type')
@@ -429,6 +476,60 @@ class TestFeature(TestBase):
             self.assertEqual(quick_values, real_values)
 
 
+class TestGetDefinitions(TestBase):
+
+    def test_get_definitions_flat(self):
+        definitions = api.defined_names("""
+        import module
+        class Class:
+            pass
+        def func():
+            pass
+        data = None
+        """)
+        self.assertEqual([d.name for d in definitions],
+                         ['module', 'Class', 'func', 'data'])
+
+    def test_dotted_assignment(self):
+        definitions = api.defined_names("""
+        x = Class()
+        x.y.z = None
+        """)
+        self.assertEqual([d.name for d in definitions],
+                         ['x'])
+
+    def test_multiple_assignment(self):
+        definitions = api.defined_names("""
+        x = y = None
+        """)
+        self.assertEqual([d.name for d in definitions],
+                         ['x', 'y'])
+
+    def test_multiple_imports(self):
+        definitions = api.defined_names("""
+        from module import a, b
+        from another_module import *
+        """)
+        self.assertEqual([d.name for d in definitions],
+                         ['a', 'b'])
+
+    def test_nested_definitions(self):
+        definitions = api.defined_names("""
+        class Class:
+            def f():
+                pass
+            def g():
+                pass
+        """)
+        self.assertEqual([d.name for d in definitions],
+                         ['Class'])
+        subdefinitions = definitions[0].defined_names()
+        self.assertEqual([d.name for d in subdefinitions],
+                         ['f', 'g'])
+        self.assertEqual([d.full_name for d in subdefinitions],
+                         ['Class.f', 'Class.g'])
+
+
 class TestSpeed(TestBase):
     def _check_speed(time_per_run, number=4, run_warm=True):
         """ Speed checks should typically be very tolerant. Some machines are
@@ -449,7 +550,7 @@ class TestSpeed(TestBase):
             return wrapper
         return decorated
 
-    @_check_speed(0.1)
+    @_check_speed(0.2)
     def test_os_path_join(self):
         s = "from posixpath import join; join('', '')."
         assert len(self.complete(s)) > 10  # is a str completion
@@ -460,6 +561,56 @@ class TestSpeed(TestBase):
         script = jedi.Script(s, 1, len(s), '')
         script.function_definition()
         #print(jedi.imports.imports_processed)
+
+
+def test_settings_module():
+    """
+    jedi.settings and jedi.cache.settings must be the same module.
+    """
+    from jedi import cache
+    from jedi import settings
+    assert cache.settings is settings
+
+
+def test_no_duplicate_modules():
+    """
+    Make sure that import hack works as expected.
+
+    Jedi does an import hack (see: jedi/__init__.py) to have submodules
+    with circular dependencies.  The modules in this circular dependency
+    "loop" must be imported by ``import <module>`` rather than normal
+    ``from jedi import <module>`` (or ``from . jedi ...``).  This test
+    make sure that this is satisfied.
+
+    See also:
+
+    - `#160 <https://github.com/davidhalter/jedi/issues/160>`_
+    - `#161 <https://github.com/davidhalter/jedi/issues/161>`_
+    """
+    import sys
+    jedipath = os.path.dirname(os.path.abspath(jedi.__file__))
+
+    def is_submodule(m):
+        try:
+            filepath = m.__file__
+        except AttributeError:
+            return False
+        return os.path.abspath(filepath).startswith(jedipath)
+
+    modules = list(filter(is_submodule, sys.modules.values()))
+    top_modules = [m for m in modules if not m.__name__.startswith('jedi.')]
+    for m in modules:
+        if m is jedi:
+            # py.test automatically improts `jedi.*` when --doctest-modules
+            # is given.  So this test cannot succeeds.
+            continue
+        for tm in top_modules:
+            try:
+                imported = getattr(m, tm.__name__)
+            except AttributeError:
+                continue
+            assert imported is tm
+
 
 if __name__ == '__main__':
     unittest.main()
