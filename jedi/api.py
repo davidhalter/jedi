@@ -7,7 +7,6 @@ catch :exc:`NotFoundError` which is being raised if your completion is not
 possible.
 """
 from __future__ import with_statement
-__all__ = ['Script', 'NotFoundError', 'set_debug_function', '_quick_complete']
 
 import re
 import os
