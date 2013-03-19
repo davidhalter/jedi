@@ -240,7 +240,7 @@ class _ModulePickling(object):
 
     def load_module(self, path, original_changed_time):
         try:
-            pickle_changed_time = self._index[self.py_version][path]
+            pickle_changed_time = self._index[path]
         except KeyError:
             return None
         if original_changed_time is not None \
@@ -258,10 +258,10 @@ class _ModulePickling(object):
     def save_module(self, path, parser_cache_item):
         self.__index = None
         try:
-            files = self._index[self.py_version]
+            files = self._index
         except KeyError:
             files = {}
-            self._index[self.py_version] = files
+            self._index = files
 
         with open(self._get_hashed_path(path), 'wb') as f:
             pickle.dump(parser_cache_item, f, pickle.HIGHEST_PROTOCOL)
@@ -300,16 +300,19 @@ class _ModulePickling(object):
         self.__index = None
 
     def delete_cache(self):
-        shutil.rmtree(settings.cache_directory)
+        shutil.rmtree(self._cache_directory())
 
     def _get_hashed_path(self, path):
-        return self._get_path('%s_%s.pkl' % (self.py_version, hash(path)))
+        return self._get_path('%s.pkl' % hash(path))
 
     def _get_path(self, file):
-        dir = settings.cache_directory
+        dir = self._cache_directory()
         if not os.path.exists(dir):
             os.makedirs(dir)
-        return dir + os.path.sep + file
+        return os.path.join(dir, file)
+
+    def _cache_directory(self):
+        return os.path.join(settings.cache_directory, self.py_version)
 
 
 # is a singleton
