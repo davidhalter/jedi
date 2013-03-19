@@ -279,7 +279,7 @@ class _ModulePickling(object):
                 self.__index = {}
             else:
                 # 0 means version is not defined (= always delete cache):
-                if data.get('version', 0) < self.version:
+                if data.get('version', 0) != self.version:
                     self.delete_cache()
                     self.__index = {}
                 else:
