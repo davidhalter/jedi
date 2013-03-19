@@ -25,6 +25,7 @@ try:
     import cPickle as pickle
 except:
     import pickle
+import shutil
 
 from jedi._compatibility import json
 from jedi import settings
@@ -219,6 +220,20 @@ def save_module(path, name, parser, pickling=True):
 
 
 class _ModulePickling(object):
+
+    version = 1
+    """
+    Version number (integer) for file system cache.
+
+    Increment this number when there are any incompatible changes in
+    parser representation classes.  For example, the following changes
+    are regarded as incompatible.
+
+    - Class name is changed.
+    - Class is moved to another module.
+    - Defined slot of the class is changed.
+    """
+
     def __init__(self):
         self.__index = None
         self.py_version = '%s.%s' % sys.version_info[:2]
@@ -259,9 +274,16 @@ class _ModulePickling(object):
         if self.__index is None:
             try:
                 with open(self._get_path('index.json')) as f:
-                    self.__index = json.load(f)
+                    data = json.load(f)
             except IOError:
                 self.__index = {}
+            else:
+                # 0 means version is not defined (= always delete cache):
+                if data.get('version', 0) < self.version:
+                    self.delete_cache()
+                    self.__index = {}
+                else:
+                    self.__index = data['index']
         return self.__index
 
     def _remove_old_modules(self):
@@ -272,9 +294,13 @@ class _ModulePickling(object):
             self._index  # reload index
 
     def _flush_index(self):
+        data = {'version': self.version, 'index': self._index}
         with open(self._get_path('index.json'), 'w') as f:
-            json.dump(self._index, f)
+            json.dump(data, f)
         self.__index = None
+
+    def delete_cache(self):
+        shutil.rmtree(settings.cache_directory)
 
     def _get_hashed_path(self, path):
         return self._get_path('%s_%s.pkl' % (self.py_version, hash(path)))

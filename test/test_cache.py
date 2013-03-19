@@ -1,3 +1,5 @@
+import pytest
+
 from jedi import settings
 from jedi.cache import ParserCacheItem, _ModulePickling
 
@@ -21,10 +23,32 @@ def test_modulepickling_change_cache_dir(monkeypatch, tmpdir):
 
     monkeypatch.setattr(settings, 'cache_directory', dir_1)
     ModulePickling.save_module(path_1, item_1)
-    cached = ModulePickling.load_module(path_1, item_1.change_time - 1)
+    cached = load_stored_item(ModulePickling, path_1, item_1)
     assert cached == item_1.parser
 
     monkeypatch.setattr(settings, 'cache_directory', dir_2)
     ModulePickling.save_module(path_2, item_2)
-    cached = ModulePickling.load_module(path_1, item_1.change_time - 1)
+    cached = load_stored_item(ModulePickling, path_1, item_1)
     assert cached is None
+
+
+def load_stored_item(cache, path, item):
+    """Load `item` stored at `path` in `cache`."""
+    return cache.load_module(path, item.change_time - 1)
+
+
+@pytest.mark.usefixtures("isolated_jedi_cache")
+def test_modulepickling_delete_incompatible_cache():
+    item = ParserCacheItem('fake parser')
+    path = 'fake path'
+
+    cache1 = _ModulePickling()
+    cache1.version = 1
+    cache1.save_module(path, item)
+    cached1 = load_stored_item(cache1, path, item)
+    assert cached1 == item.parser
+
+    cache2 = _ModulePickling()
+    cache2.version = 2
+    cached2 = load_stored_item(cache2, path, item)
+    assert cached2 is None

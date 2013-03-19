@@ -65,6 +65,18 @@ def pytest_generate_tests(metafunc):
             refactor.collect_dir_tests(base_dir, test_files))
 
 
+@pytest.fixture()
+def isolated_jedi_cache(monkeypatch, tmpdir):
+    """
+    Set `jedi.settings.cache_directory` to a temporary directory during test.
+
+    Same as `clean_jedi_cache`, but create the temporary directory for
+    each test case (scope='function').
+    """
+    settings = base.jedi.settings
+    monkeypatch.setattr(settings, 'cache_directory', str(tmpdir))
+
+
 @pytest.fixture(scope='session')
 def clean_jedi_cache(request):
     """
