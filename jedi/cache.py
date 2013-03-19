@@ -21,7 +21,10 @@ from __future__ import with_statement
 import time
 import os
 import sys
-import pickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 
 from _compatibility import json
 import settings
