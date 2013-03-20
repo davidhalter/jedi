@@ -236,7 +236,16 @@ class _ModulePickling(object):
 
     def __init__(self):
         self.__index = None
-        self.py_version = '%s.%s' % sys.version_info[:2]
+        self.py_tag = 'cpython-%s%s' % sys.version_info[:2]
+        """
+        Short name for distinguish Python implementations and versions.
+
+        It's like `sys.implementation.cache_tag` but for Python < 3.3
+        we generate something similar.  See:
+        http://docs.python.org/3/library/sys.html#sys.implementation
+
+        .. todo:: Detect interpreter (e.g., PyPy).
+        """
 
     def load_module(self, path, original_changed_time):
         try:
@@ -312,7 +321,7 @@ class _ModulePickling(object):
         return os.path.join(dir, file)
 
     def _cache_directory(self):
-        return os.path.join(settings.cache_directory, self.py_version)
+        return os.path.join(settings.cache_directory, self.py_tag)
 
 
 # is a singleton
