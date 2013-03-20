@@ -25,6 +25,7 @@ try:
     import cPickle as pickle
 except:
     import pickle
+import shutil
 
 from jedi._compatibility import json
 from jedi import settings
@@ -219,13 +220,36 @@ def save_module(path, name, parser, pickling=True):
 
 
 class _ModulePickling(object):
+
+    version = 1
+    """
+    Version number (integer) for file system cache.
+
+    Increment this number when there are any incompatible changes in
+    parser representation classes.  For example, the following changes
+    are regarded as incompatible.
+
+    - Class name is changed.
+    - Class is moved to another module.
+    - Defined slot of the class is changed.
+    """
+
     def __init__(self):
         self.__index = None
-        self.py_version = '%s.%s' % sys.version_info[:2]
+        self.py_tag = 'cpython-%s%s' % sys.version_info[:2]
+        """
+        Short name for distinguish Python implementations and versions.
+
+        It's like `sys.implementation.cache_tag` but for Python < 3.3
+        we generate something similar.  See:
+        http://docs.python.org/3/library/sys.html#sys.implementation
+
+        .. todo:: Detect interpreter (e.g., PyPy).
+        """
 
     def load_module(self, path, original_changed_time):
         try:
-            pickle_changed_time = self._index[self.py_version][path]
+            pickle_changed_time = self._index[path]
         except KeyError:
             return None
         if original_changed_time is not None \
@@ -243,10 +267,10 @@ class _ModulePickling(object):
     def save_module(self, path, parser_cache_item):
         self.__index = None
         try:
-            files = self._index[self.py_version]
+            files = self._index
         except KeyError:
             files = {}
-            self._index[self.py_version] = files
+            self._index = files
 
         with open(self._get_hashed_path(path), 'wb') as f:
             pickle.dump(parser_cache_item, f, pickle.HIGHEST_PROTOCOL)
@@ -259,9 +283,16 @@ class _ModulePickling(object):
         if self.__index is None:
             try:
                 with open(self._get_path('index.json')) as f:
-                    self.__index = json.load(f)
+                    data = json.load(f)
             except IOError:
                 self.__index = {}
+            else:
+                # 0 means version is not defined (= always delete cache):
+                if data.get('version', 0) != self.version:
+                    self.delete_cache()
+                    self.__index = {}
+                else:
+                    self.__index = data['index']
         return self.__index
 
     def _remove_old_modules(self):
@@ -272,18 +303,25 @@ class _ModulePickling(object):
             self._index  # reload index
 
     def _flush_index(self):
+        data = {'version': self.version, 'index': self._index}
         with open(self._get_path('index.json'), 'w') as f:
-            json.dump(self._index, f)
+            json.dump(data, f)
         self.__index = None
 
+    def delete_cache(self):
+        shutil.rmtree(self._cache_directory())
+
     def _get_hashed_path(self, path):
-        return self._get_path('%s_%s.pkl' % (self.py_version, hash(path)))
+        return self._get_path('%s.pkl' % hash(path))
 
     def _get_path(self, file):
-        dir = settings.cache_directory
+        dir = self._cache_directory()
         if not os.path.exists(dir):
             os.makedirs(dir)
-        return dir + os.path.sep + file
+        return os.path.join(dir, file)
+
+    def _cache_directory(self):
+        return os.path.join(settings.cache_directory, self.py_tag)
 
 
 # is a singleton
