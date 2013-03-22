@@ -24,6 +24,8 @@ if is_py33:
         importing = None
         if path is not None:
             importing = importlib.find_loader(string, path)
+            if importing is None:
+                raise ImportError
         else:
             importing = importlib.find_loader(string)
 
@@ -39,7 +41,7 @@ if is_py33:
                 returning = (None, None, False)
             else:
                 returning = (None, importing.load_module(string).__name__, False)
-
+        
         return returning
 else:
     def find_module(string, path=None):
