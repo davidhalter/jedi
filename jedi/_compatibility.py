@@ -9,6 +9,7 @@ will be dropped, we'll get rid of most code.
 import sys
 
 is_py3k = sys.hexversion >= 0x03000000
+is_py33 = sys.hexversion >= 0x03030000
 
 is_py25 = sys.hexversion < 0x02060000
 
