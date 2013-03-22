@@ -7,10 +7,51 @@ Most of the code here is necessary to support Python 2.5. Once this dependency
 will be dropped, we'll get rid of most code.
 """
 import sys
+import imp
+import os
+import io
+try:
+    import importlib
+except:
+    pass
 
 is_py3k = sys.hexversion >= 0x03000000
-
+is_py33 = sys.hexversion >= 0x03030000
 is_py25 = sys.hexversion < 0x02060000
+
+if is_py33:
+    def find_module(string, path=None):
+        importing = None
+        if path is not None:
+            importing = importlib.find_loader(string, path)
+        else:
+            importing = importlib.find_loader(string)
+
+        returning = (None, None, None)
+        try:
+            filename = importing.get_filename(string)
+            if filename and os.path.exists(filename):
+                returning = (open(filename, 'U'), filename, False)
+            else:
+                returning = (None, filename, False)
+        except AttributeError:
+            if importing is None:
+                returning = (None, None, False)
+            else:
+                returning = (None, importing.load_module(string).__name__, False)
+
+        return returning
+else:
+    def find_module(string, path=None):
+        importing = None
+        if path is None:
+            importing = imp.find_module(string)
+        else:
+            importing = imp.find_module(string, path)
+
+        returning = (importing[0], importing[1], importing[2][2] == imp.PKG_DIRECTORY)
+
+        return returning
 
 # next was defined in python 2.6, in python 3 obj.next won't be possible
 # anymore
