@@ -560,7 +560,7 @@ class Flow(Scope):
     @parent.setter
     def parent(self, value):
         self._parent = value
-        if self.next:
+        if hasattr(self, "next") and self.next:
             self.next.parent = value
 
     def get_code(self, first_indent=False, indention='    '):

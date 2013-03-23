@@ -21,6 +21,7 @@ from __future__ import with_statement
 import time
 import os
 import sys
+import hashlib
 try:
     import cPickle as pickle
 except:
@@ -312,7 +313,7 @@ class _ModulePickling(object):
         shutil.rmtree(self._cache_directory())
 
     def _get_hashed_path(self, path):
-        return self._get_path('%s.pkl' % hash(path))
+        return self._get_path('%s.pkl' % hashlib.md5(path.encode("utf-8")).hexdigest())
 
     def _get_path(self, file):
         dir = self._cache_directory()
