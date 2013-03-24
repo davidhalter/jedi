@@ -5,9 +5,8 @@ any actual importing done. This module is about finding modules in the
 filesystem. This can be quite tricky sometimes, because Python imports are not
 always that simple.
 
-Currently the import process uses ``imp`` to find modules. In the future, it's
-a goal to use ``importlib`` for this purpose. There's a `pull request
-<https://github.com/davidhalter/jedi/pull/109>`_ for that.
+This module uses imp for python up to 3.2 and importlib for python 3.3 on; the
+correct implementation is delegated to _compatibility.
 
 This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
@@ -17,7 +16,6 @@ from __future__ import with_statement
 
 import os
 import pkgutil
-import imp
 import sys
 import itertools
 

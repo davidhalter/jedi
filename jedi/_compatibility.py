@@ -9,7 +9,6 @@ will be dropped, we'll get rid of most code.
 import sys
 import imp
 import os
-import io
 try:
     import importlib
 except:
@@ -31,11 +30,14 @@ def find_module_py33(string, path=None):
         raise ImportError
 
     try:
-        filename = importing.get_filename(string)
-        if filename and os.path.exists(filename):
-            returning = (open(filename, 'U'), filename, False)
+        if (importing.is_package(string)):
+            returning = (None, os.path.dirname(importing.path), True)
         else:
-            returning = (None, filename, False)
+            filename = importing.get_filename(string)
+            if filename and os.path.exists(filename):
+                returning = (open(filename, 'U'), filename, False)
+            else:
+                returning = (None, filename, False)
     except AttributeError:
         returning = (None, importing.load_module(string).__name__, False)
 
