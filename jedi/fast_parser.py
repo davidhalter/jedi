@@ -11,6 +11,7 @@ import settings
 import parsing
 import parsing_representation as pr
 import cache
+import common
 
 
 class Module(pr.Simple, pr.Module):
@@ -219,17 +220,15 @@ class FastParser(use_metaclass(CachedFastParser)):
                 parts.append(txt)
                 current_lines[:] = []
 
-        flows = ['if', 'else', 'elif', 'while', 'with', 'try', 'except',
-                 'finally']
-        r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(flows)
+        r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(common.FLOWS)
 
         lines = code.splitlines()
         current_lines = []
         parts = []
-        is_generator = False
+        is_decorator = False
         current_indent = 0
         new_indent = False
-        is_flow = False
+        in_flow = False
         # All things within flows are simply being ignored.
         for i, l in enumerate(lines):
             # check for dedents
@@ -242,28 +241,34 @@ class FastParser(use_metaclass(CachedFastParser)):
             if indent < current_indent:  # -> dedent
                 current_indent = indent
                 new_indent = False
-                if not is_flow:
+                if not in_flow:
                     add_part()
-                is_flow = False
+                in_flow = False
             elif new_indent:
                 current_indent = indent
                 new_indent = False
 
             # Check lines for functions/classes and split the code there.
-            if not is_flow:
+            if not in_flow:
                 m = re.match(r_keyword, l)
                 if m:
-                    is_flow = m.group(1) in flows
-                    if not is_generator and not is_flow:
+                    in_flow = m.group(1) in common.FLOWS
+                    if not is_decorator and not in_flow:
                         add_part()
                         current_lines = []
-                    is_generator = '@' == m.group(1)
-                    if not is_generator:
+                    is_decorator = '@' == m.group(1)
+                    if not is_decorator:
                         current_indent += 1  # it must be higher
                         new_indent = True
 
             current_lines.append(l)
         add_part()
+
+        for p in parts:
+            #print '#####################################'
+            #print p
+            #print len(p.splitlines())
+            pass
 
         return parts
 
@@ -280,11 +285,12 @@ class FastParser(use_metaclass(CachedFastParser)):
                         el = module.imports[0]
                 return el.start_pos[1]
 
-            if self.parsers:
+            if self.parsers and False:
                 new_indent = get_indent(module)
                 old_indent = get_indent(self.parsers[-1].module)
                 if old_indent < new_indent:
-                    module.parent = self.parsers[-1].module.subscopes[0]
+                    #module.parent = self.parsers[-1].module.subscopes[0]
+                    # TODO set parents + add to subscopes
                     return
             p.module.parent = self.module
 
@@ -301,7 +307,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         p = None
         parser_order = 0
         for code_part in parts:
-            lines = code_part.count('\n')
+            lines = code_part.count('\n') + 1
             # the parser is using additional newlines, therefore substract
             if p is None or line_offset >= p.end_pos[0] - 2:
                 # check if code_part has already been parsed
@@ -336,8 +342,13 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 parser_order += 1
             line_offset += lines
-            start += len(code_part)
+            print line_offset
+            start += len(code_part) + 1  # +1 for newline
         self.parsers[parser_order + 1:] = []
+        for p in self.parsers:
+            print(p.module.get_code())
+            print(p.module.start_pos, p.module.end_pos)
+        exit()
 
     def reset_caches(self):
         self._user_scope = None

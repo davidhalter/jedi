@@ -52,13 +52,11 @@ class Parser(object):
         self.user_stmt = None
         self.no_docstr = no_docstr
 
+        self.start_pos = self.end_pos = 1 + offset[0], offset[1]
         # initialize global Scope
-        self.module = pr.SubModule(module_path, (offset[0] + 1, offset[1]),
-                                                            top_module)
+        self.module = pr.SubModule(module_path, self.start_pos, top_module)
         self.scope = self.module
         self.current = (None, None)
-        self.start_pos = 1, 0
-        self.end_pos = 1, 0
 
         source = source + '\n'  # end with \n, because the parser needs it
         buf = StringIO(source)
@@ -78,6 +76,10 @@ class Parser(object):
             # set a parent for unused decorators, avoid NullPointerException
             # because of `self.module.used_names`.
             d.parent = self.module
+
+        if self.current[0] in (tokenize.NL, tokenize.NEWLINE):
+            # we added a newline before, so we need to "remove" it again.
+            self.end_pos = self._gen.previous[2]
 
         self.start_pos = self.module.start_pos
         self.module.end_pos = self.end_pos
@@ -170,8 +172,6 @@ class Parser(object):
         while True:
             defunct = False
             token_type, tok = self.next()
-            if token_type == tokenize.ENDMARKER:
-                break
             if brackets and tok == '\n':
                 self.next()
             if tok == '(':  # python allows only one `(` in the statement.
@@ -421,8 +421,10 @@ class Parser(object):
     def __next__(self):
         """ Generate the next tokenize pattern. """
         try:
-            typ, tok, self.start_pos, self.end_pos, \
-                                self.parserline = next(self._gen)
+            typ, tok, start_pos, end_pos, self.parserline = next(self._gen)
+            # dedents shouldn't change positions
+            if typ != tokenize.DEDENT:
+                self.start_pos, self.end_pos = start_pos, end_pos
         except (StopIteration, common.MultiLevelStopIteration):
             # on finish, set end_pos correctly
             s = self.scope
@@ -662,7 +664,6 @@ class Parser(object):
                 self.freshscope = False
             else:
                 if token_type not in [tokenize.COMMENT, tokenize.INDENT,
-                                      tokenize.NEWLINE, tokenize.NL,
-                                      tokenize.ENDMARKER]:
+                                      tokenize.NEWLINE, tokenize.NL]:
                     debug.warning('token not classified', tok, token_type,
                                                         self.start_pos[0])
