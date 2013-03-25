@@ -22,9 +22,11 @@ def find_module_py33(string, path=None):
     returning = (None, None, None)
     importing = None
     if path is not None:
-        importing = importlib.find_loader(string, path)
+        importing = importlib.machinery.PathFinder.find_module(string, path)
     else:
-        importing = importlib.find_loader(string)
+        importing = importlib.machinery.PathFinder.find_module(string, sys.path)
+        if importing is None:
+            importing = importlib.find_loader(string)
 
     if importing is None:
         raise ImportError
