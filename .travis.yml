@@ -4,6 +4,7 @@ env:
     - TOXENV=py26
     - TOXENV=py27
     - TOXENV=py32
+    - TOXENV=py33
 install:
     - pip install --quiet --use-mirrors tox
 script:

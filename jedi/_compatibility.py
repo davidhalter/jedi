@@ -7,10 +7,68 @@ Most of the code here is necessary to support Python 2.5. Once this dependency
 will be dropped, we'll get rid of most code.
 """
 import sys
+import imp
+import os
+try:
+    import importlib
+except:
+    pass
 
 is_py3k = sys.hexversion >= 0x03000000
-
+is_py33 = sys.hexversion >= 0x03030000
 is_py25 = sys.hexversion < 0x02060000
+
+def find_module_py33(string, path=None):
+    mod_info = (None, None, None)
+    loader = None
+    if path is not None:
+        # Check for the module in the specidied path
+        loader = importlib.machinery.PathFinder.find_module(string, path)
+    else:
+        # Check for the module in sys.path
+        loader = importlib.machinery.PathFinder.find_module(string, sys.path)
+        if loader is None:
+            # Fallback to find builtins
+            loader = importlib.find_loader(string)
+
+    if loader is None:
+        raise ImportError
+
+    try:
+        if (loader.is_package(string)):
+            mod_info = (None, os.path.dirname(loader.path), True)
+        else:
+            filename = loader.get_filename(string)
+            if filename and os.path.exists(filename):
+                mod_info = (open(filename, 'U'), filename, False)
+            else:
+                mod_info = (None, filename, False)
+    except AttributeError:
+        mod_info = (None, loader.load_module(string).__name__, False)
+
+    return mod_info
+
+def find_module_pre_py33(string, path=None):
+    mod_info = None
+    if path is None:
+        mod_info = imp.find_module(string)
+    else:
+        mod_info = imp.find_module(string, path)
+
+    return (mod_info[0], mod_info[1], mod_info[2][2] == imp.PKG_DIRECTORY)
+
+def find_module(string, path=None):
+    """Provides information about a module.
+
+    This function isolates the differences in importing libraries introduced with
+    python 3.3 on; it gets a module name and optionally a path. It will return a
+    tuple containin an open file for the module (if not builtin), the filename
+    or the name of the module if it is a builtin one and a boolean indicating
+    if the module is contained in a package."""
+    if is_py33:
+        return find_module_py33(string, path)
+    else:
+        return find_module_pre_py33(string, path)
 
 # next was defined in python 2.6, in python 3 obj.next won't be possible
 # anymore
