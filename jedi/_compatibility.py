@@ -19,40 +19,43 @@ is_py33 = sys.hexversion >= 0x03030000
 is_py25 = sys.hexversion < 0x02060000
 
 def find_module_py33(string, path=None):
-    returning = (None, None, None)
-    importing = None
+    mod_info = (None, None, None)
+    loader = None
     if path is not None:
-        importing = importlib.machinery.PathFinder.find_module(string, path)
+        # Check for the module in the specidied path
+        loader = importlib.machinery.PathFinder.find_module(string, path)
     else:
-        importing = importlib.machinery.PathFinder.find_module(string, sys.path)
-        if importing is None:
-            importing = importlib.find_loader(string)
+        # Check for the module in sys.path
+        loader = importlib.machinery.PathFinder.find_module(string, sys.path)
+        if loader is None:
+            # Fallback to find builtins
+            loader = importlib.find_loader(string)
 
-    if importing is None:
+    if loader is None:
         raise ImportError
 
     try:
-        if (importing.is_package(string)):
-            returning = (None, os.path.dirname(importing.path), True)
+        if (loader.is_package(string)):
+            mod_info = (None, os.path.dirname(loader.path), True)
         else:
-            filename = importing.get_filename(string)
+            filename = loader.get_filename(string)
             if filename and os.path.exists(filename):
-                returning = (open(filename, 'U'), filename, False)
+                mod_info = (open(filename, 'U'), filename, False)
             else:
-                returning = (None, filename, False)
+                mod_info = (None, filename, False)
     except AttributeError:
-        returning = (None, importing.load_module(string).__name__, False)
+        mod_info = (None, loader.load_module(string).__name__, False)
 
-    return returning
+    return mod_info
 
 def find_module_pre_py33(string, path=None):
-    importing = None
+    mod_info = None
     if path is None:
-        importing = imp.find_module(string)
+        mod_info = imp.find_module(string)
     else:
-        importing = imp.find_module(string, path)
+        mod_info = imp.find_module(string, path)
 
-    return (importing[0], importing[1], importing[2][2] == imp.PKG_DIRECTORY)
+    return (mod_info[0], mod_info[1], mod_info[2][2] == imp.PKG_DIRECTORY)
 
 def find_module(string, path=None):
     """Provides information about a module.
@@ -61,14 +64,11 @@ def find_module(string, path=None):
     python 3.3 on; it gets a module name and optionally a path. It will return a
     tuple containin an open file for the module (if not builtin), the filename
     or the name of the module if it is a builtin one and a boolean indicating
-    ig the module is contained in a package."""
-    returning = (None, None, None)
+    if the module is contained in a package."""
     if is_py33:
-        returning = find_module_py33(string, path)
+        return find_module_py33(string, path)
     else:
-        returning = find_module_pre_py33(string, path)
-
-    return returning
+        return find_module_pre_py33(string, path)
 
 # next was defined in python 2.6, in python 3 obj.next won't be possible
 # anymore
