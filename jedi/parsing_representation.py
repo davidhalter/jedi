@@ -560,8 +560,10 @@ class Flow(Scope):
     @parent.setter
     def parent(self, value):
         self._parent = value
-        if self.next:
+        try:
             self.next.parent = value
+        except AttributeError:
+            return
 
     def get_code(self, first_indent=False, indention='    '):
         stmts = []
