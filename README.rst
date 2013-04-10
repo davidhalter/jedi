@@ -86,3 +86,15 @@ API for IDEs
 It's very easy to create an editor plugin that uses Jedi. See
 https://jedi.readthedocs.org/en/latest/docs/plugin-api.html for more
 information.
+
+
+Testing
+=======
+
+To run the tests::
+
+    pip install tox pytest
+    PIP_INSECURE=t tox
+
+Tests are also run automatically on `Travis CI
+<https://travis-ci.org/davidhalter/jedi/>`_.
