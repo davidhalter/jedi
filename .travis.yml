@@ -11,7 +11,11 @@ matrix:
     - env:
         - TOXENV=cov
 install:
-    - pip install --quiet --use-mirrors tox coveralls
+    - pip install --quiet --use-mirrors tox
 script:
     - tox
-    - if [ $TOXENV == "cov" ]; then coveralls; fi
+after_script:
+    - if [ $TOXENV == "cov" ]; then
+      pip install --quiet --use-mirrors coveralls
+      coveralls;
+      fi
