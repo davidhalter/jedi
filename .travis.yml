@@ -7,9 +7,8 @@ env:
     - TOXENV=py33
     - TOXENV=cov
 matrix:
-  allow_failures:
-    - env:
-        - TOXENV=cov
+    allow_failures:
+        - env: TOXENV=cov
 install:
     - pip install --quiet --use-mirrors tox
 script:
