@@ -149,6 +149,10 @@ class Scope(Simple, IsScope):
         self.statements = []
         self.docstr = ''
         self.asserts = []
+        # Needed here for fast_parser, because the fast_parser splits and
+        # returns will be in "normal" modules.
+        self.returns = []
+        self.is_generator = False
 
     def add_scope(self, sub, decorators):
         sub.parent = self.use_as_parent
@@ -194,13 +198,12 @@ class Scope(Simple, IsScope):
         if len(self.docstr) > 0:
             string += '"""' + self.docstr + '"""\n'
 
-        returns = self.returns if hasattr(self, 'returns') else []
-        objs = self.subscopes + self.imports + self.statements + returns
+        objs = self.subscopes + self.imports + self.statements + self.returns
         for obj in sorted(objs, key=lambda x: x.start_pos):
             if isinstance(obj, Scope):
                 string += obj.get_code(first_indent=True, indention=indention)
             else:
-                if obj in returns and not isinstance(self, Lambda):
+                if obj in self.returns and not isinstance(self, Lambda):
                     string += 'yield ' if self.is_generator else 'return '
                 string += obj.get_code()
 
@@ -439,8 +442,6 @@ class Function(Scope):
             p.parent = self.use_as_parent
             p.parent_function = self.use_as_parent
         self.decorators = []
-        self.returns = []
-        self.is_generator = False
         self.listeners = set()  # not used here, but in evaluation.
 
         if annotation is not None:
@@ -455,6 +456,9 @@ class Function(Scope):
         if self.is_empty():
             string += "pass\n"
         return string
+
+    def is_empty(self):
+        return super(Function, self).is_empty() and not self.returns
 
     def get_set_vars(self):
         n = super(Function, self).get_set_vars()

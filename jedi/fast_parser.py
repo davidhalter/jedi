@@ -14,13 +14,15 @@ import cache
 import common
 
 
+SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
+
+
 class Module(pr.Simple, pr.Module):
     def __init__(self, parsers):
         self._end_pos = None, None
         super(Module, self).__init__(self, (1, 0))
         self.parsers = parsers
         self.reset_caches()
-        self.line_offset = 0
 
     def reset_caches(self):
         """ This module does a whole lot of caching, because it uses different
@@ -63,18 +65,6 @@ class Module(pr.Simple, pr.Module):
         else:
             raise AttributeError("__getattr__ doesn't offer %s" % name)
 
-    def get_statement_for_position(self, pos):
-        key = 'get_statement_for_position', pos
-        if key not in self.cache:
-            for p in self.parsers:
-                s = p.module.get_statement_for_position(pos)
-                if s:
-                    self.cache[key] = s
-                    break
-            else:
-                self.cache[key] = None
-        return self.cache[key]
-
     @property
     def used_names(self):
         if not self.parsers:
@@ -91,30 +81,6 @@ class Module(pr.Simple, pr.Module):
 
             self.cache[key] = dct
         return self.cache[key]
-
-    @property
-    def docstr(self):
-        if not self.parsers:
-            raise NotImplementedError("Parser doesn't exist.")
-        return self.parsers[0].module.docstr
-
-    @property
-    def name(self):
-        if not self.parsers:
-            raise NotImplementedError("Parser doesn't exist.")
-        return self.parsers[0].module.name
-
-    @property
-    def path(self):
-        if not self.parsers:
-            raise NotImplementedError("Parser doesn't exist.")
-        return self.parsers[0].module.path
-
-    @property
-    def is_builtin(self):
-        if not self.parsers:
-            raise NotImplementedError("Parser doesn't exist.")
-        return self.parsers[0].module.is_builtin
 
     @property
     def start_pos(self):
@@ -157,12 +123,93 @@ class CachedFastParser(type):
         return p
 
 
+class ParserNode(object):
+    def __init__(self, parser, code, parent=None):
+        self.parent = parent
+        self.parser = parser
+        self.code = code
+        self.hash = hash(code)
+
+        self.children = []
+        self._checked = True
+        self.save_contents()
+
+    def save_contents(self):
+        scope = self._get_content_scope()
+        self._contents = {}
+        for c in SCOPE_CONTENTS:
+            self._contents[c] = list(getattr(scope, c))
+        self._is_generator = scope.is_generator
+
+    def _get_content_scope(self):
+        try:
+            # with fast_parser we have either 1 subscope or only statements.
+            return self.parser.module.subscopes[0]
+        except IndexError:
+            return self.parser.module
+
+    def reset_contents(self):
+        self._checked = False
+
+        scope = self._get_content_scope()
+        for key, c in self._contents.items():
+            setattr(scope, key, self.contents.items())
+        scope.is_generator = self._is_generator
+
+        for c in self.children:
+            c.reset_contents()
+
+    def parent_until_indent(self, indent):
+        if self.indent >= indent:
+            # check for
+            for i, c in enumerate(self.children):
+                if not c._checked:
+                    # all of the following 
+                    del self.children[i:]
+                    break
+
+            return self.parent.parent_until_indent(indent)
+        return self
+
+    @property
+    def indent(self):
+        if not self.parent:
+            return -1
+        module = self.parser.module
+        try:
+            el = module.subscopes[0]
+        except IndexError:
+            try:
+                el = module.statements[0]
+            except IndexError:
+                el = module.imports[0]
+        return el.start_pos[1]
+
+    def add_node(self, parser, code):
+        # only compare at the right indent level
+        insert = 0
+        for insert, c in enumerate(self.children):
+            if not c._checked:
+                break
+        node = ParserNode(parser, code, self)
+        self.children.insert(insert, node)
+
+        # insert parser objects into current structure
+        scope = self._get_content_scope()
+        for c in SCOPE_CONTENTS:
+            content = getattr(scope, c)
+            content += getattr(parser.module, c)
+        scope.is_generator |= parser.module.is_generator
+        return node
+
+
 class FastParser(use_metaclass(CachedFastParser)):
     def __init__(self, code, module_path=None, user_position=None):
         # set values like `pr.Module`.
         self.module_path = module_path
         self.user_position = user_position
 
+        self.current_node = None
         self.parsers = []
         self.module = Module(self.parsers)
         self.reset_caches()
@@ -274,83 +321,84 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def _parse(self, code):
         """ :type code: str """
-        def set_parent(module):
-            def get_indent(module):
-                try:
-                    el = module.subscopes[0]
-                except IndexError:
-                    try:
-                        el = module.statements[0]
-                    except IndexError:
-                        el = module.imports[0]
-                return el.start_pos[1]
-
-            if self.parsers and False:
-                new_indent = get_indent(module)
-                old_indent = get_indent(self.parsers[-1].module)
-                if old_indent < new_indent:
-                    #module.parent = self.parsers[-1].module.subscopes[0]
-                    # TODO set parents + add to subscopes
-                    return
-            p.module.parent = self.module
-
         parts = self._split_parts(code)
+        self.parsers[:] = []
 
-        if settings.fast_parser_always_reparse:
-            self.parsers[:] = []
-
-        # dict comprehensions are not available in py2.5/2.6 :-(
-        hashes = dict((p.hash, p) for p in self.parsers)
-
-        line_offset = 0
-        start = 0
+        self._code = code
+        self._line_offset = 0
+        self._start = 0
         p = None
-        parser_order = 0
+        is_first = True
         for code_part in parts:
             lines = code_part.count('\n') + 1
-            # the parser is using additional newlines, therefore substract
-            if p is None or line_offset >= p.end_pos[0] - 2:
-                # check if code_part has already been parsed
-                h = hash(code_part)
-
-                if h in hashes and hashes[h].code == code_part:
-                    p = hashes[h]
-                    del hashes[h]
-                    m = p.module
-                    m.line_offset += line_offset + 1 - m.start_pos[0]
-                    if self.user_position is not None and \
-                            m.start_pos <= self.user_position <= m.end_pos:
-                        # It's important to take care of the whole user
-                        # positioning stuff, if no reparsing is being done.
-                        p.user_stmt = m.get_statement_for_position(
-                                    self.user_position, include_imports=True)
-                        if p.user_stmt:
-                            p.user_scope = p.user_stmt.parent
-                        else:
-                            p.user_scope = self.scan_user_scope(m) \
-                                            or self.module
+            if is_first or self._line_offset >= p.end_pos[0] - 1:
+                indent = len(re.match(r'[ \t]*', code).groups(0))
+                if is_first and self.current_node is not None:
+                    nodes = [self]
                 else:
-                    p = parsing.Parser(code[start:],
-                                self.module_path, self.user_position,
-                                offset=(line_offset, 0), is_fast_parser=True,
-                                top_module=self.module)
+                    nodes = []
+                if self.current_node is not None:
 
-                    p.hash = h
-                    p.code = code_part
-                    set_parent(p.module)
-                self.parsers.insert(parser_order, p)
+                    self.current_node = \
+                                self.current_node.parent_until_indent(indent)
+                    nodes += self.current_node.children
 
-                parser_order += 1
-            line_offset += lines
-            print line_offset
-            start += len(code_part) + 1  # +1 for newline
-        self.parsers[parser_order + 1:] = []
+                # check if code_part has already been parsed
+                p = self._get_parser(code, nodes)
+
+                if is_first:
+                    if self.current_node is None:
+                        self.current_node = ParserNode(p, code)
+                    else:
+                        self.current_node.parser = p
+                        self.current_node.save_contents()
+                else:
+                    self.current_node = self.current_node.add_node(p, code)
+                self.parsers.append(p)
+
+                is_first = False
+
+            self._line_offset += lines
+            self._start += len(code_part) + 1  # +1 for newline
+        print 'hmm'
         for p in self.parsers:
             print(p.module.get_code())
             print(p.module.start_pos, p.module.end_pos)
         exit()
+        del self._code
+
+    def _get_parser(self, code, nodes):
+        h = hash(code)
+        hashes = [n.hash for n in nodes]
+        try:
+            index = hashes.index(h)
+            if nodes[index].code != code:
+                raise ValueError()
+        except ValueError:
+            p = parsing.Parser(self._code[self._start:],
+                               self.module_path, self.user_position,
+                               offset=(self._line_offset, 0),
+                               is_fast_parser=True, top_module=self.module)
+        else:
+            node = nodes.pop(index)
+            p = node.parser
+            m = p.module
+            m.line_offset += self._line_offset + 1 - m.start_pos[0]
+            if self.user_position is not None and \
+                    m.start_pos <= self.user_position <= m.end_pos:
+                # It's important to take care of the whole user
+                # positioning stuff, if no reparsing is being done.
+                p.user_stmt = m.get_statement_for_position(
+                            self.user_position, include_imports=True)
+                if p.user_stmt:
+                    p.user_scope = p.user_stmt.parent
+                else:
+                    p.user_scope = self.scan_user_scope(m) or self.module
+        return p
 
     def reset_caches(self):
         self._user_scope = None
         self._user_stmt = None
         self.module.reset_caches()
+        if self.current_node is not None:
+            self.current_node.reset_contents()

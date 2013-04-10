@@ -126,7 +126,6 @@ class NoErrorTokenizer(object):
         else:
             c[2] = self.offset[0] + c[2][0], c[2][1]
             c[3] = self.offset[0] + c[3][0], c[3][1]
-        print 'h', c, tokenize.tok_name[c[0]], self.current[2:4]
         self.current = c
 
         def close():
@@ -139,7 +138,7 @@ class NoErrorTokenizer(object):
                                          tokenize.NEWLINE, tokenize.DEDENT) \
                 and c[0] not in (tokenize.COMMENT, tokenize.INDENT,
                              tokenize.NL, tokenize.NEWLINE, tokenize.DEDENT):
-            print c, tokenize.tok_name[c[0]]
+            #print c, tokenize.tok_name[c[0]]
 
             tok = c[1]
             indent = c[2][1]

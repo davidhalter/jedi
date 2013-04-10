@@ -33,7 +33,6 @@ Parser
 ~~~~~~
 
 .. autodata:: fast_parser
-.. autodata:: fast_parser_always_reparse
 .. autodata:: use_function_definition_cache
 
 
@@ -148,12 +147,6 @@ fast_parser = True
 Use the fast parser. This means that reparsing is only being done if
 something has been changed e.g. to a function. If this happens, only the
 function is being reparsed.
-"""
-
-fast_parser_always_reparse = False
-"""
-This is just a debugging option. Always reparsing means that the fast parser
-is basically useless. So don't use it.
 """
 
 use_function_definition_cache = True
