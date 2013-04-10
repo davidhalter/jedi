@@ -15,6 +15,6 @@ script:
     - tox
 after_script:
     - if [ $TOXENV == "cov" ]; then
-      pip install --quiet --use-mirrors coveralls
+      pip install --quiet --use-mirrors coveralls;
       coveralls;
       fi
