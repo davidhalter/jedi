@@ -5,8 +5,9 @@ env:
     - TOXENV=py27
     - TOXENV=py32
     - TOXENV=py33
+    - TOXENV=cov
 install:
     - pip install --quiet --use-mirrors tox coveralls
 script:
     - tox
-    - if [ $TOXENV == "py33" ]; then coveralls; fi
+    - if [ $TOXENV == "cov" ]; then coveralls; fi
