@@ -6,6 +6,10 @@ env:
     - TOXENV=py32
     - TOXENV=py33
     - TOXENV=cov
+matrix:
+  allow_failures:
+    - env:
+        - TOXENV=cov
 install:
     - pip install --quiet --use-mirrors tox coveralls
 script:
