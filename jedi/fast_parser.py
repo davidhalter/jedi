@@ -132,26 +132,25 @@ class ParserNode(object):
 
         self.children = []
         self._checked = True
+        # must be created before new things are added to it.
+        try:
+            # with fast_parser we have either 1 subscope or only statements.
+            self._content_scope = self.parser.module.subscopes[0]
+        except IndexError:
+            self._content_scope = self.parser.module
         self.save_contents()
 
     def save_contents(self):
-        scope = self._get_content_scope()
+        scope = self._content_scope
         self._contents = {}
         for c in SCOPE_CONTENTS:
             self._contents[c] = list(getattr(scope, c))
         self._is_generator = scope.is_generator
 
-    def _get_content_scope(self):
-        try:
-            # with fast_parser we have either 1 subscope or only statements.
-            return self.parser.module.subscopes[0]
-        except IndexError:
-            return self.parser.module
-
     def reset_contents(self):
         self._checked = False
 
-        scope = self._get_content_scope()
+        scope = self._content_scope
         for key, c in self._contents.items():
             setattr(scope, key, self.contents.items())
         scope.is_generator = self._is_generator
@@ -160,7 +159,7 @@ class ParserNode(object):
             c.reset_contents()
 
     def parent_until_indent(self, indent):
-        if self.indent >= indent:
+        if self.indent >= indent and self.parent:
             # check for
             for i, c in enumerate(self.children):
                 if not c._checked:
@@ -174,7 +173,7 @@ class ParserNode(object):
     @property
     def indent(self):
         if not self.parent:
-            return -1
+            return 0
         module = self.parser.module
         try:
             el = module.subscopes[0]
@@ -195,7 +194,7 @@ class ParserNode(object):
         self.children.insert(insert, node)
 
         # insert parser objects into current structure
-        scope = self._get_content_scope()
+        scope = self._content_scope
         for c in SCOPE_CONTENTS:
             content = getattr(scope, c)
             content += getattr(parser.module, c)
@@ -332,7 +331,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         for code_part in parts:
             lines = code_part.count('\n') + 1
             if is_first or self._line_offset >= p.end_pos[0] - 1:
-                indent = len(re.match(r'[ \t]*', code).groups(0))
+                indent = len(re.match(r'[ \t]*', code_part).group(0))
                 if is_first and self.current_node is not None:
                     nodes = [self]
                 else:
@@ -344,7 +343,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     nodes += self.current_node.children
 
                 # check if code_part has already been parsed
-                p = self._get_parser(code, nodes)
+                p = self._get_parser(code_part, nodes)
 
                 if is_first:
                     if self.current_node is None:
@@ -360,10 +359,11 @@ class FastParser(use_metaclass(CachedFastParser)):
 
             self._line_offset += lines
             self._start += len(code_part) + 1  # +1 for newline
-        print 'hmm'
-        for p in self.parsers:
-            print(p.module.get_code())
-            print(p.module.start_pos, p.module.end_pos)
+
+        print(self.parsers[0].module.get_code())
+        #for p in self.parsers:
+        #    print(p.module.get_code())
+        #    print(p.module.start_pos, p.module.end_pos)
         exit()
         del self._code
 
