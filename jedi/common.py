@@ -150,14 +150,12 @@ class NoErrorTokenizer(object):
                 self.in_flow = False
             elif self.new_indent:
                 self.parser_indent = indent
+                self.new_indent = False
 
             if not self.in_flow:
                 if tok in FLOWS or tok in breaks:
                     self.in_flow = tok in FLOWS
                     if not self.is_decorator and not self.in_flow:
-                        print tok, c
-                        if 6230 < c[2][0] < 6290:
-                            print tok, c
                         close()
                     self.is_decorator = '@' == tok
                     if not self.is_decorator:
@@ -165,6 +163,8 @@ class NoErrorTokenizer(object):
                         self.new_indent = True
 
             if tok != '@':
+                if self.first_stmt and not self.new_indent:
+                    self.parser_indent = indent
                 self.first_stmt = False
         return c
 

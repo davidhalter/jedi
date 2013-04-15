@@ -373,7 +373,6 @@ def find_name(scope, name_str, position=None, search_global=False,
         comparison_func = lambda name: (name.start_pos)
 
         for nscope, name_list in scope_generator:
-            print nscope, name_list
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=comparison_func, reverse=True):

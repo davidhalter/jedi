@@ -112,21 +112,23 @@ class CachedFastParser(type):
 class ParserNode(object):
     def __init__(self, parser, code, parent=None):
         self.parent = parent
-        self.parser = parser
         self.code = code
         self.hash = hash(code)
 
         self.children = []
         self._old_children = []
         # must be created before new things are added to it.
+        self.save_contents(parser)
+
+    def save_contents(self, parser):
+        self.parser = parser
+
         try:
             # with fast_parser we have either 1 subscope or only statements.
             self._content_scope = self.parser.module.subscopes[0]
         except IndexError:
             self._content_scope = self.parser.module
-        self.save_contents()
 
-    def save_contents(self):
         scope = self._content_scope
         self._contents = {}
         for c in SCOPE_CONTENTS:
@@ -159,7 +161,10 @@ class ParserNode(object):
             try:
                 el = module.statements[0]
             except IndexError:
-                el = module.imports[0]
+                try:
+                    el = module.imports[0]
+                except IndexError:
+                    el = module.returns[0]
         return el.start_pos[1]
 
     def _set_items(self, parser, set_parent=False):
@@ -172,6 +177,9 @@ class ParserNode(object):
                 for i in items:
                     i.parent = scope
             content += items
+        if str(parser.module.name) == 'ordering':
+            #print scope.subscopes
+            pass
         scope.is_generator |= parser.module.is_generator
 
     def add_node(self, node):
@@ -330,15 +338,14 @@ class FastParser(use_metaclass(CachedFastParser)):
                     nodes += self.current_node._old_children
 
                 # check if code_part has already been parsed
-                print '#'*45,self._line_offset, p and p.end_pos, '\n', code_part
+                #print '#'*45,self._line_offset, p and p.end_pos, '\n', code_part
                 p, node = self._get_parser(code_part, nodes)
 
                 if is_first:
                     if self.current_node is None:
                         self.current_node = ParserNode(p, code)
                     else:
-                        self.current_node.parser = p
-                        self.current_node.save_contents()
+                        self.current_node.save_contents(p)
                 else:
                     if node is None:
                         self.current_node = \
@@ -349,12 +356,13 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 is_first = False
             else:
-                print '#'*45, self._line_offset, p.end_pos, 'theheck\n', code_part 
+                #print '#'*45, self._line_offset, p.end_pos, 'theheck\n', code_part 
+                pass
 
             self._line_offset += lines
             self._start += len(code_part) + 1  # +1 for newline
 
-        print(self.parsers[0].module.get_code())
+        #print(self.parsers[0].module.get_code())
         #for p in self.parsers:
         #    print(p.module.get_code())
         #    print(p.module.start_pos, p.module.end_pos)
