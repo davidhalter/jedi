@@ -317,7 +317,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         is_first = True
         for code_part in parts:
             lines = code_part.count('\n') + 1
-            if is_first or self._line_offset >= p.end_pos[0] - 1:
+            if is_first or self._line_offset >= p.end_pos[0]:
                 indent = len(re.match(r'[ \t]*', code_part).group(0))
                 if is_first and self.current_node is not None:
                     nodes = [self.current_node]
@@ -330,6 +330,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     nodes += self.current_node._old_children
 
                 # check if code_part has already been parsed
+                print '#'*45,self._line_offset, p and p.end_pos, '\n', code_part
                 p, node = self._get_parser(code_part, nodes)
 
                 if is_first:
@@ -347,11 +348,13 @@ class FastParser(use_metaclass(CachedFastParser)):
                 self.parsers.append(p)
 
                 is_first = False
+            else:
+                print '#'*45, self._line_offset, p.end_pos, 'theheck\n', code_part 
 
             self._line_offset += lines
             self._start += len(code_part) + 1  # +1 for newline
 
-        #print(self.parsers[0].module.get_code())
+        print(self.parsers[0].module.get_code())
         #for p in self.parsers:
         #    print(p.module.get_code())
         #    print(p.module.start_pos, p.module.end_pos)

@@ -85,7 +85,7 @@ class NoErrorTokenizer(object):
         if self.closed:
             raise MultiLevelStopIteration()
         try:
-            last_previous = self.previous
+            self.last_previous = self.previous
             self.previous = self.current
             self.current = next(self.gen)
         except tokenize.TokenError:
@@ -112,7 +112,7 @@ class NoErrorTokenizer(object):
 
         if c[0] == tokenize.ENDMARKER:
             self.current = self.previous
-            self.previous = last_previous
+            self.previous = self.last_previous
             raise MultiLevelStopIteration()
 
         # this is exactly the same check as in fast_parser, but this time with
@@ -155,6 +155,9 @@ class NoErrorTokenizer(object):
                 if tok in FLOWS or tok in breaks:
                     self.in_flow = tok in FLOWS
                     if not self.is_decorator and not self.in_flow:
+                        print tok, c
+                        if 6230 < c[2][0] < 6290:
+                            print tok, c
                         close()
                     self.is_decorator = '@' == tok
                     if not self.is_decorator:
