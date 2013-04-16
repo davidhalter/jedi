@@ -96,10 +96,20 @@ information.
 Testing
 =======
 
-To run the tests::
+The test suite depends on ``tox`` and ``pytest``::
 
     pip install tox pytest
+
+To run the tests for all supported Python versions::
+
     PIP_INSECURE=t tox
+
+If you want to test only a specific Python version (e.g. Python 2.7), it's as
+easy as ::
+
+    tox -e py27
+
+The ``PIP_INSECURE=t`` env variable is only needed for the ``py25`` target.
 
 Tests are also run automatically on `Travis CI
 <https://travis-ci.org/davidhalter/jedi/>`_.
