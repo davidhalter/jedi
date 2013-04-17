@@ -59,6 +59,7 @@ from jedi import cache
 from jedi import parsing_representation as pr
 from jedi import modules
 from jedi import settings
+from jedi import common
 from jedi import debug
 from jedi import fast_parser
 import api_classes
@@ -487,10 +488,8 @@ def related_name_add_import_modules(definitions, search_name):
     for d in definitions:
         if isinstance(d.parent, pr.Import):
             s = imports.ImportPath(d.parent, direct_resolve=True)
-            try:
+            with common.ignored(IndexError):
                 new.add(s.follow(is_goto=True)[0])
-            except IndexError:
-                pass
     return set(definitions) | new
 
 

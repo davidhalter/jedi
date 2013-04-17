@@ -68,6 +68,7 @@ backtracking algorithm.
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
+from __future__ import with_statement
 
 import sys
 import itertools
@@ -429,11 +430,9 @@ def find_name(scope, name_str, position=None, search_global=False,
             if isinstance(scope, (er.Instance, er.Class)) \
                                 and hasattr(r, 'get_descriptor_return'):
                 # handle descriptors
-                try:
+                with common.ignored(KeyError):
                     res_new += r.get_descriptor_return(scope)
                     continue
-                except KeyError:
-                    pass
             res_new.append(r)
         return res_new
 
@@ -462,19 +461,15 @@ def check_getattr(inst, name_str):
     # str is important to lose the NamePart!
     module = builtin.Builtin.scope
     name = pr.Call(module, str(name_str), pr.Call.STRING, (0, 0), inst)
-    try:
+    with common.ignored(KeyError):
         result = inst.execute_subscope_by_name('__getattr__', [name])
-    except KeyError:
-        pass
     if not result:
         # this is a little bit special. `__getattribute__` is executed
         # before anything else. But: I know no use case, where this
         # could be practical and the jedi would return wrong types. If
         # you ever have something, let me know!
-        try:
+        with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattribute__', [name])
-        except KeyError:
-            pass
     return result
 
 
@@ -536,10 +531,8 @@ def assign_tuples(tup, results, seek_name):
                 debug.warning("invalid tuple lookup %s of result %s in %s"
                                     % (tup, results, seek_name))
             else:
-                try:
+                with common.ignored(IndexError):
                     types += func(index)
-                except IndexError:
-                    pass
         return types
 
     result = []
@@ -648,11 +641,9 @@ def follow_call_list(call_list, follow_array=False):
                             call = next(calls_iterator)
                         except StopIteration:
                             break
-                        try:
+                        with common.ignored(AttributeError):
                             if str(call.name) == 'else':
                                 break
-                        except AttributeError:
-                            pass
                     continue
                 result += follow_call(call)
             elif call == '*':
