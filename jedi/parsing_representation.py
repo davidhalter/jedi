@@ -34,6 +34,7 @@ statements in this scope.  Check this out:
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 
 """
+from __future__ import with_statement
 
 import os
 import re
@@ -1280,11 +1281,8 @@ class Array(Call):
         inner = []
         for i, stmt in enumerate(self.values):
             s = ''
-            try:
+            with common.ignored(IndexError):
                 key = self.keys[i]
-            except IndexError:
-                pass
-            else:
                 s += key.get_code(new_line=False) + ': '
             s += stmt.get_code(new_line=False)
             inner.append(s)

@@ -15,6 +15,7 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
+from __future__ import with_statement
 
 import tokenize
 import keyword
@@ -396,7 +397,7 @@ class Parser(object):
             self._check_user_stmt(stmt)
 
         # Attribute docstring (PEP 257) support
-        try:
+        with common.ignored(IndexError, AttributeError):
             # If string literal is being parsed
             first_tok = stmt.token_list[0]
             if (not stmt.set_vars and
@@ -405,8 +406,6 @@ class Parser(object):
                 first_tok[0] == tokenize.STRING):
                 # ... then set it as a docstring
                 self.scope.statements[-1].add_docstr(first_tok[1])
-        except (IndexError, AttributeError):
-            pass
 
         if tok in always_break + not_first_break:
             self._gen.push_last_back()

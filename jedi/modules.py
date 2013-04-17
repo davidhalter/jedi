@@ -27,6 +27,7 @@ from jedi import parsing_representation as pr
 from jedi import fast_parser
 from jedi import debug
 from jedi import settings
+from jedi import common
 
 
 class CachedModule(object):
@@ -107,11 +108,9 @@ class ModuleWithCursor(Module):
     def parser(self):
         """ get the parser lazy """
         if not self._parser:
-            try:
+            with common.ignored(KeyError):
                 parser = cache.parser_cache[self.path].parser
                 cache.invalidate_star_import_cache(parser.module)
-            except KeyError:
-                pass
             # Call the parser already here, because it will be used anyways.
             # Also, the position is here important (which will not be used by
             # default), therefore fill the cache here.
@@ -348,10 +347,8 @@ def sys_path_with_modifications(module):
         return []  # support for modules without a path is intentionally bad.
 
     curdir = os.path.abspath(os.curdir)
-    try:
+    with common.ignored(OSError):
         os.chdir(os.path.dirname(module.path))
-    except OSError:
-        pass
 
     result = check_module(module)
     result += detect_django_path(module.path)
@@ -372,12 +369,10 @@ def detect_django_path(module_path):
         else:
             module_path = new
 
-        try:
+        with common.ignored(IOError):
             with open(module_path + os.path.sep + 'manage.py'):
                 debug.dbg('Found django path: %s' % module_path)
                 result.append(module_path)
-        except IOError:
-            pass
     return result
 
 
