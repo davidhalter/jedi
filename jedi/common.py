@@ -102,8 +102,7 @@ class NoErrorTokenizer(object):
             debug.warning('indentation error on line %s, ignoring it' %
                                                         self.current[2][0])
             # add the starting line of the last position
-            self.offset = (self.offset[0] + self.current[2][0],
-                           self.current[2][1])
+            self.offset = self.current[2]
             self.gen = PushBackIterator(tokenize.generate_tokens(
                                                                 self.readline))
             return self.__next__()
