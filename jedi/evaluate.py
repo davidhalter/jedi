@@ -159,6 +159,10 @@ def get_names_of_scope(scope, position=None, star_search=True,
     in_func_scope = scope
     non_flow = scope.get_parent_until(pr.Flow, reverse=True)
     while scope:
+        if isinstance(scope, pr.SubModule) and scope.parent:
+            # we don't want submodules to report if we have modules.
+            scope = scope.parent
+            continue
         # `pr.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.

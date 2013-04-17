@@ -392,6 +392,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             p = parsing.Parser(parser_code, self.module_path,
                                self.user_position, offset=(line_offset, 0),
                                is_fast_parser=True, top_module=self.module)
+            p.module.parent = self.module
         else:
             node = nodes.pop(index)
             p = node.parser
