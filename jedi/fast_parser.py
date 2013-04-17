@@ -318,14 +318,13 @@ class FastParser(use_metaclass(CachedFastParser)):
         parts = self._split_parts(code)
         self.parsers[:] = []
 
-        self._code = code
-        self._line_offset = 0
-        self._start = 0
+        line_offset = 0
+        start = 0
         p = None
         is_first = True
         for code_part in parts:
             lines = code_part.count('\n') + 1
-            if is_first or self._line_offset >= p.end_pos[0]:
+            if is_first or line_offset >= p.end_pos[0]:
                 indent = len(re.match(r'[ \t]*', code_part).group(0))
                 if is_first and self.current_node is not None:
                     nodes = [self.current_node]
@@ -338,8 +337,20 @@ class FastParser(use_metaclass(CachedFastParser)):
                     nodes += self.current_node._old_children
 
                 # check if code_part has already been parsed
-                #print '#'*45,self._line_offset, p and p.end_pos, '\n', code_part
-                p, node = self._get_parser(code_part, nodes)
+                #print '#'*45,line_offset, p and p.end_pos, '\n', code_part
+                p, node = self._get_parser(code_part, code[start:],
+                                           line_offset, nodes)
+
+                if is_first and p.module.subscopes:
+                    # special case, we cannot use a function subscope as a
+                    # base scope, subscopes would save all the other contents
+                    new, temp = self._get_parser('', '', 0, [])
+                    if self.current_node is None:
+                        self.current_node = ParserNode(new, code)
+                    else:
+                        self.current_node.save_contents(new)
+                    self.parsers.append(new)
+                    is_first = False
 
                 if is_first:
                     if self.current_node is None:
@@ -356,20 +367,20 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 is_first = False
             else:
-                #print '#'*45, self._line_offset, p.end_pos, 'theheck\n', code_part 
+                #print '#'*45, line_offset, p.end_pos, 'theheck\n', code_part 
                 pass
 
-            self._line_offset += lines
-            self._start += len(code_part) + 1  # +1 for newline
+            line_offset += lines
+            start += len(code_part) + 1  # +1 for newline
 
         #print(self.parsers[0].module.get_code())
         #for p in self.parsers:
         #    print(p.module.get_code())
         #    print(p.module.start_pos, p.module.end_pos)
         #exit()
-        del self._code
+        del code
 
-    def _get_parser(self, code, nodes):
+    def _get_parser(self, code, parser_code, line_offset, nodes):
         h = hash(code)
         hashes = [n.hash for n in nodes]
         node = None
@@ -378,15 +389,14 @@ class FastParser(use_metaclass(CachedFastParser)):
             if nodes[index].code != code:
                 raise ValueError()
         except ValueError:
-            p = parsing.Parser(self._code[self._start:],
-                               self.module_path, self.user_position,
-                               offset=(self._line_offset, 0),
+            p = parsing.Parser(parser_code, self.module_path,
+                               self.user_position, offset=(line_offset, 0),
                                is_fast_parser=True, top_module=self.module)
         else:
             node = nodes.pop(index)
             p = node.parser
             m = p.module
-            m.line_offset += self._line_offset + 1 - m.start_pos[0]
+            m.line_offset += line_offset + 1 - m.start_pos[0]
             if self.user_position is not None and \
                     m.start_pos <= self.user_position <= m.end_pos:
                 # It's important to take care of the whole user
