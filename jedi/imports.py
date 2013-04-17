@@ -11,7 +11,6 @@ correct implementation is delegated to _compatibility.
 This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
-
 from __future__ import with_statement
 
 import os
@@ -21,6 +20,7 @@ import itertools
 
 from jedi._compatibility import find_module
 from jedi import modules
+from jedi import common
 from jedi import debug
 from jedi import parsing_representation as pr
 from jedi import cache
@@ -122,11 +122,9 @@ class ImportPath(pr.Base):
 
                     if self.import_stmt.relative_count:
                         rel_path = self.get_relative_path() + '/__init__.py'
-                        try:
+                        with common.ignored(IOError):
                             m = modules.Module(rel_path)
                             names += m.parser.module.get_defined_names()
-                        except IOError:
-                            pass
             else:
                 if on_import_stmt and isinstance(scope, pr.Module) \
                                         and scope.path.endswith('__init__.py'):
@@ -274,10 +272,8 @@ class ImportPath(pr.Base):
                                 and len(self.import_path) == 1:
                     # follow `from . import some_variable`
                     rel_path = self.get_relative_path()
-                    try:
+                    with common.ignored(ImportError):
                         current_namespace = follow_str(rel_path, '__init__')
-                    except ImportError:
-                        pass
                 if current_namespace[1]:
                     rest = self.import_path[i:]
                 else:

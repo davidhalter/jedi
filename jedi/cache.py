@@ -30,6 +30,7 @@ import shutil
 
 from jedi._compatibility import json
 from jedi import settings
+from jedi import common
 from jedi import debug
 
 # memoize caches will be deleted after every action
@@ -148,12 +149,10 @@ def cache_function_definition(stmt):
 
 def cache_star_import(func):
     def wrapper(scope, *args, **kwargs):
-        try:
+        with common.ignored(KeyError):
             mods = star_import_cache[scope]
             if mods[0] + settings.star_import_cache_validity > time.time():
                 return mods[1]
-        except KeyError:
-            pass
         # cache is too old and therefore invalid or not available
         invalidate_star_import_cache(scope)
         mods = func(scope, *args, **kwargs)
@@ -165,15 +164,13 @@ def cache_star_import(func):
 
 def invalidate_star_import_cache(module, only_main=False):
     """ Important if some new modules are being reparsed """
-    try:
+    with common.ignored(KeyError):
         t, mods = star_import_cache[module]
 
         del star_import_cache[module]
 
         for m in mods:
             invalidate_star_import_cache(m, only_main=True)
-    except KeyError:
-        pass
 
     if not only_main:
         # We need a list here because otherwise the list is being changed
