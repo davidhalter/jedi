@@ -1,4 +1,11 @@
-"""Tokenization help for Python programs.
+"""
+This tokenizer has been copied from the ``tokenize.py`` standard library
+tokenizer. The reason was simple: The standanrd library  tokenizer fails
+if the indentation is not right. The fast parser of jedi however requires
+"wrong" indentation.
+
+Tokenization help for Python programs.
+++++++++++++++++++++++++++++++++++++++
 
 tokenize(readline) is a generator that breaks a stream of bytes into
 Python tokens.  It decodes the bytes according to PEP-0263 for
@@ -20,23 +27,12 @@ operators.  Additionally, all token lists start with an ENCODING token
 which tells you which encoding was used to decode the bytes stream.
 """
 
-__author__ = 'Ka-Ping Yee <ping@lfw.org>'
-__credits__ = ('GvR, ESR, Tim Peters, Thomas Wouters, Fred Drake, '
-               'Skip Montanaro, Raymond Hettinger, Trent Nelson, '
-               'Michael Foord')
-import builtins
 import re
-import sys
 from token import *
 from codecs import lookup, BOM_UTF8
 import collections
-from io import TextIOWrapper
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
-import token
-__all__ = token.__all__ + ["COMMENT", "tokenize", "detect_encoding",
-                           "NL", "untokenize", "ENCODING", "TokenInfo"]
-del token
 
 COMMENT = N_TOKENS
 tok_name[COMMENT] = 'COMMENT'
@@ -152,107 +148,6 @@ class TokenError(Exception): pass
 class StopTokenizing(Exception): pass
 
 
-class Untokenizer:
-
-    def __init__(self):
-        self.tokens = []
-        self.prev_row = 1
-        self.prev_col = 0
-        self.encoding = None
-
-    def add_whitespace(self, start):
-        row, col = start
-        assert row <= self.prev_row
-        col_offset = col - self.prev_col
-        if col_offset:
-            self.tokens.append(" " * col_offset)
-
-    def untokenize(self, iterable):
-        for t in iterable:
-            if len(t) == 2:
-                self.compat(t, iterable)
-                break
-            tok_type, token, start, end, line = t
-            if tok_type == ENCODING:
-                self.encoding = token
-                continue
-            self.add_whitespace(start)
-            self.tokens.append(token)
-            self.prev_row, self.prev_col = end
-            if tok_type in (NEWLINE, NL):
-                self.prev_row += 1
-                self.prev_col = 0
-        return "".join(self.tokens)
-
-    def compat(self, token, iterable):
-        startline = False
-        indents = []
-        toks_append = self.tokens.append
-        toknum, tokval = token
-
-        if toknum in (NAME, NUMBER):
-            tokval += ' '
-        if toknum in (NEWLINE, NL):
-            startline = True
-        prevstring = False
-        for tok in iterable:
-            toknum, tokval = tok[:2]
-            if toknum == ENCODING:
-                self.encoding = tokval
-                continue
-
-            if toknum in (NAME, NUMBER):
-                tokval += ' '
-
-            # Insert a space between two consecutive strings
-            if toknum == STRING:
-                if prevstring:
-                    tokval = ' ' + tokval
-                prevstring = True
-            else:
-                prevstring = False
-
-            if toknum == INDENT:
-                indents.append(tokval)
-                continue
-            elif toknum == DEDENT:
-                indents.pop()
-                continue
-            elif toknum in (NEWLINE, NL):
-                startline = True
-            elif startline and indents:
-                toks_append(indents[-1])
-                startline = False
-            toks_append(tokval)
-
-
-def untokenize(iterable):
-    """Transform tokens back into Python source code.
-    It returns a bytes object, encoded using the ENCODING
-    token, which is the first token sequence output by tokenize.
-
-    Each element returned by the iterable must be a token sequence
-    with at least two elements, a token number and token value.  If
-    only two tokens are passed, the resulting output is poor.
-
-    Round-trip invariant for full input:
-        Untokenized source will match input source exactly
-
-    Round-trip invariant for limited intput:
-        # Output bytes will tokenize the back to the input
-        t1 = [tok[:2] for tok in tokenize(f.readline)]
-        newcode = untokenize(t1)
-        readline = BytesIO(newcode).readline
-        t2 = [tok[:2] for tok in tokenize(readline)]
-        assert t1 == t2
-    """
-    ut = Untokenizer()
-    out = ut.untokenize(iterable)
-    if ut.encoding is not None:
-        out = out.encode(ut.encoding)
-    return out
-
-
 def _get_normal_name(orig_enc):
     """Imitates get_normal_name in tokenizer.c."""
     # Only care about the first 12 characters.
@@ -334,18 +229,6 @@ def detect_encoding(readline):
         return encoding, [first, second]
 
     return default, [first, second]
-
-
-def open(filename):
-    """Open a file in read only mode using the encoding detected by
-    detect_encoding().
-    """
-    buffer = builtins.open(filename, 'rb')
-    encoding, lines = detect_encoding(buffer.readline)
-    buffer.seek(0)
-    text = TextIOWrapper(buffer, encoding, line_buffering=True)
-    text.mode = 'r'
-    return text
 
 
 def tokenize(readline):
@@ -523,34 +406,3 @@ def _tokenize(readline, encoding):
     for indent in indents[1:]:                 # pop remaining indent levels
         yield TokenInfo(DEDENT, '', (lnum, 0), (lnum, 0), '')
     yield TokenInfo(ENDMARKER, '', (lnum, 0), (lnum, 0), '')
-
-
-# An undocumented, backwards compatible, API for all the places in the standard
-# library that expect to be able to use tokenize with strings
-def generate_tokens(readline):
-    return _tokenize(readline, None)
-
-if __name__ == "__main__":
-    # Quick sanity check
-    s = b'''def parseline(self, line):
-            """Parse the line into a command name and a string containing
-            the arguments.  Returns a tuple containing (command, args, line).
-            'command' and 'args' may be None if the line couldn't be parsed.
-            """
-            line = line.strip()
-            if not line:
-                return None, None, line
-            elif line[0] == '?':
-                line = 'help ' + line[1:]
-            elif line[0] == '!':
-                if hasattr(self, 'do_shell'):
-                    line = 'shell ' + line[1:]
-                else:
-                    return None, None, line
-            i, n = 0, len(line)
-            while i < n and line[i] in self.identchars: i = i+1
-            cmd, arg = line[:i], line[i:].strip()
-            return cmd, arg, line
-    '''
-    for tok in tokenize(iter(s.splitlines()).__next__):
-        print(tok)
