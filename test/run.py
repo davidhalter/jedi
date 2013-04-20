@@ -99,8 +99,13 @@ Tests look like this::
 import os
 import re
 
+if __name__ == '__main__':
+    import sys
+    sys.path.insert(0, '..')
+
 import jedi
-from jedi._compatibility import unicode, StringIO, reduce, is_py25
+from jedi._compatibility import unicode, StringIO, reduce, is_py25, \
+                                literal_eval
 
 
 TEST_COMPLETIONS = 0
@@ -110,7 +115,6 @@ TEST_USAGES = 3
 
 
 class IntegrationTestCase(object):
-
     def __init__(self, test_type, correct, line_nr, column, start, line,
                  path=None):
         self.test_type = test_type
@@ -129,6 +133,80 @@ class IntegrationTestCase(object):
 
     def script(self):
         return jedi.Script(self.source, self.line_nr, self.column, self.path)
+
+    def run(self, compare_cb):
+        testers = {
+            TEST_COMPLETIONS: self.run_completion,
+            TEST_DEFINITIONS: self.run_definition,
+            TEST_ASSIGNMENTS: self.run_goto,
+            TEST_USAGES: self.run_related_name,
+        }
+        return testers[self.test_type](compare_cb)
+
+    def run_completion(self, compare_cb):
+        completions = self.script().complete()
+        #import cProfile; cProfile.run('script.complete()')
+
+        comp_str = set([c.word for c in completions])
+        return compare_cb(self, comp_str, set(literal_eval(self.correct)))
+
+    def run_definition(self, compare_cb):
+        def definition(correct, correct_start, path):
+            def defs(line_nr, indent):
+                s = jedi.Script(self.source, line_nr, indent, path)
+                return set(s.definition())
+
+            should_be = set()
+            number = 0
+            for index in re.finditer('(?: +|$)', correct):
+                if correct == ' ':
+                    continue
+                # -1 for the comment, +3 because of the comment start `#? `
+                start = index.start()
+                number += 1
+                try:
+                    should_be |= defs(self.line_nr - 1, start + correct_start)
+                except Exception:
+                    print('could not resolve %s indent %s'
+                          % (self.line_nr - 1, start))
+                    raise
+            # because the objects have different ids, `repr`, then compare.
+            should_str = set(r.desc_with_module for r in should_be)
+            if len(should_str) < number:
+                raise Exception('Solution @%s not right, '
+                   'too few test results: %s' % (self.line_nr - 1, should_str))
+            return should_str
+
+        script = self.script()
+        should_str = definition(self.correct, self.start, script.source_path)
+        result = script.definition()
+        is_str = set(r.desc_with_module for r in result)
+        return compare_cb(self, is_str, should_str)
+
+    def run_goto(self, compare_cb):
+        result = self.script().goto()
+        comp_str = str(sorted(str(r.description) for r in result))
+        return compare_cb(self, comp_str, self.correct)
+
+    def run_related_name(self, compare_cb):
+        result = self.script().related_names()
+        self.correct = self.correct.strip()
+        compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
+                                                            for r in result)
+        wanted = []
+        if not self.correct:
+            positions = []
+        else:
+            positions = literal_eval(self.correct)
+        for pos_tup in positions:
+            if type(pos_tup[0]) == str:
+                # this means that there is a module specified
+                wanted.append(pos_tup)
+            else:
+                wanted.append(('renaming', self.line_nr + pos_tup[0],
+                                pos_tup[1]))
+
+        return compare_cb(self, compare, sorted(wanted))
 
 
 def collect_file_tests(lines, lines_to_execute):
@@ -201,3 +279,92 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
                 if skip:
                     case.skip = skip
                 yield case
+
+
+if __name__ == '__main__':
+    # an alternative testing format, this is much more hacky, but very nice to
+    # work with.
+
+    import time
+    t_start = time.time()
+    # Sorry I didn't use argparse here. It's because argparse is not in the
+    # stdlib in 2.5.
+    args = sys.argv[1:]
+    try:
+        i = args.index('--thirdparty')
+        thirdparty = True
+        args = args[:i] + args[i + 1:]
+    except ValueError:
+        thirdparty = False
+
+    print_debug = False
+    try:
+        i = args.index('--debug')
+        args = args[:i] + args[i + 1:]
+    except ValueError:
+        pass
+    else:
+        from jedi import api, debug
+        print_debug = True
+        api.set_debug_function(debug.print_to_stdout)
+
+    # get test list, that should be executed
+    test_files = {}
+    last = None
+    for arg in args:
+        if arg.isdigit():
+            if last is None:
+                continue
+            test_files[last].append(int(arg))
+        else:
+            test_files[arg] = []
+            last = arg
+
+    # completion tests:
+    completion_test_dir = '../test/completion'
+    summary = []
+    tests_fail = 0
+
+    # execute tests
+    cases = list(collect_dir_tests(completion_test_dir, test_files))
+    if test_files or thirdparty:
+        completion_test_dir += '/thirdparty'
+        cases += collect_dir_tests(completion_test_dir, test_files, True)
+
+    def file_change(current, tests, fails):
+        current = os.path.basename(current)
+        print('%s \t\t %s tests and %s fails.' % (current, tests, fails))
+
+    def report(case, actual, desired):
+        if actual == desired:
+            return 0
+        else:
+            print("\ttest fail @%d, actual = %s, desired = %s"
+                    % (case.line_nr, actual, desired))
+            return 1
+
+    current = cases[0].path if cases else None
+    count = fails = 0
+    for c in cases:
+        if c.run(report):
+            tests_fail += 1
+            fails += 1
+        count += 1
+
+        if current != c.path:
+            file_change(current, count, fails)
+            current = c.path
+            count = fails = 0
+    file_change(current, count, fails)
+
+    print('\nSummary: (%s fails of %s tests) in %.3fs' % (tests_fail,
+                                        len(cases), time.time() - t_start))
+    for s in summary:
+        print(s)
+
+    exit_code = 1 if tests_fail else 0
+    if sys.hexversion < 0x02060000 and tests_fail <= 9:
+        # Python 2.5 has major incompabillities (e.g. no property.setter),
+        # therefore it is not possible to pass all tests.
+        exit_code = 0
+    sys.exit(exit_code)
