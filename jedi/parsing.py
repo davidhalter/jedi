@@ -394,6 +394,7 @@ class Parser(object):
             stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
                               first_pos, self.end_pos)
 
+            stmt.parent = self.top_module
             self._check_user_stmt(stmt)
 
         # Attribute docstring (PEP 257) support
