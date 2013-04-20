@@ -201,3 +201,65 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
                 if skip:
                     case.skip = skip
                 yield case
+
+
+if __name__ == '__main__':
+    # an alternative testing format
+    import time, sys
+    test_sum = 0
+    t_start = time.time()
+    # Sorry I didn't use argparse here. It's because argparse is not in the
+    # stdlib in 2.5.
+    args = sys.argv[1:]
+    try:
+        i = args.index('--thirdparty')
+        thirdparty = True
+        args = args[:i] + args[i + 1:]
+    except ValueError:
+        thirdparty = False
+
+    print_debug = False
+    try:
+        i = args.index('--debug')
+        args = args[:i] + args[i + 1:]
+    except ValueError:
+        pass
+    else:
+        from jedi import api, debug
+        print_debug = True
+        api.set_debug_function(debug.print_to_stdout)
+
+    # get test list, that should be executed
+    test_files = {}
+    last = None
+    for arg in args:
+        if arg.isdigit():
+            if last is None:
+                continue
+            test_files[last].append(int(arg))
+        else:
+            test_files[arg] = []
+            last = arg
+
+    # completion tests:
+    completion_test_dir = '../test/completion'
+    summary = []
+    tests_fail = 0
+
+    # execute tests
+    cases = list(collect_dir_tests(completion_test_dir, test_files))
+    if test_files or thirdparty:
+        completion_test_dir += '/thirdparty'
+        cases += collect_dir_tests(completion_test_dir, test_files, True)
+
+    print('\nSummary: (%s fails of %s tests) in %.3fs' % (tests_fail, test_sum,
+                                                        time.time() - t_start))
+    for s in summary:
+        print(s)
+
+    exit_code = 1 if tests_fail else 0
+    if sys.hexversion < 0x02060000 and tests_fail <= 9:
+        # Python 2.5 has major incompabillities (e.g. no property.setter),
+        # therefore it is not possible to pass all tests.
+        exit_code = 0
+    sys.exit(exit_code)
