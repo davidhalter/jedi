@@ -148,7 +148,8 @@ def generate_tokens(readline):
 
         if contstr:                            # continued string
             if not line:
-                raise TokenError("EOF in multi-line string", strstart)
+                # multiline string has not been finished
+                break
             endmatch = endprog.match(line)
             if endmatch:
                 pos = end = endmatch.end(0)
@@ -200,16 +201,13 @@ def generate_tokens(readline):
                 indents.append(column)
                 yield TokenInfo(INDENT, line[:pos], (lnum, 0), (lnum, pos), line)
             while column < indents[-1]:
-                if column not in indents:
-                    raise IndentationError(
-                        "unindent does not match any outer indentation level",
-                        ("<tokenize>", lnum, pos, line))
                 indents = indents[:-1]
                 yield TokenInfo(DEDENT, '', (lnum, pos), (lnum, pos), line)
 
         else:                                  # continued statement
             if not line:
-                raise TokenError("EOF in multi-line statement", (lnum, 0))
+                # basically a statement has not been finished here.
+                break
             continued = 0
 
         while pos < max:
