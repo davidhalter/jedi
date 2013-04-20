@@ -4,27 +4,8 @@ tokenizer. The reason was simple: The standanrd library  tokenizer fails
 if the indentation is not right. The fast parser of jedi however requires
 "wrong" indentation.
 
-Tokenization help for Python programs.
-++++++++++++++++++++++++++++++++++++++
-
-tokenize(readline) is a generator that breaks a stream of bytes into
-Python tokens.  It decodes the bytes according to PEP-0263 for
-determining source file encoding.
-
-It accepts a readline-like method which is called repeatedly to get the
-next line of input (or b"" for EOF).  It generates 5-tuples with these
-members:
-
-    the token type (see token.py)
-    the token (a string)
-    the starting (row, column) indices of the token (a 2-tuple of ints)
-    the ending (row, column) indices of the token (a 2-tuple of ints)
-    the original line (string)
-
-It is designed to match the working of the Python tokenizer exactly, except
-that it produces COMMENT tokens for comments and gives type OP for all
-operators.  Additionally, all token lists start with an ENCODING token
-which tells you which encoding was used to decode the bytes stream.
+Basically this is a stripped down version of the standard library module, so
+you can read the documentation there.
 """
 
 import string
@@ -149,26 +130,19 @@ tabsize = 8
 class TokenError(Exception): pass
 
 
-def _tokenize(readline, encoding):
+def generate_tokens(readline):
     lnum = parenlev = continued = 0
     numchars = '0123456789'
     contstr, needcont = '', 0
     contline = None
     indents = [0]
 
-    if encoding is not None:
-        if encoding == "utf-8-sig":
-            # BOM will already have been stripped.
-            encoding = "utf-8"
-        yield TokenInfo(ENCODING, encoding, (0, 0), (0, 0), '')
     while True:             # loop over lines in stream
         try:
             line = readline()
         except StopIteration:
             line = b''
 
-        if encoding is not None:
-            line = line.decode(encoding)
         lnum += 1
         pos, max = 0, len(line)
 
@@ -296,9 +270,3 @@ def _tokenize(readline, encoding):
     for indent in indents[1:]:                 # pop remaining indent levels
         yield TokenInfo(DEDENT, '', (lnum, 0), (lnum, 0), '')
     yield TokenInfo(ENDMARKER, '', (lnum, 0), (lnum, 0), '')
-
-
-# An undocumented, backwards compatible, API for all the places in the standard
-# library that expect to be able to use tokenize with strings
-def generate_tokens(readline):
-    return _tokenize(readline, None)
