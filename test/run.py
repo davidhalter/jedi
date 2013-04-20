@@ -99,6 +99,10 @@ Tests look like this::
 import os
 import re
 
+if __name__ == '__main__':
+    import sys
+    sys.path.insert(0, '..')
+
 import jedi
 from jedi._compatibility import unicode, StringIO, reduce, is_py25, \
                                 literal_eval
@@ -149,7 +153,7 @@ class IntegrationTestCase(object):
     def run_definition(self, compare_cb):
         def definition(correct, correct_start, path):
             def defs(line_nr, indent):
-                s = jedi.Script(script.source, line_nr, indent, path)
+                s = jedi.Script(self.source, line_nr, indent, path)
                 return set(s.definition())
 
             should_be = set()
@@ -278,9 +282,10 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
 
 
 if __name__ == '__main__':
-    # an alternative testing format
-    import time, sys
-    test_sum = 0
+    # an alternative testing format, this is much more hacky, but very nice to
+    # work with.
+
+    import time
     t_start = time.time()
     # Sorry I didn't use argparse here. It's because argparse is not in the
     # stdlib in 2.5.
@@ -326,8 +331,34 @@ if __name__ == '__main__':
         completion_test_dir += '/thirdparty'
         cases += collect_dir_tests(completion_test_dir, test_files, True)
 
-    print('\nSummary: (%s fails of %s tests) in %.3fs' % (tests_fail, test_sum,
-                                                        time.time() - t_start))
+    def file_change(current, tests, fails):
+        current = os.path.basename(current)
+        print('%s \t\t %s tests and %s fails.' % (current, tests, fails))
+
+    def report(case, actual, desired):
+        if actual == desired:
+            return 0
+        else:
+            print("\ttest fail @%d, actual = %s, desired = %s"
+                    % (case.line_nr, actual, desired))
+            return 1
+
+    current = cases[0].path if cases else None
+    count = fails = 0
+    for c in cases:
+        if c.run(report):
+            tests_fail += 1
+            fails += 1
+        count += 1
+
+        if current != c.path:
+            file_change(current, count, fails)
+            current = c.path
+            count = fails = 0
+    file_change(current, count, fails)
+
+    print('\nSummary: (%s fails of %s tests) in %.3fs' % (tests_fail,
+                                        len(cases), time.time() - t_start))
     for s in summary:
         print(s)
 
