@@ -12,11 +12,11 @@ following functions (sometimes bug-prone):
 - extract variable
 - inline variable
 """
-
 from __future__ import with_statement
 
 import difflib
 
+from jedi import common
 from jedi import modules
 from jedi import helpers
 from jedi import parsing_representation as pr
@@ -168,7 +168,7 @@ def inline(script):
     dct = {}
 
     definitions = script.goto()
-    try:
+    with common.ignored(AssertionError):
         assert len(definitions) == 1
         stmt = definitions[0].definition
         related_names = script.related_names()
@@ -201,8 +201,5 @@ def inline(script):
             new_lines[index] = line
         else:
             new_lines.pop(index)
-
-    except AssertionError:
-        pass
 
     return Refactoring(dct)

@@ -1,9 +1,11 @@
 *~
 *.swp
 *.swo
+*.pyc
 .ropeproject
 .tox
-*.pyc
+.coveralls.yml
+.coverage
 /build/
 /docs/_build/
 /dist/

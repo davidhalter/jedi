@@ -3,6 +3,7 @@ The :mod:`api_classes` module contains the return classes of the API. These
 classes are the much bigger part of the whole API, because they contain the
 interesting information about completion and goto operations.
 """
+from __future__ import with_statement
 
 import re
 import os
@@ -11,6 +12,7 @@ import functools
 
 from jedi._compatibility import unicode, next
 from jedi import settings
+from jedi import common
 from jedi import parsing_representation as pr
 from jedi import cache
 import keywords
@@ -144,10 +146,8 @@ class BaseDefinition(object):
         if not isinstance(self.definition, keywords.Keyword):
             par = self.definition
             while par is not None:
-                try:
+                with common.ignored(AttributeError):
                     path.insert(0, par.name)
-                except AttributeError:
-                    pass
                 par = par.parent
         return path
 
@@ -295,10 +295,8 @@ class BaseDefinition(object):
         if not path:
             return None  # for keywords the path is empty
 
-        try:
+        with common.ignored(KeyError):
             path[0] = self._mapping[path[0]]
-        except KeyError:
-            pass
         for key, repl in self._tuple_mapping.items():
             if tuple(path[:len(key)]) == key:
                 path = [repl] + path[len(key):]

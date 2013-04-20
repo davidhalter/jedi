@@ -32,7 +32,7 @@ def make_definitions():
     definitions += api.defined_names(source)
 
     source += textwrap.dedent("""
-    variable = sys or C or x or f or g or h""")
+    variable = sys or C or x or f or g or g() or h""")
     lines = source.splitlines()
     script = api.Script(source, len(lines), len('variable'), None)
     definitions += script.definition()
@@ -50,4 +50,4 @@ def make_definitions():
 @pytest.mark.parametrize('definition', make_definitions())
 def test_basedefinition_type(definition):
     assert definition.type in ('module', 'class', 'instance', 'function',
-                               'statement', 'import', 'param')
+                               'generator', 'statement', 'import', 'param')

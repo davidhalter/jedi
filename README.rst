@@ -6,6 +6,11 @@ Jedi - an awesome autocompletion library for Python
     :target: http://travis-ci.org/davidhalter/jedi
     :alt: Travis-CI build status
 
+.. image:: https://coveralls.io/repos/davidhalter/jedi/badge.png?branch=master
+    :target: https://coveralls.io/r/davidhalter/jedi
+    :alt: Coverage Status
+
+
 Jedi is an autocompletion tool for Python that can be used in IDEs/editors.
 Jedi works. Jedi is fast. It understands all of the basic Python syntax
 elements including many builtin functions.
@@ -86,3 +91,25 @@ API for IDEs
 It's very easy to create an editor plugin that uses Jedi. See
 https://jedi.readthedocs.org/en/latest/docs/plugin-api.html for more
 information.
+
+
+Testing
+=======
+
+The test suite depends on ``tox`` and ``pytest``::
+
+    pip install tox pytest
+
+To run the tests for all supported Python versions::
+
+    PIP_INSECURE=t tox
+
+If you want to test only a specific Python version (e.g. Python 2.7), it's as
+easy as ::
+
+    tox -e py27
+
+The ``PIP_INSECURE=t`` env variable is only needed for the ``py25`` target.
+
+Tests are also run automatically on `Travis CI
+<https://travis-ci.org/davidhalter/jedi/>`_.

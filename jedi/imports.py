@@ -5,23 +5,22 @@ any actual importing done. This module is about finding modules in the
 filesystem. This can be quite tricky sometimes, because Python imports are not
 always that simple.
 
-Currently the import process uses ``imp`` to find modules. In the future, it's
-a goal to use ``importlib`` for this purpose. There's a `pull request
-<https://github.com/davidhalter/jedi/pull/109>`_ for that.
+This module uses imp for python up to 3.2 and importlib for python 3.3 on; the
+correct implementation is delegated to _compatibility.
 
 This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
-
 from __future__ import with_statement
 
 import os
 import pkgutil
-import imp
 import sys
 import itertools
 
+from jedi._compatibility import find_module
 from jedi import modules
+from jedi import common
 from jedi import debug
 from jedi import parsing_representation as pr
 from jedi import cache
@@ -123,11 +122,9 @@ class ImportPath(pr.Base):
 
                     if self.import_stmt.relative_count:
                         rel_path = self.get_relative_path() + '/__init__.py'
-                        try:
+                        with common.ignored(IOError):
                             m = modules.Module(rel_path)
                             names += m.parser.module.get_defined_names()
-                        except IOError:
-                            pass
             else:
                 if on_import_stmt and isinstance(scope, pr.Module) \
                                         and scope.path.endswith('__init__.py'):
@@ -238,26 +235,31 @@ class ImportPath(pr.Base):
 
             global imports_processed
             imports_processed += 1
+            importing = None
             if path is not None:
-                return imp.find_module(string, [path])
+                importing = find_module(string, [path])
             else:
                 debug.dbg('search_module', string, self.file_path)
                 # Override the sys.path. It works only good that way.
                 # Injecting the path directly into `find_module` did not work.
                 sys.path, temp = sys_path_mod, sys.path
                 try:
-                    i = imp.find_module(string)
+                    importing = find_module(string)
                 except ImportError:
                     sys.path = temp
                     raise
                 sys.path = temp
-                return i
+            
+            return importing
 
         if self.file_path:
             sys_path_mod = list(self.sys_path_with_modifications())
             sys_path_mod.insert(0, self.file_path)
         else:
             sys_path_mod = list(modules.get_sys_path())
+
+        def module_not_found():
+            raise ModuleNotFound('The module you searched has not been found')
 
         current_namespace = (None, None, None)
         # now execute those paths
@@ -270,19 +272,19 @@ class ImportPath(pr.Base):
                                 and len(self.import_path) == 1:
                     # follow `from . import some_variable`
                     rel_path = self.get_relative_path()
-                    try:
+                    with common.ignored(ImportError):
                         current_namespace = follow_str(rel_path, '__init__')
-                    except ImportError:
-                        pass
                 if current_namespace[1]:
                     rest = self.import_path[i:]
                 else:
-                    raise ModuleNotFound(
-                            'The module you searched has not been found')
+                    module_not_found()
+
+        if current_namespace == (None, None, False):
+            module_not_found()
 
         sys_path_mod.pop(0)  # TODO why is this here?
         path = current_namespace[1]
-        is_package_directory = current_namespace[2][2] == imp.PKG_DIRECTORY
+        is_package_directory = current_namespace[2]
 
         f = None
         if is_package_directory or current_namespace[0]:

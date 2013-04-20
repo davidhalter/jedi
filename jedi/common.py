@@ -163,3 +163,13 @@ def indent_block(text, indention='    '):
         text = text[:-1]
     lines = text.split('\n')
     return '\n'.join(map(lambda s: indention + s, lines)) + temp
+
+
+@contextlib.contextmanager
+def ignored(*exceptions):
+    """Context manager that ignores all of the specified exceptions. This will
+    be in the standard library starting with Python 3.4."""
+    try:
+        yield
+    except exceptions:
+        pass
