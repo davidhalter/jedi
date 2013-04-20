@@ -38,7 +38,7 @@ from __future__ import with_statement
 
 import os
 import re
-import tokenize
+import tokenizer as tokenize
 
 from jedi._compatibility import next, literal_eval, cleandoc, Python3Method, \
                             encoding, property, unicode, is_py3k
