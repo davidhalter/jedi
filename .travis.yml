@@ -1,6 +1,5 @@
 language: python
 env:
-    - TOXENV=py25 PIP_INSECURE=t
     - TOXENV=py26
     - TOXENV=py27
     - TOXENV=py32
