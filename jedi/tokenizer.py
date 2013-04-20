@@ -27,11 +27,14 @@ operators.  Additionally, all token lists start with an ENCODING token
 which tells you which encoding was used to decode the bytes stream.
 """
 
+import string
 import re
 from token import *
 from codecs import lookup, BOM_UTF8
 import collections
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
+
+namechars = string.ascii_letters + '_'
 
 
 COMMENT = N_TOKENS
@@ -388,7 +391,7 @@ def _tokenize(readline, encoding):
                         break
                     else:                                  # ordinary string
                         yield TokenInfo(STRING, token, spos, epos, line)
-                elif initial.isidentifier():               # ordinary name
+                elif initial in namechars:                 # ordinary name
                     yield TokenInfo(NAME, token, spos, epos, line)
                 elif initial == '\\':                      # continued stmt
                     continued = 1
@@ -400,9 +403,15 @@ def _tokenize(readline, encoding):
                     yield TokenInfo(OP, token, spos, epos, line)
             else:
                 yield TokenInfo(ERRORTOKEN, line[pos],
-                           (lnum, pos), (lnum, pos+1), line)
+                           (lnum, pos), (lnum, pos + 1), line)
                 pos += 1
 
     for indent in indents[1:]:                 # pop remaining indent levels
         yield TokenInfo(DEDENT, '', (lnum, 0), (lnum, 0), '')
     yield TokenInfo(ENDMARKER, '', (lnum, 0), (lnum, 0), '')
+
+
+# An undocumented, backwards compatible, API for all the places in the standard
+# library that expect to be able to use tokenize with strings
+def generate_tokens(readline):
+    return _tokenize(readline, None)
