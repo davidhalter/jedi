@@ -5,7 +5,6 @@ import functools
 import tokenizer as tokenize
 
 from jedi._compatibility import next, reraise
-from jedi import debug
 from jedi import settings
 
 
@@ -101,28 +100,7 @@ class NoErrorTokenizer(object):
     def __next__(self):
         if self.closed:
             raise MultiLevelStopIteration()
-        try:
-            self.current = next(self.gen)
-        except tokenize.TokenError:
-            # We just ignore this error, I try to handle it earlier - as
-            # good as possible
-            debug.warning('parentheses not closed error')
-            return self.__next__()
-        except IndentationError:
-            # This is an error, that tokenize may produce, because the code
-            # is not indented as it should. Here it just ignores this line
-            # and restarts the parser.
-            # (This is a rather unlikely error message, for normal code,
-            # tokenize seems to be pretty tolerant)
-            debug.warning('indentation error on line %s, ignoring it' %
-                                                        self.current[2][0])
-            # add the starting line of the last position
-            self.offset = (self.offset[0] + self.current[2][0],
-                           self.current[2][1])
-            self.gen = PushBackIterator(tokenize.generate_tokens(
-                                                                self.readline))
-            return self.__next__()
-
+        self.current = next(self.gen)
         c = list(self.current)
 
         # stop if a new class or definition is started at position zero.
