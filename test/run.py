@@ -100,7 +100,8 @@ import os
 import re
 
 import jedi
-from jedi._compatibility import unicode, StringIO, reduce, is_py25
+from jedi._compatibility import unicode, StringIO, reduce, is_py25, \
+                                literal_eval
 
 
 TEST_COMPLETIONS = 0
@@ -110,7 +111,6 @@ TEST_USAGES = 3
 
 
 class IntegrationTestCase(object):
-
     def __init__(self, test_type, correct, line_nr, column, start, line,
                  path=None):
         self.test_type = test_type
@@ -129,6 +129,80 @@ class IntegrationTestCase(object):
 
     def script(self):
         return jedi.Script(self.source, self.line_nr, self.column, self.path)
+
+    def run(self, compare_cb):
+        testers = {
+            TEST_COMPLETIONS: self.run_completion,
+            TEST_DEFINITIONS: self.run_definition,
+            TEST_ASSIGNMENTS: self.run_goto,
+            TEST_USAGES: self.run_related_name,
+        }
+        return testers[self.test_type](compare_cb)
+
+    def run_completion(self, compare_cb):
+        completions = self.script().complete()
+        #import cProfile; cProfile.run('script.complete()')
+
+        comp_str = set([c.word for c in completions])
+        return compare_cb(self, comp_str, set(literal_eval(self.correct)))
+
+    def run_definition(self, compare_cb):
+        def definition(correct, correct_start, path):
+            def defs(line_nr, indent):
+                s = jedi.Script(script.source, line_nr, indent, path)
+                return set(s.definition())
+
+            should_be = set()
+            number = 0
+            for index in re.finditer('(?: +|$)', correct):
+                if correct == ' ':
+                    continue
+                # -1 for the comment, +3 because of the comment start `#? `
+                start = index.start()
+                number += 1
+                try:
+                    should_be |= defs(self.line_nr - 1, start + correct_start)
+                except Exception:
+                    print('could not resolve %s indent %s'
+                          % (self.line_nr - 1, start))
+                    raise
+            # because the objects have different ids, `repr`, then compare.
+            should_str = set(r.desc_with_module for r in should_be)
+            if len(should_str) < number:
+                raise Exception('Solution @%s not right, '
+                   'too few test results: %s' % (self.line_nr - 1, should_str))
+            return should_str
+
+        script = self.script()
+        should_str = definition(self.correct, self.start, script.source_path)
+        result = script.definition()
+        is_str = set(r.desc_with_module for r in result)
+        return compare_cb(self, is_str, should_str)
+
+    def run_goto(self, compare_cb):
+        result = self.script().goto()
+        comp_str = str(sorted(str(r.description) for r in result))
+        return compare_cb(self, comp_str, self.correct)
+
+    def run_related_name(self, compare_cb):
+        result = self.script().related_names()
+        self.correct = self.correct.strip()
+        compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
+                                                            for r in result)
+        wanted = []
+        if not self.correct:
+            positions = []
+        else:
+            positions = literal_eval(self.correct)
+        for pos_tup in positions:
+            if type(pos_tup[0]) == str:
+                # this means that there is a module specified
+                wanted.append(pos_tup)
+            else:
+                wanted.append(('renaming', self.line_nr + pos_tup[0],
+                                pos_tup[1]))
+
+        return compare_cb(self, compare, sorted(wanted))
 
 
 def collect_file_tests(lines, lines_to_execute):
