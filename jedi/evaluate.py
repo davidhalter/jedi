@@ -68,21 +68,22 @@ backtracking algorithm.
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
-from _compatibility import next, hasattr, is_py3k, unicode, utf8
+from __future__ import with_statement
 
 import sys
 import itertools
 
-import common
-import cache
-import parsing_representation as pr
+from jedi._compatibility import next, hasattr, is_py3k, unicode, reraise
+from jedi import common
+from jedi import cache
+from jedi import parsing_representation as pr
+from jedi import debug
 import evaluate_representation as er
-import debug
+import recursion
+import docstrings
 import builtin
 import imports
-import recursion
 import dynamic
-import docstrings
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):
@@ -179,7 +180,7 @@ def get_names_of_scope(scope, position=None, star_search=True,
                     yield scope, get_defined_names_for_position(scope,
                                                     position, in_func_scope)
             except StopIteration:
-                raise common.MultiLevelStopIteration('StopIteration raised')
+                reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
         if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
             # is a list comprehension
             yield scope, scope.get_set_vars(is_internal_call=True)
@@ -433,11 +434,9 @@ def find_name(scope, name_str, position=None, search_global=False,
             if isinstance(scope, (er.Instance, er.Class)) \
                                 and hasattr(r, 'get_descriptor_return'):
                 # handle descriptors
-                try:
+                with common.ignored(KeyError):
                     res_new += r.get_descriptor_return(scope)
                     continue
-                except KeyError:
-                    pass
             res_new.append(r)
         return res_new
 
@@ -466,19 +465,15 @@ def check_getattr(inst, name_str):
     # str is important to lose the NamePart!
     module = builtin.Builtin.scope
     name = pr.Call(module, str(name_str), pr.Call.STRING, (0, 0), inst)
-    try:
+    with common.ignored(KeyError):
         result = inst.execute_subscope_by_name('__getattr__', [name])
-    except KeyError:
-        pass
     if not result:
         # this is a little bit special. `__getattribute__` is executed
         # before anything else. But: I know no use case, where this
         # could be practical and the jedi would return wrong types. If
         # you ever have something, let me know!
-        try:
+        with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattribute__', [name])
-        except KeyError:
-            pass
     return result
 
 
@@ -540,10 +535,8 @@ def assign_tuples(tup, results, seek_name):
                 debug.warning("invalid tuple lookup %s of result %s in %s"
                                     % (tup, results, seek_name))
             else:
-                try:
+                with common.ignored(IndexError):
                     types += func(index)
-                except IndexError:
-                    pass
         return types
 
     result = []
@@ -585,12 +578,7 @@ def follow_statement(stmt, seek_name=None):
     commands = stmt.get_commands()
     debug.dbg('calls: %s' % commands)
 
-    try:
-        result = follow_call_list(commands)
-    except AttributeError:
-        # This is so evil! But necessary to propagate errors. The attribute
-        # errors here must not be catched, because they shouldn't exist.
-        raise common.MultiLevelAttributeError(sys.exc_info())
+    result = follow_call_list(commands)
 
     # Assignment checking is only important if the statement defines multiple
     # variables.
@@ -602,6 +590,7 @@ def follow_statement(stmt, seek_name=None):
     return set(result)
 
 
+@common.rethrow_uncaught
 def follow_call_list(call_list, follow_array=False):
     """
     `call_list` can be either `pr.Array` or `list of list`.
@@ -656,11 +645,9 @@ def follow_call_list(call_list, follow_array=False):
                             call = next(calls_iterator)
                         except StopIteration:
                             break
-                        try:
+                        with common.ignored(AttributeError):
                             if str(call.name) == 'else':
                                 break
-                        except AttributeError:
-                            pass
                     continue
                 result += follow_call(call)
             elif call == '*':

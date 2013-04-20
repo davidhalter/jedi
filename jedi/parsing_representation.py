@@ -33,15 +33,16 @@ statements in this scope.  Check this out:
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 """
+from __future__ import with_statement
 
 import os
 import re
-import tokenize
+import tokenizer as tokenize
 
-from _compatibility import next, literal_eval, cleandoc, Python3Method, \
+from jedi._compatibility import next, literal_eval, cleandoc, Python3Method, \
                             encoding, property, unicode, is_py3k
-import common
-import debug
+from jedi import common
+from jedi import debug
 
 
 class Base(object):
@@ -564,8 +565,10 @@ class Flow(Scope):
     @parent.setter
     def parent(self, value):
         self._parent = value
-        if self.next:
+        try:
             self.next.parent = value
+        except AttributeError:
+            return
 
     def get_code(self, first_indent=False, indention='    '):
         stmts = []
@@ -1282,11 +1285,8 @@ class Array(Call):
         inner = []
         for i, stmt in enumerate(self.values):
             s = ''
-            try:
+            with common.ignored(IndexError):
                 key = self.keys[i]
-            except IndexError:
-                pass
-            else:
                 s += key.get_code(new_line=False) + ': '
             s += stmt.get_code(new_line=False)
             inner.append(s)

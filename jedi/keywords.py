@@ -1,9 +1,12 @@
-import keyword
-
-from _compatibility import is_py3k
-import builtin
+from __future__ import with_statement
 
 import pydoc
+import keyword
+
+from jedi._compatibility import is_py3k
+from jedi import common
+import builtin
+
 try:
     from pydoc_data import topics as pydoc_topics
 except ImportError:
@@ -63,12 +66,10 @@ def imitate_pydoc(string):
     # with unicode strings)
     string = str(string)
     h = pydoc.help
-    try:
+    with common.ignored(KeyError):
         # try to access symbols
         string = h.symbols[string]
         string, _, related = string.partition(' ')
-    except KeyError:
-        pass
 
     get_target = lambda s: h.topics.get(s, h.keywords.get(s))
     while isinstance(string, str):

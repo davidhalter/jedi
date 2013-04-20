@@ -1,10 +1,11 @@
 """ A universal module with functions / classes without dependencies. """
+import sys
 import contextlib
-import tokenize
+import functools
+import tokenizer as tokenize
 
-from _compatibility import next
-import debug
-import settings
+from jedi._compatibility import next, reraise
+from jedi import settings
 
 FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally']
 
@@ -16,23 +17,47 @@ class MultiLevelStopIteration(Exception):
     pass
 
 
-class MultiLevelAttributeError(Exception):
+class UncaughtAttributeError(Exception):
     """
     Important, because `__getattr__` and `hasattr` catch AttributeErrors
     implicitly. This is really evil (mainly because of `__getattr__`).
     `hasattr` in Python 2 is even more evil, because it catches ALL exceptions.
-    Therefore this class has to be a `BaseException` and not an `Exception`.
-    But because I rewrote hasattr, we can now switch back to `Exception`.
+    Therefore this class originally had to be derived from `BaseException`
+    instead of `Exception`.  But because I removed relevant `hasattr` from
+    the code base, we can now switch back to `Exception`.
 
     :param base: return values of sys.exc_info().
     """
-    def __init__(self, base=None):
-        self.base = base
 
-    def __str__(self):
-        import traceback
-        tb = traceback.format_exception(*self.base)
-        return 'Original:\n\n' + ''.join(tb)
+
+def rethrow_uncaught(func):
+    """
+    Re-throw uncaught `AttributeError`.
+
+    Usage:  Put ``@rethrow_uncaught`` in front of the function
+    which does **not** suppose to raise `AttributeError`.
+
+    AttributeError is easily get caught by `hasattr` and another
+    ``except AttributeError`` clause.  This becomes problem when you use
+    a lot of "dynamic" attributes (e.g., using ``@property``) because you
+    can't distinguish if the property does not exist for real or some code
+    inside of the "dynamic" attribute through that error.  In a well
+    written code, such error should not exist but getting there is very
+    difficult.  This decorator is to help us getting there by changing
+    `AttributeError` to `UncaughtAttributeError` to avoid unexpected catch.
+    This helps us noticing bugs earlier and facilitates debugging.
+
+    .. note:: Treating StopIteration here is easy.
+              Add that feature when needed.
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwds):
+        try:
+            return func(*args, **kwds)
+        except AttributeError:
+            exc_info = sys.exc_info()
+            reraise(UncaughtAttributeError(exc_info[1]), exc_info[2])
+    return wrapper
 
 
 class PushBackIterator(object):
@@ -84,29 +109,10 @@ class NoErrorTokenizer(object):
     def __next__(self):
         if self.closed:
             raise MultiLevelStopIteration()
-        try:
-            self.last_previous = self.previous
-            self.previous = self.current
-            self.current = next(self.gen)
-        except tokenize.TokenError:
-            # We just ignore this error, I try to handle it earlier - as
-            # good as possible
-            debug.warning('parentheses not closed error')
-            return self.__next__()
-        except IndentationError:
-            # This is an error, that tokenize may produce, because the code
-            # is not indented as it should. Here it just ignores this line
-            # and restarts the parser.
-            # (This is a rather unlikely error message, for normal code,
-            # tokenize seems to be pretty tolerant)
-            debug.warning('indentation error on line %s, ignoring it' %
-                                                        self.current[2][0])
-            # add the starting line of the last position
-            self.offset = self.current[2]
-            self.gen = PushBackIterator(tokenize.generate_tokens(
-                                                                self.readline))
-            return self.__next__()
 
+        self.last_previous = self.previous
+        self.previous = self.current
+        self.current = next(self.gen)
         c = list(self.current)
 
         if c[0] == tokenize.ENDMARKER:
@@ -187,3 +193,13 @@ def indent_block(text, indention='    '):
         text = text[:-1]
     lines = text.split('\n')
     return '\n'.join(map(lambda s: indention + s, lines)) + temp
+
+
+@contextlib.contextmanager
+def ignored(*exceptions):
+    """Context manager that ignores all of the specified exceptions. This will
+    be in the standard library starting with Python 3.4."""
+    try:
+        yield
+    except exceptions:
+        pass

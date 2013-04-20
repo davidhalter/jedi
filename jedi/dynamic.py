@@ -55,16 +55,17 @@ from __future__ import with_statement
 
 import os
 
-import cache
-import parsing_representation as pr
-import evaluate_representation as er
-import modules
-import evaluate
-import settings
-import debug
-import imports
+from jedi import cache
+from jedi import parsing_representation as pr
+from jedi import modules
+from jedi import settings
+from jedi import common
+from jedi import debug
+from jedi import fast_parser
 import api_classes
-import fast_parser
+import evaluate
+import imports
+import evaluate_representation as er
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -487,10 +488,8 @@ def related_name_add_import_modules(definitions, search_name):
     for d in definitions:
         if isinstance(d.parent, pr.Import):
             s = imports.ImportPath(d.parent, direct_resolve=True)
-            try:
+            with common.ignored(IndexError):
                 new.add(s.follow(is_goto=True)[0])
-            except IndexError:
-                pass
     return set(definitions) | new
 
 

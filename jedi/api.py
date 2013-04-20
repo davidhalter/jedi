@@ -7,29 +7,27 @@ catch :exc:`NotFoundError` which is being raised if your completion is not
 possible.
 """
 from __future__ import with_statement
-__all__ = ['Script', 'NotFoundError', 'set_debug_function', '_quick_complete']
 
 import re
 import os
 import warnings
 
-import parsing
-import parsing_representation as pr
+from jedi import parsing
+from jedi import parsing_representation as pr
+from jedi import debug
+from jedi import settings
+from jedi import helpers
+from jedi import common
+from jedi import cache
+from jedi import modules
+from jedi._compatibility import next, unicode
+import evaluate
+import keywords
+import api_classes
 import evaluate_representation as er
 import dynamic
 import imports
-import evaluate
-import modules
-import debug
-import settings
-import keywords
-import helpers
-import common
 import builtin
-import api_classes
-import cache
-
-from _compatibility import next, unicode
 
 
 class NotFoundError(Exception):
@@ -76,6 +74,7 @@ class Script(object):
         """ lazy parser."""
         return self._module.parser
 
+    @api_classes._clear_caches_after_call
     def complete(self):
         """
         Return :class:`api_classes.Completion` objects. Those objects contain
@@ -209,6 +208,7 @@ class Script(object):
         warnings.warn("Use line instead.", DeprecationWarning)
         return self.definition()
 
+    @api_classes._clear_caches_after_call
     def definition(self):
         """
         Return the definitions of a the path under the cursor. This is not a
@@ -270,8 +270,9 @@ class Script(object):
 
         d = set([api_classes.Definition(s) for s in scopes
                     if not isinstance(s, imports.ImportPath._GlobalNamespace)])
-        return sorted(d, key=lambda x: (x.module_path, x.start_pos))
+        return self._sorted_defs(d)
 
+    @api_classes._clear_caches_after_call
     def goto(self):
         """
         Return the first definition found by goto. Imports and statements
@@ -282,7 +283,7 @@ class Script(object):
         :rtype: list of :class:`api_classes.Definition`
         """
         d = [api_classes.Definition(d) for d in set(self._goto()[0])]
-        return sorted(d, key=lambda x: (x.module_path, x.start_pos))
+        return self._sorted_defs(d)
 
     def _goto(self, add_import_name=False):
         """
@@ -334,6 +335,7 @@ class Script(object):
                     definitions = [user_stmt]
         return definitions, search_name
 
+    @api_classes._clear_caches_after_call
     def related_names(self, additional_module_paths=()):
         """
         Return :class:`api_classes.RelatedName` objects, which contain all
@@ -367,7 +369,7 @@ class Script(object):
             else:
                 names.append(api_classes.RelatedName(d.names[-1], d))
 
-        return sorted(set(names), key=lambda x: (x.module_path, x.start_pos))
+        return self._sorted_defs(set(names))
 
     def get_in_function_call(self):
         """
@@ -378,6 +380,7 @@ class Script(object):
         warnings.warn("Use line instead.", DeprecationWarning)
         return self.function_definition()
 
+    @api_classes._clear_caches_after_call
     def function_definition(self):
         """
         Return the function object of the call you're currently in.
@@ -487,8 +490,11 @@ class Script(object):
         match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
         return match.groups()
 
-    def __del__(self):
-        api_classes._clear_caches()
+    @staticmethod
+    def _sorted_defs(d):
+        # Note: `or ''` below is required because `module_path` could be
+        #       None and you can't compare None and str in Python 3.
+        return sorted(d, key=lambda x: (x.module_path or '', x.start_pos))
 
 
 def defined_names(source, source_path=None, source_encoding='utf-8'):
@@ -507,7 +513,7 @@ def defined_names(source, source_path=None, source_encoding='utf-8'):
         modules.source_to_unicode(source, source_encoding),
         module_path=source_path,
     )
-    return api_classes.defined_names(parser.scope)
+    return api_classes._defined_names(parser.scope)
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,

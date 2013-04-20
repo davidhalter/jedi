@@ -22,7 +22,7 @@ possible to access functions like ``list`` and ``int`` directly, the same way
 """
 
 from __future__ import with_statement
-from _compatibility import exec_function, is_py3k
+from jedi._compatibility import exec_function, is_py3k
 
 import re
 import sys
@@ -32,11 +32,11 @@ if is_py3k:
 import types
 import inspect
 
-import common
-import debug
-import parsing
+from jedi import common
+from jedi import debug
+from jedi import parsing
+from jedi import modules
 import evaluate
-import modules
 
 
 class BuiltinModule(modules.CachedModule):

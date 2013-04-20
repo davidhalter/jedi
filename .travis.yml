@@ -1,17 +1,19 @@
 language: python
-python:
-    - 2.5
-    - 2.6
-    - 2.7
-    - 3.2
+env:
+    - TOXENV=py26
+    - TOXENV=py27
+    - TOXENV=py32
+    - TOXENV=py33
+    - TOXENV=cov
+matrix:
+    allow_failures:
+        - env: TOXENV=cov
 install:
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then
-      pip install --use-mirrors simplejson unittest2;
-      fi
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then
-      pip install --use-mirrors unittest2;
-      fi
-    - pip install --use-mirrors nose
+    - pip install --quiet --use-mirrors tox
 script:
-    - cd test
-    - ./test.sh
+    - tox
+after_script:
+    - if [ $TOXENV == "cov" ]; then
+      pip install --quiet --use-mirrors coveralls;
+      coveralls;
+      fi

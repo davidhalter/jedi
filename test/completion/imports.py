@@ -154,9 +154,9 @@ mod1.a
 
 from .. import base
 #? int()
-base.tests_fail
+base.sample_int
 
-from ..base import tests_fail as f
+from ..base import sample_int as f
 #? int()
 f
 

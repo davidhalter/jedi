@@ -1,6 +1,9 @@
+from __future__ import with_statement
+
 import copy
 
-import parsing_representation as pr
+from jedi import common
+from jedi import parsing_representation as pr
 
 
 def fast_parent_copy(obj):
@@ -21,13 +24,11 @@ def fast_parent_copy(obj):
 
         before = ()
         for cls in new_obj.__class__.__mro__:
-            try:
+            with common.ignored(AttributeError):
                 if before == cls.__slots__:
                     continue
                 before = cls.__slots__
                 items += [(n, getattr(new_obj, n)) for n in before]
-            except AttributeError:
-                pass
 
         for key, value in items:
             # replace parent (first try _parent and then parent)
@@ -35,10 +36,8 @@ def fast_parent_copy(obj):
                 if key == 'parent' and '_parent' in items:
                     # parent can be a property
                     continue
-                try:
+                with common.ignored(KeyError):
                     setattr(new_obj, key, new_elements[value])
-                except KeyError:
-                    pass
             elif key in ['parent_function', 'use_as_parent', '_sub_module']:
                 continue
             elif isinstance(value, list):

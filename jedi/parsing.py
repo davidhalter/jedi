@@ -15,14 +15,15 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
-from _compatibility import next, StringIO
+from __future__ import with_statement
 
-import tokenize
+import tokenizer as tokenize
 import keyword
 
-import debug
-import common
-import parsing_representation as pr
+from jedi._compatibility import next, StringIO
+from jedi import debug
+from jedi import common
+from jedi import parsing_representation as pr
 
 
 class ParserError(Exception):
@@ -395,10 +396,11 @@ class Parser(object):
             stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
                               first_pos, self.end_pos)
 
+            stmt.parent = self.top_module
             self._check_user_stmt(stmt)
 
         # Attribute docstring (PEP 257) support
-        try:
+        with common.ignored(IndexError, AttributeError):
             # If string literal is being parsed
             first_tok = stmt.token_list[0]
             if (not stmt.set_vars and
@@ -407,8 +409,6 @@ class Parser(object):
                 first_tok[0] == tokenize.STRING):
                 # ... then set it as a docstring
                 self.scope.statements[-1].add_docstr(first_tok[1])
-        except (IndexError, AttributeError):
-            pass
 
         if tok in always_break + not_first_break:
             self._gen.push_last_back()

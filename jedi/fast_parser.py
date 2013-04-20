@@ -6,11 +6,11 @@ finished (and still not working as I want), I won't document it any further.
 import re
 import operator
 
-from _compatibility import use_metaclass, reduce, property
-import settings
-import parsing
-import parsing_representation as pr
-import cache
+from jedi._compatibility import use_metaclass, reduce, property
+from jedi import settings
+from jedi import parsing
+from jedi import parsing_representation as pr
+from jedi import cache
 import common
 
 
