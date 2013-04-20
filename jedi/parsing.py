@@ -17,7 +17,7 @@ complexity of the ``Parser`` (there's another parser sitting inside
 """
 from __future__ import with_statement
 
-import tokenize
+import tokenizer as tokenize
 import keyword
 
 from jedi._compatibility import next, StringIO
@@ -394,6 +394,7 @@ class Parser(object):
             stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
                               first_pos, self.end_pos)
 
+            stmt.parent = self.top_module
             self._check_user_stmt(stmt)
 
         # Attribute docstring (PEP 257) support
