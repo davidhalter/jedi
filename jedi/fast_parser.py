@@ -175,10 +175,10 @@ class ParserNode(object):
             items = getattr(parser.module, c)
             if set_parent:
                 for i in items:
-                    i.parent = scope
+                    i.parent = scope.use_as_parent
                     try:
                         for d in i.decorators:
-                            d.parent = scope
+                            d.parent = scope.use_as_parent
                     except AttributeError:
                         pass
             content += items
