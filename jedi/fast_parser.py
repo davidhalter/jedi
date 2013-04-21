@@ -176,6 +176,11 @@ class ParserNode(object):
             if set_parent:
                 for i in items:
                     i.parent = scope
+                    try:
+                        for d in i.decorators:
+                            d.parent = scope
+                    except AttributeError:
+                        pass
             content += items
         if str(parser.module.name) == 'ordering':
             #print scope.subscopes
