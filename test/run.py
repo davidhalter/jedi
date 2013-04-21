@@ -332,7 +332,8 @@ if __name__ == '__main__':
         cases += collect_dir_tests(completion_test_dir, test_files, True)
 
     def file_change(current, tests, fails):
-        current = os.path.basename(current)
+        if current is not None:
+            current = os.path.basename(current)
         print('%s \t\t %s tests and %s fails.' % (current, tests, fails))
 
     def report(case, actual, desired):
@@ -340,7 +341,7 @@ if __name__ == '__main__':
             return 0
         else:
             print("\ttest fail @%d, actual = %s, desired = %s"
-                    % (case.line_nr, actual, desired))
+                    % (case.line_nr - 1, actual, desired))
             return 1
 
     current = cases[0].path if cases else None
