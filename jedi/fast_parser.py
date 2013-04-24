@@ -176,11 +176,9 @@ class ParserNode(object):
             if set_parent:
                 for i in items:
                     i.parent = scope.use_as_parent
-                    try:
+                    if isinstance(i, (pr.Function, pr.Class)):
                         for d in i.decorators:
                             d.parent = scope.use_as_parent
-                    except AttributeError:
-                        pass
             content += items
         if str(parser.module.name) == 'ordering':
             #print scope.subscopes
@@ -263,7 +261,10 @@ class FastParser(use_metaclass(CachedFastParser)):
         def add_part():
             txt = '\n'.join(current_lines)
             if txt:
-                parts.append(txt)
+                if add_to_last and parts:
+                    parts[-1] += '\n' + txt
+                else:
+                    parts.append(txt)
                 current_lines[:] = []
 
         r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(common.FLOWS)
@@ -275,6 +276,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         current_indent = 0
         new_indent = False
         in_flow = False
+        add_to_last = False
         # All things within flows are simply being ignored.
         for i, l in enumerate(lines):
             # check for dedents
@@ -289,6 +291,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 new_indent = False
                 if not in_flow:
                     add_part()
+                    add_to_last = False
                 in_flow = False
             elif new_indent:
                 current_indent = indent
@@ -301,11 +304,14 @@ class FastParser(use_metaclass(CachedFastParser)):
                     in_flow = m.group(1) in common.FLOWS
                     if not is_decorator and not in_flow:
                         add_part()
-                        current_lines = []
+                        add_to_last = False
                     is_decorator = '@' == m.group(1)
                     if not is_decorator:
                         current_indent += 1  # it must be higher
                         new_indent = True
+                elif is_decorator:
+                    is_decorator = False
+                    add_to_last = True
 
             current_lines.append(l)
         add_part()
@@ -379,10 +385,6 @@ class FastParser(use_metaclass(CachedFastParser)):
             start += len(code_part) + 1  # +1 for newline
 
         #print(self.parsers[0].module.get_code())
-        #for p in self.parsers:
-        #    print(p.module.get_code())
-        #    print(p.module.start_pos, p.module.end_pos)
-        #exit()
         del code
 
     def _get_parser(self, code, parser_code, line_offset, nodes):
