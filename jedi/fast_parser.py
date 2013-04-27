@@ -4,9 +4,8 @@ anything changes, it only reparses the changed parts. But because it's not
 finished (and still not working as I want), I won't document it any further.
 """
 import re
-import operator
 
-from jedi._compatibility import use_metaclass, reduce, property
+from jedi._compatibility import use_metaclass, property
 from jedi import settings
 from jedi import parsing
 from jedi import parsing_representation as pr
@@ -298,12 +297,6 @@ class FastParser(use_metaclass(CachedFastParser)):
 
             current_lines.append(l)
         add_part()
-
-        for p in parts:
-            #print '#####################################'
-            #print p
-            #print len(p.splitlines())
-            pass
 
         return parts
 
