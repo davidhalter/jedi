@@ -344,10 +344,17 @@ if __name__ == '__main__':
                     % (case.line_nr - 1, actual, desired))
             return 1
 
+    import traceback
     current = cases[0].path if cases else None
     count = fails = 0
     for c in cases:
-        if c.run(report):
+        try:
+            if c.run(report):
+                tests_fail += 1
+                fails += 1
+        except Exception:
+            traceback.print_exc()
+            print("\ttest fail @%d" % (c.line_nr - 1))
             tests_fail += 1
             fails += 1
         count += 1
