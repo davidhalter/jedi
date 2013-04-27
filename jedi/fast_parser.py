@@ -140,6 +140,7 @@ class ParserNode(object):
         for key, c in self._contents.items():
             setattr(scope, key, c)
         scope.is_generator = self._is_generator
+        self.parser.user_scope = None
 
         for c in self.children:
             c.reset_contents()
@@ -180,9 +181,9 @@ class ParserNode(object):
                         for d in i.decorators:
                             d.parent = scope.use_as_parent
             content += items
-        if str(parser.module.name) == 'ordering':
-            #print scope.subscopes
-            pass
+        if isinstance(parser.user_scope, pr.SubModule) \
+                and parser.start_pos <= parser.user_position < parser.end_pos:
+            parser.user_scope = scope
         scope.is_generator |= parser.module.is_generator
 
     def add_node(self, node):
