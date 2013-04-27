@@ -331,6 +331,10 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def _parse(self, code):
         """ :type code: str """
+        def empty_parser():
+            new, temp = self._get_parser('', '', 0, [])
+            return new
+
         parts = self._split_parts(code)
         self.parsers[:] = []
 
@@ -338,6 +342,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         start = 0
         p = None
         is_first = True
+
         for code_part in parts:
             lines = code_part.count('\n') + 1
             if is_first or line_offset >= p.end_pos[0]:
@@ -360,7 +365,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 if is_first and p.module.subscopes:
                     # special case, we cannot use a function subscope as a
                     # base scope, subscopes would save all the other contents
-                    new, temp = self._get_parser('', '', 0, [])
+                    new = empty_parser()
                     if self.current_node is None:
                         self.current_node = ParserNode(new, code)
                     else:
@@ -388,6 +393,9 @@ class FastParser(use_metaclass(CachedFastParser)):
 
             line_offset += lines
             start += len(code_part) + 1  # +1 for newline
+
+        if not self.parsers:
+            self.parsers.append(empty_parser())
 
         #print(self.parsers[0].module.get_code())
         del code
