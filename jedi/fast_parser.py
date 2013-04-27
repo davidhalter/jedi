@@ -19,7 +19,7 @@ SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
 
 class Module(pr.Simple, pr.Module):
     def __init__(self, parsers):
-        self._end_pos = None, None
+        self.end_pos = None, None
         super(Module, self).__init__(self, (1, 0))
         self.parsers = parsers
         self.reset_caches()
@@ -77,16 +77,6 @@ class Module(pr.Simple, pr.Module):
     def start_pos(self):
         """ ignore """
         raise NotImplementedError('TODO remove - just a check if everything works fine.')
-
-    @property
-    def end_pos(self):
-        return self._end_pos
-
-    @end_pos.setter
-    def end_pos(self, value):
-        if None in self._end_pos \
-                or None not in value and self._end_pos < value:
-            self._end_pos = value
 
     def __repr__(self):
         return "<%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -396,6 +386,9 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         if not self.parsers:
             self.parsers.append(empty_parser())
+
+
+        self.module.end_pos = self.parsers[-1].end_pos
 
         #print(self.parsers[0].module.get_code())
         del code
