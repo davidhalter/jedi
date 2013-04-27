@@ -19,10 +19,12 @@ SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
 
 class Module(pr.Simple, pr.Module):
     def __init__(self, parsers):
-        self.end_pos = None, None
         super(Module, self).__init__(self, (1, 0))
         self.parsers = parsers
         self.reset_caches()
+
+        self.start_pos = 1, 0
+        self.end_pos = None, None
 
     def reset_caches(self):
         """ This module does a whole lot of caching, because it uses different
@@ -67,16 +69,6 @@ class Module(pr.Simple, pr.Module):
 
             self.cache[key] = dct
         return self.cache[key]
-
-    @property
-    def start_pos(self):
-        """ overwrite start_pos of Simple """
-        return 1, 0
-
-    @start_pos.setter
-    def start_pos(self):
-        """ ignore """
-        raise NotImplementedError('TODO remove - just a check if everything works fine.')
 
     def __repr__(self):
         return "<%s: %s@%s-%s>" % (type(self).__name__, self.name,
