@@ -98,14 +98,14 @@ Tests look like this::
 """
 import os
 import re
+from ast import literal_eval
 
 if __name__ == '__main__':
     import sys
     sys.path.insert(0, '..')
 
 import jedi
-from jedi._compatibility import unicode, StringIO, reduce, is_py25, \
-                                literal_eval
+from jedi._compatibility import unicode, reduce, StringIO
 
 
 TEST_COMPLETIONS = 0
@@ -255,11 +255,6 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
         files_to_execute = [a for a in test_files.items() if a[0] in f_name]
         lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
         if f_name.endswith(".py") and (not test_files or files_to_execute):
-            # for python2.5 certain tests are not being done, because it
-            # only has these features partially.
-            if is_py25 and f_name in ['generators.py', 'types.py']:
-                continue
-
             skip = None
             if check_thirdparty:
                 lib = f_name.replace('_.py', '')

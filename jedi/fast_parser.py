@@ -6,7 +6,7 @@ finished (and still not working as I want), I won't document it any further.
 import re
 import operator
 
-from jedi._compatibility import use_metaclass, reduce, property
+from jedi._compatibility import use_metaclass, reduce
 from jedi import settings
 from jedi import parsing
 from jedi import parsing_representation as pr
@@ -225,7 +225,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         if settings.fast_parser_always_reparse:
             self.parsers[:] = []
 
-        # dict comprehensions are not available in py2.5/2.6 :-(
+        # dict comprehensions are not available in 2.6 :-(
         hashes = dict((p.hash, p) for p in self.parsers)
 
         line_offset = 0

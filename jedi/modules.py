@@ -19,8 +19,9 @@ import re
 import tokenizer as tokenize
 import sys
 import os
+from ast import literal_eval
 
-from jedi._compatibility import exec_function, unicode, is_py25, literal_eval
+from jedi._compatibility import exec_function, unicode
 from jedi import cache
 from jedi import parsing
 from jedi import parsing_representation as pr
@@ -383,8 +384,7 @@ def source_to_unicode(source, encoding=None):
         http://docs.python.org/2/reference/lexical_analysis.html#encoding-\
                                                                 declarations
         """
-        byte_mark = '\xef\xbb\xbf' if is_py25 else \
-                                        literal_eval(r"b'\xef\xbb\xbf'")
+        byte_mark = literal_eval(r"b'\xef\xbb\xbf'")
         if source.startswith(byte_mark):
             # UTF-8 byte-order mark
             return 'utf-8'

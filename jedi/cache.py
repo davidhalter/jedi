@@ -21,6 +21,7 @@ from __future__ import with_statement
 import time
 import os
 import sys
+import json
 import hashlib
 try:
     import cPickle as pickle
@@ -28,7 +29,6 @@ except:
     import pickle
 import shutil
 
-from jedi._compatibility import json
 from jedi import settings
 from jedi import common
 from jedi import debug

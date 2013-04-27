@@ -11,11 +11,7 @@ try:
     from pydoc_data import topics as pydoc_topics
 except ImportError:
     # Python 2.6
-    try:
-        import pydoc_topics
-    except ImportError:
-        # Python 2.5
-        pydoc_topics = None
+    import pydoc_topics
 
 if is_py3k:
     keys = keyword.kwlist

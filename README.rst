@@ -75,6 +75,9 @@ Jedi really understands your Python code. For a comprehensive list what Jedi can
 do, see: https://jedi.readthedocs.org/en/latest/docs/features.html. A list of
 caveats can be found on the same page.
 
+You can run Jedi on cPython 2.6, 2.7, 3.2 or 3.3, but it should also
+understand/parse code older than those versions.
+
 Tips on how to use Jedi efficiently can be found here:
 https://jedi.readthedocs.org/en/latest/docs/recipes.html
 
@@ -102,14 +105,12 @@ The test suite depends on ``tox`` and ``pytest``::
 
 To run the tests for all supported Python versions::
 
-    PIP_INSECURE=t tox
+    tox
 
 If you want to test only a specific Python version (e.g. Python 2.7), it's as
 easy as ::
 
     tox -e py27
-
-The ``PIP_INSECURE=t`` env variable is only needed for the ``py25`` target.
 
 Tests are also run automatically on `Travis CI
 <https://travis-ci.org/davidhalter/jedi/>`_.
