@@ -76,7 +76,7 @@ class Module(pr.Simple, pr.Module):
     @start_pos.setter
     def start_pos(self):
         """ ignore """
-        raise AttributeError('TODO remove - just a check if everything works fine.')
+        raise NotImplementedError('TODO remove - just a check if everything works fine.')
 
     @property
     def end_pos(self):
@@ -205,6 +205,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         # set values like `pr.Module`.
         self.module_path = module_path
         self.user_position = user_position
+        self._user_scope = None
 
         self.current_node = None
         self.parsers = []
@@ -218,12 +219,12 @@ class FastParser(use_metaclass(CachedFastParser)):
         if self._user_scope is None:
             for p in self.parsers:
                 if p.user_scope:
-                    if self._user_scope is not None and not \
-                            isinstance(self._user_scope, pr.SubModule):
+                    if isinstance(p.user_scope, pr.SubModule):
                         continue
                     self._user_scope = p.user_scope
 
-        if isinstance(self._user_scope, pr.SubModule):
+        if isinstance(self._user_scope, pr.SubModule) \
+                    or self._user_scope is None:
             self._user_scope = self.module
         return self._user_scope
 
