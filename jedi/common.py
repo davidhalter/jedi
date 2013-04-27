@@ -85,10 +85,11 @@ class PushBackIterator(object):
 class NoErrorTokenizer(object):
     def __init__(self, readline, offset=(0, 0), is_fast_parser=False):
         self.readline = readline
-        self.gen = PushBackIterator(tokenize.generate_tokens(readline))
+        self.gen = tokenize.generate_tokens(readline)
         self.offset = offset
         self.closed = False
         self.is_first = True
+        self.push_backs = []
 
         # fast parser options
         self.is_fast_parser = is_fast_parser
@@ -100,7 +101,7 @@ class NoErrorTokenizer(object):
         self.first_stmt = True
 
     def push_last_back(self):
-        self.gen.push_back(self.current)
+        self.push_backs.append(self.current)
 
     def next(self):
         """ Python 2 Compatibility """
@@ -109,6 +110,8 @@ class NoErrorTokenizer(object):
     def __next__(self):
         if self.closed:
             raise MultiLevelStopIteration()
+        if self.push_backs:
+            return self.push_backs.pop(0)
 
         self.last_previous = self.previous
         self.previous = self.current
