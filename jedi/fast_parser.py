@@ -165,7 +165,10 @@ class ParserNode(object):
                 try:
                     el = module.imports[0]
                 except IndexError:
-                    el = module.returns[0]
+                    try:
+                        el = module.returns[0]
+                    except IndexError:
+                        return self.parent.indent + 1
         return el.start_pos[1]
 
     def _set_items(self, parser, set_parent=False):
