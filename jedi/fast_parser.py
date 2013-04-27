@@ -41,19 +41,21 @@ class Module(pr.Simple, pr.Module):
         return self.cache[key]
 
     def __getattr__(self, name):
-        operators = {'get_imports': operator.add,
-                     'get_code': operator.add,
-                     'get_set_vars': operator.add,
-                     'get_defined_names': operator.add,
-                     'is_empty': operator.and_
-                    }
-        properties = {'subscopes': operator.add,
-                      'imports': operator.add,
-                      'statements': operator.add,
-                      'imports': operator.add,
-                      'asserts': operator.add,
-                      'global_vars': operator.add
-                     }
+        operators = {
+            'get_imports': operator.add,
+            'get_code': operator.add,
+            'get_set_vars': operator.add,
+            'get_defined_names': operator.add,
+            'is_empty': operator.and_
+        }
+        properties = {
+            'subscopes': operator.add,
+            'imports': operator.add,
+            'statements': operator.add,
+            'imports': operator.add,
+            'asserts': operator.add,
+            'global_vars': operator.add
+        }
         if name in operators:
             return lambda *args, **kwargs: self._get(name, operators[name],
                                                         True, *args, **kwargs)

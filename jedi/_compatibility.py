@@ -18,6 +18,7 @@ is_py3k = sys.hexversion >= 0x03000000
 is_py33 = sys.hexversion >= 0x03030000
 is_py25 = sys.hexversion < 0x02060000
 
+
 def find_module_py33(string, path=None):
     mod_info = (None, None, None)
     loader = None
@@ -48,6 +49,7 @@ def find_module_py33(string, path=None):
 
     return mod_info
 
+
 def find_module_pre_py33(string, path=None):
     mod_info = None
     if path is None:
@@ -56,6 +58,7 @@ def find_module_pre_py33(string, path=None):
         mod_info = imp.find_module(string, path)
 
     return (mod_info[0], mod_info[1], mod_info[2][2] == imp.PKG_DIRECTORY)
+
 
 def find_module(string, path=None):
     """Provides information about a module.

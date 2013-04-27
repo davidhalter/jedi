@@ -1272,12 +1272,13 @@ class Array(Call):
         return zip(self.keys, self.values)
 
     def get_code(self):
-        map = {self.NOARRAY: '(%s)',
-               self.TUPLE: '(%s)',
-               self.LIST: '[%s]',
-               self.DICT: '{%s}',
-               self.SET: '{%s}'
-              }
+        map = {
+            self.NOARRAY: '(%s)',
+            self.TUPLE: '(%s)',
+            self.LIST: '[%s]',
+            self.DICT: '{%s}',
+            self.SET: '{%s}'
+        }
         inner = []
         for i, stmt in enumerate(self.values):
             s = ''

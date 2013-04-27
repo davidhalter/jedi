@@ -50,19 +50,20 @@ def _clear_caches_after_call(func):
 
 
 class BaseDefinition(object):
-    _mapping = {'posixpath': 'os.path',
-               'riscospath': 'os.path',
-               'ntpath': 'os.path',
-               'os2emxpath': 'os.path',
-               'macpath': 'os.path',
-               'genericpath': 'os.path',
-               'posix': 'os',
-               '_io': 'io',
-               '_functools': 'functools',
-               '_sqlite3': 'sqlite3',
-               '__builtin__': '',
-               'builtins': '',
-               }
+    _mapping = {
+        'posixpath': 'os.path',
+        'riscospath': 'os.path',
+        'ntpath': 'os.path',
+        'os2emxpath': 'os.path',
+        'macpath': 'os.path',
+        'genericpath': 'os.path',
+        'posix': 'os',
+        '_io': 'io',
+        '_functools': 'functools',
+        '_sqlite3': 'sqlite3',
+        '__builtin__': '',
+        'builtins': '',
+    }
 
     _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
         'argparse._ActionsContainer': 'argparse.ArgumentParser',

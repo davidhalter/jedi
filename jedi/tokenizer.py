@@ -26,15 +26,25 @@ ENCODING = N_TOKENS + 2
 tok_name[ENCODING] = 'ENCODING'
 N_TOKENS += 3
 
+
 class TokenInfo(collections.namedtuple('TokenInfo', 'type string start end line')):
     def __repr__(self):
         annotated_type = '%d (%s)' % (self.type, tok_name[self.type])
         return ('TokenInfo(type=%s, string=%r, start=%r, end=%r, line=%r)' %
                 self._replace(type=annotated_type))
 
-def group(*choices): return '(' + '|'.join(choices) + ')'
-def any(*choices): return group(*choices) + '*'
-def maybe(*choices): return group(*choices) + '?'
+
+def group(*choices):
+    return '(' + '|'.join(choices) + ')'
+
+
+def any(*choices):
+    return group(*choices) + '*'
+
+
+def maybe(*choices):
+    return group(*choices) + '?'
+
 
 # Note: we use unicode matching for names ("\w") but ascii matching for
 # number literals.
@@ -91,8 +101,10 @@ ContStr = group(r"[bB]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*" +
 PseudoExtras = group(r'\\\r?\n', Comment, Triple)
 PseudoToken = Whitespace + group(PseudoExtras, Number, Funny, ContStr, Name)
 
+
 def _compile(expr):
     return re.compile(expr, re.UNICODE)
+
 
 tokenprog, pseudoprog, single3prog, double3prog = map(
     _compile, (Token, PseudoToken, Single3, Double3))
@@ -120,14 +132,16 @@ for t in ("'", '"',
           "r'", 'r"', "R'", 'R"',
           "b'", 'b"', "B'", 'B"',
           "br'", 'br"', "Br'", 'Br"',
-          "bR'", 'bR"', "BR'", 'BR"' ):
+          "bR'", 'bR"', "BR'", 'BR"'):
     single_quoted[t] = t
 
 del _compile
 
 tabsize = 8
 
-class TokenError(Exception): pass
+
+class TokenError(Exception):
+    pass
 
 
 def generate_tokens(readline):
@@ -169,13 +183,14 @@ def generate_tokens(readline):
                 continue
 
         elif parenlev == 0 and not continued:  # new statement
-            if not line: break
+            if not line:
+                break
             column = 0
             while pos < max:                   # measure leading whitespace
                 if line[pos] == ' ':
                     column += 1
                 elif line[pos] == '\t':
-                    column = (column//tabsize + 1)*tabsize
+                    column = (column // tabsize + 1) * tabsize
                 elif line[pos] == '\f':
                     column = 0
                 else:
@@ -218,7 +233,7 @@ def generate_tokens(readline):
                 token, initial = line[start:end], line[start]
 
                 if (initial in numchars or                  # ordinary number
-                    (initial == '.' and token != '.' and token != '...')):
+                        (initial == '.' and token != '.' and token != '...')):
                     yield TokenInfo(NUMBER, token, spos, epos, line)
                 elif initial in '\r\n':
                     yield TokenInfo(NL if parenlev > 0 else NEWLINE,
@@ -239,8 +254,8 @@ def generate_tokens(readline):
                         contline = line
                         break
                 elif initial in single_quoted or \
-                    token[:2] in single_quoted or \
-                    token[:3] in single_quoted:
+                        token[:2] in single_quoted or \
+                        token[:3] in single_quoted:
                     if token[-1] == '\n':                  # continued string
                         strstart = (lnum, start)
                         endprog = (endprogs[initial] or endprogs[token[1]] or
