@@ -29,36 +29,20 @@ class Module(pr.Simple, pr.Module):
     def reset_caches(self):
         """ This module does a whole lot of caching, because it uses different
         parsers. """
-        self.cache = {}
+        self._used_names = None
         for p in self.parsers:
             p.user_scope = None
             p.user_stmt = None
 
-    def _get(self, name, operation, execute=False, *args, **kwargs):
-        key = (name, args, frozenset(kwargs.items()))
-        if key not in self.cache:
-            if execute:
-                objs = (getattr(p.module, name)(*args, **kwargs)
-                                                    for p in self.parsers)
-            else:
-                objs = (getattr(p.module, name) for p in self.parsers)
-            self.cache[key] = reduce(operation, objs)
-        return self.cache[key]
-
     def __getattr__(self, name):
-        if name == 'global_vars':
-            return self._get(name, operator.add)
-        elif name.startswith('__'):
+        if name.startswith('__'):
             raise AttributeError('Not available!')
         else:
             return getattr(self.parsers[0].module, name)
 
     @property
     def used_names(self):
-        if not self.parsers:
-            raise NotImplementedError("Parser doesn't exist.")
-        key = 'used_names'
-        if key not in self.cache:
+        if self._used_names is None:
             dct = {}
             for p in self.parsers:
                 for k, statement_set in p.module.used_names.items():
@@ -67,8 +51,8 @@ class Module(pr.Simple, pr.Module):
                     else:
                         dct[k] = set(statement_set)
 
-            self.cache[key] = dct
-        return self.cache[key]
+            self._used_names = dct
+        return self._used_names
 
     def __repr__(self):
         return "<%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -107,9 +91,9 @@ class ParserNode(object):
 
         try:
             # with fast_parser we have either 1 subscope or only statements.
-            self._content_scope = self.parser.module.subscopes[0]
+            self._content_scope = parser.module.subscopes[0]
         except IndexError:
-            self._content_scope = self.parser.module
+            self._content_scope = parser.module
 
         scope = self._content_scope
         self._contents = {}
@@ -123,6 +107,11 @@ class ParserNode(object):
             setattr(scope, key, c)
         scope.is_generator = self._is_generator
         self.parser.user_scope = None
+
+        if self.parent is None:
+            # Global vars of the first one can be deleted, in the global scope
+            # they make no sense.
+            self.parser.module.global_vars = []
 
         for c in self.children:
             c.reset_contents()
@@ -169,6 +158,13 @@ class ParserNode(object):
         if isinstance(parser.user_scope, pr.SubModule) \
                 and parser.start_pos <= parser.user_position < parser.end_pos:
             parser.user_scope = scope
+
+        # global_vars
+        cur = self
+        while cur.parent is not None:
+            cur = cur.parent
+        cur.parser.module.global_vars += parser.module.global_vars
+
         scope.is_generator |= parser.module.is_generator
 
     def add_node(self, node):
@@ -378,7 +374,6 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         if not self.parsers:
             self.parsers.append(empty_parser())
-
 
         self.module.end_pos = self.parsers[-1].end_pos
 
