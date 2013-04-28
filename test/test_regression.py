@@ -18,6 +18,8 @@ from jedi._compatibility import is_py25, utf8, unicode
 from jedi import api
 api_classes = api.api_classes
 
+import pytest
+
 #jedi.set_debug_function(jedi.debug.print_to_stdout)
 
 
@@ -535,7 +537,7 @@ def test_settings_module():
 
 
 
-@unittest.skip("not yet fully fixed")
+@pytest.mark.skip("not yet fully fixed")
 def test_no_duplicate_modules():
     """
     Make sure that import hack works as expected.
