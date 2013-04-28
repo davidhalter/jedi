@@ -430,8 +430,8 @@ class Parser(object):
         except (StopIteration, common.MultiLevelStopIteration):
             # on finish, set end_pos correctly
             s = self.scope
-            while s is not None and (not isinstance(s, pr.Module)
-                                     and isinstance(s, pr.SubModule)):
+            while s is not None and not (isinstance(s, pr.Module)
+                                     and not isinstance(s, pr.SubModule)):
                 s.end_pos = self.end_pos
                 s = s.parent
             raise
