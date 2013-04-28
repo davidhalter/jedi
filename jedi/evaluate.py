@@ -131,7 +131,7 @@ def get_names_of_scope(scope, position=None, star_search=True,
     ... def func():
     ...     y = None
     ... ''')
-    >>> scope = parser.scope.subscopes[0]
+    >>> scope = parser.module.subscopes[0]
     >>> scope
     <Function: func@3-6>
 

@@ -22,7 +22,7 @@ The easiest way to play with this module is to use :class:`parsing.Parser`.
 >>> parser = Parser('import os', 'example.py')
 >>> submodule = parser.scope
 >>> submodule
-<SubModule: example.py@1-2>
+<SubModule: example.py@1-1>
 
 Any subclasses of :class:`Scope`, including :class:`SubModule` has
 attribute :attr:`imports <Scope.imports>`.  This attribute has import
