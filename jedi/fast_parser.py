@@ -136,7 +136,7 @@ class ParserNode(object):
                     el = module.imports[0]
                 except IndexError:
                     try:
-                        el = module.returns[0]
+                        el = [r for r in module.returns if r is not None][0]
                     except IndexError:
                         return self.parent.indent + 1
         return el.start_pos[1]
@@ -149,6 +149,8 @@ class ParserNode(object):
             items = getattr(parser.module, c)
             if set_parent:
                 for i in items:
+                    if i is None:
+                        continue  # happens with empty returns
                     i.parent = scope.use_as_parent
                     if isinstance(i, (pr.Function, pr.Class)):
                         for d in i.decorators:
