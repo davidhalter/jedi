@@ -10,7 +10,7 @@ from jedi import settings
 from jedi import parsing
 from jedi import parsing_representation as pr
 from jedi import cache
-import common
+from jedi import common
 
 
 SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']

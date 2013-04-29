@@ -536,8 +536,6 @@ def test_settings_module():
     assert cache.settings is settings
 
 
-
-@pytest.mark.skip("not yet fully fixed")
 def test_no_duplicate_modules():
     """
     Make sure that import hack works as expected.
