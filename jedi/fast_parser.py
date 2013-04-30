@@ -340,7 +340,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     # base scope, subscopes would save all the other contents
                     new = empty_parser()
                     if self.current_node is None:
-                        self.current_node = ParserNode(new, code)
+                        self.current_node = ParserNode(new, '')
                     else:
                         self.current_node.save_contents(new)
                     self.parsers.append(new)
@@ -348,13 +348,13 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 if is_first:
                     if self.current_node is None:
-                        self.current_node = ParserNode(p, code)
+                        self.current_node = ParserNode(p, code_part)
                     else:
                         self.current_node.save_contents(p)
                 else:
                     if node is None:
                         self.current_node = \
-                                    self.current_node.add_parser(p, code)
+                                    self.current_node.add_parser(p, code_part)
                     else:
                         self.current_node = self.current_node.add_node(node)
                 self.parsers.append(p)
