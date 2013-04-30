@@ -120,7 +120,7 @@ class ParserNode(object):
     def parent_until_indent(self, indent=None):
         if indent is None or self.indent >= indent and self.parent:
             self.old_children = []
-            if self.parent:
+            if self.parent is not None:
                 return self.parent.parent_until_indent(indent)
         return self
 
@@ -171,16 +171,16 @@ class ParserNode(object):
 
         scope.is_generator |= parser.module.is_generator
 
-    def add_node(self, node):
+    def add_node(self, node, set_parent=False):
         """Adding a node means adding a node that was already added earlier"""
         self.children.append(node)
-        self._set_items(node.parser)
+        self._set_items(node.parser, set_parent=set_parent)
         node.old_children = node.children
         node.children = []
         return node
 
     def add_parser(self, parser, code):
-        return self.add_node(ParserNode(parser, code, self))
+        return self.add_node(ParserNode(parser, code, self), True)
 
 
 class FastParser(use_metaclass(CachedFastParser)):
