@@ -81,7 +81,6 @@ class ParserNode(object):
         self.hash = hash(code)
 
         self.children = []
-        self._old_children = []
         # must be created before new things are added to it.
         self.save_contents(parser)
 
@@ -97,13 +96,16 @@ class ParserNode(object):
         scope = self._content_scope
         self._contents = {}
         for c in SCOPE_CONTENTS:
-            self._contents[c] = getattr(scope, c)
+            self._contents[c] = list(getattr(scope, c))
         self._is_generator = scope.is_generator
+
+        self.old_children = self.children
+        self.children = []
 
     def reset_contents(self):
         scope = self._content_scope
         for key, c in self._contents.items():
-            setattr(scope, key, c)
+            setattr(scope, key, list(c))
         scope.is_generator = self._is_generator
         self.parser.user_scope = None
 
@@ -115,10 +117,11 @@ class ParserNode(object):
         for c in self.children:
             c.reset_contents()
 
-    def parent_until_indent(self, indent):
-        if self.indent >= indent and self.parent:
-            self._old_children = []
-            return self.parent.parent_until_indent(indent)
+    def parent_until_indent(self, indent=None):
+        if indent is None or self.indent >= indent and self.parent:
+            self.old_children = []
+            if self.parent:
+                return self.parent.parent_until_indent(indent)
         return self
 
     @property
@@ -172,15 +175,12 @@ class ParserNode(object):
         """Adding a node means adding a node that was already added earlier"""
         self.children.append(node)
         self._set_items(node.parser)
-        node._old_children = node.children
+        node.old_children = node.children
         node.children = []
         return node
 
     def add_parser(self, parser, code):
-        node = ParserNode(parser, code, self)
-        self._set_items(parser, set_parent=True)
-        self.children.append(node)
-        return node
+        return self.add_node(ParserNode(parser, code, self))
 
 
 class FastParser(use_metaclass(CachedFastParser)):
@@ -328,7 +328,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                     self.current_node = \
                                 self.current_node.parent_until_indent(indent)
-                    nodes += self.current_node._old_children
+                    nodes += self.current_node.old_children
 
                 # check if code_part has already been parsed
                 #print '#'*45,line_offset, p and p.end_pos, '\n', code_part
@@ -367,7 +367,9 @@ class FastParser(use_metaclass(CachedFastParser)):
             line_offset += lines
             start += len(code_part) + 1  # +1 for newline
 
-        if not self.parsers:
+        if self.parsers:
+            self.current_node = self.current_node.parent_until_indent()
+        else:
             self.parsers.append(empty_parser())
 
         self.module.end_pos = self.parsers[-1].end_pos
