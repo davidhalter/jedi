@@ -96,7 +96,7 @@ class NoErrorTokenizer(object):
         self.current = self.previous = [None, None, (0, 0), (0, 0), '']
         self.in_flow = False
         self.new_indent = False
-        self.parser_indent = 0
+        self.parser_indent = self.old_parser_indent = 0
         self.is_decorator = False
         self.first_stmt = True
 
@@ -153,7 +153,7 @@ class NoErrorTokenizer(object):
             if indent < self.parser_indent:  # -> dedent
                 self.parser_indent = indent
                 self.new_indent = False
-                if not self.in_flow:
+                if not self.in_flow or indent < self.old_parser_indent:
                     close()
                 self.in_flow = False
             elif self.new_indent:
@@ -167,6 +167,7 @@ class NoErrorTokenizer(object):
                         close()
                     self.is_decorator = '@' == tok
                     if not self.is_decorator:
+                        self.old_parser_indent = self.parser_indent
                         self.parser_indent += 1  # new scope: must be higher
                         self.new_indent = True
 

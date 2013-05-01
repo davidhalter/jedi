@@ -258,6 +258,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         parts = []
         is_decorator = False
         current_indent = 0
+        old_indent = 0
         new_indent = False
         in_flow = False
         add_to_last = False
@@ -273,7 +274,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             if indent < current_indent:  # -> dedent
                 current_indent = indent
                 new_indent = False
-                if not in_flow:
+                if not in_flow or indent < old_indent:
                     add_part()
                     add_to_last = False
                 in_flow = False
@@ -291,6 +292,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                         add_to_last = False
                     is_decorator = '@' == m.group(1)
                     if not is_decorator:
+                        old_indent = current_indent
                         current_indent += 1  # it must be higher
                         new_indent = True
                 elif is_decorator:
@@ -391,6 +393,9 @@ class FastParser(use_metaclass(CachedFastParser)):
                                is_fast_parser=True, top_module=self.module)
             p.module.parent = self.module
         else:
+            if nodes[index] != self.current_node:
+                offset = int(nodes[0] == self.current_node)
+                self.current_node.old_children.pop(index - offset)
             node = nodes.pop(index)
             p = node.parser
             m = p.module
