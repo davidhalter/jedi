@@ -126,6 +126,10 @@ class IntegrationTestCase(object):
         self.path = path
         self.skip = None
 
+    @property
+    def module_name(self):
+        return re.sub('.*/|\.py', '', self.path)
+
     def __repr__(self):
         name = os.path.basename(self.path) if self.path else None
         return '<%s: %s:%s:%s>' % (self.__class__.__name__,
@@ -203,7 +207,7 @@ class IntegrationTestCase(object):
                 # this means that there is a module specified
                 wanted.append(pos_tup)
             else:
-                wanted.append(('renaming', self.line_nr + pos_tup[0],
+                wanted.append((self.module_name, self.line_nr + pos_tup[0],
                                 pos_tup[1]))
 
         return compare_cb(self, compare, sorted(wanted))
