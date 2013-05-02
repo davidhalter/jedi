@@ -455,7 +455,7 @@ class Function(Scope):
         string += "def %s(%s):\n" % (self.name, params)
         string += super(Function, self).get_code(True, indention)
         if self.is_empty():
-            string += indention + 'pass\n'
+            string += 'pass\n'
         return string
 
     def is_empty(self):
