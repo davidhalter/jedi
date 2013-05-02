@@ -126,6 +126,10 @@ class IntegrationTestCase(object):
         self.path = path
         self.skip = None
 
+    @property
+    def module_name(self):
+        return re.sub('.*/|\.py', '', self.path)
+
     def __repr__(self):
         name = os.path.basename(self.path) if self.path else None
         return '<%s: %s:%s:%s>' % (self.__class__.__name__,
@@ -203,7 +207,7 @@ class IntegrationTestCase(object):
                 # this means that there is a module specified
                 wanted.append(pos_tup)
             else:
-                wanted.append(('renaming', self.line_nr + pos_tup[0],
+                wanted.append((self.module_name, self.line_nr + pos_tup[0],
                                 pos_tup[1]))
 
         return compare_cb(self, compare, sorted(wanted))
@@ -327,7 +331,8 @@ if __name__ == '__main__':
         cases += collect_dir_tests(completion_test_dir, test_files, True)
 
     def file_change(current, tests, fails):
-        current = os.path.basename(current)
+        if current is not None:
+            current = os.path.basename(current)
         print('%s \t\t %s tests and %s fails.' % (current, tests, fails))
 
     def report(case, actual, desired):
@@ -335,13 +340,20 @@ if __name__ == '__main__':
             return 0
         else:
             print("\ttest fail @%d, actual = %s, desired = %s"
-                    % (case.line_nr, actual, desired))
+                    % (case.line_nr - 1, actual, desired))
             return 1
 
+    import traceback
     current = cases[0].path if cases else None
     count = fails = 0
     for c in cases:
-        if c.run(report):
+        try:
+            if c.run(report):
+                tests_fail += 1
+                fails += 1
+        except Exception:
+            traceback.print_exc()
+            print("\ttest fail @%d" % (c.line_nr - 1))
             tests_fail += 1
             fails += 1
         count += 1

@@ -177,5 +177,7 @@ except ImportError:
 
 try:
     encoding = sys.stdout.encoding
+    if encoding is None:
+        encoding = 'utf-8'
 except AttributeError:
     encoding = 'ascii'

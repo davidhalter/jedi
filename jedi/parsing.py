@@ -42,29 +42,27 @@ class Parser(object):
     :param user_position: The line/column, the user is currently on.
     :type user_position: tuple(int, int)
     :param no_docstr: If True, a string at the beginning is not a docstr.
-    :param stop_on_scope: Stop if a scope appears -> for fast_parser
+    :param is_fast_parser: -> for fast_parser
     :param top_module: Use this module as a parent instead of `self.module`.
     """
     def __init__(self, source, module_path=None, user_position=None,
-                        no_docstr=False, offset=(0, 0), stop_on_scope=None,
+                        no_docstr=False, offset=(0, 0), is_fast_parser=None,
                         top_module=None):
         self.user_position = user_position
         self.user_scope = None
         self.user_stmt = None
         self.no_docstr = no_docstr
 
+        self.start_pos = self.end_pos = 1 + offset[0], offset[1]
         # initialize global Scope
-        self.module = pr.SubModule(module_path, (offset[0] + 1, offset[1]),
-                                                            top_module)
+        self.module = pr.SubModule(module_path, self.start_pos, top_module)
         self.scope = self.module
         self.current = (None, None)
-        self.start_pos = 1, 0
-        self.end_pos = 1, 0
 
         source = source + '\n'  # end with \n, because the parser needs it
         buf = StringIO(source)
         self._gen = common.NoErrorTokenizer(buf.readline, offset,
-                                            stop_on_scope)
+                                            is_fast_parser)
         self.top_module = top_module or self.module
         try:
             self._parse()
@@ -79,6 +77,12 @@ class Parser(object):
             # set a parent for unused decorators, avoid NullPointerException
             # because of `self.module.used_names`.
             d.parent = self.module
+
+        if self.current[0] in (tokenize.NL, tokenize.NEWLINE):
+            # we added a newline before, so we need to "remove" it again.
+            self.end_pos = self._gen.previous[2]
+        if self.current[0] == tokenize.INDENT:
+            self.end_pos = self._gen.last_previous[2]
 
         self.start_pos = self.module.start_pos
         self.module.end_pos = self.end_pos
@@ -171,8 +175,6 @@ class Parser(object):
         while True:
             defunct = False
             token_type, tok = self.next()
-            if token_type == tokenize.ENDMARKER:
-                break
             if brackets and tok == '\n':
                 self.next()
             if tok == '(':  # python allows only one `(` in the statement.
@@ -421,12 +423,18 @@ class Parser(object):
     def __next__(self):
         """ Generate the next tokenize pattern. """
         try:
-            typ, tok, self.start_pos, self.end_pos, \
-                                self.parserline = next(self._gen)
+            typ, tok, start_pos, end_pos, self.parserline = next(self._gen)
+            # dedents shouldn't change positions
+            if typ != tokenize.DEDENT:
+                self.start_pos, self.end_pos = start_pos, end_pos
         except (StopIteration, common.MultiLevelStopIteration):
             # on finish, set end_pos correctly
             s = self.scope
             while s is not None:
+                if isinstance(s, pr.Module) \
+                                     and not isinstance(s, pr.SubModule):
+                    self.module.end_pos = self.end_pos
+                    break
                 s.end_pos = self.end_pos
                 s = s.parent
             raise
@@ -662,7 +670,6 @@ class Parser(object):
                 self.freshscope = False
             else:
                 if token_type not in [tokenize.COMMENT, tokenize.INDENT,
-                                      tokenize.NEWLINE, tokenize.NL,
-                                      tokenize.ENDMARKER]:
+                                      tokenize.NEWLINE, tokenize.NL]:
                     debug.warning('token not classified', tok, token_type,
                                                         self.start_pos[0])

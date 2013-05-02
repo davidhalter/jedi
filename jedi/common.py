@@ -7,6 +7,8 @@ import tokenizer as tokenize
 from jedi._compatibility import next, reraise
 from jedi import settings
 
+FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally']
+
 
 class MultiLevelStopIteration(Exception):
     """
@@ -81,17 +83,25 @@ class PushBackIterator(object):
 
 
 class NoErrorTokenizer(object):
-    def __init__(self, readline, offset=(0, 0), stop_on_scope=False):
+    def __init__(self, readline, offset=(0, 0), is_fast_parser=False):
         self.readline = readline
-        self.gen = PushBackIterator(tokenize.generate_tokens(readline))
+        self.gen = tokenize.generate_tokens(readline)
         self.offset = offset
-        self.stop_on_scope = stop_on_scope
-        self.first_scope = False
         self.closed = False
-        self.first = True
+        self.is_first = True
+        self.push_backs = []
+
+        # fast parser options
+        self.is_fast_parser = is_fast_parser
+        self.current = self.previous = [None, None, (0, 0), (0, 0), '']
+        self.in_flow = False
+        self.new_indent = False
+        self.parser_indent = self.old_parser_indent = 0
+        self.is_decorator = False
+        self.first_stmt = True
 
     def push_last_back(self):
-        self.gen.push_back(self.current)
+        self.push_backs.append(self.current)
 
     def next(self):
         """ Python 2 Compatibility """
@@ -100,25 +110,71 @@ class NoErrorTokenizer(object):
     def __next__(self):
         if self.closed:
             raise MultiLevelStopIteration()
+        if self.push_backs:
+            return self.push_backs.pop(0)
+
+        self.last_previous = self.previous
+        self.previous = self.current
         self.current = next(self.gen)
         c = list(self.current)
 
-        # stop if a new class or definition is started at position zero.
-        breaks = ['def', 'class', '@']
-        if self.stop_on_scope and c[1] in breaks and c[2][1] == 0:
-            if self.first_scope:
-                self.closed = True
-                raise MultiLevelStopIteration()
-            elif c[1] != '@':
-                self.first_scope = True
+        if c[0] == tokenize.ENDMARKER:
+            self.current = self.previous
+            self.previous = self.last_previous
+            raise MultiLevelStopIteration()
 
-        if self.first:
+        # this is exactly the same check as in fast_parser, but this time with
+        # tokenize and therefore precise.
+        breaks = ['def', 'class', '@']
+
+        if self.is_first:
             c[2] = self.offset[0] + c[2][0], self.offset[1] + c[2][1]
             c[3] = self.offset[0] + c[3][0], self.offset[1] + c[3][1]
-            self.first = False
+            self.is_first = False
         else:
             c[2] = self.offset[0] + c[2][0], c[2][1]
             c[3] = self.offset[0] + c[3][0], c[3][1]
+        self.current = c
+
+        def close():
+            if not self.first_stmt:
+                self.closed = True
+                raise MultiLevelStopIteration()
+        # ignore indents/comments
+        if self.is_fast_parser \
+                and self.previous[0] in (tokenize.INDENT, tokenize.NL, None,
+                                         tokenize.NEWLINE, tokenize.DEDENT) \
+                and c[0] not in (tokenize.COMMENT, tokenize.INDENT,
+                             tokenize.NL, tokenize.NEWLINE, tokenize.DEDENT):
+            #print c, tokenize.tok_name[c[0]]
+
+            tok = c[1]
+            indent = c[2][1]
+            if indent < self.parser_indent:  # -> dedent
+                self.parser_indent = indent
+                self.new_indent = False
+                if not self.in_flow or indent < self.old_parser_indent:
+                    close()
+                self.in_flow = False
+            elif self.new_indent:
+                self.parser_indent = indent
+                self.new_indent = False
+
+            if not self.in_flow:
+                if tok in FLOWS or tok in breaks:
+                    self.in_flow = tok in FLOWS
+                    if not self.is_decorator and not self.in_flow:
+                        close()
+                    self.is_decorator = '@' == tok
+                    if not self.is_decorator:
+                        self.old_parser_indent = self.parser_indent
+                        self.parser_indent += 1  # new scope: must be higher
+                        self.new_indent = True
+
+            if tok != '@':
+                if self.first_stmt and not self.new_indent:
+                    self.parser_indent = indent
+                self.first_stmt = False
         return c
 
 

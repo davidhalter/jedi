@@ -22,7 +22,7 @@ The easiest way to play with this module is to use :class:`parsing.Parser`.
 >>> parser = Parser('import os', 'example.py')
 >>> submodule = parser.scope
 >>> submodule
-<SubModule: example.py@1-2>
+<SubModule: example.py@1-1>
 
 Any subclasses of :class:`Scope`, including :class:`SubModule` has
 attribute :attr:`imports <Scope.imports>`.  This attribute has import
@@ -32,7 +32,6 @@ statements in this scope.  Check this out:
 [<Import: import os @1,0>]
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
-
 """
 from __future__ import with_statement
 
@@ -152,6 +151,10 @@ class Scope(Simple, IsScope):
         self.statements = []
         self.docstr = ''
         self.asserts = []
+        # Needed here for fast_parser, because the fast_parser splits and
+        # returns will be in "normal" modules.
+        self.returns = []
+        self.is_generator = False
 
     def add_scope(self, sub, decorators):
         sub.parent = self.use_as_parent
@@ -196,15 +199,15 @@ class Scope(Simple, IsScope):
         string = ""
         if len(self.docstr) > 0:
             string += '"""' + self.docstr + '"""\n'
-        for i in self.imports:
-            string += i.get_code()
-        for sub in self.subscopes:
-            string += sub.get_code(first_indent=True, indention=indention)
 
-        returns = self.returns if hasattr(self, 'returns') else []
-        ret_str = '' if isinstance(self, Lambda) else 'return '
-        for stmt in self.statements + returns:
-            string += (ret_str if stmt in returns else '') + stmt.get_code()
+        objs = self.subscopes + self.imports + self.statements + self.returns
+        for obj in sorted(objs, key=lambda x: x.start_pos):
+            if isinstance(obj, Scope):
+                string += obj.get_code(first_indent=True, indention=indention)
+            else:
+                if obj in self.returns and not isinstance(self, Lambda):
+                    string += 'yield ' if self.is_generator else 'return '
+                string += obj.get_code()
 
         if first_indent:
             string = common.indent_block(string, indention=indention)
@@ -399,7 +402,7 @@ class Class(Scope):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
         string += 'class %s' % (self.name)
         if len(self.supers) > 0:
-            sup = ','.join(stmt.get_code() for stmt in self.supers)
+            sup = ', '.join(stmt.get_code(False) for stmt in self.supers)
             string += '(%s)' % sup
         string += ':\n'
         string += super(Class, self).get_code(True, indention)
@@ -441,8 +444,6 @@ class Function(Scope):
             p.parent = self.use_as_parent
             p.parent_function = self.use_as_parent
         self.decorators = []
-        self.returns = []
-        self.is_generator = False
         self.listeners = set()  # not used here, but in evaluation.
 
         if annotation is not None:
@@ -451,12 +452,15 @@ class Function(Scope):
 
     def get_code(self, first_indent=False, indention='    '):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
-        params = ','.join([stmt.get_code() for stmt in self.params])
+        params = ', '.join([stmt.get_code(False) for stmt in self.params])
         string += "def %s(%s):\n" % (self.name, params)
         string += super(Function, self).get_code(True, indention)
         if self.is_empty():
-            string += "pass\n"
+            string += 'pass\n'
         return string
+
+    def is_empty(self):
+        return super(Function, self).is_empty() and not self.returns
 
     def get_set_vars(self):
         n = super(Function, self).get_set_vars()
