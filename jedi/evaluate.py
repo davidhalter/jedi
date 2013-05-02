@@ -131,22 +131,22 @@ def get_names_of_scope(scope, position=None, star_search=True,
     ... def func():
     ...     y = None
     ... ''')
-    >>> scope = parser.scope.subscopes[0]
+    >>> scope = parser.module.subscopes[0]
     >>> scope
-    <Function: func@3-6>
+    <Function: func@3-5>
 
     `get_names_of_scope` is a generator.  First it yields names from
     most inner scope.
 
     >>> pairs = list(get_names_of_scope(scope))
     >>> pairs[0]
-    (<Function: func@3-6>, [<Name: y@4,4>])
+    (<Function: func@3-5>, [<Name: y@4,4>])
 
     Then it yield the names from one level outer scope.  For this
     example, this is the most outer scope.
 
     >>> pairs[1]
-    (<SubModule: None@1-6>, [<Name: x@2,0>, <Name: func@3,4>])
+    (<SubModule: None@1-5>, [<Name: x@2,0>, <Name: func@3,4>])
 
     Finally, it yields names from builtin, if `include_builtin` is
     true (default).
@@ -160,6 +160,10 @@ def get_names_of_scope(scope, position=None, star_search=True,
     in_func_scope = scope
     non_flow = scope.get_parent_until(pr.Flow, reverse=True)
     while scope:
+        if isinstance(scope, pr.SubModule) and scope.parent:
+            # we don't want submodules to report if we have modules.
+            scope = scope.parent
+            continue
         # `pr.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
