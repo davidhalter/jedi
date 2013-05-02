@@ -403,10 +403,10 @@ class Parser(object):
         with common.ignored(IndexError, AttributeError):
             # If string literal is being parsed
             first_tok = stmt.token_list[0]
-            if (not stmt.set_vars and
-                not stmt.used_vars and
-                len(stmt.token_list) == 1 and
-                first_tok[0] == tokenize.STRING):
+            if (not stmt.set_vars
+                    and not stmt.used_vars
+                    and len(stmt.token_list) == 1
+                    and first_tok[0] == tokenize.STRING):
                 # ... then set it as a docstring
                 self.scope.statements[-1].add_docstr(first_tok[1])
 
@@ -442,7 +442,7 @@ class Parser(object):
         if self.user_position and (self.start_pos[0] == self.user_position[0]
                             or self.user_scope is None
                             and self.start_pos[0] >= self.user_position[0]):
-            debug.dbg('user scope found [%s] = %s' % \
+            debug.dbg('user scope found [%s] = %s' %
                     (self.parserline.replace('\n', ''), repr(self.scope)))
             self.user_scope = self.scope
         self.last_token = self.current

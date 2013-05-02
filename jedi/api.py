@@ -133,7 +133,7 @@ class Script(object):
             bs = builtin.Builtin.scope
             if isinstance(u, pr.Import):
                 if (u.relative_count > 0 or u.from_ns) and not re.search(
-                               r'(,|from)\s*$|import\s+$', completion_line):
+                            r'(,|from)\s*$|import\s+$', completion_line):
                     completions += ((k, bs) for k
                                             in keywords.get_keywords('import'))
 

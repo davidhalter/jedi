@@ -14,7 +14,7 @@ import textwrap
 from .base import TestBase, unittest, cwd_at
 
 import jedi
-from jedi._compatibility import is_py25, utf8, unicode
+from jedi._compatibility import utf8, unicode
 from jedi import api
 api_classes = api.api_classes
 
@@ -86,8 +86,7 @@ class TestRegression(TestBase):
     def test_keyword_doc(self):
         r = list(self.definition("or", (1, 1)))
         assert len(r) == 1
-        if not is_py25:
-            assert len(r[0].doc) > 100
+        assert len(r[0].doc) > 100
 
         r = list(self.definition("asfdasfd", (1, 1)))
         assert len(r) == 0
@@ -95,8 +94,7 @@ class TestRegression(TestBase):
     def test_operator_doc(self):
         r = list(self.definition("a == b", (1, 3)))
         assert len(r) == 1
-        if not is_py25:
-            assert len(r[0].doc) > 100
+        assert len(r[0].doc) > 100
 
     def test_function_call_signature(self):
         defs = self.definition("""
@@ -333,8 +331,6 @@ class TestRegression(TestBase):
         assert [d.doc for d in defs]
 
     def test_goto_following_on_imports(self):
-        if is_py25:
-            return
         g = self.goto("import multiprocessing.dummy; multiprocessing.dummy")
         assert len(g) == 1
         assert g[0].start_pos != (0, 0)

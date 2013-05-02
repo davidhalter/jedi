@@ -249,7 +249,7 @@ class ImportPath(pr.Base):
                     sys.path = temp
                     raise
                 sys.path = temp
-            
+
             return importing
 
         if self.file_path:

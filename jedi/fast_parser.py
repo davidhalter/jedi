@@ -5,7 +5,7 @@ finished (and still not working as I want), I won't document it any further.
 """
 import re
 
-from jedi._compatibility import use_metaclass, property
+from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi import parsing
 from jedi import parsing_representation as pr

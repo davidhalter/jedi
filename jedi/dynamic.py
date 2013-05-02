@@ -248,7 +248,7 @@ def _scan_statement(stmt, search_name, assignment_details=False):
     check = list(stmt.get_commands())
     if assignment_details:
         for commands, op in stmt.assignment_details:
-            check +=  commands
+            check += commands
 
     result = []
     for c in check:
@@ -529,7 +529,7 @@ def check_statement_information(stmt, search_name):
         # isinstance check
         isinst = call.execution.values
         assert len(isinst) == 2  # has two params
-        obj, classes = [stmt.get_commands() for stmt in isinst]
+        obj, classes = [statement.get_commands() for statement in isinst]
         assert len(obj) == 1
         assert len(classes) == 1
         assert isinstance(obj[0], pr.Call)
