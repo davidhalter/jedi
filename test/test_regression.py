@@ -300,10 +300,12 @@ class TestRegression(TestBase):
 
     def test_unicode_attribute(self):
         """ github jedi-vim issue #94 """
-        s1 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n    name = "e"\n\nPerson().name.')
+        s1 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n'
+                  '    name = "e"\n\nPerson().name.')
         completions1 = self.complete(s1)
         assert 'strip' in [c.word for c in completions1]
-        s2 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n    name = "é"\n\nPerson().name.')
+        s2 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n'
+                  '    name = "é"\n\nPerson().name.')
         completions2 = self.complete(s2)
         assert 'strip' in [c.word for c in completions2]
 

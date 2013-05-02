@@ -355,7 +355,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     else:
                         self.current_node = self.current_node.add_node(node)
 
-                if self.current_node.parent and (isinstance(p.user_scope, 
+                if self.current_node.parent and (isinstance(p.user_scope,
                                 pr.SubModule) or p.user_scope is None) \
                         and p.start_pos <= self.user_position < p.end_pos:
                     p.user_scope = self.current_node.parent.content_scope
@@ -402,7 +402,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             m = p.module
             m.line_offset += line_offset + 1 - m.start_pos[0]
             if self.user_position is not None and \
-                    m.start_pos <= self.user_position <= m.end_pos:
+                    m.start_pos[0] <= self.user_position[0] <= m.end_pos[0]:
                 # It's important to take care of the whole user
                 # positioning stuff, if no reparsing is being done.
                 p.user_stmt = m.get_statement_for_position(
