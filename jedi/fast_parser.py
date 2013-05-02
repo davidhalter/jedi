@@ -357,6 +357,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 if self.current_node.parent and (isinstance(p.user_scope,
                                 pr.SubModule) or p.user_scope is None) \
+                        and self.user_position \
                         and p.start_pos <= self.user_position < p.end_pos:
                     p.user_scope = self.current_node.parent.content_scope
 
