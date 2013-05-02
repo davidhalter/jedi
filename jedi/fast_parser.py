@@ -89,11 +89,11 @@ class ParserNode(object):
 
         try:
             # with fast_parser we have either 1 subscope or only statements.
-            self._content_scope = parser.module.subscopes[0]
+            self.content_scope = parser.module.subscopes[0]
         except IndexError:
-            self._content_scope = parser.module
+            self.content_scope = parser.module
 
-        scope = self._content_scope
+        scope = self.content_scope
         self._contents = {}
         for c in SCOPE_CONTENTS:
             self._contents[c] = list(getattr(scope, c))
@@ -103,11 +103,11 @@ class ParserNode(object):
         self.children = []
 
     def reset_contents(self):
-        scope = self._content_scope
+        scope = self.content_scope
         for key, c in self._contents.items():
             setattr(scope, key, list(c))
         scope.is_generator = self._is_generator
-        self.parser.user_scope = None
+        self.parser.user_scope = self.parser.module
 
         if self.parent is None:
             # Global vars of the first one can be deleted, in the global scope
@@ -146,7 +146,7 @@ class ParserNode(object):
 
     def _set_items(self, parser, set_parent=False):
         # insert parser objects into current structure
-        scope = self._content_scope
+        scope = self.content_scope
         for c in SCOPE_CONTENTS:
             content = getattr(scope, c)
             items = getattr(parser.module, c)
@@ -159,9 +159,6 @@ class ParserNode(object):
                         for d in i.decorators:
                             d.parent = scope.use_as_parent
             content += items
-        if isinstance(parser.user_scope, pr.SubModule) \
-                and parser.start_pos <= parser.user_position < parser.end_pos:
-            parser.user_scope = scope
 
         # global_vars
         cur = self
@@ -226,14 +223,12 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         self._parse(code)
 
-    def scan_user_scope(self, sub_module):
-        """ Scan with self.user_position.
-        :type sub_module: pr.SubModule
-        """
+    def _scan_user_scope(self, sub_module):
+        """ Scan with self.user_position. """
         for scope in sub_module.statements + sub_module.subscopes:
             if isinstance(scope, pr.Scope):
                 if scope.start_pos <= self.user_position <= scope.end_pos:
-                    return self.scan_user_scope(scope) or scope
+                    return self._scan_user_scope(scope) or scope
         return None
 
     def _split_parts(self, code):
@@ -359,6 +354,12 @@ class FastParser(use_metaclass(CachedFastParser)):
                                     self.current_node.add_parser(p, code_part)
                     else:
                         self.current_node = self.current_node.add_node(node)
+
+                if self.current_node.parent and (isinstance(p.user_scope, 
+                                pr.SubModule) or p.user_scope is None) \
+                        and p.start_pos <= self.user_position < p.end_pos:
+                    p.user_scope = self.current_node.parent.content_scope
+
                 self.parsers.append(p)
 
                 is_first = False
@@ -409,7 +410,8 @@ class FastParser(use_metaclass(CachedFastParser)):
                 if p.user_stmt:
                     p.user_scope = p.user_stmt.parent
                 else:
-                    p.user_scope = self.scan_user_scope(m) or self.module
+                    p.user_scope = self._scan_user_scope(m) or m
+
         return p, node
 
     def reset_caches(self):
