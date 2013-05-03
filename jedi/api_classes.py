@@ -311,9 +311,9 @@ class Completion(BaseDefinition):
         super(Completion, self).__init__(name.parent, name.start_pos)
 
         self._name = name
-        self.needs_dot = needs_dot
-        self.like_name_length = like_name_length
-        self.base = base
+        self._needs_dot = needs_dot
+        self._like_name_length = like_name_length
+        self._base = base
 
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
@@ -331,18 +331,18 @@ class Completion(BaseDefinition):
         would return the string 'ce'. It also adds additional stuff, depending
         on your `settings.py`.
         """
-        dot = '.' if self.needs_dot else ''
+        dot = '.' if self._needs_dot else ''
         append = ''
         if settings.add_bracket_after_function \
                     and self.type == 'Function':
             append = '('
 
         if settings.add_dot_after_module:
-            if isinstance(self.base, pr.Module):
+            if isinstance(self._base, pr.Module):
                 append += '.'
-        if isinstance(self.base, pr.Param):
+        if isinstance(self._base, pr.Param):
             append += '='
-        return dot + self._name.names[-1][self.like_name_length:] + append
+        return dot + self._name.names[-1][self._like_name_length:] + append
 
     @property
     def name(self):
