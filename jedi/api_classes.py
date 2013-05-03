@@ -310,7 +310,7 @@ class Completion(BaseDefinition):
     def __init__(self, name, needs_dot, like_name_length, base):
         super(Completion, self).__init__(name.parent, name.start_pos)
 
-        self.name = name
+        self._name = name
         self.needs_dot = needs_dot
         self.like_name_length = like_name_length
         self.base = base
@@ -342,10 +342,10 @@ class Completion(BaseDefinition):
                 append += '.'
         if isinstance(self.base, pr.Param):
             append += '='
-        return dot + self.name.names[-1][self.like_name_length:] + append
+        return dot + self._name.names[-1][self.like_name_length:] + append
 
     @property
-    def word(self):
+    def name(self):
         """
         Similar to :meth:`Completion.complete`, but return the whole word, for
         example::
@@ -354,7 +354,18 @@ class Completion(BaseDefinition):
 
         would return 'isinstance'.
         """
-        return unicode(self.name.names[-1])
+        return unicode(self._name.names[-1])
+
+    @property
+    def word(self):
+        """
+        .. deprecated:: 0.6.0
+           Use :attr:`.name` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use name instead.", DeprecationWarning)
+        return self.name
+
 
     @property
     def description(self):
@@ -363,7 +374,7 @@ class Completion(BaseDefinition):
 
         .. todo:: return value is just __repr__ of some objects, improve!
         """
-        parent = self.name.parent
+        parent = self._name.parent
         if parent is None:
             return ''
         t = self.type
@@ -399,7 +410,7 @@ class Completion(BaseDefinition):
         return self._followed_definitions
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self.name)
+        return '<%s: %s>' % (type(self).__name__, self._name)
 
 
 class Definition(BaseDefinition):

@@ -154,7 +154,7 @@ class Script(object):
                                                     self._parser.user_stmt, n):
                     new = api_classes.Completion(c, needs_dot,
                                                     len(like), s)
-                    k = (new.word, new.complete)  # key
+                    k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
                         comp_dct[k]._same_name_completions.append(new)
                     else:
@@ -163,9 +163,9 @@ class Script(object):
 
         debug.speed('completions end')
 
-        return sorted(comps, key=lambda x: (x.word.startswith('__'),
-                                            x.word.startswith('_'),
-                                            x.word.lower()))
+        return sorted(comps, key=lambda x: (x.name.startswith('__'),
+                                            x.name.startswith('_'),
+                                            x.name.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):
         """ Base for completions, goto and definition. Basically it returns

@@ -123,7 +123,7 @@ class TestRegression(TestBase):
     def test_complete_at_zero(self):
         s = self.completions("str", (1, 3))
         assert len(s) == 1
-        assert list(s)[0].word == 'str'
+        assert list(s)[0].name == 'str'
 
         s = self.completions("", (1, 0))
         assert len(s) > 0
@@ -143,7 +143,7 @@ class TestRegression(TestBase):
         assert len(self.completions("import import", path='')) > 0
 
         # 111
-        assert self.completions("from datetime import")[0].word == 'import'
+        assert self.completions("from datetime import")[0].name == 'import'
         assert self.completions("from datetime import ")
 
     def assert_call_def(self, call_def, name, index):
@@ -306,16 +306,16 @@ class TestRegression(TestBase):
         s1 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n'
                   '    name = "e"\n\nPerson().name.')
         completions1 = self.completions(s1)
-        assert 'strip' in [c.word for c in completions1]
+        assert 'strip' in [c.name for c in completions1]
         s2 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n'
                   '    name = "é"\n\nPerson().name.')
         completions2 = self.completions(s2)
-        assert 'strip' in [c.word for c in completions2]
+        assert 'strip' in [c.name for c in completions2]
 
     def test_os_nowait(self):
         """ github issue #45 """
         s = self.completions("import os; os.P_")
-        assert 'P_NOWAIT' in [i.word for i in s]
+        assert 'P_NOWAIT' in [i.name for i in s]
 
     def test_follow_definition(self):
         """ github issue #45 """
@@ -345,7 +345,7 @@ class TestRegression(TestBase):
         caused problems, sometimes.
         """
         c = self.completions("if IndentationErr")
-        assert c[0].word == 'IndentationError'
+        assert c[0].name == 'IndentationError'
         self.assertEqual(c[0].complete, 'or')
 
     def test_docstrings_type_str(self):
@@ -356,8 +356,8 @@ class TestRegression(TestBase):
                     '''
                     arg."""
 
-        words = [c.word for c in self.completions(s)]
-        assert 'join' in words
+        names = [c.name for c in self.completions(s)]
+        assert 'join' in names
 
     def test_docstrings_type_dotted_import(self):
         s = """
@@ -366,8 +366,8 @@ class TestRegression(TestBase):
                     :type arg: threading.Thread
                     '''
                     arg."""
-        words = [c.word for c in self.completions(s)]
-        assert 'start' in words
+        names = [c.name for c in self.completions(s)]
+        assert 'start' in names
 
     def test_no_statement_parent(self):
         source = textwrap.dedent("""

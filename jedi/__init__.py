@@ -27,7 +27,7 @@ example for the autocompletion feature:
 [<Completion: date>, <Completion: datetime>, ...]
 >>> print(completions[0].complete)
 te
->>> print(completions[0].word)
+>>> print(completions[0].name)
 date
 
 As you see Jedi is pretty simple and allows you to concentrate on writing a
