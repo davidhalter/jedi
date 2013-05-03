@@ -315,6 +315,8 @@ def find_name(scope, name_str, position=None, search_global=False,
             result = []
             no_break_scope = False
             par = name.parent
+            exc = pr.Class, pr.Function
+            until = lambda: par.parent.parent.get_parent_until(exc)
 
             if par.isinstance(pr.Flow):
                 if par.command == 'for':
@@ -323,7 +325,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                     debug.warning('Flow: Why are you here? %s' % par.command)
             elif par.isinstance(pr.Param) \
                     and par.parent is not None \
-                    and par.parent.parent.isinstance(pr.Class) \
+                    and isinstance(until(), pr.Class) \
                     and par.position_nr == 0:
                 # This is where self gets added - this happens at another
                 # place, if the var_args are clear. But sometimes the class is
@@ -332,7 +334,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                 if isinstance(scope, er.InstanceElement):
                     inst = scope.instance
                 else:
-                    inst = er.Instance(er.Class(par.parent.parent))
+                    inst = er.Instance(er.Class(until()))
                     inst.is_generated = True
                 result.append(inst)
             elif par.isinstance(pr.Statement):
