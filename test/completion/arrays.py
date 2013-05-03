@@ -181,6 +181,11 @@ def f():
 
 #? dict()
 f()
+
+# completion within dicts
+#? 9 ['str']
+{str: str}
+
 # -----------------
 # with variable as index
 # -----------------

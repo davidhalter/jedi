@@ -68,13 +68,19 @@ def check_arr_index(arr, pos):
 def array_for_pos(stmt, pos, array_types=None):
     """Searches for the array and position of a tuple"""
     def search_array(arr, pos):
-        for i, stmt in enumerate(arr):
-            new_arr, index = array_for_pos(stmt, pos, array_types)
-            if new_arr is not None:
-                return new_arr, index
-            if arr.start_pos < pos <= stmt.end_pos:
-                if not array_types or arr.type in array_types:
-                    return arr, i
+        if arr.type == 'dict':
+            for stmt in arr.values + arr.keys:
+                new_arr, index = array_for_pos(stmt, pos, array_types)
+                if new_arr is not None:
+                    return new_arr, index
+        else:
+            for i, stmt in enumerate(arr):
+                new_arr, index = array_for_pos(stmt, pos, array_types)
+                if new_arr is not None:
+                    return new_arr, index
+                if arr.start_pos < pos <= stmt.end_pos:
+                    if not array_types or arr.type in array_types:
+                        return arr, i
         if len(arr) == 0 and arr.start_pos < pos < arr.end_pos:
             if not array_types or arr.type in array_types:
                 return arr, 0
