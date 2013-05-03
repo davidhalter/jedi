@@ -364,6 +364,21 @@ class TestRegression(TestBase):
         words = [c.word for c in self.complete(s)]
         assert 'start' in words
 
+    def test_no_statement_parent(self):
+        source = textwrap.dedent("""
+        def f():
+            pass
+
+        class C:
+            pass
+
+        variable = f or C""")
+        lines = source.splitlines()
+        defs = self.definition(source, (len(lines), 3))
+        defs = sorted(defs, key=lambda d: d.line)
+        self.assertEqual([d.description for d in defs],
+                         ['def f', 'class C'])
+
 
 class TestDocstring(TestBase):
 

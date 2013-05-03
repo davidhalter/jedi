@@ -349,8 +349,8 @@ class SubModule(Scope, Module):
         :param name: The name of the global.
         :type name: Name
         """
-        self.global_vars.append(name)
         # set no parent here, because globals are not defined in this scope.
+        self.global_vars.append(name)
 
     def get_set_vars(self):
         n = super(SubModule, self).get_set_vars()
