@@ -528,10 +528,10 @@ def _defined_names(scope):
     return [Definition(d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
-class RelatedName(BaseDefinition):
+class Usage(BaseDefinition):
     """TODO: document this"""
     def __init__(self, name_part, scope):
-        super(RelatedName, self).__init__(scope, name_part.start_pos)
+        super(Usage, self).__init__(scope, name_part.start_pos)
         self.text = unicode(name_part)
         self.end_pos = name_part.end_pos
 

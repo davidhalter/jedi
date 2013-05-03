@@ -391,14 +391,14 @@ class Script(object):
     @api_classes._clear_caches_after_call
     def usages(self, additional_module_paths=()):
         """
-        Return :class:`api_classes.RelatedName` objects, which contain all
+        Return :class:`api_classes.Usage` objects, which contain all
         names that point to the definition of the name under the cursor. This
         is very useful for refactoring (renaming), or to show all usages of a
         variable.
 
         .. todo:: Implement additional_module_paths
 
-        :rtype: list of :class:`api_classes.RelatedName`
+        :rtype: list of :class:`api_classes.Usage`
         """
         user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
@@ -418,9 +418,9 @@ class Script(object):
 
         for d in set(definitions):
             if isinstance(d, pr.Module):
-                names.append(api_classes.RelatedName(d, d))
+                names.append(api_classes.Usage(d, d))
             else:
-                names.append(api_classes.RelatedName(d.names[-1], d))
+                names.append(api_classes.Usage(d.names[-1], d))
 
         return self._sorted_defs(set(names))
 

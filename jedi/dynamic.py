@@ -445,7 +445,7 @@ def usages(definitions, search_name, mods):
             # compare to see if they match
             if any(r in compare_definitions for r in compare_follow_res):
                 scope = call.parent
-                result.append(api_classes.RelatedName(search, scope))
+                result.append(api_classes.Usage(search, scope))
 
         return result
 
@@ -475,7 +475,7 @@ def usages(definitions, search_name, mods):
                                                         direct_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
-                        names.append(api_classes.RelatedName(name_part, stmt))
+                        names.append(api_classes.Usage(name_part, stmt))
             else:
                 for call in _scan_statement(stmt, search_name,
                                             assignment_details=True):
