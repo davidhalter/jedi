@@ -238,6 +238,11 @@ class TestRegression(TestBase):
         # jedi-vim #70
         s = """def foo("""
         assert self.function_definition(s) is None
+        jedi.set_debug_function(jedi.debug.print_to_stdout)
+        # jedi-vim #116
+        s = """import functools; test = getattr(functools, 'partial'); test("""
+        check(self.function_definition(s), 'partial', 0)
+        jedi.set_debug_function(None)
 
     @unittest.skip("function_definition at ``f( |)`` does not work")
     def test_function_definition_empty_paren_pre_space(self):

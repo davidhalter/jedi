@@ -408,7 +408,7 @@ class Execution(Executable):
                     return []
 
                 for obj in objects:
-                    if not isinstance(obj, (Instance, Class)):
+                    if not isinstance(obj, (Instance, Class, pr.Module)):
                         debug.warning('getattr called without instance')
                         continue
 
