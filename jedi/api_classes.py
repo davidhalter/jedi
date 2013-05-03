@@ -532,7 +532,6 @@ class RelatedName(BaseDefinition):
     """TODO: document this"""
     def __init__(self, name_part, scope):
         super(RelatedName, self).__init__(scope, name_part.start_pos)
-        self.name_part = name_part
         self.text = unicode(name_part)
         self.end_pos = name_part.end_pos
 
@@ -555,19 +554,19 @@ class CallDef(object):
     return the `isinstance` function. without `(` it would return nothing.
     """
     def __init__(self, executable, index, call):
-        self.executable = executable
+        self._executable = executable
         self.index = index
-        self.call = call
+        self._call = call
 
     @property
     def params(self):
-        if self.executable.isinstance(er.Function):
-            if isinstance(self.executable, er.InstanceElement):
-                return self.executable.params[1:]
-            return self.executable.params
+        if self._executable.isinstance(er.Function):
+            if isinstance(self._executable, er.InstanceElement):
+                return self._executable.params[1:]
+            return self._executable.params
         else:
             try:
-                sub = self.executable.get_subscope_by_name('__init__')
+                sub = self._executable.get_subscope_by_name('__init__')
                 return sub.params[1:]  # ignore self
             except KeyError:
                 return []
@@ -576,7 +575,7 @@ class CallDef(object):
     def bracket_start(self):
         """ The indent of the bracket that is responsible for the last function
         call. """
-        c = self.call
+        c = self._call
         while c.next is not None:
             c = c.next
         return c.name.end_pos
@@ -584,12 +583,12 @@ class CallDef(object):
     @property
     def call_name(self):
         """ The name (e.g. 'isinstance') as a string. """
-        return unicode(self.executable.name)
+        return unicode(self._executable.name)
 
     @property
     def module(self):
-        return self.executable.get_parent_until()
+        return self._executable.get_parent_until()
 
     def __repr__(self):
-        return '<%s: %s index %s>' % (type(self).__name__, self.executable,
+        return '<%s: %s index %s>' % (type(self).__name__, self._executable,
                                     self.index)

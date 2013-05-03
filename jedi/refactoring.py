@@ -92,7 +92,7 @@ def _rename(names, replace_str):
         nr, indent = name.start_pos
         line = new_lines[nr - 1]
         new_lines[nr - 1] = line[:indent] + replace_str + \
-                            line[indent + len(name.name_part):]
+                            line[indent + len(name.text):]
     process(current_path, old_lines, new_lines)
     return dct
 
