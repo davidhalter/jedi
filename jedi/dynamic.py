@@ -407,7 +407,8 @@ class ArrayInstance(pr.Base):
                         continue
                 items += evaluate.get_iterator_types([typ])
 
-        if self.var_args.parent is None:
+        # TODO check if exclusion of tuple is a problem here.
+        if isinstance(self.var_args, tuple) or self.var_args.parent is None:
             return []  # generated var_args should not be checked for arrays
 
         module = self.var_args.get_parent_until()
