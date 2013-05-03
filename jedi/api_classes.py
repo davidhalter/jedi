@@ -80,7 +80,8 @@ class BaseDefinition(object):
         self.is_keyword = isinstance(definition, keywords.Keyword)
 
         # generate a path to the definition
-        p = definition.get_parent_until().path
+        self._module = definition.get_parent_until()
+        p = self._module.path
         self.module_path = p if p is None else unicode(p)
 
     @property
