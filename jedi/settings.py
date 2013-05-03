@@ -74,12 +74,6 @@ Caching
 .. autodata:: function_definition_validity
 
 
-Various
-~~~~~~~
-
-.. autodata:: part_line_length
-
-
 """
 import os
 import platform
@@ -218,18 +212,8 @@ scale `max_executions` and `max_until_execution_unique`:
 """
 
 # ----------------
-# various
-# ----------------
-
-part_line_length = 20
-"""
-Size of the current code part, which is used to speed up parsing.
-"""
-
-# ----------------
 # caching validity (time)
 # ----------------
-
 
 star_import_cache_validity = 60.0
 """
