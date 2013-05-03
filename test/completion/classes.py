@@ -544,3 +544,23 @@ class TestSuper(Super):
         def a():
             #? 
             super()
+
+
+# -----------------
+# if flow at class level
+# -----------------
+class TestX(object):
+    def normal_method(self):
+        return 1
+
+    if True:
+        def conditional_method(self):
+            var = self.normal_method()
+            #? int()
+            var
+            return 2
+
+    def other_method(self):
+        var = self.conditional_method()
+        #? int()
+        var
