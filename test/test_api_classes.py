@@ -38,7 +38,7 @@ def make_definitions():
     definitions += script.definition()
 
     script2 = api.Script(source, 4, len('class C'), None)
-    definitions += script2.related_names()
+    definitions += script2.usages()
 
     source_param = "def f(a): return a"
     script_param = api.Script(source_param, 1, len(source_param), None)

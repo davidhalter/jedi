@@ -143,7 +143,7 @@ class IntegrationTestCase(object):
             TEST_COMPLETIONS: self.run_completion,
             TEST_DEFINITIONS: self.run_definition,
             TEST_ASSIGNMENTS: self.run_goto,
-            TEST_USAGES: self.run_related_name,
+            TEST_USAGES: self.run_usages,
         }
         return testers[self.test_type](compare_cb)
 
@@ -192,8 +192,8 @@ class IntegrationTestCase(object):
         comp_str = str(sorted(str(r.description) for r in result))
         return compare_cb(self, comp_str, self.correct)
 
-    def run_related_name(self, compare_cb):
-        result = self.script().related_names()
+    def run_usages(self, compare_cb):
+        result = self.script().usages()
         self.correct = self.correct.strip()
         compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
                                                             for r in result)

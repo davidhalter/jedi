@@ -340,7 +340,7 @@ class Script(object):
 
     def _goto(self, add_import_name=False):
         """
-        Used for goto and related_names.
+        Used for goto and usages.
         :param add_import_name: TODO add description
         """
         def follow_inexistent_imports(defs):
@@ -409,12 +409,12 @@ class Script(object):
                                 if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
-            definitions = dynamic.related_name_add_import_modules(definitions,
+            definitions = dynamic.usages_add_import_modules(definitions,
                                                                 search_name)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self._parser.module)
-        names = dynamic.related_names(definitions, search_name, module)
+        names = dynamic.usages(definitions, search_name, module)
 
         for d in set(definitions):
             if isinstance(d, pr.Module):

@@ -59,7 +59,7 @@ def rename(script, new_name):
     :type source: str
     :return: list of changed lines/changed files
     """
-    return Refactoring(_rename(script.related_names(), new_name))
+    return Refactoring(_rename(script.usages(), new_name))
 
 
 def _rename(names, replace_str):
@@ -171,8 +171,8 @@ def inline(script):
     with common.ignored(AssertionError):
         assert len(definitions) == 1
         stmt = definitions[0]._definition
-        related_names = script.related_names()
-        inlines = [r for r in related_names
+        usages = script.usages()
+        inlines = [r for r in usages
                         if not stmt.start_pos <= r.start_pos <= stmt.end_pos]
         inlines = sorted(inlines, key=lambda x: (x.module_path, x.start_pos),
                                                 reverse=True)

@@ -417,7 +417,7 @@ class ArrayInstance(pr.Base):
         return items
 
 
-def related_names(definitions, search_name, mods):
+def usages(definitions, search_name, mods):
     def compare_array(definitions):
         """ `definitions` are being compared by module/start_pos, because
         sometimes the id's of the objects change (e.g. executions).
@@ -439,7 +439,7 @@ def related_names(definitions, search_name, mods):
 
         for f in follow:
             follow_res, search = evaluate.goto(call.parent, f)
-            follow_res = related_name_add_import_modules(follow_res, search)
+            follow_res = usages_add_import_modules(follow_res, search)
 
             compare_follow_res = compare_array(follow_res)
             # compare to see if they match
@@ -483,7 +483,7 @@ def related_names(definitions, search_name, mods):
     return names
 
 
-def related_name_add_import_modules(definitions, search_name):
+def usages_add_import_modules(definitions, search_name):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:
