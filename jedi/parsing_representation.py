@@ -368,7 +368,8 @@ class SubModule(Scope, Module):
             sep = (re.escape(os.path.sep),) * 2
             r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep,
                                                                 self.path)
-            string = r.group(1)
+            # remove PEP 3149 names
+            string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         names = [(string, (0, 0))]
         self._name = Name(self, names, self.start_pos, self.end_pos,
                                                             self.use_as_parent)
