@@ -416,49 +416,13 @@ class Script(object):
         return api_classes.CallDef(executable, index, call)
 
     def _func_call_and_param_index(self):
-        def check_user_stmt(user_stmt):
-            if user_stmt is None \
-                        or not isinstance(user_stmt, pr.Statement):
-                return None, 0
-
-            call, index, stop = helpers.search_function_definition(user_stmt, self.pos)
-            return call, index
-
-        def check_cache():
-            """ Do the parsing with a part parser, therefore reduce ressource
-            costs.
-            TODO this is not working with multi-line docstrings, improve.
-            """
-            if self.source_path is None:
-                return None, 0
-
-            try:
-                parser = cache.parser_cache[self.source_path].parser
-            except KeyError:
-                return None, 0
-            part_parser = self._module.get_part_parser()
-            user_stmt = part_parser.user_stmt
-            call, index = check_user_stmt(user_stmt)
-            if call:
-                old_stmt = parser.module.get_statement_for_position(self.pos)
-                if old_stmt is None:
-                    return None, 0
-                old_call, old_index = check_user_stmt(old_stmt)
-                if old_call:
-                    # compare repr because that should definitely be the same.
-                    # Otherwise the whole thing is out of sync.
-                    if repr(old_call) == repr(call):
-                        # return the index of the part_parser
-                        return old_call, index
-            return None, 0
-
         debug.speed('func_call start')
-        call = None
-        index = 0
-        if settings.use_function_definition_cache:
-            call, index = check_cache()
+        call, index = None, 0
         if call is None:
-            call, index = check_user_stmt(self._parser.user_stmt)
+            user_stmt = self._parser.user_stmt
+            if user_stmt is not None and isinstance(user_stmt, pr.Statement):
+                call, index, _ = helpers.search_function_definition(
+                                                        user_stmt, self.pos)
         debug.speed('func_call parsed')
         return call, index
 
