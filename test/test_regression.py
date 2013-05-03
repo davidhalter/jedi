@@ -49,7 +49,7 @@ class TestRegression(TestBase):
         self.function_definition(s, pos)
         assert self.function_definition(s, pos)
 
-    def test_definition_cursor(self):
+    def test_goto_definition_cursor(self):
 
         s = ("class A():\n"
              "    def _something(self):\n"
@@ -68,7 +68,7 @@ class TestRegression(TestBase):
         diff_line = 4, 10
         should2 = 8, 10
 
-        get_def = lambda pos: [d.description for d in self.definition(s, pos)]
+        get_def = lambda pos: [d.description for d in self.goto_definitions(s, pos)]
         in_name = get_def(in_name)
         under_score = get_def(under_score)
         should1 = get_def(should1)
@@ -84,20 +84,20 @@ class TestRegression(TestBase):
         self.assertRaises(jedi.NotFoundError, get_def, cls)
 
     def test_keyword_doc(self):
-        r = list(self.definition("or", (1, 1)))
+        r = list(self.goto_definitions("or", (1, 1)))
         assert len(r) == 1
         assert len(r[0].doc) > 100
 
-        r = list(self.definition("asfdasfd", (1, 1)))
+        r = list(self.goto_definitions("asfdasfd", (1, 1)))
         assert len(r) == 0
 
     def test_operator_doc(self):
-        r = list(self.definition("a == b", (1, 3)))
+        r = list(self.goto_definitions("a == b", (1, 3)))
         assert len(r) == 1
         assert len(r[0].doc) > 100
 
     def test_function_call_signature(self):
-        defs = self.definition("""
+        defs = self.goto_definitions("""
         def f(x, y=1, z='a'):
             pass
         f""")
@@ -105,7 +105,7 @@ class TestRegression(TestBase):
         assert "f(x, y = 1, z = 'a')" in doc
 
     def test_class_call_signature(self):
-        defs = self.definition("""
+        defs = self.goto_definitions("""
         class Foo:
             def __init__(self, x, y=1, z='a'):
                 pass
@@ -113,12 +113,12 @@ class TestRegression(TestBase):
         doc = defs[0].doc
         assert "Foo(self, x, y = 1, z = 'a')" in doc
 
-    def test_definition_at_zero(self):
-        assert self.definition("a", (1, 1)) == []
-        s = self.definition("str", (1, 1))
+    def test_goto_definition_at_zero(self):
+        assert self.goto_definitions("a", (1, 1)) == []
+        s = self.goto_definitions("str", (1, 1))
         assert len(s) == 1
         assert list(s)[0].description == 'class str'
-        assert self.definition("", (1, 0)) == []
+        assert self.goto_definitions("", (1, 0)) == []
 
     def test_complete_at_zero(self):
         s = self.completions("str", (1, 3))
@@ -128,9 +128,9 @@ class TestRegression(TestBase):
         s = self.completions("", (1, 0))
         assert len(s) > 0
 
-    def test_definition_on_import(self):
-        assert self.definition("import sys_blabla", (1, 8)) == []
-        assert len(self.definition("import sys", (1, 8))) == 1
+    def test_goto_definition_on_import(self):
+        assert self.goto_definitions("import sys_blabla", (1, 8)) == []
+        assert len(self.goto_definitions("import sys", (1, 8))) == 1
 
     @cwd_at('jedi')
     def test_complete_on_empty_import(self):
@@ -263,15 +263,15 @@ class TestRegression(TestBase):
         # .parser to load the module
         api.modules.Module(os.path.abspath('dynamic.py'), src2).parser
         script = jedi.Script(src1, 1, len(src1), '../setup.py')
-        result = script.definition()
+        result = script.goto_definitions()
         assert len(result) == 1
         assert result[0].description == 'class int'
 
     def test_named_import(self):
         """ named import - jedi-vim issue #8 """
         s = "import time as dt"
-        assert len(jedi.Script(s, 1, 15, '/').definition()) == 1
-        assert len(jedi.Script(s, 1, 10, '/').definition()) == 1
+        assert len(jedi.Script(s, 1, 15, '/').goto_definitions()) == 1
+        assert len(jedi.Script(s, 1, 10, '/').goto_definitions()) == 1
 
     def test_unicode_script(self):
         """ normally no unicode objects are being used. (<=2.7) """
@@ -328,10 +328,10 @@ class TestRegression(TestBase):
 
     def test_keyword_definition_doc(self):
         """ github jedi-vim issue #44 """
-        defs = self.definition("print")
+        defs = self.goto_definitions("print")
         assert [d.doc for d in defs]
 
-        defs = self.definition("import")
+        defs = self.goto_definitions("import")
         assert len(defs) == 1
         assert [d.doc for d in defs]
 
@@ -380,7 +380,7 @@ class TestRegression(TestBase):
 
         variable = f or C""")
         lines = source.splitlines()
-        defs = self.definition(source, (len(lines), 3))
+        defs = self.goto_definitions(source, (len(lines), 3))
         defs = sorted(defs, key=lambda d: d.line)
         self.assertEqual([d.description for d in defs],
                          ['def f', 'class C'])
@@ -389,21 +389,21 @@ class TestRegression(TestBase):
 class TestDocstring(TestBase):
 
     def test_function_doc(self):
-        defs = self.definition("""
+        defs = self.goto_definitions("""
         def func():
             '''Docstring of `func`.'''
         func""")
         self.assertEqual(defs[0].raw_doc, 'Docstring of `func`.')
 
     def test_attribute_docstring(self):
-        defs = self.definition("""
+        defs = self.goto_definitions("""
         x = None
         '''Docstring of `x`.'''
         x""")
         self.assertEqual(defs[0].raw_doc, 'Docstring of `x`.')
 
     def test_multiple_docstrings(self):
-        defs = self.definition("""
+        defs = self.goto_definitions("""
         def func():
             '''Original docstring.'''
         x = func
@@ -435,7 +435,7 @@ class TestFeature(TestBase):
         import re
         any_re = re.compile('.*')
         any_re"""
-        self.assertEqual(self.definition(s)[0].full_name, 're.RegexObject')
+        self.assertEqual(self.goto_definitions(s)[0].full_name, 're.RegexObject')
 
     def test_quick_completion(self):
         sources = [

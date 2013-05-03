@@ -35,7 +35,7 @@ def make_definitions():
     variable = sys or C or x or f or g or g() or h""")
     lines = source.splitlines()
     script = api.Script(source, len(lines), len('variable'), None)
-    definitions += script.definition()
+    definitions += script.goto_definitions()
 
     script2 = api.Script(source, 4, len('class C'), None)
     definitions += script2.usages()

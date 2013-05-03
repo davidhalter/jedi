@@ -168,8 +168,10 @@ class Script(object):
                                             x.name.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):
-        """ Base for completions, goto and definition. Basically it returns
-        the resolved scopes under cursor. """
+        """
+        Base for completions/goto. Basically it returns the resolved scopes
+        under cursor.
+        """
         debug.dbg('start: %s in %s' % (goto_path, self._parser.user_scope))
 
         user_stmt = self._parser.user_stmt

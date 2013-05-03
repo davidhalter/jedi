@@ -24,9 +24,9 @@ class TestBase(unittest.TestCase):
             pos = len(lines), len(lines[-1])
         return jedi.Script(src, pos[0], pos[1], path)
 
-    def definition(self, src, pos=None):
+    def goto_definitions(self, src, pos=None):
         script = self.get_script(src, pos)
-        return script.definition()
+        return script.goto_definitions()
 
     def completions(self, src, pos=None, path=None):
         script = self.get_script(src, pos, path)
