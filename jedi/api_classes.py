@@ -71,7 +71,7 @@ class BaseDefinition(object):
 
     def __init__(self, definition, start_pos):
         self.start_pos = start_pos
-        self.definition = definition
+        self._definition = definition
         """
         An instance of :class:`jedi.parsing_representation.Base` subclass.
         """
@@ -131,9 +131,9 @@ class BaseDefinition(object):
 
         """
         # generate the type
-        stripped = self.definition
-        if isinstance(self.definition, er.InstanceElement):
-            stripped = self.definition.var
+        stripped = self._definition
+        if isinstance(self._definition, er.InstanceElement):
+            stripped = self._definition.var
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
         return type(stripped).__name__.lower()
@@ -142,8 +142,8 @@ class BaseDefinition(object):
     def path(self):
         """The module path."""
         path = []
-        if not isinstance(self.definition, keywords.Keyword):
-            par = self.definition
+        if not isinstance(self._definition, keywords.Keyword):
+            par = self._definition
             while par is not None:
                 with common.ignored(AttributeError):
                     path.insert(0, par.name)
@@ -217,7 +217,7 @@ class BaseDefinition(object):
 
         """
         try:
-            return self.definition.doc
+            return self._definition.doc
         except AttributeError:
             return self.raw_doc
 
@@ -229,7 +229,7 @@ class BaseDefinition(object):
         See :attr:`doc` for example.
         """
         try:
-            return unicode(self.definition.docstr)
+            return unicode(self._definition.docstr)
         except AttributeError:
             return ''
 
@@ -260,7 +260,7 @@ class BaseDefinition(object):
         'class C'
 
         """
-        return unicode(self.definition)
+        return unicode(self._definition)
 
     @property
     def full_name(self):
@@ -379,7 +379,7 @@ class Completion(BaseDefinition):
             return ''
         t = self.type
         if t == 'Statement' or t == 'Import':
-            desc = self.definition.get_code(False)
+            desc = self._definition.get_code(False)
         else:
             desc = '.'.join(unicode(p) for p in self.path)
 
@@ -396,10 +396,10 @@ class Completion(BaseDefinition):
         it's just PITA-slow.
         """
         if self._followed_definitions is None:
-            if self.definition.isinstance(pr.Statement):
-                defs = evaluate.follow_statement(self.definition)
-            elif self.definition.isinstance(pr.Import):
-                defs = imports.strip_imports([self.definition])
+            if self._definition.isinstance(pr.Statement):
+                defs = evaluate.follow_statement(self._definition)
+            elif self._definition.isinstance(pr.Import):
+                defs = imports.strip_imports([self._definition])
             else:
                 return [self]
 
@@ -430,7 +430,7 @@ class Definition(BaseDefinition):
 
         :rtype: str or None
         """
-        d = self.definition
+        d = self._definition
         if isinstance(d, er.InstanceElement):
             d = d.var
 
@@ -461,7 +461,7 @@ class Definition(BaseDefinition):
         A description of the :class:`.Definition` object, which is heavily used
         in testing. e.g. for ``isinstance`` it returns ``def isinstance``.
         """
-        d = self.definition
+        d = self._definition
         if isinstance(d, er.InstanceElement):
             d = d.var
         if isinstance(d, pr.Name):
@@ -494,7 +494,7 @@ class Definition(BaseDefinition):
             `module.class.function` path.
         """
         if self.module_path.endswith('.py') \
-                    and not isinstance(self.definition, pr.Module):
+                    and not isinstance(self._definition, pr.Module):
             position = '@%s' % (self.line)
         else:
             # is a builtin or module
@@ -507,7 +507,7 @@ class Definition(BaseDefinition):
 
         :rtype: list of Definition
         """
-        d = self.definition
+        d = self._definition
         if isinstance(d, er.InstanceElement):
             d = d.var
         if isinstance(d, pr.Name):

@@ -170,7 +170,7 @@ def inline(script):
     definitions = script.goto()
     with common.ignored(AssertionError):
         assert len(definitions) == 1
-        stmt = definitions[0].definition
+        stmt = definitions[0]._definition
         related_names = script.related_names()
         inlines = [r for r in related_names
                         if not stmt.start_pos <= r.start_pos <= stmt.end_pos]
