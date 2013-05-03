@@ -32,9 +32,9 @@ class TestRegression(TestBase):
         cache = api.cache
         cache.star_import_cache = {}  # first empty...
         # path needs to be not-None (otherwise caching effects are not visible)
-        jedi.Script('', 1, 0, '').complete()
+        jedi.Script('', 1, 0, '').completions()
         time.sleep(2 * new)
-        jedi.Script('', 1, 0, '').complete()
+        jedi.Script('', 1, 0, '').completions()
 
         # reset values
         jedi.settings.star_import_cache_validity = old
@@ -121,11 +121,11 @@ class TestRegression(TestBase):
         assert self.definition("", (1, 0)) == []
 
     def test_complete_at_zero(self):
-        s = self.complete("str", (1, 3))
+        s = self.completions("str", (1, 3))
         assert len(s) == 1
         assert list(s)[0].word == 'str'
 
-        s = self.complete("", (1, 0))
+        s = self.completions("", (1, 0))
         assert len(s) > 0
 
     def test_definition_on_import(self):
@@ -135,16 +135,16 @@ class TestRegression(TestBase):
     @cwd_at('jedi')
     def test_complete_on_empty_import(self):
         # should just list the files in the directory
-        assert 10 < len(self.complete("from .", path='')) < 30
-        assert 10 < len(self.complete("from . import", (1, 5), '')) < 30
-        assert 10 < len(self.complete("from . import classes",
+        assert 10 < len(self.completions("from .", path='')) < 30
+        assert 10 < len(self.completions("from . import", (1, 5), '')) < 30
+        assert 10 < len(self.completions("from . import classes",
                                         (1, 5), '')) < 30
-        assert len(self.complete("import")) == 0
-        assert len(self.complete("import import", path='')) > 0
+        assert len(self.completions("import")) == 0
+        assert len(self.completions("import import", path='')) > 0
 
         # 111
-        assert self.complete("from datetime import")[0].word == 'import'
-        assert self.complete("from datetime import ")
+        assert self.completions("from datetime import")[0].word == 'import'
+        assert self.completions("from datetime import ")
 
     def assert_call_def(self, call_def, name, index):
         self.assertEqual(
@@ -276,18 +276,18 @@ class TestRegression(TestBase):
     def test_unicode_script(self):
         """ normally no unicode objects are being used. (<=2.7) """
         s = unicode("import datetime; datetime.timedelta")
-        completions = self.complete(s)
+        completions = self.completions(s)
         assert len(completions)
         assert type(completions[0].description) is unicode
 
         s = utf8("author='öä'; author")
-        completions = self.complete(s)
+        completions = self.completions(s)
         x = completions[0].description
         assert type(x) is unicode
 
         s = utf8("#-*- coding: iso-8859-1 -*-\nauthor='öä'; author")
         s = s.encode('latin-1')
-        completions = self.complete(s)
+        completions = self.completions(s)
         assert type(completions[0].description) is unicode
 
     def test_multibyte_script(self):
@@ -299,27 +299,27 @@ class TestRegression(TestBase):
         except NameError:
             pass  # python 3 has no unicode method
         else:
-            assert len(self.complete(s, (1, len(code))))
+            assert len(self.completions(s, (1, len(code))))
 
     def test_unicode_attribute(self):
         """ github jedi-vim issue #94 """
         s1 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n'
                   '    name = "e"\n\nPerson().name.')
-        completions1 = self.complete(s1)
+        completions1 = self.completions(s1)
         assert 'strip' in [c.word for c in completions1]
         s2 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n'
                   '    name = "é"\n\nPerson().name.')
-        completions2 = self.complete(s2)
+        completions2 = self.completions(s2)
         assert 'strip' in [c.word for c in completions2]
 
     def test_os_nowait(self):
         """ github issue #45 """
-        s = self.complete("import os; os.P_")
+        s = self.completions("import os; os.P_")
         assert 'P_NOWAIT' in [i.word for i in s]
 
     def test_follow_definition(self):
         """ github issue #45 """
-        c = self.complete("from datetime import timedelta; timedelta")
+        c = self.completions("from datetime import timedelta; timedelta")
         # type can also point to import, but there will be additional
         # attributes
         objs = itertools.chain.from_iterable(r.follow_definition() for r in c)
@@ -344,7 +344,7 @@ class TestRegression(TestBase):
         """At some point, points were inserted into the completions, this
         caused problems, sometimes.
         """
-        c = self.complete("if IndentationErr")
+        c = self.completions("if IndentationErr")
         assert c[0].word == 'IndentationError'
         self.assertEqual(c[0].complete, 'or')
 
@@ -356,7 +356,7 @@ class TestRegression(TestBase):
                     '''
                     arg."""
 
-        words = [c.word for c in self.complete(s)]
+        words = [c.word for c in self.completions(s)]
         assert 'join' in words
 
     def test_docstrings_type_dotted_import(self):
@@ -366,7 +366,7 @@ class TestRegression(TestBase):
                     :type arg: threading.Thread
                     '''
                     arg."""
-        words = [c.word for c in self.complete(s)]
+        words = [c.word for c in self.completions(s)]
         assert 'start' in words
 
     def test_no_statement_parent(self):
@@ -415,7 +415,7 @@ class TestDocstring(TestBase):
 class TestFeature(TestBase):
     def test_full_name(self):
         """ feature request #61"""
-        assert self.complete('import os; os.path.join')[0].full_name \
+        assert self.completions('import os; os.path.join')[0].full_name \
                                     == 'os.path.join'
 
     def test_keyword_full_name_should_be_none(self):
@@ -427,7 +427,7 @@ class TestFeature(TestBase):
         assert d.full_name is None
 
     def test_full_name_builtin(self):
-        self.assertEqual(self.complete('type')[0].full_name, 'type')
+        self.assertEqual(self.completions('type')[0].full_name, 'type')
 
     def test_full_name_tuple_mapping(self):
         s = """
@@ -451,7 +451,7 @@ class TestFeature(TestBase):
             quick_completions = api._quick_complete(source)
             # Run real completion
             script = jedi.Script(source, pos[0], pos[1], '')
-            real_completions = script.complete()
+            real_completions = script.completions()
             # Compare results
             quick_values = [(c.full_name, c.line, c.column) for c in quick_completions]
             real_values = [(c.full_name, c.line, c.column) for c in real_completions]
@@ -535,7 +535,7 @@ class TestSpeed(TestBase):
     @_check_speed(0.2)
     def test_os_path_join(self):
         s = "from posixpath import join; join('', '')."
-        assert len(self.complete(s)) > 10  # is a str completion
+        assert len(self.completions(s)) > 10  # is a str completion
 
     @_check_speed(0.1)
     def test_scipy_speed(self):

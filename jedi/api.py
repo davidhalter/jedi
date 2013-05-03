@@ -83,7 +83,7 @@ class Script(object):
         :return: Completion objects, sorted by name and __ comes last.
         :rtype: list of :class:`api_classes.Completion`
         """
-        debug.speed('complete start')
+        debug.speed('completions start')
         path = self._module.get_path_until_cursor()
         if re.search('^\.|\.\.$', path):
             return []
@@ -161,14 +161,14 @@ class Script(object):
                         comp_dct[k] = new
                         comps.append(new)
 
-        debug.speed('complete end')
+        debug.speed('completions end')
 
         return sorted(comps, key=lambda x: (x.word.startswith('__'),
                                             x.word.startswith('_'),
                                             x.word.lower()))
 
     def _prepare_goto(self, goto_path, is_like_search=False):
-        """ Base for complete, goto and definition. Basically it returns
+        """ Base for completions, goto and definition. Basically it returns
         the resolved scopes under cursor. """
         debug.dbg('start: %s in %s' % (goto_path, self._parser.user_scope))
 
@@ -551,4 +551,4 @@ def _quick_complete(source):
     lines = re.sub(r'[\n\r\s]*$', '', source).splitlines()
     pos = len(lines), len(lines[-1])
     script = Script(source, pos[0], pos[1], '')
-    return script.complete()
+    return script.completions()

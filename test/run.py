@@ -10,7 +10,7 @@ tests.
 
 There are different kind of tests:
 
-- complete / definitions ``#?``
+- completions / definitions ``#?``
 - goto: ``#!``
 - related names: ``#<``
 
@@ -25,7 +25,7 @@ multiple Python versions.
 .. _tox: http://testrun.org/tox
 
 Integration test cases are located in ``test/completion`` directory
-and each test cases are indicated by the comment ``#?`` (complete /
+and each test cases are indicated by the comment ``#?`` (completions /
 definitions), ``#!`` (assignments) and ``#<`` (usages).  There is also
 support for third party libraries. In a normal test run they are not
 being executed, you have to provide a ``--thirdparty`` option.
@@ -148,8 +148,8 @@ class IntegrationTestCase(object):
         return testers[self.test_type](compare_cb)
 
     def run_completion(self, compare_cb):
-        completions = self.script().complete()
-        #import cProfile; cProfile.run('script.complete()')
+        completions = self.script().completions()
+        #import cProfile; cProfile.run('script.completions()')
 
         comp_str = set([c.word for c in completions])
         return compare_cb(self, comp_str, set(literal_eval(self.correct)))

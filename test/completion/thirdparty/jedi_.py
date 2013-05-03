@@ -1,7 +1,7 @@
 
 from jedi import functions, evaluate, parsing
 
-el = functions.complete()[0]
+el = functions.completions()[0]
 #? ['description']
 el.description
 

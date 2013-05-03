@@ -28,9 +28,9 @@ class TestBase(unittest.TestCase):
         script = self.get_script(src, pos)
         return script.definition()
 
-    def complete(self, src, pos=None, path=None):
+    def completions(self, src, pos=None, path=None):
         script = self.get_script(src, pos, path)
-        return script.complete()
+        return script.completions()
 
     def goto(self, src, pos=None):
         script = self.get_script(src, pos)

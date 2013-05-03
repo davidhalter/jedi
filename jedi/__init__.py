@@ -22,7 +22,7 @@ example for the autocompletion feature:
 >>> script = jedi.Script(source, 3, len('datetime.da'), 'example.py')
 >>> script
 <Script: 'example.py'>
->>> completions = script.complete()
+>>> completions = script.completions()
 >>> completions                                         #doctest: +ELLIPSIS
 [<Completion: date>, <Completion: datetime>, ...]
 >>> print(completions[0].complete)
