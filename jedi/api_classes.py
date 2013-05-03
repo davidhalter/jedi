@@ -5,8 +5,6 @@ interesting information about completion and goto operations.
 """
 from __future__ import with_statement
 
-import re
-import os
 import warnings
 import functools
 
@@ -81,8 +79,7 @@ class BaseDefinition(object):
 
         # generate a path to the definition
         self._module = definition.get_parent_until()
-        p = self._module.path
-        self.module_path = p if p is None else unicode(p)
+        self.module_path = self._module.path
 
     @property
     def type(self):
@@ -164,12 +161,8 @@ class BaseDefinition(object):
         >>> d = script.definition()[0]
         >>> print(d.module_name)                       # doctest: +ELLIPSIS
         datetime
-
         """
-        path = self.module_path
-        sep = os.path.sep
-        p = re.sub(r'^.*?([\w\d]+)(%s__init__)?.(py|so)$' % sep, r'\1', path)
-        return p
+        return str(self._module.name)
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
