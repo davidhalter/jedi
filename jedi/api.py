@@ -75,7 +75,7 @@ class Script(object):
         return self._module.parser
 
     @api_classes._clear_caches_after_call
-    def complete(self):
+    def completions(self):
         """
         Return :class:`api_classes.Completion` objects. Those objects contain
         information about the completions, more than just names.
@@ -122,8 +122,7 @@ class Script(object):
                     completions.append((c, s))
 
         if not dot:  # named params have no dots
-            call_def = self.function_definition()
-            if call_def:
+            for call_def in self.call_signatures():
                 if not call_def.module.is_builtin():
                     for p in call_def.params:
                         completions.append((p.get_name(), p))
@@ -199,17 +198,71 @@ class Script(object):
         stmt.parent = self._parser.user_scope
         return stmt
 
+    def complete(self):
+        """
+        .. deprecated:: 0.6.0
+           Use :attr:`.completions` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use completions instead.", DeprecationWarning)
+        return self.completions()
+
+    def goto(self):
+        """
+        .. deprecated:: 0.6.0
+           Use :attr:`.goto_assignments` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use goto_assignments instead.", DeprecationWarning)
+        return self.goto_assignments()
+
+    def definition(self):
+        """
+        .. deprecated:: 0.6.0
+           Use :attr:`.goto_definitions` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use goto_definitions instead.", DeprecationWarning)
+        return self.goto_definitions()
+
     def get_definition(self):
         """
         .. deprecated:: 0.5.0
-           Use :attr:`.function_definition` instead.
+           Use :attr:`.goto_definitions` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use goto_definitions instead.", DeprecationWarning)
+        return self.goto_definitions()
+
+    def related_names(self):
+        """
+        .. deprecated:: 0.6.0
+           Use :attr:`.usages` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use usages instead.", DeprecationWarning)
+        return self.usages()
+
+    def get_in_function_call(self):
+        """
+        .. deprecated:: 0.6.0
+           Use :attr:`.call_signatures` instead.
+        .. todo:: Remove!
+        """
+        return self.function_definition()
+
+    def function_definition(self):
+        """
+        .. deprecated:: 0.6.0
+           Use :attr:`.call_signatures` instead.
         .. todo:: Remove!
         """
         warnings.warn("Use line instead.", DeprecationWarning)
-        return self.definition()
+        sig = self.call_signatures()
+        return sig[0] if sig else None
 
     @api_classes._clear_caches_after_call
-    def definition(self):
+    def goto_definitions(self):
         """
         Return the definitions of a the path under the cursor. This is not a
         goto function! This follows complicated paths and returns the end, not
@@ -273,7 +326,7 @@ class Script(object):
         return self._sorted_defs(d)
 
     @api_classes._clear_caches_after_call
-    def goto(self):
+    def goto_assignments(self):
         """
         Return the first definition found by goto. Imports and statements
         aren't followed.  Multiple objects may be returned, because Python
@@ -336,7 +389,7 @@ class Script(object):
         return definitions, search_name
 
     @api_classes._clear_caches_after_call
-    def related_names(self, additional_module_paths=()):
+    def usages(self, additional_module_paths=()):
         """
         Return :class:`api_classes.RelatedName` objects, which contain all
         names that point to the definition of the name under the cursor. This
@@ -371,17 +424,8 @@ class Script(object):
 
         return self._sorted_defs(set(names))
 
-    def get_in_function_call(self):
-        """
-        .. deprecated:: 0.5.0
-           Use :attr:`.function_definition` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use line instead.", DeprecationWarning)
-        return self.function_definition()
-
     @api_classes._clear_caches_after_call
-    def function_definition(self):
+    def call_signatures(self):
         """
         Return the function object of the call you're currently in.
 
@@ -398,9 +442,9 @@ class Script(object):
         :rtype: :class:`api_classes.CallDef`
         """
 
-        (call, index) = self._func_call_and_param_index()
+        call, index = self._func_call_and_param_index()
         if call is None:
-            return None
+            return []
 
         user_stmt = self._parser.user_stmt
         with common.scale_speed_settings(settings.scale_function_definition):
@@ -408,12 +452,7 @@ class Script(object):
             origins = cache.cache_function_definition(_callable, user_stmt)
         debug.speed('func_call followed')
 
-        if len(origins) == 0:
-            return None
-        # just take entry zero, because we need just one.
-        executable = origins[0]
-
-        return api_classes.CallDef(executable, index, call)
+        return [api_classes.CallDef(o, index, call) for o in origins]
 
     def _func_call_and_param_index(self):
         debug.speed('func_call start')
