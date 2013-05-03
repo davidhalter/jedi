@@ -42,13 +42,6 @@ class TestRegression(TestBase):
         cache.star_import_cache = {}
         self.assertEqual(length, 1)
 
-    def test_part_parser(self):
-        """ test the function_definition speedups """
-        s = '\n' * 100 + 'abs('
-        pos = 101, 4
-        self.function_definition(s, pos)
-        assert self.function_definition(s, pos)
-
     def test_goto_definition_cursor(self):
 
         s = ("class A():\n"
