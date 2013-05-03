@@ -42,7 +42,7 @@ def make_definitions():
 
     source_param = "def f(a): return a"
     script_param = api.Script(source_param, 1, len(source_param), None)
-    definitions += script_param.goto()
+    definitions += script_param.goto_assignments()
 
     return definitions
 

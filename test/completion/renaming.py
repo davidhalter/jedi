@@ -1,5 +1,5 @@
 """
-Renaming tests. This means search for related names.
+Renaming tests. This means search for usages.
 I always leave a little bit of space to add room for additions, because the
 results always contain position informations.
 """

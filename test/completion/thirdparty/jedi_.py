@@ -10,8 +10,7 @@ el.description
 
 
 scopes, path, dot, like = \
-    functions.prepare_goto(source, row, column,
-                            source_path, True)
+    api._prepare_goto(source, row, column, source_path, True)
 
 # has problems with that (sometimes) very deep nesting.
 #? set()

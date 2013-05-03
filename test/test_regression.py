@@ -336,7 +336,8 @@ class TestRegression(TestBase):
         assert [d.doc for d in defs]
 
     def test_goto_following_on_imports(self):
-        g = self.goto("import multiprocessing.dummy; multiprocessing.dummy")
+        s = "import multiprocessing.dummy; multiprocessing.dummy"
+        g = self.goto_assignments(s)
         assert len(g) == 1
         assert g[0].start_pos != (0, 0)
 

@@ -10,9 +10,9 @@ tests.
 
 There are different kind of tests:
 
-- completions / definitions ``#?``
-- goto: ``#!``
-- related names: ``#<``
+- completions / goto_definitions ``#?``
+- goto_assignments: ``#!``
+- usages: ``#<``
 
 How to run tests?
 +++++++++++++++++
@@ -63,8 +63,8 @@ For example::
 Because it follows ``a.rea`` and a is an ``int``, which has a ``real``
 property.
 
-Definition
-++++++++++
+Goto Definitions
++++++++++++++++
 
 Definition tests use the same symbols like completion tests. This is
 possible because the completion tests are defined with a list::
@@ -72,8 +72,8 @@ possible because the completion tests are defined with a list::
     #? int()
     ab = 3; ab
 
-Goto
-++++
+Goto Assignments
+++++++++++++++++
 
 Tests look like this::
 
@@ -87,7 +87,7 @@ the test (otherwise it's just end of line)::
     #! 2 ['abc=1']
     abc
 
-Related Names
+Usages
 +++++++++++++
 
 Tests look like this::
@@ -141,8 +141,8 @@ class IntegrationTestCase(object):
     def run(self, compare_cb):
         testers = {
             TEST_COMPLETIONS: self.run_completion,
-            TEST_DEFINITIONS: self.run_definition,
-            TEST_ASSIGNMENTS: self.run_goto,
+            TEST_DEFINITIONS: self.run_goto_definitions,
+            TEST_ASSIGNMENTS: self.run_goto_assignments,
             TEST_USAGES: self.run_usages,
         }
         return testers[self.test_type](compare_cb)
@@ -154,11 +154,11 @@ class IntegrationTestCase(object):
         comp_str = set([c.name for c in completions])
         return compare_cb(self, comp_str, set(literal_eval(self.correct)))
 
-    def run_definition(self, compare_cb):
+    def run_goto_definitions(self, compare_cb):
         def definition(correct, correct_start, path):
             def defs(line_nr, indent):
                 s = jedi.Script(self.source, line_nr, indent, path)
-                return set(s.definition())
+                return set(s.goto_definitions())
 
             should_be = set()
             number = 0
@@ -183,12 +183,12 @@ class IntegrationTestCase(object):
 
         script = self.script()
         should_str = definition(self.correct, self.start, script.source_path)
-        result = script.definition()
+        result = script.goto_definitions()
         is_str = set(r.desc_with_module for r in result)
         return compare_cb(self, is_str, should_str)
 
-    def run_goto(self, compare_cb):
-        result = self.script().goto()
+    def run_goto_assignments(self, compare_cb):
+        result = self.script().goto_assignments()
         comp_str = str(sorted(str(r.description) for r in result))
         return compare_cb(self, comp_str, self.correct)
 
@@ -242,7 +242,7 @@ def collect_file_tests(lines, lines_to_execute):
         else:
             try:
                 r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]+)', line)
-                # test_type is ? for completion and ! for goto
+                # test_type is ? for completion and ! for goto_assignments
                 test_type = r.group(1)
                 correct = r.group(2)
                 start = r.start()

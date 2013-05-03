@@ -37,7 +37,7 @@ class NotFoundError(Exception):
 
 class Script(object):
     """
-    A Script is the base for a completion, goto or whatever you want to do with
+    A Script is the base for completions, goto or whatever you want to do with
     |jedi|.
 
     :param source: The source code of the current file, separated by newlines.
@@ -264,13 +264,13 @@ class Script(object):
     @api_classes._clear_caches_after_call
     def goto_definitions(self):
         """
-        Return the definitions of a the path under the cursor. This is not a
-        goto function! This follows complicated paths and returns the end, not
-        the first definition. The big difference between :meth:`goto` and
-        :meth:`definition` is that :meth:`goto` doesn't follow imports and
-        statements. Multiple objects may be returned, because Python itself is
-        a dynamic language, which means depending on an option you can have two
-        different versions of a function.
+        Return the definitions of a the path under the cursor.  goto function!
+        This follows complicated paths and returns the end, not the first
+        definition. The big difference between :meth:`goto_assignments` and
+        :meth:`goto_definitions` is that :meth:`goto_assignments` doesn't
+        follow imports and statements. Multiple objects may be returned,
+        because Python itself is a dynamic language, which means depending on
+        an option you can have two different versions of a function.
 
         :rtype: list of :class:`api_classes.Definition`
         """
@@ -328,10 +328,10 @@ class Script(object):
     @api_classes._clear_caches_after_call
     def goto_assignments(self):
         """
-        Return the first definition found by goto. Imports and statements
-        aren't followed.  Multiple objects may be returned, because Python
-        itself is a dynamic language, which means depending on an option you
-        can have two different versions of a function.
+        Return the first definition found. Imports and statements aren't
+        followed. Multiple objects may be returned, because Python itself is a
+        dynamic language, which means depending on an option you can have two
+        different versions of a function.
 
         :rtype: list of :class:`api_classes.Definition`
         """
@@ -340,7 +340,8 @@ class Script(object):
 
     def _goto(self, add_import_name=False):
         """
-        Used for goto and usages.
+        Used for goto_assignments and usages.
+
         :param add_import_name: TODO add description
         """
         def follow_inexistent_imports(defs):

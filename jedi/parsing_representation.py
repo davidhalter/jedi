@@ -359,7 +359,7 @@ class SubModule(Scope, Module):
 
     @property
     def name(self):
-        """ This is used for the goto function. """
+        """ This is used for the goto functions. """
         if self._name is not None:
             return self._name
         if self.path is None:

@@ -32,9 +32,9 @@ class TestBase(unittest.TestCase):
         script = self.get_script(src, pos, path)
         return script.completions()
 
-    def goto(self, src, pos=None):
+    def goto_assignments(self, src, pos=None):
         script = self.get_script(src, pos)
-        return script.goto()
+        return script.goto_assignments()
 
     def function_definition(self, src, pos=None):
         script = self.get_script(src, pos)
