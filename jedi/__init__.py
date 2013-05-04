@@ -40,7 +40,9 @@ import sys
 # imports and circular imports... Just avoid it:
 sys.path.insert(0, __path__[0])
 
-from .api import Script, NotFoundError, set_debug_function, _quick_complete
+from .api import (
+    Script, Interpreter, NotFoundError, set_debug_function, _quick_complete,
+)
 from . import settings
 
 sys.path.pop(0)
