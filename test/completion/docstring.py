@@ -78,3 +78,13 @@ def both():
 
 #? str(), int()
 both()
+
+class Test(object):
+    def __init__(self):
+        self.teststr = ""
+    """
+    # jedi issue #210
+    """
+    def test(self):
+        #? ['teststr']
+        self.teststr
