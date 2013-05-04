@@ -14,7 +14,7 @@ import textwrap
 from .base import TestBase, unittest, cwd_at
 
 import jedi
-from jedi._compatibility import utf8, unicode
+from jedi._compatibility import utf8, unicode, is_py33
 from jedi import api
 api_classes = api.api_classes
 
@@ -569,9 +569,12 @@ class TestInterpreterAPI(unittest.TestCase):
     def test_complete_raw_instance(self):
         import datetime
         dt = datetime.datetime(2013, 1, 1)
+        completions = ['time', 'timetz', 'timetuple']
+        if is_py33:
+            completions += ['timestamp']
         self.check_interpreter_complete('(dt - dt).ti',
                                         locals(),
-                                        ['time', 'timetz', 'timetuple'])
+                                        completions)
 
 
 def test_settings_module():
