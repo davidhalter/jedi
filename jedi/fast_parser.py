@@ -302,7 +302,7 @@ class FastParser(use_metaclass(CachedFastParser)):
     def _parse(self, code):
         """ :type code: str """
         def empty_parser():
-            new, temp = self._get_parser('', '', 0, [])
+            new, temp = self._get_parser('', '', 0, [], False)
             return new
 
         parts = self._split_parts(code)
@@ -330,7 +330,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 # check if code_part has already been parsed
                 #print '#'*45,line_offset, p and p.end_pos, '\n', code_part
                 p, node = self._get_parser(code_part, code[start:],
-                                           line_offset, nodes)
+                                           line_offset, nodes, not is_first)
 
                 if is_first and p.module.subscopes:
                     # special case, we cannot use a function subscope as a
@@ -381,7 +381,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         #print(self.parsers[0].module.get_code())
         del code
 
-    def _get_parser(self, code, parser_code, line_offset, nodes):
+    def _get_parser(self, code, parser_code, line_offset, nodes, no_docstr):
         h = hash(code)
         hashes = [n.hash for n in nodes]
         node = None
@@ -392,7 +392,8 @@ class FastParser(use_metaclass(CachedFastParser)):
         except ValueError:
             p = parsing.Parser(parser_code, self.module_path,
                                self.user_position, offset=(line_offset, 0),
-                               is_fast_parser=True, top_module=self.module)
+                               is_fast_parser=True, top_module=self.module,
+                               no_docstr=no_docstr)
             p.module.parent = self.module
         else:
             if nodes[index] != self.current_node:

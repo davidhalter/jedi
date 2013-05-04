@@ -399,7 +399,7 @@ class Parser(object):
             stmt.parent = self.top_module
             self._check_user_stmt(stmt)
 
-        # Attribute docstring (PEP 257) support
+        # Attribute docstring (PEP 224) support (sphinx uses it, e.g.)
         with common.ignored(IndexError, AttributeError):
             # If string literal is being parsed
             first_tok = stmt.token_list[0]
@@ -673,3 +673,5 @@ class Parser(object):
                                       tokenize.NEWLINE, tokenize.NL]:
                     debug.warning('token not classified', tok, token_type,
                                                         self.start_pos[0])
+                continue
+            self.no_docstr = False
