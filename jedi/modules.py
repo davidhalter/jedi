@@ -22,6 +22,8 @@ import os
 from ast import literal_eval
 
 from jedi._compatibility import exec_function, unicode
+from jedi import settings
+from jedi import parsing
 from jedi import cache
 from jedi import parsing_representation as pr
 from jedi import fast_parser
