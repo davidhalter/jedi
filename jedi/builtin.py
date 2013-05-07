@@ -235,7 +235,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
                 if inspect.isbuiltin(exe) or inspect.ismethod(exe) \
                             or inspect.ismethoddescriptor(exe):
                     funcs[n] = exe
-                elif inspect.isclass(exe):
+                elif inspect.isclass(exe) or inspect.ismodule(exe):
                     classes[n] = exe
                 elif inspect.ismemberdescriptor(exe):
                     members[n] = exe
@@ -261,7 +261,8 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
 
     # classes
     for name, cl in classes.items():
-        bases = (c.__name__ for c in cl.__bases__)
+        bases = (c.__name__ for c in cl.__bases__) if inspect.isclass(cl) \
+                                                   else []
         code += 'class %s(%s):\n' % (name, ','.join(bases))
         if depth == 0:
             try:
