@@ -237,7 +237,6 @@ class TestRegression(TestBase):
         check(self.function_definition(s), 'partial', 0)
         jedi.set_debug_function(None)
 
-    @unittest.skip("function_definition at ``f( |)`` does not work")
     def test_function_definition_empty_paren_pre_space(self):
         s = textwrap.dedent("""\
         def f(a, b):
