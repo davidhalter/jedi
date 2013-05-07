@@ -884,12 +884,9 @@ class Statement(Simple):
                 # always dictionaries and not sets.
                 arr.type = Array.DICT
 
-            k, v = arr.keys, arr.values
-            latest = (v[-1] if v else k[-1] if k else None)
-            end_pos = latest.end_pos if latest is not None \
-                                     else (start_pos[0], start_pos[1] + 1)
-            arr.end_pos = end_pos[0], end_pos[1] + (len(break_tok) if break_tok
-                                                    else 0)
+            c = token_iterator.current[1]
+            arr.end_pos = c.end_pos if isinstance(c, Simple) \
+                                        else (c[2][0], c[2][1] + len(c[1]))
             return arr, break_tok
 
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),

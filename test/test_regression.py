@@ -15,7 +15,7 @@ from .base import TestBase, unittest, cwd_at
 
 import jedi
 from jedi._compatibility import utf8, unicode
-from jedi import api
+from jedi import api, parsing
 api_classes = api.api_classes
 
 import pytest
@@ -377,6 +377,14 @@ class TestRegression(TestBase):
         defs = sorted(defs, key=lambda d: d.line)
         self.assertEqual([d.description for d in defs],
                          ['def f', 'class C'])
+
+    def test_end_pos(self):
+        # jedi issue #150
+        s = "x()\nx( )\nx(  )\nx (  )"
+        parser = parsing.Parser(s)
+        for i, s in enumerate(parser.scope.statements, 3):
+            for c in s.get_commands():
+                self.assertEqual(c.execution.end_pos[1], i)
 
 
 class TestDocstring(TestBase):

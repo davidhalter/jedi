@@ -64,6 +64,7 @@ class PushBackIterator(object):
     def __init__(self, iterator):
         self.pushes = []
         self.iterator = iterator
+        self.current = None
 
     def push_back(self, value):
         self.pushes.append(value)
@@ -77,9 +78,10 @@ class PushBackIterator(object):
 
     def __next__(self):
         if self.pushes:
-            return self.pushes.pop()
+            self.current = self.pushes.pop()
         else:
-            return next(self.iterator)
+            self.current = next(self.iterator)
+        return self.current
 
 
 class NoErrorTokenizer(object):
