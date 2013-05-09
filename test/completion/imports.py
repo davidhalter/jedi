@@ -222,6 +222,12 @@ import json
 from json import load, dump
 #? 17 json.load
 from json import load, dump
+# without the from clause:
+import json, datetime
+#? 7 json
+import json, datetime
+#? 13 datetime
+import json, datetime
 
 # -----------------
 # packages
