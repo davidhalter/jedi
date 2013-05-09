@@ -216,6 +216,13 @@ from not_a_module import
 # this can cause recursions
 from imports import *
 
+#137
+import json
+#? 23 json.dump
+from json import load, dump
+#? 17 json.load
+from json import load, dump
+
 # -----------------
 # packages
 # -----------------

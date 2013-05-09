@@ -547,11 +547,18 @@ class Parser(object):
                     if tok != 'import':
                         self._gen.push_last_back()
                 names = self._parse_import_list()
-                for name, alias, defunct2 in names:
+                for count, (name, alias, defunct2) in enumerate(names):
                     star = name is not None and name.names[0] == '*'
                     if star:
                         name = None
-                    i = pr.Import(self.module, first_pos, self.end_pos, name,
+                    if alias is not None:
+                        e = alias.end_pos
+                    elif name is not None:
+                        e = name.end_pos
+                    else:
+                        e = self.end_pos
+                    end_pos = self.end_pos if count + 1 == len(names) else e
+                    i = pr.Import(self.module, first_pos, end_pos, name,
                                         alias, mod, star, relative_count,
                                         defunct=defunct or defunct2)
                     self._check_user_stmt(i)
