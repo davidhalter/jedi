@@ -540,9 +540,9 @@ class Interpreter(Script):
         If `line` and `column` are None, they are assumed be at the end of
         `source`.
         """
-        super(Interpreter, self).__init__(source, fast=False, **kwds)
+        super(Interpreter, self).__init__(source, **kwds)
 
-        importer = interpret.ObjectImporter(self._parser.scope)
+        importer = interpret.ObjectImporter(self._parser.user_scope)
         for ns in namespaces:
             importer.import_raw_namespace(ns)
 
