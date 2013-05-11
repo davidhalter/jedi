@@ -55,7 +55,7 @@ class Script(object):
     :type source_encoding: str
     """
     def __init__(self, source, line=None, column=None, source_path=None,
-                 source_encoding='utf-8', fast=None):
+                 source_encoding='utf-8'):
         lines = source.splitlines()
         line = len(lines) if line is None else line
         column = len(lines[-1]) if column is None else column
@@ -65,7 +65,7 @@ class Script(object):
         self.source = modules.source_to_unicode(source, source_encoding)
         self.pos = line, column
         self._module = modules.ModuleWithCursor(
-            source_path, source=self.source, position=self.pos, fast=fast)
+            source_path, source=self.source, position=self.pos)
         self._source_path = source_path
         self.source_path = None if source_path is None \
                                     else os.path.abspath(source_path)
