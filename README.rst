@@ -52,48 +52,52 @@ Get the latest version from `github <https://github.com/davidhalter/jedi>`_
 (master branch should always be kind of stable/working).
 
 Docs are available at `https://jedi.readthedocs.org/
-<https://jedi.readthedocs.org/>`_. Pull requests with documentation enhancements
-and/or fixes are awesome and most welcome.
-
-Jedi uses `semantic versioning <http://semver.org/>`_.
+<https://jedi.readthedocs.org/>`_. Pull requests with documentation
+enhancements and/or fixes are awesome and most welcome. Jedi uses `semantic
+versioning <http://semver.org/>`_.
 
 
 Installation
 ============
 
-See https://jedi.readthedocs.org/en/latest/docs/installation.html
+    pip install jedi
 
 Note: This just installs the Jedi library, not the editor plugins. For
 information about how to make it work with your editor, refer to the
 corresponding documentation.
 
+You don't want to use ``pip``? Please refer to the `manual
+<https://jedi.readthedocs.org/en/latest/docs/installation.html>`_.
+
 
 Feature Support and Caveats
 ===========================
 
-Jedi really understands your Python code. For a comprehensive list what Jedi can
-do, see: https://jedi.readthedocs.org/en/latest/docs/features.html. A list of
+Jedi really understands your Python code. For a comprehensive list what Jedi
+can do, see: `Features
+<https://jedi.readthedocs.org/en/latest/docs/features.html>`_. A list of
 caveats can be found on the same page.
 
 You can run Jedi on cPython 2.6, 2.7, 3.2 or 3.3, but it should also
 understand/parse code older than those versions.
 
-Tips on how to use Jedi efficiently can be found here:
-https://jedi.readthedocs.org/en/latest/docs/recipes.html
-
-
-A little history
-================
-
-See https://jedi.readthedocs.org/en/latest/docs/history.html
+Tips on how to use Jedi efficiently can be found `here
+<https://jedi.readthedocs.org/en/latest/docs/recipes.html>`_.
 
 
 API for IDEs
 ============
 
-It's very easy to create an editor plugin that uses Jedi. See
-https://jedi.readthedocs.org/en/latest/docs/plugin-api.html for more
+It's very easy to create an editor plugin that uses Jedi. See `Plugin API
+<https://jedi.readthedocs.org/en/latest/docs/plugin-api.html>`_ for more
 information.
+
+
+Development
+===========
+
+There's a pretty good and extensive `development documentation
+<https://jedi.readthedocs.org/en/latest/docs/development.html>`_.
 
 
 Testing
