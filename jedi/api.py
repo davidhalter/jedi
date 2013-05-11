@@ -11,8 +11,6 @@ from __future__ import with_statement
 import re
 import os
 import warnings
-import itertools
-import tokenize
 
 from jedi import parsing
 from jedi import parsing_representation as pr
@@ -22,6 +20,7 @@ from jedi import helpers
 from jedi import common
 from jedi import cache
 from jedi import modules
+from jedi import interpret
 from jedi._compatibility import next, unicode
 import evaluate
 import keywords
@@ -544,161 +543,9 @@ class Interpreter(Script):
         super(Interpreter, self).__init__(
             source, line, column, source_path, source_encoding, fast=False)
 
-        count = itertools.count()
-        self._genname = lambda: '*jedi-%s*' % next(count)
-        """
-        Generate unique variable names to avoid name collision.
-        To avoid name collision to already defined names, generated
-        names are invalid as Python identifier.
-        """
-
+        importer = interpret.ObjectImporter(self._parser.scope)
         for ns in namespaces:
-            self._import_raw_namespace(ns)
-
-    def _import_raw_namespace(self, raw_namespace):
-        """
-        Import interpreted Python objects in a namespace.
-
-        Three kinds of objects are treated here.
-
-        1. Functions and classes.  The objects imported like this::
-
-               from os.path import join
-
-        2. Modules.  The objects imported like this::
-
-               import os
-
-        3. Instances.  The objects created like this::
-
-               from datetime import datetime
-               dt = datetime(2013, 1, 1)
-
-        :type raw_namespace: dict
-        :arg  raw_namespace: e.g., the dict given by `locals`
-        """
-        scope = self._parser.scope
-        for (variable, obj) in raw_namespace.items():
-            objname = getattr(obj, '__name__', None)
-
-            # Import functions and classes
-            module = getattr(obj, '__module__', None)
-            if module and objname:
-                fakeimport = self._make_fakeimport(module, objname, variable)
-                scope.add_import(fakeimport)
-                continue
-
-            # Import modules
-            if getattr(obj, '__file__', None) and objname:
-                fakeimport = self._make_fakeimport(objname)
-                scope.add_import(fakeimport)
-                continue
-
-            # Import instances
-            objclass = getattr(obj, '__class__', None)
-            module = getattr(objclass, '__module__', None)
-            if objclass and module:
-                alias = self._genname()
-                fakeimport = self._make_fakeimport(module, objclass.__name__,
-                                                   alias)
-                fakestmt = self._make_fakestatement(variable, alias, call=True)
-                scope.add_import(fakeimport)
-                scope.add_statement(fakestmt)
-                continue
-
-    def _make_fakeimport(self, module, variable=None, alias=None):
-        """
-        Make a fake import object.
-
-        The following statements are created depending on what parameters
-        are given:
-
-        - only `module` is given: ``import <module>``
-        - `module` and `variable` are given: ``from <module> import <variable>``
-        - all params are given: ``from <module> import <variable> as <alias>``
-
-        :type   module: str
-        :arg    module: ``<module>`` part in ``from <module> import ...``
-        :type variable: str
-        :arg  variable: ``<variable>`` part in ``from ... import <variable>``
-        :type    alias: str
-        :arg     alias: ``<alias>`` part in ``... import ... as <alias>``.
-
-        :rtype: :class:`parsing_representation.Import`
-        """
-        submodule = self._parser.scope._sub_module
-        if variable:
-            varname = pr.Name(
-                module=submodule,
-                names=[(variable, (-1, 0))],
-                start_pos=(-1, 0),
-                end_pos=(None, None))
-        else:
-            varname = None
-        modname = pr.Name(
-            module=submodule,
-            names=[(module, (-1, 0))],
-            start_pos=(-1, 0),
-            end_pos=(None, None))
-        if alias:
-            aliasname = pr.Name(
-                module=submodule,
-                names=[(alias, (-1, 0))],
-                start_pos=(-1, 0),
-                end_pos=(None, None))
-        else:
-            aliasname = None
-        if varname:
-            fakeimport = pr.Import(
-                module=submodule,
-                namespace=varname,
-                from_ns=modname,
-                alias=aliasname,
-                start_pos=(-1, 0),
-                end_pos=(None, None))
-        else:
-            fakeimport = pr.Import(
-                module=submodule,
-                namespace=modname,
-                alias=aliasname,
-                start_pos=(-1, 0),
-                end_pos=(None, None))
-        return fakeimport
-
-    def _make_fakestatement(self, lhs, rhs, call=False):
-        """
-        Make a fake statement object that represents ``lhs = rhs``.
-
-        :type call: bool
-        :arg  call: When `call` is true, make a fake statement that represents
-                   ``lhs = rhs()``.
-
-        :rtype: :class:`parsing_representation.Statement`
-        """
-        submodule = self._parser.scope._sub_module
-        lhsname = pr.Name(
-            module=submodule,
-            names=[(lhs, (0, 0))],
-            start_pos=(0, 0),
-            end_pos=(None, None))
-        rhsname = pr.Name(
-            module=submodule,
-            names=[(rhs, (0, 0))],
-            start_pos=(0, 0),
-            end_pos=(None, None))
-        token_list = [lhsname, (tokenize.OP, '=', (0, 0)), rhsname]
-        if call:
-            token_list.extend([
-                (tokenize.OP, '(', (0, 0)),
-                (tokenize.OP, ')', (0, 0)),
-            ])
-        return pr.Statement(
-            module=submodule,
-            set_vars=[lhsname],
-            used_vars=[rhsname],
-            token_list=token_list,
-            start_pos=(0, 0),
-            end_pos=(None, None))
+            importer.import_raw_namespace(ns)
 
 
 def defined_names(source, source_path=None, source_encoding='utf-8'):
