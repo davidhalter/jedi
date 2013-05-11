@@ -118,3 +118,6 @@ easy as ::
 
 Tests are also run automatically on `Travis CI
 <https://travis-ci.org/davidhalter/jedi/>`_.
+
+For more detailed information visit the testing `documentation
+<https://jedi.readthedocs.org/en/latest/docs/testing.html>`_
