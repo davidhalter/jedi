@@ -526,8 +526,7 @@ class Interpreter(Script):
 
     """
 
-    def __init__(self, source, namespaces=[], line=None, column=None,
-                 source_path=None, source_encoding='utf-8'):
+    def __init__(self, source, namespaces=[], **kwds):
         """
         Parse `source` and mixin interpreted Python objects from `namespaces`.
 
@@ -541,8 +540,7 @@ class Interpreter(Script):
         If `line` and `column` are None, they are assumed be at the end of
         `source`.
         """
-        super(Interpreter, self).__init__(
-            source, line, column, source_path, source_encoding, fast=False)
+        super(Interpreter, self).__init__(source, fast=False, **kwds)
 
         importer = interpret.ObjectImporter(self._parser.scope)
         for ns in namespaces:
