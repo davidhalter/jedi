@@ -54,8 +54,12 @@ class Script(object):
         ``unicode`` object (default ``'utf-8'``).
     :type source_encoding: str
     """
-    def __init__(self, source, line, column, source_path,
+    def __init__(self, source, line=None, column=None, source_path=None,
                  source_encoding='utf-8', fast=None):
+        lines = source.splitlines()
+        line = len(lines) if line is None else line
+        column = len(lines[-1]) if column is None else column
+
         api_classes._clear_caches()
         debug.reset_time()
         self.source = modules.source_to_unicode(source, source_encoding)
@@ -537,9 +541,6 @@ class Interpreter(Script):
         If `line` and `column` are None, they are assumed be at the end of
         `source`.
         """
-        lines = source.splitlines()
-        line = len(lines) if line is None else line
-        column = len(lines[-1]) if column is None else column
         super(Interpreter, self).__init__(
             source, line, column, source_path, source_encoding, fast=False)
 
