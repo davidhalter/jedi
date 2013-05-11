@@ -8,8 +8,8 @@ __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 readme = open('README.rst').read()
 
-with open('VERSION') as f:
-    VERSION = f.read().strip()
+import jedi
+VERSION = '.'.join(str(x) for x in jedi.__version__)
 
 setup(name='jedi',
       version=VERSION,
