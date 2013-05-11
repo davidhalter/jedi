@@ -430,27 +430,6 @@ class TestFeature(TestBase):
         any_re"""
         self.assertEqual(self.goto_definitions(s)[0].full_name, 're.RegexObject')
 
-    def test_quick_completion(self):
-        sources = [
-            ('import json; json.l', (1, 19)),
-            ('import json; json.l   ', (1, 19)),
-            ('import json\njson.l', (2, 6)),
-            ('import json\njson.l  ', (2, 6)),
-            ('import json\njson.l\n\n', (2, 6)),
-            ('import json\njson.l  \n\n', (2, 6)),
-            ('import json\njson.l  \n  \n\n', (2, 6)),
-        ]
-        for source, pos in sources:
-            # Run quick_complete
-            quick_completions = api._quick_complete(source)
-            # Run real completion
-            script = jedi.Script(source, pos[0], pos[1], '')
-            real_completions = script.completions()
-            # Compare results
-            quick_values = [(c.full_name, c.line, c.column) for c in quick_completions]
-            real_values = [(c.full_name, c.line, c.column) for c in real_completions]
-            self.assertEqual(quick_values, real_values)
-
 
 class TestGetDefinitions(TestBase):
 

@@ -577,25 +577,3 @@ def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
     debug.enable_warning = warnings
     debug.enable_notice = notices
     debug.enable_speed = speed
-
-
-def _quick_complete(source):
-    """
-    Convenience function to complete a source string at the end.
-
-    Example:
-
-    >>> _quick_complete('''
-    ... import datetime
-    ... datetime.da''')                                 #doctest: +ELLIPSIS
-    [<Completion: date>, <Completion: datetime>, ...]
-
-    :param source: The source code to be completed.
-    :type source: string
-    :return: Completion objects as returned by :meth:`complete`.
-    :rtype: list of :class:`api_classes.Completion`
-    """
-    lines = re.sub(r'[\n\r\s]*$', '', source).splitlines()
-    pos = len(lines), len(lines[-1])
-    script = Script(source, pos[0], pos[1], '')
-    return script.completions()
