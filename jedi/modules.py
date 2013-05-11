@@ -22,8 +22,6 @@ import os
 from ast import literal_eval
 
 from jedi._compatibility import exec_function, unicode
-from jedi import settings
-from jedi import parsing
 from jedi import cache
 from jedi import parsing_representation as pr
 from jedi import fast_parser
@@ -93,15 +91,9 @@ class ModuleWithCursor(Module):
     :param path: The module path of the file or None.
     :param position: The position, the user is currently in. Only important \
     for the main file.
-    :param fast: Use `fast_parser.FastParser` or not.  If None, respect
-                 `settings.fast_parser`.
     """
-    def __init__(self, path, source, position, fast=None):
+    def __init__(self, path, source, position):
         super(ModuleWithCursor, self).__init__(path, source)
-        if fast is None:
-            fast = settings.fast_parser
-        self._parserclass = fast_parser.FastParser if fast else \
-                            parsing.Parser
         self.position = position
 
         # this two are only used, because there is no nonlocal in Python 2
@@ -120,7 +112,7 @@ class ModuleWithCursor(Module):
             # Call the parser already here, because it will be used anyways.
             # Also, the position is here important (which will not be used by
             # default), therefore fill the cache here.
-            self._parser = self._parserclass(self.source, self.path,
+            self._parser = fast_parser.FastParser(self.source, self.path,
                                                         self.position)
             # don't pickle that module, because it's changing fast
             cache.save_module(self.path, self.name, self._parser,
