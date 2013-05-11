@@ -6,7 +6,7 @@ from setuptools import setup
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
-readme = open('README.rst').read()
+readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 
 import jedi
 VERSION = '.'.join(str(x) for x in jedi.__version__)
