@@ -11,9 +11,21 @@ jedi-vim_ does by default), or you can install it systemwide.
     editor, refer to the corresponding documentation.
 
 
+The preferred way
+-----------------
+
+On any system you can install |jedi| directly from the Python package index
+using pip::
+
+    sudo pip install jedi
+
+If you want to install the current development version (master branch)::
+
+    sudo pip install -e git://github.com/davidhalter/jedi.git#egg=jedi
+
+
 System-wide installation via a package manager
 ----------------------------------------------
-
 
 Arch Linux
 ~~~~~~~~~~
@@ -24,18 +36,11 @@ You can install jedi directly from AUR: `python-jedi at AUR
 (There is also a packaged version of the vim plugin available: `vim-jedi at AUR
 <https://aur.archlinux.org/packages/vim-jedi/>`__.)
 
-
 Others
 ~~~~~~
 
-On any system can install |jedi| directly from the Python package index using
-pip::
-
-    sudo pip install jedi
-
-If you want to install the current development version (master branch)::
-
-    sudo pip install -e git://github.com/davidhalter/jedi.git#egg=jedi
+We are in the discussion of adding Jedi to the Debian and Fedora repositories.
+But it's not possible yet.
 
 
 Manual installation from a downloaded package
