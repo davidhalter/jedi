@@ -64,7 +64,7 @@ Because it follows ``a.rea`` and a is an ``int``, which has a ``real``
 property.
 
 Goto Definitions
-+++++++++++++++
+++++++++++++++++
 
 Definition tests use the same symbols like completion tests. This is
 possible because the completion tests are defined with a list::
@@ -88,7 +88,7 @@ the test (otherwise it's just end of line)::
     abc
 
 Usages
-+++++++++++++
+++++++
 
 Tests look like this::
 
