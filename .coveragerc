@@ -1,6 +1,9 @@
 [run]
 omit =
+    jedi/__init__.py
     jedi/_compatibility.py
+    jedi/errors.py
+    jedi/settings.py
 
 [report]
 # Regexes for lines to exclude from consideration
