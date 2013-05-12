@@ -21,6 +21,8 @@ from jedi import common
 from jedi import cache
 from jedi import modules
 from jedi._compatibility import next, unicode
+from jedi import lazy_import_api_call
+from jedi.errors import NotFoundError
 import evaluate
 import keywords
 import api_classes
@@ -28,11 +30,6 @@ import evaluate_representation as er
 import dynamic
 import imports
 import builtin
-
-
-class NotFoundError(Exception):
-    """A custom error to avoid catching the wrong exceptions."""
-    pass
 
 
 class Script(object):
@@ -555,3 +552,6 @@ def _quick_complete(source):
     pos = len(lines), len(lines[-1])
     script = Script(source, pos[0], pos[1], '')
     return script.completions()
+
+# it replaces __doc__ strings for all lazy imported objects, otherwise not important
+lazy_import_api_call('NotFoundError')

@@ -36,13 +36,21 @@ good text editor, while still having very good IDE features for Python.
 
 __version__ = 0, 6, 0
 
-import sys
+from functools import partial
 
-# python imports are hell sometimes. Especially the combination of relative
-# imports and circular imports... Just avoid it:
-sys.path.insert(0, __path__[0])
-
-from .api import Script, NotFoundError, set_debug_function, _quick_complete
 from . import settings
+from .errors import NotFoundError
 
-sys.path.pop(0)
+
+def lazy_import_api_call(fname, *args, **kwargs):
+    from . import api
+    for name in ['Script', 'set_debug_function', '_quick_complete']:
+        globals()[name] = getattr(api, name)
+    return globals()[fname](*args, **kwargs)
+
+# These names are imported lazy and replaced later by jedi.api objects.
+# If the __doc__ string is important, any of these objects should be used
+# first or jedi.api should be imported.
+Script = partial(lazy_import_api_call, 'Script')
+set_debug_function = partial(lazy_import_api_call, 'set_debug_function')
+_quick_complete = partial(lazy_import_api_call, '_quick_complete')

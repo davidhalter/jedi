@@ -4,14 +4,11 @@ if sys.hexversion < 0x02070000:
 else:
     import unittest
 import os
-from os.path import abspath, dirname
+from os.path import dirname
 import functools
 
+from . import root_dir, test_dir
 import jedi
-
-
-test_dir = dirname(abspath(__file__))
-root_dir = dirname(test_dir)
 
 
 sample_int = 1  # This is used in completion/imports.py

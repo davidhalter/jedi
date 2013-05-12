@@ -4,19 +4,17 @@ import tempfile
 
 import pytest
 
-from . import base
-from . import run
-from . import refactor
-
+from . import test_dir
+from jedi import settings
 
 def pytest_addoption(parser):
     parser.addoption(
         "--integration-case-dir",
-        default=os.path.join(base.test_dir, 'completion'),
+        default=os.path.join(test_dir, 'completion'),
         help="Directory in which integration test case files locate.")
     parser.addoption(
         "--refactor-case-dir",
-        default=os.path.join(base.test_dir, 'refactor'),
+        default=os.path.join(test_dir, 'refactor'),
         help="Directory in which refactoring test case files locate.")
     parser.addoption(
         "--test-files", "-T", default=[], action='append',
@@ -48,6 +46,7 @@ def pytest_generate_tests(metafunc):
     """
     :type metafunc: _pytest.python.Metafunc
     """
+    from . import run, refactor
     test_files = dict(map(parse_test_files_option,
                           metafunc.config.option.test_files))
     if 'case' in metafunc.fixturenames:
@@ -73,7 +72,6 @@ def isolated_jedi_cache(monkeypatch, tmpdir):
     Same as `clean_jedi_cache`, but create the temporary directory for
     each test case (scope='function').
     """
-    settings = base.jedi.settings
     monkeypatch.setattr(settings, 'cache_directory', str(tmpdir))
 
 
@@ -88,7 +86,6 @@ def clean_jedi_cache(request):
 
     This fixture is activated in ../pytest.ini.
     """
-    settings = base.jedi.settings
     old = settings.cache_directory
     tmp = tempfile.mkdtemp(prefix='jedi-test-')
     settings.cache_directory = tmp
