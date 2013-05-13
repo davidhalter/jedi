@@ -15,10 +15,8 @@ from .base import TestBase, unittest, cwd_at
 
 import jedi
 from jedi._compatibility import utf8, unicode
-from jedi import api, parsing
+from jedi import api, parsing, common
 api_classes = api.api_classes
-
-import pytest
 
 #jedi.set_debug_function(jedi.debug.print_to_stdout)
 
@@ -231,11 +229,9 @@ class TestRegression(TestBase):
         # jedi-vim #70
         s = """def foo("""
         assert self.function_definition(s) is None
-        jedi.set_debug_function(jedi.debug.print_to_stdout)
         # jedi-vim #116
         s = """import functools; test = getattr(functools, 'partial'); test("""
         check(self.function_definition(s), 'partial', 0)
-        jedi.set_debug_function(None)
 
     def test_function_definition_empty_paren_pre_space(self):
         s = textwrap.dedent("""\
@@ -436,6 +432,26 @@ class TestFeature(TestBase):
         any_re = re.compile('.*')
         any_re"""
         self.assertEqual(self.goto_definitions(s)[0].full_name, 're.RegexObject')
+
+    def test_preload_modules(self):
+        def check_loaded(*modules):
+            # + 1 for builtin, +1 for None module (currently used)
+            assert len(new) == len(modules) + 2
+            for i in modules + ('__builtin__',):
+                assert [i in k for k in new.keys() if k is not None]
+
+        from jedi import cache
+        temp_cache, cache.parser_cache = cache.parser_cache, {}
+        new = cache.parser_cache
+        with common.ignored(KeyError): # performance of tests -> no reload
+            new['__builtin__'] = temp_cache['__builtin__']
+
+        jedi.preload_module('datetime')
+        check_loaded('datetime')
+        jedi.preload_module('json', 'token')
+        check_loaded('datetime', 'json', 'token')
+
+        cache.parser_cache = temp_cache
 
     def test_quick_completion(self):
         sources = [

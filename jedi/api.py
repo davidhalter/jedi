@@ -522,6 +522,18 @@ def defined_names(source, source_path=None, source_encoding='utf-8'):
     return api_classes._defined_names(parser.scope)
 
 
+def preload_module(*modules):
+    """
+    Preloading modules tells Jedi to load a module now, instead of lazy parsing
+    of modules. Usful for IDEs, to control which modules to load on startup.
+
+    :param modules: different module names, list of string.
+    """
+    for m in modules:
+        s = "import %s as x; x." % m
+        Script(s, 1, len(s), None).complete()
+
+
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
                                             notices=True, speed=True):
     """
