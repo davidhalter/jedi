@@ -36,11 +36,16 @@ You can install jedi directly from AUR: `python-jedi at AUR
 (There is also a packaged version of the vim plugin available: `vim-jedi at AUR
 <https://aur.archlinux.org/packages/vim-jedi/>`__.)
 
+Debian
+~~~~~~
+
+Debian packages are available as `experimental packages
+<http://packages.debian.org/experimental/python-jedi>`__.
+
 Others
 ~~~~~~
 
-We are in the discussion of adding Jedi to the Debian and Fedora repositories.
-But it's not possible yet.
+We are in the discussion of adding Jedi to the Fedora repositories.
 
 
 Manual installation from a downloaded package
