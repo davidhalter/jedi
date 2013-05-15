@@ -20,12 +20,14 @@ from jedi import cache
 from jedi import helpers
 from jedi import debug
 from jedi import common
-import recursion
-import docstrings
-import imports
-import evaluate
-import builtin
-import dynamic
+from jedi import imports
+from jedi import builtin
+import jedi
+# the following should be imported from api, not here due to cyclic import
+#import jedi.recursion
+#import jedi.evaluate
+#import jedi.dynamic
+#import jedi.docstrings
 
 
 class DecoratorNotFound(LookupError):
@@ -59,7 +61,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         if str(base.name) in ['list', 'set'] \
                     and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
-            self.var_args = dynamic.check_array_instances(self)
+            self.var_args = jedi.dynamic.check_array_instances(self)
         else:
             # need to execute the __init__ function, because the dynamic param
             # searching needs it.
@@ -243,14 +245,14 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         # TODO care for mro stuff (multiple super classes).
         for s in self.base.supers:
             # Super classes are statements.
-            for cls in evaluate.follow_statement(s):
+            for cls in jedi.evaluate.follow_statement(s):
                 if not isinstance(cls, Class):
                     debug.warning('Received non class, as a super class')
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
         if not supers and self.base.parent != builtin.Builtin.scope:
             # add `object` to classes
-            supers += evaluate.find_name(builtin.Builtin.scope, 'object')
+            supers += jedi.evaluate.find_name(builtin.Builtin.scope, 'object')
         return supers
 
     @cache.memoize_default(default=())
@@ -318,7 +320,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
                 debug.dbg('decorator:', dec, f)
-                dec_results = evaluate.follow_statement(dec)
+                dec_results = jedi.evaluate.follow_statement(dec)
                 if not len(dec_results):
                     debug.warning('decorator func not found: %s in stmt %s' %
                                                         (self.base_func, dec))
@@ -384,12 +386,12 @@ class Execution(Executable):
             return []
         else:
             if isinstance(stmt, pr.Statement):
-                return evaluate.follow_statement(stmt)
+                return jedi.evaluate.follow_statement(stmt)
             else:
                 return [stmt]  # just some arbitrary object
 
     @cache.memoize_default(default=())
-    @recursion.ExecutionRecursionDecorator
+    @jedi.recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
         stmts = []
@@ -416,7 +418,7 @@ class Execution(Executable):
                         if len(arr_name.var_args) != 1:
                             debug.warning('jedi getattr is too simple')
                         key = arr_name.var_args[0]
-                        stmts += evaluate.follow_path(iter([key]), obj,
+                        stmts += jedi.evaluate.follow_path(iter([key]), obj,
                                                         self.base)
                 return stmts
             elif func_name == 'type':
@@ -473,10 +475,10 @@ class Execution(Executable):
         if func.is_generator and not evaluate_generator:
             return [Generator(func, self.var_args)]
         else:
-            stmts = docstrings.find_return_types(func)
+            stmts = jedi.docstrings.find_return_types(func)
             for r in self.returns:
                 if r is not None:
-                    stmts += evaluate.follow_statement(r)
+                    stmts += jedi.evaluate.follow_statement(r)
             return stmts
 
     @cache.memoize_default(default=())
@@ -629,14 +631,14 @@ class Execution(Executable):
 
                 # *args
                 if stmt.get_commands()[0] == '*':
-                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
+                    arrays = jedi.evaluate.follow_call_list(stmt.get_commands()[1:])
                     # *args must be some sort of an array, otherwise -> ignore
                     for array in arrays:
                         for field_stmt in array:  # yield from plz!
                             yield None, field_stmt
                 # **kwargs
                 elif stmt.get_commands()[0] == '**':
-                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
+                    arrays = jedi.evaluate.follow_call_list(stmt.get_commands()[1:])
                     for array in arrays:
                         for key_stmt, value_stmt in array.items():
                             # first index, is the key if syntactically correct
@@ -808,7 +810,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                         return self.get_exact_index_types(index.var_args[0])
 
         result = list(self._follow_values(self._array.values))
-        result += dynamic.check_array_additions(self)
+        result += jedi.dynamic.check_array_additions(self)
         return set(result)
 
     def get_exact_index_types(self, mixed_index):
@@ -839,7 +841,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def _follow_values(self, values):
         """ helper function for the index getters """
-        return list(itertools.chain.from_iterable(evaluate.follow_statement(v)
+        return list(itertools.chain.from_iterable(jedi.evaluate.follow_statement(v)
                                                   for v in values))
 
     def get_defined_names(self):
@@ -848,7 +850,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = evaluate.find_name(builtin.Builtin.scope, self._array.type)[0]
+        scope = jedi.evaluate.find_name(builtin.Builtin.scope, self._array.type)[0]
         scope = Instance(scope)
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]

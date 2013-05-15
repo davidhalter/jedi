@@ -12,22 +12,38 @@ import re
 import os
 import warnings
 
+
+# Jedi modules - group A
+# this group can be imported in any order (e.g. alphabetically)
+from jedi import cache
+from jedi import common
+from jedi import debug
+from jedi import helpers
+from jedi import modules
 from jedi import parsing
 from jedi import parsing_representation as pr
-from jedi import debug
 from jedi import settings
-from jedi import helpers
-from jedi import common
-from jedi import cache
-from jedi import modules
+from jedi import tokenizer as tokenize
 from jedi._compatibility import next, unicode
-import evaluate
-import keywords
-import api_classes
-import evaluate_representation as er
-import dynamic
-import imports
-import builtin
+from jedi import fast_parser  # unused
+from jedi import refactoring  # unused
+
+# Jedi modules - group B
+# these modules must be imported before modules from group C because they can
+# not be imported directly by them in order to prevent cyclic dependency.
+import jedi.evaluate
+from jedi import builtin
+import jedi.recursion  # important here, although unused here
+
+# Jedi modules - group C
+# modules imported group C uses some modules by jedi.xxx.yyy without importing anything explicitely except "jedi"
+# here can be the order important
+from jedi import evaluate_representation as er
+
+from jedi import keywords
+import jedi.dynamic
+from jedi import api_classes
+from jedi import imports
 
 
 class NotFoundError(Exception):
@@ -94,7 +110,7 @@ class Script(object):
             scopes = list(self._prepare_goto(path, True))
         except NotFoundError:
             scopes = []
-            scope_generator = evaluate.get_names_of_scope(
+            scope_generator = jedi.evaluate.get_names_of_scope(
                                             self._parser.user_scope, self.pos)
             completions = []
             for scope, name_list in scope_generator:
@@ -150,7 +166,7 @@ class Script(object):
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
-                if not evaluate.filter_private_variable(s,
+                if not jedi.evaluate.filter_private_variable(s,
                                                     self._parser.user_stmt, n):
                     new = api_classes.Completion(c, needs_dot,
                                                     len(like), s)
@@ -187,7 +203,7 @@ class Script(object):
         else:
             # just parse one statement, take it and evaluate it
             stmt = self._get_under_cursor_stmt(goto_path)
-            scopes = evaluate.follow_statement(stmt)
+            scopes = jedi.evaluate.follow_statement(stmt)
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
@@ -382,7 +398,7 @@ class Script(object):
                     definitions.append(import_name[0])
         else:
             stmt = self._get_under_cursor_stmt(goto_path)
-            defs, search_name = evaluate.goto(stmt)
+            defs, search_name = jedi.evaluate.goto(stmt)
             definitions = follow_inexistent_imports(defs)
             if isinstance(user_stmt, pr.Statement):
                 if user_stmt.get_commands()[0].start_pos > self.pos:
@@ -412,12 +428,12 @@ class Script(object):
                                 if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
-            definitions = dynamic.usages_add_import_modules(definitions,
+            definitions = jedi.dynamic.usages_add_import_modules(definitions,
                                                                 search_name)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self._parser.module)
-        names = dynamic.usages(definitions, search_name, module)
+        names = jedi.dynamic.usages(definitions, search_name, module)
 
         for d in set(definitions):
             if isinstance(d, pr.Module):
@@ -451,7 +467,7 @@ class Script(object):
 
         user_stmt = self._parser.user_stmt
         with common.scale_speed_settings(settings.scale_function_definition):
-            _callable = lambda: evaluate.follow_call(call)
+            _callable = lambda: jedi.evaluate.follow_call(call)
             origins = cache.cache_function_definition(_callable, user_stmt)
         debug.speed('func_call followed')
 

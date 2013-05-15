@@ -10,8 +10,9 @@ calls.
 from jedi import parsing_representation as pr
 from jedi import debug
 from jedi import settings
-import evaluate_representation as er
-import builtin
+from jedi import builtin
+import jedi
+#import jedi.evaluate_representation  # imported from api
 
 
 class RecursionDecorator(object):
@@ -132,7 +133,7 @@ class ExecutionRecursionDecorator(object):
         if cls.execution_count > settings.max_executions:
             return True
 
-        if isinstance(execution.base, (er.Generator, er.Array)):
+        if isinstance(execution.base, (jedi.evaluate_representation.Generator, jedi.evaluate_representation.Array)):
             return False
         module = execution.get_parent_until()
         if evaluate_generator or module == builtin.Builtin.scope:

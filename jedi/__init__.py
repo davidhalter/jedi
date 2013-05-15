@@ -38,12 +38,6 @@ __version__ = 0, 6, 0
 
 import sys
 
-# python imports are hell sometimes. Especially the combination of relative
-# imports and circular imports... Just avoid it:
-sys.path.insert(0, __path__[0])
-
-from .api import Script, NotFoundError, set_debug_function, _quick_complete, \
-                 preload_module
-from . import settings
-
-sys.path.pop(0)
+from jedi.api import Script, NotFoundError, set_debug_function, \
+                 _quick_complete,  preload_module
+from jedi import settings

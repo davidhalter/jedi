@@ -18,8 +18,8 @@ import re
 
 from jedi import cache
 from jedi import parsing
-import evaluate
-import evaluate_representation as er
+from jedi import evaluate_representation as er
+import jedi.evaluate
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
@@ -53,7 +53,7 @@ def follow_param(param):
 
         p = parsing.Parser(param_str, None, user_position,
                                   no_docstr=True)
-        return evaluate.follow_statement(p.user_stmt)
+        return jedi.evaluate.follow_statement(p.user_stmt)
     return []
 
 
@@ -124,4 +124,4 @@ def find_return_types(func):
 
     p = parsing.Parser(type_str, None, (1, 0), no_docstr=True)
     p.user_stmt.parent = func
-    return list(evaluate.follow_statement(p.user_stmt))
+    return list(jedi.evaluate.follow_statement(p.user_stmt))

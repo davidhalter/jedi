@@ -24,8 +24,8 @@ from jedi import common
 from jedi import debug
 from jedi import parsing_representation as pr
 from jedi import cache
-import builtin
-import evaluate
+from jedi import builtin
+import jedi.evaluate
 
 # for debugging purposes only
 imports_processed = 0
@@ -130,7 +130,7 @@ class ImportPath(pr.Base):
                                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
                     names += self.get_module_names([pkg_path])
-                for s, scope_names in evaluate.get_names_of_scope(scope,
+                for s, scope_names in jedi.evaluate.get_names_of_scope(scope,
                                                     include_builtin=False):
                     for n in scope_names:
                         if self.import_stmt.from_ns is None \
@@ -177,7 +177,7 @@ class ImportPath(pr.Base):
         """
         Returns the imported modules.
         """
-        if evaluate.follow_statement.push_stmt(self.import_stmt):
+        if jedi.evaluate.follow_statement.push_stmt(self.import_stmt):
             # check recursion
             return []
 
@@ -186,7 +186,7 @@ class ImportPath(pr.Base):
                 scope, rest = self._follow_file_system()
             except ModuleNotFound:
                 debug.warning('Module not found: ' + str(self.import_stmt))
-                evaluate.follow_statement.pop_stmt()
+                jedi.evaluate.follow_statement.pop_stmt()
                 return []
 
             scopes = [scope]
@@ -198,11 +198,11 @@ class ImportPath(pr.Base):
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
-                                evaluate.find_name(s, rest[0], is_goto=True)
+                                jedi.evaluate.find_name(s, rest[0], is_goto=True)
                                 for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
-                                        evaluate.follow_path(iter(rest), s, s)
+                                        jedi.evaluate.follow_path(iter(rest), s, s)
                                         for s in scopes)
             scopes = list(scopes)
 
@@ -212,7 +212,7 @@ class ImportPath(pr.Base):
             scopes = [ImportPath.GlobalNamespace]
         debug.dbg('after import', scopes)
 
-        evaluate.follow_statement.pop_stmt()
+        jedi.evaluate.follow_statement.pop_stmt()
         return scopes
 
     def get_relative_path(self):
