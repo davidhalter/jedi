@@ -36,7 +36,7 @@ You can install |jedi| directly from official AUR packages:
 - `python2-jedi <https://aur.archlinux.org/packages/python2-jedi/>`__ (Python 2)
 
 The specified Python version just refers to the *runtime environment* for
-|jedi|. Use the Python 2 version if you're running vim (or whatever editor oyu
+|jedi|. Use the Python 2 version if you're running vim (or whatever editor you
 use) under Python 2. Otherwise, use the Python 3 version. But whatever version
 you choose, both are able to complete both Python 2 and 3 *code*.
 
