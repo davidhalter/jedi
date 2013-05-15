@@ -30,8 +30,10 @@ System-wide installation via a package manager
 Arch Linux
 ~~~~~~~~~~
 
-You can install jedi directly from AUR: `python-jedi at AUR
-<https://aur.archlinux.org/packages/python-jedi/>`__.
+You can install jedi directly from official AUR packages:
+
+- `python-jedi <https://aur.archlinux.org/packages/python-jedi/>`__.
+- `python2-jedi <https://aur.archlinux.org/packages/python2-jedi/>`__.
 
 (There is also a packaged version of the vim plugin available: `vim-jedi at AUR
 <https://aur.archlinux.org/packages/vim-jedi/>`__.)
