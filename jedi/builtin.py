@@ -36,8 +36,11 @@ from jedi import common
 from jedi import debug
 from jedi import parsing
 from jedi import modules
-import jedi
-#import jedi.evaluate  # imported from api first
+from jedi.lazy import collect_import
+try:
+    from jedi import evaluate
+except ImportError:
+    collect_import(__name__, 'evaluate')
 
 
 class BuiltinModule(modules.CachedModule):
@@ -441,7 +444,7 @@ class Builtin(object):
             parser = parsing.Parser(source, None)
             module = parser.module
             module.parent = self.scope
-            typ = jedi.evaluate.follow_path(iter(['FunctionType']), module, module)
+            typ = evaluate.follow_path(iter(['FunctionType']), module, module)
 
             s = self._magic_function_scope = typ.pop()
             return s

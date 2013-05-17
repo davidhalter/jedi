@@ -41,3 +41,6 @@ import sys
 from jedi.api import Script, NotFoundError, set_debug_function, \
                  _quick_complete,  preload_module
 from jedi import settings
+from jedi.lazy import retry_import
+
+retry_import()

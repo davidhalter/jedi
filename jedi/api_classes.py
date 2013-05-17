@@ -16,7 +16,11 @@ from jedi import cache
 from jedi import keywords
 import jedi.recursion
 import jedi.dynamic
-import jedi.evaluate
+from jedi.lazy import collect_import
+try:
+    from jedi import evaluate
+except ImportError:
+    collect_import(__name__, 'evaluate')
 from jedi import imports
 from jedi import evaluate_representation as er
 
@@ -30,7 +34,7 @@ def _clear_caches():
     jedi.dynamic.search_param_cache.clear()
     jedi.recursion.ExecutionRecursionDecorator.reset()
 
-    jedi.evaluate.follow_statement.reset()
+    evaluate.follow_statement.reset()
 
     imports.imports_processed = 0
 
@@ -397,7 +401,7 @@ class Completion(BaseDefinition):
         """
         if self._followed_definitions is None:
             if self._definition.isinstance(pr.Statement):
-                defs = jedi.evaluate.follow_statement(self._definition)
+                defs = evaluate.follow_statement(self._definition)
             elif self._definition.isinstance(pr.Import):
                 defs = imports.strip_imports([self._definition])
             else:
@@ -522,7 +526,7 @@ def _defined_names(scope):
     :type scope: Scope
     :rtype: list of Definition
     """
-    pair = next(jedi.evaluate.get_names_of_scope(
+    pair = next(evaluate.get_names_of_scope(
         scope, star_search=False, include_builtin=False), None)
     names = pair[1] if pair else []
     return [Definition(d) for d in sorted(names, key=lambda s: s.start_pos)]

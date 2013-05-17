@@ -65,7 +65,11 @@ from jedi import fast_parser
 from jedi import api_classes
 from jedi import imports
 from jedi import evaluate_representation as er
-import jedi.evaluate
+from jedi.lazy import collect_import
+try:
+    from jedi import evaluate
+except ImportError:
+    collect_import(__name__, 'evaluate')
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -178,14 +182,14 @@ def search_params(param):
                         call_path = c.generate_call_path()
                         pos = c.start_pos
                         scope = stmt.parent
-                        jedi.evaluate.follow_call_path(call_path, scope, pos)
+                        evaluate.follow_call_path(call_path, scope, pos)
             return listener.param_possibilities
 
         result = []
         for params in get_posibilities(module, func_name):
             for p in params:
                 if str(p) == param_name:
-                    result += jedi.evaluate.follow_statement(p.parent)
+                    result += evaluate.follow_statement(p.parent)
         return result
 
     func = param.get_parent_until(pr.Function)
@@ -296,7 +300,7 @@ def _check_array_additions(compare_array, module, is_list):
             position = c.start_pos
             scope = c.get_parent_until(pr.IsScope)
 
-            found = jedi.evaluate.follow_call_path(backtrack_path, scope, position)
+            found = evaluate.follow_call_path(backtrack_path, scope, position)
             if not compare_array in found:
                 continue
 
@@ -305,18 +309,18 @@ def _check_array_additions(compare_array, module, is_list):
                 continue  # no params: just ignore it
             if add_name in ['append', 'add']:
                 for param in params:
-                    result += jedi.evaluate.follow_statement(param)
+                    result += evaluate.follow_statement(param)
             elif add_name in ['insert']:
                 try:
                     second_param = params[1]
                 except IndexError:
                     continue
                 else:
-                    result += jedi.evaluate.follow_statement(second_param)
+                    result += evaluate.follow_statement(second_param)
             elif add_name in ['extend', 'update']:
                 for param in params:
-                    iterators = jedi.evaluate.follow_statement(param)
-                result += jedi.evaluate.get_iterator_types(iterators)
+                    iterators = evaluate.follow_statement(param)
+                result += evaluate.get_iterator_types(iterators)
         return result
 
     def get_execution_parent(element, *stop_classes):
@@ -359,11 +363,11 @@ def _check_array_additions(compare_array, module, is_list):
             if isinstance(comp_arr_parent, er.InstanceElement):
                 stmt = er.InstanceElement(comp_arr_parent.instance, stmt)
 
-            if jedi.evaluate.follow_statement.push_stmt(stmt):
+            if evaluate.follow_statement.push_stmt(stmt):
                 # check recursion
                 continue
             res += check_calls(_scan_statement(stmt, n), n)
-            jedi.evaluate.follow_statement.pop_stmt()
+            evaluate.follow_statement.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
     return res
@@ -394,7 +398,7 @@ class ArrayInstance(pr.Base):
         """
         items = []
         for stmt in self.var_args:
-            for typ in jedi.evaluate.follow_statement(stmt):
+            for typ in evaluate.follow_statement(stmt):
                 if isinstance(typ, er.Instance) and len(typ.var_args):
                     array = typ.var_args[0]
                     if isinstance(array, ArrayInstance):
@@ -405,7 +409,7 @@ class ArrayInstance(pr.Base):
                         else:
                             debug.warning('ArrayInstance recursion', self.var_args)
                         continue
-                items += jedi.evaluate.get_iterator_types([typ])
+                items += evaluate.get_iterator_types([typ])
 
         # TODO check if exclusion of tuple is a problem here.
         if isinstance(self.var_args, tuple) or self.var_args.parent is None:
@@ -438,7 +442,7 @@ def usages(definitions, search_name, mods):
                 follow.append(call_path[:i + 1])
 
         for f in follow:
-            follow_res, search = jedi.evaluate.goto(call.parent, f)
+            follow_res, search = evaluate.goto(call.parent, f)
             follow_res = usages_add_import_modules(follow_res, search)
 
             compare_follow_res = compare_array(follow_res)
@@ -541,7 +545,7 @@ def check_statement_information(stmt, search_name):
         return []
 
     result = []
-    for c in jedi.evaluate.follow_call(classes[0]):
+    for c in evaluate.follow_call(classes[0]):
         if isinstance(c, er.Array):
             result += c.get_index_types()
         else:
