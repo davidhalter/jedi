@@ -33,7 +33,7 @@ from jedi import refactoring  # unused, but recommended here
 # not be imported directly by them in order to prevent cyclic dependency.
 from jedi import evaluate
 from jedi import builtin
-import jedi.recursion  # important here, although unused here
+import jedi.recursion  # unused, but very important here
 
 # Jedi modules - group C
 # modules imported group C uses some modules by jedi.xxx.yyy without importing

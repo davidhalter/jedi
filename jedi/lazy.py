@@ -21,31 +21,23 @@ import sys
 def collect_import(destination, name, alias=None, mfrom='jedi'):
     assert not '.' in name
     if enabled:
-        #import traceback
-        #traceback.print_stack()
-        #print
+        # ** Debug print can be here enabled for more complicated problems. 
+        # import traceback
+        # traceback.print_stack()
+        # print('catched ImportError and saved for later retry')
+        # traceback.print_tb(sys.exc_info()[2])
+        # print('')
         imp_list.append((destination, name, alias, mfrom))
     else:
         raise ImportError("Module {0}.{1} import can not be imp_list because too late.".format(mfrom, name))
 
 def retry_import():
     global enabled
-    retries = 1
-    for retry in range(retries):
-        i = 0
-        while i < len(imp_list):
-            (destination, name, alias, mfrom) = imp_list[i]
-            full_name = '.'.join((mfrom, name))
-            try:
-                module = sys.modules.get(full_name, __import__(full_name))
-                setattr(sys.modules[destination], alias or name, module)
-                imp_list.pop(i)
-            except ImportError:
-                if retry == retries - 1:  # last round
-                    raise
-                else:
-                    i += 1
     enabled = False
+    for (destination, name, alias, mfrom) in imp_list:
+        full_name = '.'.join((mfrom, name))
+        module = sys.modules.get(full_name, __import__(full_name))
+        setattr(sys.modules[destination], alias or name, module)
 
 enabled = True
 imp_list = []
