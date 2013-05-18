@@ -78,12 +78,14 @@ from jedi import common
 from jedi import cache
 from jedi import parsing_representation as pr
 from jedi import debug
-import evaluate_representation as er
-import recursion
-import docstrings
-import builtin
-import imports
-import dynamic
+
+# maybe important ordering
+from jedi import builtin
+from jedi import imports
+from jedi import recursion
+from jedi import docstrings
+from jedi import dynamic
+from jedi import evaluate_representation as er  # the last
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):

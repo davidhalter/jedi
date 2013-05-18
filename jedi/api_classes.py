@@ -13,12 +13,16 @@ from jedi import settings
 from jedi import common
 from jedi import parsing_representation as pr
 from jedi import cache
-import keywords
-import recursion
-import dynamic
-import evaluate
-import imports
-import evaluate_representation as er
+from jedi import keywords
+import jedi.recursion
+import jedi.dynamic
+from jedi.lazy import collect_import
+try:
+    from jedi import evaluate
+except ImportError:
+    collect_import(__name__, 'evaluate')
+from jedi import imports
+from jedi import evaluate_representation as er
 
 
 def _clear_caches():
@@ -27,8 +31,8 @@ def _clear_caches():
     be deleted is the module cache.
     """
     cache.clear_caches()
-    dynamic.search_param_cache.clear()
-    recursion.ExecutionRecursionDecorator.reset()
+    jedi.dynamic.search_param_cache.clear()
+    jedi.recursion.ExecutionRecursionDecorator.reset()
 
     evaluate.follow_statement.reset()
 

@@ -2,7 +2,7 @@
 import sys
 import contextlib
 import functools
-import tokenizer as tokenize
+from jedi import tokenizer as tokenize
 
 from jedi._compatibility import next, reraise
 from jedi import settings

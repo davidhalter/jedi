@@ -20,12 +20,18 @@ from jedi import cache
 from jedi import helpers
 from jedi import debug
 from jedi import common
-import recursion
-import docstrings
-import imports
-import evaluate
-import builtin
-import dynamic
+from jedi import imports
+from jedi import builtin
+import jedi
+# the following should be imported from api, not here due to cyclic import
+#import jedi.recursion
+#import jedi.dynamic
+#import jedi.docstrings
+from jedi.lazy import collect_import
+try:
+    from jedi import evaluate
+except ImportError:
+    collect_import(__name__, 'evaluate')
 
 
 class DecoratorNotFound(LookupError):
@@ -59,7 +65,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         if str(base.name) in ['list', 'set'] \
                     and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
-            self.var_args = dynamic.check_array_instances(self)
+            self.var_args = jedi.dynamic.check_array_instances(self)
         else:
             # need to execute the __init__ function, because the dynamic param
             # searching needs it.
@@ -389,7 +395,7 @@ class Execution(Executable):
                 return [stmt]  # just some arbitrary object
 
     @cache.memoize_default(default=())
-    @recursion.ExecutionRecursionDecorator
+    @jedi.recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
         stmts = []
@@ -473,7 +479,7 @@ class Execution(Executable):
         if func.is_generator and not evaluate_generator:
             return [Generator(func, self.var_args)]
         else:
-            stmts = docstrings.find_return_types(func)
+            stmts = jedi.docstrings.find_return_types(func)
             for r in self.returns:
                 if r is not None:
                     stmts += evaluate.follow_statement(r)
@@ -808,7 +814,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                         return self.get_exact_index_types(index.var_args[0])
 
         result = list(self._follow_values(self._array.values))
-        result += dynamic.check_array_additions(self)
+        result += jedi.dynamic.check_array_additions(self)
         return set(result)
 
     def get_exact_index_types(self, mixed_index):
