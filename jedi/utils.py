@@ -2,27 +2,20 @@
 Utilities for end-users.
 """
 
-import sys
+from rlcompleter import Completer
 
 from jedi import Interpreter
 
 
-def readline_complete(text, state):
-    """
-    Function to be passed to :func:`readline.set_completer`.
+class JediRLCompleter(Completer):
 
-    Usage::
-
-        import readline
-        readline.set_completer(readline_complete)
-
-    """
-    ns = vars(sys.modules['__main__'])
-    completions = Interpreter(text, [ns]).completions()
-    try:
-        return text + completions[state].complete
-    except IndexError:
-        return None
+    def attr_matches(self, text):
+        if '(' in text or ')' in text:
+            completions = Interpreter(text, [self.namespace]).completions()
+            return [text + c.complete for c in completions]
+        else:
+            # NOTE: Completer is old type class
+            return Completer.attr_matches(self, text)
 
 
 def setup_readline():
@@ -42,7 +35,7 @@ def setup_readline():
     except ImportError:
         print("Module readline not available.")
     else:
-        readline.set_completer(readline_complete)
+        readline.set_completer(JediRLCompleter().complete)
         readline.parse_and_bind("tab: complete")
 
         # Default delimiters minus "()":
