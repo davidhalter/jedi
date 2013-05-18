@@ -7,6 +7,23 @@ from rlcompleter import Completer
 from jedi import Interpreter
 
 
+_NON_DELIMS = ' \t\n()'
+"""
+:class:`rcompleter.Completer` assumes these characters to be delimiter
+(i.e., :meth:`rcompleter.Completer.complete` does not expect these
+characters) but :class:`JediRLCompleter` can handle them.
+"""
+
+try:
+    import readline
+except ImportError:
+    pass
+else:
+    _READLINE_DEFAULT_DELIMS = readline.get_completer_delims()
+    _READLINE_JEDI_DELIMS = ''.join(
+        set(_READLINE_DEFAULT_DELIMS) - set(_NON_DELIMS))
+
+
 class JediRLCompleter(Completer):
 
     def _jedi_matches(self, text):
@@ -14,7 +31,7 @@ class JediRLCompleter(Completer):
         return [text + c.complete for c in completions]
 
     @staticmethod
-    def _split_for_default_matcher(text, delims='()'):
+    def _split_for_default_matcher(text, delims=_NON_DELIMS):
         """
         Split `text` before passing it to :meth:`Completer.attr_matches` etc.
 
@@ -75,6 +92,4 @@ def setup_readline():
     else:
         readline.set_completer(JediRLCompleter().complete)
         readline.parse_and_bind("tab: complete")
-
-        # Default delimiters minus "()":
-        readline.set_completer_delims(' \t\n`~!@#$%^&*-=+[{]}\\|;:\'",<>/?')
+        readline.set_completer_delims(_READLINE_JEDI_DELIMS)
