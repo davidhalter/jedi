@@ -64,6 +64,8 @@ Parser Representation (parser_representation.py)
 
 .. automodule:: parsing_representation
 
+Class inheritance diagram:
+
 .. inheritance-diagram::
    SubModule
    Class
