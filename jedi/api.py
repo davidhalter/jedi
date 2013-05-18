@@ -20,6 +20,7 @@ from jedi import helpers
 from jedi import common
 from jedi import cache
 from jedi import modules
+from jedi import interpret
 from jedi._compatibility import next, unicode
 import evaluate
 import keywords
@@ -53,14 +54,18 @@ class Script(object):
         ``unicode`` object (default ``'utf-8'``).
     :type source_encoding: str
     """
-    def __init__(self, source, line, column, source_path,
-                                 source_encoding='utf-8'):
+    def __init__(self, source, line=None, column=None, source_path=None,
+                 source_encoding='utf-8'):
+        lines = source.splitlines()
+        line = len(lines) if line is None else line
+        column = len(lines[-1]) if column is None else column
+
         api_classes._clear_caches()
         debug.reset_time()
         self.source = modules.source_to_unicode(source, source_encoding)
         self.pos = line, column
-        self._module = modules.ModuleWithCursor(source_path,
-                                        source=self.source, position=self.pos)
+        self._module = modules.ModuleWithCursor(
+            source_path, source=self.source, position=self.pos)
         self._source_path = source_path
         self.source_path = None if source_path is None \
                                     else os.path.abspath(source_path)
@@ -503,6 +508,45 @@ class Script(object):
         return sorted(d, key=lambda x: (x.module_path or '', x.start_pos))
 
 
+class Interpreter(Script):
+
+    """
+    Jedi API for Python REPLs.
+
+    In addition to completion of simple attribute access, Jedi
+    supports code completion based on static code analysis.
+    Jedi can complete attributes of object which is not initialized
+    yet.
+
+    >>> from os.path import join
+    >>> namespace = locals()
+    >>> script = Interpreter('join().up', [namespace])
+    >>> print(script.complete()[0].word)
+    upper
+
+    """
+
+    def __init__(self, source, namespaces=[], **kwds):
+        """
+        Parse `source` and mixin interpreted Python objects from `namespaces`.
+
+        :type source: str
+        :arg  source: Code to parse.
+        :type namespaces: list of dict
+        :arg  namespaces: a list of namespace dictionaries such as the one
+                          returned by :func:`locals`.
+
+        Other optional arguments are same as the ones for :class:`Script`.
+        If `line` and `column` are None, they are assumed be at the end of
+        `source`.
+        """
+        super(Interpreter, self).__init__(source, **kwds)
+
+        importer = interpret.ObjectImporter(self._parser.user_scope)
+        for ns in namespaces:
+            importer.import_raw_namespace(ns)
+
+
 def defined_names(source, source_path=None, source_encoding='utf-8'):
     """
     Get all definitions in `source` sorted by its position.
@@ -545,25 +589,3 @@ def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
     debug.enable_warning = warnings
     debug.enable_notice = notices
     debug.enable_speed = speed
-
-
-def _quick_complete(source):
-    """
-    Convenience function to complete a source string at the end.
-
-    Example:
-
-    >>> _quick_complete('''
-    ... import datetime
-    ... datetime.da''')                                 #doctest: +ELLIPSIS
-    [<Completion: date>, <Completion: datetime>, ...]
-
-    :param source: The source code to be completed.
-    :type source: string
-    :return: Completion objects as returned by :meth:`complete`.
-    :rtype: list of :class:`api_classes.Completion`
-    """
-    lines = re.sub(r'[\n\r\s]*$', '', source).splitlines()
-    pos = len(lines), len(lines[-1])
-    script = Script(source, pos[0], pos[1], '')
-    return script.completions()

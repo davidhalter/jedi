@@ -14,7 +14,7 @@ import textwrap
 from .base import TestBase, unittest, cwd_at
 
 import jedi
-from jedi._compatibility import utf8, unicode
+from jedi._compatibility import utf8, unicode, is_py33
 from jedi import api, parsing, common
 api_classes = api.api_classes
 
@@ -560,6 +560,44 @@ class TestSpeed(TestBase):
         script = jedi.Script(s, 1, len(s), '')
         script.function_definition()
         #print(jedi.imports.imports_processed)
+
+
+class TestInterpreterAPI(unittest.TestCase):
+
+    def check_interpreter_complete(self, source, namespace, completions,
+                                   **kwds):
+        script = api.Interpreter(source, [namespace], **kwds)
+        cs = script.complete()
+        actual = [c.word for c in cs]
+        self.assertEqual(sorted(actual), sorted(completions))
+
+    def test_complete_raw_function(self):
+        from os.path import join
+        self.check_interpreter_complete('join().up',
+                                        locals(),
+                                        ['upper'])
+
+    def test_complete_raw_function_different_name(self):
+        from os.path import join as pjoin
+        self.check_interpreter_complete('pjoin().up',
+                                        locals(),
+                                        ['upper'])
+
+    def test_complete_raw_module(self):
+        import os
+        self.check_interpreter_complete('os.path.join().up',
+                                        locals(),
+                                        ['upper'])
+
+    def test_complete_raw_instance(self):
+        import datetime
+        dt = datetime.datetime(2013, 1, 1)
+        completions = ['time', 'timetz', 'timetuple']
+        if is_py33:
+            completions += ['timestamp']
+        self.check_interpreter_complete('(dt - dt).ti',
+                                        locals(),
+                                        completions)
 
 
 def test_settings_module():
