@@ -28,6 +28,14 @@ def readline_complete(text, state):
 def setup_readline():
     """
     Install Jedi completer to :mod:`readline`.
+
+    This function setups :mod:`readline` to use Jedi in Python interactive
+    shell.  If you want to use custom ``PYTHONSTARTUP`` file, you can call
+    this function like this:
+
+    >>> from jedi.utils import setup_readline
+    >>> setup_readline()
+
     """
     try:
         import readline
