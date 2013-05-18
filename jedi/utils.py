@@ -26,6 +26,21 @@ else:
 
 class JediRLCompleter(Completer):
 
+    """
+    :class:`rlcompleter.Completer` enhanced by Jedi.
+
+    This class tries matchers defined in :class:`.Completer` first.
+    If they fail, :class:`jedi.Interpreter` is used.
+
+    >>> import os
+    >>> completer = JediRLCompleter(locals())
+    >>> completer.complete('os.path.joi', 0)   # completion w/o Jedi
+    'os.path.join('
+    >>> completer.complete('os.path.join().s', 0)   # completion with Jedi
+    'os.path.join().split'
+
+    """
+
     def _jedi_matches(self, text):
         completions = Interpreter(text, [self.namespace]).completions()
         return [text + c.complete for c in completions]
