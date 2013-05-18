@@ -24,8 +24,12 @@ from jedi import common
 from jedi import debug
 from jedi import parsing_representation as pr
 from jedi import cache
-import builtin
-import evaluate
+from jedi import builtin
+from jedi.lazy import collect_import
+try:
+    from jedi import evaluate
+except ImportError:
+    collect_import(__name__, 'evaluate')
 
 # for debugging purposes only
 imports_processed = 0

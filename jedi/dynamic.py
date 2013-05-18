@@ -62,10 +62,14 @@ from jedi import settings
 from jedi import common
 from jedi import debug
 from jedi import fast_parser
-import api_classes
-import evaluate
-import imports
-import evaluate_representation as er
+from jedi import api_classes
+from jedi import imports
+from jedi import evaluate_representation as er
+from jedi.lazy import collect_import
+try:
+    from jedi import evaluate
+except ImportError:
+    collect_import(__name__, 'evaluate')
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.

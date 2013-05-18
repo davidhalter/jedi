@@ -37,7 +37,7 @@ from __future__ import with_statement
 
 import os
 import re
-import tokenizer as tokenize
+from jedi import tokenizer as tokenize
 from inspect import cleandoc
 from ast import literal_eval
 

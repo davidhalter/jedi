@@ -16,7 +16,7 @@ Apart from those classes there's a ``sys.path`` fetching function, as well as
 from __future__ import with_statement
 
 import re
-import tokenizer as tokenize
+from jedi import tokenizer as tokenize
 import sys
 import os
 from ast import literal_eval

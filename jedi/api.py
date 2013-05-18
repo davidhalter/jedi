@@ -12,6 +12,9 @@ import re
 import os
 import warnings
 
+
+# Jedi modules - group A
+# this group can be imported in any order (e.g. alphabetically)
 from jedi import parsing
 from jedi import parsing_representation as pr
 from jedi import debug
@@ -21,13 +24,26 @@ from jedi import common
 from jedi import cache
 from jedi import modules
 from jedi._compatibility import next, unicode
-import evaluate
-import keywords
-import api_classes
-import evaluate_representation as er
-import dynamic
-import imports
-import builtin
+from jedi import tokenizer as tokenize
+from jedi import fast_parser  # unused, but recommended here
+from jedi import refactoring  # unused, but recommended here
+
+# Jedi modules - group B
+# these modules must be imported before modules from group C because they can
+# not be imported directly by them in order to prevent cyclic dependency.
+from jedi import evaluate
+from jedi import builtin
+import jedi.recursion  # unused, but very important here
+
+# Jedi modules - group C
+# modules imported group C uses some modules by jedi.xxx.yyy without importing
+# anything explicitely except "jedi".
+# Something from the following order can be important
+from jedi import evaluate_representation as er
+from jedi import keywords
+import jedi.dynamic
+from jedi import api_classes
+from jedi import imports
 
 
 class NotFoundError(Exception):
@@ -412,12 +428,12 @@ class Script(object):
                                 if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
-            definitions = dynamic.usages_add_import_modules(definitions,
+            definitions = jedi.dynamic.usages_add_import_modules(definitions,
                                                                 search_name)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self._parser.module)
-        names = dynamic.usages(definitions, search_name, module)
+        names = jedi.dynamic.usages(definitions, search_name, module)
 
         for d in set(definitions):
             if isinstance(d, pr.Module):

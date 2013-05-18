@@ -36,7 +36,11 @@ from jedi import common
 from jedi import debug
 from jedi import parsing
 from jedi import modules
-import evaluate
+from jedi.lazy import collect_import
+try:
+    from jedi import evaluate
+except ImportError:
+    collect_import(__name__, 'evaluate')
 
 
 class BuiltinModule(modules.CachedModule):

@@ -18,8 +18,13 @@ import re
 
 from jedi import cache
 from jedi import parsing
-import evaluate
-import evaluate_representation as er
+from jedi import evaluate_representation as er
+from jedi.lazy import collect_import
+try:
+    from jedi import evaluate
+except ImportError:
+    collect_import(__name__, 'evaluate')
+
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
