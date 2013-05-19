@@ -324,6 +324,8 @@ class TestRegression(TestBase):
         # unrelated to #44
         defs = self.goto_assignments("import")
         assert len(defs) == 0
+        completions = self.completions("import", (1,1))
+        assert len(completions) == 0
 
     def test_goto_following_on_imports(self):
         s = "import multiprocessing.dummy; multiprocessing.dummy"

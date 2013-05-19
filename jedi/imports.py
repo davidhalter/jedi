@@ -162,9 +162,9 @@ class ImportPath(pr.Base):
         # If you edit e.g. gunicorn, there will be imports like this:
         # `from gunicorn import something`. But gunicorn is not in the
         # sys.path. Therefore look if gunicorn is a parent directory, #56.
-        parts = self.file_path.split(os.path.sep)
         in_path = []
         if self.import_path:
+            parts = self.file_path.split(os.path.sep)
             for i, p in enumerate(parts):
                 if p == self.import_path[0]:
                     new = os.path.sep.join(parts[:i])
