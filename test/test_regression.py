@@ -314,14 +314,16 @@ class TestRegression(TestBase):
         types = [o.type for o in objs]
         assert 'import' not in types and 'class' in types
 
-    def test_keyword_definition_doc(self):
+    def test_keyword(self):
         """ github jedi-vim issue #44 """
         defs = self.goto_definitions("print")
         assert [d.doc for d in defs]
 
         defs = self.goto_definitions("import")
-        assert len(defs) == 1
-        assert [d.doc for d in defs]
+        assert len(defs) == 1 and [1 for d in defs if d.doc]
+        # unrelated to #44
+        defs = self.goto_assignments("import")
+        assert len(defs) == 0
 
     def test_goto_following_on_imports(self):
         s = "import multiprocessing.dummy; multiprocessing.dummy"
