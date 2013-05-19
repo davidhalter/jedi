@@ -2,6 +2,8 @@
 Tests for `api.defined_names`.
 """
 
+import textwrap
+
 from jedi import api
 from .base import TestBase
 
@@ -9,7 +11,7 @@ from .base import TestBase
 class TestDefinedNames(TestBase):
 
     def check_defined_names(self, source, names):
-        definitions = api.defined_names(source)
+        definitions = api.defined_names(textwrap.dedent(source))
         self.assertEqual([d.name for d in definitions], names)
         return definitions
 
