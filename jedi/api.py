@@ -563,7 +563,7 @@ def defined_names(source, source_path=None, source_encoding='utf-8'):
         modules.source_to_unicode(source, source_encoding),
         module_path=source_path,
     )
-    return api_classes._defined_names(parser.scope)
+    return api_classes._defined_names(parser.module)
 
 
 def preload_module(*modules):
