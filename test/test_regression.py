@@ -377,7 +377,7 @@ class TestRegression(TestBase):
         # jedi issue #150
         s = "x()\nx( )\nx(  )\nx (  )"
         parser = parsing.Parser(s)
-        for i, s in enumerate(parser.scope.statements, 3):
+        for i, s in enumerate(parser.module.statements, 3):
             for c in s.get_commands():
                 self.assertEqual(c.execution.end_pos[1], i)
 
