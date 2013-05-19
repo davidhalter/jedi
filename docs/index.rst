@@ -22,6 +22,7 @@ Docs
 
    docs/installation
    docs/features
+   docs/repl
    docs/recipes
    docs/plugin-api
    docs/history
