@@ -8,51 +8,46 @@ from .base import TestBase
 
 class TestDefinedNames(TestBase):
 
+    def check_defined_names(self, source, names):
+        definitions = api.defined_names(source)
+        self.assertEqual([d.name for d in definitions], names)
+        return definitions
+
     def test_get_definitions_flat(self):
-        definitions = api.defined_names("""
+        self.check_defined_names("""
         import module
         class Class:
             pass
         def func():
             pass
         data = None
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['module', 'Class', 'func', 'data'])
+        """, ['module', 'Class', 'func', 'data'])
 
     def test_dotted_assignment(self):
-        definitions = api.defined_names("""
+        self.check_defined_names("""
         x = Class()
         x.y.z = None
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['x'])
+        """, ['x'])
 
     def test_multiple_assignment(self):
-        definitions = api.defined_names("""
+        self.check_defined_names("""
         x = y = None
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['x', 'y'])
+        """, ['x', 'y'])
 
     def test_multiple_imports(self):
-        definitions = api.defined_names("""
+        self.check_defined_names("""
         from module import a, b
         from another_module import *
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['a', 'b'])
+        """, ['a', 'b'])
 
     def test_nested_definitions(self):
-        definitions = api.defined_names("""
+        definitions = self.check_defined_names("""
         class Class:
             def f():
                 pass
             def g():
                 pass
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['Class'])
+        """, ['Class'])
         subdefinitions = definitions[0].defined_names()
         self.assertEqual([d.name for d in subdefinitions],
                          ['f', 'g'])
