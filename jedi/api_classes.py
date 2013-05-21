@@ -144,6 +144,8 @@ class BaseDefinition(object):
         path = []
         if not isinstance(self._definition, keywords.Keyword):
             par = self._definition
+            with common.ignored(AttributeError):
+                path.append(par.alias)
             while par is not None:
                 with common.ignored(AttributeError):
                     path.insert(0, par.name)
