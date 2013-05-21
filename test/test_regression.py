@@ -16,7 +16,6 @@ from .base import TestBase, unittest, cwd_at
 import jedi
 from jedi._compatibility import utf8, unicode, is_py33
 from jedi import api, parsing, common
-api_classes = api.api_classes
 
 #jedi.set_debug_function(jedi.debug.print_to_stdout)
 
@@ -410,28 +409,6 @@ class TestDocstring(TestBase):
 
 
 class TestFeature(TestBase):
-    def test_full_name(self):
-        """ feature request #61"""
-        assert self.completions('import os; os.path.join')[0].full_name \
-                                    == 'os.path.join'
-
-    def test_keyword_full_name_should_be_none(self):
-        """issue #94"""
-        # Using `from jedi.keywords import Keyword` here does NOT work
-        # in Python 3.  This is due to the import hack jedi using.
-        Keyword = api_classes.keywords.Keyword
-        d = api_classes.Definition(Keyword('(', (0, 0)))
-        assert d.full_name is None
-
-    def test_full_name_builtin(self):
-        self.assertEqual(self.completions('type')[0].full_name, 'type')
-
-    def test_full_name_tuple_mapping(self):
-        s = """
-        import re
-        any_re = re.compile('.*')
-        any_re"""
-        self.assertEqual(self.goto_definitions(s)[0].full_name, 're.RegexObject')
 
     def test_preload_modules(self):
         def check_loaded(*modules):
