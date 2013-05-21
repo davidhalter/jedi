@@ -1,3 +1,19 @@
+"""
+Tests for :attr:`.BaseDefinition.full_name`.
+
+There are three kinds of test:
+
+#. Test classes derived from :class:`MixinTestFullName`.
+   Child class defines :meth:`.get_definitions` to alter how
+   the api definition instance is created.
+
+#. :class:`TestFullDefinedName` is to test combination of
+   :attr:`.full_name` and :func:`.defined_names`.
+
+#. Misc single-function tests.
+
+"""
+
 import textwrap
 
 import jedi
@@ -6,6 +22,12 @@ from .base import TestBase
 
 
 class MixinTestFullName(object):
+
+    def get_definitions(self, source):
+        """
+        Get definition objects of the variable at the end of `source`.
+        """
+        raise NotImplementedError
 
     def check(self, source, desired):
         definitions = self.get_definitions(textwrap.dedent(source))
@@ -37,6 +59,10 @@ class TestFullNameWithCompletions(MixinTestFullName, TestBase):
 
 
 class TestFullDefinedName(TestBase):
+
+    """
+    Test combination of :attr:`.full_name` and :func:`.defined_names`.
+    """
 
     def check(self, source, desired):
         definitions = jedi.defined_names(textwrap.dedent(source))
