@@ -36,6 +36,28 @@ class TestFullNameWithCompletions(MixinTestFullName, TestBase):
     get_definitions = TestBase.completions
 
 
+class TestFullDefinedName(TestBase):
+
+    def check(self, source, desired):
+        definitions = jedi.defined_names(textwrap.dedent(source))
+        full_names = [d.full_name for d in definitions]
+        self.assertEqual(full_names, desired)
+
+    def test_local_names(self):
+        self.check("""
+        def f(): pass
+        class C: pass
+        """, ['f', 'C'])
+
+    def test_imports(self):
+        self.check("""
+        import os
+        from os import path
+        from os.path import join
+        from os import path as opath
+        """, ['os', 'os.path', 'os.path.join', 'os.path'])
+
+
 def test_keyword_full_name_should_be_none():
     """issue #94"""
     # Using `from jedi.keywords import Keyword` here does NOT work
