@@ -142,11 +142,19 @@ class BaseDefinition(object):
     def path(self):
         """The module path."""
         path = []
+
+        def insert_nonnone(x):
+            if x:
+                path.insert(0, x)
+
         if not isinstance(self._definition, keywords.Keyword):
             par = self._definition
-            with common.ignored(AttributeError):
-                path.append(par.alias)
             while par is not None:
+                if isinstance(par, pr.Import):
+                    insert_nonnone(par.namespace)
+                    insert_nonnone(par.from_ns)
+                    if par.relative_count == 0:
+                        break
                 with common.ignored(AttributeError):
                     path.insert(0, par.name)
                 par = par.parent
