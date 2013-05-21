@@ -10,9 +10,12 @@ from .base import TestBase
 
 class TestDefinedNames(TestBase):
 
+    def assert_definition_names(self, definitions, names):
+        self.assertEqual([d.name for d in definitions], names)
+
     def check_defined_names(self, source, names):
         definitions = api.defined_names(textwrap.dedent(source))
-        self.assertEqual([d.name for d in definitions], names)
+        self.assert_definition_names(definitions, names)
         return definitions
 
     def test_get_definitions_flat(self):
@@ -51,7 +54,22 @@ class TestDefinedNames(TestBase):
                 pass
         """, ['Class'])
         subdefinitions = definitions[0].defined_names()
-        self.assertEqual([d.name for d in subdefinitions],
-                         ['f', 'g'])
+        self.assert_definition_names(subdefinitions, ['f', 'g'])
         self.assertEqual([d.full_name for d in subdefinitions],
                          ['Class.f', 'Class.g'])
+
+    def test_nested_class(self):
+        definitions = self.check_defined_names("""
+        class L1:
+            class L2:
+                class L3:
+                    def f(): pass
+                def f(): pass
+            def f(): pass
+        def f(): pass
+        """, ['L1', 'f'])
+        subdefs = definitions[0].defined_names()
+        subsubdefs = subdefs[0].defined_names()
+        self.assert_definition_names(subdefs, ['L2', 'f'])
+        self.assert_definition_names(subsubdefs, ['L3', 'f'])
+        self.assert_definition_names(subsubdefs[0].defined_names(), ['f'])
