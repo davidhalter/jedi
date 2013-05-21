@@ -659,7 +659,8 @@ class Parser(object):
                 continue
             elif tok == 'assert':
                 stmt, tok = self._parse_statement()
-                stmt.parent = use_as_parent_scope
+                if stmt is not None:
+                    stmt.parent = use_as_parent_scope
                 self._scope.asserts.append(stmt)
             # default
             elif token_type in [tokenize.NAME, tokenize.STRING,

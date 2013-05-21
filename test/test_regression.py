@@ -326,6 +326,9 @@ class TestRegression(TestBase):
         assert len(defs) == 0
         completions = self.completions("import", (1,1))
         assert len(completions) == 0
+        with common.ignored(jedi.NotFoundError):  # TODO shouldn't throw that.
+            defs = self.goto_definitions("assert")
+            assert len(defs) == 1
 
     def test_goto_following_on_imports(self):
         s = "import multiprocessing.dummy; multiprocessing.dummy"
