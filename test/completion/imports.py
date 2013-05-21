@@ -72,6 +72,16 @@ import os
 #? ['dirname']
 os.path.dirname
 
+#? os.path.join
+from os.path import join
+
+from os.path import (
+    expanduser
+)
+
+#? os.path.expanduser
+expanduser
+
 from itertools import (tee,
                        islice)
 #? ['islice']
