@@ -94,6 +94,17 @@ path  : {args[3]}
 """.format(**data))
 
 
+class MixinLoader(object):
+
+    def add_arguments(self, parser):
+        super(MixinLoader, self).add_arguments(parser)
+        parser = parser.add_argument(
+            'recid', default=0, nargs='?', type=int)
+
+    def do_run(self, record, recid):
+        self.load_record(record)
+
+
 class RandomAtaccker(MixinPrinter, BaseAttacker):
 
     operations = [
@@ -129,17 +140,19 @@ class RandomAtaccker(MixinPrinter, BaseAttacker):
             help='root directory to look for Python files.')
 
 
-class RedoAttacker(BaseAttacker):
+class RedoAttacker(MixinLoader, BaseAttacker):
 
     def do_run(self, record, recid):
-        self.load_record(record)
+        super(RedoAttacker, self).do_run(record, recid)
         data = self.get_record(recid)
         self.attack(data['operation'], *data['args'])
 
-    def add_arguments(self, parser):
-        super(RedoAttacker, self).add_arguments(parser)
-        parser = parser.add_argument(
-            'recid', default=0, type=int)
+
+class ShowRecord(MixinLoader, MixinPrinter, BaseAttacker):
+
+    def do_run(self, record, recid):
+        super(ShowRecord, self).do_run(record, recid)
+        self.print_record()
 
 
 class AttackApp(object):
@@ -174,6 +187,7 @@ class AttackApp(object):
         self.subparsers = parser.add_subparsers()
         self.add_parser(RandomAtaccker, 'random', help='Random attack')
         self.add_parser(RedoAttacker, 'redo', help='Redo recorded attack')
+        self.add_parser(ShowRecord, 'show', help='Show record')
 
         return parser
 
