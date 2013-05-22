@@ -11,6 +11,11 @@ import random
 import sys
 import traceback
 
+try:
+    from itertools import izip as zip
+except ImportError:
+    pass
+
 import jedi
 
 
@@ -105,6 +110,31 @@ class MixinLoader(object):
         self.load_record(record)
 
 
+class AttackReporter(object):
+
+    def __init__(self):
+        self.tries = 0
+        self.errors = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.tries += 1
+        sys.stderr.write('.')
+        sys.stderr.flush()
+        return self.tries
+
+    next = __next__
+
+    def error(self):
+        self.errors += 1
+        sys.stderr.write('\n')
+        sys.stderr.flush()
+        print('{0}th error is encountered after {1} tries.'
+              .format(self.errors, self.tries))
+
+
 class RandomAtaccker(MixinPrinter, BaseAttacker):
 
     operations = [
@@ -122,13 +152,16 @@ class RandomAtaccker(MixinPrinter, BaseAttacker):
 
     def do_run(self, record, rootpath, maxtries):
         finder = SourceFinder(rootpath)
+        reporter = AttackReporter()
         for (operation, args) in self.generate_attacks(maxtries, finder):
+            reporter.next()
             try:
                 self.attack(operation, *args)
             except jedi.NotFoundError:
                 pass
             except Exception:
                 self.add_record(sys.exc_info(), operation, args)
+                reporter.error()
                 self.print_record()
                 raise
         self.save_record(record)
