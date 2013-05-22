@@ -198,7 +198,7 @@ class RandomAtaccker(MixinPrinter, BaseAttacker):
     def add_arguments(self, parser):
         super(RandomAtaccker, self).add_arguments(parser)
         parser.add_argument(
-            '--maxtries', default=10000, type=int)
+            '--maxtries', '-l', default=10000, type=int)
         parser.add_argument(
             'rootpath', default='.', nargs='?',
             help='root directory to look for Python files.')
@@ -268,7 +268,7 @@ class AttackApp(object):
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description=__doc__)
         parser.add_argument(
-            '--record', default='record.json',
+            '--record', '-R', default='record.json',
             help='Exceptions are recorded in here.')
         parser.add_argument(
             '--pdb', dest='debugger', const='pdb', action='store_const',
