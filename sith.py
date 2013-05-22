@@ -125,6 +125,8 @@ class RandomAtaccker(MixinPrinter, BaseAttacker):
         for (operation, args) in self.generate_attacks(maxtries, finder):
             try:
                 self.attack(operation, *args)
+            except jedi.NotFoundError:
+                pass
             except Exception:
                 self.add_record(sys.exc_info(), operation, args)
                 self.print_record()
