@@ -128,7 +128,7 @@ class RandomAtaccker(MixinPrinter, BaseAttacker):
             except Exception:
                 self.add_record(sys.exc_info(), operation, args)
                 self.print_record()
-                break
+                raise
         self.save_record(record)
 
     def add_arguments(self, parser):
@@ -165,8 +165,17 @@ class AttackApp(object):
         parser = self.get_parser()
         self.do_run(**vars(parser.parse_args(args)))
 
-    def do_run(self, func, **kwds):
-        func(**kwds)
+    def do_run(self, func, debugger, **kwds):
+        try:
+            func(**kwds)
+        except:
+            exc_info = sys.exc_info()
+            if debugger == 'pdb':
+                import pdb
+                pdb.post_mortem(exc_info[2])
+            elif debugger == 'ipdb':
+                import ipdb
+                ipdb.post_mortem(exc_info[2])
 
     def add_parser(self, attacker_class, *args, **kwds):
         parser = self.subparsers.add_parser(*args, **kwds)
@@ -183,6 +192,10 @@ class AttackApp(object):
         parser.add_argument(
             '--record', default='record.json',
             help='Exceptions are recorded in here.')
+        parser.add_argument(
+            '--pdb', dest='debugger', const='pdb', action='store_const')
+        parser.add_argument(
+            '--ipdb', dest='debugger', const='ipdb', action='store_const')
 
         self.subparsers = parser.add_subparsers()
         self.add_parser(RandomAtaccker, 'random', help='Random attack')
