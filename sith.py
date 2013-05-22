@@ -192,7 +192,8 @@ class RandomAtaccker(MixinPrinter, BaseAttacker):
                 reporter.error()
                 self.print_record()
                 raise
-        self.save_record(record)
+            finally:
+                self.save_record(record)
 
     def add_arguments(self, parser):
         super(RandomAtaccker, self).add_arguments(parser)
