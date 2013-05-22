@@ -4,6 +4,7 @@
 Sith attacks (and helps debugging) Jedi.
 """
 
+from __future__ import print_function
 import json
 import os
 import random
@@ -80,7 +81,20 @@ class BaseAttacker(object):
         parser.set_defaults(func=self.do_run)
 
 
-class RandomAtaccker(BaseAttacker):
+class MixinPrinter(object):
+
+    def print_record(self, recid=-1):
+        data = self.get_record(recid)
+        print(*data['traceback'], end='')
+        print("""
+{error} is raised by running Script(...).{operation}() with
+line  : {args[1]}
+column: {args[2]}
+path  : {args[3]}
+""".format(**data))
+
+
+class RandomAtaccker(MixinPrinter, BaseAttacker):
 
     operations = [
         'completions', 'goto_assignments', 'goto_definitions', 'usages',
@@ -102,6 +116,7 @@ class RandomAtaccker(BaseAttacker):
                 self.attack(operation, *args)
             except Exception:
                 self.add_record(sys.exc_info(), operation, args)
+                self.print_record()
                 break
         self.save_record(record)
 
