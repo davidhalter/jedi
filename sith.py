@@ -269,7 +269,7 @@ class AttackApp(object):
             description=__doc__)
         parser.add_argument(
             '--record', '-R', default='record.json',
-            help='Exceptions are recorded in here.')
+            help='Exceptions are recorded in here (default: %(default)s).')
         parser.add_argument(
             '--pdb', dest='debugger', const='pdb', action='store_const',
             help="Launch pdb when error is raised.")
