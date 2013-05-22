@@ -2,6 +2,21 @@
 
 """
 Sith attacks (and helps debugging) Jedi.
+
+Randomly search Python files and run Jedi on it.  Exception and used
+arguments are recorded to ``./record.josn`` (specified by --record)::
+
+    %(prog)s random
+
+Redo recorded exception::
+
+    %(prog)s redo
+
+Fallback to pdb when error is raised::
+
+    %(prog)s --pdb random
+    %(prog)s --pdb redo
+
 """
 
 from __future__ import print_function
@@ -85,6 +100,12 @@ class BaseAttacker(object):
     def add_arguments(self, parser):
         parser.set_defaults(func=self.do_run)
 
+    def get_help(self):
+        for line in self.__doc__.splitlines():
+            line = line.strip()
+            if line:
+                return line
+
 
 class MixinPrinter(object):
 
@@ -104,7 +125,10 @@ class MixinLoader(object):
     def add_arguments(self, parser):
         super(MixinLoader, self).add_arguments(parser)
         parser = parser.add_argument(
-            'recid', default=0, nargs='?', type=int)
+            'recid', default=0, nargs='?', type=int, help="""
+            This option currently has no effect as random attack record
+            only one error.
+            """)
 
     def do_run(self, record, recid):
         self.load_record(record)
@@ -136,6 +160,10 @@ class AttackReporter(object):
 
 
 class RandomAtaccker(MixinPrinter, BaseAttacker):
+
+    """
+    Randomly run Script().<method>() against files under <rootpath>.
+    """
 
     operations = [
         'completions', 'goto_assignments', 'goto_definitions', 'usages',
@@ -177,6 +205,10 @@ class RandomAtaccker(MixinPrinter, BaseAttacker):
 
 class RedoAttacker(MixinLoader, BaseAttacker):
 
+    """
+    Redo recorded attack.
+    """
+
     def do_run(self, record, recid):
         super(RedoAttacker, self).do_run(record, recid)
         data = self.get_record(recid)
@@ -184,6 +216,10 @@ class RedoAttacker(MixinLoader, BaseAttacker):
 
 
 class ShowRecord(MixinLoader, MixinPrinter, BaseAttacker):
+
+    """
+    Show recorded errors.
+    """
 
     def do_run(self, record, recid):
         super(ShowRecord, self).do_run(record, recid)
@@ -213,8 +249,12 @@ class AttackApp(object):
                 ipdb.post_mortem(exc_info[2])
 
     def add_parser(self, attacker_class, *args, **kwds):
-        parser = self.subparsers.add_parser(*args, **kwds)
         attacker = attacker_class()
+        parser = self.subparsers.add_parser(
+            *args,
+            help=attacker.get_help(),
+            description=attacker.__doc__,
+            **kwds)
         attacker.add_arguments(parser)
 
         # Not required, just fore debugging:
@@ -223,19 +263,23 @@ class AttackApp(object):
 
     def get_parser(self):
         import argparse
-        parser = argparse.ArgumentParser(description=__doc__)
+        parser = argparse.ArgumentParser(
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            description=__doc__)
         parser.add_argument(
             '--record', default='record.json',
             help='Exceptions are recorded in here.')
         parser.add_argument(
-            '--pdb', dest='debugger', const='pdb', action='store_const')
+            '--pdb', dest='debugger', const='pdb', action='store_const',
+            help="Launch pdb when error is raised.")
         parser.add_argument(
-            '--ipdb', dest='debugger', const='ipdb', action='store_const')
+            '--ipdb', dest='debugger', const='ipdb', action='store_const',
+            help="Launch ipdb when error is raised.")
 
         self.subparsers = parser.add_subparsers()
-        self.add_parser(RandomAtaccker, 'random', help='Random attack')
-        self.add_parser(RedoAttacker, 'redo', help='Redo recorded attack')
-        self.add_parser(ShowRecord, 'show', help='Show record')
+        self.add_parser(RandomAtaccker, 'random')
+        self.add_parser(RedoAttacker, 'redo')
+        self.add_parser(ShowRecord, 'show')
 
         return parser
 
