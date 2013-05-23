@@ -19,7 +19,7 @@ Fallback to pdb when error is raised::
 
 """
 
-from __future__ import print_function
+from __future__ import print_function, division, unicode_literals
 import json
 import os
 import random
@@ -155,7 +155,7 @@ class AttackReporter(object):
               .format(self.errors, self.tries))
 
 
-class RandomAtaccker(MixinPrinter, BaseAttacker):
+class RandomAttacker(MixinPrinter, BaseAttacker):
 
     """
     Randomly run Script().<method>() against files under <rootpath>.
@@ -192,7 +192,7 @@ class RandomAtaccker(MixinPrinter, BaseAttacker):
                 self.save_record(record)
 
     def add_arguments(self, parser):
-        super(RandomAtaccker, self).add_arguments(parser)
+        super(RandomAttacker, self).add_arguments(parser)
         parser.add_argument(
             '--maxtries', '-l', default=10000, type=int)
         parser.add_argument(
@@ -267,13 +267,13 @@ class AttackApp(object):
             help='Exceptions are recorded in here (default: %(default)s).')
         parser.add_argument(
             '--pdb', dest='debugger', const='pdb', action='store_const',
-            help="Launch pdb when error is raised.")
+            help='Launch pdb when error is raised.')
         parser.add_argument(
             '--ipdb', dest='debugger', const='ipdb', action='store_const',
-            help="Launch ipdb when error is raised.")
+            help='Launch ipdb when error is raised.')
 
         self.subparsers = parser.add_subparsers()
-        self.add_parser(RandomAtaccker, 'random')
+        self.add_parser(RandomAttacker, 'random')
         self.add_parser(RedoAttacker, 'redo')
         self.add_parser(ShowRecord, 'show')
 
