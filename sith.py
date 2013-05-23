@@ -4,7 +4,7 @@
 Sith attacks (and helps debugging) Jedi.
 
 Randomly search Python files and run Jedi on it.  Exception and used
-arguments are recorded to ``./record.josn`` (specified by --record)::
+arguments are recorded to ``./record.json`` (specified by --record)::
 
     %(prog)s random
 
