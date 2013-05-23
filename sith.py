@@ -28,6 +28,8 @@ import traceback
 
 import jedi
 
+_unspecified = object()
+
 
 class SourceCode(object):
 
@@ -236,7 +238,12 @@ class AttackApp(object):
         parser = self.get_parser()
         self.do_run(**vars(parser.parse_args(args)))
 
-    def do_run(self, func, debugger, **kwds):
+    def do_run(self, func, debugger, fs_cache, **kwds):
+        if fs_cache is _unspecified:
+            jedi.settings.use_filesystem_cache = False
+        else:
+            jedi.settings.cache_directory = fs_cache
+
         try:
             func(**kwds)
         except:
@@ -274,6 +281,13 @@ class AttackApp(object):
         parser.add_argument(
             '--ipdb', dest='debugger', const='ipdb', action='store_const',
             help='Launch ipdb when error is raised.')
+        parser.add_argument(
+            '--fs-cache', '-C', default=_unspecified,
+            help="""
+            By default, file system cache is off for reproducibility.
+            Pass a temporary directory to use file system cache.
+            It is set to ``jedi.settings.cache_directory``.
+            """)
 
         self.subparsers = parser.add_subparsers()
         self.add_parser(RandomAttacker, 'random')
