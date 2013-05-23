@@ -12,7 +12,7 @@ Redo recorded exception::
 
     %(prog)s redo
 
-Fallback to pdb when error is raised::
+Fallback to pdb (or ipdb if available) when error is raised::
 
     %(prog)s --pdb random
     %(prog)s --pdb redo
@@ -243,11 +243,11 @@ class AttackApp(object):
         except:
             exc_info = sys.exc_info()
             if debugger == 'pdb':
-                import pdb
-                pdb.post_mortem(exc_info[2])
-            elif debugger == 'ipdb':
-                import ipdb
-                ipdb.post_mortem(exc_info[2])
+                try:
+                    import ipdb as debugger
+                except ImportError:
+                    import pdb as debugger
+                debugger.post_mortem(exc_info[2])
 
     def add_parser(self, attacker_class, *args, **kwds):
         attacker = attacker_class()
@@ -272,10 +272,7 @@ class AttackApp(object):
             help='Exceptions are recorded in here (default: %(default)s).')
         parser.add_argument(
             '--pdb', dest='debugger', const='pdb', action='store_const',
-            help="Launch pdb when error is raised.")
-        parser.add_argument(
-            '--ipdb', dest='debugger', const='ipdb', action='store_const',
-            help="Launch ipdb when error is raised.")
+            help="Launch pdb or ipdb (if available) when error is raised.")
 
         self.subparsers = parser.add_subparsers()
         self.add_parser(RandomAtaccker, 'random')
