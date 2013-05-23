@@ -27,11 +27,6 @@ import sys
 import traceback
 import argparse
 
-try:
-    from itertools import izip as zip
-except ImportError:
-    pass
-
 import jedi
 
 
