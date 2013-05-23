@@ -554,14 +554,31 @@ def assign_tuples(tup, results, seek_name):
         else:
             r = eval_results(i)
 
-        # are there still tuples or is it just a Call.
-        if isinstance(command, pr.Array):
-            # These are "sub"-tuples.
-            result += assign_tuples(command, r, seek_name)
-        else:
-            if command.name.names[-1] == seek_name:
-                result += r
+        # LHS of tuples can be nested, so resolve it recursively
+        result += find_assignments(command, r, seek_name)
     return result
+
+
+def find_assignments(lhs, results, seek_name):
+    """
+    Check if `seek_name` is in the left hand side `lhs` of assignment.
+
+    `lhs` can simply be a variable (`pr.Call`) or a tuple/list (`pr.Array`)
+    representing the following cases::
+
+        a = 1        # lhs is pr.Call
+        (a, b) = 2   # lhs is pr.Array
+
+    :type lhs: pr.Call
+    :type results: list
+    :type seek_name: str
+    """
+    if isinstance(lhs, pr.Array):
+        return assign_tuples(lhs, results, seek_name)
+    elif lhs.name.names[-1] == seek_name:
+        return results
+    else:
+        return []
 
 
 @recursion.RecursionDecorator
@@ -587,7 +604,7 @@ def follow_statement(stmt, seek_name=None):
     if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
         new_result = []
         for ass_commands, op in stmt.assignment_details:
-            new_result += assign_tuples(ass_commands[0], result, seek_name)
+            new_result += find_assignments(ass_commands[0], result, seek_name)
         result = new_result
     return set(result)
 
