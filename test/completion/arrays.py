@@ -103,6 +103,18 @@ a
 #? int()
 b
 
+(a, b) = (c, (e, f)) = ('2', (3, 4))
+#? str()
+a
+#? tuple()
+b
+#? str()
+c
+#? int()
+e
+#? int()
+f
+
 
 # -----------------
 # unnessecary braces
