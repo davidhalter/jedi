@@ -95,6 +95,28 @@ b4
 
 
 # -----------------
+# multiple assignments
+# -----------------
+a = b = 1
+#? int()
+a
+#? int()
+b
+
+(a, b) = (c, (e, f)) = ('2', (3, 4))
+#? str()
+a
+#? tuple()
+b
+#? str()
+c
+#? int()
+e
+#? int()
+f
+
+
+# -----------------
 # unnessecary braces
 # -----------------
 #? int()
