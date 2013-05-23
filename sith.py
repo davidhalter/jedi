@@ -25,7 +25,6 @@ import os
 import random
 import sys
 import traceback
-import argparse
 
 import jedi
 
@@ -281,5 +280,10 @@ class AttackApp(object):
 
 
 if __name__ == '__main__':
+    try:
+        import argparse
+    except ImportError:
+        print('The argparse module (Python>=2.7) is needed to run sith.')
+        sys.exit(1)
     app = AttackApp()
     app.run()
