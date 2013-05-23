@@ -318,7 +318,9 @@ def find_name(scope, name_str, position=None, search_global=False,
             exc = pr.Class, pr.Function
             until = lambda: par.parent.parent.get_parent_until(exc)
 
-            if par.isinstance(pr.Flow):
+            if par is None:
+                pass
+            elif par.isinstance(pr.Flow):
                 if par.command == 'for':
                     result += handle_for_loops(par)
                 else:
