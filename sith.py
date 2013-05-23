@@ -208,7 +208,11 @@ class RedoAttacker(MixinLoader, BaseAttacker):
     def do_run(self, record, recid):
         super(RedoAttacker, self).do_run(record, recid)
         data = self.get_record(recid)
-        self.attack(data['operation'], *data['args'])
+        try:
+            self.attack(data['operation'], *data['args'])
+        except:
+            traceback.print_exc()
+            raise
 
 
 class ShowRecord(MixinLoader, MixinPrinter, BaseAttacker):
