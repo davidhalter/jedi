@@ -95,6 +95,16 @@ b4
 
 
 # -----------------
+# multiple assignments
+# -----------------
+a = b = 1
+#? int()
+a
+#? int()
+b
+
+
+# -----------------
 # unnessecary braces
 # -----------------
 #? int()
