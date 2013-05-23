@@ -25,6 +25,7 @@ import os
 import random
 import sys
 import traceback
+import argparse
 
 try:
     from itertools import izip as zip
@@ -263,7 +264,6 @@ class AttackApp(object):
         self.attackers.append(attacker)
 
     def get_parser(self):
-        import argparse
         parser = argparse.ArgumentParser(
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description=__doc__)
