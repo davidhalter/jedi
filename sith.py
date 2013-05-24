@@ -254,6 +254,9 @@ class AttackApp(object):
             elif debugger == 'ipdb':
                 import ipdb
                 ipdb.post_mortem(exc_info[2])
+            elif debugger == 'pudb':
+                import pudb
+                pudb.post_mortem(exc_info)
 
     def add_parser(self, attacker_class, *args, **kwds):
         attacker = attacker_class()
@@ -281,6 +284,9 @@ class AttackApp(object):
         parser.add_argument(
             '--ipdb', dest='debugger', const='ipdb', action='store_const',
             help='Launch ipdb when error is raised.')
+        parser.add_argument(
+            '--pudb', dest='debugger', const='pudb', action='store_const',
+            help='Launch pudb when error is raised.')
         parser.add_argument(
             '--fs-cache', '-C', default=_unspecified,
             help="""
