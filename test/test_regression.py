@@ -329,6 +329,14 @@ class TestRegression(TestBase):
             defs = self.goto_definitions("assert")
             assert len(defs) == 1
 
+    def test_goto_assignments_keyword(self):
+        """
+        Bug: goto assignments on ``in`` used to raise AttributeError::
+
+          'unicode' object has no attribute 'generate_call_path'
+        """
+        self.goto_assignments('in')
+
     def test_goto_following_on_imports(self):
         s = "import multiprocessing.dummy; multiprocessing.dummy"
         g = self.goto_assignments(s)
