@@ -794,7 +794,10 @@ def goto(stmt, call_path=None):
         commands = stmt.get_commands()
         assert len(commands) == 1
         call = commands[0]
-        call_path = list(call.generate_call_path())
+        if isinstance(call, (str, unicode)):
+            call_path = [call]
+        else:
+            call_path = list(call.generate_call_path())
 
     scope = stmt.get_parent_until(pr.IsScope)
     pos = stmt.start_pos
