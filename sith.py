@@ -86,7 +86,7 @@ class BaseAttacker(object):
         return self.record['data'][recid]
 
     def save_record(self, path):
-        directory = os.path.dirname(path)
+        directory = os.path.dirname(os.path.abspath(path))
         if not os.path.isdir(directory):
             os.makedirs(directory)
         with open(path, 'w') as f:
