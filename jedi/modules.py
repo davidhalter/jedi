@@ -188,6 +188,7 @@ class ModuleWithCursor(Module):
                 elif token_type == tokenize.NUMBER:
                     pass
                 else:
+                    self._column_temp = self._line_length - end[1]
                     break
 
                 self._column_temp = self._line_length - end[1]
