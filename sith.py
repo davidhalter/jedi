@@ -247,16 +247,10 @@ class AttackApp(object):
         try:
             func(**kwds)
         except:
-            exc_info = sys.exc_info()
-            if debugger == 'pdb':
-                import pdb
-                pdb.post_mortem(exc_info[2])
-            elif debugger == 'ipdb':
-                import ipdb
-                ipdb.post_mortem(exc_info[2])
-            elif debugger == 'pudb':
-                import pudb
-                pudb.post_mortem(exc_info)
+            if debugger:
+                einfo = sys.exc_info()
+                pdb = __import__(debugger)
+                pdb.post_mortem(einfo if debugger == 'pudb' else einfo[2])
 
     def add_parser(self, attacker_class, *args, **kwds):
         attacker = attacker_class()
