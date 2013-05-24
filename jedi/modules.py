@@ -141,6 +141,7 @@ class ModuleWithCursor(Module):
                 last_line = self.get_line(self._line_temp)
                 if last_line and last_line[-1] == '\\':
                     line = last_line[:-1] + ' ' + line
+                    self._line_length = len(last_line)
                 else:
                     break
             return line[::-1]
