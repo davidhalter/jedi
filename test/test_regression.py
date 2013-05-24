@@ -395,6 +395,22 @@ class TestRegression(TestBase):
             for c in s.get_commands():
                 self.assertEqual(c.execution.end_pos[1], i)
 
+    def test_backslash_continuation(self):
+        """
+        Test that ModuleWithCursor.get_path_until_cursor handles continuation
+        """
+        source = textwrap.dedent(r"""
+        x = 0
+        a = \
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, x]  # <-- here
+        """)
+        for (i, line) in enumerate(source.splitlines()):
+            if '<-- here' in line:
+                break
+        column = len(line) - len(']  # <-- here')
+        defs = self.goto_definitions(source, (i + 1, column))
+        self.assertEqual([d.name for d in defs], ['int'])
+
 
 class TestDocstring(TestBase):
 
