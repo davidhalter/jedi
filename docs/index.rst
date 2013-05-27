@@ -45,9 +45,18 @@ Resources
 Editor Plugins
 --------------
 
-- `Vim <http://github.com/davidhalter/jedi-vim>`_
-- `Emacs <https://github.com/tkf/emacs-jedi>`_
-- `Sublime Text 2 <https://github.com/svaiter/SublimeJEDI>`_
+Vim:
+
+- `jedi-vim <http://github.com/davidhalter/jedi-vim>`_
+- `YouCompleteMe <http://valloric.github.io/YouCompleteMe/>`_
+
+Emacs:
+
+- `emacs-jedi <https://github.com/tkf/emacs-jedi>`_
+
+Sublime Text 2:
+
+- `SublimeJEDI <https://github.com/svaiter/SublimeJEDI>`_
 
 
 .. _other-software:
