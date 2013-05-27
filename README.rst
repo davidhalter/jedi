@@ -29,7 +29,7 @@ me.
 Jedi can be used with the following editors:
 
 - Vim (jedi-vim_, YouCompleteMe_)
-- Emacs (emacs-jedi_)
+- Emacs (Jedi.el_)
 - Sublime Text (SublimeJEDI_)
 
 And it powers the following projects:
@@ -130,6 +130,6 @@ For more detailed information visit the `testing documentation
 
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
-.. _emacs-jedi: https://github.com/tkf/emacs-jedi
+.. _Jedi.el: https://github.com/tkf/emacs-jedi
 .. _sublimejedi: https://github.com/svaiter/SublimeJEDI
 .. _wdb: https://github.com/Kozea/wdb

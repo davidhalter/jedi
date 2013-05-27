@@ -52,7 +52,7 @@ Vim:
 
 Emacs:
 
-- `emacs-jedi <https://github.com/tkf/emacs-jedi>`_
+- `Jedi.el <https://github.com/tkf/emacs-jedi>`_
 
 Sublime Text 2:
 
