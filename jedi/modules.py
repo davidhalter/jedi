@@ -28,6 +28,9 @@ from jedi import fast_parser
 from jedi import debug
 from jedi import common
 
+# by Arashi
+import subprocess
+import shlex
 
 class CachedModule(object):
     """
@@ -250,18 +253,88 @@ class ModuleWithCursor(Module):
 
 
 def get_sys_path():
+
+    custom_path = []
+
     def check_virtual_env(sys_path):
         """ Add virtualenv's site-packages to the `sys.path`."""
         venv = os.getenv('VIRTUAL_ENV')
-        if not venv:
-            return
-        venv = os.path.abspath(venv)
-        p = os.path.join(
-            venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
-        sys_path.insert(0, p)
+        if venv:
+            venv = os.path.abspath(venv)
+            p = os.path.join(
+                venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
+            sys_path.insert(0, p)
+
+
+    def check_pyenv(sys_path):
+
+        pyenv_name = 'pyenv'
+        pyenv_pattern = re.compile('\.pyenv\/bin\/pyenv')
+        pyenv_bin = None
+        path = os.environ['PATH']
+
+        for p in path.split(':'):
+            check_path = os.path.join(p, pyenv_name)
+            if os.path.exists(check_path):
+                if pyenv_pattern.search(check_path):
+                    pyenv_bin = check_path
+    
+        if pyenv_bin:
+            dev_null = open(os.devnull)
+    
+            # Get pyenv root
+            pyenv_root = pyenv_bin.split('/')[:-2]
+            pyenv_root = '/'.join(pyenv_root)
+    
+    
+            # Get pyenv's current version
+            version_raw_cmd = ('{0} version'.format(pyenv_bin))
+            version_cmd = shlex.split(version_raw_cmd)
+            current_version = subprocess.Popen(
+                version_cmd,
+                stdout=subprocess.PIPE,
+                stderr=dev_null,
+                cwd=os.curdir
+            )
+            current_version.wait()
+            current_version = current_version.stdout.readline()
+            current_version = current_version.rstrip().decode()
+            current_version = current_version.split()[0]
+
+            python_option_cmd = '"import sys; print(sys.version)"'
+            python_raw_cmd = 'python -c {0}'.format(python_option_cmd)
+            python_cmd = shlex.split(python_raw_cmd)
+            python_ver_info = subprocess.Popen(
+                python_cmd,
+                stdout=subprocess.PIPE,
+                stderr=dev_null,
+                cwd=os.curdir
+            )
+            python_ver_info = python_ver_info.stdout.readline()
+            python_ver_info = python_ver_info.rstrip().decode()
+            python_ver_info = python_ver_info.split()
+            python_ver_info = python_ver_info[0].split('.')[:2]
+    
+            p = os.path.join(
+                pyenv_root,
+                'versions',
+                current_version,
+                'lib',
+                'python{0}.{1}'.format(python_ver_info[0], python_ver_info[1]),
+                'site-packages'
+            )
+            dev_null.close()
+            sys_path.insert(0, p)
+
 
     check_virtual_env(sys.path)
-    return [p for p in sys.path if p != ""]
+    check_pyenv(sys.path)
+    custom_path.extend([p for p in sys.path if p!= ""])
+
+    if custom_path:
+        return custom_path
+    else:
+        return
 
 
 @cache.memoize_default([])
