@@ -267,9 +267,10 @@ def get_sys_path():
 
 
     def check_pyenv(sys_path):
-
+        """ Add site-packages to the `sys.path` of pyenv's current version"""
+        # Check whether pyenv command exists
         pyenv_name = 'pyenv'
-        pyenv_pattern = re.compile('\.pyenv\/bin\/pyenv')
+        pyenv_pattern = re.compile('bin\/pyenv')
         pyenv_bin = None
         path = os.environ['PATH']
 
@@ -301,6 +302,7 @@ def get_sys_path():
             current_version = current_version.rstrip().decode()
             current_version = current_version.split()[0]
 
+            # Get pyenv's lib/pythonX.X/site-packages
             python_option_cmd = '"import sys; print(sys.version)"'
             python_raw_cmd = 'python -c {0}'.format(python_option_cmd)
             python_cmd = shlex.split(python_raw_cmd)
