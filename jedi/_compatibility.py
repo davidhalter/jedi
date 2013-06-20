@@ -25,18 +25,18 @@ def find_module_py33(string, path=None):
         raise ImportError("Couldn't find a loader for {0}".format(string))
 
     try:
-        if (loader.is_package(string)):
-            mod_info = (None, os.path.dirname(loader.path), True)
+        is_package = loader.is_package(string)
+        if is_package:
+            module_path = os.path.dirname(loader.path)
+            module_file = None
         else:
-            filename = loader.get_filename(string)
-            if filename and os.path.exists(filename):
-                mod_info = (open(filename, 'U'), filename, False)
-            else:
-                mod_info = (None, filename, False)
+            module_path = loader.get_filename(string)
+            module_file = open(module_path)
     except AttributeError:
-        mod_info = (None, loader.load_module(string).__name__, False)
+        module_path = loader.load_module(string).__name__
+        module_file = None
 
-    return mod_info
+    return module_file, module_path, is_package
 
 
 def find_module_pre_py33(string, path=None):
