@@ -56,18 +56,16 @@ def find_module_pre_py33(string, path=None):
     return (mod_info[0], mod_info[1], mod_info[2][2] == imp.PKG_DIRECTORY)
 
 
-def find_module(string, path=None):
-    """Provides information about a module.
+find_module = find_module_py33 if is_py33 else find_module_pre_py33
+find_module.__doc__ = """
+Provides information about a module.
 
-    This function isolates the differences in importing libraries introduced with
-    python 3.3 on; it gets a module name and optionally a path. It will return a
-    tuple containin an open file for the module (if not builtin), the filename
-    or the name of the module if it is a builtin one and a boolean indicating
-    if the module is contained in a package."""
-    if is_py33:
-        return find_module_py33(string, path)
-    else:
-        return find_module_pre_py33(string, path)
+This function isolates the differences in importing libraries introduced with
+python 3.3 on; it gets a module name and optionally a path. It will return a
+tuple containin an open file for the module (if not builtin), the filename
+or the name of the module if it is a builtin one and a boolean indicating
+if the module is contained in a package.
+"""
 
 # next was defined in python 2.6, in python 3 obj.next won't be possible
 # anymore
