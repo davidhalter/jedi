@@ -16,17 +16,10 @@ is_py33 = sys.hexversion >= 0x03030000
 
 
 def find_module_py33(string, path=None):
-    mod_info = (None, None, None)
-    loader = None
-    if path is not None:
-        # Check for the module in the specidied path
-        loader = importlib.machinery.PathFinder.find_module(string, path)
-    else:
-        # Check for the module in sys.path
-        loader = importlib.machinery.PathFinder.find_module(string, sys.path)
-        if loader is None:
-            # Fallback to find builtins
-            loader = importlib.find_loader(string)
+    loader = importlib.machinery.PathFinder.find_module(string, path)
+
+    if loader is None and path is None: # Fallback to find builtins
+        loader = importlib.find_loader(string)
 
     if loader is None:
         raise ImportError("Couldn't find a loader for {0}".format(string))
