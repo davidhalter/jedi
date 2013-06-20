@@ -29,7 +29,7 @@ def find_module_py33(string, path=None):
             loader = importlib.find_loader(string)
 
     if loader is None:
-        raise ImportError
+        raise ImportError("Couldn't find a loader for {0}".format(string))
 
     try:
         if (loader.is_package(string)):
