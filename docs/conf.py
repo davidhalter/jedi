@@ -141,7 +141,7 @@ html_static_path = ['_static']
 # Custom sidebar templates, maps document names to template names.
 html_sidebars = {
     '**': [
-#        'sidebarlogo.html',
+        'sidebarlogo.html',
         'localtoc.html',
 #        'relations.html',
         'ghbuttons.html',
