@@ -157,13 +157,6 @@ class Python3Method(object):
         else:
             return lambda *args, **kwargs: self.func(obj, *args, **kwargs)
 
-try:
-    # the python3 way
-    from functools import reduce
-except ImportError:
-    reduce = reduce
-
-
 def use_metaclass(meta, *bases):
     """ Create a class with a metaclass. """
     if not bases:
