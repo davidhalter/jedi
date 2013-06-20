@@ -47,13 +47,9 @@ def find_module_py33(string, path=None):
 
 
 def find_module_pre_py33(string, path=None):
-    mod_info = None
-    if path is None:
-        mod_info = imp.find_module(string)
-    else:
-        mod_info = imp.find_module(string, path)
-
-    return (mod_info[0], mod_info[1], mod_info[2][2] == imp.PKG_DIRECTORY)
+    module_file, module_path, description = imp.find_module(string, path)
+    module_type = description[2]
+    return module_file, module_path, module_type is imp.PKG_DIRECTORY
 
 
 find_module = find_module_py33 if is_py33 else find_module_pre_py33
