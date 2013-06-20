@@ -86,6 +86,9 @@ class BaseAttacker(object):
         return self.record['data'][recid]
 
     def save_record(self, path):
+        directory = os.path.dirname(os.path.abspath(path))
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
         with open(path, 'w') as f:
             json.dump(self.record, f)
 
@@ -251,6 +254,7 @@ class AttackApp(object):
                 einfo = sys.exc_info()
                 pdb = __import__(debugger)
                 pdb.post_mortem(einfo if debugger == 'pudb' else einfo[2])
+            sys.exit(1)
 
     def add_parser(self, attacker_class, *args, **kwds):
         attacker = attacker_class()

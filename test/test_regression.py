@@ -395,6 +395,43 @@ class TestRegression(TestBase):
             for c in s.get_commands():
                 self.assertEqual(c.execution.end_pos[1], i)
 
+    def check_definition_by_marker(self, source, after_cursor, names):
+        r"""
+        Find definitions specified by `after_cursor` and check what found
+
+        For example, for the following configuration, you can pass
+        ``after_cursor = 'y)'``.::
+
+            function(
+                x, y)
+                   \
+                    `- You want cursor to be here
+        """
+        source = textwrap.dedent(source)
+        for (i, line) in enumerate(source.splitlines()):
+            if after_cursor in line:
+                break
+        column = len(line) - len(after_cursor)
+        defs = self.goto_definitions(source, (i + 1, column))
+        self.assertEqual([d.name for d in defs], names)
+
+    def test_backslash_continuation(self):
+        """
+        Test that ModuleWithCursor.get_path_until_cursor handles continuation
+        """
+        self.check_definition_by_marker(r"""
+        x = 0
+        a = \
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, x]  # <-- here
+        """, ']  # <-- here', ['int'])
+
+    def test_backslash_continuation_and_bracket(self):
+        self.check_definition_by_marker(r"""
+        x = 0
+        a = \
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, (x)]  # <-- here
+        """, '(x)]  # <-- here', [None])
+
 
 class TestDocstring(TestBase):
 

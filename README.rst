@@ -26,12 +26,15 @@ which uses Jedi's autocompletion.  I encourage you to use Jedi in your IDEs.
 It's really easy. If there are any problems (also with licensing), just contact
 me.
 
-Jedi can be used with the following plugins/software:
+Jedi can be used with the following editors:
 
-- `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_
-- `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_
-- `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_
-- `wdb (web debugger) <https://github.com/Kozea/wdb>`_
+- Vim (jedi-vim_, YouCompleteMe_)
+- Emacs (Jedi.el_)
+- Sublime Text (SublimeJEDI_)
+
+And it powers the following projects:
+
+- wdb_
 
 
 Here are some pictures:
@@ -123,3 +126,10 @@ Tests are also run automatically on `Travis CI
 
 For more detailed information visit the `testing documentation
 <https://jedi.readthedocs.org/en/latest/docs/testing.html>`_
+
+
+.. _jedi-vim: https://github.com/davidhalter/jedi-vim
+.. _youcompleteme: http://valloric.github.io/YouCompleteMe/
+.. _Jedi.el: https://github.com/tkf/emacs-jedi
+.. _sublimejedi: https://github.com/svaiter/SublimeJEDI
+.. _wdb: https://github.com/Kozea/wdb
