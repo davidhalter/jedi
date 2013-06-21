@@ -1,3 +1,4 @@
+import jedi
 from jedi.parsing import Parser
 from jedi._compatibility import is_py3k; is_py3k # shut up pyflakes
 from . import base
@@ -25,3 +26,12 @@ def test_imports_are_absolute_in_modules_with_future_import():
     """
     parser = Parser("from __future__ import absolute_import", "test.py")
     assert parser.scope.absolute_imports
+
+@base.cwd_at("test/absolute_import")
+def test_can_complete_when_shadowing():
+    filename = "unittest.py"
+    with open(filename) as f:
+        lines = f.readlines()
+    src = "".join(lines)
+    script = jedi.Script(src, len(lines), len(lines[1]), filename)
+    assert script.completions()
