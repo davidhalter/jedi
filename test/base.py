@@ -6,6 +6,7 @@ else:
 import os
 from os.path import abspath, dirname
 import functools
+import pytest
 
 import jedi
 
@@ -60,3 +61,6 @@ def cwd_at(path):
                 os.chdir(oldcwd)
         return wrapper
     return decorator
+
+py3_only = pytest.mark.skipif("not is_py3k")
+py2_only = pytest.mark.skipif("is_py3k")

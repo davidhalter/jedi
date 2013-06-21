@@ -294,6 +294,27 @@ class Scope(Simple, IsScope):
                 if p:
                     return p
 
+    @property
+    def absolute_imports(self):
+        """
+        Checks if imports in this scope are absolute.
+
+        In Python 3, this is always true. In Python 2, this is true if there
+        is a ``absolute_import`` ``__future__`` import.
+
+        The result of this property is cached; the first time it is called on
+        Python 2 will cause it to walk through all the imports in the parse
+        tree.
+        """
+        if self._absolute_imports is not None:
+            return self._absolute_imports
+
+        has_import = any(_enables_absolute_import(i) for i in self.imports)
+        self._absolute_imports = has_import
+        return has_import
+
+    _absolute_imports = True if is_py3k else None
+
     def __repr__(self):
         try:
             name = self.path
@@ -306,6 +327,13 @@ class Scope(Simple, IsScope):
         return "<%s: %s@%s-%s>" % (type(self).__name__, name,
                                     self.start_pos[0], self.end_pos[0])
 
+def _enables_absolute_import(imp):
+    """
+    Checks if the import is a ``__future__`` import that enables the
+    ``absolute_import`` feature.
+    """
+    namespace, feature = imp.from_ns.names[0], imp.namespace.names[0]
+    return namespace == "__future__" and feature == "absolute_import"
 
 class Module(IsScope):
     """ For isinstance checks. fast_parser.Module also inherits from this. """
