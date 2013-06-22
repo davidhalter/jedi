@@ -8,6 +8,7 @@ will get this module again, causing infinite recursion.
 """
 from local_module import Assertions
 
+
 class TestCase(Assertions):
     def test(self):
         self.assertT

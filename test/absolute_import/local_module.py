@@ -9,5 +9,6 @@ from __future__ import absolute_import
 
 import unittest # this is stdlib unittest, but jedi gets the local one
 
+
 class Assertions(unittest.TestCase):
     pass
