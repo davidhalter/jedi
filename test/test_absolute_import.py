@@ -1,6 +1,5 @@
 import jedi
 from jedi.parsing import Parser
-from jedi._compatibility import is_py3k; is_py3k # shut up pyflakes
 from . import base
 
 
