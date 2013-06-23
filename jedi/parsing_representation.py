@@ -333,6 +333,9 @@ def _enables_absolute_import(imp):
     Checks if the import is a ``__future__`` import that enables the
     ``absolute_import`` feature.
     """
+    if imp.namespace is None:
+        return False
+
     namespace, feature = imp.from_ns.names[0], imp.namespace.names[0]
     return namespace == "__future__" and feature == "absolute_import"
 
