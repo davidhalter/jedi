@@ -155,6 +155,7 @@ class Scope(Simple, IsScope):
         # returns will be in "normal" modules.
         self.returns = []
         self.is_generator = False
+        self._explicit_absolute_imports = None
 
     def add_scope(self, sub, decorators):
         sub.parent = self.use_as_parent
@@ -295,25 +296,22 @@ class Scope(Simple, IsScope):
                     return p
 
     @property
-    def absolute_imports(self):
+    def explicit_absolute_import(self):
         """
-        Checks if imports in this scope are absolute.
+        Checks if imports in this scope are explicitly absolute, i.e. there
+        is a ``__future__`` import.
 
-        In Python 3, this is always true. In Python 2, this is true if there
-        is a ``absolute_import`` ``__future__`` import.
+        The result of this property is cached; the first time it is
+        called will cause it to walk through all the imports in the
+        parse tree.
 
-        The result of this property is cached; the first time it is called on
-        Python 2 will cause it to walk through all the imports in the parse
-        tree.
         """
-        if self._absolute_imports is not None:
-            return self._absolute_imports
+        if self._explicit_absolute_imports is not None:
+            return self._explicit_absolute_imports
 
         has_import = any(_enables_absolute_import(i) for i in self.imports)
-        self._absolute_imports = has_import
+        self._explicit_absolute_imports = has_import
         return has_import
-
-    _absolute_imports = True if is_py3k else None
 
     def __repr__(self):
         try:

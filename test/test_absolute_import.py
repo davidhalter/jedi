@@ -3,22 +3,20 @@ from jedi.parsing import Parser
 from . import base
 
 
-@base.py3_only
-def test_py3k_imports_are_always_absolute():
+def test_explicit_absolute_imports():
     """
-    By default, imports in Python 3 are absolute.
+    Detect modules with ``from __future__ import absolute_import``.
     """
-    parser = Parser("1", "test.py")
-    assert parser.scope.absolute_imports
+    parser = Parser("from __future__ import absolute_import", "test.py")
+    assert parser.scope.explicit_absolute_import
 
 
-@base.py2_only
-def test_py2_imports_are_not_always_absolute():
+def test_no_explicit_absolute_imports():
     """
-    By default, imports in Python 2 are not absolute.
+     Detect modules without ``from __future__ import absolute_import``.
     """
     parser = Parser("1", "test.py")
-    assert not parser.scope.absolute_imports
+    assert not parser.scope.explicit_absolute_import
 
 
 def test_dont_break_imports_without_namespaces():
@@ -28,16 +26,7 @@ def test_dont_break_imports_without_namespaces():
     """
     src = "from __future__ import absolute_import\nimport xyzzy"
     parser = Parser(src, "test.py")
-    assert parser.scope.absolute_imports
-
-
-def test_imports_are_absolute_in_modules_with_future_import():
-    """
-    In any module with the ``absolute_import`` ``__future__`` import, all
-    imports are absolute.
-    """
-    parser = Parser("from __future__ import absolute_import", "test.py")
-    assert parser.scope.absolute_imports
+    assert parser.scope.explicit_absolute_import
 
 
 @base.cwd_at("test/absolute_import")

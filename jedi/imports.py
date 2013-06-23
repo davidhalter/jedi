@@ -91,11 +91,6 @@ class ImportPath(pr.Base):
                 and len(self.import_stmt.namespace.names) > 1 \
                 and not self.direct_resolve
 
-    @property
-    def is_absolute(self):
-        module = self.import_stmt.get_parent_until(pr.IsScope)
-        return module.absolute_imports
-
     def get_nested_import(self, parent):
         """
         See documentation of `self.is_nested_import`.
@@ -257,7 +252,8 @@ class ImportPath(pr.Base):
 
             return importing
 
-        if self.file_path and not self.is_absolute:
+        parent = self.import_stmt.get_parent_until()
+        if self.file_path and not parent.explicit_absolute_import:
             sys_path_mod = list(self.sys_path_with_modifications())
             sys_path_mod.insert(0, self.file_path)
         else:
