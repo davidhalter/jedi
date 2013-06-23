@@ -56,7 +56,7 @@ class Parser(object):
         self.start_pos = self.end_pos = 1 + offset[0], offset[1]
         # initialize global Scope
         self.module = pr.SubModule(module_path, self.start_pos, top_module)
-        self.scope = self.module
+        self._scope = self.module
         self.current = (None, None)
 
         source = source + '\n'  # end with \n, because the parser needs it
@@ -390,7 +390,7 @@ class Parser(object):
         #print 'new_stat', set_vars, used_vars
         if self.freshscope and not self.no_docstr and len(tok_list) == 1 \
                     and self.last_token[0] == tokenize.STRING:
-            self.scope.add_docstr(self.last_token[1])
+            self._scope.add_docstr(self.last_token[1])
             return None, tok
         else:
             stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
@@ -408,7 +408,7 @@ class Parser(object):
                     and len(stmt.token_list) == 1
                     and first_tok[0] == tokenize.STRING):
                 # ... then set it as a docstring
-                self.scope.statements[-1].add_docstr(first_tok[1])
+                self._scope.statements[-1].add_docstr(first_tok[1])
 
         if tok in always_break + not_first_break:
             self._gen.push_last_back()
@@ -429,7 +429,7 @@ class Parser(object):
                 self.start_pos, self.end_pos = start_pos, end_pos
         except (StopIteration, common.MultiLevelStopIteration):
             # on finish, set end_pos correctly
-            s = self.scope
+            s = self._scope
             while s is not None:
                 if isinstance(s, pr.Module) \
                                      and not isinstance(s, pr.SubModule):
@@ -443,8 +443,8 @@ class Parser(object):
                             or self.user_scope is None
                             and self.start_pos[0] >= self.user_position[0]):
             debug.dbg('user scope found [%s] = %s' %
-                    (self.parserline.replace('\n', ''), repr(self.scope)))
-            self.user_scope = self.scope
+                    (self.parserline.replace('\n', ''), repr(self._scope)))
+            self.user_scope = self._scope
         self.last_token = self.current
         self.current = (typ, tok)
         return self.current
@@ -472,29 +472,29 @@ class Parser(object):
             #debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
             #    % (tok, tokenize.tok_name[token_type], start_position[0]))
 
-            while token_type == tokenize.DEDENT and self.scope != self.module:
+            while token_type == tokenize.DEDENT and self._scope != self.module:
                 token_type, tok = self.next()
-                if self.start_pos[1] <= self.scope.start_pos[1]:
-                    self.scope.end_pos = self.start_pos
-                    self.scope = self.scope.parent
-                    if isinstance(self.scope, pr.Module) \
-                            and not isinstance(self.scope, pr.SubModule):
-                        self.scope = self.module
+                if self.start_pos[1] <= self._scope.start_pos[1]:
+                    self._scope.end_pos = self.start_pos
+                    self._scope = self._scope.parent
+                    if isinstance(self._scope, pr.Module) \
+                            and not isinstance(self._scope, pr.SubModule):
+                        self._scope = self.module
 
             # check again for unindented stuff. this is true for syntax
             # errors. only check for names, because thats relevant here. If
             # some docstrings are not indented, I don't care.
-            while self.start_pos[1] <= self.scope.start_pos[1] \
+            while self.start_pos[1] <= self._scope.start_pos[1] \
                     and (token_type == tokenize.NAME or tok in ['(', '['])\
-                    and self.scope != self.module:
-                self.scope.end_pos = self.start_pos
-                self.scope = self.scope.parent
-                if isinstance(self.scope, pr.Module) \
-                        and not isinstance(self.scope, pr.SubModule):
-                    self.scope = self.module
+                    and self._scope != self.module:
+                self._scope.end_pos = self.start_pos
+                self._scope = self._scope.parent
+                if isinstance(self._scope, pr.Module) \
+                        and not isinstance(self._scope, pr.SubModule):
+                    self._scope = self.module
 
-            use_as_parent_scope = self.top_module if isinstance(self.scope,
-                                            pr.SubModule) else self.scope
+            use_as_parent_scope = self.top_module if isinstance(self._scope,
+                                            pr.SubModule) else self._scope
             first_pos = self.start_pos
             if tok == 'def':
                 func = self._parse_function()
@@ -503,7 +503,7 @@ class Parser(object):
                                                         self.start_pos[0])
                     continue
                 self.freshscope = True
-                self.scope = self.scope.add_scope(func, self._decorators)
+                self._scope = self._scope.add_scope(func, self._decorators)
                 self._decorators = []
             elif tok == 'class':
                 cls = self._parse_class()
@@ -511,7 +511,7 @@ class Parser(object):
                     debug.warning("class: syntax error@%s" % self.start_pos[0])
                     continue
                 self.freshscope = True
-                self.scope = self.scope.add_scope(cls, self._decorators)
+                self._scope = self._scope.add_scope(cls, self._decorators)
                 self._decorators = []
             # import stuff
             elif tok == 'import':
@@ -522,7 +522,7 @@ class Parser(object):
                     i = pr.Import(self.module, first_pos, end_pos, m,
                                                 alias, defunct=defunct)
                     self._check_user_stmt(i)
-                    self.scope.add_import(i)
+                    self._scope.add_import(i)
                 if not imports:
                     i = pr.Import(self.module, first_pos, self.end_pos, None,
                                                                 defunct=True)
@@ -559,7 +559,7 @@ class Parser(object):
                                         alias, mod, star, relative_count,
                                         defunct=defunct or defunct2)
                     self._check_user_stmt(i)
-                    self.scope.add_import(i)
+                    self._scope.add_import(i)
                 self.freshscope = False
             #loops
             elif tok == 'for':
@@ -569,7 +569,7 @@ class Parser(object):
                     if tok == ':':
                         s = [] if statement is None else [statement]
                         f = pr.ForFlow(self.module, s, first_pos, set_stmt)
-                        self.scope = self.scope.add_statement(f)
+                        self._scope = self._scope.add_statement(f)
                     else:
                         debug.warning('syntax err, for flow started @%s',
                                                         self.start_pos[0])
@@ -612,13 +612,13 @@ class Parser(object):
                         # the flow statement, because a dedent releases the
                         # main scope, so just take the last statement.
                         try:
-                            s = self.scope.statements[-1].set_next(f)
+                            s = self._scope.statements[-1].set_next(f)
                         except (AttributeError, IndexError):
                             # If set_next doesn't exist, just add it.
-                            s = self.scope.add_statement(f)
+                            s = self._scope.add_statement(f)
                     else:
-                        s = self.scope.add_statement(f)
-                    self.scope = s
+                        s = self._scope.add_statement(f)
+                    self._scope = s
                 else:
                     for i in inputs:
                         i.parent = use_as_parent_scope
@@ -629,7 +629,7 @@ class Parser(object):
                 s = self.start_pos
                 self.freshscope = False
                 # add returns to the scope
-                func = self.scope.get_parent_until(pr.Function)
+                func = self._scope.get_parent_until(pr.Function)
                 if tok == 'yield':
                     func.is_generator = True
 
@@ -646,7 +646,7 @@ class Parser(object):
             elif tok == 'global':
                 stmt, tok = self._parse_statement(self.current)
                 if stmt:
-                    self.scope.add_statement(stmt)
+                    self._scope.add_statement(stmt)
                     for name in stmt.used_vars:
                         # add the global to the top, because there it is
                         # important.
@@ -659,8 +659,9 @@ class Parser(object):
                 continue
             elif tok == 'assert':
                 stmt, tok = self._parse_statement()
-                stmt.parent = use_as_parent_scope
-                self.scope.asserts.append(stmt)
+                if stmt is not None:
+                    stmt.parent = use_as_parent_scope
+                self._scope.asserts.append(stmt)
             # default
             elif token_type in [tokenize.NAME, tokenize.STRING,
                                 tokenize.NUMBER] \
@@ -670,7 +671,7 @@ class Parser(object):
                 # by the statement parser.
                 stmt, tok = self._parse_statement(self.current)
                 if stmt:
-                    self.scope.add_statement(stmt)
+                    self._scope.add_statement(stmt)
                 self.freshscope = False
             else:
                 if token_type not in [tokenize.COMMENT, tokenize.INDENT,

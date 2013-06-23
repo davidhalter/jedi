@@ -14,9 +14,8 @@ import textwrap
 from .base import TestBase, unittest, cwd_at
 
 import jedi
-from jedi._compatibility import utf8, unicode
+from jedi._compatibility import utf8, unicode, is_py33
 from jedi import api, parsing, common
-api_classes = api.api_classes
 
 #jedi.set_debug_function(jedi.debug.print_to_stdout)
 
@@ -314,14 +313,29 @@ class TestRegression(TestBase):
         types = [o.type for o in objs]
         assert 'import' not in types and 'class' in types
 
-    def test_keyword_definition_doc(self):
+    def test_keyword(self):
         """ github jedi-vim issue #44 """
         defs = self.goto_definitions("print")
         assert [d.doc for d in defs]
 
         defs = self.goto_definitions("import")
-        assert len(defs) == 1
-        assert [d.doc for d in defs]
+        assert len(defs) == 1 and [1 for d in defs if d.doc]
+        # unrelated to #44
+        defs = self.goto_assignments("import")
+        assert len(defs) == 0
+        completions = self.completions("import", (1,1))
+        assert len(completions) == 0
+        with common.ignored(jedi.NotFoundError):  # TODO shouldn't throw that.
+            defs = self.goto_definitions("assert")
+            assert len(defs) == 1
+
+    def test_goto_assignments_keyword(self):
+        """
+        Bug: goto assignments on ``in`` used to raise AttributeError::
+
+          'unicode' object has no attribute 'generate_call_path'
+        """
+        self.goto_assignments('in')
 
     def test_goto_following_on_imports(self):
         s = "import multiprocessing.dummy; multiprocessing.dummy"
@@ -377,9 +391,46 @@ class TestRegression(TestBase):
         # jedi issue #150
         s = "x()\nx( )\nx(  )\nx (  )"
         parser = parsing.Parser(s)
-        for i, s in enumerate(parser.scope.statements, 3):
+        for i, s in enumerate(parser.module.statements, 3):
             for c in s.get_commands():
                 self.assertEqual(c.execution.end_pos[1], i)
+
+    def check_definition_by_marker(self, source, after_cursor, names):
+        r"""
+        Find definitions specified by `after_cursor` and check what found
+
+        For example, for the following configuration, you can pass
+        ``after_cursor = 'y)'``.::
+
+            function(
+                x, y)
+                   \
+                    `- You want cursor to be here
+        """
+        source = textwrap.dedent(source)
+        for (i, line) in enumerate(source.splitlines()):
+            if after_cursor in line:
+                break
+        column = len(line) - len(after_cursor)
+        defs = self.goto_definitions(source, (i + 1, column))
+        self.assertEqual([d.name for d in defs], names)
+
+    def test_backslash_continuation(self):
+        """
+        Test that ModuleWithCursor.get_path_until_cursor handles continuation
+        """
+        self.check_definition_by_marker(r"""
+        x = 0
+        a = \
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, x]  # <-- here
+        """, ']  # <-- here', ['int'])
+
+    def test_backslash_continuation_and_bracket(self):
+        self.check_definition_by_marker(r"""
+        x = 0
+        a = \
+          [1, 2, 3, 4, 5, 6, 7, 8, 9, (x)]  # <-- here
+        """, '(x)]  # <-- here', [None])
 
 
 class TestDocstring(TestBase):
@@ -410,28 +461,6 @@ class TestDocstring(TestBase):
 
 
 class TestFeature(TestBase):
-    def test_full_name(self):
-        """ feature request #61"""
-        assert self.completions('import os; os.path.join')[0].full_name \
-                                    == 'os.path.join'
-
-    def test_keyword_full_name_should_be_none(self):
-        """issue #94"""
-        # Using `from jedi.keywords import Keyword` here does NOT work
-        # in Python 3.  This is due to the import hack jedi using.
-        Keyword = api_classes.keywords.Keyword
-        d = api_classes.Definition(Keyword('(', (0, 0)))
-        assert d.full_name is None
-
-    def test_full_name_builtin(self):
-        self.assertEqual(self.completions('type')[0].full_name, 'type')
-
-    def test_full_name_tuple_mapping(self):
-        s = """
-        import re
-        any_re = re.compile('.*')
-        any_re"""
-        self.assertEqual(self.goto_definitions(s)[0].full_name, 're.RegexObject')
 
     def test_preload_modules(self):
         def check_loaded(*modules):
@@ -452,81 +481,6 @@ class TestFeature(TestBase):
         check_loaded('datetime', 'json', 'token')
 
         cache.parser_cache = temp_cache
-
-    def test_quick_completion(self):
-        sources = [
-            ('import json; json.l', (1, 19)),
-            ('import json; json.l   ', (1, 19)),
-            ('import json\njson.l', (2, 6)),
-            ('import json\njson.l  ', (2, 6)),
-            ('import json\njson.l\n\n', (2, 6)),
-            ('import json\njson.l  \n\n', (2, 6)),
-            ('import json\njson.l  \n  \n\n', (2, 6)),
-        ]
-        for source, pos in sources:
-            # Run quick_complete
-            quick_completions = api._quick_complete(source)
-            # Run real completion
-            script = jedi.Script(source, pos[0], pos[1], '')
-            real_completions = script.completions()
-            # Compare results
-            quick_values = [(c.full_name, c.line, c.column) for c in quick_completions]
-            real_values = [(c.full_name, c.line, c.column) for c in real_completions]
-            self.assertEqual(quick_values, real_values)
-
-
-class TestGetDefinitions(TestBase):
-
-    def test_get_definitions_flat(self):
-        definitions = api.defined_names("""
-        import module
-        class Class:
-            pass
-        def func():
-            pass
-        data = None
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['module', 'Class', 'func', 'data'])
-
-    def test_dotted_assignment(self):
-        definitions = api.defined_names("""
-        x = Class()
-        x.y.z = None
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['x'])
-
-    def test_multiple_assignment(self):
-        definitions = api.defined_names("""
-        x = y = None
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['x', 'y'])
-
-    def test_multiple_imports(self):
-        definitions = api.defined_names("""
-        from module import a, b
-        from another_module import *
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['a', 'b'])
-
-    def test_nested_definitions(self):
-        definitions = api.defined_names("""
-        class Class:
-            def f():
-                pass
-            def g():
-                pass
-        """)
-        self.assertEqual([d.name for d in definitions],
-                         ['Class'])
-        subdefinitions = definitions[0].defined_names()
-        self.assertEqual([d.name for d in subdefinitions],
-                         ['f', 'g'])
-        self.assertEqual([d.full_name for d in subdefinitions],
-                         ['Class.f', 'Class.g'])
 
 
 class TestSpeed(TestBase):
@@ -560,6 +514,44 @@ class TestSpeed(TestBase):
         script = jedi.Script(s, 1, len(s), '')
         script.function_definition()
         #print(jedi.imports.imports_processed)
+
+
+class TestInterpreterAPI(unittest.TestCase):
+
+    def check_interpreter_complete(self, source, namespace, completions,
+                                   **kwds):
+        script = api.Interpreter(source, [namespace], **kwds)
+        cs = script.complete()
+        actual = [c.word for c in cs]
+        self.assertEqual(sorted(actual), sorted(completions))
+
+    def test_complete_raw_function(self):
+        from os.path import join
+        self.check_interpreter_complete('join().up',
+                                        locals(),
+                                        ['upper'])
+
+    def test_complete_raw_function_different_name(self):
+        from os.path import join as pjoin
+        self.check_interpreter_complete('pjoin().up',
+                                        locals(),
+                                        ['upper'])
+
+    def test_complete_raw_module(self):
+        import os
+        self.check_interpreter_complete('os.path.join().up',
+                                        locals(),
+                                        ['upper'])
+
+    def test_complete_raw_instance(self):
+        import datetime
+        dt = datetime.datetime(2013, 1, 1)
+        completions = ['time', 'timetz', 'timetuple']
+        if is_py33:
+            completions += ['timestamp']
+        self.check_interpreter_complete('(dt - dt).ti',
+                                        locals(),
+                                        completions)
 
 
 def test_settings_module():

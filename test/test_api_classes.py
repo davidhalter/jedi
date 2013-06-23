@@ -3,7 +3,13 @@ import textwrap
 import pytest
 
 from jedi import api
+import jedi
 
+def test_is_keyword():
+    results = jedi.Script('import ', 1, 1, None).goto_definitions()
+    assert len(results) == 1 and results[0].is_keyword == True
+    results = jedi.Script('str', 1, 1, None).goto_definitions()
+    assert len(results) == 1 and results[0].is_keyword == False
 
 def make_definitions():
     """

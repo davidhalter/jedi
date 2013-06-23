@@ -28,7 +28,7 @@ sys.path.append(os.path.abspath('_themes'))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.todo',
-              'sphinx.ext.inheritance_diagram']
+              'sphinx.ext.intersphinx', 'sphinx.ext.inheritance_diagram']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -141,7 +141,7 @@ html_static_path = ['_static']
 # Custom sidebar templates, maps document names to template names.
 html_sidebars = {
     '**': [
-#        'sidebarlogo.html',
+        'sidebarlogo.html',
         'localtoc.html',
 #        'relations.html',
         'ghbuttons.html',
@@ -266,6 +266,14 @@ todo_include_todos = False
 
 # -- Options for autodoc module ------------------------------------------------
 
+autoclass_content = 'both'
 autodoc_member_order = 'bysource'
 autodoc_default_flags = []
 #autodoc_default_flags = ['members', 'undoc-members']
+
+
+# -- Options for intersphinx module --------------------------------------------
+
+intersphinx_mapping = {
+    'http://docs.python.org/': None,
+}
