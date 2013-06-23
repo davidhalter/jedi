@@ -24,7 +24,7 @@ def test_py2_imports_are_not_always_absolute():
 def test_dont_break_imports_without_namespaces():
     """
     The code checking for ``from __future__ import absolute_import`` shouldn't
-    assume that all imports have non-``None`` ``namespace`` attributes.
+    assume that all imports have non-``None`` namespaces.
     """
     src = "from __future__ import absolute_import\nimport xyzzy"
     parser = Parser(src, "test.py")
