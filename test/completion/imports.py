@@ -56,6 +56,27 @@ def scope_nested():
     #? set
     import_tree.random.a
 
+def scope_from_import_variable():
+    #? int()
+    from import_tree.mod2.fake import a
+    #? set
+    from import_tree.mod2.fake import c
+
+    #? int()
+    a
+    #? set
+    c
+
+def scope_from_import_variable_with_parenthesis():
+    from import_tree.mod2.fake import (
+        a, c
+    )
+
+    #? int()
+    a
+    #? set
+    c
+
 # -----------------
 # std lib modules
 # -----------------
@@ -71,6 +92,16 @@ import os
 
 #? ['dirname']
 os.path.dirname
+
+#? os.path.join
+from os.path import join
+
+from os.path import (
+    expanduser
+)
+
+#? os.path.expanduser
+expanduser
 
 from itertools import (tee,
                        islice)
@@ -196,7 +227,7 @@ import datetime.
 #? []
 import datetime.date
 
-#? 18 ['mod1', 'random', 'pkg', 'rename1', 'rename2', 'import']
+#? 18 ['mod1', 'mod2', 'random', 'pkg', 'rename1', 'rename2', 'import']
 from import_tree. import pkg
 
 #? 18 ['pkg']
