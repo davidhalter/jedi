@@ -197,8 +197,8 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
-                        or isinstance(par, pr.Class) \
-                            and par == self.instance.base.base:
+            or isinstance(par, pr.Class) \
+                and par == self.instance.base.base:
             par = self.instance
         elif not isinstance(par, pr.Module):
             par = InstanceElement(self.instance, par, self.is_class_var)
@@ -417,7 +417,7 @@ class Execution(Executable):
                             debug.warning('jedi getattr is too simple')
                         key = arr_name.var_args[0]
                         stmts += evaluate.follow_path(iter([key]), obj,
-                                                        self.base)
+                                                      self.base)
                 return stmts
             elif func_name == 'type':
                 # otherwise it would be a metaclass
@@ -430,7 +430,7 @@ class Execution(Executable):
                 func = self.var_args.get_parent_until(accept)
                 if func.isinstance(*accept):
                     cls = func.get_parent_until(accept + (pr.Class,),
-                                                    include_current=False)
+                                                include_current=False)
                     if isinstance(cls, pr.Class):
                         cls = Class(cls)
                         su = cls.get_super_classes()
@@ -802,8 +802,8 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 # otherwise it just ignores the index (e.g. [1+1]).
                 index = index_possibilities[0]
                 if isinstance(index, Instance) \
-                            and str(index.name) in ['int', 'str'] \
-                            and len(index.var_args) == 1:
+                    and str(index.name) in ['int', 'str'] \
+                        and len(index.var_args) == 1:
                     with common.ignored(KeyError, IndexError):
                         return self.get_exact_index_types(index.var_args[0])
 

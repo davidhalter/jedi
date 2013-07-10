@@ -345,8 +345,8 @@ class Parser(object):
 
         tok_list = []
         while not (tok in always_break
-                or tok in not_first_break and not tok_list
-                or tok in breaks and level <= 0):
+                   or tok in not_first_break and not tok_list
+                   or tok in breaks and level <= 0):
             try:
                 # print 'parse_stmt', tok, tokenize.tok_name[token_type]
                 tok_list.append(self.current + (self.start_pos,))

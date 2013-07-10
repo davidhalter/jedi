@@ -254,8 +254,8 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
     code += get_doc(scope)
 
     names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
-                                            '__path__', '__package__']) \
-                            | set(['mro'])
+                                   '__path__', '__package__']) \
+        | set(['mro'])
 
     classes, funcs, stmts, members = get_scope_objects(names)
 
@@ -337,11 +337,11 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
         code += '%s = %s\n' % (name, value)
 
     if depth == 0:
-        #with open('writeout.py', 'w') as f:
+        # with open('writeout.py', 'w') as f:
         #    f.write(code)
-        #import sys
-        #sys.stdout.write(code)
-        #exit()
+        # import sys
+        # sys.stdout.write(code)
+        # exit()
         pass
     return code
 

@@ -334,7 +334,7 @@ def _check_array_additions(compare_array, module, is_list):
     settings.dynamic_params_for_other_modules = False
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
-                                                            ['add', 'update']
+        ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array, er.Execution)
 
     possible_stmts = []
@@ -351,7 +351,7 @@ def _check_array_additions(compare_array, module, is_list):
             # literally copy the contents of a function.
             if isinstance(comp_arr_parent, er.Execution):
                 stmt = comp_arr_parent. \
-                                get_statement_for_position(stmt.start_pos)
+                    get_statement_for_position(stmt.start_pos)
                 if stmt is None:
                     continue
             # InstanceElements are special, because they don't get copied,
@@ -403,7 +403,9 @@ class ArrayInstance(pr.Base):
                         if self.var_args.start_pos != array.var_args.start_pos:
                             items += array.iter_content()
                         else:
-                            debug.warning('ArrayInstance recursion', self.var_args)
+                            debug.warning(
+                                'ArrayInstance recursion',
+                                self.var_args)
                         continue
                 items += evaluate.get_iterator_types([typ])
 
