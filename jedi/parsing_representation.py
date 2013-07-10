@@ -296,7 +296,7 @@ class Scope(Simple, IsScope):
                     return p
 
     @property
-    def explicit_absolute_import(self):
+    def has_explicit_absolute_import(self):
         """
         Checks if imports in this scope are explicitly absolute, i.e. there
         is a ``__future__`` import.

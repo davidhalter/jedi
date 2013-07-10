@@ -255,7 +255,7 @@ class ImportPath(pr.Base):
         if self.file_path:
             sys_path_mod = list(self.sys_path_with_modifications())
             module = self.import_stmt.get_parent_until()
-            if not module.explicit_absolute_import:
+            if not module.has_explicit_absolute_import:
                 # If the module explicitly asks for absolute imports,
                 # there's probably a bogus local one.
                 sys_path_mod.insert(0, self.file_path)
