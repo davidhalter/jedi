@@ -6,7 +6,6 @@ else:
 import os
 from os.path import abspath, dirname
 import functools
-import pytest
 
 import jedi
 
