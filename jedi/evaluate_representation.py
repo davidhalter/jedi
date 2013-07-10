@@ -111,9 +111,6 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
                         add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
-            if s == self.base:
-                # I don't know how this could happen... But saw it once.
-                continue
             names += Instance(s).get_self_properties()
 
         return names
