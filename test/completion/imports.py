@@ -196,7 +196,7 @@ import datetime.
 #? []
 import datetime.date
 
-#? 18 ['mod1', 'random', 'pkg', 'rename1', 'rename2', 'import']
+#? 18 ['mod1', 'random', 'pkg', 'rename1', 'rename2', 'import', 'recurse_class1', 'recurse_class2']
 from import_tree. import pkg
 
 #? 18 ['pkg']
@@ -236,3 +236,11 @@ import json, datetime
 from import_tree.mod1 import c
 #? set
 c
+
+from import_tree import recurse_class1
+
+#? ['a']
+recurse_class1.C.a
+# github #239 RecursionError
+#? ['a']
+recurse_class1.C().a

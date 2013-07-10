@@ -54,7 +54,7 @@ Emacs:
 
 - `Jedi.el <https://github.com/tkf/emacs-jedi>`_
 
-Sublime Text 2:
+Sublime Text 2/3:
 
 - `SublimeJEDI <https://github.com/svaiter/SublimeJEDI>`_
 
