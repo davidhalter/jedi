@@ -472,7 +472,7 @@ def usages(definitions, search_name, mods):
 
                 for used_count, name_part in imps:
                     i = imports.ImportPath(stmt, kill_count=count - used_count,
-                                                        direct_resolve=True)
+                                           direct_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
                         names.append(api_classes.Usage(name_part, stmt))

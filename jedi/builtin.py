@@ -233,7 +233,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
                     if is_in_base_classes(scope, n, exe):
                         continue
                 if inspect.isbuiltin(exe) or inspect.ismethod(exe) \
-                            or inspect.ismethoddescriptor(exe):
+                        or inspect.ismethoddescriptor(exe):
                     funcs[n] = exe
                 elif inspect.isclass(exe) or inspect.ismodule(exe):
                     classes[n] = exe
@@ -262,7 +262,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
     # classes
     for name, cl in classes.items():
         bases = (c.__name__ for c in cl.__bases__) if inspect.isclass(cl) \
-                                                   else []
+            else []
         code += 'class %s(%s):\n' % (name, ','.join(bases))
         if depth == 0:
             try:
@@ -378,7 +378,7 @@ def _parse_function_doc(func):
             return ','.join(args)
         while True:
             param_str, changes = re.subn(r' ?\[([^\[\]]+)\]',
-                                            change_options, param_str)
+                                         change_options, param_str)
             if changes == 0:
                 break
     except (ValueError, AttributeError):

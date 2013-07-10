@@ -53,11 +53,13 @@ class Executable(pr.IsScope):
 
 
 class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
+
     """ This class is used to evaluate instances. """
+
     def __init__(self, base, var_args=()):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
-                    and builtin.Builtin.scope == base.get_parent_until():
+                and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = dynamic.check_array_instances(self)
         else:
@@ -285,8 +287,8 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'asserts', 'docstr',
-                'doc', 'get_imports', 'get_parent_until', 'get_code',
-                'subscopes']:
+                        'doc', 'get_imports', 'get_parent_until', 'get_code',
+                        'subscopes']:
             raise AttributeError("Don't touch this: %s of %s !" % (name, self))
         return getattr(self.base, name)
 
@@ -319,11 +321,11 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
                 dec_results = evaluate.follow_statement(dec)
                 if not len(dec_results):
                     debug.warning('decorator func not found: %s in stmt %s' %
-                                                        (self.base_func, dec))
+                                 (self.base_func, dec))
                     return None
                 if len(dec_results) > 1:
                     debug.warning('multiple decorators found', self.base_func,
-                                                            dec_results)
+                                  dec_results)
                 decorator = dec_results.pop()
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
@@ -334,7 +336,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
                     return None
                 if len(wrappers) > 1:
                     debug.warning('multiple wrappers found', self.base_func,
-                                                                wrappers)
+                                  wrappers)
                 # This is here, that the wrapper gets executed.
                 f = wrappers[0]
 
@@ -450,7 +452,7 @@ class Execution(Executable):
                 if hasattr(self.base, 'execute_subscope_by_name'):
                     try:
                         stmts = self.base.execute_subscope_by_name('__call__',
-                                                                self.var_args)
+                                                                   self.var_args)
                     except KeyError:
                         debug.warning("no __call__ func available", self.base)
                 else:
@@ -554,7 +556,7 @@ class Execution(Executable):
                 else:
                     keys_used.add(str(key))
                     result.append(gen_param_name_copy(key_param,
-                                                        values=[value]))
+                                                      values=[value]))
                 key, value = next(var_arg_iterator, (None, None))
 
             commands = param.get_commands()
@@ -599,7 +601,7 @@ class Execution(Executable):
             if not ignore_creation and (not keys_only or commands[0] == '**'):
                 keys_used.add(str(key))
                 result.append(gen_param_name_copy(param, keys=keys,
-                                        values=values, array_type=array_type))
+                                                  values=values, array_type=array_type))
 
         if keys_only:
             # sometimes param arguments are not completely written (which would
@@ -752,7 +754,7 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
             name = pr.Name(builtin.Builtin.scope, [(n, none_pos)],
-                                none_pos, none_pos)
+                           none_pos, none_pos)
             if n in executes_generator:
                 name.parent = self
             names.append(name)
@@ -769,10 +771,10 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
-                'asserts', 'doc', 'docstr', 'get_parent_until', 'get_code',
-                'subscopes']:
+                        'asserts', 'doc', 'docstr', 'get_parent_until', 'get_code',
+                        'subscopes']:
             raise AttributeError("Accessing %s of %s is not allowed."
-                                    % (self, name))
+                                 % (self, name))
         return getattr(self.func, name)
 
     def __repr__(self):

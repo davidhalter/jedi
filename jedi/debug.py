@@ -62,4 +62,4 @@ def print_to_stdout(level, str_out):
     print(col + str_out + Fore.RESET)
 
 
-#debug_function = print_to_stdout
+# debug_function = print_to_stdout
