@@ -61,6 +61,3 @@ def cwd_at(path):
                 os.chdir(oldcwd)
         return wrapper
     return decorator
-
-py3_only = pytest.mark.skipif("sys.hexversion < 0x03000000")
-py2_only = pytest.mark.skipif("sys.hexversion >= 0x03000000")
