@@ -308,18 +308,17 @@ class Scope(Simple, IsScope):
 
 
 class Module(IsScope):
-    """ For isinstance checks. fast_parser.Module also inherits from this. """
-    pass
+    """
+    For isinstance checks. fast_parser.Module also inherits from this.
+    """
 
 
 class SubModule(Scope, Module):
-
     """
     The top scope, which is always a module.
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-
     def __init__(self, path, start_pos=(1, 0), top_module=None):
         """
         Initialize :class:`SubModule`.
@@ -377,6 +376,22 @@ class SubModule(Scope, Module):
 
     def is_builtin(self):
         return not (self.path is None or self.path.endswith('.py'))
+
+    @property
+    def has_explicit_absolute_import(self):
+        """
+        Checks if imports in this module are explicitly absolute, i.e. there
+        is a ``__future__`` import.
+        """
+        for imp in self.imports:
+            if imp.from_ns is None or imp.namespace is None:
+                continue
+
+            namespace, feature = imp.from_ns.names[0], imp.namespace.names[0]
+            if namespace == "__future__" and feature == "absolute_import":
+                return True
+
+        return False
 
 
 class Class(Scope):
