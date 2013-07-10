@@ -7,7 +7,7 @@ The twisted equivalent of this module is ``twisted.trial._synctest``.
 """
 from __future__ import absolute_import
 
-import unittest # this is stdlib unittest, but jedi gets the local one
+import unittest
 
 
 class Assertions(unittest.TestCase):
