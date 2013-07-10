@@ -155,7 +155,6 @@ class Scope(Simple, IsScope):
         # returns will be in "normal" modules.
         self.returns = []
         self.is_generator = False
-        self._explicit_absolute_imports = None
 
     def add_scope(self, sub, decorators):
         sub.parent = self.use_as_parent
@@ -295,24 +294,6 @@ class Scope(Simple, IsScope):
                 if p:
                     return p
 
-    @property
-    def has_explicit_absolute_import(self):
-        """
-        Checks if imports in this scope are explicitly absolute, i.e. there
-        is a ``__future__`` import.
-
-        The result of this property is cached; the first time it is
-        called will cause it to walk through all the imports in the
-        parse tree.
-
-        """
-        if self._explicit_absolute_imports is not None:
-            return self._explicit_absolute_imports
-
-        has_import = any(_enables_absolute_import(i) for i in self.imports)
-        self._explicit_absolute_imports = has_import
-        return has_import
-
     def __repr__(self):
         try:
             name = self.path
@@ -350,7 +331,6 @@ class SubModule(Scope, Module):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-
     def __init__(self, path, start_pos=(1, 0), top_module=None):
         """
         Initialize :class:`SubModule`.
@@ -370,6 +350,8 @@ class SubModule(Scope, Module):
         self.line_offset = 0
 
         self.use_as_parent = top_module or self
+
+        self._explicit_absolute_imports = None
 
     def add_global(self, name):
         """
@@ -408,6 +390,19 @@ class SubModule(Scope, Module):
 
     def is_builtin(self):
         return not (self.path is None or self.path.endswith('.py'))
+
+    @property
+    def has_explicit_absolute_import(self):
+        """
+        Checks if imports in this module are explicitly absolute, i.e. there
+        is a ``__future__`` import.
+        """
+        if self._explicit_absolute_imports is not None:
+            return self._explicit_absolute_imports
+
+        has_import = any(_enables_absolute_import(i) for i in self.imports)
+        self._explicit_absolute_imports = has_import
+        return has_import
 
 
 class Class(Scope):
