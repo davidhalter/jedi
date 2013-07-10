@@ -84,6 +84,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         except IndexError:
             return None
 
+    @cache.memoize_default([])
     def get_self_properties(self):
         def add_self_dot_name(name):
             n = copy.copy(name)
