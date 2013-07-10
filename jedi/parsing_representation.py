@@ -307,18 +307,6 @@ class Scope(Simple, IsScope):
                                     self.start_pos[0], self.end_pos[0])
 
 
-def _enables_absolute_import(imp):
-    """
-    Checks if the import is a ``__future__`` import that enables the
-    ``absolute_import`` feature.
-    """
-    if imp.from_ns is None or imp.namespace is None:
-        return False
-
-    namespace, feature = imp.from_ns.names[0], imp.namespace.names[0]
-    return namespace == "__future__" and feature == "absolute_import"
-
-
 class Module(IsScope):
     """
     For isinstance checks. fast_parser.Module also inherits from this.
@@ -395,7 +383,15 @@ class SubModule(Scope, Module):
         Checks if imports in this module are explicitly absolute, i.e. there
         is a ``__future__`` import.
         """
-        return any(_enables_absolute_import(i) for i in self.imports)
+        for imp in self.imports:
+            if imp.from_ns is None or imp.namespace is None:
+                continue
+
+            namespace, feature = imp.from_ns.names[0], imp.namespace.names[0]
+            if namespace == "__future__" and feature == "absolute_import":
+                return True
+
+        return False
 
 
 class Class(Scope):
