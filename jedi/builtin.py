@@ -321,7 +321,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
             file_type = io.TextIOWrapper
         else:
             file_type = types.FileType
-        if type(value) == file_type:
+        if isinstance(value, file_type):
             value = 'open()'
         elif name == 'None':
             value = ''

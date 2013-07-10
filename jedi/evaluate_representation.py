@@ -643,7 +643,7 @@ class Execution(Executable):
                             call = key_stmt.get_commands()[0]
                             if isinstance(call, pr.Name):
                                 yield call, value_stmt
-                            elif type(call) == pr.Call:
+                            elif isinstance(call, pr.Call):
                                 yield call.name, value_stmt
                 # Normal arguments (including key arguments).
                 else:
