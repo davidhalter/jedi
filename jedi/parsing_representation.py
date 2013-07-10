@@ -351,8 +351,6 @@ class SubModule(Scope, Module):
 
         self.use_as_parent = top_module or self
 
-        self._explicit_absolute_imports = None
-
     def add_global(self, name):
         """
         Global means in these context a function (subscope) which has a global
@@ -397,12 +395,7 @@ class SubModule(Scope, Module):
         Checks if imports in this module are explicitly absolute, i.e. there
         is a ``__future__`` import.
         """
-        if self._explicit_absolute_imports is not None:
-            return self._explicit_absolute_imports
-
-        has_import = any(_enables_absolute_import(i) for i in self.imports)
-        self._explicit_absolute_imports = has_import
-        return has_import
+        return any(_enables_absolute_import(i) for i in self.imports)
 
 
 class Class(Scope):
