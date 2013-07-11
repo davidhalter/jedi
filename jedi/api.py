@@ -67,7 +67,7 @@ class Script(object):
             source_path, source=self.source, position=self.pos)
         self._source_path = source_path
         self.source_path = None if source_path is None \
-                                    else os.path.abspath(source_path)
+            else os.path.abspath(source_path)
         debug.speed('init')
 
     def __repr__(self):
@@ -359,7 +359,7 @@ class Script(object):
             definitions = set(defs)
             for d in defs:
                 if isinstance(d.parent, pr.Import) \
-                                        and d.start_pos == (0, 0):
+                        and d.start_pos == (0, 0):
                     i = imports.ImportPath(d.parent).follow(is_goto=True)
                     definitions.remove(d)
                     definitions |= follow_inexistent_imports(i)
