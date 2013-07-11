@@ -168,10 +168,9 @@ def get_names_of_scope(scope, position=None, star_search=True,
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
         if not (scope != non_flow and scope.isinstance(pr.Class)
-                    or scope.isinstance(pr.Flow)
-                    or scope.isinstance(er.Instance)
-                        and non_flow.isinstance(er.Function)
-                    ):
+                or scope.isinstance(pr.Flow)
+                or scope.isinstance(er.Instance)
+                and non_flow.isinstance(er.Function)):
             try:
                 if isinstance(scope, er.Instance):
                     for g in scope.scope_generator():
