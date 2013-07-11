@@ -304,7 +304,7 @@ class Scope(Simple, IsScope):
                 name = self.command
 
         return "<%s: %s@%s-%s>" % (type(self).__name__, name,
-                                    self.start_pos[0], self.end_pos[0])
+                                   self.start_pos[0], self.end_pos[0])
 
 
 class Module(IsScope):
@@ -1225,7 +1225,7 @@ class Call(Simple):
 
     def __repr__(self):
         return "<%s: %s>" % \
-                (type(self).__name__, self.name)
+            (type(self).__name__, self.name)
 
 
 class Array(Call):
