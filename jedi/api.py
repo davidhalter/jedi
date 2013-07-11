@@ -33,7 +33,6 @@ import builtin
 
 class NotFoundError(Exception):
     """A custom error to avoid catching the wrong exceptions."""
-    pass
 
 
 class Script(object):
