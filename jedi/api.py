@@ -33,7 +33,6 @@ import builtin
 
 class NotFoundError(Exception):
     """A custom error to avoid catching the wrong exceptions."""
-    pass
 
 
 class Script(object):
@@ -68,7 +67,7 @@ class Script(object):
             source_path, source=self.source, position=self.pos)
         self._source_path = source_path
         self.source_path = None if source_path is None \
-                                    else os.path.abspath(source_path)
+            else os.path.abspath(source_path)
         debug.speed('init')
 
     def __repr__(self):
@@ -100,7 +99,7 @@ class Script(object):
         except NotFoundError:
             scopes = []
             scope_generator = evaluate.get_names_of_scope(
-                                            self._parser.user_scope, self.pos)
+                self._parser.user_scope, self.pos)
             completions = []
             for scope, name_list in scope_generator:
                 for c in name_list:
@@ -137,14 +136,14 @@ class Script(object):
             bs = builtin.Builtin.scope
             if isinstance(u, pr.Import):
                 if (u.relative_count > 0 or u.from_ns) and not re.search(
-                            r'(,|from)\s*$|import\s+$', completion_line):
+                        r'(,|from)\s*$|import\s+$', completion_line):
                     completions += ((k, bs) for k
-                                            in keywords.get_keywords('import'))
+                                    in keywords.get_keywords('import'))
 
             if not path and not isinstance(u, pr.Import):
                 # add keywords
                 completions += ((k, bs) for k in keywords.get_keywords(
-                                                                    all=True))
+                    all=True))
 
         needs_dot = not dot and path
 
@@ -156,9 +155,9 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
-                                                    self._parser.user_stmt, n):
+                                                        self._parser.user_stmt, n):
                     new = api_classes.Completion(c, needs_dot,
-                                                    len(like), s)
+                                                 len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
                         comp_dct[k]._same_name_completions.append(new)
@@ -329,7 +328,7 @@ class Script(object):
         scopes |= keywords.get_keywords(string=goto_path, pos=self.pos)
 
         d = set([api_classes.Definition(s) for s in scopes
-                    if not isinstance(s, imports.ImportPath._GlobalNamespace)])
+                 if not isinstance(s, imports.ImportPath._GlobalNamespace)])
         return self._sorted_defs(d)
 
     @api_classes._clear_caches_after_call
@@ -343,7 +342,7 @@ class Script(object):
         :rtype: list of :class:`api_classes.Definition`
         """
         d = [api_classes.Definition(d) for d in set(self._goto()[0])
-                    if not isinstance(d, imports.ImportPath._GlobalNamespace)]
+             if not isinstance(d, imports.ImportPath._GlobalNamespace)]
         return self._sorted_defs(d)
 
     def _goto(self, add_import_name=False):
@@ -360,7 +359,7 @@ class Script(object):
             definitions = set(defs)
             for d in defs:
                 if isinstance(d.parent, pr.Import) \
-                                        and d.start_pos == (0, 0):
+                        and d.start_pos == (0, 0):
                     i = imports.ImportPath(d.parent).follow(is_goto=True)
                     definitions.remove(d)
                     definitions |= follow_inexistent_imports(i)
@@ -414,14 +413,14 @@ class Script(object):
         user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
         if isinstance(user_stmt, pr.Statement) \
-                    and self.pos < user_stmt.get_commands()[0].start_pos:
+                and self.pos < user_stmt.get_commands()[0].start_pos:
             # the search_name might be before `=`
             definitions = [v for v in user_stmt.set_vars
-                                if unicode(v.names[-1]) == search_name]
+                           if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
             definitions = dynamic.usages_add_import_modules(definitions,
-                                                                search_name)
+                                                            search_name)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self._parser.module)
@@ -472,7 +471,7 @@ class Script(object):
             user_stmt = self._parser.user_stmt
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
                 call, index, _ = helpers.search_function_definition(
-                                                        user_stmt, self.pos)
+                    user_stmt, self.pos)
         debug.speed('func_call parsed')
         return call, index
 
@@ -493,7 +492,7 @@ class Script(object):
                     kill_count += 1
 
         i = imports.ImportPath(user_stmt, is_like_search,
-                                kill_count=kill_count, direct_resolve=True)
+                               kill_count=kill_count, direct_resolve=True)
         return i, cur_name_part
 
     def _get_completion_parts(self, path):
@@ -582,7 +581,7 @@ def preload_module(*modules):
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
-                                            notices=True, speed=True):
+                       notices=True, speed=True):
     """
     Define a callback debug function to get all the debug messages.
 

@@ -70,7 +70,7 @@ class ObjectImporter(object):
             if objclass and module:
                 alias = self._genname()
                 fakeimport = self.make_fakeimport(module, objclass.__name__,
-                                                   alias)
+                                                  alias)
                 fakestmt = self.make_fakestatement(variable, alias, call=True)
                 scope.add_import(fakeimport)
                 scope.add_statement(fakestmt)
