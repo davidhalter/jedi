@@ -168,14 +168,14 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'name', 'get_imports',
-                'doc', 'docstr', 'asserts']:
+                        'doc', 'docstr', 'asserts']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
-                                    % (self, name))
+                                 % (self, name))
         return getattr(self.base, name)
 
     def __repr__(self):
         return "<e%s of %s (var_args: %s)>" % \
-                (type(self).__name__, self.base, len(self.var_args or []))
+            (type(self).__name__, self.base, len(self.var_args or []))
 
 
 class InstanceElement(use_metaclass(cache.CachedMetaClass)):
@@ -734,7 +734,7 @@ class Execution(Executable):
 
     def __repr__(self):
         return "<%s of %s>" % \
-                (type(self).__name__, self.base)
+            (type(self).__name__, self.base)
 
 
 class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
