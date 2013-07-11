@@ -526,7 +526,7 @@ def check_statement_information(stmt, search_name):
         # this might be removed if we analyze and, etc
         assert len(commands) == 1
         call = commands[0]
-        assert isinstance(call, pr.Call) and str(call.name) == 'isinstance'
+        assert type(call) is pr.Call and str(call.name) == 'isinstance'
         assert bool(call.execution)
 
         # isinstance check
