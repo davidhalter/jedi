@@ -344,7 +344,7 @@ class Completion(BaseDefinition):
         dot = '.' if self._needs_dot else ''
         append = ''
         if settings.add_bracket_after_function \
-                    and self.type == 'Function':
+                and self.type == 'Function':
             append = '('
 
         if settings.add_dot_after_module:
