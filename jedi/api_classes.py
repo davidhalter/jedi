@@ -376,7 +376,6 @@ class Completion(BaseDefinition):
         warnings.warn("Use name instead.", DeprecationWarning)
         return self.name
 
-
     @property
     def description(self):
         """
