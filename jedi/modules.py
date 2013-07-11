@@ -136,7 +136,7 @@ class ModuleWithCursor(Module):
                 self._line_length = len(line)
                 line = line + '\n'
             # add lines with a backslash at the end
-            while 1:
+            while True:
                 self._line_temp -= 1
                 last_line = self.get_line(self._line_temp)
                 if last_line and last_line[-1] == '\\':

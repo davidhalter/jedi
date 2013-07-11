@@ -532,7 +532,7 @@ class Parser(object):
                 defunct = False
                 # take care for relative imports
                 relative_count = 0
-                while 1:
+                while True:
                     token_type, tok = self.next()
                     if tok != '.':
                         break
