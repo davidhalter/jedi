@@ -105,8 +105,8 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
     if (not position or isinstance(scope, (er.Array, er.Instance))
-                or start_scope != scope
-                and isinstance(start_scope, (pr.Function, er.Execution))):
+       or start_scope != scope
+       and isinstance(start_scope, (pr.Function, er.Execution))):
         return names
     names_new = []
     for n in names:
@@ -116,7 +116,7 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
 
 
 def get_names_of_scope(scope, position=None, star_search=True,
-                                                        include_builtin=True):
+                       include_builtin=True):
     """
     Get all completions (names) possible for the current scope.
     The star search option is only here to provide an optimization. Otherwise
@@ -168,17 +168,16 @@ def get_names_of_scope(scope, position=None, star_search=True,
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
         if not (scope != non_flow and scope.isinstance(pr.Class)
-                    or scope.isinstance(pr.Flow)
-                    or scope.isinstance(er.Instance)
-                        and non_flow.isinstance(er.Function)
-                    ):
+                or scope.isinstance(pr.Flow)
+                or scope.isinstance(er.Instance)
+                and non_flow.isinstance(er.Function)):
             try:
                 if isinstance(scope, er.Instance):
                     for g in scope.scope_generator():
                         yield g
                 else:
                     yield scope, get_defined_names_for_position(scope,
-                                                    position, in_func_scope)
+                                                                position, in_func_scope)
             except StopIteration:
                 reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
         if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
@@ -204,7 +203,7 @@ def get_names_of_scope(scope, position=None, star_search=True,
 
 
 def find_name(scope, name_str, position=None, search_global=False,
-                                                        is_goto=False):
+              is_goto=False):
     """
     This is the search function. The most important part to debug.
     `remove_statements` and `filter_statements` really are the core part of
@@ -273,8 +272,8 @@ def find_name(scope, name_str, position=None, search_global=False,
                 if check_instance is not None:
                     # class renames
                     add = [er.InstanceElement(check_instance, a, True)
-                                if isinstance(a, (er.Function, pr.Function))
-                                else a for a in add]
+                           if isinstance(a, (er.Function, pr.Function))
+                           else a for a in add]
                 res_new += add
             else:
                 if isinstance(r, pr.Class):
@@ -349,7 +348,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                             # Compare start_pos, because names may be different
                             # because of executions.
                             if c.name.start_pos == name.start_pos \
-                                                            and c.execution:
+                                    and c.execution:
                                 return True
                     return False
 
@@ -368,7 +367,7 @@ def find_name(scope, name_str, position=None, search_global=False,
 
                     # TODO this makes self variables non-breakable. wanted?
                     if isinstance(name, er.InstanceElement) \
-                                                and not name.is_class_var:
+                            and not name.is_class_var:
                         no_break_scope = True
 
                     result.append(par)
@@ -387,7 +386,7 @@ def find_name(scope, name_str, position=None, search_global=False,
             for name in sorted(name_list, key=comparison_func, reverse=True):
                 p = name.parent.parent if name.parent else None
                 if isinstance(p, er.InstanceElement) \
-                            and isinstance(p.var, pr.Class):
+                        and isinstance(p.var, pr.Class):
                     p = p.var
                 if name_str == name.get_code() and p not in break_scopes:
                     r, no_break_scope = process(name)
@@ -410,7 +409,7 @@ def find_name(scope, name_str, position=None, search_global=False,
             while flow_scope:
                 # TODO check if result is in scope -> no evaluation necessary
                 n = dynamic.check_flow_information(flow_scope, name_str,
-                                                                    position)
+                                                   position)
                 if n:
                     result = n
                     break
@@ -428,7 +427,7 @@ def find_name(scope, name_str, position=None, search_global=False,
             # __getattr__ / __getattribute__
             result += check_getattr(nscope, name_str)
         debug.dbg('sfn filter "%s" in (%s-%s): %s@%s' % (name_str, scope,
-                                                nscope, result, position))
+                                                         nscope, result, position))
         return result
 
     def descriptor_check(result):
@@ -436,7 +435,7 @@ def find_name(scope, name_str, position=None, search_global=False,
         res_new = []
         for r in result:
             if isinstance(scope, (er.Instance, er.Class)) \
-                                and hasattr(r, 'get_descriptor_return'):
+                    and hasattr(r, 'get_descriptor_return'):
                 # handle descriptors
                 with common.ignored(KeyError):
                     res_new += r.get_descriptor_return(scope)
@@ -537,7 +536,7 @@ def assign_tuples(tup, results, seek_name):
                 func = r.get_exact_index_types
             except AttributeError:
                 debug.warning("invalid tuple lookup %s of result %s in %s"
-                                    % (tup, results, seek_name))
+                              % (tup, results, seek_name))
             else:
                 with common.ignored(IndexError):
                     types += func(index)
@@ -643,7 +642,7 @@ def follow_call_list(call_list, follow_array=False):
             call_path = call.generate_call_path()
             next(call_path, None)  # the first one has been used already
             result += follow_paths(call_path, r, call.parent,
-                                  position=call.start_pos)
+                                   position=call.start_pos)
         elif isinstance(call, pr.ListComprehension):
             loop = evaluate_list_comprehension(call)
             # Caveat: parents are being changed, but this doesn't matter,
@@ -655,7 +654,7 @@ def follow_call_list(call_list, follow_array=False):
                 result.append(er.Function(call))
             # With things like params, these can also be functions...
             elif isinstance(call, (er.Function, er.Class, er.Instance,
-                                            dynamic.ArrayInstance)):
+                                   dynamic.ArrayInstance)):
                 result.append(call)
             # The string tokens are just operations (+, -, etc.)
             elif not isinstance(call, (str, unicode)):
@@ -673,8 +672,8 @@ def follow_call_list(call_list, follow_array=False):
                 result += follow_call(call)
             elif call == '*':
                 if [r for r in result if isinstance(r, er.Array)
-                                or isinstance(r, er.Instance)
-                                    and str(r.name) == 'str']:
+                   or isinstance(r, er.Instance)
+                   and str(r.name) == 'str']:
                     # if it is an iterable, ignore * operations
                     next(calls_iterator)
     return set(result)
@@ -701,7 +700,7 @@ def follow_call_path(path, scope, position):
         if isinstance(current, pr.NamePart):
             # This is the first global lookup.
             scopes = find_name(scope, current, position=position,
-                                            search_global=True)
+                               search_global=True)
         else:
             if current.type in (pr.Call.STRING, pr.Call.NUMBER):
                 t = type(current.name).__name__
@@ -775,7 +774,7 @@ def follow_path(path, scope, call_scope, position=None):
             if filter_private_variable(scope, call_scope, current):
                 return []
         result = imports.strip_imports(find_name(scope, current,
-                                                    position=position))
+                                                 position=position))
     return follow_paths(path, set(result), call_scope, position=position)
 
 
@@ -814,5 +813,5 @@ def goto(stmt, call_path=None):
     follow_res = []
     for s in scopes:
         follow_res += find_name(s, search, pos,
-                                    search_global=search_global, is_goto=True)
+                                search_global=search_global, is_goto=True)
     return follow_res, search
