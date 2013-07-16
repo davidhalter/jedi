@@ -3,4 +3,5 @@ include CHANGELOG.rst
 include LICENSE.txt
 include AUTHORS.txt
 include jedi/mixin/*.pym
+recursive-include test *
 recursive-exclude * *.pyc
