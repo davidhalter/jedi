@@ -155,9 +155,8 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
-                                                        self._parser.user_stmt, n):
-                    new = api_classes.Completion(c, needs_dot,
-                                                 len(like), s)
+                        self._parser.user_stmt or self._parser.user_scope, n):
+                    new = api_classes.Completion(c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
                         comp_dct[k]._same_name_completions.append(new)

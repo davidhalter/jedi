@@ -459,6 +459,12 @@ class TestDocstring(TestBase):
         docs = [d.raw_doc for d in defs]
         self.assertEqual(docs, ['Original docstring.', 'Docstring of `x`.'])
 
+    def test_completion(self):
+        assert self.completions('''
+        class DocstringCompletion():
+            #? []
+            """ asdfas """''')
+
 
 class TestFeature(TestBase):
 
