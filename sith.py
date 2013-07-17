@@ -139,7 +139,8 @@ def main(arguments):
             t.run(debugger)
     elif arguments['run']:
             TestCase(arguments['<operation>'], arguments['<path>'],
-                arguments['<line>'], arguments['<column>']).run(debugger)
+                int(arguments['<line>']), int(arguments['<column>'])
+                ).run(debugger)
     else:
         for _ in range(int(arguments['--maxtries'])):
             t = TestCase.generate(arguments['<path>'] or '.')
