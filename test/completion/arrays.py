@@ -208,6 +208,13 @@ f()
 #? 9 ['str']
 {str: str}
 
+# iteration problem (detected with sith)
+d = dict({'a':''})
+def y(a):
+    return a
+#? str()
+y(**d)
+
 # -----------------
 # with variable as index
 # -----------------
