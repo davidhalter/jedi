@@ -628,15 +628,18 @@ class Execution(Executable):
                     stmt._commands = [old]
 
                 # *args
-                if stmt.get_commands()[0] == '*':
-                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
+                commands = stmt.get_commands()
+                if not len(commands):
+                    continue
+                if commands[0] == '*':
+                    arrays = evaluate.follow_call_list(commands[1:])
                     # *args must be some sort of an array, otherwise -> ignore
                     for array in arrays:
                         for field_stmt in array:  # yield from plz!
                             yield None, field_stmt
                 # **kwargs
-                elif stmt.get_commands()[0] == '**':
-                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
+                elif commands[0] == '**':
+                    arrays = evaluate.follow_call_list(commands[1:])
                     for array in arrays:
                         for key_stmt, value_stmt in array.items():
                             # first index, is the key if syntactically correct
