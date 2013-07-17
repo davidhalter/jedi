@@ -233,7 +233,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
                     if is_in_base_classes(scope, n, exe):
                         continue
                 if inspect.isbuiltin(exe) or inspect.ismethod(exe) \
-                            or inspect.ismethoddescriptor(exe):
+                        or inspect.ismethoddescriptor(exe):
                     funcs[n] = exe
                 elif inspect.isclass(exe) or inspect.ismodule(exe):
                     classes[n] = exe
@@ -254,15 +254,15 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
     code += get_doc(scope)
 
     names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
-                                            '__path__', '__package__']) \
-                            | set(['mro'])
+                                   '__path__', '__package__']) \
+        | set(['mro'])
 
     classes, funcs, stmts, members = get_scope_objects(names)
 
     # classes
     for name, cl in classes.items():
         bases = (c.__name__ for c in cl.__bases__) if inspect.isclass(cl) \
-                                                   else []
+            else []
         code += 'class %s(%s):\n' % (name, ','.join(bases))
         if depth == 0:
             try:
@@ -321,7 +321,7 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
             file_type = io.TextIOWrapper
         else:
             file_type = types.FileType
-        if type(value) == file_type:
+        if isinstance(value, file_type):
             value = 'open()'
         elif name == 'None':
             value = ''
@@ -336,13 +336,6 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
                 value = '%s.%s' % (mod, value)
         code += '%s = %s\n' % (name, value)
 
-    if depth == 0:
-        #with open('writeout.py', 'w') as f:
-        #    f.write(code)
-        #import sys
-        #sys.stdout.write(code)
-        #exit()
-        pass
     return code
 
 
@@ -378,7 +371,7 @@ def _parse_function_doc(func):
             return ','.join(args)
         while True:
             param_str, changes = re.subn(r' ?\[([^\[\]]+)\]',
-                                            change_options, param_str)
+                                         change_options, param_str)
             if changes == 0:
                 break
     except (ValueError, AttributeError):

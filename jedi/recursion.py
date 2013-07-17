@@ -24,7 +24,7 @@ class RecursionDecorator(object):
         self.reset()
 
     def __call__(self, stmt, *args, **kwargs):
-        #print stmt, len(self.node_statements())
+        # print stmt, len(self.node_statements())
         if self.push_stmt(stmt):
             return []
         else:
@@ -37,7 +37,7 @@ class RecursionDecorator(object):
         check = self._check_recursion()
         if check:  # TODO remove False!!!!
             debug.warning('catched stmt recursion: %s against %s @%s'
-                                % (stmt, check.stmt, stmt.start_pos))
+                          % (stmt, check.stmt, stmt.start_pos))
             self.pop_stmt()
             return True
         return False
@@ -82,7 +82,7 @@ class RecursionNode(object):
         # The same's true for the builtins, because the builtins are really
         # simple.
         self.is_ignored = isinstance(stmt, pr.Param) \
-                                   or (self.script == builtin.Builtin.scope)
+            or (self.script == builtin.Builtin.scope)
 
     def __eq__(self, other):
         if not other:
@@ -90,10 +90,10 @@ class RecursionNode(object):
 
         is_list_comp = lambda x: isinstance(x, pr.ForFlow) and x.is_list_comp
         return self.script == other.script \
-                    and self.position == other.position \
-                    and not is_list_comp(self.stmt.parent) \
-                    and not is_list_comp(other.parent) \
-                    and not self.is_ignored and not other.is_ignored
+            and self.position == other.position \
+            and not is_list_comp(self.stmt.parent) \
+            and not is_list_comp(other.parent) \
+            and not self.is_ignored and not other.is_ignored
 
 
 class ExecutionRecursionDecorator(object):
@@ -107,7 +107,7 @@ class ExecutionRecursionDecorator(object):
 
     def __call__(self, execution, evaluate_generator=False):
         debug.dbg('Execution recursions: %s' % execution, self.recursion_level,
-                            self.execution_count, len(self.execution_funcs))
+                  self.execution_count, len(self.execution_funcs))
         if self.check_recursion(execution, evaluate_generator):
             result = []
         else:

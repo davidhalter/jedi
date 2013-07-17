@@ -45,7 +45,7 @@ class CachedModule(object):
         """ get the parser lazy """
         if self._parser is None:
             self._parser = cache.load_module(self.path, self.name) \
-                                or self._load_module()
+                or self._load_module()
         return self._parser
 
     def _get_source(self):
@@ -113,10 +113,10 @@ class ModuleWithCursor(Module):
             # Also, the position is here important (which will not be used by
             # default), therefore fill the cache here.
             self._parser = fast_parser.FastParser(self.source, self.path,
-                                                        self.position)
+                                                  self.position)
             # don't pickle that module, because it's changing fast
             cache.save_module(self.path, self.name, self._parser,
-                                                            pickling=False)
+                              pickling=False)
         return self._parser
 
     def get_path_until_cursor(self):
@@ -136,7 +136,7 @@ class ModuleWithCursor(Module):
                 self._line_length = len(line)
                 line = line + '\n'
             # add lines with a backslash at the end
-            while 1:
+            while True:
                 self._line_temp -= 1
                 last_line = self.get_line(self._line_temp)
                 if last_line and last_line[-1] == '\\':
@@ -163,7 +163,7 @@ class ModuleWithCursor(Module):
         last_type = None
         try:
             for token_type, tok, start, end, line in gen:
-                #print 'tok', token_type, tok, force_point
+                # print 'tok', token_type, tok, force_point
                 if last_type == token_type == tokenize.NAME:
                     string += ' '
 
@@ -214,7 +214,7 @@ class ModuleWithCursor(Module):
         after = re.match("[^\w\s]+", line[self.position[1]:])
         before = re.match("[^\w\s]+", line[:self.position[1]][::-1])
         return (before.group(0) if before is not None else '') \
-                + (after.group(0) if after is not None else '')
+            + (after.group(0) if after is not None else '')
 
     def get_context(self):
         pos = self._start_cursor_pos
@@ -375,7 +375,7 @@ def source_to_unicode(source, encoding=None):
 
         first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', str(source)).group(0)
         possible_encoding = re.search(r"coding[=:]\s*([-\w.]+)",
-                                                            first_two_lines)
+                                      first_two_lines)
         if possible_encoding:
             return possible_encoding.group(1)
         else:

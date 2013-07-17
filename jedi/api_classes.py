@@ -344,7 +344,7 @@ class Completion(BaseDefinition):
         dot = '.' if self._needs_dot else ''
         append = ''
         if settings.add_bracket_after_function \
-                    and self.type == 'Function':
+                and self.type == 'Function':
             append = '('
 
         if settings.add_dot_after_module:
@@ -375,7 +375,6 @@ class Completion(BaseDefinition):
         """
         warnings.warn("Use name instead.", DeprecationWarning)
         return self.name
-
 
     @property
     def description(self):
@@ -414,7 +413,7 @@ class Completion(BaseDefinition):
                 return [self]
 
             self._followed_definitions = \
-                            [BaseDefinition(d, d.start_pos) for d in defs]
+                [BaseDefinition(d, d.start_pos) for d in defs]
             _clear_caches()
 
         return self._followed_definitions
@@ -504,7 +503,7 @@ class Definition(BaseDefinition):
             `module.class.function` path.
         """
         if self.module_path.endswith('.py') \
-                    and not isinstance(self._definition, pr.Module):
+                and not isinstance(self._definition, pr.Module):
             position = '@%s' % (self.line)
         else:
             # is a builtin or module
@@ -601,4 +600,4 @@ class CallDef(object):
 
     def __repr__(self):
         return '<%s: %s index %s>' % (type(self).__name__, self._executable,
-                                    self.index)
+                                      self.index)

@@ -42,8 +42,8 @@ import sys
 # imports and circular imports... Just avoid it:
 sys.path.insert(0, __path__[0])
 
-from .api import Script, Interpreter, NotFoundError, set_debug_function, \
-                 preload_module, defined_names
+from .api import Script, Interpreter, NotFoundError, set_debug_function
+from .api import preload_module, defined_names
 from . import settings
 
 sys.path.pop(0)

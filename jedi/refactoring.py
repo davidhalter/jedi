@@ -65,7 +65,7 @@ def rename(script, new_name):
 def _rename(names, replace_str):
     """ For both rename and inline. """
     order = sorted(names, key=lambda x: (x.module_path, x.start_pos),
-                            reverse=True)
+                   reverse=True)
 
     def process(path, old_lines, new_lines):
         if new_lines is not None:  # goto next file, save last
@@ -92,7 +92,7 @@ def _rename(names, replace_str):
         nr, indent = name.start_pos
         line = new_lines[nr - 1]
         new_lines[nr - 1] = line[:indent] + replace_str + \
-                            line[indent + len(name.text):]
+            line[indent + len(name.text):]
     process(current_path, old_lines, new_lines)
     return dct
 
@@ -148,7 +148,7 @@ def extract(script, new_name):
             open_brackets = ['(', '[', '{']
             close_brackets = [')', ']', '}']
             if '\n' in text and not (text[0] in open_brackets and text[-1] ==
-                                close_brackets[open_brackets.index(text[0])]):
+                                     close_brackets[open_brackets.index(text[0])]):
                 text = '(%s)' % text
 
             # add new line before statement
@@ -173,9 +173,9 @@ def inline(script):
         stmt = definitions[0]._definition
         usages = script.usages()
         inlines = [r for r in usages
-                        if not stmt.start_pos <= r.start_pos <= stmt.end_pos]
+                   if not stmt.start_pos <= r.start_pos <= stmt.end_pos]
         inlines = sorted(inlines, key=lambda x: (x.module_path, x.start_pos),
-                                                reverse=True)
+                         reverse=True)
         commands = stmt.get_commands()
         # don't allow multiline refactorings for now.
         assert stmt.start_pos[0] == stmt.end_pos[0]
