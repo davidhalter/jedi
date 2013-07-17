@@ -641,13 +641,14 @@ class Execution(Executable):
                 elif commands[0] == '**':
                     arrays = evaluate.follow_call_list(commands[1:])
                     for array in arrays:
-                        for key_stmt, value_stmt in array.items():
-                            # first index, is the key if syntactically correct
-                            call = key_stmt.get_commands()[0]
-                            if isinstance(call, pr.Name):
-                                yield call, value_stmt
-                            elif type(call) is pr.Call:
-                                yield call.name, value_stmt
+                        if isinstance(array, Array):
+                            for key_stmt, value_stmt in array.items():
+                                # first index, is the key if syntactically correct
+                                call = key_stmt.get_commands()[0]
+                                if isinstance(call, pr.Name):
+                                    yield call, value_stmt
+                                elif type(call) is pr.Call:
+                                    yield call.name, value_stmt
                 # Normal arguments (including key arguments).
                 else:
                     if stmt.assignment_details:
