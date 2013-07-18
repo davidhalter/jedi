@@ -119,6 +119,13 @@ strs.second
 #? ['var_class']
 TestClass.var_class.var_class.var_class.var_class
 
+# operations (+, *, etc) shouldn't be InstanceElements - #246
+class A():
+    def __init__(self):
+        self.addition = 1 + 2
+#? int()
+A().addition
+
 # -----------------
 # inheritance
 # -----------------

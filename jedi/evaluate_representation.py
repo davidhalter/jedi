@@ -217,6 +217,7 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
     def get_commands(self):
         # Copy and modify the array.
         return [InstanceElement(self.instance, command, self.is_class_var)
+                if not isinstance(command, unicode) else command
                 for command in self.var.get_commands()]
 
     def __getattr__(self, name):
