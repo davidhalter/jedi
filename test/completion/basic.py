@@ -239,3 +239,7 @@ A().hello
 a = 'smörbröd'
 #? str()
 a
+xyz = 'smörbröd.py'
+if 1:
+    #? str()
+    xyz
