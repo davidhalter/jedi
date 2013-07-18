@@ -89,7 +89,9 @@ class TestCase(object):
             source = f.read()
             lines = source.splitlines()
 
-        line = random.randint(1, max(len(lines), 1))
+        if not lines:
+            lines = ['']
+        line = random.randint(1, len(lines))
         column = random.randint(0, len(lines[line - 1]))
         return cls(operation, path, line, column)
 
