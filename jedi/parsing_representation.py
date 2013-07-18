@@ -1114,7 +1114,7 @@ class Statement(Simple):
                     result = []
                     is_chain = False
             else:
-                if tok != '\n':
+                if tok != '\n' and token_type != tokenize.COMMENT:
                     result.append(tok)
         return result
 

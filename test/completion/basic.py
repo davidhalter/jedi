@@ -220,3 +220,14 @@ class B(): pass
 A.__init__
 #? ['__init__']
 B.__init__
+
+
+# -----------------
+# comments
+# -----------------
+
+class A():
+    def __init__(self):
+        self.hello = {}  # comment shouldn't be a string
+#? dict()
+A().hello
