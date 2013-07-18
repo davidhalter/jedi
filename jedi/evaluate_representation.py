@@ -14,7 +14,7 @@ from __future__ import with_statement
 import copy
 import itertools
 
-from jedi._compatibility import use_metaclass, next, hasattr
+from jedi._compatibility import use_metaclass, next, hasattr, unicode
 from jedi import parsing_representation as pr
 from jedi import cache
 from jedi import helpers

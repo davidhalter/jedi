@@ -231,3 +231,11 @@ class A():
         self.hello = {}  # comment shouldn't be a string
 #? dict()
 A().hello
+
+# -----------------
+# unicode
+# -----------------
+
+a = 'smörbröd'
+#? str()
+a

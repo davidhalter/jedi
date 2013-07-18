@@ -105,7 +105,7 @@ if __name__ == '__main__':
     sys.path.insert(0, '..')
 
 import jedi
-from jedi._compatibility import unicode, reduce, StringIO
+from jedi._compatibility import unicode, reduce, StringIO, is_py3k
 
 
 TEST_COMPLETIONS = 0
@@ -221,7 +221,8 @@ def collect_file_tests(lines, lines_to_execute):
     test_type = None
     for line_nr, line in enumerate(lines):
         line_nr += 1  # py2.5 doesn't know about the additional enumerate param
-        line = unicode(line)
+        if not is_py3k:
+            line = unicode(line, 'UTF-8')
         if correct:
             r = re.match('^(\d+)\s*(.*)$', correct)
             if r:
