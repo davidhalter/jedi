@@ -18,9 +18,9 @@ Show recorded exception::
 
 Usage:
   sith.py [--pdb|--ipdb|--pudb] [-d] [-m=<nr>] [-f] [--record=<file>] random [<path>]
-  sith.py [--pdb|--ipdb|--pudb] [-d] [-f] redo
+  sith.py [--pdb|--ipdb|--pudb] [-d] [-f] [--record=<file>] redo
   sith.py [--pdb|--ipdb|--pudb] [-d] [-f] run <operation> <path> <line> <column>
-  sith.py show
+  sith.py show [--record=<file>]
   sith.py -h | --help
 
 Options:
