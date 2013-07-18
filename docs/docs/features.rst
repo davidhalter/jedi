@@ -75,7 +75,6 @@ older Python 2 features have been left out:
 
 - Classes: Always Python 3 like, therefore all classes inherit from ``object``.
 - Generators: No ``next()`` method. The ``__next__()`` method is used instead.
-- Exceptions are only looked at in the form of ``Exception as e``, no comma!
 
 **Slow Performance**
 
