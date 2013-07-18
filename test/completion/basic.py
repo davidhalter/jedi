@@ -235,7 +235,6 @@ A().hello
 # -----------------
 # unicode
 # -----------------
-
 a = 'smörbröd'
 #? str()
 a
@@ -243,3 +242,21 @@ xyz = 'smörbröd.py'
 if 1:
     #? str()
     xyz
+
+# -----------------
+# exceptions
+# -----------------
+try:
+    import math
+except ImportError as i_a:
+    #? ['i_a']
+    i_a
+    #? ImportError()
+    i_a
+try:
+    import math
+except ImportError, i_b:
+    #? ['i_b']
+    i_b
+    #? ImportError()
+    i_b
