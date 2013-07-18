@@ -161,3 +161,13 @@ try:
         encoding = 'utf-8'
 except AttributeError:
     encoding = 'ascii'
+
+def u(string):
+    """Cast to unicode DAMMIT!
+    Written because Python2 repr always implicitly casts to a string, so we
+    have to cast back to a unicode (and we now that we always deal with valid
+    unicode, because we check that in the beginning).
+    """
+    if not is_py3k and not isinstance(string, unicode):
+        return unicode(str(string), 'UTF-8')
+    return string

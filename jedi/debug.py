@@ -1,3 +1,4 @@
+from _compatibility import u
 import inspect
 import time
 
@@ -36,12 +37,12 @@ def dbg(*args):
         frm = inspect.stack()[1]
         mod = inspect.getmodule(frm[0])
         if not (mod.__name__ in ignored_modules):
-            debug_function(NOTICE, 'dbg: ' + ', '.join(str(a) for a in args))
+            debug_function(NOTICE, 'dbg: ' + ', '.join(u(a) for a in args))
 
 
 def warning(*args):
     if debug_function and enable_warning:
-        debug_function(WARNING, 'warning: ' + ', '.join(str(a) for a in args))
+        debug_function(WARNING, 'warning: ' + ', '.join(u(a) for a in args))
 
 
 def speed(name):

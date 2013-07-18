@@ -73,7 +73,7 @@ from __future__ import with_statement
 import sys
 import itertools
 
-from jedi._compatibility import next, hasattr, is_py3k, unicode, reraise
+from jedi._compatibility import next, hasattr, is_py3k, unicode, reraise, u
 from jedi import common
 from jedi import cache
 from jedi import parsing_representation as pr
@@ -427,7 +427,7 @@ def find_name(scope, name_str, position=None, search_global=False,
             # __getattr__ / __getattribute__
             result += check_getattr(nscope, name_str)
         debug.dbg('sfn filter "%s" in (%s-%s): %s@%s' % (name_str, scope,
-                                                         nscope, result, position))
+             nscope, u(result), position))
         return result
 
     def descriptor_check(result):
