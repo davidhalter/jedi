@@ -318,7 +318,6 @@ class Completion(BaseDefinition):
     provide additional information about a completion.
     """
     def __init__(self, name, needs_dot, like_name_length, base):
-        print name
         super(Completion, self).__init__(name.parent, name.start_pos)
 
         self._name = name

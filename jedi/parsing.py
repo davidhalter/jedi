@@ -600,6 +600,7 @@ class Parser(object):
                         # this is only true for python 2
                         n, token_type, tok = self._parse_dot_name()
                         if n:
+                            n.parent = statement
                             statement.set_vars.append(n)
                     if statement:
                         inputs.append(statement)
