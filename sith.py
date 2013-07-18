@@ -27,7 +27,7 @@ Options:
   -h --help         Show this screen.
   --record=<file>   Exceptions are recorded in here [default: record.json].
   -f, --fs-cache        By default, file system cache is off for reproducibility.
-  -m, --maxtries=<nr>   Maximum of random tries [default: 100]
+  -n, --maxtries=<nr>   Maximum of random tries [default: 100]
   -d, --debug       Jedi print debugging when an error is raised.
   --pdb             Launch pdb when error is raised.
   --ipdb            Launch ipdb when error is raised.
@@ -148,6 +148,7 @@ def main(arguments):
                 break
             print('.', end='')
             sys.stdout.flush()
+        print()
 
 
 if __name__ == '__main__':
