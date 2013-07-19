@@ -88,3 +88,11 @@ class Test(object):
     def test(self):
         #? ['teststr']
         self.teststr
+
+# -----------------
+# statement docstrings
+# -----------------
+d = ''
+""" bsdf """
+#? str()
+d.upper()
