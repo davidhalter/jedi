@@ -128,10 +128,10 @@ import classes
 from datetime import timedel
 
 # should not be possible, because names can only be looked up 1 level deep.
-#? []
+#? ['resolution']
 from datetime.timedelta import resolution
-#? []
-from datetime.timedelta import 
+#? ['days']
+from datetime.timedelta import days
 
 #? ['Cursor']
 from sqlite3 import Cursor
