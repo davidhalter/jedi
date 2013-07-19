@@ -130,8 +130,8 @@ from datetime import timedel
 # should not be possible, because names can only be looked up 1 level deep.
 #? ['resolution']
 from datetime.timedelta import resolution
-#? ['date', 'datetime_CAPI', 'days', 'datetime']
-from datetime.timedelta import d
+#? ['days']
+from datetime.timedelta import days
 
 #? ['Cursor']
 from sqlite3 import Cursor
