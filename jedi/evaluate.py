@@ -263,8 +263,10 @@ def find_name(scope, name_str, position=None, search_global=False,
                                 # so just ignore it.
                                 continue
 
-                    if r.docstr:
-                        res_new.append(r)
+                    # Remove the statement docstr stuff for now, that has to be
+                    # implemented with the evaluator class.
+                    #if r.docstr:
+                        #res_new.append(r)
 
                     scopes = follow_statement(r, seek_name=name_str)
                     add += remove_statements(scopes)
