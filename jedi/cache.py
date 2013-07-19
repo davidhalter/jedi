@@ -282,7 +282,7 @@ class _ModulePickling(object):
             try:
                 with open(self._get_path('index.json')) as f:
                     data = json.load(f)
-            except IOError:
+            except (IOError, ValueError):
                 self.__index = {}
             else:
                 # 0 means version is not defined (= always delete cache):
