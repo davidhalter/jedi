@@ -341,6 +341,8 @@ def find_name(scope, name_str, position=None, search_global=False,
             elif par.isinstance(pr.Statement):
                 def is_execution(calls):
                     for c in calls:
+                        if isinstance(c, (unicode, str)):
+                            continue
                         if c.isinstance(pr.Array):
                             if is_execution(c):
                                 return True
