@@ -133,10 +133,8 @@ class ImportPath(pr.Base):
                 for s, scope_names in evaluate.get_names_of_scope(scope,
                                                     include_builtin=False):
                     for n in scope_names:
-                        if self.import_stmt.from_ns is None \
-                                            or self.is_partial_import:
-                                # from_ns must be defined to access module
-                                # values plus a partial import means that there
+                        if self.is_partial_import:
+                                # a partial import means that there
                                 # is something after the import, which
                                 # automatically implies that there must not be
                                 # any non-module scope.
