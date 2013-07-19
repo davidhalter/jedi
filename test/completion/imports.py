@@ -191,8 +191,8 @@ import datetime
 #? 6 datetime
 from datetime.time import time
 
-#? ['timedelta', 'MAXYEAR', 'datetime', 'MINYEAR', 'datetime_CAPI', 'mro', 'tzinfo', 'time', 'date']
-import datetime.
+#? ['timedelta']
+import datetime.timedel
 #? ['date', 'datetime_CAPI', 'datetime']
 import datetime.date
 
