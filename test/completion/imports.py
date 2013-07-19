@@ -191,9 +191,9 @@ import datetime
 #? 6 datetime
 from datetime.time import time
 
-#? []
-import datetime.
-#? []
+#? ['timedelta']
+import datetime.timedel
+#? ['date', 'datetime_CAPI', 'datetime']
 import datetime.date
 
 #? 18 ['mod1', 'random', 'pkg', 'rename1', 'rename2', 'import']
