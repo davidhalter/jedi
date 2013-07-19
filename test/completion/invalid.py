@@ -42,6 +42,12 @@ def normalfunc():
 #? int()
 normalfunc()
 
+# dots in param
+def f(seq1...=None):
+    return seq1
+#? int()
+f(1)
+
 
 # first part not complete (raised errors)
 if a
