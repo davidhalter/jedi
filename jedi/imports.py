@@ -194,7 +194,9 @@ class ImportPath(pr.Base):
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
-                scopes = []
+                scopes = itertools.chain.from_iterable(
+                                    evaluate.follow_path(iter(rest), s, s)
+                                    for s in scopes)
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
