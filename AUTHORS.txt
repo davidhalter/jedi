@@ -8,7 +8,11 @@ Code Contributors
 =================
 
 Danilo Bargen (@dbrgn)
+Laurens Van Houtven (@lvh)
+Aldo Stracquadanio (@Astrac)
+Jean-Louis Fuchs (@ganwell)
 tek (@tek)
 Yasha Borevich (@jjay)
 Aaron Griffin
 andviro (@andviro)
+Mike Gilbert (@floppym)
