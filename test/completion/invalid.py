@@ -119,4 +119,11 @@ def asdf(a or b): # multiple param names
 #? int()
 asdf(2)
 
+# -----------------
+# goto
+# -----------------
+
+#! []
+as
+
 import datetime as 

@@ -795,6 +795,8 @@ def filter_private_variable(scope, call_scope, var_name):
 def goto(stmt, call_path=None):
     if call_path is None:
         commands = stmt.get_commands()
+        if len(commands) == 0:
+            return [], ''
         # Only the first command is important, the rest should basically not
         # happen except in broken code (e.g. docstrings that aren't code).
         call = commands[0]
