@@ -166,6 +166,16 @@ exe[1]
 # illegal args (TypeError)
 #? 
 args_func(*1)[0]
+# iterator
+#? int()
+args_func(*iter([1]))[0]
+
+# different types
+e = args_func(*[1+"", {}])
+#? int() str()
+e[0]
+#? dict()
+e[1]
 
 _list = [1,""]
 exe2 = args_func(_list)[0]

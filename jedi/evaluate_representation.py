@@ -635,9 +635,14 @@ class Execution(Executable):
                 if commands[0] == '*':
                     arrays = evaluate.follow_call_list(commands[1:])
                     # *args must be some sort of an array, otherwise -> ignore
+
                     for array in arrays:
-                        for field_stmt in array:  # yield from plz!
-                            yield None, field_stmt
+                        if isinstance(array, Array):
+                            for field_stmt in array:  # yield from plz!
+                                yield None, field_stmt
+                        elif isinstance(array, Generator):
+                            for field_stmt in array.iter_content():
+                                yield None, helpers.FakeStatement(field_stmt)
                 # **kwargs
                 elif commands[0] == '**':
                     arrays = evaluate.follow_call_list(commands[1:])

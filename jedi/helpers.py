@@ -125,3 +125,13 @@ def search_function_definition(stmt, pos):
         arr.parent.execution = None
         return call, index, False
     return None, 0, False
+
+
+class FakeStatement(pr.Statement):
+    class SubModule():
+        line_offset = 0
+
+    def __init__(self, content):
+        cls = type(self)
+        p = 0, 0
+        super(cls, self).__init__(cls.SubModule, [], [], [content], p, p)
