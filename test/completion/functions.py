@@ -160,9 +160,12 @@ def args_func(*args):
 exe = args_func(1, "")
 #? int()
 exe[0]
-
 #? str()
 exe[1]
+
+# illegal args (TypeError)
+#? 
+args_func(*1)[0]
 
 _list = [1,""]
 exe2 = args_func(_list)[0]
