@@ -33,11 +33,15 @@ def f(a, b):
     :type a:
     :param b: Just something
     :type b: ``
+    :rtype: 
     """
     #? 
     a
     #? 
     b
+
+#? 
+f()
 
 # -----------------
 # epydoc style
