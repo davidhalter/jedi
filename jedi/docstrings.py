@@ -125,5 +125,7 @@ def find_return_types(func):
         return []
 
     p = parsing.Parser(type_str, None, (1, 0), no_docstr=True)
+    if p.user_stmt is None:
+        return []
     p.user_stmt.parent = func
     return list(evaluate.follow_statement(p.user_stmt))
