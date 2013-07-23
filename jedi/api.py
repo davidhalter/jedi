@@ -382,7 +382,8 @@ class Script(object):
             if add_import_name:
                 import_name = user_stmt.get_defined_names()
                 # imports have only one name
-                if name_part == import_name[0].names[-1]:
+                if not user_stmt.star \
+                        and name_part == import_name[0].names[-1]:
                     definitions.append(import_name[0])
         else:
             stmt = self._get_under_cursor_stmt(goto_path)
