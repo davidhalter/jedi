@@ -53,6 +53,8 @@ def follow_param(param):
 
         p = parsing.Parser(param_str, None, user_position,
                            no_docstr=True)
+        if p.user_stmt is None:
+            return []
         return evaluate.follow_statement(p.user_stmt)
     return []
 
