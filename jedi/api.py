@@ -411,11 +411,12 @@ class Script(object):
         """
         user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
-        if isinstance(user_stmt, pr.Statement) \
-                and self.pos < user_stmt.get_commands()[0].start_pos:
-            # the search_name might be before `=`
-            definitions = [v for v in user_stmt.set_vars
-                           if unicode(v.names[-1]) == search_name]
+        if isinstance(user_stmt, pr.Statement):
+            c = user_stmt.get_commands()[0]
+            if not isinstance(c, unicode) and self.pos < c.start_pos:
+                # the search_name might be before `=`
+                definitions = [v for v in user_stmt.set_vars
+                               if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
             definitions = dynamic.usages_add_import_modules(definitions,

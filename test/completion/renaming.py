@@ -203,3 +203,10 @@ class TestProperty:
     def b(self):
         #< 13 (-5,8), (0,13)
         self.rw_prop
+
+# -----------------
+# *args, **kwargs
+# -----------------
+#< 11 (1,11), (0,8)
+def f(**kwargs):
+    return kwargs
