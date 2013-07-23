@@ -113,8 +113,7 @@ class TestCase(object):
                 einfo = sys.exc_info()
                 pdb = __import__(debugger)
                 pdb.post_mortem(einfo if debugger == 'pudb' else einfo[2])
-            return False
-        return True
+            exit(1)
 
     def show(self):
         print(self.traceback)
@@ -146,8 +145,7 @@ def main(arguments):
     else:
         for _ in range(int(arguments['--maxtries'])):
             t = TestCase.generate(arguments['<path>'] or '.')
-            if not t.run(debugger, record):
-                break
+            t.run(debugger, record)
             print('.', end='')
             sys.stdout.flush()
         print()
