@@ -1,5 +1,8 @@
 """ Test docstrings in functions and classes, which are used to infer types """
 
+# -----------------
+# sphinx style
+# -----------------
 def f(a, b, c, d):
     """ asdfasdf
     :param a: blablabla
@@ -23,6 +26,22 @@ def f(a, b, c, d):
 #? dict()
 f()
 
+# wrong declarations
+def f(a, b):
+    """
+    :param a: Forgot type declaration
+    :type a:
+    :param b: Just something
+    :type b: ``
+    """
+    #? 
+    a
+    #? 
+    b
+
+# -----------------
+# epydoc style
+# -----------------
 def e(a, b):
     """ asdfasdf
     @type a: str
