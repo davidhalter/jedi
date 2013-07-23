@@ -401,13 +401,8 @@ class Execution(Executable):
             # some implementations of builtins:
             if func_name == 'getattr':
                 # follow the first param
-                try:
-                    objects = self.follow_var_arg(0)
-                    names = self.follow_var_arg(1)
-                except IndexError:
-                    debug.warning('getattr() called with to few args.')
-                    return []
-
+                objects = self.follow_var_arg(0)
+                names = self.follow_var_arg(1)
                 for obj in objects:
                     if not isinstance(obj, (Instance, Class, pr.Module)):
                         debug.warning('getattr called without instance')
