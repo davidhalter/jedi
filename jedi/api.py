@@ -410,6 +410,8 @@ class Script(object):
 
         :rtype: list of :class:`api_classes.Usage`
         """
+        temp, settings.dynamic_flow_information = \
+            settings.dynamic_flow_information, False
         user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
         if isinstance(user_stmt, pr.Statement):
@@ -433,6 +435,7 @@ class Script(object):
             else:
                 names.append(api_classes.Usage(d.names[-1], d))
 
+        settings.dynamic_flow_information = temp
         return self._sorted_defs(set(names))
 
     @api_classes._clear_caches_after_call

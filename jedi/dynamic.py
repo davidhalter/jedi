@@ -505,22 +505,24 @@ def check_flow_information(flow, search_name, pos):
 
     ensures that `k` is a string.
     """
+    if not settings.dynamic_flow_information:
+        return None
     result = []
     if isinstance(flow, (pr.Scope, fast_parser.Module)) and not result:
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
-            result = check_statement_information(ass, search_name)
+            result = _check_isinstance_type(ass, search_name)
             if result:
                 break
 
     if isinstance(flow, pr.Flow) and not result:
         if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
-            result = check_statement_information(flow.inputs[0], search_name)
+            result = _check_isinstance_type(flow.inputs[0], search_name)
     return result
 
 
-def check_statement_information(stmt, search_name):
+def _check_isinstance_type(stmt, search_name):
     try:
         commands = stmt.get_commands()
         # this might be removed if we analyze and, etc

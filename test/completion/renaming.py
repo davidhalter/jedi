@@ -213,3 +213,11 @@ class TestProperty:
 #< 11 (1,11), (0,8)
 def f(**kwargs):
     return kwargs
+
+
+# -----------------
+# No result
+# -----------------
+if isinstance(j, int):
+    #< 
+    j

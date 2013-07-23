@@ -175,6 +175,11 @@ Additional modules in which |jedi| checks if statements are to be found. This
 is practical for IDEs, that want to administrate their modules themselves.
 """
 
+dynamic_flow_information = True
+"""
+Check for `isinstance` and other information to infer a type.
+"""
+
 # ----------------
 # recursions
 # ----------------
