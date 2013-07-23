@@ -24,6 +24,7 @@ from jedi import common
 from jedi import debug
 from jedi import parsing_representation as pr
 from jedi import cache
+from jedi import fast_parser
 import builtin
 import evaluate
 
@@ -197,6 +198,9 @@ class ImportPath(pr.Base):
                 scopes = itertools.chain.from_iterable(
                                     evaluate.follow_path(iter(rest), s, s)
                                     for s in scopes)
+                scopes = list(scopes)
+                if not all(isinstance(s, fast_parser.Module) for s in scopes):
+                    scopes = []
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
@@ -206,7 +210,7 @@ class ImportPath(pr.Base):
                     scopes = itertools.chain.from_iterable(
                                         evaluate.follow_path(iter(rest), s, s)
                                         for s in scopes)
-            scopes = list(scopes)
+                scopes = list(scopes)
 
             if self.is_nested_import():
                 scopes.append(self.get_nested_import(scope))

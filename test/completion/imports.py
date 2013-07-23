@@ -128,13 +128,25 @@ import classes
 from datetime import timedel
 
 # should not be possible, because names can only be looked up 1 level deep.
-#? ['resolution']
+#? []
 from datetime.timedelta import resolution
-#? ['days']
-from datetime.timedelta import days
+#? []
+from datetime.timedelta import  
 
 #? ['Cursor']
 from sqlite3 import Cursor
+
+# --------------
+# nested imports
+# --------------
+#? ['join']
+from os.path import j
+
+#? ['exists']
+from os.path import join, exist
+
+#? ['exists']
+from os.path import join,exist
 
 # -----------------
 # relative imports
