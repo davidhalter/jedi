@@ -11,6 +11,8 @@
 [1,""][2]
 #? int() str()
 [1,""][20]
+#? int() str()
+[1,""][str(hello)]
 
 a = list()
 #? list()
@@ -214,6 +216,11 @@ def y(a):
     return a
 #? 
 y(**d)
+
+# problem with more complicated casts
+dic = {str(key): ''}
+#? str()
+dic['']
 
 # -----------------
 # with variable as index

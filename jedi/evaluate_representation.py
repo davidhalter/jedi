@@ -812,9 +812,12 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 # otherwise it just ignores the index (e.g. [1+1]).
                 index = index_possibilities[0]
                 if isinstance(index, Instance) \
-                    and str(index.name) in ['int', 'str'] \
+                        and str(index.name) in ['int', 'str'] \
                         and len(index.var_args) == 1:
-                    with common.ignored(KeyError, IndexError):
+                    # TODO this is just very hackish and a lot of use cases are
+                    # being ignored
+                    with common.ignored(KeyError, IndexError,
+                                        UnboundLocalError, TypeError):
                         return self.get_exact_index_types(index.var_args[0])
 
         result = list(self._follow_values(self._array.values))
