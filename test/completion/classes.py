@@ -495,6 +495,8 @@ getattr()
 getattr(str)
 #? 
 getattr(getattr, 1)
+#? 
+getattr(str, [])
 
 
 class Base():

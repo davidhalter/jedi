@@ -414,6 +414,9 @@ class Execution(Executable):
                         continue
 
                     for arr_name in names:
+                        if not isinstance(arr_name, Instance):
+                            debug.warning('getattr called without str')
+                            continue
                         if len(arr_name.var_args) != 1:
                             debug.warning('jedi getattr is too simple')
                         key = arr_name.var_args[0]
