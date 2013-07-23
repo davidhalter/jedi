@@ -1210,13 +1210,7 @@ class Call(Simple):
         if self.type == Call.NAME:
             s = self.name.get_code()
         else:
-            if not is_py3k and isinstance(self.name, str)\
-                    and "'" not in self.name:
-                # This is a very rough spot, because of repr not supporting
-                # unicode signs, see `test_unicode_script`.
-                s = "'%s'" % unicode(self.name, 'UTF-8')
-            else:
-                s = '' if self.name is None else repr(self.name)
+            s = '' if self.name is None else repr(self.name)
         if self.execution is not None:
             s += self.execution.get_code()
         if self.next is not None:
