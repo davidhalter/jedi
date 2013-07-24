@@ -657,8 +657,8 @@ def follow_call_list(call_list, follow_array=False):
             if isinstance(call, pr.Lambda):
                 result.append(er.Function(call))
             # With things like params, these can also be functions...
-            elif isinstance(call, (er.Function, er.Class, er.Instance,
-                                   dynamic.ArrayInstance)):
+            elif isinstance(call, pr.Base) and call.isinstance(er.Function,
+                    er.Class, er.Instance, dynamic.ArrayInstance):
                 result.append(call)
             # The string tokens are just operations (+, -, etc.)
             elif not isinstance(call, (str, unicode)):

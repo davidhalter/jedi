@@ -178,7 +178,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
             (type(self).__name__, self.base, len(self.var_args or []))
 
 
-class InstanceElement(use_metaclass(cache.CachedMetaClass)):
+class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
     """
     InstanceElement is a wrapper for any object, that is used as an instance
     variable (e.g. self.variable or class methods).
