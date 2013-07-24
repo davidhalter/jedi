@@ -152,6 +152,12 @@ def a(): return ''
 #? int()
 (tuple)().index()
 
+class C():
+    def __init__(self):
+        self.a = (int(1)).real
+
+#? int()
+C().a
 
 # -----------------
 # imbalanced sides
