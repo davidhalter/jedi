@@ -433,3 +433,9 @@ arg_func(1, 2, a=[], b=10)[1]
 a = lambda: 3
 #? ['__closure__']
 a.__closure__
+
+class C():
+    def __init__(self):
+        self.a = lambda: 1
+#? int()
+C().a()
