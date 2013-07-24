@@ -1260,9 +1260,11 @@ class Array(Call):
         This is not only used for calls on the actual object, but for
         ducktyping, to invoke this function with anything as `self`.
         """
-        if isinstance(instance, Array):
+        try:
             if instance.type in types:
                 return True
+        except AttributeError:
+            pass
         return False
 
     def __len__(self):

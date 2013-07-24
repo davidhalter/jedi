@@ -154,9 +154,9 @@ def a(): return ''
 
 class C():
     def __init__(self):
-        self.a = (int(1)).real
+        self.a = (str()).upper()
 
-#? int()
+#? str()
 C().a
 
 # -----------------

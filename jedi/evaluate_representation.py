@@ -220,6 +220,10 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 if not isinstance(command, unicode) else command
                 for command in self.var.get_commands()]
 
+    def __iter__(self):
+        for el in self.var.__iter__():
+            yield InstanceElement(self.instance, el, self.is_class_var)
+
     def __getattr__(self, name):
         return getattr(self.var, name)
 
