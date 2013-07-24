@@ -123,7 +123,7 @@ def search_function_definition(stmt, pos):
         while isinstance(call.parent, pr.Call):
             call = call.parent
         arr.parent.execution = None
-        return call, index, False
+        return call if call.type == pr.Call.NAME else None, index, False
     return None, 0, False
 
 

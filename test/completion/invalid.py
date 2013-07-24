@@ -6,8 +6,21 @@ Basically this file could change depending on the current implementation. But
 there should never be any errors.
 """
 
+# wait until keywords are out of definitions (pydoc function).
+##? 5 
+'s'()
+
 #? ['upper']
 str()).upper
+
+# -----------------
+# funcs
+# -----------------
+def asdf(a or b): # multiple param names
+    return a
+
+#? int()
+asdf(2)
 
 from a import (b
 def blub():
@@ -83,6 +96,10 @@ for_local
 for_local
 
 
+# -----------------
+# list comprehensions
+# -----------------
+
 a2 = [for a2 in [0]]
 #? 
 a2[0]
@@ -112,12 +129,6 @@ a[0]
 
 #? []
 int()).
-
-def asdf(a or b): # multiple param names
-    return a
-
-#? int()
-asdf(2)
 
 # -----------------
 # goto
