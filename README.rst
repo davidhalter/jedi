@@ -28,7 +28,7 @@ Jedi can be used with the following plugins/software:
 
 - `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_
 - `Emacs-Plugin <https://github.com/tkf/emacs-jedi>`_
-- `Sublime-Plugin <https://github.com/svaiter/SublimeJEDI>`_
+- `Sublime-Plugin <https://github.com/srusskih/SublimeJEDI>`_
 - `wdb (web debugger) <https://github.com/Kozea/wdb>`_
 
 
