@@ -131,5 +131,5 @@ For more detailed information visit the `testing documentation
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
-.. _sublimejedi: https://github.com/svaiter/SublimeJEDI
+.. _sublimejedi: https://github.com/srusskih/SublimeJEDI
 .. _wdb: https://github.com/Kozea/wdb

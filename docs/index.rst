@@ -56,7 +56,7 @@ Emacs:
 
 Sublime Text 2/3:
 
-- `SublimeJEDI <https://github.com/svaiter/SublimeJEDI>`_
+- `SublimeJEDI <https://github.com/srusskih/SublimeJEDI>`_
 
 
 .. _other-software:
