@@ -209,6 +209,9 @@ def a():
     """
     pass
 
+#? 
+# str literals in comment """ upper
+
 # -----------------
 # magic methods
 # -----------------

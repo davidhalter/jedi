@@ -122,7 +122,7 @@ class ModuleWithCursor(Module):
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
         result = self._get_path_until_cursor()
-        self._start_cursor_pos = self._line_temp + 1, self._column_temp
+        self._start_cursor_pos = self._last_tok_line, self._column_temp
         return result
 
     def _get_path_until_cursor(self, start_pos=None):
@@ -139,6 +139,7 @@ class ModuleWithCursor(Module):
             while True:
                 self._line_temp -= 1
                 last_line = self.get_line(self._line_temp)
+                #print self._line_temp, repr(last_line)
                 if last_line and last_line[-1] == '\\':
                     line = last_line[:-1] + ' ' + line
                     self._line_length = len(last_line)
@@ -147,11 +148,8 @@ class ModuleWithCursor(Module):
             return line[::-1]
 
         self._is_first = True
-        if start_pos is None:
-            self._line_temp = self.position[0]
-            self._column_temp = self.position[1]
-        else:
-            self._line_temp, self._column_temp = start_pos
+        self._line_temp, self._column_temp = start_pos or self.position
+        self._last_tok_line = self.position[0]
 
         open_brackets = ['(', '[', '{']
         close_brackets = [')', ']', '}']
@@ -191,6 +189,7 @@ class ModuleWithCursor(Module):
                     self._column_temp = self._line_length - end[1]
                     break
 
+                self._last_tok_line = self.position[0] - end[0] + 1
                 self._column_temp = self._line_length - end[1]
                 string += tok
                 last_type = token_type
