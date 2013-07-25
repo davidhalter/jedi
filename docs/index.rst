@@ -46,7 +46,7 @@ Editor Plugins
 
 - `Vim <http://github.com/davidhalter/jedi-vim>`_
 - `Emacs <https://github.com/tkf/emacs-jedi>`_
-- `Sublime Text 2 <https://github.com/svaiter/SublimeJEDI>`_
+- `Sublime Text 2 <https://github.com/srusskih/SublimeJEDI>`_
 
 
 .. _other-software:
