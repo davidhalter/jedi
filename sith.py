@@ -112,7 +112,7 @@ class TestCase(object):
             if debugger:
                 einfo = sys.exc_info()
                 pdb = __import__(debugger)
-                pdb.post_mortem(einfo if debugger == 'pudb' else einfo[2])
+                pdb.post_mortem(einfo[2])
             exit(1)
 
     def show(self):
