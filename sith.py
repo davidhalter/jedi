@@ -87,12 +87,13 @@ class TestCase(object):
             dct = json.load(f)
         return cls(**dct)
 
+    operations = [
+        'completions', 'goto_assignments', 'goto_definitions', 'usages',
+        'call_signatures']
+
     @classmethod
     def generate(cls, file_path):
-        operations = [
-            'completions', 'goto_assignments', 'goto_definitions', 'usages',
-            'call_signatures']
-        operation = random.choice(operations)
+        operation = random.choice(cls.operations)
 
         path = random.choice(SourceFinder.files(file_path))
         with open(path) as f:
