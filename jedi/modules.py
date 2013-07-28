@@ -122,17 +122,17 @@ class ModuleWithCursor(Module):
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
         result = self._get_path_until_cursor()
-        self._start_cursor_pos = self._last_tok_line, self._column_temp
+        self._start_cursor_pos = self._start_cursor_pos_temp
         return result
 
     def _get_path_until_cursor(self, start_pos=None):
         def fetch_line():
-            line = self.get_line(self._line_temp)
             if self._is_first:
                 self._is_first = False
                 self._line_length = self._column_temp
-                line = line[:self._column_temp]
+                line = self._first_line
             else:
+                line = self.get_line(self._line_temp)
                 self._line_length = len(line)
                 line = line + '\n'
             # add lines with a backslash at the end
@@ -149,7 +149,8 @@ class ModuleWithCursor(Module):
 
         self._is_first = True
         self._line_temp, self._column_temp = start_pos or self.position
-        self._last_tok_line = self.position[0]
+        self._first_line = self.get_line(self._line_temp)[:self._column_temp]
+        self._start_cursor_pos_temp = self.position
 
         open_brackets = ['(', '[', '{']
         close_brackets = [')', ']', '}']
@@ -189,7 +190,10 @@ class ModuleWithCursor(Module):
                     self._column_temp = self._line_length - end[1]
                     break
 
-                self._last_tok_line = self.position[0] - end[0] + 1
+                x = self.position[0] - end[0] + 1
+                l = self.get_line(x)
+                l = self._first_line if x == self.position[0] else l
+                self._start_cursor_pos_temp = x, len(l) - end[1]
                 self._column_temp = self._line_length - end[1]
                 string += tok
                 last_type = token_type
@@ -236,7 +240,7 @@ class ModuleWithCursor(Module):
         if not self._line_cache:
             self._line_cache = self.source.splitlines()
             if not self.source:  # ''.splitlines() == []
-                self._line_cache = [self.source]
+                self._line_cache = ['']
 
         if line_nr == 0:
             # This is a fix for the zeroth line. We need a newline there, for

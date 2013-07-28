@@ -425,6 +425,10 @@ class TestRegression(TestBase):
           [1, 2, 3, 4, 5, 6, 7, 8, 9, x]  # <-- here
         """, ']  # <-- here', ['int'])
 
+        # completion in whitespace
+        s = 'asdfxyxxxxxxxx sds\\\n    hello'
+        assert self.goto_assignments(s, (2, 4)) == []
+
     def test_backslash_continuation_and_bracket(self):
         self.check_definition_by_marker(r"""
         x = 0
