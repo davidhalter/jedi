@@ -132,6 +132,7 @@ class TestCase(object):
 
     def show_completions(self):
         print("Completions:")
+        print()
         for completion in self.completions:
             print(completion.name)
 
