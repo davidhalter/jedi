@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 from __future__ import with_statement
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    # Distribute is not actually required to install
+    from distutils.core import setup
 
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
