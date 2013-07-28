@@ -95,12 +95,16 @@ class TestCase(object):
         column = random.randint(0, len(lines[line - 1]))
         return cls(operation, path, line, column)
 
-    def run(self, debugger, record=None):
+    def run(self, debugger, record=None, print_completions=False):
         try:
             with open(self.path) as f:
-                script = jedi.Script(f.read(), self.line, self.column,
-                    self.path)
-            getattr(script, self.operation)()
+                self.file = f.read()
+            self.script = jedi.Script(self.file, self.line, self.column,
+                self.path)
+            self.completions = getattr(self.script, self.operation)()
+            if print_completions:
+                self.show_location()
+                self.show_completions()
         except jedi.NotFoundError:
             pass
         except Exception:
@@ -108,7 +112,7 @@ class TestCase(object):
             if record is not None:
                 with open(record, 'w') as f:
                     json.dump(self.__dict__, f)
-            self.show()
+            self.show_errors()
             if debugger:
                 einfo = sys.exc_info()
                 pdb = __import__(debugger)
@@ -118,7 +122,20 @@ class TestCase(object):
                     pdb.post_mortem(einfo[2])
             exit(1)
 
-    def show(self):
+    def show_location(self):
+        # Three lines ought to be enough
+        show = 3
+        lower = self.line - show if self.line - show > 0 else 0
+        for i, line in enumerate(self.file.split('\n')[lower:self.line]):
+            print(lower + i + 1, line)
+        print(' '*(self.column + len(str(self.line))), '^')
+
+    def show_completions(self):
+        print("Completions:")
+        for completion in self.completions:
+            print(completion.name)
+
+    def show_errors(self):
         print(self.traceback)
         print(("Error with running Script(...).{operation}() with\n"
               "\tpath:   {path}\n"
@@ -138,13 +155,13 @@ def main(arguments):
     if  arguments['redo'] or arguments['show']:
         t = TestCase.from_cache(record)
         if arguments['show']:
-            t.show()
+            t.show_errors()
         else:
             t.run(debugger)
     elif arguments['run']:
             TestCase(arguments['<operation>'], arguments['<path>'],
                 int(arguments['<line>']), int(arguments['<column>'])
-                ).run(debugger)
+                ).run(debugger, print_completions=True)
     else:
         for _ in range(int(arguments['--maxtries'])):
             t = TestCase.generate(arguments['<path>'] or '.')
