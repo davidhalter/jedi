@@ -16,6 +16,16 @@ Show recorded exception::
 
     ./sith.py show
 
+Run a specific operation
+
+    ./sith.py run operation /path/to/source/file.py line col
+
+Where operation is one of completions, goto_assignments, goto_definitions,
+usages, or call_signatures.
+
+Note: Line numbers start at 1; columns start at 0 (this is consistent with
+many text editors, including Emacs).
+
 Usage:
   sith.py [--pdb|--ipdb|--pudb] [-d] [-n=<nr>] [-f] [--record=<file>] random [<path>]
   sith.py [--pdb|--ipdb|--pudb] [-d] [-f] [--record=<file>] redo
