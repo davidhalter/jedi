@@ -13,7 +13,8 @@ Aldo Stracquadanio (@Astrac)
 Jean-Louis Fuchs (@ganwell)
 tek (@tek)
 Yasha Borevich (@jjay)
-Aaron Griffin
+Aaron Griffin <aaronmgriffin@gmail.com>
 andviro (@andviro)
 Mike Gilbert (@floppym)
 Aaron Meurer (@asmeurer)
+Lubos Trilety <ltrilety@redhat.com>

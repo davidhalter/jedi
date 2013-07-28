@@ -56,6 +56,17 @@ def scope_nested():
     #? set
     import_tree.random.a
 
+def scope_nested2():
+    """Multiple modules should be indexable, if imported"""
+    import import_tree.mod1
+    import import_tree.pkg
+    #? ['mod1']
+    import_tree.mod1
+    #? ['pkg']
+    import_tree.pkg
+    #? []
+    import_tree.rename1
+
 # -----------------
 # std lib modules
 # -----------------

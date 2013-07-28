@@ -376,6 +376,9 @@ def find_name(scope, name_str, position=None, search_global=False,
 
                     result.append(par)
             else:
+                # TODO multi-level import non-breakable
+                if isinstance(par, pr.Import) and len(par.namespace) > 1:
+                    no_break_scope = True
                 result.append(par)
             return result, no_break_scope
 
