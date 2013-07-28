@@ -75,6 +75,8 @@ class SourceFinder(object):
 
 class TestCase(object):
     def __init__(self, operation, path, line, column, traceback=None):
+        if operation not in self.operations:
+            raise ValueError("%s is not a valid operation" % operation)
         self.operation = operation
         self.path = path
         self.line = line
