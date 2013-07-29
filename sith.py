@@ -140,20 +140,11 @@ class TestCase(object):
         lower = lineno - show if lineno - show > 0 else 0
         for i, line in enumerate(self.file.split('\n')[lower:lineno]):
             print(lower + i + 1, line)
-        print(' '*(column + len(str(lineno))), '^')
+        print(' ' * (column + len(str(lineno))), '^')
 
     def show_operation(self):
         print("%s:\n" % self.operation.capitalize())
-        if self.operation == 'completions':
-            self.show_completions()
-        elif self.operation == 'goto_assignments':
-            self.show_goto_assignments()
-        elif self.operation == 'goto_definitions':
-            self.show_goto_definitions()
-        elif self.operation == 'usages':
-            self.show_usages()
-        elif self.operation == 'call_signatures':
-            self.show_call_signatures()
+        getattr(self, 'show_' + self.operation)()
 
     def show_completions(self):
         for completion in self.completions:
@@ -174,7 +165,6 @@ class TestCase(object):
             # implemented in str() anyway.
             print(completion)
             # Can't print the location here because we don't have the module path
-
 
     def show_goto_definitions(self):
         for completion in self.completions:
