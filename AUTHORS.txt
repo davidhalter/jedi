@@ -18,6 +18,8 @@ andviro (@andviro)
 Mike Gilbert (@floppym) <floppym@gentoo.org>
 Aaron Meurer (@asmeurer) <asmeurer@gmail.com>
 Lubos Trilety <ltrilety@redhat.com>
+Akinori Hattori (@hattya)
+srusskih (@srusskih)
 
 
 Note: (@user) means a github user name.
