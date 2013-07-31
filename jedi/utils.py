@@ -45,7 +45,7 @@ def setup_readline():
                 except IndexError:
                     return None
 
-        readline.set_completer(JediRL().get_item)
+        readline.set_completer(JediRL().complete)
 
         readline.parse_and_bind("tab: complete")
         # No delimiters, Jedi handles that.
