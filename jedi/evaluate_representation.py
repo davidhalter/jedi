@@ -769,6 +769,8 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
                            none_pos, none_pos)
             if n in executes_generator:
                 name.parent = self
+            else:
+                name.parent = builtin.Builtin.scope
             names.append(name)
         debug.dbg('generator names', names)
         return names
