@@ -224,6 +224,8 @@ A.__init__
 #? ['__init__']
 B.__init__
 
+#? ['__init__']
+int().__init__
 
 # -----------------
 # comments
