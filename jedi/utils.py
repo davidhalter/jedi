@@ -97,10 +97,10 @@ def setup_readline():
     ``$HOME/.pythonrc.py``), you can add this piece of code:
 
     >>> try:
-    >>>     from jedi.utils import setup_readline
-    >>>     setup_readline()
-    >>> except ImportError:
-    >>>     print('Install Jedi with pip! No autocompletion otherwise.')
+    ...     from jedi.utils import setup_readline
+    ...     setup_readline()
+    ... except ImportError:
+    ...     print('Install Jedi with pip! No autocompletion otherwise.')
 
     """
     try:
