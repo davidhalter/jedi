@@ -1,6 +1,4 @@
 """
-``PYTHONSTARTUP`` to use Jedi in your Python interpreter.
-
 To use Jedi completion in Python interpreter, add the following in your shell
 setup (e.g., ``.bashrc``)::
 
