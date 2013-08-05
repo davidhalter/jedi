@@ -436,6 +436,15 @@ class TestRegression(TestBase):
           [1, 2, 3, 4, 5, 6, 7, 8, 9, (x)]  # <-- here
         """, '(x)]  # <-- here', [None])
 
+    def test_generator(self):
+        # Did have some problems with the usage of generator completions this
+        # way.
+        s = "def abc():\n" \
+            "    yield 1\n" \
+            "abc()."
+        assert self.completions(s)
+
+
 
 class TestDocstring(TestBase):
 
