@@ -138,11 +138,11 @@ class Script(object):
                 if (u.relative_count > 0 or u.from_ns) and not re.search(
                         r'(,|from)\s*$|import\s+$', completion_line):
                     completions += ((k, bs) for k
-                                    in keywords.get_keywords('import'))
+                                    in keywords.keyword_names('import'))
 
             if not path and not isinstance(u, pr.Import):
                 # add keywords
-                completions += ((k, bs) for k in keywords.get_keywords(
+                completions += ((k, bs) for k in keywords.keyword_names(
                     all=True))
 
         needs_dot = not dot and path
@@ -324,7 +324,7 @@ class Script(object):
         scopes = resolve_import_paths(scopes)
 
         # add keywords
-        scopes |= keywords.get_keywords(string=goto_path, pos=self.pos)
+        scopes |= keywords.keywords(string=goto_path, pos=self.pos)
 
         d = set([api_classes.Definition(s) for s in scopes
                  if not isinstance(s, imports.ImportPath._GlobalNamespace)])

@@ -81,6 +81,11 @@ class TestRegression(TestBase):
         r = list(self.goto_definitions("asfdasfd", (1, 1)))
         assert len(r) == 0
 
+        k = self.completions("fro")[0]
+        imp_start = '\nThe ``import'
+        assert k.raw_doc.startswith(imp_start)
+        assert k.doc.startswith(imp_start)
+
     def test_operator_doc(self):
         r = list(self.goto_definitions("a == b", (1, 3)))
         assert len(r) == 1
@@ -447,7 +452,6 @@ class TestRegression(TestBase):
 
 
 class TestDocstring(TestBase):
-
     def test_function_doc(self):
         defs = self.goto_definitions("""
         def func():
@@ -538,7 +542,6 @@ class TestSpeed(TestBase):
 
 
 class TestInterpreterAPI(unittest.TestCase):
-
     def check_interpreter_complete(self, source, namespace, completions,
                                    **kwds):
         script = api.Interpreter(source, [namespace], **kwds)
