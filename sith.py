@@ -18,7 +18,7 @@ Show recorded exception::
 
 Run a specific operation
 
-    ./sith.py run operation /path/to/source/file.py line col
+    ./sith.py run <operation> </path/to/source/file.py> <line> <col>
 
 Where operation is one of completions, goto_assignments, goto_definitions,
 usages, or call_signatures.
@@ -34,14 +34,14 @@ Usage:
   sith.py -h | --help
 
 Options:
-  -h --help         Show this screen.
-  --record=<file>   Exceptions are recorded in here [default: record.json].
+  -h --help             Show this screen.
+  --record=<file>       Exceptions are recorded in here [default: record.json].
   -f, --fs-cache        By default, file system cache is off for reproducibility.
   -n, --maxtries=<nr>   Maximum of random tries [default: 100]
-  -d, --debug       Jedi print debugging when an error is raised.
-  --pdb             Launch pdb when error is raised.
-  --ipdb            Launch ipdb when error is raised.
-  --pudb            Launch pudb when error is raised.
+  -d, --debug           Jedi print debugging when an error is raised.
+  --pdb                 Launch pdb when error is raised.
+  --ipdb                Launch ipdb when error is raised.
+  --pudb                Launch pudb when error is raised.
 """
 
 from __future__ import print_function, division, unicode_literals
