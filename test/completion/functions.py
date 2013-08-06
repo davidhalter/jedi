@@ -155,6 +155,7 @@ def a():
 # -----------------
 
 def args_func(*args):
+    #? tuple()
     return args
 
 exe = args_func(1, "")
@@ -203,6 +204,9 @@ exe[1][1]
 # ** kwargs
 # -----------------
 def kwargs_func(**kwargs):
+    #? ['keys']
+    kwargs.keys
+    #? dict()
     return kwargs
 
 exe = kwargs_func(a=3,b=4.0)
