@@ -258,6 +258,13 @@ def find_name(scope, name_str, position=None, search_global=False,
 
                         if not r.is_generated:
                             res_new += dynamic.search_params(r)
+                            if not res_new:
+                                c = r.get_commands()[0]
+                                if c in ('*', '**'):
+                                    t = 'tuple' if c == '*' else 'dict'
+                                    res_new = [er.Instance(
+                                        find_name(builtin.Builtin.scope, t)[0])
+                                        ]
                             if not r.assignment_details:
                                 # this means that there are no default params,
                                 # so just ignore it.
