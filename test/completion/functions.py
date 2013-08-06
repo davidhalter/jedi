@@ -228,6 +228,12 @@ exe2['a']
 # *args / ** kwargs
 # -----------------
 
+def func_without_call(*args, **kwargs):
+    #? tuple()
+    args
+    #? dict()
+    kwargs
+
 def fu(a=1, b="", *args, **kwargs):
     return a, b, args, kwargs
 
