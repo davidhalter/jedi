@@ -149,13 +149,18 @@ class ImportPath(pr.Base):
         Get the names of all modules in the search_path. This means file names
         and not names defined in the files.
         """
+        def generate_name(name):
+            return pr.Name(self.GlobalNamespace, [(name, inf_pos)],
+                           inf_pos, inf_pos, self.import_stmt)
+
         if not search_path:
             search_path = self.sys_path_with_modifications()
         names = []
+        inf_pos = float('inf'), float('inf')
         for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
-            inf_pos = (float('inf'), float('inf'))
-            names.append(pr.Name(self.GlobalNamespace, [(name, inf_pos)],
-                                 inf_pos, inf_pos, self.import_stmt))
+            names.append(generate_name(name))
+        # add builtin module names
+        names += [generate_name(name) for name in sys.builtin_module_names]
         return names
 
     def sys_path_with_modifications(self):

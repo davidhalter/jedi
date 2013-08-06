@@ -67,6 +67,10 @@ def scope_nested2():
     #? []
     import_tree.rename1
 
+def builtin_test():
+    #? ['math']
+    import math
+
 # -----------------
 # std lib modules
 # -----------------
