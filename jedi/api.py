@@ -22,8 +22,8 @@ from jedi import cache
 from jedi import modules
 from jedi import interpret
 from jedi._compatibility import next, unicode
-import evaluate
 import keywords
+import evaluate
 import api_classes
 import evaluate_representation as er
 import dynamic

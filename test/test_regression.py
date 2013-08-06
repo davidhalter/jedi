@@ -10,6 +10,7 @@ import functools
 import itertools
 import os
 import textwrap
+import inspect
 
 from .base import TestBase, unittest, cwd_at
 
@@ -624,7 +625,10 @@ def test_no_duplicate_modules():
                 imported = getattr(m, tm.__name__)
             except AttributeError:
                 continue
-            assert imported is tm
+            if inspect.ismodule(imported):
+                # module could have a function with the same name, e.g.
+                # `keywords.keywords`.
+                assert imported is tm
 
 
 if __name__ == '__main__':
