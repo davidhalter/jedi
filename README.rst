@@ -30,7 +30,7 @@ Jedi can be used with the following editors:
 
 - Vim (jedi-vim_, YouCompleteMe_)
 - Emacs (Jedi.el_)
-- Sublime Text (SublimeJEDI_)
+- Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
 
 And it powers the following projects:
 
@@ -132,4 +132,5 @@ For more detailed information visit the `testing documentation
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
 .. _sublimejedi: https://github.com/srusskih/SublimeJEDI
+.. _anaconda: https://github.com/DamnWidget/anaconda
 .. _wdb: https://github.com/Kozea/wdb

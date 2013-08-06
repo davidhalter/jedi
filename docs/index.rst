@@ -56,7 +56,8 @@ Emacs:
 
 Sublime Text 2/3:
 
-- `SublimeJEDI <https://github.com/srusskih/SublimeJEDI>`_
+- `SublimeJEDI <https://github.com/srusskih/SublimeJEDI>`_  (ST2 & ST3)
+- `anaconda <https://github.com/DamnWidget/anaconda>`_ (only ST3)
 
 
 .. _other-software:
