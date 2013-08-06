@@ -2,7 +2,7 @@
 To use Jedi completion in Python interpreter, add the following in your shell
 setup (e.g., ``.bashrc``)::
 
-    export PYTHONSTARTUP="$(python -m jedi)"
+    export PYTHONSTARTUP="$(python -m jedi repl)"
 
 Then you will be able to use Jedi completer in your Python interpreter::
 
