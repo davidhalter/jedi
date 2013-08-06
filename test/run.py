@@ -100,10 +100,6 @@ import os
 import re
 from ast import literal_eval
 
-if __name__ == '__main__':
-    import sys
-    sys.path.insert(0, '..')
-
 import jedi
 from jedi._compatibility import unicode, reduce, StringIO, is_py3k
 
@@ -289,6 +285,7 @@ if __name__ == '__main__':
     t_start = time.time()
     # Sorry I didn't use argparse here. It's because argparse is not in the
     # stdlib in 2.5.
+    import sys
     args = sys.argv[1:]
     try:
         i = args.index('--thirdparty')

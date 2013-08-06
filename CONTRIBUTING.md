@@ -6,6 +6,16 @@ are ok in the master branch.
  3. Add your name to AUTHORS.txt
  4. Push to your fork and submit a **pull request to the dev branch**.
 
+My **master** branch is a 100% stable (should be). I only push to it after I am
+certain that things are working out. Many people are using Jedi directly from
+the github master branch.
+
+**Please use PEP8 to style your code.**
+
+
+Changing Issues to Pull Requests (Github)
+-----------------------------------------
+
 If you have have previously filed a GitHub issue and want to contribute code
 that addresses that issue, we prefer it if you use
 [hub](https://github.com/github/hub) to convert your existing issue to a pull
@@ -16,9 +26,3 @@ and then issue the following command:
 
 It's no strict requirement though, if you don't have hub installed or prefer to
 use the web interface, then feel free to post a traditional pull request.
-
-My **master** branch is a 100% stable (should be). I only push to it after I am
-certain that things are working out. Many people are using Jedi directly from
-the github master branch.
-
-Please use PEP8 to style your code.
