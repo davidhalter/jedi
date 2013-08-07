@@ -54,19 +54,6 @@ class TestRegression(unittest.TestCase):
 
         self.assertRaises(jedi.NotFoundError, get_def, cls)
 
-    def test_keyword_doc(self):
-        r = list(Script("or", 1, 1).goto_definitions())
-        assert len(r) == 1
-        assert len(r[0].doc) > 100
-
-        r = list(Script("asfdasfd", 1, 1).goto_definitions())
-        assert len(r) == 0
-
-        k = Script("fro").completions()[0]
-        imp_start = '\nThe ``import'
-        assert k.raw_doc.startswith(imp_start)
-        assert k.doc.startswith(imp_start)
-
     def test_operator_doc(self):
         r = list(Script("a == b", 1, 3).goto_definitions())
         assert len(r) == 1
@@ -121,30 +108,6 @@ class TestRegression(unittest.TestCase):
         """ github issue #45 """
         s = Script("import os; os.P_").completions()
         assert 'P_NOWAIT' in [i.name for i in s]
-
-    def test_keyword(self):
-        """ github jedi-vim issue #44 """
-        defs = Script("print").goto_definitions()
-        assert [d.doc for d in defs]
-
-        defs = Script("import").goto_definitions()
-        assert len(defs) == 1 and [1 for d in defs if d.doc]
-        # unrelated to #44
-        defs = Script("import").goto_assignments()
-        assert len(defs) == 0
-        completions = Script("import", 1,1).completions()
-        assert len(completions) == 0
-        with common.ignored(jedi.NotFoundError):  # TODO shouldn't throw that.
-            defs = Script("assert").goto_definitions()
-            assert len(defs) == 1
-
-    def test_goto_assignments_keyword(self):
-        """
-        Bug: goto assignments on ``in`` used to raise AttributeError::
-
-          'unicode' object has no attribute 'generate_call_path'
-        """
-        Script('in').goto_assignments()
 
     def test_points_in_completion(self):
         """At some point, points were inserted into the completions, this
