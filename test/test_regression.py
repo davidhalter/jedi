@@ -104,24 +104,6 @@ class TestRegression(TestBase):
         s = self.completions("", (1, 0))
         assert len(s) > 0
 
-    def test_goto_definition_on_import(self):
-        assert self.goto_definitions("import sys_blabla", (1, 8)) == []
-        assert len(self.goto_definitions("import sys", (1, 8))) == 1
-
-    @cwd_at('jedi')
-    def test_complete_on_empty_import(self):
-        # should just list the files in the directory
-        assert 10 < len(self.completions("from .", path='')) < 30
-        assert 10 < len(self.completions("from . import", (1, 5), '')) < 30
-        assert 10 < len(self.completions("from . import classes",
-                                        (1, 5), '')) < 30
-        assert len(self.completions("import")) == 0
-        assert len(self.completions("import import", path='')) > 0
-
-        # 111
-        assert self.completions("from datetime import")[0].name == 'import'
-        assert self.completions("from datetime import ")
-
     @cwd_at('jedi')
     def test_add_dynamic_mods(self):
         api.settings.additional_dynamic_modules = ['dynamic.py']
@@ -135,12 +117,6 @@ class TestRegression(TestBase):
         result = script.goto_definitions()
         assert len(result) == 1
         assert result[0].description == 'class int'
-
-    def test_named_import(self):
-        """ named import - jedi-vim issue #8 """
-        s = "import time as dt"
-        assert len(jedi.Script(s, 1, 15, '/').goto_definitions()) == 1
-        assert len(jedi.Script(s, 1, 10, '/').goto_definitions()) == 1
 
     def test_unicode_script(self):
         """ normally no unicode objects are being used. (<=2.7) """
@@ -186,15 +162,6 @@ class TestRegression(TestBase):
         s = self.completions("import os; os.P_")
         assert 'P_NOWAIT' in [i.name for i in s]
 
-    def test_follow_definition(self):
-        """ github issue #45 """
-        c = self.completions("from datetime import timedelta; timedelta")
-        # type can also point to import, but there will be additional
-        # attributes
-        objs = itertools.chain.from_iterable(r.follow_definition() for r in c)
-        types = [o.type for o in objs]
-        assert 'import' not in types and 'class' in types
-
     def test_keyword(self):
         """ github jedi-vim issue #44 """
         defs = self.goto_definitions("print")
@@ -219,12 +186,6 @@ class TestRegression(TestBase):
         """
         self.goto_assignments('in')
 
-    def test_goto_following_on_imports(self):
-        s = "import multiprocessing.dummy; multiprocessing.dummy"
-        g = self.goto_assignments(s)
-        assert len(g) == 1
-        assert g[0].start_pos != (0, 0)
-
     def test_points_in_completion(self):
         """At some point, points were inserted into the completions, this
         caused problems, sometimes.
@@ -232,27 +193,6 @@ class TestRegression(TestBase):
         c = self.completions("if IndentationErr")
         assert c[0].name == 'IndentationError'
         self.assertEqual(c[0].complete, 'or')
-
-    def test_docstrings_type_str(self):
-        s = """
-                def func(arg):
-                    '''
-                    :type arg: str
-                    '''
-                    arg."""
-
-        names = [c.name for c in self.completions(s)]
-        assert 'join' in names
-
-    def test_docstrings_type_dotted_import(self):
-        s = """
-                def func(arg):
-                    '''
-                    :type arg: threading.Thread
-                    '''
-                    arg."""
-        names = [c.name for c in self.completions(s)]
-        assert 'start' in names
 
     def test_no_statement_parent(self):
         source = textwrap.dedent("""
