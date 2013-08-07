@@ -467,7 +467,8 @@ class Script(object):
             origins = cache.cache_function_definition(_callable, user_stmt)
         debug.speed('func_call followed')
 
-        return [api_classes.CallDef(o, index, call) for o in origins]
+        return [api_classes.CallDef(o, index, call) for o in origins
+                if o.isinstance(er.Function, er.Instance, er.Class)]
 
     def _func_call_and_param_index(self):
         debug.speed('func_call start')

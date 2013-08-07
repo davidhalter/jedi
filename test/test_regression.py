@@ -15,6 +15,7 @@ import inspect
 from .base import TestBase, unittest, cwd_at
 
 import jedi
+from jedi import Script
 from jedi._compatibility import utf8, unicode, is_py33
 from jedi import api, parsing, common
 
@@ -237,6 +238,12 @@ class TestRegression(TestBase):
         # jedi-vim #116
         s = """import functools; test = getattr(functools, 'partial'); test("""
         check(self.function_definition(s), 'partial', 0)
+
+    def test_call_signature_on_module(self):
+        """github issue #240"""
+        s = 'import datetime; datetime('
+        # just don't throw an exception (if numpy doesn't exist, just ignore it)
+        assert Script(s).call_signatures() == []
 
     def test_function_definition_empty_paren_pre_space(self):
         s = textwrap.dedent("""\
