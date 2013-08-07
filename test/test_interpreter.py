@@ -38,5 +38,3 @@ class TestInterpreterAPI(unittest.TestCase):
         self.check_interpreter_complete('(dt - dt).ti',
                                         locals(),
                                         completions)
-
-

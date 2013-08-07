@@ -6,7 +6,6 @@ module.
 """
 
 import time
-import functools
 import itertools
 import os
 import textwrap
@@ -16,7 +15,7 @@ from .base import TestBase, unittest, cwd_at
 
 import jedi
 from jedi import Script
-from jedi._compatibility import utf8, unicode, is_py33
+from jedi._compatibility import utf8, unicode
 from jedi import api, parsing, common
 
 #jedi.set_debug_function(jedi.debug.print_to_stdout)
@@ -384,7 +383,6 @@ class TestDocstring(TestBase):
 
 
 class TestFeature(TestBase):
-
     def test_preload_modules(self):
         def check_loaded(*modules):
             # + 1 for builtin, +1 for None module (currently used)
@@ -404,39 +402,6 @@ class TestFeature(TestBase):
         check_loaded('datetime', 'json', 'token')
 
         cache.parser_cache = temp_cache
-
-
-class TestSpeed(TestBase):
-    def _check_speed(time_per_run, number=4, run_warm=True):
-        """ Speed checks should typically be very tolerant. Some machines are
-        faster than others, but the tests should still pass. These tests are
-        here to assure that certain effects that kill jedi performance are not
-        reintroduced to Jedi."""
-        def decorated(func):
-            @functools.wraps(func)
-            def wrapper(self):
-                if run_warm:
-                    func(self)
-                first = time.time()
-                for i in range(number):
-                    func(self)
-                single_time = (time.time() - first) / number
-                print('\nspeed', func, single_time)
-                assert single_time < time_per_run
-            return wrapper
-        return decorated
-
-    @_check_speed(0.2)
-    def test_os_path_join(self):
-        s = "from posixpath import join; join('', '')."
-        assert len(self.completions(s)) > 10  # is a str completion
-
-    @_check_speed(0.1)
-    def test_scipy_speed(self):
-        s = 'import scipy.weave; scipy.weave.inline('
-        script = jedi.Script(s, 1, len(s), '')
-        script.function_definition()
-        #print(jedi.imports.imports_processed)
 
 
 def test_settings_module():
