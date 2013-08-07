@@ -4,23 +4,20 @@ from .base import unittest
 from jedi import Script
 
 class TestCallSignatures(unittest.TestCase):
-    def _assert_call_def(self, call_defs, name, index):
-        # just for the sake of this simple comparison
-        assert len(call_defs) <= 1
+    def _run(self, source, expected_name, expected_index=0, line=None, column=None):
+        signatures = Script(source, line, column).call_signatures()
 
-        if not call_defs:
-            assert name is None
+        assert len(signatures) <= 1
+
+        if not signatures:
+            assert expected_name is None
         else:
-            assert call_defs[0].call_name == name
-            assert call_defs[0].index == index
+            assert signatures[0].call_name == expected_name
+            assert signatures[0].index == expected_index
 
     def test_call_signatures(self):
-        def _run(source, expected_name, expected_index=0, column=None, line=None):
-            signatures = Script(source, line, column).call_signatures()
-            self._assert_call_def(signatures, expected_name, expected_index)
-
         def run(source, name, index=0, column=None, line=1):
-            _run(source, name, index, column, line)
+            self._run(source, name, index, line, column)
 
         # simple
         s1 = "abs(a, str("
@@ -79,8 +76,6 @@ class TestCallSignatures(unittest.TestCase):
         run(s, 'func', 0, column=13, line=2)
 
     def test_function_definition_complex(self):
-        check = self._assert_call_def
-
         s = """
                 def abc(a,b):
                     pass
@@ -91,20 +86,22 @@ class TestCallSignatures(unittest.TestCase):
                 if 1:
                     pass
             """
-        check(Script(s, 6, 24).call_signatures(), 'abc', 0)
+        self._run(s, 'abc', 0, line=6, column=24)
         s = """
                 import re
                 def huhu(it):
                     re.compile(
                     return it * 2
             """
-        check(Script(s, 4, 31).call_signatures(), 'compile', 0)
+        self._run(s, 'compile', 0, line=4, column=31)
+
         # jedi-vim #70
         s = """def foo("""
         assert Script(s).call_signatures() == []
+
         # jedi-vim #116
         s = """import functools; test = getattr(functools, 'partial'); test("""
-        check(Script(s).call_signatures(), 'partial', 0)
+        self._run(s, 'partial', 0)
 
     def test_call_signature_on_module(self):
         """github issue #240"""
@@ -117,5 +114,4 @@ class TestCallSignatures(unittest.TestCase):
         def f(a, b):
             pass
         f( )""")
-        call_defs = Script(s, 3, 3).call_signatures()
-        self._assert_call_def(call_defs, 'f', 0)
+        self._run(s, 'f', 0, line=3, column=3)
