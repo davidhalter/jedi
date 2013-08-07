@@ -112,7 +112,8 @@ class Script(object):
                     names = s.get_magic_method_names()
                 else:
                     if isinstance(s, imports.ImportPath):
-                        if like == 'import':
+                        under = like + self._module.get_path_after_cursor()
+                        if under == 'import':
                             if not completion_line.endswith('import import'):
                                 continue
                         a = s.import_stmt.alias

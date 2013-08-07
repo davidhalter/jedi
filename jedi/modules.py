@@ -208,9 +208,11 @@ class ModuleWithCursor(Module):
         Return the path under the cursor. If there is a rest of the path left,
         it will be added to the stuff before it.
         """
+        return self.get_path_until_cursor() + self.get_path_after_cursor()
+
+    def get_path_after_cursor(self):
         line = self.get_line(self.position[0])
-        after = re.search("[\w\d]*", line[self.position[1]:]).group(0)
-        return self.get_path_until_cursor() + after
+        return re.search("[\w\d]*", line[self.position[1]:]).group(0)
 
     def get_operator_under_cursor(self):
         line = self.get_line(self.position[0])

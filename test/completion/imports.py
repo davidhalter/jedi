@@ -211,7 +211,9 @@ import datetime.
 #? []
 import datetime.date
 
-#? 18 ['mod1', 'random', 'pkg', 'rename1', 'rename2', 'import', 'recurse_class1', 'recurse_class2']
+#? 18 ['import']
+from import_tree. import pkg
+#? 17 ['mod1', 'random', 'pkg', 'rename1', 'rename2', 'recurse_class1', 'recurse_class2']
 from import_tree. import pkg
 
 #? 18 ['pkg']
