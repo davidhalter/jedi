@@ -5,7 +5,6 @@ Unit tests to avoid errors of the past. Makes use of Python's ``unittest``
 module.
 """
 
-import time
 import itertools
 import os
 import textwrap
@@ -21,24 +20,6 @@ from jedi import api, parsing, common
 
 
 class TestRegression(TestBase):
-    def test_star_import_cache_duration(self):
-        new = 0.01
-        old, jedi.settings.star_import_cache_validity = \
-                jedi.settings.star_import_cache_validity, new
-
-        cache = api.cache
-        cache.star_import_cache = {}  # first empty...
-        # path needs to be not-None (otherwise caching effects are not visible)
-        jedi.Script('', 1, 0, '').completions()
-        time.sleep(2 * new)
-        jedi.Script('', 1, 0, '').completions()
-
-        # reset values
-        jedi.settings.star_import_cache_validity = old
-        length = len(cache.star_import_cache)
-        cache.star_import_cache = {}
-        self.assertEqual(length, 1)
-
     def test_goto_definition_cursor(self):
 
         s = ("class A():\n"
