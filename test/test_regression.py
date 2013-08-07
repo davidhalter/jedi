@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Unit tests to avoid errors of the past. These are also all tests that didn't
 found a good place in any other testing module.

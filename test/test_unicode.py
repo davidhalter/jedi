@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 All character set and unicode related tests.
 """
