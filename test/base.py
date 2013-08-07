@@ -18,10 +18,7 @@ sample_int = 1  # This is used in completion/imports.py
 
 
 class TestBase(unittest.TestCase):
-    def get_script(self, src, pos=None, path=None):
-        if pos is None:
-            lines = src.splitlines()
-            pos = len(lines), len(lines[-1])
+    def get_script(self, src, pos=(None, None), path=None):
         return jedi.Script(src, pos[0], pos[1], path)
 
     def __getattr__(self, name):
@@ -29,7 +26,6 @@ class TestBase(unittest.TestCase):
         if not hasattr(jedi.Script, name):
             raise AttributeError("Don't use getattr on this without Jedi methods")
         def action(*args, **kwargs):
-            print args, kwargs
             script = self.get_script(*args, **kwargs)
             return getattr(script, name)()
         return action

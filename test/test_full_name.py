@@ -4,33 +4,28 @@ Tests for :attr:`.BaseDefinition.full_name`.
 There are three kinds of test:
 
 #. Test classes derived from :class:`MixinTestFullName`.
-   Child class defines :meth:`.get_definitions` to alter how
+   Child class defines :attr:`.operation` to alter how
    the api definition instance is created.
 
 #. :class:`TestFullDefinedName` is to test combination of
-   :attr:`.full_name` and :func:`.defined_names`.
+   ``obj.full_name`` and ``jedi.defined_names``.
 
 #. Misc single-function tests.
-
 """
 
 import textwrap
 
 import jedi
 from jedi import api_classes
-from .base import TestBase
+from .base import unittest
 
 
 class MixinTestFullName(object):
-
-    def get_definitions(self, source):
-        """
-        Get definition objects of the variable at the end of `source`.
-        """
-        raise NotImplementedError
+    operation = None
 
     def check(self, source, desired):
-        definitions = self.get_definitions(textwrap.dedent(source))
+        script = jedi.Script(textwrap.dedent(source))
+        definitions = getattr(script, type(self).operation)()
         self.assertEqual(definitions[0].full_name, desired)
 
     def test_os_path_join(self):
@@ -43,9 +38,8 @@ class MixinTestFullName(object):
         self.check('from os import path', 'os.path')
 
 
-class TestFullNameWithGotoDefinitions(MixinTestFullName, TestBase):
-
-    get_definitions = TestBase.goto_definitions
+class TestFullNameWithGotoDefinitions(MixinTestFullName, unittest.TestCase):
+    operation = 'goto_definitions'
 
     def test_tuple_mapping(self):
         self.check("""
@@ -54,14 +48,13 @@ class TestFullNameWithGotoDefinitions(MixinTestFullName, TestBase):
         any_re""", 're.RegexObject')
 
 
-class TestFullNameWithCompletions(MixinTestFullName, TestBase):
-    get_definitions = TestBase.completions
+class TestFullNameWithCompletions(MixinTestFullName, unittest.TestCase):
+    operation = 'completions'
 
 
-class TestFullDefinedName(TestBase):
-
+class TestFullDefinedName(unittest.TestCase):
     """
-    Test combination of :attr:`.full_name` and :func:`.defined_names`.
+    Test combination of ``obj.full_name`` and ``jedi.defined_names``.
     """
 
     def check(self, source, desired):
