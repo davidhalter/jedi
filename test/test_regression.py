@@ -8,7 +8,7 @@ found a good place in any other testing module.
 import os
 import textwrap
 
-from .base import TestCase, cwd_at
+from .helpers import TestCase, cwd_at
 
 import jedi
 from jedi import Script

@@ -17,7 +17,7 @@ import textwrap
 
 import jedi
 from jedi import api_classes
-from .base import unittest
+from .helpers import TestCase
 
 
 class MixinTestFullName(object):
@@ -38,7 +38,7 @@ class MixinTestFullName(object):
         self.check('from os import path', 'os.path')
 
 
-class TestFullNameWithGotoDefinitions(MixinTestFullName, unittest.TestCase):
+class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
     operation = 'goto_definitions'
 
     def test_tuple_mapping(self):
@@ -48,11 +48,11 @@ class TestFullNameWithGotoDefinitions(MixinTestFullName, unittest.TestCase):
         any_re""", 're.RegexObject')
 
 
-class TestFullNameWithCompletions(MixinTestFullName, unittest.TestCase):
+class TestFullNameWithCompletions(MixinTestFullName, TestCase):
     operation = 'completions'
 
 
-class TestFullDefinedName(unittest.TestCase):
+class TestFullDefinedName(TestCase):
     """
     Test combination of ``obj.full_name`` and ``jedi.defined_names``.
     """

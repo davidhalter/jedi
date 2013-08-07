@@ -167,11 +167,11 @@ from .......import_tree import mod1
 #? 
 mod1.a
 
-from .. import base
+from .. import helpers
 #? int()
-base.sample_int
+helpers.sample_int
 
-from ..base import sample_int as f
+from ..helpers import sample_int as f
 #? int()
 f
 

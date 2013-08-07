@@ -6,7 +6,7 @@ should.
 import time
 import functools
 
-from .base import TestCase
+from .helpers import TestCase
 import jedi
 
 class TestSpeed(TestCase):

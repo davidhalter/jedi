@@ -2,7 +2,7 @@
 Tests of ``jedi.api.Interpreter``.
 """
 
-from .base import TestCase
+from .helpers import TestCase
 import jedi
 from jedi._compatibility import is_py33
 

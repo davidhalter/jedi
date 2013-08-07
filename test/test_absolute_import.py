@@ -1,6 +1,10 @@
+"""
+Tests ``from __future__ import absolute_import`` (only important for
+Python 2.X)
+"""
 import jedi
 from jedi.parsing import Parser
-from . import base
+from . import helpers
 
 
 def test_explicit_absolute_imports():
@@ -29,7 +33,7 @@ def test_dont_break_imports_without_namespaces():
     assert parser.module.has_explicit_absolute_import
 
 
-@base.cwd_at("test/absolute_import")
+@helpers.cwd_at("test/absolute_import")
 def test_can_complete_when_shadowing():
     filename = "unittest.py"
     with open(filename) as f:

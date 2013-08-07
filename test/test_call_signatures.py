@@ -1,9 +1,9 @@
 import textwrap
 
-from .base import unittest
+from .helpers import TestCase
 from jedi import Script
 
-class TestCallSignatures(unittest.TestCase):
+class TestCallSignatures(TestCase):
     def _run(self, source, expected_name, expected_index=0, line=None, column=None):
         signatures = Script(source, line, column).call_signatures()
 

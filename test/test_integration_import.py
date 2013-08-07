@@ -6,7 +6,7 @@ Tests".
 import itertools
 
 from jedi import Script
-from .base import cwd_at
+from .helpers import cwd_at
 
 
 def test_goto_definition_on_import():

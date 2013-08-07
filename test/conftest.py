@@ -4,7 +4,7 @@ import tempfile
 
 import pytest
 
-from . import base
+from . import helpers
 from . import run
 from . import refactor
 
@@ -12,11 +12,11 @@ from . import refactor
 def pytest_addoption(parser):
     parser.addoption(
         "--integration-case-dir",
-        default=os.path.join(base.test_dir, 'completion'),
+        default=os.path.join(helpers.test_dir, 'completion'),
         help="Directory in which integration test case files locate.")
     parser.addoption(
         "--refactor-case-dir",
-        default=os.path.join(base.test_dir, 'refactor'),
+        default=os.path.join(helpers.test_dir, 'refactor'),
         help="Directory in which refactoring test case files locate.")
     parser.addoption(
         "--test-files", "-T", default=[], action='append',
