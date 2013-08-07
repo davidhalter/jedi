@@ -44,10 +44,7 @@ class TestCallSignatures(unittest.TestCase):
         run(s4, 'abs', 0, 9)
         #run(s4, 'abs', 1, 10)
 
-
         s5 = "abs(1,\nif 2:\n def a():"
-        print Script(s5, 1, 4).call_signatures()
-        #check(self.function_definition(s5, (1, 6)), 'abs', 1)
         run(s5, 'abs', 0, 4)
         run(s5, 'abs', 1, 6)
 
