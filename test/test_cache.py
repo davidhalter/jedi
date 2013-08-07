@@ -1,3 +1,7 @@
+"""
+Test all things related to the ``jedi.cache`` module.
+"""
+
 import time
 
 import pytest

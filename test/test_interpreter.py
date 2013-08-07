@@ -1,9 +1,13 @@
-from .base import unittest
+"""
+Tests of ``jedi.api.Interpreter``.
+"""
+
+from .base import TestCase
 import jedi
 from jedi._compatibility import is_py33
 
 
-class TestInterpreterAPI(unittest.TestCase):
+class TestInterpreterAPI(TestCase):
     def check_interpreter_complete(self, source, namespace, completions,
                                    **kwds):
         script = jedi.Interpreter(source, [namespace], **kwds)

@@ -1,23 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Unit tests to avoid errors of the past. Makes use of Python's ``unittest``
-module.
+Unit tests to avoid errors of the past. These are also all tests that didn't
+found a good place in any other testing module.
 """
 
 import os
 import textwrap
 
-from .base import unittest, cwd_at
+from .base import TestCase, cwd_at
 
 import jedi
 from jedi import Script
-from jedi import api, parsing, common
+from jedi import api, parsing
 
 #jedi.set_debug_function(jedi.debug.print_to_stdout)
 
 
-class TestRegression(unittest.TestCase):
+class TestRegression(TestCase):
     def test_goto_definition_cursor(self):
 
         s = ("class A():\n"
@@ -58,23 +58,6 @@ class TestRegression(unittest.TestCase):
         r = list(Script("a == b", 1, 3).goto_definitions())
         assert len(r) == 1
         assert len(r[0].doc) > 100
-
-    def test_function_call_signature(self):
-        defs = Script("""
-        def f(x, y=1, z='a'):
-            pass
-        f""").goto_definitions()
-        doc = defs[0].doc
-        assert "f(x, y = 1, z = 'a')" in doc
-
-    def test_class_call_signature(self):
-        defs = Script("""
-        class Foo:
-            def __init__(self, x, y=1, z='a'):
-                pass
-        Foo""").goto_definitions()
-        doc = defs[0].doc
-        assert "Foo(self, x, y = 1, z = 'a')" in doc
 
     def test_goto_definition_at_zero(self):
         assert Script("a", 1, 1).goto_definitions() == []

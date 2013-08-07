@@ -1,3 +1,7 @@
+"""
+Test all things related to the ``jedi.api`` module.
+"""
+
 import jedi
 from jedi import common
 

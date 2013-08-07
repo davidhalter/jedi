@@ -1,3 +1,6 @@
+"""
+Test of keywords and ``jedi.keywords``
+"""
 import jedi
 from jedi import Script, common
 

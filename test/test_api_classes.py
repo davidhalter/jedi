@@ -1,9 +1,13 @@
+""" Test all things related to the ``jedi.api_classes`` module.
+"""
+
 import textwrap
 
 import pytest
 
 from jedi import api
 import jedi
+
 
 def test_is_keyword():
     results = jedi.Script('import ', 1, 1, None).goto_definitions()
@@ -57,3 +61,21 @@ def make_definitions():
 def test_basedefinition_type(definition):
     assert definition.type in ('module', 'class', 'instance', 'function',
                                'generator', 'statement', 'import', 'param')
+
+
+def test_function_call_signature_in_doc():
+    defs = jedi.Script("""
+    def f(x, y=1, z='a'):
+        pass
+    f""").goto_definitions()
+    doc = defs[0].doc
+    assert "f(x, y = 1, z = 'a')" in doc
+
+def test_class_call_signature():
+    defs = jedi.Script("""
+    class Foo:
+        def __init__(self, x, y=1, z='a'):
+            pass
+    Foo""").goto_definitions()
+    doc = defs[0].doc
+    assert "Foo(self, x, y = 1, z = 'a')" in doc

@@ -1,8 +1,12 @@
-from .base import cwd_at
+"""
+Tests of various import related things that could not be tested with "Black Box
+Tests".
+"""
 
 import itertools
 
 from jedi import Script
+from .base import cwd_at
 
 
 def test_goto_definition_on_import():

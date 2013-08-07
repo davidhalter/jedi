@@ -1,10 +1,15 @@
+"""
+Speed tests of Jedi. To prove that certain things don't take longer than they
+should.
+"""
+
 import time
 import functools
 
-from .base import unittest
+from .base import TestCase
 import jedi
 
-class TestSpeed(unittest.TestCase):
+class TestSpeed(TestCase):
     def _check_speed(time_per_run, number=4, run_warm=True):
         """ Speed checks should typically be very tolerant. Some machines are
         faster than others, but the tests should still pass. These tests are
