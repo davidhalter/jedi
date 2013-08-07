@@ -73,7 +73,7 @@ def isolated_jedi_cache(monkeypatch, tmpdir):
     Same as `clean_jedi_cache`, but create the temporary directory for
     each test case (scope='function').
     """
-    settings = base.jedi.settings
+    from jedi import settings
     monkeypatch.setattr(settings, 'cache_directory', str(tmpdir))
 
 
@@ -88,7 +88,7 @@ def clean_jedi_cache(request):
 
     This fixture is activated in ../pytest.ini.
     """
-    settings = base.jedi.settings
+    from jedi import settings
     old = settings.cache_directory
     tmp = tempfile.mkdtemp(prefix='jedi-test-')
     settings.cache_directory = tmp

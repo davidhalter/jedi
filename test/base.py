@@ -3,33 +3,16 @@ if sys.hexversion < 0x02070000:
     import unittest2 as unittest
 else:
     import unittest
+TestCase = unittest.TestCase
+
 import os
 from os.path import abspath, dirname
 import functools
 
-import jedi
-
-
 test_dir = dirname(abspath(__file__))
 root_dir = dirname(test_dir)
 
-
 sample_int = 1  # This is used in completion/imports.py
-
-
-class TestBase(unittest.TestCase):
-    def get_script(self, src, pos=(None, None), path=None):
-        return jedi.Script(src, pos[0], pos[1], path)
-
-    def __getattr__(self, name):
-        """Allow access to all the Jedi methods with a simplified interface."""
-        if not hasattr(jedi.Script, name):
-            raise AttributeError("Don't use getattr on this without Jedi methods")
-        def action(*args, **kwargs):
-            script = self.get_script(*args, **kwargs)
-            return getattr(script, name)()
-        return action
-
 
 def cwd_at(path):
     """

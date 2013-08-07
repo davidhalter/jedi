@@ -5,10 +5,10 @@ Tests for `api.defined_names`.
 import textwrap
 
 from jedi import api
-from .base import TestBase
+from .base import TestCase
 
 
-class TestDefinedNames(TestBase):
+class TestDefinedNames(TestCase):
 
     def assert_definition_names(self, definitions, names):
         self.assertEqual([d.name for d in definitions], names)
