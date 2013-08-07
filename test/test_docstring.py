@@ -34,3 +34,24 @@ class TestDocstring(unittest.TestCase):
         class DocstringCompletion():
             #? []
             """ asdfas """''').completions()
+
+    def test_docstrings_type_dotted_import(self):
+        s = """
+                def func(arg):
+                    '''
+                    :type arg: threading.Thread
+                    '''
+                    arg."""
+        names = [c.name for c in jedi.Script(s).completions()]
+        assert 'start' in names
+
+    def test_docstrings_type_str(self):
+        s = """
+                def func(arg):
+                    '''
+                    :type arg: str
+                    '''
+                    arg."""
+
+        names = [c.name for c in jedi.Script(s).completions()]
+        assert 'join' in names
