@@ -447,11 +447,9 @@ class Execution(Executable):
         elif isinstance(self.base, Generator):
             return self.base.iter_content()
         else:
-            # Don't do this with exceptions, as usual, because some deeper
-            # exceptions could be catched - and I wouldn't know what happened.
             try:
-                self.base.returns
-            except (AttributeError, DecoratorNotFound):
+                self.base.returns  # Test if it is a function
+            except AttributeError:
                 if hasattr(self.base, 'execute_subscope_by_name'):
                     try:
                         stmts = self.base.execute_subscope_by_name('__call__',
