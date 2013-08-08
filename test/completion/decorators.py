@@ -76,7 +76,7 @@ exe[4]['d']
 
 
 # -----------------
-# class decorators
+# Decorator is a class
 # -----------------
 class Decorator(object):
     def __init__(self, func):
@@ -121,6 +121,39 @@ JustAClass().a()
 JustAClass.a.
 #? []
 JustAClass().a()
+
+# -----------------
+# method decorators
+# -----------------
+
+def dec(f):
+    def wrapper(s):
+        return f(s)
+    return wrapper
+
+class MethodDecorators():
+    _class_var = 1
+    def __init__(self):
+        self._method_var = ''
+
+    @dec
+    def constant(self):
+        return 1.0
+
+    @dec
+    def class_var(self):
+        return self._class_var
+
+    @dec
+    def method_var(self):
+        return self._method_var
+
+#? float()
+MethodDecorators().constant()
+#? int()
+MethodDecorators().class_var()
+#? str()
+MethodDecorators().method_var()
 
 # -----------------
 # others
