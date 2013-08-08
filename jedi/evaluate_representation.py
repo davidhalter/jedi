@@ -209,7 +209,8 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
-        func = self.var.get_decorated_func()
+        #print 'gdf', self, self.is_decorated
+        func = self.var.get_decorated_func(self.instance)
         if func == self.var:
             return self
         return func
@@ -310,9 +311,8 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         self.base_func = func
         self.is_decorated = is_decorated
 
-    @property
     @cache.memoize_default()
-    def _decorated_func(self):
+    def _decorated_func(self, instance=None):
         """
         Returns the function, that is to be executed in the end.
         This is also the places where the decorators are processed.
@@ -323,10 +323,10 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
                 debug.dbg('decorator:', dec, f)
-                dec_results = evaluate.follow_statement(dec)
+                dec_results = set(evaluate.follow_statement(dec))
                 if not len(dec_results):
-                    debug.warning('decorator func not found: %s in stmt %s' %
-                                 (self.base_func, dec))
+                    debug.warning('decorator not found: %s on %s' %
+                                 (dec, self.base_func))
                     return None
                 if len(dec_results) > 1:
                     debug.warning('multiple decorators found', self.base_func,
@@ -334,6 +334,9 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
                 decorator = dec_results.pop()
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
+                if instance is not None:
+                    old_func = InstanceElement(instance, old_func)
+                    instance = None
 
                 wrappers = Execution(decorator, (old_func,)).get_return_types()
                 if not len(wrappers):
@@ -350,12 +353,13 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
             f = Function(f)
         return f
 
-    def get_decorated_func(self):
-        if self._decorated_func is None:
+    def get_decorated_func(self, instance=None):
+        decorated_func = self._decorated_func(instance)
+        if decorated_func is None:
             raise DecoratorNotFound()
-        if self._decorated_func == self.base_func:
+        if decorated_func == self.base_func:
             return self
-        return self._decorated_func
+        return decorated_func
 
     def get_magic_method_names(self):
         return builtin.Builtin.magic_function_scope.get_defined_names()
@@ -368,8 +372,8 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
 
     def __repr__(self):
         dec = ''
-        if self._decorated_func != self.base_func:
-            dec = " is " + repr(self._decorated_func)
+        if self._decorated_func() != self.base_func:
+            dec = " is " + repr(self._decorated_func())
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
