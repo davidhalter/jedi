@@ -143,6 +143,29 @@ JustAClass.a.__closure__
 JustAClass.a()
 
 # -----------------
+# illegal decorators
+# -----------------
+
+class DecoratorWithoutCall():
+    def __init__(self, func):
+        self.func = func
+    def __call__(self):
+        return self.func()
+
+@DecoratorWithoutCall
+def f():
+    return 1
+
+@DecoratorWithoutCall(None)
+def g():
+    return 1
+
+#? 
+f()
+#? int()
+g()
+
+# -----------------
 # method decorators
 # -----------------
 
