@@ -1059,6 +1059,8 @@ class Statement(Simple):
                 lambd, tok = parse_lambda(token_iterator)
                 if lambd is not None:
                     result.append(lambd)
+                else:
+                    continue
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:

@@ -40,3 +40,7 @@ def test_keyword():
     with common.ignored(jedi.NotFoundError):  # TODO shouldn't throw that.
         defs = Script("assert").goto_definitions()
         assert len(defs) == 1
+
+def test_lambda():
+    defs = Script('lambda x: x', column=0).goto_definitions()
+    assert [d.type for d in defs] == ['keyword']
