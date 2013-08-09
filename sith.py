@@ -172,7 +172,7 @@ class TestCase(object):
             if os.path.abspath(completion.module_path) == os.path.abspath(self.path):
                 self.show_location(completion.line, completion.column)
 
-    show_goto_assignments =  show_goto_definitions
+    show_goto_assignments = show_goto_definitions
 
     def show_errors(self):
         print(self.traceback)
@@ -180,6 +180,7 @@ class TestCase(object):
               "\tpath:   {path}\n"
               "\tline:   {line}\n"
               "\tcolumn: {column}").format(**self.__dict__))
+
 
 def main(arguments):
     debugger = 'pdb' if arguments['--pdb'] else \
@@ -191,16 +192,17 @@ def main(arguments):
     if arguments['--debug']:
         jedi.set_debug_function()
 
-    if  arguments['redo'] or arguments['show']:
+    if arguments['redo'] or arguments['show']:
         t = TestCase.from_cache(record)
         if arguments['show']:
             t.show_errors()
         else:
             t.run(debugger)
     elif arguments['run']:
-            TestCase(arguments['<operation>'], arguments['<path>'],
+            TestCase(
+                arguments['<operation>'], arguments['<path>'],
                 int(arguments['<line>']), int(arguments['<column>'])
-                ).run(debugger, print_result=True)
+            ).run(debugger, print_result=True)
     else:
         for _ in range(int(arguments['--maxtries'])):
             t = TestCase.generate(arguments['<path>'] or '.')
