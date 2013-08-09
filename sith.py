@@ -111,9 +111,7 @@ class TestCase(object):
     def run(self, debugger, record=None, print_result=False):
         try:
             with open(self.path) as f:
-                self.file = f.read()
-            self.script = jedi.Script(self.file, self.line, self.column,
-                self.path)
+                self.script = jedi.Script(f.read(), self.line, self.column, self.path)
             self.completions = getattr(self.script, self.operation)()
             if print_result:
                 self.show_location(self.line, self.column)
@@ -138,7 +136,7 @@ class TestCase(object):
     def show_location(self, lineno, column, show=3):
         # Three lines ought to be enough
         lower = lineno - show if lineno - show > 0 else 0
-        for i, line in enumerate(self.file.split('\n')[lower:lineno]):
+        for i, line in enumerate(self.script.source.split('\n')[lower:lineno]):
             print(lower + i + 1, line)
         print(' ' * (column + len(str(lineno))), '^')
 
