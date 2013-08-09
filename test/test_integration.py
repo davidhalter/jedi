@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from . import base
+from . import helpers
 
 
 def assert_case_equal(case, actual, desired):
@@ -23,7 +23,7 @@ desired = %s
 def test_integration(case, monkeypatch, pytestconfig):
     if case.skip is not None:
         pytest.skip(case.skip)
-    repo_root = base.root_dir
+    repo_root = helpers.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
     case.run(assert_case_equal)
 

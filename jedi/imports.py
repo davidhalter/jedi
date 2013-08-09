@@ -56,7 +56,7 @@ class ImportPath(pr.Base):
     GlobalNamespace = _GlobalNamespace()
 
     def __init__(self, import_stmt, is_like_search=False, kill_count=0,
-                                                    direct_resolve=False):
+                 direct_resolve=False):
         self.import_stmt = import_stmt
         self.is_like_search = is_like_search
         self.direct_resolve = direct_resolve
@@ -88,8 +88,8 @@ class ImportPath(pr.Base):
             import foo.bar
         """
         return not self.import_stmt.alias and not self.import_stmt.from_ns \
-                and len(self.import_stmt.namespace.names) > 1 \
-                and not self.direct_resolve
+            and len(self.import_stmt.namespace.names) > 1 \
+            and not self.direct_resolve
 
     def get_nested_import(self, parent):
         """
@@ -127,14 +127,14 @@ class ImportPath(pr.Base):
                             names += m.parser.module.get_defined_names()
             else:
                 if on_import_stmt and isinstance(scope, pr.Module) \
-                                        and scope.path.endswith('__init__.py'):
+                        and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
                     names += self.get_module_names([pkg_path])
                 for s, scope_names in evaluate.get_names_of_scope(scope,
-                                                    include_builtin=False):
+                                                                  include_builtin=False):
                     for n in scope_names:
                         if self.import_stmt.from_ns is None \
-                                            or self.is_partial_import:
+                                or self.is_partial_import:
                                 # from_ns must be defined to access module
                                 # values plus a partial import means that there
                                 # is something after the import, which
@@ -149,22 +149,29 @@ class ImportPath(pr.Base):
         Get the names of all modules in the search_path. This means file names
         and not names defined in the files.
         """
-        if not search_path:
-            search_path = self.sys_path_with_modifications()
+        def generate_name(name):
+            return pr.Name(self.GlobalNamespace, [(name, inf_pos)],
+                           inf_pos, inf_pos, self.import_stmt)
+
         names = []
+        inf_pos = float('inf'), float('inf')
+        # add builtin module names
+        if search_path is None:
+            names += [generate_name(name) for name in sys.builtin_module_names]
+
+        if search_path is None:
+            search_path = self.sys_path_with_modifications()
         for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
-            inf_pos = (float('inf'), float('inf'))
-            names.append(pr.Name(self.GlobalNamespace, [(name, inf_pos)],
-                                        inf_pos, inf_pos, self.import_stmt))
+            names.append(generate_name(name))
         return names
 
     def sys_path_with_modifications(self):
         # If you edit e.g. gunicorn, there will be imports like this:
         # `from gunicorn import something`. But gunicorn is not in the
         # sys.path. Therefore look if gunicorn is a parent directory, #56.
-        parts = self.file_path.split(os.path.sep)
         in_path = []
         if self.import_path:
+            parts = self.file_path.split(os.path.sep)
             for i, p in enumerate(parts):
                 if p == self.import_path[0]:
                     new = os.path.sep.join(parts[:i])
@@ -198,12 +205,12 @@ class ImportPath(pr.Base):
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
-                                evaluate.find_name(s, rest[0], is_goto=True)
-                                for s in scopes)
+                        evaluate.find_name(s, rest[0], is_goto=True)
+                        for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
-                                        evaluate.follow_path(iter(rest), s, s)
-                                        for s in scopes)
+                        evaluate.follow_path(iter(rest), s, s)
+                        for s in scopes)
             scopes = list(scopes)
 
             if self.is_nested_import():
@@ -254,7 +261,11 @@ class ImportPath(pr.Base):
 
         if self.file_path:
             sys_path_mod = list(self.sys_path_with_modifications())
-            sys_path_mod.insert(0, self.file_path)
+            module = self.import_stmt.get_parent_until()
+            if not module.has_explicit_absolute_import:
+                # If the module explicitly asks for absolute imports,
+                # there's probably a bogus local one.
+                sys_path_mod.insert(0, self.file_path)
         else:
             sys_path_mod = list(modules.get_sys_path())
 
@@ -269,7 +280,7 @@ class ImportPath(pr.Base):
                 current_namespace = follow_str(current_namespace[1], s)
             except ImportError:
                 if self.import_stmt.relative_count \
-                                and len(self.import_path) == 1:
+                        and len(self.import_path) == 1:
                     # follow `from . import some_variable`
                     rel_path = self.get_relative_path()
                     with common.ignored(ImportError):

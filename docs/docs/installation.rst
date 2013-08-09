@@ -30,8 +30,15 @@ System-wide installation via a package manager
 Arch Linux
 ~~~~~~~~~~
 
-You can install jedi directly from AUR: `python-jedi at AUR
-<https://aur.archlinux.org/packages/python-jedi/>`__.
+You can install |jedi| directly from official AUR packages:
+
+- `python-jedi <https://aur.archlinux.org/packages/python-jedi/>`__ (Python 3)
+- `python2-jedi <https://aur.archlinux.org/packages/python2-jedi/>`__ (Python 2)
+
+The specified Python version just refers to the *runtime environment* for
+|jedi|. Use the Python 2 version if you're running vim (or whatever editor you
+use) under Python 2. Otherwise, use the Python 3 version. But whatever version
+you choose, both are able to complete both Python 2 and 3 *code*.
 
 (There is also a packaged version of the vim plugin available: `vim-jedi at AUR
 <https://aur.archlinux.org/packages/vim-jedi/>`__.)
@@ -45,7 +52,7 @@ Debian packages are available as `experimental packages
 Others
 ~~~~~~
 
-We are in the discussion of adding Jedi to the Fedora repositories.
+We are in the discussion of adding |jedi| to the Fedora repositories.
 
 
 Manual installation from a downloaded package
@@ -53,7 +60,7 @@ Manual installation from a downloaded package
 
 If you prefer not to use an automated package installer, you can `download
 <https://github.com/davidhalter/jedi/archive/master.zip>`__ a current copy of
-*Jedi* and install it manually.
+|jedi| and install it manually.
 
 To install it, navigate to the directory containing `setup.py` on your console
 and type::

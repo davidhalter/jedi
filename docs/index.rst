@@ -22,6 +22,7 @@ Docs
 
    docs/installation
    docs/features
+   docs/repl
    docs/recipes
    docs/plugin-api
    docs/history
@@ -44,9 +45,19 @@ Resources
 Editor Plugins
 --------------
 
-- `Vim <http://github.com/davidhalter/jedi-vim>`_
-- `Emacs <https://github.com/tkf/emacs-jedi>`_
-- `Sublime Text 2 <https://github.com/srusskih/SublimeJEDI>`_
+Vim:
+
+- `jedi-vim <http://github.com/davidhalter/jedi-vim>`_
+- `YouCompleteMe <http://valloric.github.io/YouCompleteMe/>`_
+
+Emacs:
+
+- `Jedi.el <https://github.com/tkf/emacs-jedi>`_
+
+Sublime Text 2/3:
+
+- `SublimeJEDI <https://github.com/srusskih/SublimeJEDI>`_  (ST2 & ST3)
+- `anaconda <https://github.com/DamnWidget/anaconda>`_ (only ST3)
 
 
 .. _other-software:

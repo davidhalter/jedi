@@ -20,9 +20,10 @@ from jedi import helpers
 from jedi import common
 from jedi import cache
 from jedi import modules
+from jedi import interpret
 from jedi._compatibility import next, unicode
-import evaluate
 import keywords
+import evaluate
 import api_classes
 import evaluate_representation as er
 import dynamic
@@ -32,7 +33,6 @@ import builtin
 
 class NotFoundError(Exception):
     """A custom error to avoid catching the wrong exceptions."""
-    pass
 
 
 class Script(object):
@@ -53,17 +53,21 @@ class Script(object):
         ``unicode`` object (default ``'utf-8'``).
     :type source_encoding: str
     """
-    def __init__(self, source, line, column, source_path,
-                                 source_encoding='utf-8'):
+    def __init__(self, source, line=None, column=None, source_path=None,
+                 source_encoding='utf-8'):
+        lines = source.splitlines()
+        line = len(lines) if line is None else line
+        column = len(lines[-1]) if column is None else column
+
         api_classes._clear_caches()
         debug.reset_time()
         self.source = modules.source_to_unicode(source, source_encoding)
         self.pos = line, column
-        self._module = modules.ModuleWithCursor(source_path,
-                                        source=self.source, position=self.pos)
+        self._module = modules.ModuleWithCursor(
+            source_path, source=self.source, position=self.pos)
         self._source_path = source_path
         self.source_path = None if source_path is None \
-                                    else os.path.abspath(source_path)
+            else os.path.abspath(source_path)
         debug.speed('init')
 
     def __repr__(self):
@@ -95,7 +99,7 @@ class Script(object):
         except NotFoundError:
             scopes = []
             scope_generator = evaluate.get_names_of_scope(
-                                            self._parser.user_scope, self.pos)
+                self._parser.user_scope, self.pos)
             completions = []
             for scope, name_list in scope_generator:
                 for c in name_list:
@@ -108,7 +112,8 @@ class Script(object):
                     names = s.get_magic_method_names()
                 else:
                     if isinstance(s, imports.ImportPath):
-                        if like == 'import':
+                        under = like + self._module.get_path_after_cursor()
+                        if under == 'import':
                             if not completion_line.endswith('import import'):
                                 continue
                         a = s.import_stmt.alias
@@ -132,14 +137,14 @@ class Script(object):
             bs = builtin.Builtin.scope
             if isinstance(u, pr.Import):
                 if (u.relative_count > 0 or u.from_ns) and not re.search(
-                            r'(,|from)\s*$|import\s+$', completion_line):
+                        r'(,|from)\s*$|import\s+$', completion_line):
                     completions += ((k, bs) for k
-                                            in keywords.get_keywords('import'))
+                                    in keywords.keyword_names('import'))
 
             if not path and not isinstance(u, pr.Import):
                 # add keywords
-                completions += ((k, bs) for k in keywords.get_keywords(
-                                                                    all=True))
+                completions += ((k, bs) for k in keywords.keyword_names(
+                    all=True))
 
         needs_dot = not dot and path
 
@@ -151,9 +156,8 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
-                                                    self._parser.user_stmt, n):
-                    new = api_classes.Completion(c, needs_dot,
-                                                    len(like), s)
+                        self._parser.user_stmt or self._parser.user_scope, n):
+                    new = api_classes.Completion(c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
                         comp_dct[k]._same_name_completions.append(new)
@@ -321,10 +325,10 @@ class Script(object):
         scopes = resolve_import_paths(scopes)
 
         # add keywords
-        scopes |= keywords.get_keywords(string=goto_path, pos=self.pos)
+        scopes |= keywords.keywords(string=goto_path, pos=self.pos)
 
         d = set([api_classes.Definition(s) for s in scopes
-                    if not isinstance(s, imports.ImportPath._GlobalNamespace)])
+                 if not isinstance(s, imports.ImportPath._GlobalNamespace)])
         return self._sorted_defs(d)
 
     @api_classes._clear_caches_after_call
@@ -337,7 +341,8 @@ class Script(object):
 
         :rtype: list of :class:`api_classes.Definition`
         """
-        d = [api_classes.Definition(d) for d in set(self._goto()[0])]
+        d = [api_classes.Definition(d) for d in set(self._goto()[0])
+             if not isinstance(d, imports.ImportPath._GlobalNamespace)]
         return self._sorted_defs(d)
 
     def _goto(self, add_import_name=False):
@@ -354,7 +359,7 @@ class Script(object):
             definitions = set(defs)
             for d in defs:
                 if isinstance(d.parent, pr.Import) \
-                                        and d.start_pos == (0, 0):
+                        and d.start_pos == (0, 0):
                     i = imports.ImportPath(d.parent).follow(is_goto=True)
                     definitions.remove(d)
                     definitions |= follow_inexistent_imports(i)
@@ -378,14 +383,17 @@ class Script(object):
             if add_import_name:
                 import_name = user_stmt.get_defined_names()
                 # imports have only one name
-                if name_part == import_name[0].names[-1]:
+                if not user_stmt.star \
+                        and name_part == import_name[0].names[-1]:
                     definitions.append(import_name[0])
         else:
             stmt = self._get_under_cursor_stmt(goto_path)
             defs, search_name = evaluate.goto(stmt)
             definitions = follow_inexistent_imports(defs)
             if isinstance(user_stmt, pr.Statement):
-                if user_stmt.get_commands()[0].start_pos > self.pos:
+                c = user_stmt.get_commands()
+                if c and not isinstance(c[0], (str, unicode)) and \
+                   c[0].start_pos > self.pos:
                     # The cursor must be after the start, otherwise the
                     # statement is just an assignee.
                     definitions = [user_stmt]
@@ -403,17 +411,20 @@ class Script(object):
 
         :rtype: list of :class:`api_classes.Usage`
         """
+        temp, settings.dynamic_flow_information = \
+            settings.dynamic_flow_information, False
         user_stmt = self._parser.user_stmt
         definitions, search_name = self._goto(add_import_name=True)
-        if isinstance(user_stmt, pr.Statement) \
-                    and self.pos < user_stmt.get_commands()[0].start_pos:
-            # the search_name might be before `=`
-            definitions = [v for v in user_stmt.set_vars
-                                if unicode(v.names[-1]) == search_name]
+        if isinstance(user_stmt, pr.Statement):
+            c = user_stmt.get_commands()[0]
+            if not isinstance(c, unicode) and self.pos < c.start_pos:
+                # the search_name might be before `=`
+                definitions = [v for v in user_stmt.set_vars
+                               if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
             definitions = dynamic.usages_add_import_modules(definitions,
-                                                                search_name)
+                                                            search_name)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self._parser.module)
@@ -425,6 +436,7 @@ class Script(object):
             else:
                 names.append(api_classes.Usage(d.names[-1], d))
 
+        settings.dynamic_flow_information = temp
         return self._sorted_defs(set(names))
 
     @api_classes._clear_caches_after_call
@@ -455,7 +467,8 @@ class Script(object):
             origins = cache.cache_function_definition(_callable, user_stmt)
         debug.speed('func_call followed')
 
-        return [api_classes.CallDef(o, index, call) for o in origins]
+        return [api_classes.CallDef(o, index, call) for o in origins
+                if o.isinstance(er.Function, er.Instance, er.Class)]
 
     def _func_call_and_param_index(self):
         debug.speed('func_call start')
@@ -464,7 +477,7 @@ class Script(object):
             user_stmt = self._parser.user_stmt
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
                 call, index, _ = helpers.search_function_definition(
-                                                        user_stmt, self.pos)
+                    user_stmt, self.pos)
         debug.speed('func_call parsed')
         return call, index
 
@@ -485,7 +498,7 @@ class Script(object):
                     kill_count += 1
 
         i = imports.ImportPath(user_stmt, is_like_search,
-                                kill_count=kill_count, direct_resolve=True)
+                               kill_count=kill_count, direct_resolve=True)
         return i, cur_name_part
 
     def _get_completion_parts(self, path):
@@ -501,6 +514,45 @@ class Script(object):
         # Note: `or ''` below is required because `module_path` could be
         #       None and you can't compare None and str in Python 3.
         return sorted(d, key=lambda x: (x.module_path or '', x.start_pos))
+
+
+class Interpreter(Script):
+
+    """
+    Jedi API for Python REPLs.
+
+    In addition to completion of simple attribute access, Jedi
+    supports code completion based on static code analysis.
+    Jedi can complete attributes of object which is not initialized
+    yet.
+
+    >>> from os.path import join
+    >>> namespace = locals()
+    >>> script = Interpreter('join().up', [namespace])
+    >>> print(script.complete()[0].word)
+    upper
+
+    """
+
+    def __init__(self, source, namespaces=[], **kwds):
+        """
+        Parse `source` and mixin interpreted Python objects from `namespaces`.
+
+        :type source: str
+        :arg  source: Code to parse.
+        :type namespaces: list of dict
+        :arg  namespaces: a list of namespace dictionaries such as the one
+                          returned by :func:`locals`.
+
+        Other optional arguments are same as the ones for :class:`Script`.
+        If `line` and `column` are None, they are assumed be at the end of
+        `source`.
+        """
+        super(Interpreter, self).__init__(source, **kwds)
+
+        importer = interpret.ObjectImporter(self._parser.user_scope)
+        for ns in namespaces:
+            importer.import_raw_namespace(ns)
 
 
 def defined_names(source, source_path=None, source_encoding='utf-8'):
@@ -519,7 +571,7 @@ def defined_names(source, source_path=None, source_encoding='utf-8'):
         modules.source_to_unicode(source, source_encoding),
         module_path=source_path,
     )
-    return api_classes._defined_names(parser.scope)
+    return api_classes._defined_names(parser.module)
 
 
 def preload_module(*modules):
@@ -535,7 +587,7 @@ def preload_module(*modules):
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
-                                            notices=True, speed=True):
+                       notices=True, speed=True):
     """
     Define a callback debug function to get all the debug messages.
 
@@ -545,25 +597,3 @@ def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
     debug.enable_warning = warnings
     debug.enable_notice = notices
     debug.enable_speed = speed
-
-
-def _quick_complete(source):
-    """
-    Convenience function to complete a source string at the end.
-
-    Example:
-
-    >>> _quick_complete('''
-    ... import datetime
-    ... datetime.da''')                                 #doctest: +ELLIPSIS
-    [<Completion: date>, <Completion: datetime>, ...]
-
-    :param source: The source code to be completed.
-    :type source: string
-    :return: Completion objects as returned by :meth:`complete`.
-    :rtype: list of :class:`api_classes.Completion`
-    """
-    lines = re.sub(r'[\n\r\s]*$', '', source).splitlines()
-    pos = len(lines), len(lines[-1])
-    script = Script(source, pos[0], pos[1], '')
-    return script.completions()

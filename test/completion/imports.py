@@ -56,6 +56,21 @@ def scope_nested():
     #? set
     import_tree.random.a
 
+def scope_nested2():
+    """Multiple modules should be indexable, if imported"""
+    import import_tree.mod1
+    import import_tree.pkg
+    #? ['mod1']
+    import_tree.mod1
+    #? ['pkg']
+    import_tree.pkg
+    #? []
+    import_tree.rename1
+
+def builtin_test():
+    #? ['math']
+    import math
+
 # -----------------
 # std lib modules
 # -----------------
@@ -152,11 +167,11 @@ from .......import_tree import mod1
 #? 
 mod1.a
 
-from .. import base
+from .. import helpers
 #? int()
-base.sample_int
+helpers.sample_int
 
-from ..base import sample_int as f
+from ..helpers import sample_int as f
 #? int()
 f
 
@@ -196,7 +211,9 @@ import datetime.
 #? []
 import datetime.date
 
-#? 18 ['mod1', 'random', 'pkg', 'rename1', 'rename2', 'import']
+#? 18 ['import']
+from import_tree. import pkg
+#? 17 ['mod1', 'random', 'pkg', 'rename1', 'rename2', 'recurse_class1', 'recurse_class2']
 from import_tree. import pkg
 
 #? 18 ['pkg']
@@ -236,3 +253,11 @@ import json, datetime
 from import_tree.mod1 import c
 #? set
 c
+
+from import_tree import recurse_class1
+
+#? ['a']
+recurse_class1.C.a
+# github #239 RecursionError
+#? ['a']
+recurse_class1.C().a

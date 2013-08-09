@@ -34,7 +34,7 @@ As you see Jedi is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.
 """
 
-__version__ = 0, 6, 0
+__version__ = 0, 7, 0
 
 import sys
 
@@ -42,8 +42,8 @@ import sys
 # imports and circular imports... Just avoid it:
 sys.path.insert(0, __path__[0])
 
-from .api import Script, NotFoundError, set_debug_function, _quick_complete, \
-                 preload_module
+from .api import Script, Interpreter, NotFoundError, set_debug_function
+from .api import preload_module, defined_names
 from . import settings
 
 sys.path.pop(0)

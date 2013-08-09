@@ -76,7 +76,7 @@ exe[4]['d']
 
 
 # -----------------
-# class decorators
+# Decorator is a class
 # -----------------
 class Decorator(object):
     def __init__(self, func):
@@ -94,18 +94,38 @@ nothing("")[0]
 #? str()
 nothing("")[1]
 
+@Decorator
+def nothing(a,b,c):
+    return a,b,c
+
+class MethodDecoratorAsClass():
+    class_var = 3
+    @Decorator
+    def func_without_self(arg):
+        return arg
+
+    @Decorator
+    def func_with_self(self, arg):
+        return self.class_var
+
+#? int()
+MethodDecoratorAsClass().func_without_self(1)
+#? 
+MethodDecoratorAsClass().func_with_self(1)
+
+
 # -----------------
-# not found decorators
+# not found decorators (are just ignored)
 # -----------------
 @not_found_decorator
 def just_a_func():
     return 1
 
-#? []
+#? int()
 just_a_func()
 
-#? []
-just_a_func.
+#? ['__closure__']
+just_a_func.__closure__
 
 
 class JustAClass:
@@ -113,14 +133,75 @@ class JustAClass:
     def a(self):
         return 1
 
-#? []
-JustAClass().a.
-#? []
+#? ['__closure__']
+JustAClass().a.__closure__
+#? int()
 JustAClass().a()
-#? []
-JustAClass.a.
-#? []
-JustAClass().a()
+#? ['__closure__']
+JustAClass.a.__closure__
+#? int()
+JustAClass.a()
+
+# -----------------
+# method decorators
+# -----------------
+
+def dec(f):
+    def wrapper(s):
+        return f(s)
+    return wrapper
+
+class MethodDecorators():
+    _class_var = 1
+    def __init__(self):
+        self._method_var = ''
+
+    @dec
+    def constant(self):
+        return 1.0
+
+    @dec
+    def class_var(self):
+        return self._class_var
+
+    @dec
+    def method_var(self):
+        return self._method_var
+
+#? float()
+MethodDecorators().constant()
+#? int()
+MethodDecorators().class_var()
+#? str()
+MethodDecorators().method_var()
+
+
+class Base():
+    @not_existing
+    def __init__(self):
+        pass
+    @not_existing
+    def b(self):
+        return ''
+    @dec
+    def c(self):
+        return 1
+
+class MethodDecoratorDoesntExist(Base):
+    """#272 github: combination of method decorators and super()"""
+    def a(self):
+        #? 
+        super().__init__()
+        #? str()
+        super().b()
+        #? int()
+        super().c()
+        #? float()
+        self.d()
+
+    @doesnt_exist
+    def d(self):
+        return 1.0
 
 # -----------------
 # others
@@ -148,5 +229,9 @@ follow_statement(1)
 
 # class decorators should just be ignored
 @should_ignore
-class A(): pass
+class A():
+    def ret(self):
+        return 1
 
+#? int()
+A().ret()

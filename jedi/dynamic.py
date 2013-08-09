@@ -334,7 +334,7 @@ def _check_array_additions(compare_array, module, is_list):
     settings.dynamic_params_for_other_modules = False
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
-                                                            ['add', 'update']
+        ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array, er.Execution)
 
     possible_stmts = []
@@ -351,7 +351,7 @@ def _check_array_additions(compare_array, module, is_list):
             # literally copy the contents of a function.
             if isinstance(comp_arr_parent, er.Execution):
                 stmt = comp_arr_parent. \
-                                get_statement_for_position(stmt.start_pos)
+                    get_statement_for_position(stmt.start_pos)
                 if stmt is None:
                     continue
             # InstanceElements are special, because they don't get copied,
@@ -403,7 +403,9 @@ class ArrayInstance(pr.Base):
                         if self.var_args.start_pos != array.var_args.start_pos:
                             items += array.iter_content()
                         else:
-                            debug.warning('ArrayInstance recursion', self.var_args)
+                            debug.warning(
+                                'ArrayInstance recursion',
+                                self.var_args)
                         continue
                 items += evaluate.get_iterator_types([typ])
 
@@ -472,7 +474,7 @@ def usages(definitions, search_name, mods):
 
                 for used_count, name_part in imps:
                     i = imports.ImportPath(stmt, kill_count=count - used_count,
-                                                        direct_resolve=True)
+                                           direct_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
                         names.append(api_classes.Usage(name_part, stmt))
@@ -503,28 +505,30 @@ def check_flow_information(flow, search_name, pos):
 
     ensures that `k` is a string.
     """
+    if not settings.dynamic_flow_information:
+        return None
     result = []
     if isinstance(flow, (pr.Scope, fast_parser.Module)) and not result:
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
-            result = check_statement_information(ass, search_name)
+            result = _check_isinstance_type(ass, search_name)
             if result:
                 break
 
     if isinstance(flow, pr.Flow) and not result:
         if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
-            result = check_statement_information(flow.inputs[0], search_name)
+            result = _check_isinstance_type(flow.inputs[0], search_name)
     return result
 
 
-def check_statement_information(stmt, search_name):
+def _check_isinstance_type(stmt, search_name):
     try:
         commands = stmt.get_commands()
         # this might be removed if we analyze and, etc
         assert len(commands) == 1
         call = commands[0]
-        assert type(call) == pr.Call and str(call.name) == 'isinstance'
+        assert type(call) is pr.Call and str(call.name) == 'isinstance'
         assert bool(call.execution)
 
         # isinstance check

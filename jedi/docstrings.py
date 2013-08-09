@@ -27,8 +27,8 @@ DOCSTRING_PARAM_PATTERNS = [
 ]
 
 DOCSTRING_RETURN_PATTERNS = [
-        re.compile(r'\s*:rtype:\s*([^\n]+)', re.M),  # Sphinx
-        re.compile(r'\s*@rtype:\s*([^\n]+)', re.M),  # Epydoc
+    re.compile(r'\s*:rtype:\s*([^\n]+)', re.M),  # Sphinx
+    re.compile(r'\s*@rtype:\s*([^\n]+)', re.M),  # Epydoc
 ]
 
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
@@ -37,7 +37,7 @@ REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 @cache.memoize_default()
 def follow_param(param):
     func = param.parent_function
-    #print func, param, param.parent_function
+    # print func, param, param.parent_function
     param_str = _search_param_in_docstr(func.docstr, str(param.get_name()))
     user_position = (1, 0)
 
@@ -52,7 +52,9 @@ def follow_param(param):
             user_position = (2, 0)
 
         p = parsing.Parser(param_str, None, user_position,
-                                  no_docstr=True)
+                           no_docstr=True)
+        if p.user_stmt is None:
+            return []
         return evaluate.follow_statement(p.user_stmt)
     return []
 
@@ -123,5 +125,7 @@ def find_return_types(func):
         return []
 
     p = parsing.Parser(type_str, None, (1, 0), no_docstr=True)
+    if p.user_stmt is None:
+        return []
     p.user_stmt.parent = func
     return list(evaluate.follow_statement(p.user_stmt))
