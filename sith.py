@@ -78,9 +78,6 @@ class TestCase(object):
         if operation not in self.operations:
             raise ValueError("%s is not a valid operation" % operation)
 
-        # Store call arguments
-        self.call_args = (operation, path, line, column, traceback)
-
         # Set other attributes
         self.operation = operation
         self.path = path
@@ -128,8 +125,9 @@ class TestCase(object):
         except Exception:
             self.traceback = traceback.format_exc()
             if record is not None:
+                call_args = (self.operation, self.path, self.line, self.column, self.traceback)
                 with open(record, 'w') as f:
-                    json.dump(self.call_args, f)
+                    json.dump(call_args, f)
             self.show_errors()
             if debugger:
                 einfo = sys.exc_info()
