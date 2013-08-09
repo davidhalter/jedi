@@ -328,13 +328,13 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
                     debug.warning('decorator not found: %s on %s' %
                                  (dec, self.base_func))
                     return None
-                if len(dec_results) > 1:
+                decorator = dec_results.pop()
+                if dec_results:
                     debug.warning('multiple decorators found', self.base_func,
                                   dec_results)
-                decorator = dec_results.pop()
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
-                if instance is not None:
+                if instance is not None and decorator.isinstance(Function):
                     old_func = InstanceElement(instance, old_func)
                     instance = None
 

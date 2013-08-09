@@ -99,9 +99,12 @@ def nothing(a,b,c):
     return a,b,c
 
 class MethodDecoratorAsClass():
-    class_var
+    class_var = 3
+    @Decorator
     def func_without_self(arg):
         return arg
+
+    @Decorator
     def func_with_self(self, arg):
         return self.class_var
 
