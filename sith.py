@@ -77,6 +77,11 @@ class TestCase(object):
     def __init__(self, operation, path, line, column, traceback=None):
         if operation not in self.operations:
             raise ValueError("%s is not a valid operation" % operation)
+
+        # Store call arguments
+        self.call_args = (operation, path, line, column, traceback)
+
+        # Set other attributes
         self.operation = operation
         self.path = path
         self.line = line
@@ -86,8 +91,8 @@ class TestCase(object):
     @classmethod
     def from_cache(cls, record):
         with open(record) as f:
-            dct = json.load(f)
-        return cls(**dct)
+            args = json.load(f)
+        return cls(*args)
 
     operations = [
         'completions', 'goto_assignments', 'goto_definitions', 'usages',
@@ -124,7 +129,7 @@ class TestCase(object):
             self.traceback = traceback.format_exc()
             if record is not None:
                 with open(record, 'w') as f:
-                    json.dump(self.__dict__, f)
+                    json.dump(self.call_args, f)
             self.show_errors()
             if debugger:
                 einfo = sys.exc_info()
