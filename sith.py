@@ -77,6 +77,8 @@ class TestCase(object):
     def __init__(self, operation, path, line, column, traceback=None):
         if operation not in self.operations:
             raise ValueError("%s is not a valid operation" % operation)
+
+        # Set other attributes
         self.operation = operation
         self.path = path
         self.line = line
@@ -86,8 +88,8 @@ class TestCase(object):
     @classmethod
     def from_cache(cls, record):
         with open(record) as f:
-            dct = json.load(f)
-        return cls(**dct)
+            args = json.load(f)
+        return cls(*args)
 
     operations = [
         'completions', 'goto_assignments', 'goto_definitions', 'usages',
@@ -123,8 +125,9 @@ class TestCase(object):
         except Exception:
             self.traceback = traceback.format_exc()
             if record is not None:
+                call_args = (self.operation, self.path, self.line, self.column, self.traceback)
                 with open(record, 'w') as f:
-                    json.dump(self.__dict__, f)
+                    json.dump(call_args, f)
             self.show_errors()
             if debugger:
                 einfo = sys.exc_info()
@@ -172,7 +175,7 @@ class TestCase(object):
             if os.path.abspath(completion.module_path) == os.path.abspath(self.path):
                 self.show_location(completion.line, completion.column)
 
-    show_goto_assignments =  show_goto_definitions
+    show_goto_assignments = show_goto_definitions
 
     def show_errors(self):
         print(self.traceback)
@@ -180,6 +183,7 @@ class TestCase(object):
               "\tpath:   {path}\n"
               "\tline:   {line}\n"
               "\tcolumn: {column}").format(**self.__dict__))
+
 
 def main(arguments):
     debugger = 'pdb' if arguments['--pdb'] else \
@@ -191,16 +195,17 @@ def main(arguments):
     if arguments['--debug']:
         jedi.set_debug_function()
 
-    if  arguments['redo'] or arguments['show']:
+    if arguments['redo'] or arguments['show']:
         t = TestCase.from_cache(record)
         if arguments['show']:
             t.show_errors()
         else:
             t.run(debugger)
     elif arguments['run']:
-            TestCase(arguments['<operation>'], arguments['<path>'],
+            TestCase(
+                arguments['<operation>'], arguments['<path>'],
                 int(arguments['<line>']), int(arguments['<column>'])
-                ).run(debugger, print_result=True)
+            ).run(debugger, print_result=True)
     else:
         for _ in range(int(arguments['--maxtries'])):
             t = TestCase.generate(arguments['<path>'] or '.')
