@@ -61,6 +61,7 @@ class SourceFinder(object):
 
     @staticmethod
     def fetch(file_path):
+        assert os.path.isdir(file_path), 'Path must be a directory, not a file.'
         for root, dirnames, filenames in os.walk(file_path):
             for name in filenames:
                 if name.endswith('.py'):
@@ -207,6 +208,9 @@ def main(arguments):
                 int(arguments['<line>']), int(arguments['<column>'])
             ).run(debugger, print_result=True)
     else:
+        if not os.path.isdir(arguments['<path>']):
+            print('Error: Path must be a directory, not a file.')
+            sys.exit(1)
         for _ in range(int(arguments['--maxtries'])):
             t = TestCase.generate(arguments['<path>'] or '.')
             t.run(debugger, record)
