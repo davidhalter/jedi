@@ -175,6 +175,34 @@ MethodDecorators().class_var()
 #? str()
 MethodDecorators().method_var()
 
+
+class Base():
+    @not_existing
+    def __init__(self):
+        pass
+    @not_existing
+    def b(self):
+        return ''
+    @dec
+    def c(self):
+        return 1
+
+class MethodDecoratorDoesntExist(Base):
+    """#272 github: combination of method decorators and super()"""
+    def a(self):
+        #? 
+        super().__init__()
+        #? 
+        super().b()
+        #? int()
+        super().c()
+        #? 
+        self.d()
+
+    @doesnt_exist
+    def d(self):
+        return 1.0
+
 # -----------------
 # others
 # -----------------
@@ -201,5 +229,9 @@ follow_statement(1)
 
 # class decorators should just be ignored
 @should_ignore
-class A(): pass
+class A():
+    def ret(self):
+        return 1
 
+#? int()
+A().ret()
