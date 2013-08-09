@@ -94,6 +94,23 @@ nothing("")[0]
 #? str()
 nothing("")[1]
 
+@Decorator
+def nothing(a,b,c):
+    return a,b,c
+
+class MethodDecoratorAsClass():
+    class_var
+    def func_without_self(arg):
+        return arg
+    def func_with_self(self, arg):
+        return self.class_var
+
+#? int()
+MethodDecoratorAsClass().func_without_self(1)
+#? 
+MethodDecoratorAsClass().func_with_self(1)
+
+
 # -----------------
 # not found decorators
 # -----------------
