@@ -28,13 +28,6 @@ import builtin
 import dynamic
 
 
-class DecoratorNotFound(LookupError):
-    """
-    Decorators are sometimes not found, if that happens, that error is raised.
-    """
-    pass
-
-
 class Executable(pr.IsScope):
     """
     An instance is also an executable - because __init__ is called
@@ -355,10 +348,13 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
 
     def get_decorated_func(self, instance=None):
         decorated_func = self._decorated_func(instance)
-        if decorated_func is None:
-            raise DecoratorNotFound()
         if decorated_func == self.base_func:
             return self
+        if decorated_func is None:
+            # If the decorator func is not found, just ignore the decorator
+            # function, because sometimes decorators are just really
+            # complicated.
+            return Function(self.base_func, True)
         return decorated_func
 
     def get_magic_method_names(self):

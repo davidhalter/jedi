@@ -115,17 +115,17 @@ MethodDecoratorAsClass().func_with_self(1)
 
 
 # -----------------
-# not found decorators
+# not found decorators (are just ignored)
 # -----------------
 @not_found_decorator
 def just_a_func():
     return 1
 
-#? []
+#? int()
 just_a_func()
 
-#? []
-just_a_func.
+#? ['__closure__']
+just_a_func.__closure__
 
 
 class JustAClass:
@@ -133,14 +133,14 @@ class JustAClass:
     def a(self):
         return 1
 
-#? []
-JustAClass().a.
-#? []
+#? ['__closure__']
+JustAClass().a.__closure__
+#? int()
 JustAClass().a()
-#? []
-JustAClass.a.
-#? []
-JustAClass().a()
+#? ['__closure__']
+JustAClass.a.__closure__
+#? int()
+JustAClass.a()
 
 # -----------------
 # method decorators
@@ -192,11 +192,11 @@ class MethodDecoratorDoesntExist(Base):
     def a(self):
         #? 
         super().__init__()
-        #? 
+        #? str()
         super().b()
         #? int()
         super().c()
-        #? 
+        #? float()
         self.d()
 
     @doesnt_exist

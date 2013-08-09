@@ -290,10 +290,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                 elif isinstance(r, pr.Function):
                     r = er.Function(r)
                 if r.isinstance(er.Function):
-                    try:
-                        r = r.get_decorated_func()
-                    except er.DecoratorNotFound:
-                        continue
+                    r = r.get_decorated_func()
                 res_new.append(r)
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
