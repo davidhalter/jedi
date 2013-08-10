@@ -53,9 +53,9 @@ class Executable(pr.IsScope):
 
 
 class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
-
-    """ This class is used to evaluate instances. """
-
+    """
+    This class is used to evaluate instances.
+    """
     def __init__(self, base, var_args=()):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
@@ -72,22 +72,22 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         self.is_generated = False
 
     @cache.memoize_default()
-    def get_init_execution(self, func):
+    def _get_init_execution(self, func):
         func = InstanceElement(self, func, True)
         return Execution(func, self.var_args)
 
-    def get_func_self_name(self, func):
+    def _get_func_self_name(self, func):
         """
         Returns the name of the first param in a class method (which is
         normally self
         """
         try:
-            return func.params[0].used_vars[0].names[0]
+            return str(func.params[0].used_vars[0])
         except IndexError:
             return None
 
     @cache.memoize_default([])
-    def get_self_properties(self):
+    def _get_self_properties(self):
         def add_self_dot_name(name):
             n = copy.copy(name)
             n.names = n.names[1:]
@@ -100,11 +100,11 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
             if isinstance(sub, pr.Class):
                 continue
             # Get the self name, if there's one.
-            self_name = self.get_func_self_name(sub)
+            self_name = self._get_func_self_name(sub)
             if self_name:
                 # Check the __init__ function.
                 if sub.name.get_code() == '__init__':
-                    sub = self.get_init_execution(sub)
+                    sub = self._get_init_execution(sub)
                 for n in sub.get_set_vars():
                     # Only names with the selfname are being added.
                     # It is also important, that they have a len() of 2,
@@ -113,7 +113,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
                         add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
-            names += Instance(s).get_self_properties()
+            names += Instance(s)._get_self_properties()
 
         return names
 
@@ -138,7 +138,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         Get the instance vars of a class. This includes the vars of all
         classes
         """
-        names = self.get_self_properties()
+        names = self._get_self_properties()
 
         class_names = self.base.get_defined_names()
         for var in class_names:
@@ -150,7 +150,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         An Instance has two scopes: The scope with self names and the class
         scope. Instance variables have priority over the class scope.
         """
-        yield self, self.get_self_properties()
+        yield self, self._get_self_properties()
 
         names = []
         class_names = self.base.get_defined_names()
@@ -682,15 +682,14 @@ class Execution(Executable):
 
         return iter(common.PushBackIterator(iterate()))
 
-    def get_set_vars(self):
-        return self.get_defined_names()
-
     def get_defined_names(self):
         """
         Call the default method with the own instance (self implements all
         the necessary functions). Add also the params.
         """
         return self.get_params() + pr.Scope.get_set_vars(self)
+
+    get_set_vars = get_defined_names
 
     @common.rethrow_uncaught
     def copy_properties(self, prop):
