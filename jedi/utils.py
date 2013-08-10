@@ -32,6 +32,9 @@ def setup_readline():
         import readline, rlcompleter
         readline.parse_and_bind("tab: complete")
 
+    You'll also need to add ``export PYTHONSTARTUP=$HOME/.pythonrc.py`` to
+    your bash profile (usually ``.bash_profile`` or ``.profile``).
+
     """
     try:
         import readline
