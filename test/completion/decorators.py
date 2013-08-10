@@ -116,6 +116,31 @@ MethodDecoratorAsClass().func_without_self('')[1]
 MethodDecoratorAsClass().func_with_self(1)
 
 
+class SelfVars():
+    """Init decorator problem as an instance, #247"""
+    @Decorator
+    def __init__(self):
+        """
+        init decorators should be ignored when looking up variables in the
+        class.
+        """
+        self.c = list
+
+    @Decorator
+    def shouldnt_expose_var(not_self):
+        """
+        Even though in real Python this shouldn't expose the variable, in this
+        case Jedi exposes the variable, because these kind of decorators are
+        normally descriptors, which SHOULD be exposed (at least 90%).
+        """
+        not_self.b = 1.0
+
+    def other_method(self):
+        #? float()
+        self.b
+        #? list
+        self.c
+
 # -----------------
 # not found decorators (are just ignored)
 # -----------------
