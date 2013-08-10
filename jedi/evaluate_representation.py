@@ -79,7 +79,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
     def _get_func_self_name(self, func):
         """
         Returns the name of the first param in a class method (which is
-        normally self
+        normally self.
         """
         try:
             return str(func.params[0].used_vars[0])
@@ -87,8 +87,12 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
             return None
 
     @cache.memoize_default([])
-    def _get_self_properties(self):
+    def _get_self_attributes(self):
         def add_self_dot_name(name):
+            """
+            Need to copy and rewrite the name, because names are now
+            ``instance_usage.variable`` instead of ``self.variable``.
+            """
             n = copy.copy(name)
             n.names = n.names[1:]
             names.append(InstanceElement(self, n))
@@ -113,7 +117,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
                         add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
-            names += Instance(s)._get_self_properties()
+            names += Instance(s)._get_self_attributes()
 
         return names
 
@@ -138,7 +142,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         Get the instance vars of a class. This includes the vars of all
         classes
         """
-        names = self._get_self_properties()
+        names = self._get_self_attributes()
 
         class_names = self.base.get_defined_names()
         for var in class_names:
@@ -150,7 +154,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         An Instance has two scopes: The scope with self names and the class
         scope. Instance variables have priority over the class scope.
         """
-        yield self, self._get_self_properties()
+        yield self, self._get_self_attributes()
 
         names = []
         class_names = self.base.get_defined_names()
