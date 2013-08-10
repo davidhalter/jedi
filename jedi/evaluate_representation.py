@@ -38,11 +38,18 @@ class Executable(pr.IsScope):
         self.var_args = var_args
 
     def get_parent_until(self, *args, **kwargs):
-        return self.base.get_parent_until(*args, **kwargs)
+        return self.decorated.get_parent_until(*args, **kwargs)
 
     @property
     def parent(self):
-        return self.base.parent
+        return self.decorated.parent
+
+    @property
+    def decorated(self):
+        """
+        Instance doesn't care about decorators and Execution overrides this
+        """
+        return self.base
 
 
 class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
@@ -393,14 +400,24 @@ class Execution(Executable):
             else:
                 return [stmt]  # just some arbitrary object
 
+    @property
+    @cache.memoize_default()
+    def decorated(self):
+        """Get the decorated version of the input"""
+        base = self.base
+        if self.base.isinstance(Function):
+            base = base.get_decorated_func()
+        return base
+
     @cache.memoize_default(default=())
     @recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
+        base = self.decorated
         stmts = []
-        if self.base.parent == builtin.Builtin.scope \
-                and not isinstance(self.base, (Generator, Array)):
-            func_name = str(self.base.name)
+        if base.parent == builtin.Builtin.scope \
+                and not isinstance(base, (Generator, Array)):
+            func_name = str(base.name)
 
             # some implementations of builtins:
             if func_name == 'getattr':
@@ -419,8 +436,7 @@ class Execution(Executable):
                         if len(arr_name.var_args) != 1:
                             debug.warning('jedi getattr is too simple')
                         key = arr_name.var_args[0]
-                        stmts += evaluate.follow_path(iter([key]), obj,
-                                                      self.base)
+                        stmts += evaluate.follow_path(iter([key]), obj, base)
                 return stmts
             elif func_name == 'type':
                 # otherwise it would be a metaclass
@@ -441,36 +457,35 @@ class Execution(Executable):
                             return [Instance(su[0])]
                 return []
 
-        if self.base.isinstance(Class):
+        if base.isinstance(Class):
             # There maybe executions of executions.
-            stmts = [Instance(self.base, self.var_args)]
-        elif isinstance(self.base, Generator):
-            return self.base.iter_content()
+            stmts = [Instance(base, self.var_args)]
+        elif isinstance(base, Generator):
+            return base.iter_content()
         else:
             try:
-                self.base.returns  # Test if it is a function
+                base.returns  # Test if it is a function
             except AttributeError:
-                if hasattr(self.base, 'execute_subscope_by_name'):
+                if hasattr(base, 'execute_subscope_by_name'):
                     try:
-                        stmts = self.base.execute_subscope_by_name('__call__',
-                                                                   self.var_args)
+                        stmts = base.execute_subscope_by_name('__call__',
+                                                              self.var_args)
                     except KeyError:
-                        debug.warning("no __call__ func available", self.base)
+                        debug.warning("no __call__ func available", base)
                 else:
-                    debug.warning("no execution possible", self.base)
+                    debug.warning("no execution possible", base)
             else:
-                stmts = self._get_function_returns(evaluate_generator)
+                stmts = self._get_function_returns(base, evaluate_generator)
 
         debug.dbg('exec result: %s in %s' % (stmts, self))
 
         return imports.strip_imports(stmts)
 
-    def _get_function_returns(self, evaluate_generator):
+    def _get_function_returns(self, func, evaluate_generator):
         """ A normal Function execution """
         # Feed the listeners, with the params.
-        for listener in self.base.listeners:
+        for listener in func.listeners:
             listener.execute(self.get_params())
-        func = self.base.get_decorated_func()
         if func.is_generator and not evaluate_generator:
             return [Generator(func, self.var_args)]
         else:
@@ -496,7 +511,7 @@ class Execution(Executable):
                 parent = self.var_args.parent
                 start_pos = self.var_args.start_pos
             else:
-                parent = self.base
+                parent = self.decorated
                 start_pos = 0, 0
 
             new_param = copy.copy(param)
@@ -524,15 +539,15 @@ class Execution(Executable):
 
         result = []
         start_offset = 0
-        if isinstance(self.base, InstanceElement):
+        if isinstance(self.decorated, InstanceElement):
             # Care for self -> just exclude it and add the instance
             start_offset = 1
-            self_name = copy.copy(self.base.params[0].get_name())
-            self_name.parent = self.base.instance
+            self_name = copy.copy(self.decorated.params[0].get_name())
+            self_name.parent = self.decorated.instance
             result.append(self_name)
 
         param_dict = {}
-        for param in self.base.params:
+        for param in self.decorated.params:
             param_dict[str(param.get_name())] = param
         # There may be calls, which don't fit all the params, this just ignores
         # it.
@@ -541,7 +556,7 @@ class Execution(Executable):
         non_matching_keys = []
         keys_used = set()
         keys_only = False
-        for param in self.base.params[start_offset:]:
+        for param in self.decorated.params[start_offset:]:
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
             # Wrong value count is just ignored. If you try to test cases that
@@ -686,7 +701,7 @@ class Execution(Executable):
         execution.
         """
         # Copy all these lists into this local function.
-        attr = getattr(self.base, prop)
+        attr = getattr(self.decorated, prop)
         objects = []
         for element in attr:
             if element is None:
@@ -702,7 +717,7 @@ class Execution(Executable):
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'imports', '_sub_module']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
-        return getattr(self.base, name)
+        return getattr(self.decorated, name)
 
     @cache.memoize_default()
     @common.rethrow_uncaught
@@ -744,7 +759,7 @@ class Execution(Executable):
 
     def __repr__(self):
         return "<%s of %s>" % \
-            (type(self).__name__, self.base)
+            (type(self).__name__, self.decorated)
 
 
 class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):

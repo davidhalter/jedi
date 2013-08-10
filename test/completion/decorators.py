@@ -149,13 +149,12 @@ JustAClass.a()
 class DecoratorWithoutCall():
     def __init__(self, func):
         self.func = func
-    def __call__(self):
-        return self.func()
 
 @DecoratorWithoutCall
 def f():
     return 1
 
+# cannot be resolved - should be ignored
 @DecoratorWithoutCall(None)
 def g():
     return 1
