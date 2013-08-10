@@ -20,7 +20,7 @@ def setup_readline():
         from jedi.utils import setup_readline
         setup_readline()
     except ImportError:
-        print('Install Jedi with pip! No autocompletion otherwise.')
+        print('Install Jedi! No autocompletion otherwise.')
 
     """
     try:
