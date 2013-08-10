@@ -72,7 +72,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         self.is_generated = False
 
     @cache.memoize_default()
-    def _get_init_execution(self, func):
+    def _get_method_execution(self, func):
         func = InstanceElement(self, func, True)
         return Execution(func, self.var_args)
 
@@ -105,16 +105,23 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
                 continue
             # Get the self name, if there's one.
             self_name = self._get_func_self_name(sub)
-            if self_name:
-                # Check the __init__ function.
-                if sub.name.get_code() == '__init__':
-                    sub = self._get_init_execution(sub)
-                for n in sub.get_set_vars():
-                    # Only names with the selfname are being added.
-                    # It is also important, that they have a len() of 2,
-                    # because otherwise, they are just something else
-                    if n.names[0] == self_name and len(n.names) == 2:
-                        add_self_dot_name(n)
+            if not self_name:
+                continue
+
+            if sub.name.get_code() == '__init__':
+                # ``__init__`` is special because the params need are injected
+                # this way. Therefore an execution is necessary.
+                if not sub.decorators:
+                    # __init__ decorators should generally just be ignored,
+                    # because to follow them and their self variables is too
+                    # complicated.
+                    sub = self._get_method_execution(sub)
+            for n in sub.get_set_vars():
+                # Only names with the selfname are being added.
+                # It is also important, that they have a len() of 2,
+                # because otherwise, they are just something else
+                if n.names[0] == self_name and len(n.names) == 2:
+                    add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
             names += Instance(s)._get_self_attributes()
@@ -213,7 +220,6 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
-        #print 'gdf', self, self.is_decorated
         func = self.var.get_decorated_func(self.instance)
         if func == self.var:
             return self
