@@ -22,6 +22,16 @@ def setup_readline():
     except ImportError:
         print('Install Jedi! No autocompletion otherwise.')
 
+    Alternately, you can fall back to regular readline completion with
+    something like::
+
+    try:
+        from jedi.utils import setup_readline
+        setup_readline()
+    except ImportError:
+        import readline, rlcompleter
+        readline.parse_and_bind("tab: complete")
+
     """
     try:
         import readline
