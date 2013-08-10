@@ -14,13 +14,13 @@ def setup_readline():
 
     This function setups :mod:`readline` to use Jedi in Python interactive
     shell.  If you want to use a custom ``PYTHONSTARTUP`` file (typically
-    ``$HOME/.pythonrc.py``), you can add this piece of code:
+    ``$HOME/.pythonrc.py``), you can add this piece of code::
 
-    >>> try:
-    ...     from jedi.utils import setup_readline
-    ...     setup_readline()
-    ... except ImportError:
-    ...     print('Install Jedi with pip! No autocompletion otherwise.')
+    try:
+        from jedi.utils import setup_readline
+        setup_readline()
+    except ImportError:
+        print('Install Jedi with pip! No autocompletion otherwise.')
 
     """
     try:
