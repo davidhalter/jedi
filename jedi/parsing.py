@@ -175,10 +175,10 @@ class Parser(object):
         while True:
             defunct = False
             token_type, tok = self.next()
-            if brackets and tok == '\n':
-                self.next()
             if tok == '(':  # python allows only one `(` in the statement.
                 brackets = True
+                token_type, tok = self.next()
+            if brackets and tok == '\n':
                 self.next()
             i, token_type, tok = self._parse_dot_name(self._current)
             if not i:
@@ -191,7 +191,6 @@ class Parser(object):
                 token_type, tok = self.next()
             if not (tok == "," or brackets and tok == '\n'):
                 break
-        print imports
         return imports
 
     def _parse_parentheses(self):

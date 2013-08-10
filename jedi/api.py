@@ -350,7 +350,7 @@ class Script(object):
         """
         Used for goto_assignments and usages.
 
-        :param add_import_name: TODO add description
+        :param add_import_name: Add the the name (if import) to the result.
         """
         def follow_inexistent_imports(defs):
             """ Imports can be generated, e.g. following
