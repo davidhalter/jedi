@@ -10,3 +10,4 @@
 /docs/_build/
 /dist/
 jedi.egg-info/
+record.json
