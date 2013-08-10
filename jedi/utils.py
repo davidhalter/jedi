@@ -16,21 +16,21 @@ def setup_readline():
     shell.  If you want to use a custom ``PYTHONSTARTUP`` file (typically
     ``$HOME/.pythonrc.py``), you can add this piece of code::
 
-    try:
-        from jedi.utils import setup_readline
-        setup_readline()
-    except ImportError:
-        print('Install Jedi! No autocompletion otherwise.')
+        try:
+            from jedi.utils import setup_readline
+            setup_readline()
+        except ImportError:
+            print('Install Jedi! No autocompletion otherwise.')
 
     Alternately, you can fall back to regular readline completion with
     something like::
 
-    try:
-        from jedi.utils import setup_readline
-        setup_readline()
-    except ImportError:
-        import readline, rlcompleter
-        readline.parse_and_bind("tab: complete")
+        try:
+            from jedi.utils import setup_readline
+            setup_readline()
+        except ImportError:
+            import readline, rlcompleter
+            readline.parse_and_bind("tab: complete")
 
     You'll also need to add ``export PYTHONSTARTUP=$HOME/.pythonrc.py`` to
     your bash profile (usually ``.bash_profile`` or ``.profile``).
