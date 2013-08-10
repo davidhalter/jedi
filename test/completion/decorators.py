@@ -101,15 +101,17 @@ def nothing(a,b,c):
 class MethodDecoratorAsClass():
     class_var = 3
     @Decorator
-    def func_without_self(arg):
-        return arg
+    def func_without_self(arg, arg2):
+        return arg, arg2
 
     @Decorator
     def func_with_self(self, arg):
         return self.class_var
 
 #? int()
-MethodDecoratorAsClass().func_without_self(1)
+MethodDecoratorAsClass().func_without_self('')[0]
+#? str()
+MethodDecoratorAsClass().func_without_self('')[1]
 #? 
 MethodDecoratorAsClass().func_with_self(1)
 
