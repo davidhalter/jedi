@@ -57,7 +57,7 @@ class Parser(object):
         # initialize global Scope
         self.module = pr.SubModule(module_path, self.start_pos, top_module)
         self._scope = self.module
-        self.current = (None, None)
+        self._current = (None, None)
 
         source = source + '\n'  # end with \n, because the parser needs it
         buf = StringIO(source)
@@ -78,10 +78,10 @@ class Parser(object):
             # because of `self.module.used_names`.
             d.parent = self.module
 
-        if self.current[0] in (tokenize.NL, tokenize.NEWLINE):
+        if self._current[0] in (tokenize.NL, tokenize.NEWLINE):
             # we added a newline before, so we need to "remove" it again.
             self.end_pos = self._gen.previous[2]
-        if self.current[0] == tokenize.INDENT:
+        if self._current[0] == tokenize.INDENT:
             self.end_pos = self._gen.last_previous[2]
 
         self.start_pos = self.module.start_pos
@@ -180,7 +180,7 @@ class Parser(object):
             if tok == '(':  # python allows only one `(` in the statement.
                 brackets = True
                 self.next()
-            i, token_type, tok = self._parse_dot_name(self.current)
+            i, token_type, tok = self._parse_dot_name(self._current)
             if not i:
                 defunct = True
             name2 = None
@@ -191,6 +191,7 @@ class Parser(object):
                 token_type, tok = self.next()
             if not (tok == "," or brackets and tok == '\n'):
                 break
+        print imports
         return imports
 
     def _parse_parentheses(self):
@@ -349,11 +350,11 @@ class Parser(object):
                    or tok in breaks and level <= 0):
             try:
                 # print 'parse_stmt', tok, tokenize.tok_name[token_type]
-                tok_list.append(self.current + (self.start_pos,))
+                tok_list.append(self._current + (self.start_pos,))
                 if tok == 'as':
                     token_type, tok = self.next()
                     if token_type == tokenize.NAME:
-                        n, token_type, tok = self._parse_dot_name(self.current)
+                        n, token_type, tok = self._parse_dot_name(self._current)
                         if n:
                             set_vars.append(n)
                         tok_list.append(n)
@@ -363,7 +364,7 @@ class Parser(object):
                     if tok == 'lambda':
                         breaks.discard(':')
                 elif token_type == tokenize.NAME:
-                    n, token_type, tok = self._parse_dot_name(self.current)
+                    n, token_type, tok = self._parse_dot_name(self._current)
                     # removed last entry, because we add Name
                     tok_list.pop()
                     if n:
@@ -445,9 +446,9 @@ class Parser(object):
             debug.dbg('user scope found [%s] = %s' %
                      (self.parserline.replace('\n', ''), repr(self._scope)))
             self.user_scope = self._scope
-        self.last_token = self.current
-        self.current = (typ, tok)
-        return self.current
+        self.last_token = self._current
+        self._current = (typ, tok)
+        return self._current
 
     def _parse(self):
         """
@@ -538,7 +539,7 @@ class Parser(object):
                         break
                     relative_count += 1
                 # the from import
-                mod, token_type, tok = self._parse_dot_name(self.current)
+                mod, token_type, tok = self._parse_dot_name(self._current)
                 if str(mod) == 'import' and relative_count:
                     self._gen.push_last_back()
                     tok = 'import'
@@ -645,7 +646,7 @@ class Parser(object):
                     debug.warning('return in non-function')
             # globals
             elif tok == 'global':
-                stmt, tok = self._parse_statement(self.current)
+                stmt, tok = self._parse_statement(self._current)
                 if stmt:
                     self._scope.add_statement(stmt)
                     for name in stmt.used_vars:
@@ -670,7 +671,7 @@ class Parser(object):
                 # this is the main part - a name can be a function or a
                 # normal var, which can follow anything. but this is done
                 # by the statement parser.
-                stmt, tok = self._parse_statement(self.current)
+                stmt, tok = self._parse_statement(self._current)
                 if stmt:
                     self._scope.add_statement(stmt)
                 self.freshscope = False
