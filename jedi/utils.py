@@ -34,13 +34,13 @@ def setup_readline():
     The readline completer will only complete names in the global namespace,
     so for example,
 
-    >>> ran<TAB>
+    >>> ran<TAB> # doctest: +SKIP
 
     will complete to ``range``
 
     with both Jedi and readline, but
 
-    >>> range(10).cou<TAB>
+    >>> range(10).cou<TAB> # doctest: +SKIP
 
     will show complete to ``range(10).count`` only with Jedi.
 
