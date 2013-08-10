@@ -20,20 +20,32 @@ def setup_readline():
             from jedi.utils import setup_readline
             setup_readline()
         except ImportError:
-            print('Install Jedi! No autocompletion otherwise.')
+            # Fallback to the stdlib readline completer if it is installed.
+            # Taken from http://docs.python.org/2/library/rlcompleter.html
+            try:
+                import readline
+                import rlcompleter
+                readline.parse_and_bind("tab: complete")
+            except ImportError:
+                pass
 
-    Alternately, you can fall back to regular readline completion with
-    something like::
+    This will fallback to the readline completer if Jedi is not installed.
+    The readline completer will only complete names in the global namespace,
+    so for example,
 
-        try:
-            from jedi.utils import setup_readline
-            setup_readline()
-        except ImportError:
-            import readline, rlcompleter
-            readline.parse_and_bind("tab: complete")
+    >>> ran<TAB>
+
+    will complete to ``range``
+
+    with both Jedi and readline, but
+
+    >>> range(10).cou<TAB>
+
+    will show complete to ``range(10).count`` only with Jedi.
 
     You'll also need to add ``export PYTHONSTARTUP=$HOME/.pythonrc.py`` to
-    your bash profile (usually ``.bash_profile`` or ``.profile``).
+    your shell profile (usually ``.bash_profile`` or ``.profile`` if you use
+    bash).
 
     """
     try:
