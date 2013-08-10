@@ -341,7 +341,8 @@ class Script(object):
 
         :rtype: list of :class:`api_classes.Definition`
         """
-        d = [api_classes.Definition(d) for d in set(self._goto()[0])
+        results, _ = self._goto()
+        d = [api_classes.Definition(d) for d in set(results)
              if not isinstance(d, imports.ImportPath._GlobalNamespace)]
         return self._sorted_defs(d)
 
