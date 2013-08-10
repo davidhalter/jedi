@@ -22,12 +22,13 @@ def setup_readline():
         except ImportError:
             # Fallback to the stdlib readline completer if it is installed.
             # Taken from http://docs.python.org/2/library/rlcompleter.html
+            print("Jedi is not installed, falling back to readline")
             try:
                 import readline
                 import rlcompleter
                 readline.parse_and_bind("tab: complete")
             except ImportError:
-                pass
+                print("Readline is not installed either. No tab completion is enabled.")
 
     This will fallback to the readline completer if Jedi is not installed.
     The readline completer will only complete names in the global namespace,
