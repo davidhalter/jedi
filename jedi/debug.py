@@ -48,7 +48,7 @@ def warning(*args):
 def speed(name):
     if debug_function and enable_speed:
         now = time.time()
-        debug_function(SPEED, 'speed: ' + '%s %s' % (u(name), now - start_time))
+        debug_function(SPEED, 'speed: ' + '%s %s' % (name, now - start_time))
 
 
 def print_to_stdout(level, str_out):

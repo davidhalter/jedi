@@ -168,6 +168,8 @@ def u(string):
     have to cast back to a unicode (and we now that we always deal with valid
     unicode, because we check that in the beginning).
     """
-    if not is_py3k and not isinstance(string, unicode):
+    if is_py3k:
+        return str(string)
+    elif not isinstance(string, unicode):
         return unicode(str(string), 'UTF-8')
     return string
