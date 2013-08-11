@@ -109,7 +109,8 @@ def get_directory_modules_for_name(mods, name):
                         if entry.endswith('.py'):
                             paths.add(d + os.path.sep + entry)
 
-        for p in paths:
+        for p in sorted(paths):
+            # make testing easier, sort it - same results on every interpreter
             c = check_python_file(p)
             if c is not None and c not in mods:
                 yield c
