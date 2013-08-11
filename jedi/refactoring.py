@@ -64,7 +64,7 @@ def rename(script, new_name):
 
 def _rename(names, replace_str):
     """ For both rename and inline. """
-    order = sorted(names, key=lambda x: (x.module_path, x.start_pos),
+    order = sorted(names, key=lambda x: (x.module_path, x.line, x.column),
                    reverse=True)
 
     def process(path, old_lines, new_lines):
@@ -89,7 +89,7 @@ def _rename(names, replace_str):
             new_lines = modules.source_to_unicode(source).splitlines()
             old_lines = new_lines[:]
 
-        nr, indent = name.start_pos
+        nr, indent = name.line, name.column
         line = new_lines[nr - 1]
         new_lines[nr - 1] = line[:indent] + replace_str + \
             line[indent + len(name.text):]
@@ -167,14 +167,14 @@ def inline(script):
 
     dct = {}
 
-    definitions = script.goto()
+    definitions = script.goto_assignments()
     with common.ignored(AssertionError):
         assert len(definitions) == 1
         stmt = definitions[0]._definition
         usages = script.usages()
         inlines = [r for r in usages
-                   if not stmt.start_pos <= r.start_pos <= stmt.end_pos]
-        inlines = sorted(inlines, key=lambda x: (x.module_path, x.start_pos),
+                   if not stmt.start_pos <= (r.line, r.column) <= stmt.end_pos]
+        inlines = sorted(inlines, key=lambda x: (x.module_path, x.line, x.column),
                          reverse=True)
         commands = stmt.get_commands()
         # don't allow multiline refactorings for now.

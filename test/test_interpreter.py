@@ -11,8 +11,8 @@ class TestInterpreterAPI(TestCase):
     def check_interpreter_complete(self, source, namespace, completions,
                                    **kwds):
         script = jedi.Interpreter(source, [namespace], **kwds)
-        cs = script.complete()
-        actual = [c.word for c in cs]
+        cs = script.completions()
+        actual = [c.name for c in cs]
         self.assertEqual(sorted(actual), sorted(completions))
 
     def test_complete_raw_function(self):

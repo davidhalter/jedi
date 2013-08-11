@@ -98,7 +98,7 @@ class BaseDefinition(object):
 
         Here is an example of the value of this attribute.  Let's consider
         the following source.  As what is in ``variable`` is unambiguous
-        to Jedi, :meth:`api.Script.definition` should return a list of
+        to Jedi, :meth:`api.Script.goto_definitions` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
         >>> from jedi import Script
@@ -118,7 +118,7 @@ class BaseDefinition(object):
         ...
         ... variable = keyword or f or C or x'''
         >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
-        >>> defs = script.definition()
+        >>> defs = script.goto_definitions()
 
         Before showing what is in ``defs``, let's sort it by :attr:`line`
         so that it is easy to relate the result to the source code.
@@ -178,7 +178,7 @@ class BaseDefinition(object):
         >>> from jedi import Script
         >>> source = 'import datetime'
         >>> script = Script(source, 1, len(source), 'example.py')
-        >>> d = script.definition()[0]
+        >>> d = script.goto_definitions()[0]
         >>> print(d.module_name)                       # doctest: +ELLIPSIS
         datetime
         """
@@ -226,7 +226,7 @@ class BaseDefinition(object):
         ...     "Document for function f."
         ... '''
         >>> script = Script(source, 1, len('def f'), 'example.py')
-        >>> d = script.definition()[0]
+        >>> d = script.goto_definitions()[0]
         >>> print(d.doc)
         f(a, b = 1)
         <BLANKLINE>
@@ -274,7 +274,7 @@ class BaseDefinition(object):
         ...
         ... variable = f or C'''
         >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
-        >>> defs = script.definition()                      # doctest: +SKIP
+        >>> defs = script.goto_definitions()                # doctest: +SKIP
         >>> defs = sorted(defs, key=lambda d: d.line)       # doctest: +SKIP
         >>> defs                                            # doctest: +SKIP
         [<Definition def f>, <Definition class C>]
@@ -302,7 +302,7 @@ class BaseDefinition(object):
         ... import os
         ... os.path.join'''
         >>> script = Script(source, 3, len('os.path.join'), 'example.py')
-        >>> print(script.definition()[0].full_name)
+        >>> print(script.goto_definitions()[0].full_name)
         os.path.join
 
         Notice that it correctly returns ``'os.path.join'`` instead of

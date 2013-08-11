@@ -191,8 +191,7 @@ class IntegrationTestCase(object):
     def run_usages(self, compare_cb):
         result = self.script().usages()
         self.correct = self.correct.strip()
-        compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
-                                                            for r in result)
+        compare = sorted((r.module_name, r.line, r.column) for r in result)
         wanted = []
         if not self.correct:
             positions = []

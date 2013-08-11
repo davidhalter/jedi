@@ -39,7 +39,7 @@ def test_goto_following_on_imports():
     s = "import multiprocessing.dummy; multiprocessing.dummy"
     g = Script(s).goto_assignments()
     assert len(g) == 1
-    assert g[0].start_pos != (0, 0)
+    assert (g[0].line, g[0].column) != (0, 0)
 
 
 def test_follow_definition():

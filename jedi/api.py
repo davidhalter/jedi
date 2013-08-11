@@ -514,7 +514,7 @@ class Script(object):
     def _sorted_defs(d):
         # Note: `or ''` below is required because `module_path` could be
         #       None and you can't compare None and str in Python 3.
-        return sorted(d, key=lambda x: (x.module_path or '', x.start_pos))
+        return sorted(d, key=lambda x: (x.module_path or '', x.line, x.column))
 
 
 class Interpreter(Script):
@@ -530,7 +530,7 @@ class Interpreter(Script):
     >>> from os.path import join
     >>> namespace = locals()
     >>> script = Interpreter('join().up', [namespace])
-    >>> print(script.complete()[0].word)
+    >>> print(script.completions()[0].name)
     upper
 
     """
@@ -584,7 +584,7 @@ def preload_module(*modules):
     """
     for m in modules:
         s = "import %s as x; x." % m
-        Script(s, 1, len(s), None).complete()
+        Script(s, 1, len(s), None).completions()
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,

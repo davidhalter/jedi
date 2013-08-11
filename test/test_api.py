@@ -2,8 +2,7 @@
 Test all things related to the ``jedi.api`` module.
 """
 
-import jedi
-from jedi import common
+from jedi import common, api
 
 
 def test_preload_modules():
@@ -19,9 +18,9 @@ def test_preload_modules():
     with common.ignored(KeyError): # performance of tests -> no reload
         new['__builtin__'] = temp_cache['__builtin__']
 
-    jedi.preload_module('datetime')
+    api.preload_module('datetime')
     check_loaded('datetime')
-    jedi.preload_module('json', 'token')
+    api.preload_module('json', 'token')
     check_loaded('datetime', 'json', 'token')
 
     cache.parser_cache = temp_cache
