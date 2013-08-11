@@ -277,38 +277,41 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
                 yield case
 
 
+
+docoptstr = """
+Using run.py to make debugging easier with integration tests.
+
+An alternative testing format, which is much more hacky, but very nice to
+work with.
+
+Usage:
+    run.py [--pdb] [--debug] [--thirdparty] [<rest>...]
+    run.py --help
+
+Options:
+    -h --help       Show this screen.
+    --pdb           Enable pdb debugging on fail.
+    -d, --debug     Enable text output debugging (please install ``colorama``).
+    --thirdparty    Also run thirdparty tests (in ``completion/thirdparty``).
+"""
 if __name__ == '__main__':
-    # an alternative testing format, this is much more hacky, but very nice to
-    # work with.
+    import docopt
+    arguments = docopt.docopt(docoptstr)
 
     import time
     t_start = time.time()
     # Sorry I didn't use argparse here. It's because argparse is not in the
     # stdlib in 2.5.
     import sys
-    args = sys.argv[1:]
-    try:
-        i = args.index('--thirdparty')
-        thirdparty = True
-        args = args[:i] + args[i + 1:]
-    except ValueError:
-        thirdparty = False
 
-    print_debug = False
-    try:
-        i = args.index('--debug')
-        args = args[:i] + args[i + 1:]
-    except ValueError:
-        pass
-    else:
+    if arguments['--debug']:
         from jedi import api, debug
-        print_debug = True
         api.set_debug_function(debug.print_to_stdout)
 
     # get test list, that should be executed
     test_files = {}
     last = None
-    for arg in args:
+    for arg in arguments['<rest>']:
         if arg.isdigit():
             if last is None:
                 continue
@@ -324,7 +327,7 @@ if __name__ == '__main__':
 
     # execute tests
     cases = list(collect_dir_tests(completion_test_dir, test_files))
-    if test_files or thirdparty:
+    if test_files or arguments['--thirdparty']:
         completion_test_dir += '/thirdparty'
         cases += collect_dir_tests(completion_test_dir, test_files, True)
 
@@ -354,6 +357,10 @@ if __name__ == '__main__':
             print("\ttest fail @%d" % (c.line_nr - 1))
             tests_fail += 1
             fails += 1
+            if arguments['--pdb']:
+                import pdb
+                pdb.post_mortem()
+
         count += 1
 
         if current != c.path:
