@@ -172,14 +172,45 @@ def search_params(param):
                 return []
 
             for stmt in possible_stmts:
-                if not isinstance(stmt, pr.Import):
-                    calls = _scan_statement(stmt, func_name)
-                    for c in calls:
-                        # no execution means that params cannot be set
-                        call_path = c.generate_call_path()
-                        pos = c.start_pos
-                        scope = stmt.parent
-                        evaluate.follow_call_path(call_path, scope, pos)
+                if isinstance(stmt, pr.Import):
+                    continue
+                calls = _scan_statement(stmt, func_name)
+                for c in calls:
+                    # no execution means that params cannot be set
+                    call_path = list(c.generate_call_path())
+                    pos = c.start_pos
+                    scope = stmt.parent
+
+                    # this whole stuff is just to not execute certain parts
+                    # (speed improvement), basically we could just call
+                    # ``follow_call_path`` on the call_path and it would
+                    # also work.
+                    def listRightIndex(lst, value):
+                        return len(lst) - lst[-1::-1].index(value) -1
+
+                    # Need to take right index, because there could be a
+                    # func usage before.
+                    i = listRightIndex(call_path, func_name)
+                    first, last = call_path[:i], call_path[i+1:]
+                    if not last and not call_path.index(func_name) != i:
+                        continue
+                    #print first, second, func
+                    scopes = [scope]
+                    if first:
+                        scopes = evaluate.follow_call_path(iter(first), scope, pos)
+                        pos = None
+                    for scope in scopes:
+                        s = evaluate.find_name(scope, func_name, position=pos,
+                                               search_global=not first,
+                                               resolve_decorator=False)
+                        #print s, pos, compare, func.parent
+                        comparisons = [getattr(escope, 'base_func', None) or escope.base
+                                       for escope in s]
+                        if compare in comparisons:
+                            # only if we have the correct function we execute
+                            # it, otherwise just ignore it.
+                            evaluate.follow_paths(iter(last), s, scope)
+
             return listener.param_possibilities
 
         result = []
@@ -192,8 +223,10 @@ def search_params(param):
     func = param.get_parent_until(pr.Function)
     current_module = param.get_parent_until()
     func_name = str(func.name)
+    compare = func
     if func_name == '__init__' and isinstance(func.parent, pr.Class):
         func_name = str(func.parent.name)
+        compare = func.parent
 
     # get the param name
     if param.assignment_details:

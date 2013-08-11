@@ -203,7 +203,7 @@ def get_names_of_scope(scope, position=None, star_search=True,
 
 
 def find_name(scope, name_str, position=None, search_global=False,
-              is_goto=False):
+              is_goto=False, resolve_decorator=True):
     """
     This is the search function. The most important part to debug.
     `remove_statements` and `filter_statements` really are the core part of
@@ -289,7 +289,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                     r = er.Class(r)
                 elif isinstance(r, pr.Function):
                     r = er.Function(r)
-                if r.isinstance(er.Function):
+                if r.isinstance(er.Function) and resolve_decorator:
                     r = r.get_decorated_func()
                 res_new.append(r)
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
