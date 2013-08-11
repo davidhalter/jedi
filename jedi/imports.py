@@ -111,7 +111,7 @@ class ImportPath(pr.Base):
         names = []
         for scope in self.follow():
             if scope is ImportPath.GlobalNamespace:
-                if self.import_stmt.relative_count == 0:
+                if self.is_relative_import() == 0:
                     names += self.get_module_names()
 
                 if self.file_path is not None:
@@ -120,7 +120,7 @@ class ImportPath(pr.Base):
                         path = os.path.dirname(path)
                     names += self.get_module_names([path])
 
-                    if self.import_stmt.relative_count:
+                    if self.is_relative_import():
                         rel_path = self.get_relative_path() + '/__init__.py'
                         with common.ignored(IOError):
                             m = modules.Module(rel_path)
@@ -247,7 +247,7 @@ class ImportPath(pr.Base):
             path = None
             if ns_path:
                 path = ns_path
-            elif self.import_stmt.relative_count:
+            elif self.is_relative_import():
                 path = self.get_relative_path()
 
             global imports_processed
@@ -290,8 +290,7 @@ class ImportPath(pr.Base):
             try:
                 current_namespace = follow_str(current_namespace[1], s)
             except ImportError:
-                if self.import_stmt.relative_count \
-                        and len(self.import_path) == 1:
+                if self.is_relative_import() and len(self.import_path) == 1:
                     # follow `from . import some_variable`
                     rel_path = self.get_relative_path()
                     with common.ignored(ImportError):
