@@ -253,6 +253,7 @@ class ImportPath(pr.Base):
                 try:
                     importing = find_module(string)
                 except ImportError:
+                    # TODO insert finally here
                     sys.path = temp
                     raise
                 sys.path = temp
@@ -287,6 +288,7 @@ class ImportPath(pr.Base):
                         current_namespace = follow_str(rel_path, '__init__')
                 if current_namespace[1]:
                     rest = self.import_path[i:]
+                    break
                 else:
                     module_not_found()
 
