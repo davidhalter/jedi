@@ -72,14 +72,19 @@ def builtin_test():
     import math
 
 def scope_from_import_variable():
-    #? int()
+    """
+    All of them shouldn't work, because "fake" imports don't work in python
+    without the use of ``sys.modules`` modifications (e.g. ``os.path`` see also
+    github issue #213 for clarification.
+    """
+    #? 
     from import_tree.mod2.fake import a
-    #? set
+    #? 
     from import_tree.mod2.fake import c
 
-    #? int()
+    #? 
     a
-    #? set
+    #? 
     c
 
 def scope_from_import_variable_with_parenthesis():
@@ -87,9 +92,9 @@ def scope_from_import_variable_with_parenthesis():
         a, c
     )
 
-    #? int()
+    #? 
     a
-    #? set
+    #? 
     c
 
 # -----------------
