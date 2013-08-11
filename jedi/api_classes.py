@@ -192,11 +192,15 @@ class BaseDefinition(object):
     @property
     def line(self):
         """The line where the definition occurs (starting with 1)."""
+        if self.in_builtin_module:
+            return None
         return self.start_pos[0]
 
     @property
     def column(self):
         """The column where the definition occurs (starting with 0)."""
+        if self.in_builtin_module:
+            return None
         return self.start_pos[1]
 
     @property
