@@ -70,7 +70,7 @@ class BaseDefinition(object):
     }.items())
 
     def __init__(self, definition, start_pos):
-        self.start_pos = start_pos
+        self._start_pos = start_pos
         self._definition = definition
         """
         An instance of :class:`jedi.parsing_representation.Base` subclass.
@@ -80,6 +80,16 @@ class BaseDefinition(object):
         # generate a path to the definition
         self._module = definition.get_parent_until()
         self.module_path = self._module.path
+
+    @property
+    def start_pos(self):
+        """
+        .. deprecated:: 0.7.0
+           Use :attr:`.line` and :attr:`.column` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use line/column instead.", DeprecationWarning)
+        return self._start_pos
 
     @property
     def type(self):
@@ -194,14 +204,14 @@ class BaseDefinition(object):
         """The line where the definition occurs (starting with 1)."""
         if self.in_builtin_module:
             return None
-        return self.start_pos[0]
+        return self._start_pos[0]
 
     @property
     def column(self):
         """The column where the definition occurs (starting with 0)."""
         if self.in_builtin_module:
             return None
-        return self.start_pos[1]
+        return self._start_pos[1]
 
     @property
     def doc(self):
@@ -550,14 +560,14 @@ class Usage(BaseDefinition):
 
     @property
     def description(self):
-        return "%s@%s,%s" % (self.text, self.start_pos[0], self.start_pos[1])
+        return "%s@%s,%s" % (self.text, self.line, self.column)
 
     def __eq__(self, other):
-        return self.start_pos == other.start_pos \
+        return self._start_pos == other._start_pos \
             and self.module_path == other.module_path
 
     def __hash__(self):
-        return hash((self.start_pos, self.module_path))
+        return hash((self._start_pos, self.module_path))
 
 
 class CallDef(object):
