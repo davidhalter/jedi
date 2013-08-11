@@ -63,6 +63,11 @@ def func(c=1):
 
 func(1.0)
 
+# Needs to be here, because in this case func is an import -> shouldn't lead to
+# exceptions.
+import sys as func
+func.sys
+
 # -----------------
 # classes
 # -----------------

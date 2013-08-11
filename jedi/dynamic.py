@@ -194,7 +194,6 @@ def search_params(param):
                     first, last = call_path[:i], call_path[i+1:]
                     if not last and not call_path.index(func_name) != i:
                         continue
-                    #print first, second, func
                     scopes = [scope]
                     if first:
                         scopes = evaluate.follow_call_path(iter(first), scope, pos)
@@ -203,10 +202,12 @@ def search_params(param):
                         s = evaluate.find_name(scope, func_name, position=pos,
                                                search_global=not first,
                                                resolve_decorator=False)
-                        #print s, pos, compare, func.parent
-                        comparisons = [getattr(escope, 'base_func', None) or escope.base
-                                       for escope in s]
-                        if compare in comparisons:
+
+                        c = [getattr(escope, 'base_func', None) or escope.base
+                            for escope in s
+                            if escope.isinstance(er.Function, er.Class)
+                        ]
+                        if compare in c:
                             # only if we have the correct function we execute
                             # it, otherwise just ignore it.
                             evaluate.follow_paths(iter(last), s, scope)
