@@ -1,4 +1,4 @@
-from _compatibility import u
+from _compatibility import u, encoding, is_py3k
 import inspect
 import time
 
@@ -59,6 +59,8 @@ def print_to_stdout(level, str_out):
         col = Fore.RED
     else:
         col = Fore.YELLOW
+    if not is_py3k:
+        str_out = str_out.encode(encoding, 'replace')
     print(col + str_out + Fore.RESET)
 
 
