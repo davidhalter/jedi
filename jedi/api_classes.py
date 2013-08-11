@@ -103,7 +103,7 @@ class BaseDefinition(object):
 
         >>> from jedi import Script
         >>> source = '''
-        ... import sys
+        ... import keyword
         ...
         ... class C:
         ...     pass
@@ -116,7 +116,7 @@ class BaseDefinition(object):
         ... def f():
         ...     pass
         ...
-        ... variable = sys or f or C or x'''
+        ... variable = keyword or f or C or x'''
         >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
         >>> defs = script.definition()
 
@@ -125,7 +125,7 @@ class BaseDefinition(object):
 
         >>> defs = sorted(defs, key=lambda d: d.line)
         >>> defs                           # doctest: +NORMALIZE_WHITESPACE
-        [<Definition module sys>, <Definition class C>,
+        [<Definition module keyword>, <Definition class C>,
          <Definition class D>, <Definition def f>]
 
         Finally, here is what you can get from :attr:`type`:
@@ -202,14 +202,14 @@ class BaseDefinition(object):
     @property
     def line(self):
         """The line where the definition occurs (starting with 1)."""
-        if self.in_builtin_module:
+        if self.in_builtin_module():
             return None
         return self._start_pos[0]
 
     @property
     def column(self):
         """The column where the definition occurs (starting with 0)."""
-        if self.in_builtin_module:
+        if self.in_builtin_module():
             return None
         return self._start_pos[1]
 
