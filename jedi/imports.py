@@ -262,11 +262,8 @@ class ImportPath(pr.Base):
                 sys.path, temp = sys_path_mod, sys.path
                 try:
                     importing = find_module(string)
-                except ImportError:
-                    # TODO insert finally here
+                finally:
                     sys.path = temp
-                    raise
-                sys.path = temp
 
             return importing
 
