@@ -202,6 +202,13 @@ class ImportPath(pr.Base):
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []
+                if ['os', 'path'] == self.import_path[:2] \
+                        and not self.is_relative_import():
+                    # This is a huge exception, we follow a nested import
+                    # ``os.path``, because it's a very important one in Python
+                    # that is being achieved by messing with ``sys.modules`` in
+                    # ``os``.
+                    scopes = evaluate.follow_path(iter(rest), scope, scope)
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
@@ -221,6 +228,9 @@ class ImportPath(pr.Base):
 
         evaluate.follow_statement.pop_stmt()
         return scopes
+
+    def is_relative_import(self):
+        return bool(self.import_stmt.relative_count)
 
     def get_relative_path(self):
         path = self.file_path
