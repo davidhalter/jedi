@@ -5,14 +5,14 @@ import textwrap
 
 import pytest
 
-from jedi import api
+from jedi import Script
 import jedi
 
 
 def test_is_keyword():
-    results = jedi.Script('import ', 1, 1, None).goto_definitions()
+    results = Script('import ', 1, 1, None).goto_definitions()
     assert len(results) == 1 and results[0].is_keyword == True
-    results = jedi.Script('str', 1, 1, None).goto_definitions()
+    results = Script('str', 1, 1, None).goto_definitions()
     assert len(results) == 1 and results[0].is_keyword == False
 
 def make_definitions():
@@ -39,19 +39,19 @@ def make_definitions():
     """)
 
     definitions = []
-    definitions += api.defined_names(source)
+    definitions += jedi.defined_names(source)
 
     source += textwrap.dedent("""
     variable = sys or C or x or f or g or g() or h""")
     lines = source.splitlines()
-    script = api.Script(source, len(lines), len('variable'), None)
+    script = Script(source, len(lines), len('variable'), None)
     definitions += script.goto_definitions()
 
-    script2 = api.Script(source, 4, len('class C'), None)
+    script2 = Script(source, 4, len('class C'), None)
     definitions += script2.usages()
 
     source_param = "def f(a): return a"
-    script_param = api.Script(source_param, 1, len(source_param), None)
+    script_param = Script(source_param, 1, len(source_param), None)
     definitions += script_param.goto_assignments()
 
     return definitions
@@ -64,7 +64,7 @@ def test_basedefinition_type(definition):
 
 
 def test_function_call_signature_in_doc():
-    defs = jedi.Script("""
+    defs = Script("""
     def f(x, y=1, z='a'):
         pass
     f""").goto_definitions()
@@ -72,10 +72,16 @@ def test_function_call_signature_in_doc():
     assert "f(x, y = 1, z = 'a')" in doc
 
 def test_class_call_signature():
-    defs = jedi.Script("""
+    defs = Script("""
     class Foo:
         def __init__(self, x, y=1, z='a'):
             pass
     Foo""").goto_definitions()
     doc = defs[0].doc
     assert "Foo(self, x, y = 1, z = 'a')" in doc
+
+
+def test_position_none_if_builtin():
+    gotos = Script('import sys; sys.path').goto_assignments()
+    assert gotos[0].line is None
+    assert gotos[0].column is None
