@@ -434,6 +434,10 @@ class Script(object):
         for d in set(definitions):
             if isinstance(d, pr.Module):
                 names.append(api_classes.Usage(d, d))
+            elif isinstance(d, er.Instance):
+                # Instances can be ignored, because they are being created by
+                # ``__getattr__``.
+                pass
             else:
                 names.append(api_classes.Usage(d.names[-1], d))
 
