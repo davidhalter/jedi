@@ -161,9 +161,9 @@ ab1(ClassDef);ab2(ClassDef);ab3(ClassDef)
 # -----------------
 
 for i in range(1):
-    #! ['for i in range(...']
+    #! ['for i in range(1):    i']
     i
 
 for key, value in [(1,2)]:
-    #! ['for key,value i...']
+    #! ['for key,value in [(1...']
     key
