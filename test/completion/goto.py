@@ -155,3 +155,15 @@ def ab2(param): pass
 def ab3(a=param): pass
 
 ab1(ClassDef);ab2(ClassDef);ab3(ClassDef)
+
+# -----------------
+# for loops
+# -----------------
+
+for i in range(1):
+    #! ['for i in range(...']
+    i
+
+for key, value in [(1,2)]:
+    #! ['for key,value i...']
+    key
