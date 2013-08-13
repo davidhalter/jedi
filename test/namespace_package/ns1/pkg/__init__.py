@@ -1,7 +1,7 @@
 foo = 'ns1!'
 
 # this is a namespace package
-try
+try:
     import pkg_resources
     pkg_resources.declare_namespace(__name__)
 except ImportError:

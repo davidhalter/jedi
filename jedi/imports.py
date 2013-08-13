@@ -322,7 +322,7 @@ class ImportPath(pr.Base):
                     rel_path = self.get_relative_path()
                     with common.ignored(ImportError):
                         current_namespace = follow_str(rel_path, '__init__')
-                else:
+                elif current_namespace[2]:  # is a package
                     for n in self._namespace_packages(current_namespace[1],
                                                       self.import_path[:i]):
                         try:
