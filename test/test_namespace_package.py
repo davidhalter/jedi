@@ -41,10 +41,11 @@ def test_namespace_package():
             'import pkg as x': 'ns1!',
         }
         for source, solution in tests.items():
-            completions = jedi.Script(source + '; x.').completions()
-            completions = {c.name: c for c in completions}
+            for c in jedi.Script(source + '; x.').completions():
+                if c.name == 'foo':
+                    completion = c
             solution = "statement: foo = '%s'" % solution
-            assert completions['foo'].description == solution
+            assert completion.description == solution
 
 
     finally:
