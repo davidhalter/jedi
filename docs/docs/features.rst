@@ -40,6 +40,7 @@ Supported Python Features
   case, that doesn't work with |jedi|)
 - simple/usual ``sys.path`` modifications
 - ``isinstance`` checks for if/while/assert
+- namespace packages (includes ``pkgutil`` and ``pkg_resources`` namespaces)
 
 
 Unsupported Features
