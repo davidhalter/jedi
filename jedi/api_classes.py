@@ -373,7 +373,7 @@ class Completion(BaseDefinition):
         if parent is None:
             return ''
         t = self.type
-        if t == 'Statement' or t == 'Import':
+        if t == 'statement' or t == 'import':
             desc = self._definition.get_code(False)
         else:
             desc = '.'.join(unicode(p) for p in self.path)
@@ -497,7 +497,7 @@ class Definition(BaseDefinition):
             d = 'keyword %s' % d.name
         else:
             code = d.get_code().replace('\n', '')
-            max_len = 15
+            max_len = 20
             d = (code[:max_len] + '...') if len(code) > max_len + 3 else code
         return d
 
