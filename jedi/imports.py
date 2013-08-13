@@ -129,7 +129,8 @@ class ImportPath(pr.Base):
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
-                    names += self.get_module_names([pkg_path])
+                    paths = self._namespace_packages(pkg_path, self.import_path)
+                    names += self.get_module_names([pkg_path] + paths)
                 for s, scope_names in evaluate.get_names_of_scope(scope,
                                                                   include_builtin=False):
                     for n in scope_names:
