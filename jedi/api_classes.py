@@ -259,31 +259,7 @@ class BaseDefinition(object):
 
     @property
     def description(self):
-        """
-        A textual description of the object.
-
-        Example:
-
-        >>> from jedi import Script
-        >>> source = '''
-        ... def f():
-        ...     pass
-        ...
-        ... class C:
-        ...     pass
-        ...
-        ... variable = f or C'''
-        >>> script = Script(source, column=3)  # line is maximum by default
-        >>> defs = script.goto_definitions()
-        >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> defs
-        [<Definition def f>, <Definition class C>]
-        >>> str(defs[0].description)  # strip literals in python2
-        'def f'
-        >>> str(defs[1].description)
-        'class C'
-
-        """
+        """A textual description of the object."""
         return unicode(self._definition)
 
     @property
@@ -392,11 +368,7 @@ class Completion(BaseDefinition):
 
     @property
     def description(self):
-        """
-        Provide a description of the completion object.
-
-        .. todo:: return value is just __repr__ of some objects, improve!
-        """
+        """Provide a description of the completion object."""
         parent = self._name.parent
         if parent is None:
             return ''
@@ -483,6 +455,28 @@ class Definition(BaseDefinition):
         """
         A description of the :class:`.Definition` object, which is heavily used
         in testing. e.g. for ``isinstance`` it returns ``def isinstance``.
+
+        Example:
+
+        >>> from jedi import Script
+        >>> source = '''
+        ... def f():
+        ...     pass
+        ...
+        ... class C:
+        ...     pass
+        ...
+        ... variable = f or C'''
+        >>> script = Script(source, column=3)  # line is maximum by default
+        >>> defs = script.goto_definitions()
+        >>> defs = sorted(defs, key=lambda d: d.line)
+        >>> defs
+        [<Definition def f>, <Definition class C>]
+        >>> str(defs[0].description)  # strip literals in python2
+        'def f'
+        >>> str(defs[1].description)
+        'class C'
+
         """
         d = self._definition
         if isinstance(d, er.InstanceElement):
