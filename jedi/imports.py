@@ -238,6 +238,35 @@ class ImportPath(pr.Base):
             path = os.path.dirname(path)
         return path
 
+    def _namespace_packages(self, found_path, import_path):
+        """
+        Returns a list of paths of possible ``pkgutil``/``pkg_resources``
+        namespaces. If the package is no "namespace package", an empty list is
+        returned.
+        """
+        def follow_path(directories, paths):
+            try:
+                directory = next(directories)
+            except StopIteration:
+                return paths
+            else:
+                deeper_paths = []
+                for p in paths:
+                    new = os.path.join(p, directory)
+                    if os.path.isdir(new) and new != found_path:
+                        deeper_paths.append(new)
+                return follow_path(directories, deeper_paths)
+
+        with open(os.path.join(found_path, '__init__.py')) as f:
+            content = f.read()
+            # these are strings that need to be used for namespace packages,
+            # the first one is ``pkgutil``, the second ``pkg_resources``.
+            options = 'declare_namespace(__name__)', 'extend_path(__path__'
+            if options[0] in content or options[1] in content:
+                # It is a namespace, now try to find the rest of the modules.
+                return follow_path(iter(import_path), sys.path)
+        return []
+
     def _follow_file_system(self):
         """
         Find a module with a path (of the module, like usb.backend.libusb10).
@@ -252,7 +281,6 @@ class ImportPath(pr.Base):
 
             global imports_processed
             imports_processed += 1
-            importing = None
             if path is not None:
                 importing = find_module(string, [path])
             else:
@@ -287,16 +315,29 @@ class ImportPath(pr.Base):
             try:
                 current_namespace = follow_str(current_namespace[1], s)
             except ImportError:
+                _continue = False
                 if self.is_relative_import() and len(self.import_path) == 1:
                     # follow `from . import some_variable`
                     rel_path = self.get_relative_path()
                     with common.ignored(ImportError):
                         current_namespace = follow_str(rel_path, '__init__')
-                if current_namespace[1]:
-                    rest = self.import_path[i:]
-                    break
                 else:
-                    module_not_found()
+                    for n in self._namespace_packages(current_namespace[1],
+                                                      self.import_path[:i]):
+                        try:
+                            current_namespace = follow_str(n, s)
+                            if current_namespace[1]:
+                                _continue = True
+                                break
+                        except ImportError:
+                            pass
+
+                if not _continue:
+                    if current_namespace[1]:
+                        rest = self.import_path[i:]
+                        break
+                    else:
+                        module_not_found()
 
         if current_namespace == (None, None, False):
             module_not_found()
