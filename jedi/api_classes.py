@@ -273,14 +273,14 @@ class BaseDefinition(object):
         ...     pass
         ...
         ... variable = f or C'''
-        >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
-        >>> defs = script.goto_definitions()                # doctest: +SKIP
-        >>> defs = sorted(defs, key=lambda d: d.line)       # doctest: +SKIP
-        >>> defs                                            # doctest: +SKIP
+        >>> script = Script(source, column=3)  # line is maximum by default
+        >>> defs = script.goto_definitions()
+        >>> defs = sorted(defs, key=lambda d: d.line)
+        >>> defs
         [<Definition def f>, <Definition class C>]
-        >>> defs[0].description                             # doctest: +SKIP
+        >>> str(defs[0].description)  # strip literals in python2
         'def f'
-        >>> defs[1].description                             # doctest: +SKIP
+        >>> str(defs[1].description)
         'class C'
 
         """
