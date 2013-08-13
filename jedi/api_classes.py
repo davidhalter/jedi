@@ -496,7 +496,9 @@ class Definition(BaseDefinition):
         elif self.is_keyword:
             d = 'keyword %s' % d.name
         else:
-            d = d.get_code().replace('\n', '')
+            code = d.get_code().replace('\n', '')
+            max_len = 15
+            d = (code[:max_len] + '...') if len(code) > max_len + 3 else code
         return d
 
     @property
