@@ -93,7 +93,8 @@ def setup_readline(namespace=__main__.__dict__):
                                     self.matches.append(path + dot + name)
                     else:
                         completions = interpreter.completions()
-                        self.matches = [text + c.complete for c in completions]
+                        self.matches = [path + dot + c.name_with_signs
+                                        for c in completions]
                 try:
                     return self.matches[state]
                 except IndexError:

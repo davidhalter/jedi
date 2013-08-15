@@ -321,16 +321,7 @@ class Completion(BaseDefinition):
 
         self._followed_definitions = None
 
-    @property
-    def complete(self):
-        """
-        Return the rest of the word, e.g. completing ``isinstance``::
-
-            isinstan# <-- Cursor is here
-
-        would return the string 'ce'. It also adds additional stuff, depending
-        on your `settings.py`.
-        """
+    def _complete(self, like_name):
         dot = '.' if self._needs_dot else ''
         append = ''
         if settings.add_bracket_after_function \
@@ -342,7 +333,23 @@ class Completion(BaseDefinition):
                 append += '.'
         if isinstance(self._base, pr.Param):
             append += '='
-        return dot + self._name.names[-1][self._like_name_length:] + append
+
+        name = self._name.names[-1]
+        if like_name:
+            name = name[self._like_name_length:]
+        return dot + name + append
+
+    @property
+    def complete(self):
+        """
+        Return the rest of the word, e.g. completing ``isinstance``::
+
+            isinstan# <-- Cursor is here
+
+        would return the string 'ce'. It also adds additional stuff, depending
+        on your `settings.py`.
+        """
+        return self._complete(True)
 
     @property
     def name(self):
@@ -352,9 +359,21 @@ class Completion(BaseDefinition):
 
             isinstan
 
-        would return 'isinstance'.
+        would return `isinstance`.
         """
         return unicode(self._name.names[-1])
+
+    @property
+    def name_with_signs(self):
+        """
+        Similar to :meth:`Completion.name`, but like :meth:`Completion.name`
+        returns also the signs, for example::
+
+            list()
+
+        would return ``.append`` and others.
+        """
+        return self._complete(False)
 
     @property
     def word(self):
