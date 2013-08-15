@@ -49,6 +49,7 @@ class TestSetupReadline():
     def test_import(self):
         s = 'from os.path import a'
         assert set(self.completions(s)) == set([s + 'ltsep', s + 'bspath'])
+        assert self.completions('import keyword') == ['import keyword']
 
     def test_colorama(self):
         """

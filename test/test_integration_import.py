@@ -28,6 +28,20 @@ def test_complete_on_empty_import():
     assert Script("from datetime import ").completions()
 
 
+def test_imports_on_global_namespace_without_path():
+    """If the path is None, there shouldn't be any import problem"""
+    completions = Script("import operator").completions()
+    assert [c.name for c in completions] == ['operator']
+    completions = Script("import operator", source_path= 'example.py').completions()
+    assert [c.name for c in completions] == ['operator']
+
+    # the first one has a path the second doesn't
+    completions = Script("import keyword", source_path='example.py').completions()
+    assert [c.name for c in completions] == ['keyword']
+    completions = Script("import keyword").completions()
+    assert [c.name for c in completions] == ['keyword']
+
+
 def test_named_import():
     """named import - jedi-vim issue #8"""
     s = "import time as dt"

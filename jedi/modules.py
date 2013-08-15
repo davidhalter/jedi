@@ -335,7 +335,9 @@ def sys_path_with_modifications(module):
         return sys_path
 
     if module.path is None:
-        return []  # support for modules without a path is intentionally bad.
+        # Support for modules without a path is bad, therefore return the
+        # normal path.
+        return list(get_sys_path())
 
     curdir = os.path.abspath(os.curdir)
     with common.ignored(OSError):
