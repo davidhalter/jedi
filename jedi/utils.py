@@ -75,7 +75,10 @@ def setup_readline(namespace=__main__.__dict__):
                     # use the "default" completion with ``getattr`` if
                     # possible.
                     path, dot, like = interpreter._get_completion_parts()
-                    if not path or re.match('^[\w][\w\d.]*$', path):
+                    # Shouldn't be an import statement and just a simple path
+                    # with dots.
+                    if not re.match('^\s*(import|from) ', text) \
+                            and (not path or re.match('^[\w][\w\d.]*$', path)):
                         paths = path.split('.') if path else []
                         namespaces = (namespace, builtins.__dict__)
                         for p in paths:
