@@ -10,7 +10,7 @@ from jedi._compatibility import builtins
 from jedi import Interpreter
 
 
-def setup_readline():
+def setup_readline(namespace=__main__.__dict__):
     """
     Install Jedi completer to :mod:`readline`.
 
@@ -68,7 +68,6 @@ def setup_readline():
                 library module.
                 """
                 if state == 0:
-                    namespace = __main__.__dict__
                     interpreter = Interpreter(text, [namespace])
 
                     # The following part is a bit hackish, because it tries to
@@ -76,20 +75,20 @@ def setup_readline():
                     # use the "default" completion with ``getattr`` if
                     # possible.
                     path, dot, like = interpreter._get_completion_parts()
-                    if re.match('^[\w][\w\d.]*$', path):
+                    if not path or re.match('^[\w][\w\d.]*$', path):
                         paths = path.split('.') if path else []
-                        namespaces = (namespace, builtins)
+                        namespaces = (namespace, builtins.__dict__)
                         for p in paths:
                             old, namespaces = namespaces, []
                             for n in old:
                                 try:
-                                    namespaces.append(getattr(n, p))
-                                except AttributeError:
+                                    namespaces.append(n[p].__dict__)
+                                except (KeyError, AttributeError):
                                     pass
 
                         self.matches = []
                         for n in namespaces:
-                            for name in dir(n):
+                            for name in n.keys():
                                 if name.lower().startswith(like.lower()):
                                     self.matches.append(path + dot + name)
                     else:
@@ -101,8 +100,6 @@ def setup_readline():
                     return None
 
         readline.set_completer(JediRL().complete)
-        j = JediRL()
-        j.complete('r', 0)
 
         readline.parse_and_bind("tab: complete")
         # No delimiters, Jedi handles that.
