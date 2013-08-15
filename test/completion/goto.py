@@ -167,3 +167,7 @@ for i in range(1):
 for key, value in [(1,2)]:
     #! ['for key,value in [(1...']
     key
+
+for i in []:
+    #! ['for i in []:    i']
+    i
