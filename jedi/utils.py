@@ -77,8 +77,8 @@ def setup_readline(namespace=__main__.__dict__):
                     path, dot, like = interpreter._get_completion_parts()
                     # Shouldn't be an import statement and just a simple path
                     # with dots.
-                    if not re.match('^\s*(import|from) ', text) \
-                            and (not path or re.match('^[\w][\w\d.]*$', path)):
+                    is_import = re.match('^\s*(import|from) ', text)
+                    if not is_import and (not path or re.match('^[\w][\w\d.]*$', path)):
                         paths = path.split('.') if path else []
                         namespaces = (namespace, builtins.__dict__)
                         for p in paths:
@@ -96,7 +96,9 @@ def setup_readline(namespace=__main__.__dict__):
                                     self.matches.append(path + dot + name)
                     else:
                         completions = interpreter.completions()
-                        self.matches = [path + dot + c.name_with_symbols
+
+                        before = text[:len(text) - len(like)]
+                        self.matches = [before + c.name_with_symbols
                                         for c in completions]
                 try:
                     return self.matches[state]
