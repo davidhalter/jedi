@@ -5,9 +5,13 @@ from .helpers import TestCase
 
 
 class TestSetupReadline(TestCase):
+    class NameSpace():
+        pass
+
     def __init__(self, *args, **kwargs):
         super(type(self), self).__init__(*args, **kwargs)
-        self.namespace = dict()
+
+        self.namespace = self.NameSpace()
         utils.setup_readline(self.namespace)
 
     def completions(self, text):
@@ -37,8 +41,8 @@ class TestSetupReadline(TestCase):
     def test_modules(self):
         import sys
         import os
-        self.namespace['sys'] = sys
-        self.namespace['os'] = os
+        self.namespace.sys = sys
+        self.namespace.os = os
 
         assert self.completions('os.path.join') == ['os.path.join']
         assert self.completions('os.path.join().upper') == ['os.path.join().upper']
@@ -46,13 +50,18 @@ class TestSetupReadline(TestCase):
         c = set(['os.' + d for d in dir(os) if d.startswith('ch')])
         assert set(self.completions('os.ch')) == set(c)
 
-        del self.namespace['sys']
-        del self.namespace['os']
+        del self.namespace.sys
+        del self.namespace.os
 
     def test_import(self):
         s = 'from os.path import a'
         assert set(self.completions(s)) == set([s + 'ltsep', s + 'bspath'])
         assert self.completions('import keyword') == ['import keyword']
+
+    def test_preexisting_values(self):
+        self.namespace.a = range(10)
+        assert set(self.completions('a.')) == set(['a.' + n for n in dir(range(1))])
+        del self.namespace.a
 
     def test_colorama(self):
         """
@@ -67,7 +76,7 @@ class TestSetupReadline(TestCase):
         except ImportError:
             pass
         else:
-            self.namespace['colorama'] = colorama
+            self.namespace.colorama = colorama
             assert self.completions('colorama')
             assert self.completions('colorama.Fore.BLACK') == ['colorama.Fore.BLACK']
-            del self.namespace['colorama']
+            del self.namespace.colorama
