@@ -322,6 +322,7 @@ def find_name(scope, name_str, position=None, search_global=False,
             par = name.parent
             exc = pr.Class, pr.Function
             until = lambda: par.parent.parent.get_parent_until(exc)
+            is_array_assignment = False
 
             if par is None:
                 pass
@@ -367,7 +368,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                 if is_exe:
                     # filter array[3] = ...
                     # TODO check executions for dict contents
-                    pass
+                    is_array_assignment = True
                 else:
                     details = par.assignment_details
                     if details and details[0][1] != '=':
@@ -384,7 +385,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                 if isinstance(par, pr.Import) and len(par.namespace) > 1:
                     no_break_scope = True
                 result.append(par)
-            return result, no_break_scope
+            return result, no_break_scope, is_array_assignment
 
         flow_scope = scope
         result = []
@@ -400,11 +401,9 @@ def find_name(scope, name_str, position=None, search_global=False,
                         and isinstance(p.var, pr.Class):
                     p = p.var
                 if name_str == name.get_code() and p not in break_scopes:
-                    r, no_break_scope = process(name)
+                    r, no_break_scope, is_array_assignment = process(name)
                     if is_goto:
-                        if r:
-                            # Directly assign the name, but there has to be a
-                            # result.
+                        if not is_array_assignment:  # shouldn't goto arr[1] =
                             result.append(name)
                     else:
                         result += r
