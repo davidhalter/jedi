@@ -46,15 +46,19 @@ class Script(object):
     :type line: int
     :param col: The column of the cursor (starting with 0).
     :type col: int
-    :param source_path: The path of the file in the file system, or ``''`` if
+    :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
-    :type source_path: str or None
+    :type path: str or None
     :param source_encoding: The encoding of ``source``, if it is not a
         ``unicode`` object (default ``'utf-8'``).
     :type source_encoding: str
     """
-    def __init__(self, source, line=None, column=None, source_path=None,
-                 source_encoding='utf-8'):
+    def __init__(self, source, line=None, column=None, path=None,
+                 source_encoding='utf-8', source_path=None):
+        if source_path is not None:
+            warnings.warn("Use path instead of source_path.", DeprecationWarning)
+            path = source_path
+
         lines = source.splitlines()
         line = len(lines) if line is None else line
         column = len(lines[-1]) if column is None else column
@@ -64,11 +68,20 @@ class Script(object):
         self.source = modules.source_to_unicode(source, source_encoding)
         self.pos = line, column
         self._module = modules.ModuleWithCursor(
-            source_path, source=self.source, position=self.pos)
-        self._source_path = source_path
-        self.source_path = None if source_path is None \
-            else os.path.abspath(source_path)
+            path, source=self.source, position=self.pos)
+        self._source_path = path
+        self.path = None if path is None else os.path.abspath(path)
         debug.speed('init')
+
+    @property
+    def source_path(self):
+        """
+        .. deprecated:: 0.7.0
+           Use :attr:`.path` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use path instead of source_path.", DeprecationWarning)
+        return self.path
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, repr(self._source_path))
@@ -556,12 +569,13 @@ class Interpreter(Script):
         """
         super(Interpreter, self).__init__(source, **kwds)
 
+        # Here we add the namespaces to the current parser.
         importer = interpret.ObjectImporter(self._parser.user_scope)
         for ns in namespaces:
             importer.import_raw_namespace(ns)
 
 
-def defined_names(source, source_path=None, source_encoding='utf-8'):
+def defined_names(source, path=None, source_encoding='utf-8'):
     """
     Get all definitions in `source` sorted by its position.
 
@@ -575,7 +589,7 @@ def defined_names(source, source_path=None, source_encoding='utf-8'):
     """
     parser = parsing.Parser(
         modules.source_to_unicode(source, source_encoding),
-        module_path=source_path,
+        module_path=path,
     )
     return api_classes._defined_names(parser.module)
 

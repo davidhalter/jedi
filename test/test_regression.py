@@ -81,7 +81,7 @@ class TestRegression(TestCase):
         src2 = 'from .. import setup; setup.ret(1)'
         # .parser to load the module
         api.modules.Module(os.path.abspath('dynamic.py'), src2).parser
-        result = Script(src1, source_path='../setup.py').goto_definitions()
+        result = Script(src1, path='../setup.py').goto_definitions()
         assert len(result) == 1
         assert result[0].description == 'class int'
 

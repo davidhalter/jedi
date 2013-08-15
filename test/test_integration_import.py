@@ -17,11 +17,11 @@ def test_goto_definition_on_import():
 @cwd_at('jedi')
 def test_complete_on_empty_import():
     # should just list the files in the directory
-    assert 10 < len(Script("from .", source_path='').completions()) < 30
+    assert 10 < len(Script("from .", path='').completions()) < 30
     assert 10 < len(Script("from . import", 1, 5, '').completions()) < 30
     assert 10 < len(Script("from . import classes", 1, 5, '').completions()) < 30
     assert len(Script("import").completions()) == 0
-    assert len(Script("import import", source_path='').completions()) > 0
+    assert len(Script("import import", path='').completions()) > 0
 
     # 111
     assert Script("from datetime import").completions()[0].name == 'import'
@@ -32,11 +32,11 @@ def test_imports_on_global_namespace_without_path():
     """If the path is None, there shouldn't be any import problem"""
     completions = Script("import operator").completions()
     assert [c.name for c in completions] == ['operator']
-    completions = Script("import operator", source_path= 'example.py').completions()
+    completions = Script("import operator", path= 'example.py').completions()
     assert [c.name for c in completions] == ['operator']
 
     # the first one has a path the second doesn't
-    completions = Script("import keyword", source_path='example.py').completions()
+    completions = Script("import keyword", path='example.py').completions()
     assert [c.name for c in completions] == ['keyword']
     completions = Script("import keyword").completions()
     assert [c.name for c in completions] == ['keyword']

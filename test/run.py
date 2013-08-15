@@ -178,7 +178,7 @@ class IntegrationTestCase(object):
             return should_str
 
         script = self.script()
-        should_str = definition(self.correct, self.start, script.source_path)
+        should_str = definition(self.correct, self.start, script.path)
         result = script.goto_definitions()
         is_str = set(r.desc_with_module for r in result)
         return compare_cb(self, is_str, should_str)

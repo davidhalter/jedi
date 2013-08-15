@@ -155,7 +155,7 @@ def extract(script, new_name):
             indent = user_stmt.start_pos[1]
             new = "%s%s = %s" % (' ' * indent, new_name, text)
             new_lines.insert(line_index, new)
-    dct[script.source_path] = script.source_path, old_lines, new_lines
+    dct[script.path] = script.path, old_lines, new_lines
     return Refactoring(dct)
 
 
@@ -196,7 +196,7 @@ def inline(script):
 
         dct = _rename(inlines, replace_str)
         # remove the empty line
-        new_lines = dct[script.source_path][2]
+        new_lines = dct[script.path][2]
         if line.strip():
             new_lines[index] = line
         else:
