@@ -95,12 +95,12 @@ class ModuleWithCursor(Module):
     def __init__(self, path, source, position):
         super(ModuleWithCursor, self).__init__(path, source)
         self.position = position
+        self.source = source
+        self._path_until_cursor = None
 
         # this two are only used, because there is no nonlocal in Python 2
         self._line_temp = None
         self._relevant_temp = None
-
-        self.source = source
 
     @property
     def parser(self):
@@ -121,9 +121,10 @@ class ModuleWithCursor(Module):
 
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
-        result = self._get_path_until_cursor()
-        self._start_cursor_pos = self._start_cursor_pos_temp
-        return result
+        if self._path_until_cursor is None:  # small caching
+            self._path_until_cursor = self._get_path_until_cursor()
+            self._start_cursor_pos = self._start_cursor_pos_temp
+        return self._path_until_cursor
 
     def _get_path_until_cursor(self, start_pos=None):
         def fetch_line():

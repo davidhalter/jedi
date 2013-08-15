@@ -173,3 +173,8 @@ def u(string):
     elif not isinstance(string, unicode):
         return unicode(str(string), 'UTF-8')
     return string
+
+try:
+    import builtins  # module name in python 3
+except ImportError:
+    import __builtin__ as builtins

@@ -4,7 +4,9 @@ Utilities for end-users.
 
 from __future__ import absolute_import
 import __main__
+import re
 
+from jedi._compatibility import builtins
 from jedi import Interpreter
 
 
@@ -61,20 +63,46 @@ def setup_readline():
                 a lot more sense, but probably due to backwards compatibility
                 this is still the way how it works.
 
-                The only important part is the ``Interpreter`` call, everything
-                else hsa been copied from the ``rlcompleter`` std. library
-                module.
+                The only important part is stuff in the ``state == 0`` flow,
+                everything else has been copied from the ``rlcompleter`` std.
+                library module.
                 """
                 if state == 0:
                     namespace = __main__.__dict__
-                    completions = Interpreter(text, [namespace]).completions()
-                    self.matches = [text + c.complete for c in completions]
+                    interpreter = Interpreter(text, [namespace])
+
+                    # The following part is a bit hackish, because it tries to
+                    # directly access some jedi internals. The goal is to just
+                    # use the "default" completion with ``getattr`` if
+                    # possible.
+                    path, dot, like = interpreter._get_completion_parts()
+                    if re.match('^[\w][\w\d.]*$', path):
+                        paths = path.split('.') if path else []
+                        namespaces = (namespace, builtins)
+                        for p in paths:
+                            old, namespaces = namespaces, []
+                            for n in old:
+                                try:
+                                    namespaces.append(getattr(n, p))
+                                except AttributeError:
+                                    pass
+
+                        self.matches = []
+                        for n in namespaces:
+                            for name in dir(n):
+                                if name.lower().startswith(like.lower()):
+                                    self.matches.append(path + dot + name)
+                    else:
+                        completions = interpreter.completions()
+                        self.matches = [text + c.complete for c in completions]
                 try:
                     return self.matches[state]
                 except IndexError:
                     return None
 
         readline.set_completer(JediRL().complete)
+        j = JediRL()
+        j.complete('r', 0)
 
         readline.parse_and_bind("tab: complete")
         # No delimiters, Jedi handles that.

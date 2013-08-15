@@ -91,7 +91,7 @@ class Script(object):
         path = self._module.get_path_until_cursor()
         if re.search('^\.|\.\.$', path):
             return []
-        path, dot, like = self._get_completion_parts(path)
+        path, dot, like = self._get_completion_parts()
         completion_line = self._module.get_line(self.pos[0])[:self.pos[1]]
 
         try:
@@ -506,11 +506,12 @@ class Script(object):
                                kill_count=kill_count, direct_resolve=True)
         return i, cur_name_part
 
-    def _get_completion_parts(self, path):
+    def _get_completion_parts(self):
         """
         Returns the parts for the completion
         :return: tuple - (path, dot, like)
         """
+        path = self._module.get_path_until_cursor()
         match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
         return match.groups()
 
