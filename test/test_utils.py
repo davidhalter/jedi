@@ -1,11 +1,14 @@
 import readline
 
 from jedi import utils
+from .helpers import TestCase
 
 
-class TestSetupReadline():
-    namespace = dict()
-    utils.setup_readline(namespace)
+class TestSetupReadline(TestCase):
+    def __init__(self, *args, **kwargs):
+        super(type(self), self).__init__(*args, **kwargs)
+        self.namespace = dict()
+        utils.setup_readline(self.namespace)
 
     def completions(self, text):
         completer = readline.get_completer()
@@ -37,11 +40,11 @@ class TestSetupReadline():
         self.namespace['sys'] = sys
         self.namespace['os'] = os
 
-        c = set(['os.' + d for d in dir(os) if d.startswith('ch')])
-        assert set(self.completions('os.ch')) == set(c)
-        assert self.completions('os.chdir') == ['os.chdir']
         assert self.completions('os.path.join') == ['os.path.join']
         assert self.completions('os.path.join().upper') == ['os.path.join().upper']
+
+        c = set(['os.' + d for d in dir(os) if d.startswith('ch')])
+        assert set(self.completions('os.ch')) == set(c)
 
         del self.namespace['sys']
         del self.namespace['os']
