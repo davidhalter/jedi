@@ -364,14 +364,14 @@ class Completion(BaseDefinition):
         return unicode(self._name.names[-1])
 
     @property
-    def name_with_signs(self):
+    def name_with_symbols(self):
         """
         Similar to :meth:`Completion.name`, but like :meth:`Completion.name`
-        returns also the signs, for example::
+        returns also the symbols, for example::
 
             list()
 
-        would return ``.append`` and others.
+        would return ``.append`` and others (which means it adds a dot).
         """
         return self._complete(False)
 
