@@ -29,6 +29,8 @@ class TestSetupReadline(TestCase):
     def test_simple(self):
         assert self.completions('list') == ['list']
         assert self.completions('importerror') == ['ImportError']
+        s = "print BaseE"
+        assert self.completions(s) == [s + 'xception']
 
     def test_nested(self):
         assert self.completions('list.Insert') == ['list.insert']
