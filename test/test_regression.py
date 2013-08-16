@@ -12,7 +12,7 @@ import jedi
 from jedi import Script
 from jedi import api, parsing
 
-#jedi.set_debug_function(jedi.debug.print_to_stdout)
+#jedi.set_debug_function()
 
 
 class TestRegression(TestCase):

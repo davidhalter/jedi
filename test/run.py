@@ -304,8 +304,7 @@ if __name__ == '__main__':
     import sys
 
     if arguments['--debug']:
-        from jedi import api, debug
-        api.set_debug_function(debug.print_to_stdout)
+        jedi.set_debug_function()
 
     # get test list, that should be executed
     test_files = {}
