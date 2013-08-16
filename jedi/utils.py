@@ -70,6 +70,7 @@ def setup_readline(namespace_module=__main__):
                 # use the "default" completion with ``getattr`` if
                 # possible.
                 path, dot, like = interpreter._get_completion_parts()
+                before = text[:len(text) - len(like)]
                 # Shouldn't be an import statement and just a simple path
                 # with dots.
                 is_import = re.match('^\s*(import|from) ', text)
@@ -88,11 +89,10 @@ def setup_readline(namespace_module=__main__):
                     for n in namespaces:
                         for name in dir(n):
                             if name.lower().startswith(like.lower()):
-                                self.matches.append(path + dot + name)
+                                self.matches.append(before + name)
                 else:
                     completions = interpreter.completions()
 
-                    before = text[:len(text) - len(like)]
                     self.matches = [before + c.name_with_symbols
                                     for c in completions]
             try:
