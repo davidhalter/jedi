@@ -369,8 +369,9 @@ class SubModule(Scope, Module):
                           self.path)
             # remove PEP 3149 names
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+        # positions are not real therefore choose (0, 0)
         names = [(string, (0, 0))]
-        self._name = Name(self, names, self.start_pos, self.end_pos,
+        self._name = Name(self, names, (0, 0), (0, 0),
                           self.use_as_parent)
         return self._name
 
