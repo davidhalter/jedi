@@ -60,6 +60,21 @@ class TestSubscopes():
         assert name.end_pos == (1, len('def foo'))
         assert str(name) == 'foo'
 
+class TestImports():
+    def get_import(self, source):
+        return Parser(source).module.imports[0]
+
+    def test_import_names(self):
+        imp = self.get_import('import math\n')
+        names = imp.get_defined_names()
+        assert len(names) == 1
+        assert str(names[0]) == 'math'
+        assert names[0].start_pos == (1, len('import '))
+        assert names[0].end_pos == (1, len('import math'))
+
+        assert imp.start_pos == (1, 0)
+        assert imp.end_pos == (1, len('import math'))
+
 
 def test_module():
     module = Parser('asdf', 'example.py', no_docstr=True).module
