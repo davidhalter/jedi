@@ -13,10 +13,14 @@ class Abc():
 
 class Two(Abc):
     def h(self):
-        self.
-"""  #       ^ here is the first completion
+        self
+"""  #      ^ here is the first completion
 
-    b = "    def h(self):\n" \
+    b = "    def g(self):\n" \
         "        self."
+    assert jedi.Script(a, 8, 12, 'example.py').completions()
+    assert  jedi.Script(a + b, path='example.py').completions()
+
+    a = a[:-1] + '.\n'
     assert jedi.Script(a, 8, 13, 'example.py').completions()
     assert  jedi.Script(a + b, path='example.py').completions()
