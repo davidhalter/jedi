@@ -140,6 +140,7 @@ class Parser(object):
         append((tok, self.start_pos))
         first_pos = self.start_pos
         while True:
+            end_pos = self.end_pos
             token_type, tok = self.next()
             if tok != '.':
                 break
@@ -148,8 +149,7 @@ class Parser(object):
                 break
             append((tok, self.start_pos))
 
-        n = pr.Name(self.module, names, first_pos, self.end_pos) if names \
-            else None
+        n = pr.Name(self.module, names, first_pos, end_pos) if names else None
         return n, token_type, tok
 
     def _parse_import_list(self):

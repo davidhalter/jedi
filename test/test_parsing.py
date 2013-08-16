@@ -26,8 +26,8 @@ class TestCallAndName():
 
         call = self.get_call('1.0\n')
         assert call.name == 1.0
-        assert call.name.start_pos == call.start_pos == (1, 0)
-        assert call.name.end_pos == call.end_pos == (1, 3)
+        assert call.start_pos == (1, 0)
+        assert call.end_pos == (1, 3)
 
     def test_call_type(self):
         call = self.get_call('hello')
