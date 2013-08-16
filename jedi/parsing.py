@@ -426,7 +426,9 @@ class Parser(object):
             typ, tok, start_pos, end_pos, self.parserline = next(self._gen)
             # dedents shouldn't change positions
             if typ != tokenize.DEDENT:
-                self.start_pos, self.end_pos = start_pos, end_pos
+                self.start_pos = start_pos
+                if typ not in (tokenize.INDENT, tokenize.NEWLINE, tokenize.NL):
+                    self.start_pos, self.end_pos = start_pos, end_pos
         except (StopIteration, common.MultiLevelStopIteration):
             # on finish, set end_pos correctly
             s = self._scope

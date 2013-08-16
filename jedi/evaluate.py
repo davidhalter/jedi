@@ -133,20 +133,20 @@ def get_names_of_scope(scope, position=None, star_search=True,
     ... ''')
     >>> scope = parser.module.subscopes[0]
     >>> scope
-    <Function: func@3-5>
+    <Function: func@3-4>
 
     `get_names_of_scope` is a generator.  First it yields names from
     most inner scope.
 
     >>> pairs = list(get_names_of_scope(scope))
     >>> pairs[0]
-    (<Function: func@3-5>, [<Name: y@4,4>])
+    (<Function: func@3-4>, [<Name: y@4,4>])
 
     Then it yield the names from one level outer scope.  For this
     example, this is the most outer scope.
 
     >>> pairs[1]
-    (<SubModule: None@1-5>, [<Name: x@2,0>, <Name: func@3,4>])
+    (<SubModule: None@1-4>, [<Name: x@2,0>, <Name: func@3,4>])
 
     Finally, it yields names from builtin, if `include_builtin` is
     true (default).

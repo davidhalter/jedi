@@ -115,7 +115,7 @@ class Script(object):
                         completions.append((p.get_name(), p))
 
             # Do the completion if there is no path before and no import stmt.
-            u = self._parser.user_stmt
+            u = self._user_stmt(True)
             bs = builtin.Builtin.scope
             if isinstance(u, pr.Import):
                 completion_line = self._module.get_position_line()
@@ -139,7 +139,7 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
-                        self._parser.user_stmt or self._parser.user_scope, n):
+                        self._user_stmt(True) or self._parser.user_scope, n):
                     new = api_classes.Completion(c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
@@ -189,15 +189,29 @@ class Script(object):
                     completions.append((c, s))
         return completions
 
-    def _prepare_goto(self, goto_path, is_like_search=False):
+    def _user_stmt(self, is_completion=False):
+        user_stmt = self._parser.user_stmt
+        debug.speed('parsed')
+
+        if is_completion and not user_stmt:
+            # for statements like `from x import ` (cursor not in statement)
+            line = self._module.get_position_line()
+            pos = self.pos[0], len(line) - len(re.search(' *$', line).group(0))
+            # check the last statement
+            last_stmt = self._parser.module.get_statement_for_position(pos,
+                        include_imports=True)
+            if isinstance(last_stmt, pr.Import):
+                user_stmt = last_stmt
+        return user_stmt
+
+    def _prepare_goto(self, goto_path, is_completion=False):
         """
         Base for completions/goto. Basically it returns the resolved scopes
         under cursor.
         """
         debug.dbg('start: %s in %s' % (goto_path, self._parser.user_scope))
 
-        user_stmt = self._parser.user_stmt
-        debug.speed('parsed')
+        user_stmt = self._user_stmt(is_completion)
         if not user_stmt and len(goto_path.split('\n')) > 1:
             # If the user_stmt is not defined and the goto_path is multi line,
             # something's strange. Most probably the backwards tokenizer
@@ -205,7 +219,7 @@ class Script(object):
             return []
 
         if isinstance(user_stmt, pr.Import):
-            scopes = [self._get_on_import_stmt(is_like_search)[0]]
+            scopes = [self._get_on_import_stmt(user_stmt, is_completion)[0]]
         else:
             # just parse one statement, take it and evaluate it
             stmt = self._get_under_cursor_stmt(goto_path)
@@ -386,13 +400,13 @@ class Script(object):
 
         goto_path = self._module.get_path_under_cursor()
         context = self._module.get_context()
-        user_stmt = self._parser.user_stmt
+        user_stmt = self._user_stmt()
         if next(context) in ('class', 'def'):
             user_scope = self._parser.user_scope
             definitions = set([user_scope.name])
             search_name = unicode(user_scope.name)
         elif isinstance(user_stmt, pr.Import):
-            s, name_part = self._get_on_import_stmt()
+            s, name_part = self._get_on_import_stmt(user_stmt)
             try:
                 definitions = [s.follow(is_goto=True)[0]]
             except IndexError:
@@ -432,7 +446,7 @@ class Script(object):
         """
         temp, settings.dynamic_flow_information = \
             settings.dynamic_flow_information, False
-        user_stmt = self._parser.user_stmt
+        user_stmt = self._user_stmt()
         definitions, search_name = self._goto(add_import_name=True)
         if isinstance(user_stmt, pr.Statement):
             c = user_stmt.get_commands()[0]
@@ -484,7 +498,7 @@ class Script(object):
         if call is None:
             return []
 
-        user_stmt = self._parser.user_stmt
+        user_stmt = self._user_stmt()
         with common.scale_speed_settings(settings.scale_function_definition):
             _callable = lambda: evaluate.follow_call(call)
             origins = cache.cache_function_definition(_callable, user_stmt)
@@ -497,17 +511,16 @@ class Script(object):
         debug.speed('func_call start')
         call, index = None, 0
         if call is None:
-            user_stmt = self._parser.user_stmt
+            user_stmt = self._user_stmt()
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
                 call, index, _ = helpers.search_function_definition(
                     user_stmt, self.pos)
         debug.speed('func_call parsed')
         return call, index
 
-    def _get_on_import_stmt(self, is_like_search=False):
+    def _get_on_import_stmt(self, user_stmt, is_like_search=False):
         """ Resolve the user statement, if it is an import. Only resolve the
         parts until the user position. """
-        user_stmt = self._parser.user_stmt
         import_names = user_stmt.get_all_import_names()
         kill_count = -1
         cur_name_part = None

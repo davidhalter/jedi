@@ -285,7 +285,7 @@ class Scope(Simple, IsScope):
                     p = s.get_statement_for_position(pos, include_imports)
                 if p:
                     return p
-            elif s.start_pos <= pos < s.end_pos:
+            elif s.start_pos <= pos <= s.end_pos:
                 return s
 
         for s in self.subscopes:
