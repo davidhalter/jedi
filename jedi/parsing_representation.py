@@ -371,8 +371,7 @@ class SubModule(Scope, Module):
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # positions are not real therefore choose (0, 0)
         names = [(string, (0, 0))]
-        self._name = Name(self, names, (0, 0), (0, 0),
-                          self.use_as_parent)
+        self._name = Name(self, names, (0, 0), (0, 0), self.use_as_parent)
         return self._name
 
     def is_builtin(self):

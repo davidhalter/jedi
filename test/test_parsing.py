@@ -45,6 +45,22 @@ class TestCallAndName():
         assert call.type == pr.Call.STRING
         assert call.name == 'hello'
 
+class TestSubscopes():
+    def get_sub(self, source):
+        return Parser(source).module.subscopes[0]
+
+    def test_subscope_names(self):
+        name = self.get_sub('class Foo: pass').name
+        assert name.start_pos == (1, len('class '))
+        assert name.end_pos == (1, len('class Foo'))
+        assert str(name) == 'Foo'
+
+        name = self.get_sub('def foo(): pass').name
+        assert name.start_pos == (1, len('def '))
+        assert name.end_pos == (1, len('def foo'))
+        assert str(name) == 'foo'
+
+
 def test_module():
     module = Parser('asdf', 'example.py', no_docstr=True).module
     name = module.name
