@@ -655,7 +655,8 @@ class Parser(object):
             # decorator
             elif tok == '@':
                 stmt, tok = self._parse_statement()
-                self._decorators.append(stmt)
+                if stmt is not None:
+                    self._decorators.append(stmt)
             elif tok == 'pass':
                 continue
             elif tok == 'assert':
