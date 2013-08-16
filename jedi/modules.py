@@ -256,6 +256,9 @@ class ModuleWithCursor(Module):
         except IndexError:
             raise StopIteration()
 
+    def get_position_line(self):
+        return self.get_line(self.position[0])[:self.position[1]]
+
 
 def get_sys_path():
     def check_virtual_env(sys_path):

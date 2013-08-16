@@ -105,39 +105,8 @@ class Script(object):
         if re.search('^\.|\.\.$', path):
             return []
         path, dot, like = self._get_completion_parts()
-        completion_line = self._module.get_line(self.pos[0])[:self.pos[1]]
 
-        try:
-            scopes = list(self._prepare_goto(path, True))
-        except NotFoundError:
-            scopes = []
-            scope_generator = evaluate.get_names_of_scope(
-                self._parser.user_scope, self.pos)
-            completions = []
-            for scope, name_list in scope_generator:
-                for c in name_list:
-                    completions.append((c, scope))
-        else:
-            completions = []
-            debug.dbg('possible scopes', scopes)
-            for s in scopes:
-                if s.isinstance(er.Function):
-                    names = s.get_magic_method_names()
-                else:
-                    if isinstance(s, imports.ImportPath):
-                        under = like + self._module.get_path_after_cursor()
-                        if under == 'import':
-                            if not completion_line.endswith('import import'):
-                                continue
-                        a = s.import_stmt.alias
-                        if a and a.start_pos <= self.pos <= a.end_pos:
-                            continue
-                        names = s.get_defined_names(on_import_stmt=True)
-                    else:
-                        names = s.get_defined_names()
-
-                for c in names:
-                    completions.append((c, s))
+        completions = self._simple_complete(path, like)
 
         if not dot:  # named params have no dots
             for call_def in self.call_signatures():
@@ -149,6 +118,7 @@ class Script(object):
             u = self._parser.user_stmt
             bs = builtin.Builtin.scope
             if isinstance(u, pr.Import):
+                completion_line = self._module.get_position_line()
                 if (u.relative_count > 0 or u.from_ns) and not re.search(
                         r'(,|from)\s*$|import\s+$', completion_line):
                     completions += ((k, bs) for k
@@ -183,6 +153,42 @@ class Script(object):
         return sorted(comps, key=lambda x: (x.name.startswith('__'),
                                             x.name.startswith('_'),
                                             x.name.lower()))
+
+    def _simple_complete(self, path, like):
+        try:
+            scopes = list(self._prepare_goto(path, True))
+        except NotFoundError:
+            scopes = []
+            scope_generator = evaluate.get_names_of_scope(
+                self._parser.user_scope, self.pos)
+            completions = []
+            for scope, name_list in scope_generator:
+                for c in name_list:
+                    completions.append((c, scope))
+        else:
+            completions = []
+            debug.dbg('possible scopes', scopes)
+            for s in scopes:
+                if s.isinstance(er.Function):
+                    names = s.get_magic_method_names()
+                else:
+                    if isinstance(s, imports.ImportPath):
+                        under = like + self._module.get_path_after_cursor()
+                        if under == 'import':
+                            current_line = self._module.get_position_line()
+                            if not current_line.endswith('import import'):
+                                continue
+                        a = s.import_stmt.alias
+                        if a and a.start_pos <= self.pos <= a.end_pos:
+                            continue
+                        names = s.get_defined_names(on_import_stmt=True)
+                    else:
+                        names = s.get_defined_names()
+
+                for c in names:
+                    completions.append((c, s))
+        return completions
+
 
     def _prepare_goto(self, goto_path, is_like_search=False):
         """
