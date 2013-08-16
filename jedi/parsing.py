@@ -81,7 +81,7 @@ class Parser(object):
         if self._current[0] in (tokenize.NL, tokenize.NEWLINE):
             # we added a newline before, so we need to "remove" it again.
             self.end_pos = self._gen.previous[2]
-        if self._current[0] == tokenize.INDENT:
+        elif self._current[0] == tokenize.INDENT:
             self.end_pos = self._gen.last_previous[2]
 
         self.start_pos = self.module.start_pos

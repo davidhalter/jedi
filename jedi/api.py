@@ -189,7 +189,6 @@ class Script(object):
                     completions.append((c, s))
         return completions
 
-
     def _prepare_goto(self, goto_path, is_like_search=False):
         """
         Base for completions/goto. Basically it returns the resolved scopes
