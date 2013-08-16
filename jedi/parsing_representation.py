@@ -911,7 +911,7 @@ class Statement(Simple):
             level = 1
             tok = None
             first = True
-            end_pos = None
+            end_pos = None, None
             for i, tok_temp in token_iterator:
                 if isinstance(tok_temp, Base):
                     # the token is a Name, which has already been parsed
@@ -1042,8 +1042,10 @@ class Statement(Simple):
                 tok = tok_temp
                 token_type = None
                 start_pos = tok.start_pos
+                end_pos = tok.end_pos
             else:
                 token_type, tok, start_pos = tok_temp
+                end_pos = start_pos[0], start_pos[1] + len(tok)
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
@@ -1072,7 +1074,7 @@ class Statement(Simple):
                     elif token_type == tokenize.NUMBER:
                         c_type = Call.NUMBER
 
-                call = Call(self._sub_module, tok, c_type, start_pos, self)
+                call = Call(self._sub_module, tok, c_type, start_pos, end_pos, self)
                 if is_chain:
                     result[-1].set_next(call)
                 else:
@@ -1100,13 +1102,13 @@ class Statement(Simple):
                     token_iterator.push_back((i, tok))
                 t = self.token_list[i - 1]
                 try:
-                    end_pos = t.end_pos
+                    e = t.end_pos
                 except AttributeError:
-                    end_pos = (t[2][0], t[2][1] + len(t[1])) \
+                    e = (t[2][0], t[2][1] + len(t[1])) \
                         if isinstance(t, tuple) else t.start_pos
 
                 stmt = Statement(self._sub_module, [], [], result,
-                                 start_pos, end_pos, self.parent)
+                                 start_pos, e, self.parent)
                 stmt._commands = result
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
                                              stmt.start_pos, stmt)
@@ -1162,8 +1164,8 @@ class Call(Simple):
     NUMBER = 2
     STRING = 3
 
-    def __init__(self, module, name, type, start_pos, parent=None):
-        super(Call, self).__init__(module, start_pos)
+    def __init__(self, module, name, type, start_pos, end_pos, parent=None):
+        super(Call, self).__init__(module, start_pos, end_pos)
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
@@ -1242,10 +1244,10 @@ class Array(Call):
     SET = 'set'
 
     def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None):
-        super(Array, self).__init__(module, None, arr_type, start_pos, parent)
+        super(Array, self).__init__(module, None, arr_type, start_pos, (None, None), parent)
+        self.end_pos = None, None
         self.values = []
         self.keys = []
-        self.end_pos = None, None
 
     def add_statement(self, statement, is_key=False):
         """Just add a new statement"""
