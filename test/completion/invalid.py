@@ -61,6 +61,16 @@ def f(seq1...=None):
 #? int()
 f(1)
 
+@
+def test_empty_decorator():
+    return 1
+
+#? int()
+test_empty_decorator()
+
+# -----------------
+# flows
+# -----------------
 
 # first part not complete (raised errors)
 if a
