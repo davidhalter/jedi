@@ -1,7 +1,7 @@
 .. include:: ../global.rst
 
-Jedi autocompletion in the Python interpreter
-=============================================
+Tab completion in the Python Shell
+==================================
 
 There are two different options how you can use Jedi autocompletion in
 your Python interpreter. One with your custom ``$HOME/.pythonrc.py`` file
