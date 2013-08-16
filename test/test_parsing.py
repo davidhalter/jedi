@@ -13,11 +13,30 @@ def test_user_statement_on_import():
         assert [str(n) for n in u.get_defined_names()] == ['time']
 
 
-def test_name_and_call_positions():
-    stmt = Parser('name\nsomething_else').module.statements[0]
-    call = stmt.get_commands()[0]
-    name = call.name
-    print call, name
-    assert str(name) == 'name'
-    assert name.start_pos == call.start_pos == (1, 0)
-    assert name.end_pos == call.end_pos == (1, 4)
+class TestCallAndName():
+    def get_call(self, source):
+        stmt = Parser(source, no_docstr=True).module.statements[0]
+        return stmt.get_commands()[0]
+
+    def test_name_and_call_positions(self):
+        call = self.get_call('name\ncall, something_else')
+        name = call.name
+        assert str(name) == 'name'
+        assert name.start_pos == call.start_pos == (1, 0)
+        assert name.end_pos == call.end_pos == (1, 4)
+
+    def test_call_type(self):
+        call = self.get_call('hello')
+        assert call.type == pr.Call.NAME
+        assert type(call.name) == pr.Name
+
+        call = self.get_call('1.0')
+        assert type(call.name) == float
+        assert call.type == pr.Call.NUMBER
+        call = self.get_call('1')
+        assert type(call.name) == int
+        assert call.type == pr.Call.NUMBER
+
+        call = self.get_call('"hello"')
+        assert call.type == pr.Call.STRING
+        assert call.name == 'hello'
