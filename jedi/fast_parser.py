@@ -192,7 +192,12 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.module = Module(self.parsers)
         self.reset_caches()
 
-        self._parse(code)
+        try:
+            self._parse(code)
+        except:
+            # FastParser is cached, be careful with exceptions
+            self.parsers[:] = []
+            raise
 
     @property
     def user_scope(self):
@@ -221,7 +226,13 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.user_position = user_position
         self.reset_caches()
 
-        self._parse(code)
+
+        try:
+            self._parse(code)
+        except:
+            # FastParser is cached, be careful with exceptions
+            self.parsers[:] = []
+            raise
 
     def _scan_user_scope(self, sub_module):
         """ Scan with self.user_position. """
