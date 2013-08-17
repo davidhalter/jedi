@@ -60,6 +60,13 @@ class TestSetupReadline(TestCase):
         assert set(self.completions(s)) == set([s + 'ltsep', s + 'bspath'])
         assert self.completions('import keyword') == ['import keyword']
 
+        import os
+        s = 'from os import '
+        goal = set([s + el for el in dir(os)])
+        # There are minor differences, e.g. the dir doesn't include deleted
+        # items as well as items that are not only available on linux.
+        assert len(set(self.completions(s)).symmetric_difference(goal)) < 20
+
     def test_preexisting_values(self):
         self.namespace.a = range(10)
         assert set(self.completions('a.')) == set(['a.' + n for n in dir(range(1))])

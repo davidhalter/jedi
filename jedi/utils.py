@@ -4,9 +4,7 @@ Utilities for end-users.
 
 from __future__ import absolute_import
 import __main__
-import re
 
-from jedi._compatibility import builtins
 from jedi import Interpreter
 
 
@@ -65,36 +63,11 @@ def setup_readline(namespace_module=__main__):
             if state == 0:
                 interpreter = Interpreter(text, [namespace_module.__dict__])
 
-                # The following part is a bit hackish, because it tries to
-                # directly access some jedi internals. The goal is to just
-                # use the "default" completion with ``getattr`` if
-                # possible.
                 path, dot, like = interpreter._get_completion_parts()
                 before = text[:len(text) - len(like)]
-                # Shouldn't be an import statement and just a simple path
-                # with dots.
-                is_import = re.match('^\s*(import|from) ', text)
-                if not is_import and (not path or re.match('^[\w][\w\d.]*$', path)):
-                    paths = path.split('.') if path else []
-                    namespaces = (namespace_module, builtins)
-                    for p in paths:
-                        old, namespaces = namespaces, []
-                        for n in old:
-                            try:
-                                namespaces.append(getattr(n, p))
-                            except AttributeError:
-                                pass
+                completions = interpreter.completions()
 
-                    self.matches = []
-                    for n in namespaces:
-                        for name in dir(n):
-                            if name.lower().startswith(like.lower()):
-                                self.matches.append(before + name)
-                else:
-                    completions = interpreter.completions()
-
-                    self.matches = [before + c.name_with_symbols
-                                    for c in completions]
+                self.matches = [before + c.name_with_symbols for c in completions]
             try:
                 return self.matches[state]
             except IndexError:

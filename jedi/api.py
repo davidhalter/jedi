@@ -11,6 +11,7 @@ from __future__ import with_statement
 import re
 import os
 import warnings
+from itertools import chain
 
 from jedi import parsing
 from jedi import parsing_representation as pr
@@ -21,7 +22,7 @@ from jedi import common
 from jedi import cache
 from jedi import modules
 from jedi import interpret
-from jedi._compatibility import next, unicode
+from jedi._compatibility import next, unicode, builtins
 import keywords
 import evaluate
 import api_classes
@@ -586,11 +587,54 @@ class Interpreter(Script):
         `source`.
         """
         super(Interpreter, self).__init__(source, **kwds)
+        self.namespaces = namespaces
 
         # Here we add the namespaces to the current parser.
         importer = interpret.ObjectImporter(self._parser.user_scope)
         for ns in namespaces:
             importer.import_raw_namespace(ns)
+
+    def _simple_complete(self, path, like):
+        user_stmt = self._user_stmt(True)
+        is_simple_path = not path or re.search('^[\w][\w\d.]*$', path)
+        if isinstance(user_stmt, pr.Import) or not is_simple_path:
+            return super(type(self), self)._simple_complete(path, like)
+        else:
+            class NamespaceModule:
+                def __getattr__(_, name):
+                    for n in self.namespaces:
+                        try:
+                            return n[name]
+                        except KeyError:
+                            pass
+                    raise AttributeError()
+
+                def __dir__(_):
+                    return list(set(chain.from_iterable(n.keys()
+                                    for n in self.namespaces)))
+
+            paths = path.split('.') if path else []
+
+            namespaces = (NamespaceModule(), builtins)
+            for p in paths:
+                old, namespaces = namespaces, []
+                for n in old:
+                    try:
+                        namespaces.append(getattr(n, p))
+                    except AttributeError:
+                        pass
+
+            completions = []
+            for n in namespaces:
+                for name in dir(n):
+                    if name.lower().startswith(like.lower()):
+                        scope = self._parser.module
+                        n = pr.Name(self._parser.module, [(name, (0, 0))],
+                                    (0, 0), (0, 0), scope)
+                        completions.append((n, scope))
+            return completions
+
+
 
 
 def defined_names(source, path=None, source_encoding='utf-8'):
