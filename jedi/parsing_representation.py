@@ -266,7 +266,7 @@ class Scope(Simple, IsScope):
         :return: True if there are no subscopes, imports and statements.
         :rtype: bool
         """
-        return not (self.imports or self.subscopes or self.statements)
+        return not (self.imports or self.subscopes or self.statements or self.returns)
 
     @Python3Method
     def get_statement_for_position(self, pos, include_imports=False):
@@ -478,9 +478,6 @@ class Function(Scope):
                 string += indention
             string += 'pass\n'
         return string
-
-    def is_empty(self):
-        return super(Function, self).is_empty() and not self.returns
 
     def get_set_vars(self):
         n = super(Function, self).get_set_vars()
