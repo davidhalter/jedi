@@ -141,10 +141,16 @@ a[0]
 int()).
 
 # -----------------
-# goto
+# keywords
 # -----------------
 
 #! []
 as
+
+def empty_assert():
+    x = 3
+    assert
+    #? int()
+    x
 
 import datetime as 
