@@ -55,6 +55,10 @@ class TestSetupReadline(TestCase):
         del self.namespace.sys
         del self.namespace.os
 
+    def test_calls(self):
+        s = 'str(bytes'
+        assert self.completions(s) == [s, 'str(BytesWarning']
+
     def test_import(self):
         s = 'from os.path import a'
         assert set(self.completions(s)) == set([s + 'ltsep', s + 'bspath'])

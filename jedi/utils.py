@@ -80,5 +80,7 @@ def setup_readline(namespace_module=__main__):
     else:
         readline.set_completer(JediRL().complete)
         readline.parse_and_bind("tab: complete")
+        # jedi itself does the case matching
+        readline.parse_and_bind("set completion-ignore-case on")
         # No delimiters, Jedi handles that.
         readline.set_completer_delims('')
