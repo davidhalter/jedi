@@ -70,7 +70,7 @@ class BaseDefinition(object):
     }.items())
 
     def __init__(self, definition, start_pos):
-        self.start_pos = start_pos
+        self._start_pos = start_pos
         self._definition = definition
         """
         An instance of :class:`jedi.parsing_representation.Base` subclass.
@@ -82,18 +82,28 @@ class BaseDefinition(object):
         self.module_path = self._module.path
 
     @property
+    def start_pos(self):
+        """
+        .. deprecated:: 0.7.0
+           Use :attr:`.line` and :attr:`.column` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use line/column instead.", DeprecationWarning)
+        return self._start_pos
+
+    @property
     def type(self):
         """
         The type of the definition.
 
         Here is an example of the value of this attribute.  Let's consider
         the following source.  As what is in ``variable`` is unambiguous
-        to Jedi, :meth:`api.Script.definition` should return a list of
+        to Jedi, :meth:`api.Script.goto_definitions` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
         >>> from jedi import Script
         >>> source = '''
-        ... import sys
+        ... import keyword
         ...
         ... class C:
         ...     pass
@@ -106,16 +116,16 @@ class BaseDefinition(object):
         ... def f():
         ...     pass
         ...
-        ... variable = sys or f or C or x'''
+        ... variable = keyword or f or C or x'''
         >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
-        >>> defs = script.definition()
+        >>> defs = script.goto_definitions()
 
         Before showing what is in ``defs``, let's sort it by :attr:`line`
         so that it is easy to relate the result to the source code.
 
         >>> defs = sorted(defs, key=lambda d: d.line)
         >>> defs                           # doctest: +NORMALIZE_WHITESPACE
-        [<Definition module sys>, <Definition class C>,
+        [<Definition module keyword>, <Definition class C>,
          <Definition class D>, <Definition def f>]
 
         Finally, here is what you can get from :attr:`type`:
@@ -142,9 +152,19 @@ class BaseDefinition(object):
     def path(self):
         """The module path."""
         path = []
+
+        def insert_nonnone(x):
+            if x:
+                path.insert(0, x)
+
         if not isinstance(self._definition, keywords.Keyword):
             par = self._definition
             while par is not None:
+                if isinstance(par, pr.Import):
+                    insert_nonnone(par.namespace)
+                    insert_nonnone(par.from_ns)
+                    if par.relative_count == 0:
+                        break
                 with common.ignored(AttributeError):
                     path.insert(0, par.name)
                 par = par.parent
@@ -158,7 +178,7 @@ class BaseDefinition(object):
         >>> from jedi import Script
         >>> source = 'import datetime'
         >>> script = Script(source, 1, len(source), 'example.py')
-        >>> d = script.definition()[0]
+        >>> d = script.goto_definitions()[0]
         >>> print(d.module_name)                       # doctest: +ELLIPSIS
         datetime
         """
@@ -182,12 +202,16 @@ class BaseDefinition(object):
     @property
     def line(self):
         """The line where the definition occurs (starting with 1)."""
-        return self.start_pos[0]
+        if self.in_builtin_module():
+            return None
+        return self._start_pos[0]
 
     @property
     def column(self):
         """The column where the definition occurs (starting with 0)."""
-        return self.start_pos[1]
+        if self.in_builtin_module():
+            return None
+        return self._start_pos[1]
 
     @property
     def doc(self):
@@ -202,7 +226,7 @@ class BaseDefinition(object):
         ...     "Document for function f."
         ... '''
         >>> script = Script(source, 1, len('def f'), 'example.py')
-        >>> d = script.definition()[0]
+        >>> d = script.goto_definitions()[0]
         >>> print(d.doc)
         f(a, b = 1)
         <BLANKLINE>
@@ -235,31 +259,7 @@ class BaseDefinition(object):
 
     @property
     def description(self):
-        """
-        A textual description of the object.
-
-        Example:
-
-        >>> from jedi import Script
-        >>> source = '''
-        ... def f():
-        ...     pass
-        ...
-        ... class C:
-        ...     pass
-        ...
-        ... variable = f or C'''
-        >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
-        >>> defs = script.definition()                      # doctest: +SKIP
-        >>> defs = sorted(defs, key=lambda d: d.line)       # doctest: +SKIP
-        >>> defs                                            # doctest: +SKIP
-        [<Definition def f>, <Definition class C>]
-        >>> defs[0].description                             # doctest: +SKIP
-        'def f'
-        >>> defs[1].description                             # doctest: +SKIP
-        'class C'
-
-        """
+        """A textual description of the object."""
         return unicode(self._definition)
 
     @property
@@ -278,7 +278,7 @@ class BaseDefinition(object):
         ... import os
         ... os.path.join'''
         >>> script = Script(source, 3, len('os.path.join'), 'example.py')
-        >>> print(script.definition()[0].full_name)
+        >>> print(script.goto_definitions()[0].full_name)
         os.path.join
 
         Notice that it correctly returns ``'os.path.join'`` instead of
@@ -321,6 +321,24 @@ class Completion(BaseDefinition):
 
         self._followed_definitions = None
 
+    def _complete(self, like_name):
+        dot = '.' if self._needs_dot else ''
+        append = ''
+        if settings.add_bracket_after_function \
+                and self.type == 'Function':
+            append = '('
+
+        if settings.add_dot_after_module:
+            if isinstance(self._base, pr.Module):
+                append += '.'
+        if isinstance(self._base, pr.Param):
+            append += '='
+
+        name = self._name.names[-1]
+        if like_name:
+            name = name[self._like_name_length:]
+        return dot + name + append
+
     @property
     def complete(self):
         """
@@ -331,18 +349,7 @@ class Completion(BaseDefinition):
         would return the string 'ce'. It also adds additional stuff, depending
         on your `settings.py`.
         """
-        dot = '.' if self._needs_dot else ''
-        append = ''
-        if settings.add_bracket_after_function \
-                    and self.type == 'Function':
-            append = '('
-
-        if settings.add_dot_after_module:
-            if isinstance(self._base, pr.Module):
-                append += '.'
-        if isinstance(self._base, pr.Param):
-            append += '='
-        return dot + self._name.names[-1][self._like_name_length:] + append
+        return self._complete(True)
 
     @property
     def name(self):
@@ -352,9 +359,21 @@ class Completion(BaseDefinition):
 
             isinstan
 
-        would return 'isinstance'.
+        would return `isinstance`.
         """
         return unicode(self._name.names[-1])
+
+    @property
+    def name_with_symbols(self):
+        """
+        Similar to :meth:`Completion.name`, but like :meth:`Completion.name`
+        returns also the symbols, for example::
+
+            list()
+
+        would return ``.append`` and others (which means it adds a dot).
+        """
+        return self._complete(False)
 
     @property
     def word(self):
@@ -366,19 +385,14 @@ class Completion(BaseDefinition):
         warnings.warn("Use name instead.", DeprecationWarning)
         return self.name
 
-
     @property
     def description(self):
-        """
-        Provide a description of the completion object.
-
-        .. todo:: return value is just __repr__ of some objects, improve!
-        """
+        """Provide a description of the completion object."""
         parent = self._name.parent
         if parent is None:
             return ''
         t = self.type
-        if t == 'Statement' or t == 'Import':
+        if t == 'statement' or t == 'import':
             desc = self._definition.get_code(False)
         else:
             desc = '.'.join(unicode(p) for p in self.path)
@@ -404,7 +418,7 @@ class Completion(BaseDefinition):
                 return [self]
 
             self._followed_definitions = \
-                            [BaseDefinition(d, d.start_pos) for d in defs]
+                [BaseDefinition(d, d.start_pos) for d in defs]
             _clear_caches()
 
         return self._followed_definitions
@@ -460,6 +474,28 @@ class Definition(BaseDefinition):
         """
         A description of the :class:`.Definition` object, which is heavily used
         in testing. e.g. for ``isinstance`` it returns ``def isinstance``.
+
+        Example:
+
+        >>> from jedi import Script
+        >>> source = '''
+        ... def f():
+        ...     pass
+        ...
+        ... class C:
+        ...     pass
+        ...
+        ... variable = f or C'''
+        >>> script = Script(source, column=3)  # line is maximum by default
+        >>> defs = script.goto_definitions()
+        >>> defs = sorted(defs, key=lambda d: d.line)
+        >>> defs
+        [<Definition def f>, <Definition class C>]
+        >>> str(defs[0].description)  # strip literals in python2
+        'def f'
+        >>> str(defs[1].description)
+        'class C'
+
         """
         d = self._definition
         if isinstance(d, er.InstanceElement):
@@ -479,7 +515,9 @@ class Definition(BaseDefinition):
         elif self.is_keyword:
             d = 'keyword %s' % d.name
         else:
-            d = d.get_code().replace('\n', '')
+            code = d.get_code().replace('\n', '')
+            max_len = 20
+            d = (code[:max_len] + '...') if len(code) > max_len + 3 else code
         return d
 
     @property
@@ -494,7 +532,7 @@ class Definition(BaseDefinition):
             `module.class.function` path.
         """
         if self.module_path.endswith('.py') \
-                    and not isinstance(self._definition, pr.Module):
+                and not isinstance(self._definition, pr.Module):
             position = '@%s' % (self.line)
         else:
             # is a builtin or module
@@ -537,14 +575,14 @@ class Usage(BaseDefinition):
 
     @property
     def description(self):
-        return "%s@%s,%s" % (self.text, self.start_pos[0], self.start_pos[1])
+        return "%s@%s,%s" % (self.text, self.line, self.column)
 
     def __eq__(self, other):
-        return self.start_pos == other.start_pos \
+        return self._start_pos == other._start_pos \
             and self.module_path == other.module_path
 
     def __hash__(self):
-        return hash((self.start_pos, self.module_path))
+        return hash((self._start_pos, self.module_path))
 
 
 class CallDef(object):
@@ -591,4 +629,4 @@ class CallDef(object):
 
     def __repr__(self):
         return '<%s: %s index %s>' % (type(self).__name__, self._executable,
-                                    self.index)
+                                      self.index)

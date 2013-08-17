@@ -127,8 +127,10 @@ cache_directory = os.path.expanduser(_cache_directory)
 """
 The path where all the caches can be found.
 
-On Linux, this defaults to ``~/.cache/jedi/``, on OS X to ``~/.jedi/`` and on
-Windows to ``%APPDATA%\\Jedi\\Jedi\\``.
+On Linux, this defaults to ``~/.cache/jedi/``, on OS X to
+``~/Library/Caches/Jedi/`` and on Windows to ``%APPDATA%\\Jedi\\Jedi\\``.
+On Linux, if environment variable ``$XDG_CACHE_HOME`` is set,
+``$XDG_CACHE_HOME/jedi`` is used instead of the default one.
 """
 
 # ----------------
@@ -171,6 +173,11 @@ additional_dynamic_modules = []
 """
 Additional modules in which |jedi| checks if statements are to be found. This
 is practical for IDEs, that want to administrate their modules themselves.
+"""
+
+dynamic_flow_information = True
+"""
+Check for `isinstance` and other information to infer a type.
 """
 
 # ----------------

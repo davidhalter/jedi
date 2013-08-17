@@ -100,12 +100,8 @@ import os
 import re
 from ast import literal_eval
 
-if __name__ == '__main__':
-    import sys
-    sys.path.insert(0, '..')
-
 import jedi
-from jedi._compatibility import unicode, reduce, StringIO
+from jedi._compatibility import unicode, reduce, StringIO, is_py3k
 
 
 TEST_COMPLETIONS = 0
@@ -182,7 +178,7 @@ class IntegrationTestCase(object):
             return should_str
 
         script = self.script()
-        should_str = definition(self.correct, self.start, script.source_path)
+        should_str = definition(self.correct, self.start, script.path)
         result = script.goto_definitions()
         is_str = set(r.desc_with_module for r in result)
         return compare_cb(self, is_str, should_str)
@@ -195,8 +191,7 @@ class IntegrationTestCase(object):
     def run_usages(self, compare_cb):
         result = self.script().usages()
         self.correct = self.correct.strip()
-        compare = sorted((r.module_name, r.start_pos[0], r.start_pos[1])
-                                                            for r in result)
+        compare = sorted((r.module_name, r.line, r.column) for r in result)
         wanted = []
         if not self.correct:
             positions = []
@@ -221,7 +216,8 @@ def collect_file_tests(lines, lines_to_execute):
     test_type = None
     for line_nr, line in enumerate(lines):
         line_nr += 1  # py2.5 doesn't know about the additional enumerate param
-        line = unicode(line)
+        if not is_py3k:
+            line = unicode(line, 'UTF-8')
         if correct:
             r = re.match('^(\d+)\s*(.*)$', correct)
             if r:
@@ -280,37 +276,40 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
                 yield case
 
 
+
+docoptstr = """
+Using run.py to make debugging easier with integration tests.
+
+An alternative testing format, which is much more hacky, but very nice to
+work with.
+
+Usage:
+    run.py [--pdb] [--debug] [--thirdparty] [<rest>...]
+    run.py --help
+
+Options:
+    -h --help       Show this screen.
+    --pdb           Enable pdb debugging on fail.
+    -d, --debug     Enable text output debugging (please install ``colorama``).
+    --thirdparty    Also run thirdparty tests (in ``completion/thirdparty``).
+"""
 if __name__ == '__main__':
-    # an alternative testing format, this is much more hacky, but very nice to
-    # work with.
+    import docopt
+    arguments = docopt.docopt(docoptstr)
 
     import time
     t_start = time.time()
     # Sorry I didn't use argparse here. It's because argparse is not in the
     # stdlib in 2.5.
-    args = sys.argv[1:]
-    try:
-        i = args.index('--thirdparty')
-        thirdparty = True
-        args = args[:i] + args[i + 1:]
-    except ValueError:
-        thirdparty = False
+    import sys
 
-    print_debug = False
-    try:
-        i = args.index('--debug')
-        args = args[:i] + args[i + 1:]
-    except ValueError:
-        pass
-    else:
-        from jedi import api, debug
-        print_debug = True
-        api.set_debug_function(debug.print_to_stdout)
+    if arguments['--debug']:
+        jedi.set_debug_function()
 
     # get test list, that should be executed
     test_files = {}
     last = None
-    for arg in args:
+    for arg in arguments['<rest>']:
         if arg.isdigit():
             if last is None:
                 continue
@@ -326,7 +325,7 @@ if __name__ == '__main__':
 
     # execute tests
     cases = list(collect_dir_tests(completion_test_dir, test_files))
-    if test_files or thirdparty:
+    if test_files or arguments['--thirdparty']:
         completion_test_dir += '/thirdparty'
         cases += collect_dir_tests(completion_test_dir, test_files, True)
 
@@ -356,6 +355,10 @@ if __name__ == '__main__':
             print("\ttest fail @%d" % (c.line_nr - 1))
             tests_fail += 1
             fails += 1
+            if arguments['--pdb']:
+                import pdb
+                pdb.post_mortem()
+
         count += 1
 
         if current != c.path:

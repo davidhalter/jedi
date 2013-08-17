@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 from __future__ import with_statement
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    # Distribute is not actually required to install
+    from distutils.core import setup
 
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
@@ -19,7 +23,7 @@ setup(name='jedi',
       maintainer=__AUTHOR__,
       maintainer_email=__AUTHOR_EMAIL__,
       url='https://github.com/davidhalter/jedi',
-      license='LGPLv3',
+      license='MIT',
       keywords='python completion refactoring vim',
       long_description=readme,
       packages=['jedi'],
@@ -29,7 +33,7 @@ setup(name='jedi',
           'Development Status :: 4 - Beta',
           'Environment :: Plugins',
           'Intended Audience :: Developers',
-          'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
+          'License :: OSI Approved :: MIT License',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 2.6',

@@ -46,6 +46,15 @@ def multi_line_func(a, # comment blabla
 #? str()
 multi_line_func(1,'')
 
+# nothing after comma
+def asdf(a):
+    return a
+
+x = asdf(a=1,
+    )
+#? int()
+x
+
 # -----------------
 # double execution
 # -----------------
@@ -146,14 +155,28 @@ def a():
 # -----------------
 
 def args_func(*args):
+    #? tuple()
     return args
 
 exe = args_func(1, "")
 #? int()
 exe[0]
-
 #? str()
 exe[1]
+
+# illegal args (TypeError)
+#? 
+args_func(*1)[0]
+# iterator
+#? int()
+args_func(*iter([1]))[0]
+
+# different types
+e = args_func(*[1+"", {}])
+#? int() str()
+e[0]
+#? dict()
+e[1]
 
 _list = [1,""]
 exe2 = args_func(_list)[0]
@@ -181,6 +204,9 @@ exe[1][1]
 # ** kwargs
 # -----------------
 def kwargs_func(**kwargs):
+    #? ['keys']
+    kwargs.keys
+    #? dict()
     return kwargs
 
 exe = kwargs_func(a=3,b=4.0)
@@ -201,6 +227,12 @@ exe2['a']
 # -----------------
 # *args / ** kwargs
 # -----------------
+
+def func_without_call(*args, **kwargs):
+    #? tuple()
+    args
+    #? dict()
+    kwargs
 
 def fu(a=1, b="", *args, **kwargs):
     return a, b, args, kwargs
@@ -411,3 +443,9 @@ arg_func(1, 2, a=[], b=10)[1]
 a = lambda: 3
 #? ['__closure__']
 a.__closure__
+
+class C():
+    def __init__(self):
+        self.a = lambda: 1
+#? int()
+C().a()

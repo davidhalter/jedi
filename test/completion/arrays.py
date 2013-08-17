@@ -11,6 +11,8 @@
 [1,""][2]
 #? int() str()
 [1,""][20]
+#? int() str()
+[1,""][str(hello)]
 
 a = list()
 #? list()
@@ -95,6 +97,28 @@ b4
 
 
 # -----------------
+# multiple assignments
+# -----------------
+a = b = 1
+#? int()
+a
+#? int()
+b
+
+(a, b) = (c, (e, f)) = ('2', (3, 4))
+#? str()
+a
+#? tuple()
+b
+#? str()
+c
+#? int()
+e
+#? int()
+f
+
+
+# -----------------
 # unnessecary braces
 # -----------------
 #? int()
@@ -128,6 +152,12 @@ def a(): return ''
 #? int()
 (tuple)().index()
 
+class C():
+    def __init__(self):
+        self.a = (str()).upper()
+
+#? str()
+C().a
 
 # -----------------
 # imbalanced sides
@@ -185,6 +215,18 @@ f()
 # completion within dicts
 #? 9 ['str']
 {str: str}
+
+# iteration problem (detected with sith)
+d = dict({'a':''})
+def y(a):
+    return a
+#? 
+y(**d)
+
+# problem with more complicated casts
+dic = {str(key): ''}
+#? str()
+dic['']
 
 # -----------------
 # with variable as index

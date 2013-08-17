@@ -16,11 +16,11 @@ is the easiest way to write a parser. The same behaviour applies to ``Param``,
 which is being used in a function definition.
 
 The easiest way to play with this module is to use :class:`parsing.Parser`.
-:attr:`parsing.Parser.scope` holds an instance of :class:`SubModule`:
+:attr:`parsing.Parser.module` holds an instance of :class:`SubModule`:
 
 >>> from jedi.parsing import Parser
 >>> parser = Parser('import os', 'example.py')
->>> submodule = parser.scope
+>>> submodule = parser.module
 >>> submodule
 <SubModule: example.py@1-1>
 
@@ -91,7 +91,7 @@ class Simple(Base):
     @property
     def start_pos(self):
         return self._sub_module.line_offset + self._start_pos[0], \
-               self._start_pos[1]
+            self._start_pos[1]
 
     @start_pos.setter
     def start_pos(self, value):
@@ -102,7 +102,7 @@ class Simple(Base):
         if None in self._end_pos:
             return self._end_pos
         return self._sub_module.line_offset + self._end_pos[0], \
-               self._end_pos[1]
+            self._end_pos[1]
 
     @end_pos.setter
     def end_pos(self, value):
@@ -110,7 +110,7 @@ class Simple(Base):
 
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
-                                                    include_current=True):
+                         include_current=True):
         """ Takes always the parent, until one class (not a Class) """
         if type(classes) not in (tuple, list):
             classes = (classes,)
@@ -247,19 +247,19 @@ class Scope(Simple, IsScope):
         ... b = y
         ... b.c = z
         ... ''')
-        >>> parser.scope.get_defined_names()
+        >>> parser.module.get_defined_names()
         [<Name: a@2,0>, <Name: b@3,0>]
 
         Note that unlike :meth:`get_set_vars`, assignment to object
         attribute does not change the result because it does not change
         the defined names in this scope.
 
-        >>> parser.scope.get_set_vars()
+        >>> parser.module.get_set_vars()
         [<Name: a@2,0>, <Name: b@3,0>, <Name: b.c@4,0>]
 
         """
         return [n for n in self.get_set_vars()
-                  if isinstance(n, Import) or len(n) == 1]
+                if isinstance(n, Import) or len(n) == 1]
 
     def is_empty(self):
         """
@@ -285,7 +285,7 @@ class Scope(Simple, IsScope):
                     p = s.get_statement_for_position(pos, include_imports)
                 if p:
                     return p
-            elif s.start_pos <= pos < s.end_pos:
+            elif s.start_pos <= pos <= s.end_pos:
                 return s
 
         for s in self.subscopes:
@@ -304,22 +304,21 @@ class Scope(Simple, IsScope):
                 name = self.command
 
         return "<%s: %s@%s-%s>" % (type(self).__name__, name,
-                                    self.start_pos[0], self.end_pos[0])
+                                   self.start_pos[0], self.end_pos[0])
 
 
 class Module(IsScope):
-    """ For isinstance checks. fast_parser.Module also inherits from this. """
-    pass
+    """
+    For isinstance checks. fast_parser.Module also inherits from this.
+    """
 
 
 class SubModule(Scope, Module):
-
     """
     The top scope, which is always a module.
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-
     def __init__(self, path, start_pos=(1, 0), top_module=None):
         """
         Initialize :class:`SubModule`.
@@ -367,16 +366,32 @@ class SubModule(Scope, Module):
         else:
             sep = (re.escape(os.path.sep),) * 2
             r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep,
-                                                                self.path)
+                          self.path)
             # remove PEP 3149 names
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+        # positions are not real therefore choose (0, 0)
         names = [(string, (0, 0))]
-        self._name = Name(self, names, self.start_pos, self.end_pos,
-                                                            self.use_as_parent)
+        self._name = Name(self, names, (0, 0), (0, 0), self.use_as_parent)
         return self._name
 
     def is_builtin(self):
         return not (self.path is None or self.path.endswith('.py'))
+
+    @property
+    def has_explicit_absolute_import(self):
+        """
+        Checks if imports in this module are explicitly absolute, i.e. there
+        is a ``__future__`` import.
+        """
+        for imp in self.imports:
+            if imp.from_ns is None or imp.namespace is None:
+                continue
+
+            namespace, feature = imp.from_ns.names[0], imp.namespace.names[0]
+            if namespace == "__future__" and feature == "absolute_import":
+                return True
+
+        return False
 
 
 class Class(Scope):
@@ -517,7 +532,7 @@ class Lambda(Function):
 
     def __repr__(self):
         return "<%s @%s (%s-%s)>" % (type(self).__name__, self.start_pos[0],
-                                        self.start_pos[1], self.end_pos[1])
+                                     self.start_pos[1], self.end_pos[1])
 
 
 class Flow(Scope):
@@ -626,7 +641,7 @@ class ForFlow(Flow):
     def __init__(self, module, inputs, start_pos, set_stmt,
                  is_list_comp=False):
         super(ForFlow, self).__init__(module, 'for', inputs, start_pos,
-                                        set_stmt.used_vars)
+                                      set_stmt.used_vars)
         self.set_stmt = set_stmt
         set_stmt.parent = self.use_as_parent
         self.is_list_comp = is_list_comp
@@ -799,7 +814,7 @@ class Statement(Simple):
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
             pieces = [c.get_code() if isinstance(c, Simple) else unicode(c)
-                        for c in command_list]
+                      for c in command_list]
             if assignment is None:
                 return ''.join(pieces)
             return '%s %s ' % (''.join(pieces), assignment)
@@ -851,7 +866,7 @@ class Statement(Simple):
         """
         def is_assignment(tok):
             return isinstance(tok, (str, unicode)) and tok.endswith('=') \
-                    and not tok in ['>=', '<=', '==', '!=']
+                and not tok in ['>=', '<=', '==', '!=']
 
         def parse_array(token_iterator, array_type, start_pos, add_el=None,
                         added_breaks=()):
@@ -886,7 +901,7 @@ class Statement(Simple):
 
             c = token_iterator.current[1]
             arr.end_pos = c.end_pos if isinstance(c, Simple) \
-                                        else (c[2][0], c[2][1] + len(c[1]))
+                else (c[2][0], c[2][1] + len(c[1]))
             return arr, break_tok
 
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
@@ -896,7 +911,7 @@ class Statement(Simple):
             level = 1
             tok = None
             first = True
-            end_pos = None
+            end_pos = None, None
             for i, tok_temp in token_iterator:
                 if isinstance(tok_temp, Base):
                     # the token is a Name, which has already been parsed
@@ -924,7 +939,7 @@ class Statement(Simple):
                             token_list.append(lambd)
                     elif tok == 'for':
                         list_comp, tok = parse_list_comp(token_iterator,
-                                         token_list, start_pos, last_end_pos)
+                                                         token_list, start_pos, last_end_pos)
                         if list_comp is not None:
                             token_list = [list_comp]
 
@@ -936,8 +951,8 @@ class Statement(Simple):
                     if level == 0 and tok in closing_brackets \
                             or tok in added_breaks \
                             or level == 1 and (tok == ','
-                                or maybe_dict and tok == ':'
-                                or is_assignment(tok) and break_on_assignment):
+                                               or maybe_dict and tok == ':'
+                                               or is_assignment(tok) and break_on_assignment):
                         end_pos = end_pos[0], end_pos[1] - 1
                         break
                 token_list.append(tok_temp)
@@ -946,7 +961,7 @@ class Statement(Simple):
                 return None, tok
 
             statement = stmt_class(self._sub_module, [], [], token_list,
-                                  start_pos, end_pos, self.parent)
+                                   start_pos, end_pos, self.parent)
             statement.used_vars = used_vars
             return statement, tok
 
@@ -1027,8 +1042,10 @@ class Statement(Simple):
                 tok = tok_temp
                 token_type = None
                 start_pos = tok.start_pos
+                end_pos = tok.end_pos
             else:
                 token_type, tok, start_pos = tok_temp
+                end_pos = start_pos[0], start_pos[1] + len(tok)
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
@@ -1044,6 +1061,8 @@ class Statement(Simple):
                 lambd, tok = parse_lambda(token_iterator)
                 if lambd is not None:
                     result.append(lambd)
+                else:
+                    continue
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:
@@ -1055,7 +1074,7 @@ class Statement(Simple):
                     elif token_type == tokenize.NUMBER:
                         c_type = Call.NUMBER
 
-                call = Call(self._sub_module, tok, c_type, start_pos, self)
+                call = Call(self._sub_module, tok, c_type, start_pos, end_pos, self)
                 if is_chain:
                     result[-1].set_next(call)
                 else:
@@ -1063,7 +1082,7 @@ class Statement(Simple):
                 is_chain = False
             elif tok in brackets.keys():
                 arr, is_ass = parse_array(token_iterator, brackets[tok],
-                                             start_pos)
+                                          start_pos)
                 if result and isinstance(result[-1], Call):
                     result[-1].set_execution(arr)
                 else:
@@ -1083,13 +1102,13 @@ class Statement(Simple):
                     token_iterator.push_back((i, tok))
                 t = self.token_list[i - 1]
                 try:
-                    end_pos = t.end_pos
+                    e = t.end_pos
                 except AttributeError:
-                    end_pos = (t[2][0], t[2][1] + len(t[1])) \
-                                if isinstance(t, tuple) else t.start_pos
+                    e = (t[2][0], t[2][1] + len(t[1])) \
+                        if isinstance(t, tuple) else t.start_pos
 
                 stmt = Statement(self._sub_module, [], [], result,
-                                       start_pos, end_pos, self.parent)
+                                 start_pos, e, self.parent)
                 stmt._commands = result
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
                                              stmt.start_pos, stmt)
@@ -1099,7 +1118,7 @@ class Statement(Simple):
                     result = []
                     is_chain = False
             else:
-                if tok != '\n':
+                if tok != '\n' and token_type != tokenize.COMMENT:
                     result.append(tok)
         return result
 
@@ -1145,8 +1164,8 @@ class Call(Simple):
     NUMBER = 2
     STRING = 3
 
-    def __init__(self, module, name, type, start_pos, parent=None):
-        super(Call, self).__init__(module, start_pos)
+    def __init__(self, module, name, type, start_pos, end_pos, parent=None):
+        super(Call, self).__init__(module, start_pos, end_pos)
         self.name = name
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
@@ -1195,13 +1214,7 @@ class Call(Simple):
         if self.type == Call.NAME:
             s = self.name.get_code()
         else:
-            if not is_py3k and isinstance(self.name, str)\
-                        and "'" not in self.name:
-                # This is a very rough spot, because of repr not supporting
-                # unicode signs, see `test_unicode_script`.
-                s = "'%s'" % unicode(self.name, 'UTF-8')
-            else:
-                s = '' if self.name is None else repr(self.name)
+            s = '' if self.name is None else repr(self.name)
         if self.execution is not None:
             s += self.execution.get_code()
         if self.next is not None:
@@ -1210,7 +1223,7 @@ class Call(Simple):
 
     def __repr__(self):
         return "<%s: %s>" % \
-                (type(self).__name__, self.name)
+            (type(self).__name__, self.name)
 
 
 class Array(Call):
@@ -1231,10 +1244,10 @@ class Array(Call):
     SET = 'set'
 
     def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None):
-        super(Array, self).__init__(module, None, arr_type, start_pos, parent)
+        super(Array, self).__init__(module, None, arr_type, start_pos, (None, None), parent)
+        self.end_pos = None, None
         self.values = []
         self.keys = []
-        self.end_pos = None, None
 
     def add_statement(self, statement, is_key=False):
         """Just add a new statement"""
@@ -1251,9 +1264,11 @@ class Array(Call):
         This is not only used for calls on the actual object, but for
         ducktyping, to invoke this function with anything as `self`.
         """
-        if isinstance(instance, Array):
+        try:
             if instance.type in types:
                 return True
+        except AttributeError:
+            pass
         return False
 
     def __len__(self):
@@ -1341,7 +1356,7 @@ class Name(Simple):
     def __init__(self, module, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(module, start_pos, end_pos)
         self.names = tuple(n if isinstance(n, NamePart) else
-                                NamePart(n[0], self, n[1]) for n in names)
+                           NamePart(n[0], self, n[1]) for n in names)
         if parent is not None:
             self.parent = parent
 
@@ -1384,7 +1399,7 @@ class ListComprehension(Base):
 
     def __repr__(self):
         return "<%s: %s>" % \
-                (type(self).__name__, self.get_code())
+            (type(self).__name__, self.get_code())
 
     def get_code(self):
         statements = self.stmt, self.middle, self.input

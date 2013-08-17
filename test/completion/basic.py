@@ -209,6 +209,9 @@ def a():
     """
     pass
 
+#? 
+# str literals in comment """ upper
+
 # -----------------
 # magic methods
 # -----------------
@@ -220,3 +223,45 @@ class B(): pass
 A.__init__
 #? ['__init__']
 B.__init__
+
+#? ['__init__']
+int().__init__
+
+# -----------------
+# comments
+# -----------------
+
+class A():
+    def __init__(self):
+        self.hello = {}  # comment shouldn't be a string
+#? dict()
+A().hello
+
+# -----------------
+# unicode
+# -----------------
+a = 'smörbröd'
+#? str()
+a
+xyz = 'smörbröd.py'
+if 1:
+    #? str()
+    xyz
+
+# -----------------
+# exceptions
+# -----------------
+try:
+    import math
+except ImportError as i_a:
+    #? ['i_a']
+    i_a
+    #? ImportError()
+    i_a
+try:
+    import math
+except ImportError, i_b:
+    #? ['i_b']
+    i_b
+    #? ImportError()
+    i_b

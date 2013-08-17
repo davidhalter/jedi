@@ -55,7 +55,7 @@ class Module(pr.Simple, pr.Module):
 
     def __repr__(self):
         return "<%s: %s@%s-%s>" % (type(self).__name__, self.name,
-                                    self.start_pos[0], self.end_pos[0])
+                                   self.start_pos[0], self.end_pos[0])
 
 
 class CachedFastParser(type):
@@ -67,7 +67,7 @@ class CachedFastParser(type):
         pi = cache.parser_cache.get(module_path, None)
         if pi is None or isinstance(pi.parser, parsing.Parser):
             p = super(CachedFastParser, self).__call__(source, module_path,
-                                                            user_position)
+                                                       user_position)
         else:
             p = pi.parser  # pi is a `cache.ParserCacheItem`
             p.update(source, user_position)
@@ -192,7 +192,12 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.module = Module(self.parsers)
         self.reset_caches()
 
-        self._parse(code)
+        try:
+            self._parse(code)
+        except:
+            # FastParser is cached, be careful with exceptions
+            self.parsers[:] = []
+            raise
 
     @property
     def user_scope(self):
@@ -204,7 +209,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     self._user_scope = p.user_scope
 
         if isinstance(self._user_scope, pr.SubModule) \
-                    or self._user_scope is None:
+                or self._user_scope is None:
             self._user_scope = self.module
         return self._user_scope
 
@@ -221,7 +226,13 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.user_position = user_position
         self.reset_caches()
 
-        self._parse(code)
+
+        try:
+            self._parse(code)
+        except:
+            # FastParser is cached, be careful with exceptions
+            self.parsers[:] = []
+            raise
 
     def _scan_user_scope(self, sub_module):
         """ Scan with self.user_position. """
@@ -324,11 +335,11 @@ class FastParser(use_metaclass(CachedFastParser)):
                 if self.current_node is not None:
 
                     self.current_node = \
-                                self.current_node.parent_until_indent(indent)
+                        self.current_node.parent_until_indent(indent)
                     nodes += self.current_node.old_children
 
                 # check if code_part has already been parsed
-                #print '#'*45,line_offset, p and p.end_pos, '\n', code_part
+                # print '#'*45,line_offset, p and p.end_pos, '\n', code_part
                 p, node = self._get_parser(code_part, code[start:],
                                            line_offset, nodes, not is_first)
 
@@ -351,12 +362,12 @@ class FastParser(use_metaclass(CachedFastParser)):
                 else:
                     if node is None:
                         self.current_node = \
-                                    self.current_node.add_parser(p, code_part)
+                            self.current_node.add_parser(p, code_part)
                     else:
                         self.current_node = self.current_node.add_node(node)
 
                 if self.current_node.parent and (isinstance(p.user_scope,
-                                pr.SubModule) or p.user_scope is None) \
+                                                            pr.SubModule) or p.user_scope is None) \
                         and self.user_position \
                         and p.start_pos <= self.user_position < p.end_pos:
                     p.user_scope = self.current_node.parent.content_scope
@@ -365,7 +376,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 is_first = False
             else:
-                #print '#'*45, line_offset, p.end_pos, 'theheck\n', code_part 
+                # print '#'*45, line_offset, p.end_pos, 'theheck\n', code_part
                 pass
 
             line_offset += lines
@@ -378,7 +389,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         self.module.end_pos = self.parsers[-1].end_pos
 
-        #print(self.parsers[0].module.get_code())
+        # print(self.parsers[0].module.get_code())
         del code
 
     def _get_parser(self, code, parser_code, line_offset, nodes, no_docstr):
@@ -408,7 +419,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 # It's important to take care of the whole user
                 # positioning stuff, if no reparsing is being done.
                 p.user_stmt = m.get_statement_for_position(
-                            self.user_position, include_imports=True)
+                    self.user_position, include_imports=True)
                 if p.user_stmt:
                     p.user_scope = p.user_stmt.parent
                 else:

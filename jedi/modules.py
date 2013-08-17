@@ -45,7 +45,7 @@ class CachedModule(object):
         """ get the parser lazy """
         if self._parser is None:
             self._parser = cache.load_module(self.path, self.name) \
-                                or self._load_module()
+                or self._load_module()
         return self._parser
 
     def _get_source(self):
@@ -95,12 +95,12 @@ class ModuleWithCursor(Module):
     def __init__(self, path, source, position):
         super(ModuleWithCursor, self).__init__(path, source)
         self.position = position
+        self.source = source
+        self._path_until_cursor = None
 
         # this two are only used, because there is no nonlocal in Python 2
         self._line_temp = None
         self._relevant_temp = None
-
-        self.source = source
 
     @property
     def parser(self):
@@ -113,44 +113,44 @@ class ModuleWithCursor(Module):
             # Also, the position is here important (which will not be used by
             # default), therefore fill the cache here.
             self._parser = fast_parser.FastParser(self.source, self.path,
-                                                        self.position)
+                                                  self.position)
             # don't pickle that module, because it's changing fast
             cache.save_module(self.path, self.name, self._parser,
-                                                            pickling=False)
+                              pickling=False)
         return self._parser
 
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
-        result = self._get_path_until_cursor()
-        self._start_cursor_pos = self._line_temp + 1, self._column_temp
-        return result
+        if self._path_until_cursor is None:  # small caching
+            self._path_until_cursor, self._start_cursor_pos = \
+                self._get_path_until_cursor(self.position)
+        return self._path_until_cursor
 
     def _get_path_until_cursor(self, start_pos=None):
         def fetch_line():
-            line = self.get_line(self._line_temp)
             if self._is_first:
                 self._is_first = False
                 self._line_length = self._column_temp
-                line = line[:self._column_temp]
+                line = self._first_line
             else:
+                line = self.get_line(self._line_temp)
                 self._line_length = len(line)
                 line = line + '\n'
             # add lines with a backslash at the end
-            while 1:
+            while True:
                 self._line_temp -= 1
                 last_line = self.get_line(self._line_temp)
+                #print self._line_temp, repr(last_line)
                 if last_line and last_line[-1] == '\\':
                     line = last_line[:-1] + ' ' + line
+                    self._line_length = len(last_line)
                 else:
                     break
             return line[::-1]
 
         self._is_first = True
-        if start_pos is None:
-            self._line_temp = self.position[0]
-            self._column_temp = self.position[1]
-        else:
-            self._line_temp, self._column_temp = start_pos
+        self._line_temp, self._column_temp = start_cursor = start_pos
+        self._first_line = self.get_line(self._line_temp)[:self._column_temp]
 
         open_brackets = ['(', '[', '{']
         close_brackets = [')', ']', '}']
@@ -162,7 +162,7 @@ class ModuleWithCursor(Module):
         last_type = None
         try:
             for token_type, tok, start, end, line in gen:
-                #print 'tok', token_type, tok, force_point
+                # print 'tok', token_type, tok, force_point
                 if last_type == token_type == tokenize.NAME:
                     string += ' '
 
@@ -187,8 +187,13 @@ class ModuleWithCursor(Module):
                 elif token_type == tokenize.NUMBER:
                     pass
                 else:
+                    self._column_temp = self._line_length - end[1]
                     break
 
+                x = start_pos[0] - end[0] + 1
+                l = self.get_line(x)
+                l = self._first_line if x == start_pos[0] else l
+                start_cursor = x, len(l) - end[1]
                 self._column_temp = self._line_length - end[1]
                 string += tok
                 last_type = token_type
@@ -196,46 +201,65 @@ class ModuleWithCursor(Module):
             debug.warning("Tokenize couldn't finish", sys.exc_info)
 
         # string can still contain spaces at the end
-        return string[::-1].strip()
+        return string[::-1].strip(), start_cursor
 
     def get_path_under_cursor(self):
         """
         Return the path under the cursor. If there is a rest of the path left,
         it will be added to the stuff before it.
         """
+        return self.get_path_until_cursor() + self.get_path_after_cursor()
+
+    def get_path_after_cursor(self):
         line = self.get_line(self.position[0])
-        after = re.search("[\w\d]*", line[self.position[1]:]).group(0)
-        return self.get_path_until_cursor() + after
+        return re.search("[\w\d]*", line[self.position[1]:]).group(0)
 
     def get_operator_under_cursor(self):
         line = self.get_line(self.position[0])
         after = re.match("[^\w\s]+", line[self.position[1]:])
         before = re.match("[^\w\s]+", line[:self.position[1]][::-1])
         return (before.group(0) if before is not None else '') \
-                + (after.group(0) if after is not None else '')
+            + (after.group(0) if after is not None else '')
 
-    def get_context(self):
+    def get_context(self, yield_positions=False):
         pos = self._start_cursor_pos
-        while pos > (1, 0):
+        while True:
             # remove non important white space
             line = self.get_line(pos[0])
-            while pos[1] > 0 and line[pos[1] - 1].isspace():
-                pos = pos[0], pos[1] - 1
+            while True:
+                if pos[1] == 0:
+                    line = self.get_line(pos[0] - 1)
+                    if line and line[-1] == '\\':
+                        pos = pos[0] - 1, len(line) - 1
+                        continue
+                    else:
+                        break
+
+                if line[pos[1] - 1].isspace():
+                    pos = pos[0], pos[1] - 1
+                else:
+                    break
 
             try:
-                yield self._get_path_until_cursor(start_pos=pos)
+                result, pos = self._get_path_until_cursor(start_pos=pos)
+                if yield_positions:
+                    yield pos
+                else:
+                    yield result
             except StopIteration:
-                yield ''
-            pos = self._line_temp, self._column_temp
-
-        while True:
-            yield ''
+                if yield_positions:
+                    yield None
+                else:
+                    yield ''
 
     def get_line(self, line_nr):
         if not self._line_cache:
             self._line_cache = self.source.splitlines()
-            if not self.source:  # ''.splitlines() == []
-                self._line_cache = [self.source]
+            if self.source:
+                if self.source[-1] == '\n':
+                    self._line_cache.append('')
+            else:  # ''.splitlines() == []
+                self._line_cache = ['']
 
         if line_nr == 0:
             # This is a fix for the zeroth line. We need a newline there, for
@@ -247,6 +271,9 @@ class ModuleWithCursor(Module):
             return self._line_cache[line_nr - 1]
         except IndexError:
             raise StopIteration()
+
+    def get_position_line(self):
+        return self.get_line(self.position[0])[:self.position[1]]
 
 
 def get_sys_path():
@@ -327,7 +354,9 @@ def sys_path_with_modifications(module):
         return sys_path
 
     if module.path is None:
-        return []  # support for modules without a path is intentionally bad.
+        # Support for modules without a path is bad, therefore return the
+        # normal path.
+        return list(get_sys_path())
 
     curdir = os.path.abspath(os.curdir)
     with common.ignored(OSError):
@@ -373,7 +402,7 @@ def source_to_unicode(source, encoding=None):
 
         first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', str(source)).group(0)
         possible_encoding = re.search(r"coding[=:]\s*([-\w.]+)",
-                                                            first_two_lines)
+                                      first_two_lines)
         if possible_encoding:
             return possible_encoding.group(1)
         else:

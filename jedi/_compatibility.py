@@ -16,58 +16,45 @@ is_py33 = sys.hexversion >= 0x03030000
 
 
 def find_module_py33(string, path=None):
-    mod_info = (None, None, None)
-    loader = None
-    if path is not None:
-        # Check for the module in the specidied path
-        loader = importlib.machinery.PathFinder.find_module(string, path)
-    else:
-        # Check for the module in sys.path
-        loader = importlib.machinery.PathFinder.find_module(string, sys.path)
-        if loader is None:
-            # Fallback to find builtins
-            loader = importlib.find_loader(string)
+    loader = importlib.machinery.PathFinder.find_module(string, path)
+
+    if loader is None and path is None:  # Fallback to find builtins
+        loader = importlib.find_loader(string)
 
     if loader is None:
-        raise ImportError
+        raise ImportError("Couldn't find a loader for {0}".format(string))
 
     try:
-        if (loader.is_package(string)):
-            mod_info = (None, os.path.dirname(loader.path), True)
+        is_package = loader.is_package(string)
+        if is_package:
+            module_path = os.path.dirname(loader.path)
+            module_file = None
         else:
-            filename = loader.get_filename(string)
-            if filename and os.path.exists(filename):
-                mod_info = (open(filename, 'U'), filename, False)
-            else:
-                mod_info = (None, filename, False)
+            module_path = loader.get_filename(string)
+            module_file = open(module_path)
     except AttributeError:
-        mod_info = (None, loader.load_module(string).__name__, False)
+        module_path = loader.load_module(string).__name__
+        module_file = None
 
-    return mod_info
+    return module_file, module_path, is_package
 
 
 def find_module_pre_py33(string, path=None):
-    mod_info = None
-    if path is None:
-        mod_info = imp.find_module(string)
-    else:
-        mod_info = imp.find_module(string, path)
-
-    return (mod_info[0], mod_info[1], mod_info[2][2] == imp.PKG_DIRECTORY)
+    module_file, module_path, description = imp.find_module(string, path)
+    module_type = description[2]
+    return module_file, module_path, module_type is imp.PKG_DIRECTORY
 
 
-def find_module(string, path=None):
-    """Provides information about a module.
+find_module = find_module_py33 if is_py33 else find_module_pre_py33
+find_module.__doc__ = """
+Provides information about a module.
 
-    This function isolates the differences in importing libraries introduced with
-    python 3.3 on; it gets a module name and optionally a path. It will return a
-    tuple containin an open file for the module (if not builtin), the filename
-    or the name of the module if it is a builtin one and a boolean indicating
-    if the module is contained in a package."""
-    if is_py33:
-        return find_module_py33(string, path)
-    else:
-        return find_module_pre_py33(string, path)
+This function isolates the differences in importing libraries introduced with
+python 3.3 on; it gets a module name and optionally a path. It will return a
+tuple containin an open file for the module (if not builtin), the filename
+or the name of the module if it is a builtin one and a boolean indicating
+if the module is contained in a package.
+"""
 
 # next was defined in python 2.6, in python 3 obj.next won't be possible
 # anymore
@@ -157,13 +144,6 @@ class Python3Method(object):
         else:
             return lambda *args, **kwargs: self.func(obj, *args, **kwargs)
 
-try:
-    # the python3 way
-    from functools import reduce
-except ImportError:
-    reduce = reduce
-
-
 def use_metaclass(meta, *bases):
     """ Create a class with a metaclass. """
     if not bases:
@@ -181,3 +161,20 @@ try:
         encoding = 'utf-8'
 except AttributeError:
     encoding = 'ascii'
+
+def u(string):
+    """Cast to unicode DAMMIT!
+    Written because Python2 repr always implicitly casts to a string, so we
+    have to cast back to a unicode (and we now that we always deal with valid
+    unicode, because we check that in the beginning).
+    """
+    if is_py3k:
+        return str(string)
+    elif not isinstance(string, unicode):
+        return unicode(str(string), 'UTF-8')
+    return string
+
+try:
+    import builtins  # module name in python 3
+except ImportError:
+    import __builtin__ as builtins
