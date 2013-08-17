@@ -4,6 +4,7 @@ import pydoc
 import keyword
 
 from jedi._compatibility import is_py3k
+from jedi import parsing_representation as pr
 from jedi import common
 import builtin
 
@@ -19,12 +20,21 @@ else:
     keys = keyword.kwlist + ['None', 'False', 'True']
 
 
-def get_keywords(string='', pos=(0, 0), all=False):
+def keywords(string='', pos=(0, 0), all=False):
     if all:
         return set([Keyword(k, pos) for k in keys])
     if string in keys:
         return set([Keyword(string, pos)])
     return set()
+
+
+def keyword_names(*args, **kwargs):
+    kwds = []
+    for k in keywords(*args, **kwargs):
+        start = k.start_pos
+        end = start[0], start[1] + len(k.name)
+        kwds.append(pr.Name(k.parent, [(k.name, start)], start, end, k))
+    return kwds
 
 
 def get_operator(string, pos):

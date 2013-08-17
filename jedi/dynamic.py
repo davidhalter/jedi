@@ -109,7 +109,8 @@ def get_directory_modules_for_name(mods, name):
                         if entry.endswith('.py'):
                             paths.add(d + os.path.sep + entry)
 
-        for p in paths:
+        for p in sorted(paths):
+            # make testing easier, sort it - same results on every interpreter
             c = check_python_file(p)
             if c is not None and c not in mods:
                 yield c
@@ -171,14 +172,46 @@ def search_params(param):
                 return []
 
             for stmt in possible_stmts:
-                if not isinstance(stmt, pr.Import):
-                    calls = _scan_statement(stmt, func_name)
-                    for c in calls:
-                        # no execution means that params cannot be set
-                        call_path = c.generate_call_path()
-                        pos = c.start_pos
-                        scope = stmt.parent
-                        evaluate.follow_call_path(call_path, scope, pos)
+                if isinstance(stmt, pr.Import):
+                    continue
+                calls = _scan_statement(stmt, func_name)
+                for c in calls:
+                    # no execution means that params cannot be set
+                    call_path = list(c.generate_call_path())
+                    pos = c.start_pos
+                    scope = stmt.parent
+
+                    # this whole stuff is just to not execute certain parts
+                    # (speed improvement), basically we could just call
+                    # ``follow_call_path`` on the call_path and it would
+                    # also work.
+                    def listRightIndex(lst, value):
+                        return len(lst) - lst[-1::-1].index(value) -1
+
+                    # Need to take right index, because there could be a
+                    # func usage before.
+                    i = listRightIndex(call_path, func_name)
+                    first, last = call_path[:i], call_path[i+1:]
+                    if not last and not call_path.index(func_name) != i:
+                        continue
+                    scopes = [scope]
+                    if first:
+                        scopes = evaluate.follow_call_path(iter(first), scope, pos)
+                        pos = None
+                    for scope in scopes:
+                        s = evaluate.find_name(scope, func_name, position=pos,
+                                               search_global=not first,
+                                               resolve_decorator=False)
+
+                        c = [getattr(escope, 'base_func', None) or escope.base
+                            for escope in s
+                            if escope.isinstance(er.Function, er.Class)
+                        ]
+                        if compare in c:
+                            # only if we have the correct function we execute
+                            # it, otherwise just ignore it.
+                            evaluate.follow_paths(iter(last), s, scope)
+
             return listener.param_possibilities
 
         result = []
@@ -191,8 +224,10 @@ def search_params(param):
     func = param.get_parent_until(pr.Function)
     current_module = param.get_parent_until()
     func_name = str(func.name)
+    compare = func
     if func_name == '__init__' and isinstance(func.parent, pr.Class):
         func_name = str(func.parent.name)
+        compare = func.parent
 
     # get the param name
     if param.assignment_details:
@@ -334,7 +369,7 @@ def _check_array_additions(compare_array, module, is_list):
     settings.dynamic_params_for_other_modules = False
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
-                                                            ['add', 'update']
+        ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array, er.Execution)
 
     possible_stmts = []
@@ -351,7 +386,7 @@ def _check_array_additions(compare_array, module, is_list):
             # literally copy the contents of a function.
             if isinstance(comp_arr_parent, er.Execution):
                 stmt = comp_arr_parent. \
-                                get_statement_for_position(stmt.start_pos)
+                    get_statement_for_position(stmt.start_pos)
                 if stmt is None:
                     continue
             # InstanceElements are special, because they don't get copied,
@@ -403,7 +438,9 @@ class ArrayInstance(pr.Base):
                         if self.var_args.start_pos != array.var_args.start_pos:
                             items += array.iter_content()
                         else:
-                            debug.warning('ArrayInstance recursion', self.var_args)
+                            debug.warning(
+                                'ArrayInstance recursion',
+                                self.var_args)
                         continue
                 items += evaluate.get_iterator_types([typ])
 
@@ -472,7 +509,7 @@ def usages(definitions, search_name, mods):
 
                 for used_count, name_part in imps:
                     i = imports.ImportPath(stmt, kill_count=count - used_count,
-                                                        direct_resolve=True)
+                                           direct_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
                         names.append(api_classes.Usage(name_part, stmt))
@@ -503,28 +540,30 @@ def check_flow_information(flow, search_name, pos):
 
     ensures that `k` is a string.
     """
+    if not settings.dynamic_flow_information:
+        return None
     result = []
     if isinstance(flow, (pr.Scope, fast_parser.Module)) and not result:
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
-            result = check_statement_information(ass, search_name)
+            result = _check_isinstance_type(ass, search_name)
             if result:
                 break
 
     if isinstance(flow, pr.Flow) and not result:
         if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
-            result = check_statement_information(flow.inputs[0], search_name)
+            result = _check_isinstance_type(flow.inputs[0], search_name)
     return result
 
 
-def check_statement_information(stmt, search_name):
+def _check_isinstance_type(stmt, search_name):
     try:
         commands = stmt.get_commands()
         # this might be removed if we analyze and, etc
         assert len(commands) == 1
         call = commands[0]
-        assert type(call) == pr.Call and str(call.name) == 'isinstance'
+        assert type(call) is pr.Call and str(call.name) == 'isinstance'
         assert bool(call.execution)
 
         # isinstance check

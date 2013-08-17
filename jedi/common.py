@@ -147,8 +147,8 @@ class NoErrorTokenizer(object):
                 and self.previous[0] in (tokenize.INDENT, tokenize.NL, None,
                                          tokenize.NEWLINE, tokenize.DEDENT) \
                 and c[0] not in (tokenize.COMMENT, tokenize.INDENT,
-                             tokenize.NL, tokenize.NEWLINE, tokenize.DEDENT):
-            #print c, tokenize.tok_name[c[0]]
+                                 tokenize.NL, tokenize.NEWLINE, tokenize.DEDENT):
+            # print c, tokenize.tok_name[c[0]]
 
             tok = c[1]
             indent = c[2][1]

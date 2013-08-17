@@ -1,3 +1,4 @@
+from _compatibility import u, encoding, is_py3k
 import inspect
 import time
 
@@ -36,17 +37,16 @@ def dbg(*args):
         frm = inspect.stack()[1]
         mod = inspect.getmodule(frm[0])
         if not (mod.__name__ in ignored_modules):
-            debug_function(NOTICE, 'dbg: ' + ', '.join(str(a) for a in args))
+            debug_function(NOTICE, 'dbg: ' + ', '.join(u(a) for a in args))
 
 
 def warning(*args):
     if debug_function and enable_warning:
-        debug_function(WARNING, 'warning: ' + ', '.join(str(a) for a in args))
+        debug_function(WARNING, 'warning: ' + ', '.join(u(a) for a in args))
 
 
 def speed(name):
     if debug_function and enable_speed:
-        global start_time
         now = time.time()
         debug_function(SPEED, 'speed: ' + '%s %s' % (name, now - start_time))
 
@@ -59,7 +59,9 @@ def print_to_stdout(level, str_out):
         col = Fore.RED
     else:
         col = Fore.YELLOW
+    if not is_py3k:
+        str_out = str_out.encode(encoding, 'replace')
     print(col + str_out + Fore.RESET)
 
 
-#debug_function = print_to_stdout
+# debug_function = print_to_stdout

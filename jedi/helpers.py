@@ -123,5 +123,15 @@ def search_function_definition(stmt, pos):
         while isinstance(call.parent, pr.Call):
             call = call.parent
         arr.parent.execution = None
-        return call, index, False
+        return call if call.type == pr.Call.NAME else None, index, False
     return None, 0, False
+
+
+class FakeStatement(pr.Statement):
+    class SubModule():
+        line_offset = 0
+
+    def __init__(self, content):
+        cls = type(self)
+        p = 0, 0
+        super(cls, self).__init__(cls.SubModule, [], [], [content], p, p)

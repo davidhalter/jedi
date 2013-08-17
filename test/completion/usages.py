@@ -89,6 +89,9 @@ from import_tree.rename1 import abc
 #< (0, 32),
 from import_tree.rename1 import not_existing
 
+# shouldn't work
+#< 
+from not_existing import *
 
 # -----------------
 # classes
@@ -127,6 +130,16 @@ class TestInstanceVar():
     def b(self):
         #< (-4,13), (0,13)
         self._instance_var
+
+
+class NestedClass():
+    def __getattr__(self, name):
+        return self
+
+# Shouldn't find a definition, because there's no name defined (used ``getattr``).
+
+#< (0, 14),
+NestedClass().instance
 
 
 # -----------------
@@ -203,3 +216,18 @@ class TestProperty:
     def b(self):
         #< 13 (-5,8), (0,13)
         self.rw_prop
+
+# -----------------
+# *args, **kwargs
+# -----------------
+#< 11 (1,11), (0,8)
+def f(**kwargs):
+    return kwargs
+
+
+# -----------------
+# No result
+# -----------------
+if isinstance(j, int):
+    #< 
+    j

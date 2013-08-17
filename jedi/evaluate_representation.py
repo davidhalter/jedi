@@ -14,7 +14,7 @@ from __future__ import with_statement
 import copy
 import itertools
 
-from jedi._compatibility import use_metaclass, next, hasattr
+from jedi._compatibility import use_metaclass, next, hasattr, unicode
 from jedi import parsing_representation as pr
 from jedi import cache
 from jedi import helpers
@@ -28,13 +28,6 @@ import builtin
 import dynamic
 
 
-class DecoratorNotFound(LookupError):
-    """
-    Decorators are sometimes not found, if that happens, that error is raised.
-    """
-    pass
-
-
 class Executable(pr.IsScope):
     """
     An instance is also an executable - because __init__ is called
@@ -45,19 +38,28 @@ class Executable(pr.IsScope):
         self.var_args = var_args
 
     def get_parent_until(self, *args, **kwargs):
-        return self.base.get_parent_until(*args, **kwargs)
+        return self.decorated.get_parent_until(*args, **kwargs)
 
     @property
     def parent(self):
-        return self.base.parent
+        return self.decorated.parent
+
+    @property
+    def decorated(self):
+        """
+        Instance doesn't care about decorators and Execution overrides this
+        """
+        return self.base
 
 
 class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
-    """ This class is used to evaluate instances. """
+    """
+    This class is used to evaluate instances.
+    """
     def __init__(self, base, var_args=()):
         super(Instance, self).__init__(base, var_args)
         if str(base.name) in ['list', 'set'] \
-                    and builtin.Builtin.scope == base.get_parent_until():
+                and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = dynamic.check_array_instances(self)
         else:
@@ -70,22 +72,27 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         self.is_generated = False
 
     @cache.memoize_default()
-    def get_init_execution(self, func):
+    def _get_method_execution(self, func):
         func = InstanceElement(self, func, True)
         return Execution(func, self.var_args)
 
-    def get_func_self_name(self, func):
+    def _get_func_self_name(self, func):
         """
         Returns the name of the first param in a class method (which is
-        normally self
+        normally self.
         """
         try:
-            return func.params[0].used_vars[0].names[0]
+            return str(func.params[0].used_vars[0])
         except IndexError:
             return None
 
-    def get_self_properties(self):
+    @cache.memoize_default([])
+    def _get_self_attributes(self):
         def add_self_dot_name(name):
+            """
+            Need to copy and rewrite the name, because names are now
+            ``instance_usage.variable`` instead of ``self.variable``.
+            """
             n = copy.copy(name)
             n.names = n.names[1:]
             names.append(InstanceElement(self, n))
@@ -97,23 +104,27 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
             if isinstance(sub, pr.Class):
                 continue
             # Get the self name, if there's one.
-            self_name = self.get_func_self_name(sub)
-            if self_name:
-                # Check the __init__ function.
-                if sub.name.get_code() == '__init__':
-                    sub = self.get_init_execution(sub)
-                for n in sub.get_set_vars():
-                    # Only names with the selfname are being added.
-                    # It is also important, that they have a len() of 2,
-                    # because otherwise, they are just something else
-                    if n.names[0] == self_name and len(n.names) == 2:
-                        add_self_dot_name(n)
+            self_name = self._get_func_self_name(sub)
+            if not self_name:
+                continue
+
+            if sub.name.get_code() == '__init__':
+                # ``__init__`` is special because the params need are injected
+                # this way. Therefore an execution is necessary.
+                if not sub.decorators:
+                    # __init__ decorators should generally just be ignored,
+                    # because to follow them and their self variables is too
+                    # complicated.
+                    sub = self._get_method_execution(sub)
+            for n in sub.get_set_vars():
+                # Only names with the selfname are being added.
+                # It is also important, that they have a len() of 2,
+                # because otherwise, they are just something else
+                if n.names[0] == self_name and len(n.names) == 2:
+                    add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
-            if s == self.base:
-                # I don't know how this could happen... But saw it once.
-                continue
-            names += Instance(s).get_self_properties()
+            names += Instance(s)._get_self_attributes()
 
         return names
 
@@ -138,7 +149,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         Get the instance vars of a class. This includes the vars of all
         classes
         """
-        names = self.get_self_properties()
+        names = self._get_self_attributes()
 
         class_names = self.base.get_defined_names()
         for var in class_names:
@@ -150,7 +161,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         An Instance has two scopes: The scope with self names and the class
         scope. Instance variables have priority over the class scope.
         """
-        yield self, self.get_self_properties()
+        yield self, self._get_self_attributes()
 
         names = []
         class_names = self.base.get_defined_names()
@@ -168,17 +179,17 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'name', 'get_imports',
-                'doc', 'docstr', 'asserts']:
+                        'doc', 'docstr', 'asserts']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
-                                    % (self, name))
+                                 % (self, name))
         return getattr(self.base, name)
 
     def __repr__(self):
         return "<e%s of %s (var_args: %s)>" % \
-                (type(self).__name__, self.base, len(self.var_args or []))
+            (type(self).__name__, self.base, len(self.var_args or []))
 
 
-class InstanceElement(use_metaclass(cache.CachedMetaClass)):
+class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
     """
     InstanceElement is a wrapper for any object, that is used as an instance
     variable (e.g. self.variable or class methods).
@@ -197,8 +208,8 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
-                        or isinstance(par, pr.Class) \
-                            and par == self.instance.base.base:
+            or isinstance(par, pr.Class) \
+                and par == self.instance.base.base:
             par = self.instance
         elif not isinstance(par, pr.Module):
             par = InstanceElement(self.instance, par, self.is_class_var)
@@ -209,7 +220,7 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
-        func = self.var.get_decorated_func()
+        func = self.var.get_decorated_func(self.instance)
         if func == self.var:
             return self
         return func
@@ -217,7 +228,12 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass)):
     def get_commands(self):
         # Copy and modify the array.
         return [InstanceElement(self.instance, command, self.is_class_var)
+                if not isinstance(command, unicode) else command
                 for command in self.var.get_commands()]
+
+    def __iter__(self):
+        for el in self.var.__iter__():
+            yield InstanceElement(self.instance, el, self.is_class_var)
 
     def __getattr__(self, name):
         return getattr(self.var, name)
@@ -287,8 +303,8 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'asserts', 'docstr',
-                'doc', 'get_imports', 'get_parent_until', 'get_code',
-                'subscopes']:
+                        'doc', 'get_imports', 'get_parent_until', 'get_code',
+                        'subscopes']:
             raise AttributeError("Don't touch this: %s of %s !" % (name, self))
         return getattr(self.base, name)
 
@@ -305,9 +321,8 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         self.base_func = func
         self.is_decorated = is_decorated
 
-    @property
     @cache.memoize_default()
-    def _decorated_func(self):
+    def _decorated_func(self, instance=None):
         """
         Returns the function, that is to be executed in the end.
         This is also the places where the decorators are processed.
@@ -318,17 +333,20 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
                 debug.dbg('decorator:', dec, f)
-                dec_results = evaluate.follow_statement(dec)
+                dec_results = set(evaluate.follow_statement(dec))
                 if not len(dec_results):
-                    debug.warning('decorator func not found: %s in stmt %s' %
-                                                        (self.base_func, dec))
+                    debug.warning('decorator not found: %s on %s' %
+                                 (dec, self.base_func))
                     return None
-                if len(dec_results) > 1:
-                    debug.warning('multiple decorators found', self.base_func,
-                                                            dec_results)
                 decorator = dec_results.pop()
+                if dec_results:
+                    debug.warning('multiple decorators found', self.base_func,
+                                  dec_results)
                 # Create param array.
                 old_func = Function(f, is_decorated=True)
+                if instance is not None and decorator.isinstance(Function):
+                    old_func = InstanceElement(instance, old_func)
+                    instance = None
 
                 wrappers = Execution(decorator, (old_func,)).get_return_types()
                 if not len(wrappers):
@@ -336,7 +354,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
                     return None
                 if len(wrappers) > 1:
                     debug.warning('multiple wrappers found', self.base_func,
-                                                                wrappers)
+                                  wrappers)
                 # This is here, that the wrapper gets executed.
                 f = wrappers[0]
 
@@ -345,12 +363,16 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
             f = Function(f)
         return f
 
-    def get_decorated_func(self):
-        if self._decorated_func is None:
-            raise DecoratorNotFound()
-        if self._decorated_func == self.base_func:
+    def get_decorated_func(self, instance=None):
+        decorated_func = self._decorated_func(instance)
+        if decorated_func == self.base_func:
             return self
-        return self._decorated_func
+        if decorated_func is None:
+            # If the decorator func is not found, just ignore the decorator
+            # function, because sometimes decorators are just really
+            # complicated.
+            return Function(self.base_func, True)
+        return decorated_func
 
     def get_magic_method_names(self):
         return builtin.Builtin.magic_function_scope.get_defined_names()
@@ -363,8 +385,8 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
 
     def __repr__(self):
         dec = ''
-        if self._decorated_func != self.base_func:
-            dec = " is " + repr(self._decorated_func)
+        if self._decorated_func() != self.base_func:
+            dec = " is " + repr(self._decorated_func())
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
@@ -388,36 +410,43 @@ class Execution(Executable):
             else:
                 return [stmt]  # just some arbitrary object
 
+    @property
+    @cache.memoize_default()
+    def decorated(self):
+        """Get the decorated version of the input"""
+        base = self.base
+        if self.base.isinstance(Function):
+            base = base.get_decorated_func()
+        return base
+
     @cache.memoize_default(default=())
     @recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
+        base = self.decorated
         stmts = []
-        if self.base.parent == builtin.Builtin.scope \
-                and not isinstance(self.base, (Generator, Array)):
-            func_name = str(self.base.name)
+        if base.parent == builtin.Builtin.scope \
+                and not isinstance(base, (Generator, Array)):
+            func_name = str(base.name)
 
             # some implementations of builtins:
             if func_name == 'getattr':
                 # follow the first param
-                try:
-                    objects = self.follow_var_arg(0)
-                    names = self.follow_var_arg(1)
-                except IndexError:
-                    debug.warning('getattr() called with to few args.')
-                    return []
-
+                objects = self.follow_var_arg(0)
+                names = self.follow_var_arg(1)
                 for obj in objects:
                     if not isinstance(obj, (Instance, Class, pr.Module)):
                         debug.warning('getattr called without instance')
                         continue
 
                     for arr_name in names:
+                        if not isinstance(arr_name, Instance):
+                            debug.warning('getattr called without str')
+                            continue
                         if len(arr_name.var_args) != 1:
                             debug.warning('jedi getattr is too simple')
                         key = arr_name.var_args[0]
-                        stmts += evaluate.follow_path(iter([key]), obj,
-                                                        self.base)
+                        stmts += evaluate.follow_path(iter([key]), obj, base)
                 return stmts
             elif func_name == 'type':
                 # otherwise it would be a metaclass
@@ -430,7 +459,7 @@ class Execution(Executable):
                 func = self.var_args.get_parent_until(accept)
                 if func.isinstance(*accept):
                     cls = func.get_parent_until(accept + (pr.Class,),
-                                                    include_current=False)
+                                                include_current=False)
                     if isinstance(cls, pr.Class):
                         cls = Class(cls)
                         su = cls.get_super_classes()
@@ -438,38 +467,35 @@ class Execution(Executable):
                             return [Instance(su[0])]
                 return []
 
-        if self.base.isinstance(Class):
+        if base.isinstance(Class):
             # There maybe executions of executions.
-            stmts = [Instance(self.base, self.var_args)]
-        elif isinstance(self.base, Generator):
-            return self.base.iter_content()
+            stmts = [Instance(base, self.var_args)]
+        elif isinstance(base, Generator):
+            return base.iter_content()
         else:
-            # Don't do this with exceptions, as usual, because some deeper
-            # exceptions could be catched - and I wouldn't know what happened.
             try:
-                self.base.returns
-            except (AttributeError, DecoratorNotFound):
-                if hasattr(self.base, 'execute_subscope_by_name'):
+                base.returns  # Test if it is a function
+            except AttributeError:
+                if hasattr(base, 'execute_subscope_by_name'):
                     try:
-                        stmts = self.base.execute_subscope_by_name('__call__',
-                                                                self.var_args)
+                        stmts = base.execute_subscope_by_name('__call__',
+                                                              self.var_args)
                     except KeyError:
-                        debug.warning("no __call__ func available", self.base)
+                        debug.warning("no __call__ func available", base)
                 else:
-                    debug.warning("no execution possible", self.base)
+                    debug.warning("no execution possible", base)
             else:
-                stmts = self._get_function_returns(evaluate_generator)
+                stmts = self._get_function_returns(base, evaluate_generator)
 
         debug.dbg('exec result: %s in %s' % (stmts, self))
 
         return imports.strip_imports(stmts)
 
-    def _get_function_returns(self, evaluate_generator):
+    def _get_function_returns(self, func, evaluate_generator):
         """ A normal Function execution """
         # Feed the listeners, with the params.
-        for listener in self.base.listeners:
+        for listener in func.listeners:
             listener.execute(self.get_params())
-        func = self.base.get_decorated_func()
         if func.is_generator and not evaluate_generator:
             return [Generator(func, self.var_args)]
         else:
@@ -495,7 +521,7 @@ class Execution(Executable):
                 parent = self.var_args.parent
                 start_pos = self.var_args.start_pos
             else:
-                parent = self.base
+                parent = self.decorated
                 start_pos = 0, 0
 
             new_param = copy.copy(param)
@@ -523,15 +549,15 @@ class Execution(Executable):
 
         result = []
         start_offset = 0
-        if isinstance(self.base, InstanceElement):
+        if isinstance(self.decorated, InstanceElement):
             # Care for self -> just exclude it and add the instance
             start_offset = 1
-            self_name = copy.copy(self.base.params[0].get_name())
-            self_name.parent = self.base.instance
+            self_name = copy.copy(self.decorated.params[0].get_name())
+            self_name.parent = self.decorated.instance
             result.append(self_name)
 
         param_dict = {}
-        for param in self.base.params:
+        for param in self.decorated.params:
             param_dict[str(param.get_name())] = param
         # There may be calls, which don't fit all the params, this just ignores
         # it.
@@ -540,7 +566,7 @@ class Execution(Executable):
         non_matching_keys = []
         keys_used = set()
         keys_only = False
-        for param in self.base.params[start_offset:]:
+        for param in self.decorated.params[start_offset:]:
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
             # Wrong value count is just ignored. If you try to test cases that
@@ -556,7 +582,7 @@ class Execution(Executable):
                 else:
                     keys_used.add(str(key))
                     result.append(gen_param_name_copy(key_param,
-                                                        values=[value]))
+                                                      values=[value]))
                 key, value = next(var_arg_iterator, (None, None))
 
             commands = param.get_commands()
@@ -601,7 +627,7 @@ class Execution(Executable):
             if not ignore_creation and (not keys_only or commands[0] == '**'):
                 keys_used.add(str(key))
                 result.append(gen_param_name_copy(param, keys=keys,
-                                        values=values, array_type=array_type))
+                                                  values=values, array_type=array_type))
 
         if keys_only:
             # sometimes param arguments are not completely written (which would
@@ -628,23 +654,32 @@ class Execution(Executable):
                     stmt._commands = [old]
 
                 # *args
-                if stmt.get_commands()[0] == '*':
-                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
+                commands = stmt.get_commands()
+                if not len(commands):
+                    continue
+                if commands[0] == '*':
+                    arrays = evaluate.follow_call_list(commands[1:])
                     # *args must be some sort of an array, otherwise -> ignore
+
                     for array in arrays:
-                        for field_stmt in array:  # yield from plz!
-                            yield None, field_stmt
+                        if isinstance(array, Array):
+                            for field_stmt in array:  # yield from plz!
+                                yield None, field_stmt
+                        elif isinstance(array, Generator):
+                            for field_stmt in array.iter_content():
+                                yield None, helpers.FakeStatement(field_stmt)
                 # **kwargs
-                elif stmt.get_commands()[0] == '**':
-                    arrays = evaluate.follow_call_list(stmt.get_commands()[1:])
+                elif commands[0] == '**':
+                    arrays = evaluate.follow_call_list(commands[1:])
                     for array in arrays:
-                        for key_stmt, value_stmt in array.items():
-                            # first index, is the key if syntactically correct
-                            call = key_stmt.get_commands()[0]
-                            if isinstance(call, pr.Name):
-                                yield call, value_stmt
-                            elif type(call) == pr.Call:
-                                yield call.name, value_stmt
+                        if isinstance(array, Array):
+                            for key_stmt, value_stmt in array.items():
+                                # first index, is the key if syntactically correct
+                                call = key_stmt.get_commands()[0]
+                                if isinstance(call, pr.Name):
+                                    yield call, value_stmt
+                                elif type(call) is pr.Call:
+                                    yield call.name, value_stmt
                 # Normal arguments (including key arguments).
                 else:
                     if stmt.assignment_details:
@@ -657,15 +692,14 @@ class Execution(Executable):
 
         return iter(common.PushBackIterator(iterate()))
 
-    def get_set_vars(self):
-        return self.get_defined_names()
-
     def get_defined_names(self):
         """
         Call the default method with the own instance (self implements all
         the necessary functions). Add also the params.
         """
         return self.get_params() + pr.Scope.get_set_vars(self)
+
+    get_set_vars = get_defined_names
 
     @common.rethrow_uncaught
     def copy_properties(self, prop):
@@ -676,7 +710,7 @@ class Execution(Executable):
         execution.
         """
         # Copy all these lists into this local function.
-        attr = getattr(self.base, prop)
+        attr = getattr(self.decorated, prop)
         objects = []
         for element in attr:
             if element is None:
@@ -692,7 +726,7 @@ class Execution(Executable):
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'imports', '_sub_module']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
-        return getattr(self.base, name)
+        return getattr(self.decorated, name)
 
     @cache.memoize_default()
     @common.rethrow_uncaught
@@ -734,7 +768,7 @@ class Execution(Executable):
 
     def __repr__(self):
         return "<%s of %s>" % \
-                (type(self).__name__, self.base)
+            (type(self).__name__, self.decorated)
 
 
 class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
@@ -754,9 +788,11 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
             name = pr.Name(builtin.Builtin.scope, [(n, none_pos)],
-                                none_pos, none_pos)
+                           none_pos, none_pos)
             if n in executes_generator:
                 name.parent = self
+            else:
+                name.parent = builtin.Builtin.scope
             names.append(name)
         debug.dbg('generator names', names)
         return names
@@ -771,10 +807,10 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
-                'asserts', 'doc', 'docstr', 'get_parent_until', 'get_code',
-                'subscopes']:
+                        'asserts', 'doc', 'docstr', 'get_parent_until', 'get_code',
+                        'subscopes']:
             raise AttributeError("Accessing %s of %s is not allowed."
-                                    % (self, name))
+                                 % (self, name))
         return getattr(self.func, name)
 
     def __repr__(self):
@@ -802,9 +838,12 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 # otherwise it just ignores the index (e.g. [1+1]).
                 index = index_possibilities[0]
                 if isinstance(index, Instance) \
-                            and str(index.name) in ['int', 'str'] \
-                            and len(index.var_args) == 1:
-                    with common.ignored(KeyError, IndexError):
+                        and str(index.name) in ['int', 'str'] \
+                        and len(index.var_args) == 1:
+                    # TODO this is just very hackish and a lot of use cases are
+                    # being ignored
+                    with common.ignored(KeyError, IndexError,
+                                        UnboundLocalError, TypeError):
                         return self.get_exact_index_types(index.var_args[0])
 
         result = list(self._follow_values(self._array.values))

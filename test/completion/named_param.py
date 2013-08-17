@@ -1,5 +1,6 @@
 """ named params:
 >>> def a(abc): pass
+...
 >>> a(abc=3)  # <- this stuff
 """
 

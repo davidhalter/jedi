@@ -61,5 +61,5 @@ isinstance(None,
 
 def x(): pass  # acts like EOF
 
-#? isinstance
+##? isinstance
 isinstance(None, 

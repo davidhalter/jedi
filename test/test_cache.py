@@ -1,6 +1,13 @@
+"""
+Test all things related to the ``jedi.cache`` module.
+"""
+
+import time
+
 import pytest
 
-from jedi import settings
+import jedi
+from jedi import settings, cache
 from jedi.cache import ParserCacheItem, _ModulePickling
 
 
@@ -52,3 +59,21 @@ def test_modulepickling_delete_incompatible_cache():
     cache2.version = 2
     cached2 = load_stored_item(cache2, path, item)
     assert cached2 is None
+
+
+def test_star_import_cache_duration():
+    new = 0.01
+    old, jedi.settings.star_import_cache_validity = \
+            jedi.settings.star_import_cache_validity, new
+
+    cache.star_import_cache = {}  # first empty...
+    # path needs to be not-None (otherwise caching effects are not visible)
+    jedi.Script('', 1, 0, '').completions()
+    time.sleep(2 * new)
+    jedi.Script('', 1, 0, '').completions()
+
+    # reset values
+    jedi.settings.star_import_cache_validity = old
+    length = len(cache.star_import_cache)
+    cache.star_import_cache = {}
+    assert length == 1
