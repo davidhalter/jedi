@@ -536,8 +536,13 @@ class Script(object):
                         cur_name_part = name_part
                     kill_count += 1
 
+
+        context = self._module.get_context()
+        just_from = next(context) == 'from'
+
         i = imports.ImportPath(user_stmt, is_like_search,
-                               kill_count=kill_count, direct_resolve=True)
+                               kill_count=kill_count, direct_resolve=True,
+                               is_just_from=just_from)
         return i, cur_name_part
 
     def _get_completion_parts(self):

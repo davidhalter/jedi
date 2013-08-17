@@ -56,10 +56,12 @@ class ImportPath(pr.Base):
     GlobalNamespace = _GlobalNamespace()
 
     def __init__(self, import_stmt, is_like_search=False, kill_count=0,
-                 direct_resolve=False):
+                 direct_resolve=False, is_just_from=False):
         self.import_stmt = import_stmt
         self.is_like_search = is_like_search
         self.direct_resolve = direct_resolve
+        self.is_just_from = is_just_from
+
         self.is_partial_import = bool(max(0, kill_count))
         path = import_stmt.get_parent_until().path
         self.file_path = os.path.dirname(path) if path is not None else None
@@ -131,6 +133,16 @@ class ImportPath(pr.Base):
                     pkg_path = os.path.dirname(scope.path)
                     paths = self._namespace_packages(pkg_path, self.import_path)
                     names += self._get_module_names([pkg_path] + paths)
+                if self.is_just_from:
+                    # In the case of an import like `from x.` we don't need to
+                    # add all the variables.
+                    if ['os'] == self.import_path and not self._is_relative_import():
+                        # os.path is a hardcoded exception, because it's a
+                        # ``sys.modules`` modification.
+                        p = (0, 0)
+                        names.append(pr.Name(self.GlobalNamespace, [('path', p)],
+                                       p, p, self.import_stmt))
+                    continue
                 for s, scope_names in evaluate.get_names_of_scope(scope,
                                                                   include_builtin=False):
                     for n in scope_names:

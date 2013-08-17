@@ -67,6 +67,12 @@ def scope_nested2():
     #? []
     import_tree.rename1
 
+def from_names():
+    #? ['mod1']
+    from import_tree.pkg.
+    #? ['path']
+    from os.
+
 def builtin_test():
     #? ['math']
     import math
