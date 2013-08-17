@@ -82,5 +82,8 @@ def setup_readline(namespace_module=__main__):
         readline.parse_and_bind("tab: complete")
         # jedi itself does the case matching
         readline.parse_and_bind("set completion-ignore-case on")
+        # because it's easier to hit the tab just once
+        readline.parse_and_bind("set show-all-if-unmodified")
+        readline.parse_and_bind("set show-all-if-ambiguous on")
         # No delimiters, Jedi handles that.
         readline.set_completer_delims('')
