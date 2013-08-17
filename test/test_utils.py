@@ -1,7 +1,7 @@
 import readline
 
 from jedi import utils
-from .helpers import TestCase
+from .helpers import TestCase, cwd_at
 
 
 class TestSetupReadline(TestCase):
@@ -71,6 +71,7 @@ class TestSetupReadline(TestCase):
         # items as well as items that are not only available on linux.
         assert len(set(self.completions(s)).symmetric_difference(goal)) < 20
 
+    @cwd_at('test')
     def test_local_import(self):
         s = 'import test_utils'
         assert self.completions(s) == [s]
