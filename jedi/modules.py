@@ -122,8 +122,8 @@ class ModuleWithCursor(Module):
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
         if self._path_until_cursor is None:  # small caching
-            self._path_until_cursor = self._get_path_until_cursor()
-            self._start_cursor_pos = self._start_cursor_pos_temp
+            self._path_until_cursor, self._start_cursor_pos = \
+                self._get_path_until_cursor(self.position)
         return self._path_until_cursor
 
     def _get_path_until_cursor(self, start_pos=None):
@@ -149,9 +149,8 @@ class ModuleWithCursor(Module):
             return line[::-1]
 
         self._is_first = True
-        self._line_temp, self._column_temp = start_pos or self.position
+        self._line_temp, self._column_temp = start_cursor = start_pos
         self._first_line = self.get_line(self._line_temp)[:self._column_temp]
-        self._start_cursor_pos_temp = self.position
 
         open_brackets = ['(', '[', '{']
         close_brackets = [')', ']', '}']
@@ -191,10 +190,10 @@ class ModuleWithCursor(Module):
                     self._column_temp = self._line_length - end[1]
                     break
 
-                x = self.position[0] - end[0] + 1
+                x = start_pos[0] - end[0] + 1
                 l = self.get_line(x)
-                l = self._first_line if x == self.position[0] else l
-                self._start_cursor_pos_temp = x, len(l) - end[1]
+                l = self._first_line if x == start_pos[0] else l
+                start_cursor = x, len(l) - end[1]
                 self._column_temp = self._line_length - end[1]
                 string += tok
                 last_type = token_type
@@ -202,7 +201,7 @@ class ModuleWithCursor(Module):
             debug.warning("Tokenize couldn't finish", sys.exc_info)
 
         # string can still contain spaces at the end
-        return string[::-1].strip()
+        return string[::-1].strip(), start_cursor
 
     def get_path_under_cursor(self):
         """
@@ -222,27 +221,44 @@ class ModuleWithCursor(Module):
         return (before.group(0) if before is not None else '') \
             + (after.group(0) if after is not None else '')
 
-    def get_context(self):
+    def get_context(self, yield_positions=False):
         pos = self._start_cursor_pos
-        while pos > (1, 0):
+        while True:
             # remove non important white space
             line = self.get_line(pos[0])
-            while pos[1] > 0 and line[pos[1] - 1].isspace():
-                pos = pos[0], pos[1] - 1
+            while True:
+                if pos[1] == 0:
+                    line = self.get_line(pos[0] - 1)
+                    if line and line[-1] == '\\':
+                        pos = pos[0] - 1, len(line) - 1
+                        continue
+                    else:
+                        break
+
+                if line[pos[1] - 1].isspace():
+                    pos = pos[0], pos[1] - 1
+                else:
+                    break
 
             try:
-                yield self._get_path_until_cursor(start_pos=pos)
+                result, pos = self._get_path_until_cursor(start_pos=pos)
+                if yield_positions:
+                    yield pos
+                else:
+                    yield result
             except StopIteration:
-                yield ''
-            pos = self._line_temp, self._column_temp
-
-        while True:
-            yield ''
+                if yield_positions:
+                    yield None
+                else:
+                    yield ''
 
     def get_line(self, line_nr):
         if not self._line_cache:
             self._line_cache = self.source.splitlines()
-            if not self.source:  # ''.splitlines() == []
+            if self.source:
+                if self.source[-1] == '\n':
+                    self._line_cache.append('')
+            else:  # ''.splitlines() == []
                 self._line_cache = ['']
 
         if line_nr == 0:

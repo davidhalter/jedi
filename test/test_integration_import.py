@@ -56,6 +56,19 @@ def test_goto_following_on_imports():
     assert (g[0].line, g[0].column) != (0, 0)
 
 
+def test_after_from():
+    def check(source, result, column=None):
+        completions = Script(source, column=column).completions()
+        assert [c.name for c in completions] == result
+
+    check('from os ', ['import'])
+    check('\nfrom os ', ['import'])
+    check('\nfrom os import whatever', ['import'], len('from os im'))
+
+    check('from os\\\n', ['import'])
+    check('from os \\\n', ['import'])
+
+
 def test_follow_definition():
     """ github issue #45 """
     c = Script("from datetime import timedelta; timedelta").completions()

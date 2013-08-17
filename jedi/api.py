@@ -61,13 +61,16 @@ class Script(object):
             path = source_path
 
         lines = source.splitlines()
-        line = len(lines) if line is None else line
-        column = len(lines[-1]) if column is None else column
+        if source and source[-1] == '\n':
+            lines.append('')
+
+        self._line = max(len(lines), 1) if line is None else line
+        self._column = len(lines[-1]) if column is None else column
 
         api_classes._clear_caches()
         debug.reset_time()
         self.source = modules.source_to_unicode(source, source_encoding)
-        self.pos = line, column
+        self.pos = self._line, self._column
         self._module = modules.ModuleWithCursor(
             path, source=self.source, position=self.pos)
         self._source_path = path
@@ -101,13 +104,24 @@ class Script(object):
         :return: Completion objects, sorted by name and __ comes last.
         :rtype: list of :class:`api_classes.Completion`
         """
+        def get_completions(user_stmt, bs):
+            if isinstance(user_stmt, pr.Import):
+                context = self._module.get_context()
+                next(context)  # skip the path
+                if next(context) == 'from':
+                    # completion is just "import" if before stands from ..
+                    return ((k, bs) for k in keywords.keyword_names('import'))
+            return self._simple_complete(path, like)
+
         debug.speed('completions start')
         path = self._module.get_path_until_cursor()
         if re.search('^\.|\.\.$', path):
             return []
         path, dot, like = self._get_completion_parts()
 
-        completions = self._simple_complete(path, like)
+        user_stmt = self._user_stmt(True)
+        bs = builtin.Builtin.scope
+        completions = get_completions(user_stmt, bs)
 
         if not dot:  # named params have no dots
             for call_def in self.call_signatures():
@@ -115,17 +129,7 @@ class Script(object):
                     for p in call_def.params:
                         completions.append((p.get_name(), p))
 
-            # Do the completion if there is no path before and no import stmt.
-            u = self._user_stmt(True)
-            bs = builtin.Builtin.scope
-            if isinstance(u, pr.Import):
-                completion_line = self._module.get_position_line()
-                if (u.relative_count > 0 or u.from_ns) and not re.search(
-                        r'(,|from)\s*$|import\s+$', completion_line):
-                    completions += ((k, bs) for k
-                                    in keywords.keyword_names('import'))
-
-            if not path and not isinstance(u, pr.Import):
+            if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords
                 completions += ((k, bs) for k in keywords.keyword_names(
                     all=True))
@@ -140,7 +144,7 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
-                        self._user_stmt(True) or self._parser.user_scope, n):
+                        user_stmt or self._parser.user_scope, n):
                     new = api_classes.Completion(c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
@@ -196,11 +200,9 @@ class Script(object):
 
         if is_completion and not user_stmt:
             # for statements like `from x import ` (cursor not in statement)
-            line = self._module.get_position_line()
-            pos = self.pos[0], len(line) - len(re.search(' *$', line).group(0))
-            # check the last statement
-            last_stmt = self._parser.module.get_statement_for_position(pos,
-                        include_imports=True)
+            pos = next(self._module.get_context(yield_positions=True))
+            last_stmt = pos and self._parser.module.get_statement_for_position(
+                                pos, include_imports=True)
             if isinstance(last_stmt, pr.Import):
                 user_stmt = last_stmt
         return user_stmt
