@@ -61,11 +61,17 @@ def setup_readline(namespace_module=__main__):
             library module.
             """
             if state == 0:
-                interpreter = Interpreter(text, [namespace_module.__dict__])
+                import os, sys
+                sys.path.insert(0, os.getcwd())
+                # Calling python doesn't have a path, so add to sys.path.
+                try:
+                    interpreter = Interpreter(text, [namespace_module.__dict__])
 
-                path, dot, like = interpreter._get_completion_parts()
-                before = text[:len(text) - len(like)]
-                completions = interpreter.completions()
+                    path, dot, like = interpreter._get_completion_parts()
+                    before = text[:len(text) - len(like)]
+                    completions = interpreter.completions()
+                finally:
+                    sys.path.pop(0)
 
                 self.matches = [before + c.name_with_symbols for c in completions]
             try:

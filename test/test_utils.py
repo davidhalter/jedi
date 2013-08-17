@@ -71,6 +71,10 @@ class TestSetupReadline(TestCase):
         # items as well as items that are not only available on linux.
         assert len(set(self.completions(s)).symmetric_difference(goal)) < 20
 
+    def test_local_import(self):
+        s = 'import test_utils'
+        assert self.completions(s) == [s]
+
     def test_preexisting_values(self):
         self.namespace.a = range(10)
         assert set(self.completions('a.')) == set(['a.' + n for n in dir(range(1))])
