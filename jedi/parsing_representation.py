@@ -423,6 +423,8 @@ class Class(Scope):
         string += ':\n'
         string += super(Class, self).get_code(True, indention)
         if self.is_empty():
+            if self.docstr:
+                string += indention
             string += "pass\n"
         return string
 
@@ -472,6 +474,8 @@ class Function(Scope):
         string += "def %s(%s):\n" % (self.name, params)
         string += super(Function, self).get_code(True, indention)
         if self.is_empty():
+            if self.docstr:
+                string += indention
             string += 'pass\n'
         return string
 
