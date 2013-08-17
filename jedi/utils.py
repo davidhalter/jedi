@@ -85,5 +85,7 @@ def setup_readline(namespace_module=__main__):
         # because it's easier to hit the tab just once
         readline.parse_and_bind("set show-all-if-unmodified")
         readline.parse_and_bind("set show-all-if-ambiguous on")
+        # don't repeat all the things written in the readline all the time
+        readline.parse_and_bind("set completion-prefix-display-length 2")
         # No delimiters, Jedi handles that.
         readline.set_completer_delims('')
