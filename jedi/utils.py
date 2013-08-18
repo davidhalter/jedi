@@ -2,7 +2,7 @@
 Utilities for end-users.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import __main__
 
 from jedi import Interpreter
@@ -84,6 +84,63 @@ def setup_readline(namespace_module=__main__):
     except ImportError:
         print("Module readline not available.")
     else:
+        # Taken from SymPy (sympy/printing/pretty/stringpict.py)
+        def terminal_width():
+            """Return the terminal width if possible, otherwise return 0.
+            """
+            ncols = 0
+            try:
+                import curses
+                import io
+                try:
+                    curses.setupterm()
+                    ncols = curses.tigetnum('cols')
+                except AttributeError:
+                    # windows curses doesn't implement setupterm or tigetnum
+                    # code below from
+                    # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/440694
+                    from ctypes import windll, create_string_buffer
+                    # stdin handle is -10
+                    # stdout handle is -11
+                    # stderr handle is -12
+                    h = windll.kernel32.GetStdHandle(-12)
+                    csbi = create_string_buffer(22)
+                    res = windll.kernel32.GetConsoleScreenBufferInfo(h, csbi)
+                    if res:
+                        import struct
+                        (bufx, bufy, curx, cury, wattr,
+                         left, top, right, bottom, maxx, maxy) = struct.unpack("hhhhHhhhhhh", csbi.raw)
+                        ncols = right - left + 1
+                except curses.error:
+                    pass
+                except io.UnsupportedOperation:
+                    pass
+            except (ImportError, TypeError):
+                pass
+            return ncols
+
+        TERM_WIDTH = terminal_width() or 80 # TODO: Better logic here
+
+        import re
+        # For now, just show the end of the completion that's a keyword.
+        # re.UNICODE is technically not correct in Python 2, but it shouldn't hurt
+        identifier = re.compile(r"[^\d\W]\w*$", re.UNICODE)
+
+        def display_matches_hook(substitution, matches, longest_match_length):
+            print()
+            rematch = identifier.search(substitution)
+            pos = rematch.start() if rematch else len(substitution)
+            prefix = substitution[:pos]
+            # At least spaces between matches
+            new_longest_match_length = longest_match_length - len(prefix) + 2
+            matches_per_line = TERM_WIDTH//new_longest_match_length
+            for i, match in enumerate(matches):
+                if i and not i % matches_per_line-1:
+                    print()
+                print(match[pos:] + ' '*(new_longest_match_length -
+                    len(match[pos:])), end='')
+
+        readline.set_completion_display_matches_hook(display_matches_hook)
         readline.set_completer(JediRL().complete)
         readline.parse_and_bind("tab: complete")
         # jedi itself does the case matching
