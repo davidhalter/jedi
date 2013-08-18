@@ -112,7 +112,7 @@ def extract(script, new_name):
     # TODO care for multiline extracts
     dct = {}
     if user_stmt:
-        pos = script.pos
+        pos = script._pos
         line_index = pos[0] - 1
         arr, index = helpers.array_for_pos(user_stmt, pos)
         if arr is not None:
