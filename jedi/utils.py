@@ -49,7 +49,7 @@ def setup_readline(namespace_module=__main__):
     bash).
 
     """
-    class JediRL():
+    class JediRL(object):
         def complete(self, text, state):
             """
             This complete stuff is pretty weird, a generator would make
