@@ -5,6 +5,9 @@ Utilities for end-users.
 from __future__ import absolute_import, print_function
 import __main__
 
+import sys
+import re
+
 from jedi import Interpreter
 
 
@@ -121,7 +124,6 @@ def setup_readline(namespace_module=__main__):
 
         TERM_WIDTH = terminal_width() or 80 # TODO: Better logic here
 
-        import re
         # For now, just show the end of the completion that's a keyword.
         # re.UNICODE is technically not correct in Python 2, but it shouldn't hurt
         identifier = re.compile(r"[^\d\W]\w*$", re.UNICODE)
@@ -135,10 +137,13 @@ def setup_readline(namespace_module=__main__):
             new_longest_match_length = longest_match_length - len(prefix) + 2
             matches_per_line = TERM_WIDTH//new_longest_match_length
             for i, match in enumerate(matches):
-                if i and not i % matches_per_line-1:
+                if i and not i % (matches_per_line-1):
                     print()
                 print(match[pos:] + ' '*(new_longest_match_length -
                     len(match[pos:])), end='')
+            print()
+            print(sys.ps1 + substitution, end='')
+            sys.stdout.flush()
 
         readline.set_completion_display_matches_hook(display_matches_hook)
         readline.set_completer(JediRL().complete)
