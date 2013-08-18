@@ -343,11 +343,11 @@ class Script(object):
                     call = call.next
                 # reset cursor position:
                 (row, col) = call.name.end_pos
-                self._pos = (row, max(col - 1, 0))
+                _pos = (row, max(col - 1, 0))
                 self._module = modules.ModuleWithCursor(
                     self._source_path,
                     source=self.source,
-                    position=self._pos)
+                    position=_pos)
                 # then try to find the path again
                 goto_path = self._module.get_path_under_cursor()
 
