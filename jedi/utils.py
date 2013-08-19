@@ -128,22 +128,19 @@ def setup_readline(namespace_module=__main__):
         # re.UNICODE is technically not correct in Python 2, but it shouldn't hurt
         identifier = re.compile(r"[^\d\W]\w*$", re.UNICODE)
 
+        import rl.readline as readline
         def display_matches_hook(substitution, matches, longest_match_length):
-            print()
             rematch = identifier.search(substitution)
             pos = rematch.start() if rematch else len(substitution)
-            prefix = substitution[:pos]
             # At least spaces between matches
-            new_longest_match_length = longest_match_length - len(prefix) + 2
-            matches_per_line = TERM_WIDTH//new_longest_match_length
-            for i, match in enumerate(matches):
-                if i and not i % (matches_per_line-1):
-                    print()
-                print(match[pos:] + ' '*(new_longest_match_length -
-                    len(match[pos:])), end='')
-            print()
-            print(sys.ps1 + substitution, end='')
-            sys.stdout.flush()
+            newmatches = [match[pos:] for match in matches]
+            try:
+                import rl
+                rl.readline.display_match_list(substitution, newmatches,
+                    longest_match_length - pos)
+            except Exception as e:
+                print(e)
+            rl.readline.redisplay(force=True)
 
         readline.set_completion_display_matches_hook(display_matches_hook)
         readline.set_completer(JediRL().complete)
@@ -154,6 +151,6 @@ def setup_readline(namespace_module=__main__):
         readline.parse_and_bind("set show-all-if-unmodified")
         readline.parse_and_bind("set show-all-if-ambiguous on")
         # don't repeat all the things written in the readline all the time
-        readline.parse_and_bind("set completion-prefix-display-length 2")
+        #readline.parse_and_bind("set completion-prefix-display-length 2")
         # No delimiters, Jedi handles that.
         readline.set_completer_delims('')
