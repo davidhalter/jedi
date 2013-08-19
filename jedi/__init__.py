@@ -34,7 +34,7 @@ As you see Jedi is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.
 """
 
-__version__ = 0, 7, 0
+__version__ = 0, 7, 0, 'alpha1'
 
 import sys
 
