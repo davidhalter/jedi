@@ -9,4 +9,5 @@ include pytest.ini
 include tox.ini
 include jedi/mixin/*.pym
 recursive-include test *
+recursive-include docs *
 recursive-exclude * *.pyc
