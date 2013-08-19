@@ -70,9 +70,9 @@ class Script(object):
         api_classes._clear_caches()
         debug.reset_time()
         self.source = modules.source_to_unicode(source, source_encoding)
-        self.pos = self._line, self._column
+        self._pos = self._line, self._column
         self._module = modules.ModuleWithCursor(
-            path, source=self.source, position=self.pos)
+            path, source=self.source, position=self._pos)
         self._source_path = path
         self.path = None if path is None else os.path.abspath(path)
         debug.speed('init')
@@ -165,7 +165,7 @@ class Script(object):
         except NotFoundError:
             scopes = []
             scope_generator = evaluate.get_names_of_scope(
-                self._parser.user_scope, self.pos)
+                self._parser.user_scope, self._pos)
             completions = []
             for scope, name_list in scope_generator:
                 for c in name_list:
@@ -184,7 +184,7 @@ class Script(object):
                             if not current_line.endswith('import import'):
                                 continue
                         a = s.import_stmt.alias
-                        if a and a.start_pos <= self.pos <= a.end_pos:
+                        if a and a.start_pos <= self._pos <= a.end_pos:
                             continue
                         names = s.get_defined_names(on_import_stmt=True)
                     else:
@@ -230,7 +230,7 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        offset = self.pos[0] - 1, self.pos[1]
+        offset = self._line - 1, self._column
         r = parsing.Parser(cursor_txt, no_docstr=True, offset=offset)
         try:
             stmt = r.module.statements[0]
@@ -333,7 +333,7 @@ class Script(object):
         elif not goto_path:
             op = self._module.get_operator_under_cursor()
             if op and op not in lower_priority_operators:
-                scopes = set([keywords.get_operator(op, self.pos)])
+                scopes = set([keywords.get_operator(op, self._pos)])
 
         # Fetch definition of callee
         if not goto_path:
@@ -343,11 +343,11 @@ class Script(object):
                     call = call.next
                 # reset cursor position:
                 (row, col) = call.name.end_pos
-                self.pos = (row, max(col - 1, 0))
+                _pos = (row, max(col - 1, 0))
                 self._module = modules.ModuleWithCursor(
                     self._source_path,
                     source=self.source,
-                    position=self.pos)
+                    position=_pos)
                 # then try to find the path again
                 goto_path = self._module.get_path_under_cursor()
 
@@ -355,12 +355,12 @@ class Script(object):
             if goto_path:
                 scopes = set(self._prepare_goto(goto_path))
             elif op in lower_priority_operators:
-                scopes = set([keywords.get_operator(op, self.pos)])
+                scopes = set([keywords.get_operator(op, self._pos)])
 
         scopes = resolve_import_paths(scopes)
 
         # add keywords
-        scopes |= keywords.keywords(string=goto_path, pos=self.pos)
+        scopes |= keywords.keywords(string=goto_path, pos=self._pos)
 
         d = set([api_classes.Definition(s) for s in scopes
                  if not isinstance(s, imports.ImportPath._GlobalNamespace)])
@@ -429,7 +429,7 @@ class Script(object):
             if isinstance(user_stmt, pr.Statement):
                 c = user_stmt.get_commands()
                 if c and not isinstance(c[0], (str, unicode)) and \
-                   c[0].start_pos > self.pos:
+                   c[0].start_pos > self._pos:
                     # The cursor must be after the start, otherwise the
                     # statement is just an assignee.
                     definitions = [user_stmt]
@@ -453,7 +453,7 @@ class Script(object):
         definitions, search_name = self._goto(add_import_name=True)
         if isinstance(user_stmt, pr.Statement):
             c = user_stmt.get_commands()[0]
-            if not isinstance(c, unicode) and self.pos < c.start_pos:
+            if not isinstance(c, unicode) and self._pos < c.start_pos:
                 # the search_name might be before `=`
                 definitions = [v for v in user_stmt.set_vars
                                if unicode(v.names[-1]) == search_name]
@@ -517,7 +517,7 @@ class Script(object):
             user_stmt = self._user_stmt()
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
                 call, index, _ = helpers.search_function_definition(
-                    user_stmt, self.pos)
+                    user_stmt, self._pos)
         debug.speed('func_call parsed')
         return call, index
 
@@ -531,7 +531,7 @@ class Script(object):
             if user_stmt.alias == i:
                 continue
             for name_part in i.names:
-                if name_part.end_pos >= self.pos:
+                if name_part.end_pos >= self._pos:
                     if not cur_name_part:
                         cur_name_part = name_part
                     kill_count += 1
