@@ -128,19 +128,28 @@ def setup_readline(namespace_module=__main__):
         # re.UNICODE is technically not correct in Python 2, but it shouldn't hurt
         identifier = re.compile(r"[^\d\W]\w*$", re.UNICODE)
 
-        import rl.readline as readline
-        def display_matches_hook(substitution, matches, longest_match_length):
+        from rl import readline, completer, completion
+
+        def display_matches_hook(substitution, matches, max_length):
             rematch = identifier.search(substitution)
             pos = rematch.start() if rematch else len(substitution)
             # At least spaces between matches
             newmatches = [match[pos:] for match in matches]
-            try:
-                import rl
-                rl.readline.display_match_list(substitution, newmatches,
-                    longest_match_length - pos)
-            except Exception as e:
-                print(e)
-            rl.readline.redisplay(force=True)
+            print(completer.query_items)
+            # if num_matches > completer.query_items >= 0:
+            #     sys.stdout.write('\nDisplay all %d possibilities? (y or n)' % num_matches)
+            #     sys.stdout.flush()
+            #     while True:
+            #         c = readline.read_key()
+            #         if c in 'yY\x20': # SPACEBAR
+            #             break
+            #         if c in 'nN\x7f': # RUBOUT
+            #             sys.stdout.write('\n')
+            #             completion.redisplay(force=True)
+            #             return
+            completion.display_match_list(substitution, newmatches, max_length
+                - pos)
+            completion.redisplay(force=True)
 
         readline.set_completion_display_matches_hook(display_matches_hook)
         readline.set_completer(JediRL().complete)
