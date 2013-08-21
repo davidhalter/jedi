@@ -141,8 +141,8 @@ def time_cache(time_add_setting):
     return _temp
 
 
-@time_cache("function_definition_validity")
-def cache_function_definition(stmt):
+@time_cache("call_signatures_validity")
+def cache_call_signatures(stmt):
     module_path = stmt.get_parent_until().path
     return None if module_path is None else (module_path, stmt.start_pos)
 

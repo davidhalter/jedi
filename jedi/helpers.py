@@ -111,7 +111,7 @@ def array_for_pos(stmt, pos, array_types=None):
     return None, 0
 
 
-def search_function_definition(stmt, pos):
+def search_call_signatures(stmt, pos):
     """
     Returns the function Call that matches the position before.
     """

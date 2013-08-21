@@ -502,9 +502,9 @@ class Script(object):
             return []
 
         user_stmt = self._user_stmt()
-        with common.scale_speed_settings(settings.scale_function_definition):
+        with common.scale_speed_settings(settings.scale_call_signatures):
             _callable = lambda: evaluate.follow_call(call)
-            origins = cache.cache_function_definition(_callable, user_stmt)
+            origins = cache.cache_call_signatures(_callable, user_stmt)
         debug.speed('func_call followed')
 
         return [api_classes.CallDef(o, index, call) for o in origins
@@ -516,7 +516,7 @@ class Script(object):
         if call is None:
             user_stmt = self._user_stmt()
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
-                call, index, _ = helpers.search_function_definition(
+                call, index, _ = helpers.search_call_signatures(
                     user_stmt, self._pos)
         debug.speed('func_call parsed')
         return call, index
