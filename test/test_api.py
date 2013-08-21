@@ -24,3 +24,7 @@ def test_preload_modules():
     check_loaded('datetime', 'json', 'token')
 
     cache.parser_cache = temp_cache
+
+
+def test_empty_script():
+    assert api.Script('')

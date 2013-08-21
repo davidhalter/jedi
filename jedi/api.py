@@ -60,7 +60,7 @@ class Script(object):
             warnings.warn("Use path instead of source_path.", DeprecationWarning)
             path = source_path
 
-        lines = source.splitlines()
+        lines = source.splitlines() or ['']
         if source and source[-1] == '\n':
             lines.append('')
 
