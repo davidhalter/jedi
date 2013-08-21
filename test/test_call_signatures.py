@@ -112,3 +112,14 @@ class TestCallSignatures(TestCase):
             pass
         f( )""")
         self._run(s, 'f', 0, line=3, column=3)
+
+    def test_multiple_signatures(self):
+        s = textwrap.dedent("""\
+        if x:
+            def f(a, b):
+                pass
+        else:
+            def f(a, b):
+                pass
+        f(""")
+        assert len(Script(s).call_signatures()) == 2
