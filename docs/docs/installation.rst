@@ -46,8 +46,8 @@ you choose, both are able to complete both Python 2 and 3 *code*.
 Debian
 ~~~~~~
 
-Debian packages are available as `experimental packages
-<http://packages.debian.org/experimental/python-jedi>`__.
+Debian packages are available in the `unstable repository
+<http://packages.debian.org/search?keywords=python-jedi>`__.
 
 Others
 ~~~~~~
