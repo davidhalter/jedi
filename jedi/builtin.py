@@ -374,7 +374,7 @@ def _parse_function_doc(func):
                                          change_options, param_str)
             if changes == 0:
                 break
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError, UnboundLocalError):
         debug.dbg('no brackets found - no param')
         end = 0
         param_str = ''
@@ -384,7 +384,7 @@ def _parse_function_doc(func):
     if doc is not None:
         r = re.search('-[>-]* ', doc[end:end + 7])
     if doc is None or r is None:
-        ret = 'pass'
+        ret = 'pass' if doc is None else ''
     else:
         index = end + r.end()
         # get result type, which can contain newlines
