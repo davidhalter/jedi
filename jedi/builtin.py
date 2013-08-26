@@ -347,6 +347,9 @@ def _parse_function_doc(func):
     # TODO: things like utime(path, (atime, mtime)) and a(b [, b]) -> None
     doc = inspect.getdoc(func)
 
+    if doc is None:
+        return '', 'pass'
+
     # get full string, parse round parentheses: def func(a, (b,c))
     try:
         count = 0
@@ -361,7 +364,13 @@ def _parse_function_doc(func):
                 end = start + i
                 break
         param_str = doc[start + 1:end]
-
+    except (ValueError, UnboundLocalError):
+        # ValueError for doc.index
+        # UnboundLocalError for undefined end in last line
+        debug.dbg('no brackets found - no param')
+        end = 0
+        param_str = ''
+    else:
         # remove square brackets, that show an optional param ( = None)
         def change_options(m):
             args = m.group(1).split(',')
@@ -369,22 +378,18 @@ def _parse_function_doc(func):
                 if a and '=' not in a:
                     args[i] += '=None'
             return ','.join(args)
+
         while True:
             param_str, changes = re.subn(r' ?\[([^\[\]]+)\]',
                                          change_options, param_str)
             if changes == 0:
                 break
-    except (ValueError, AttributeError, UnboundLocalError):
-        debug.dbg('no brackets found - no param')
-        end = 0
-        param_str = ''
-
     param_str = param_str.replace('-', '_')  # see: isinstance.__doc__
 
-    if doc is not None:
-        r = re.search('-[>-]* ', doc[end:end + 7])
-    if doc is None or r is None:
-        ret = 'pass' if doc is None else ''
+    # parse return value
+    r = re.search('-[>-]* ', doc[end:end + 7])
+    if r is None:
+        ret = ''
     else:
         index = end + r.end()
         # get result type, which can contain newlines
@@ -396,8 +401,8 @@ def _parse_function_doc(func):
         ret = BuiltinModule.map_types.get(ret_str, ret_str)
         if ret == ret_str and ret not in ['None', 'object', 'tuple', 'set']:
             debug.dbg('not working', ret_str)
-        if ret != 'pass':
-            ret = ('return ' if 'return' not in ret else '') + ret
+
+        ret = ('return ' if 'return' not in ret else '') + ret
     return param_str, ret
 
 
