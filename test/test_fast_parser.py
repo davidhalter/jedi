@@ -24,3 +24,11 @@ class Two(Abc):
     a = a[:-1] + '.\n'
     assert jedi.Script(a, 8, 13, 'example.py').completions()
     assert  jedi.Script(a + b, path='example.py').completions()
+
+
+def test_class_in_docstr():
+    a = '"\nclasses\n"'
+    jedi.Script(a, 1, 0)._parser
+
+    b = a + '\nimport os'
+    assert jedi.Script(b, 4, 8).goto_assignments()
