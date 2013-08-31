@@ -23,15 +23,6 @@ API Interface
     :undoc-members:
 
 
-
-API Return Classes
-~~~~~~~~~~~~~~~~~~
-
-.. automodule:: api_classes
-    :members:
-    :undoc-members:
-
-
 Examples
 --------
 
