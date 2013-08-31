@@ -18,13 +18,14 @@ Docs
 ----
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    docs/installation
    docs/features
    docs/repl
    docs/recipes
    docs/plugin-api
+   docs/plugin-api-classes
    docs/settings
    docs/history
    docs/development
