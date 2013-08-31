@@ -3,6 +3,7 @@ Test all things related to the ``jedi.api`` module.
 """
 
 from jedi import common, api
+from pytest import raises
 
 
 def test_preload_modules():
@@ -28,3 +29,25 @@ def test_preload_modules():
 
 def test_empty_script():
     assert api.Script('')
+
+def test_line_number_errors():
+    """
+    Script should raise a ValueError if line/column numbers are not in a
+    valid range.
+    """
+    s = 'hello'
+    # lines
+    with raises(ValueError):
+        api.Script(s, 2, 0)
+    with raises(ValueError):
+        api.Script(s, 0, 0)
+
+    # columns
+    with raises(ValueError):
+        api.Script(s, 1, len(s) + 1)
+    with raises(ValueError):
+        api.Script(s, 1, -1)
+
+    # ok
+    api.Script(s, 1, 0)
+    api.Script(s, 1, len(s) + 1)
