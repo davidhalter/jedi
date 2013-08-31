@@ -41,6 +41,9 @@ class Script(object):
     A Script is the base for completions, goto or whatever you want to do with
     |jedi|.
 
+    You can either use the ``source`` parameter or ``path`` to read a file.
+    Usually you're going to want to use both of them (in an editor).
+
     :param source: The source code of the current file, separated by newlines.
     :type source: str
     :param line: The line to perform actions on (starting with 1).
@@ -54,11 +57,15 @@ class Script(object):
         ``unicode`` object (default ``'utf-8'``).
     :type source_encoding: str
     """
-    def __init__(self, source, line=None, column=None, path=None,
+    def __init__(self, source=None, line=None, column=None, path=None,
                  source_encoding='utf-8', source_path=None):
         if source_path is not None:
             warnings.warn("Use path instead of source_path.", DeprecationWarning)
             path = source_path
+
+        if source is None:
+            with open(path) as f:
+                source = f.read()
 
         lines = source.splitlines() or ['']
         if source and source[-1] == '\n':

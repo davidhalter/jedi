@@ -35,9 +35,5 @@ def test_dont_break_imports_without_namespaces():
 
 @helpers.cwd_at("test/absolute_import")
 def test_can_complete_when_shadowing():
-    filename = "unittest.py"
-    with open(filename) as f:
-        lines = f.readlines()
-    src = "".join(lines)
-    script = jedi.Script(src, path=filename)
+    script = jedi.Script(path="unittest.py")
     assert script.completions()
