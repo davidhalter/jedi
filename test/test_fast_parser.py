@@ -27,6 +27,9 @@ class Two(Abc):
 
 
 def test_class_in_docstr():
+    """
+    Regression test for a problem with classes in docstrings.
+    """
     a = '"\nclasses\n"'
     jedi.Script(a, 1, 0)._parser
 

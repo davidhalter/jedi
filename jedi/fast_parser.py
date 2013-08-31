@@ -259,7 +259,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(common.FLOWS)
 
-        lines = code.splitlines()
+        self._lines = code.splitlines()
         current_lines = []
         parts = []
         is_decorator = False
@@ -269,7 +269,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         in_flow = False
         add_to_last = False
         # All things within flows are simply being ignored.
-        for i, l in enumerate(lines):
+        for i, l in enumerate(self._lines):
             # check for dedents
             m = re.match('^([\t ]*)(.?)', l)
             indent = len(m.group(1))
@@ -343,6 +343,12 @@ class FastParser(use_metaclass(CachedFastParser)):
                 p, node = self._get_parser(code_part, code[start:],
                                            line_offset, nodes, not is_first)
 
+                # The actual used code_part is different from the given code
+                # part, because of docstrings for example there's a chance that
+                # splits are wrong.
+                used_lines = self._lines[line_offset:p.end_pos[0]]
+                code_part_actually_used = '\n'.join(used_lines)
+
                 if is_first and p.module.subscopes:
                     # special case, we cannot use a function subscope as a
                     # base scope, subscopes would save all the other contents
@@ -356,18 +362,18 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 if is_first:
                     if self.current_node is None:
-                        self.current_node = ParserNode(p, code_part)
+                        self.current_node = ParserNode(p, code_part_actually_used)
                     else:
                         self.current_node.save_contents(p)
                 else:
                     if node is None:
                         self.current_node = \
-                            self.current_node.add_parser(p, code_part)
+                            self.current_node.add_parser(p, code_part_actually_used)
                     else:
                         self.current_node = self.current_node.add_node(node)
 
                 if self.current_node.parent and (isinstance(p.user_scope,
-                                                            pr.SubModule) or p.user_scope is None) \
+                                    pr.SubModule) or p.user_scope is None) \
                         and self.user_position \
                         and p.start_pos <= self.user_position < p.end_pos:
                     p.user_scope = self.current_node.parent.content_scope
@@ -375,9 +381,8 @@ class FastParser(use_metaclass(CachedFastParser)):
                 self.parsers.append(p)
 
                 is_first = False
-            else:
-                # print '#'*45, line_offset, p.end_pos, 'theheck\n', code_part
-                pass
+            #else:
+                #print '#'*45, line_offset, p.end_pos, 'theheck\n', repr(code_part)
 
             line_offset += lines
             start += len(code_part) + 1  # +1 for newline
