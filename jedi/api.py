@@ -348,7 +348,7 @@ class Script(object):
             if op and op not in lower_priority_operators:
                 scopes = set([keywords.get_operator(op, self._pos)])
 
-        # Fetch definition of callee
+        # Fetch definition of callee, if there's no path otherwise.
         if not goto_path:
             (call, _) = self._func_call_and_param_index()
             if call is not None:

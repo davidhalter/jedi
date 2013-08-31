@@ -259,7 +259,7 @@ class Scope(Simple, IsScope):
 
         """
         return [n for n in self.get_set_vars()
-                if isinstance(n, Import) or len(n) == 1]
+                if isinstance(n, Import) or (len(n) == 1)]
 
     def is_empty(self):
         """
@@ -783,6 +783,7 @@ class Statement(Simple):
 
     def _remove_executions_from_set_vars(self, set_vars):
         """
+        Removes all executions and uses in lookups.
         Important mainly for assosiative arrays::
 
             a = 3
@@ -796,19 +797,22 @@ class Statement(Simple):
             return set_vars
         result = set(set_vars)
         last = None
-        in_execution = 0
-        for tok in self.token_list:
+        in_lookup = 0
+        is_execution = False
+        for i, tok in enumerate(self.token_list):
             if isinstance(tok, Name):
-                if tok not in result:
-                    break
-                if in_execution:
-                    result.remove(tok)
+                if in_lookup or is_execution:
+                    result.discard(tok)
             elif isinstance(tok, tuple):
                 tok = tok[1]
-            if tok in ['(', '['] and isinstance(last, Name):
-                in_execution += 1
-            elif tok in [')', ']'] and in_execution > 0:
-                in_execution -= 1
+            if in_lookup == 0 and tok == '(':
+                is_execution = True
+                for t in self.token_list[:i]:
+                    result.discard(t)
+            if tok == '[' and isinstance(last, Name):
+                in_lookup += 1
+            elif tok == ']' and in_lookup > 0:
+                in_lookup -= 1
             last = tok
         return list(result)
 
