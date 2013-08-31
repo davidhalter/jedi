@@ -39,5 +39,5 @@ def test_can_complete_when_shadowing():
     with open(filename) as f:
         lines = f.readlines()
     src = "".join(lines)
-    script = jedi.Script(src, len(lines), len(lines[1]), filename)
+    script = jedi.Script(src, path=filename)
     assert script.completions()
