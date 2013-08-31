@@ -23,12 +23,9 @@ Docs
    docs/usage
    docs/installation
    docs/features
-   docs/repl
-   docs/recipes
    docs/plugin-api
    docs/plugin-api-classes
    docs/settings
-   docs/history
    docs/development
    docs/testing
 
