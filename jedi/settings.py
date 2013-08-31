@@ -1,7 +1,6 @@
 """
-This module contains variables with global |jedi| setting. To change the
-behavior of |jedi|, change the variables defined in
-:mod:`jedi.settings`.
+This module contains variables with global |jedi| settings. To change the
+behavior of |jedi|, change the variables defined in :mod:`jedi.settings`.
 
 Plugins should expose an interface so that the user can adjust the
 configuration.

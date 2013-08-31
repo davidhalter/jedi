@@ -25,6 +25,7 @@ Docs
    docs/repl
    docs/recipes
    docs/plugin-api
+   docs/settings
    docs/history
    docs/development
    docs/testing

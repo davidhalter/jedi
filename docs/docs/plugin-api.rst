@@ -31,10 +31,6 @@ API Return Classes
     :members:
     :undoc-members:
 
-Settings Module
-~~~~~~~~~~~~~~~
-
-.. automodule:: settings
 
 Examples
 --------
