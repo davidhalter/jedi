@@ -126,6 +126,10 @@ class A():
 #? int()
 A().addition
 
+#? 8 int()
+A().addition = None
+
+
 # -----------------
 # inheritance
 # -----------------
