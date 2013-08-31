@@ -8,8 +8,10 @@ The Plugin API
 Note: This documentation is for Plugin developers, who want to improve their
 editors/IDE autocompletion 
 
-If you want to use |jedi|, you first need to
-``import jedi``. You then have direct access to the :class:`.Script`.
+If you want to use |jedi|, you first need to ``import jedi``.  You then have
+direct access to the :class:`.Script`. You can then call the functions
+documented here. These functions return :ref:`API classes
+<plugin-api-classes>`.
 
 
 API documentation
