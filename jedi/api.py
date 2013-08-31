@@ -65,7 +65,13 @@ class Script(object):
             lines.append('')
 
         self._line = max(len(lines), 1) if line is None else line
-        self._column = len(lines[-1]) if column is None else column
+        if not (0 < self._line <= len(lines)):
+            raise ValueError('`line` parameter is not in a valid range.')
+
+        line_len = len(lines[self._line - 1])
+        self._column = line_len if column is None else column
+        if not (0 <= self._column <= line_len):
+            raise ValueError('`column` parameter is not in a valid range.')
 
         api_classes._clear_caches()
         debug.reset_time()

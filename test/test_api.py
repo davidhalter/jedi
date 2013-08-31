@@ -50,4 +50,4 @@ def test_line_number_errors():
 
     # ok
     api.Script(s, 1, 0)
-    api.Script(s, 1, len(s) + 1)
+    api.Script(s, 1, len(s))
