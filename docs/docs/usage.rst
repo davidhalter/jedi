@@ -4,8 +4,8 @@ End User Usage
 ==============
 
 If you are a not an IDE Developer, than chances are pretty high, that you just
-want to use |jedi| as a browser plugin or in the shell. Yes that's also
-possible!
+want to use |jedi| as a browser plugin or in the shell. Yes that's :ref:`also
+possible <repl-completion>``!
 
 |jedi| is relatively young and can be used in a variety of Plugins and
 Software. If your Editor/IDE is not among them, recommend |jedi| to your IDE
@@ -38,3 +38,23 @@ Other Software Using Jedi
 -------------------------
 
 - `wdb <https://github.com/Kozea/wdb>`_
+
+
+.. _repl-completion:
+
+Tab completion in the Python Shell
+----------------------------------
+
+There are two different options how you can use Jedi autocompletion in
+your Python interpreter. One with your custom ``$HOME/.pythonrc.py`` file
+and one that uses ``PYTHONSTARTUP``.
+
+Using ``PYTHONSTARTUP``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: jedi.replstartup
+
+Using a custom ``$HOME/.pythonrc.py``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: jedi.utils.setup_readline
