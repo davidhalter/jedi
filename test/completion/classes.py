@@ -126,8 +126,12 @@ class A():
 #? int()
 A().addition
 
-#? 8 int()
+# should also work before `=`
+##? 8 int()
 A().addition = None
+a = A()
+##? 8 int()
+a.addition = None
 
 
 # -----------------

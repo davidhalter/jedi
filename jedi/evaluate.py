@@ -99,7 +99,7 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
 
     :type     scope: :class:`parsing_representation.IsScope`
     :param    scope: Scope in which names are searched.
-    :param position: the position as a line/column tuple, default is infinity.
+    :param position: The position as a line/column tuple, default is infinity.
     """
     names = scope.get_defined_names()
     # Instances have special rules, always return all the possible completions,

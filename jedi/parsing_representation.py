@@ -796,8 +796,6 @@ class Statement(Simple):
         if not set_vars:
             return []
 
-        if _assignment_details():
-            s
         result = set(set_vars)
         last = None
         in_lookup = 0
@@ -808,16 +806,10 @@ class Statement(Simple):
                     result.discard(tok)
             elif isinstance(tok, tuple):
                 tok = tok[1]
-                if in_lookup == 0 and tok == '(':
-                    is_execution = True
-                    for t in self.token_list[:i]:
-                       result.discard(t)
                 if tok in '[(' and isinstance(last, Name):
                     in_lookup += 1
                 elif tok in ')]' and in_lookup > 0:
                     in_lookup -= 1
-                elif '=' in tok and in_lookup == 0:
-                    break
             last = tok
         return list(result)
 
@@ -863,8 +855,7 @@ class Statement(Simple):
     def get_commands(self):
         if self._commands is None:
             self._commands = ['time neeeeed']  # avoid recursions
-            result = self._parse_statement()
-            self._commands = result
+            self._commands = self._parse_statement()
         return self._commands
 
     def _parse_statement(self):
