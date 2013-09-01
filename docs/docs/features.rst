@@ -56,7 +56,7 @@ Will probably never be implemented:
 - metaclasses (how could an auto-completion ever support this)
 - ``setattr()``, ``__import__()``
 - writing to some dicts: ``globals()``, ``locals()``, ``object.__dict__``
-- evaluating ``if`` / ``while``
+- evaluating ``if`` / ``while`` / ``del``
 
 
 Caveats
