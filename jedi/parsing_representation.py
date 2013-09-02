@@ -770,9 +770,6 @@ class Statement(Simple):
             for t in token_list:
                 if isinstance(t, Name):
                     t.parent = self.use_as_parent
-        for t in set_vars + used_vars:
-            if isinstance(t, Name):
-                t.parent = self.use_as_parent
         self.set_vars = self._remove_executions_from_set_vars(set_vars)
         self.parent = parent
         self.docstr = ''
