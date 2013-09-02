@@ -757,14 +757,14 @@ class Statement(Simple):
     :type   start_pos: 2-tuple of int
     :param  start_pos: Position (line, column) of the Statement.
     """
-    __slots__ = ('token_list', 'used_vars',
+    __slots__ = ('token_list', '_used_vars',
                  '_set_vars', 'as_names', '_commands', '_assignment_details',
                  'docstr')
 
     def __init__(self, module, set_vars, used_vars, token_list,
                  start_pos, end_pos, parent=None, as_names=(), set_name_parents=True):
         super(Statement, self).__init__(module, start_pos, end_pos)
-        self.used_vars = used_vars
+        self._used_vars = used_vars
         self.token_list = token_list
         if set_name_parents:
             for t in token_list:
@@ -781,6 +781,10 @@ class Statement(Simple):
         self._commands = None
         self._assignment_details = []
         # this is important for other scripts
+
+    @property
+    def used_vars(self):
+        return self._used_vars
 
     def add_docstr(self, string):
         """ Clean up a docstring """
@@ -949,9 +953,8 @@ class Statement(Simple):
             if not token_list:
                 return None, tok
 
-            statement = stmt_class(self._sub_module, [], [], token_list,
+            statement = stmt_class(self._sub_module, [], used_vars, token_list,
                                    start_pos, end_pos, self.parent, set_name_parents=False)
-            statement.used_vars = used_vars
             return statement, tok
 
         def parse_lambda(token_iterator):
