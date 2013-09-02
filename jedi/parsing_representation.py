@@ -753,15 +753,12 @@ class Statement(Simple):
     :type   start_pos: 2-tuple of int
     :param  start_pos: Position (line, column) of the Statement.
     """
-    __slots__ = ('token_list', '_used_vars',
-                 '_set_vars', 'as_names', '_commands', '_assignment_details',
-                 'docstr', '_names_are_set_vars')
+    __slots__ = ('token_list', '_set_vars', 'as_names', '_commands',
+                 '_assignment_details', 'docstr', '_names_are_set_vars')
 
-    def __init__(self, module, set_vars, used_vars, token_list,
-                 start_pos, end_pos, parent=None, as_names=(),
-                 names_are_set_vars=False, set_name_parents=True):
+    def __init__(self, module, set_vars, used_vars, token_list, start_pos, end_pos, parent=None,
+                 as_names=(), names_are_set_vars=False, set_name_parents=True):
         super(Statement, self).__init__(module, start_pos, end_pos)
-        self._used_vars = used_vars
         self.token_list = token_list
         self._names_are_set_vars = names_are_set_vars
         if set_name_parents:
@@ -779,10 +776,6 @@ class Statement(Simple):
         self._commands = None
         self._assignment_details = []
         # this is important for other scripts
-
-    @property
-    def used_vars(self):
-        return self._used_vars
 
     def add_docstr(self, string):
         """ Clean up a docstring """
@@ -997,11 +990,11 @@ class Statement(Simple):
                     arr, tok = parse_array(token_iterator, Array.TUPLE,
                                            stmt.start_pos, stmt,
                                            added_breaks=added_breaks)
-                    used_vars = []
+                    token_list = []
                     for stmt in arr:
-                        used_vars += stmt.used_vars
+                        token_list += stmt.token_list
                     start_pos = arr.start_pos[0], arr.start_pos[1] - 1
-                    stmt = Statement(self._sub_module, [], used_vars, used_vars,
+                    stmt = Statement(self._sub_module, [], token_list, token_list,
                                      start_pos, arr.end_pos)
                     arr.parent = stmt
                     stmt.token_list = stmt._commands = [arr]
