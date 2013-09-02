@@ -758,7 +758,7 @@ class Statement(Simple):
     :param  start_pos: Position (line, column) of the Statement.
     """
     __slots__ = ('token_list', 'used_vars',
-                 'set_vars', '_commands', '_assignment_details',
+                 '_set_vars', '_commands', '_assignment_details',
                  'docstr')
 
     def __init__(self, module, set_vars, used_vars, token_list,
@@ -770,9 +770,9 @@ class Statement(Simple):
             for t in token_list:
                 if isinstance(t, Name):
                     t.parent = self.use_as_parent
-        self.set_vars = self._remove_executions_from_set_vars(set_vars)
         self.parent = parent
         self.docstr = ''
+        self._set_vars = None
 
         # cache
         self._commands = None
@@ -783,7 +783,8 @@ class Statement(Simple):
         """ Clean up a docstring """
         self.docstr = cleandoc(literal_eval(string))
 
-    def _remove_executions_from_set_vars(self, set_vars):
+    @property
+    def set_vars(self):
         """
         Removes all executions and uses in lookups.
         Important mainly for assosiative arrays::
@@ -795,33 +796,21 @@ class Statement(Simple):
         `a` is in this case not a set_var, it is used to index the dict.
         """
 
-        if not set_vars:
-            return []
+        if self._set_vars is None:
+            _set_vars = []
+            def search_calls(calls):
+                for call in calls:
+                    if isinstance(call, Array):
+                        for stmt in call:
+                            search_calls(stmt.get_commands())
+                    elif isinstance(call, Call):
+                        if call.type == Call.NAME:
+                            _set_vars.append(call.name)
 
-        """
-        _set_vars = []
-        def search_calls(calls):
             for calls, operation in self.assignment_details:
-                search_elements()
-        set_vars
-"""
-
-        result = set(set_vars)
-        last = None
-        in_lookup = 0
-        is_execution = False
-        for i, tok in enumerate(self.token_list):
-            if isinstance(tok, Name):
-                if in_lookup or is_execution:
-                    result.discard(tok)
-            elif isinstance(tok, tuple):
-                tok = tok[1]
-                if tok in '[(' and isinstance(last, Name):
-                    in_lookup += 1
-                elif tok in ')]' and in_lookup > 0:
-                    in_lookup -= 1
-            last = tok
-        return list(result)
+                search_calls(calls)
+            self._set_vars = _set_vars
+        return self._set_vars
 
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
