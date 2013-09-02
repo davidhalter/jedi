@@ -454,8 +454,8 @@ class Parser(object):
             debug.dbg('user scope found [%s] = %s' %
                      (self.parserline.replace('\n', ''), repr(self._scope)))
             self.user_scope = self._scope
-        self.last_token = self._current
-        self._current = (typ, tok)
+
+        self._current = typ, tok
         return self._current
 
     def _parse(self):
