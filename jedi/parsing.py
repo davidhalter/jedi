@@ -657,10 +657,11 @@ class Parser(object):
                 stmt, tok = self._parse_statement(self._current)
                 if stmt:
                     self._scope.add_statement(stmt)
-                    for name in stmt.used_vars:
-                        # add the global to the top, because there it is
-                        # important.
-                        self.module.add_global(name)
+                    for t in stmt.token_list:
+                        if isinstance(t, pr.Name):
+                            # add the global to the top, because there it is
+                            # important.
+                            self.module.add_global(t)
             # decorator
             elif tok == '@':
                 stmt, tok = self._parse_statement()

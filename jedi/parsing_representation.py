@@ -641,8 +641,9 @@ class ForFlow(Flow):
     """
     def __init__(self, module, inputs, start_pos, set_stmt,
                  is_list_comp=False):
-        super(ForFlow, self).__init__(module, 'for', inputs, start_pos,
-                                      set_stmt.used_vars)
+        set_vars = [t for t in set_stmt.token_list if isinstance(t, Name)]
+        super(ForFlow, self).__init__(module, 'for', inputs, start_pos, set_vars)
+
         self.set_stmt = set_stmt
         set_stmt.parent = self.use_as_parent
         self.is_list_comp = is_list_comp
@@ -1007,8 +1008,9 @@ class Statement(Simple):
                     arr.parent = stmt
                     stmt.token_list = stmt._commands = [arr]
                 else:
-                    for v in stmt.used_vars:
-                        v.parent = stmt
+                    for t in stmt.token_list:
+                        if isinstance(t, Name):
+                            t.parent = stmt
                 return stmt, tok
 
             st = Statement(self._sub_module, [], [], token_list, start_pos,
