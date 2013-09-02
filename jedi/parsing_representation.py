@@ -740,10 +740,6 @@ class Statement(Simple):
     stores pretty much all the Python code, except functions, classes, imports,
     and flow functions like if, for, etc.
 
-    :type    set_vars: list of :class:`Name`
-    :param   set_vars: The variables which are defined by the statement.
-    :type   used_vars: list of :class:`Name`
-    :param  used_vars: The variables which are used by the statement.
     :type  token_list: list
     :param token_list:
         List of tokens or names.  Each element is either an instance
@@ -756,9 +752,11 @@ class Statement(Simple):
     __slots__ = ('token_list', '_set_vars', 'as_names', '_commands',
                  '_assignment_details', 'docstr', '_names_are_set_vars')
 
-    def __init__(self, module, set_vars, used_vars, token_list, start_pos, end_pos, parent=None,
+    def __init__(self, module, token_list, start_pos, end_pos, parent=None,
                  as_names=(), names_are_set_vars=False, set_name_parents=True):
         super(Statement, self).__init__(module, start_pos, end_pos)
+        if isinstance(start_pos, list):
+            raise NotImplementedError()
         self.token_list = token_list
         self._names_are_set_vars = names_are_set_vars
         if set_name_parents:
@@ -897,7 +895,6 @@ class Statement(Simple):
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
                        break_on_assignment=False, stmt_class=Statement):
             token_list = []
-            used_vars = []
             level = 1
             tok = None
             first = True
@@ -913,8 +910,6 @@ class Statement(Simple):
                     if isinstance(tok, ListComprehension):
                         # it's not possible to set it earlier
                         tok.parent = self
-                    if isinstance(tok, Name):
-                        used_vars.append(tok)
                 else:
                     token_type, tok, start_tok_pos = tok_temp
                     last_end_pos = end_pos
@@ -950,7 +945,7 @@ class Statement(Simple):
             if not token_list:
                 return None, tok
 
-            statement = stmt_class(self._sub_module, [], used_vars, token_list,
+            statement = stmt_class(self._sub_module, token_list,
                                    start_pos, end_pos, self.parent, set_name_parents=False)
             return statement, tok
 
@@ -994,7 +989,7 @@ class Statement(Simple):
                     for stmt in arr:
                         token_list += stmt.token_list
                     start_pos = arr.start_pos[0], arr.start_pos[1] - 1
-                    stmt = Statement(self._sub_module, [], token_list, token_list,
+                    stmt = Statement(self._sub_module, token_list,
                                      start_pos, arr.end_pos)
                     arr.parent = stmt
                     stmt.token_list = stmt._commands = [arr]
@@ -1005,7 +1000,7 @@ class Statement(Simple):
                 stmt._names_are_set_vars = names_are_set_vars
                 return stmt, tok
 
-            st = Statement(self._sub_module, [], [], token_list, start_pos,
+            st = Statement(self._sub_module, token_list, start_pos,
                            end_pos, set_name_parents=False)
 
             middle, tok = parse_stmt_or_arr(token_iterator, ['in'], True)
@@ -1098,7 +1093,7 @@ class Statement(Simple):
                     e = (t[2][0], t[2][1] + len(t[1])) \
                         if isinstance(t, tuple) else t.start_pos
 
-                stmt = Statement(self._sub_module, [], [], result,
+                stmt = Statement(self._sub_module, result,
                                  start_pos, e, self.parent, set_name_parents=False)
                 stmt._commands = result
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,

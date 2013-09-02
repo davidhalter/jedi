@@ -534,8 +534,7 @@ class Execution(Executable):
             arr.values = values
             key_stmts = []
             for key in keys:
-                stmt = pr.Statement(self._sub_module, [], [], [],
-                                    start_pos, None)
+                stmt = pr.Statement(self._sub_module, [], start_pos, None)
                 stmt._commands = [key]
                 key_stmts.append(stmt)
             arr.keys = key_stmts
@@ -650,7 +649,7 @@ class Execution(Executable):
                     old = stmt
                     # generate a statement if it's not already one.
                     module = builtin.Builtin.scope
-                    stmt = pr.Statement(module, [], [], [], (0, 0), None)
+                    stmt = pr.Statement(module, [], (0, 0), None)
                     stmt._commands = [old]
 
                 # *args

@@ -315,7 +315,6 @@ class Parser(object):
         :rtype: (Statement, str)
         """
         set_vars = []
-        used_vars = []
         level = 0  # The level of parentheses
 
         if pre_used_token:
@@ -370,13 +369,7 @@ class Parser(object):
                     tok_list.pop()
                     if n:
                         tok_list.append(n)
-                        used_vars.append(n)
                     continue
-                elif tok.endswith('=') and tok not in ['>=', '<=', '==', '!=']:
-                    # there has been an assignement -> change vars
-                    if level == 0:
-                        set_vars += used_vars
-                        used_vars = []
                 elif tok in opening_brackets:
                     level += 1
                 elif tok in closing_brackets:
@@ -408,8 +401,8 @@ class Parser(object):
                     return None, tok
 
 
-        stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
-                          first_pos, self.end_pos, as_names=as_names,
+        stmt = stmt_class(self.module, tok_list, first_pos, self.end_pos,
+                          as_names=as_names,
                           names_are_set_vars=names_are_set_vars)
 
         stmt.parent = self.top_module

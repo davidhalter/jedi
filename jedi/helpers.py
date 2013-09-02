@@ -134,4 +134,4 @@ class FakeStatement(pr.Statement):
     def __init__(self, content):
         cls = type(self)
         p = 0, 0
-        super(cls, self).__init__(cls.SubModule, [], [], [content], p, p)
+        super(cls, self).__init__(cls.SubModule, [content], p, p)

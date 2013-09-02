@@ -164,8 +164,6 @@ class ObjectImporter(object):
             ])
         return pr.Statement(
             module=submodule,
-            set_vars=[lhsname],
-            used_vars=[rhsname],
             token_list=token_list,
             start_pos=(0, 0),
             end_pos=(None, None))
