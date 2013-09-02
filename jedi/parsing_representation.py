@@ -819,10 +819,6 @@ class Statement(Simple):
                 search_calls(calls)
         return self._set_vars + self.as_names
 
-    @property
-    def set_vars(self):
-        return self.get_set_vars()
-
     def is_global(self):
         # first keyword of the first token is global -> must be a global
         return str(self.token_list[0]) == "global"

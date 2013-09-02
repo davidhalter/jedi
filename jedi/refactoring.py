@@ -191,7 +191,7 @@ def inline(script):
                 replace_str = '(%s)' % replace_str
 
         # if it's the only assignment, remove the statement
-        if len(stmt.set_vars) == 1:
+        if len(stmt.get_set_vars()) == 1:
             line = line[:stmt.start_pos[1]] + line[stmt.end_pos[1]:]
 
         dct = _rename(inlines, replace_str)

@@ -405,7 +405,7 @@ class Parser(object):
         with common.ignored(IndexError, AttributeError):
             # If string literal is being parsed
             first_tok = stmt.token_list[0]
-            if (not stmt.set_vars
+            if (not stmt.get_set_vars()
                     and not stmt.used_vars
                     and len(stmt.token_list) == 1
                     and first_tok[0] == tokenize.STRING):

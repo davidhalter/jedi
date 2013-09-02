@@ -468,7 +468,7 @@ class Script(object):
             c = user_stmt.get_commands()[0]
             if not isinstance(c, unicode) and self._pos < c.start_pos:
                 # the search_name might be before `=`
-                definitions = [v for v in user_stmt.set_vars
+                definitions = [v for v in user_stmt.get_set_vars()
                                if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
