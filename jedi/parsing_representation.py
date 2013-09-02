@@ -556,10 +556,8 @@ class Flow(Scope):
     :type inputs: list(Statement)
     :param start_pos: Position (line, column) of the Flow statement.
     :type start_pos: tuple(int, int)
-    :param set_vars: Local variables used in the for loop (only there).
-    :type set_vars: list
     """
-    def __init__(self, module, command, inputs, start_pos, set_vars=None):
+    def __init__(self, module, command, inputs, start_pos):
         self.next = None
         self.command = command
         super(Flow, self).__init__(module, start_pos)
@@ -568,13 +566,7 @@ class Flow(Scope):
         self.inputs = inputs
         for s in inputs:
             s.parent = self.use_as_parent
-        if set_vars is None:
-            self.set_vars = []
-        else:
-            self.set_vars = set_vars
-            for s in self.set_vars:
-                s.parent.parent = self.use_as_parent
-                s.parent = self.use_as_parent
+        self.set_vars = []
 
     @property
     def parent(self):
@@ -639,14 +631,17 @@ class ForFlow(Flow):
     """
     Used for the for loop, because there are two statement parts.
     """
-    def __init__(self, module, inputs, start_pos, set_stmt,
-                 is_list_comp=False):
-        set_vars = [t for t in set_stmt.token_list if isinstance(t, Name)]
-        super(ForFlow, self).__init__(module, 'for', inputs, start_pos, set_vars)
+    def __init__(self, module, inputs, start_pos, set_stmt, is_list_comp=False):
+        super(ForFlow, self).__init__(module, 'for', inputs, start_pos)
 
         self.set_stmt = set_stmt
         set_stmt.parent = self.use_as_parent
         self.is_list_comp = is_list_comp
+
+        self.set_vars = [t for t in set_stmt.token_list if isinstance(t, Name)]
+        for s in self.set_vars:
+            s.parent.parent = self.use_as_parent
+            s.parent = self.use_as_parent
 
     def get_code(self, first_indent=False, indention=" " * 4):
         vars = ",".join(x.get_code() for x in self.set_vars)
