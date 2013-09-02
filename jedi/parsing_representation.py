@@ -758,11 +758,11 @@ class Statement(Simple):
     :param  start_pos: Position (line, column) of the Statement.
     """
     __slots__ = ('token_list', 'used_vars',
-                 '_set_vars', '_commands', '_assignment_details',
+                 '_set_vars', 'as_names', '_commands', '_assignment_details',
                  'docstr')
 
     def __init__(self, module, set_vars, used_vars, token_list,
-                 start_pos, end_pos, parent=None, set_name_parents=True):
+                 start_pos, end_pos, parent=None, as_names=(), set_name_parents=True):
         super(Statement, self).__init__(module, start_pos, end_pos)
         self.used_vars = used_vars
         self.token_list = token_list
@@ -770,9 +770,12 @@ class Statement(Simple):
             for t in token_list:
                 if isinstance(t, Name):
                     t.parent = self.use_as_parent
+            for n in as_names:
+                n.parent = self.use_as_parent
         self.parent = parent
         self.docstr = ''
         self._set_vars = None
+        self.as_names = list(as_names)
 
         # cache
         self._commands = None
@@ -810,7 +813,7 @@ class Statement(Simple):
             for calls, operation in self.assignment_details:
                 search_calls(calls)
             self._set_vars = _set_vars
-        return self._set_vars
+        return self._set_vars + self.as_names
 
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):

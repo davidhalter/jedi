@@ -344,6 +344,7 @@ class Parser(object):
             breaks |= set(added_breaks)
 
         tok_list = []
+        as_names = []
         while not (tok in always_break
                    or tok in not_first_break and not tok_list
                    or tok in breaks and level <= 0):
@@ -356,6 +357,7 @@ class Parser(object):
                         n, token_type, tok = self._parse_dot_name(self._current)
                         if n:
                             set_vars.append(n)
+                            as_names.append(n)
                         tok_list.append(n)
                     continue
                 elif tok in ['lambda', 'for', 'in']:
@@ -394,7 +396,7 @@ class Parser(object):
             return None, tok
         else:
             stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
-                              first_pos, self.end_pos)
+                              first_pos, self.end_pos, as_names=as_names)
 
             stmt.parent = self.top_module
             self._check_user_stmt(stmt)
@@ -597,13 +599,13 @@ class Parser(object):
                         and tok not in [':', '\n']:
                     statement, tok = \
                         self._parse_statement(added_breaks=added_breaks)
-                    if command == 'except' and tok in added_breaks:
+                    if command == 'except' and tok == ',':
                         # the except statement defines a var
                         # this is only true for python 2
                         n, token_type, tok = self._parse_dot_name()
                         if n:
                             n.parent = statement
-                            statement.set_vars.append(n)
+                            statement.as_names.append(n)
                     if statement:
                         inputs.append(statement)
                     first = False
