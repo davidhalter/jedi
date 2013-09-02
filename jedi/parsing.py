@@ -300,7 +300,7 @@ class Parser(object):
         return scope
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
-                         stmt_class=pr.Statement):
+                         stmt_class=pr.Statement, names_are_set_vars=False):
         """
         Parses statements like::
 
@@ -409,7 +409,8 @@ class Parser(object):
 
 
         stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
-                          first_pos, self.end_pos, as_names=as_names)
+                          first_pos, self.end_pos, as_names=as_names,
+                          names_are_set_vars=names_are_set_vars)
 
         stmt.parent = self.top_module
         self._check_user_stmt(stmt)
@@ -572,7 +573,8 @@ class Parser(object):
                 self.freshscope = False
             # loops
             elif tok == 'for':
-                set_stmt, tok = self._parse_statement(added_breaks=['in'])
+                set_stmt, tok = self._parse_statement(added_breaks=['in'],
+                                                      names_are_set_vars=True)
                 if tok == 'in':
                     statement, tok = self._parse_statement()
                     if tok == ':':

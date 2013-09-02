@@ -638,7 +638,7 @@ class ForFlow(Flow):
         set_stmt.parent = self.use_as_parent
         self.is_list_comp = is_list_comp
 
-        self.set_vars = [t for t in set_stmt.token_list if isinstance(t, Name)]
+        self.set_vars = set_stmt.get_set_vars()
         for s in self.set_vars:
             s.parent.parent = self.use_as_parent
             s.parent = self.use_as_parent
@@ -755,13 +755,15 @@ class Statement(Simple):
     """
     __slots__ = ('token_list', '_used_vars',
                  '_set_vars', 'as_names', '_commands', '_assignment_details',
-                 'docstr')
+                 'docstr', '_names_are_set_vars')
 
     def __init__(self, module, set_vars, used_vars, token_list,
-                 start_pos, end_pos, parent=None, as_names=(), set_name_parents=True):
+                 start_pos, end_pos, parent=None, as_names=(),
+                 names_are_set_vars=False, set_name_parents=True):
         super(Statement, self).__init__(module, start_pos, end_pos)
         self._used_vars = used_vars
         self.token_list = token_list
+        self._names_are_set_vars = names_are_set_vars
         if set_name_parents:
             for t in token_list:
                 if isinstance(t, Name):
@@ -820,7 +822,7 @@ class Statement(Simple):
             for calls, operation in self.assignment_details:
                 search_calls(calls)
 
-            if not self.assignment_details and isinstance(self, Param):
+            if not self.assignment_details and self._names_are_set_vars:
                 # In the case of Param, it's also a defining name without ``=``
                 search_calls(self.get_commands())
         return self._set_vars + self.as_names
@@ -985,7 +987,8 @@ class Statement(Simple):
             return lambd, tok
 
         def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
-            def parse_stmt_or_arr(token_iterator, added_breaks=()):
+            def parse_stmt_or_arr(token_iterator, added_breaks=(),
+                                    names_are_set_vars=False):
                 stmt, tok = parse_stmt(token_iterator,
                                        added_breaks=added_breaks)
                 if not stmt:
@@ -1006,13 +1009,13 @@ class Statement(Simple):
                     for t in stmt.token_list:
                         if isinstance(t, Name):
                             t.parent = stmt
+                stmt._names_are_set_vars = names_are_set_vars
                 return stmt, tok
 
             st = Statement(self._sub_module, [], [], token_list, start_pos,
                            end_pos, set_name_parents=False)
 
-            middle, tok = parse_stmt_or_arr(token_iterator,
-                                            added_breaks=['in'])
+            middle, tok = parse_stmt_or_arr(token_iterator, ['in'], True)
             if tok != 'in' or middle is None:
                 debug.warning('list comprehension middle @%s' % str(start_pos))
                 return None, tok
@@ -1127,7 +1130,8 @@ class Param(Statement):
                  'parent_function')
 
     def __init__(self, *args, **kwargs):
-        super(Param, self).__init__(*args, **kwargs)
+        kwargs.pop('names_are_set_vars', None)
+        super(Param, self).__init__(*args, names_are_set_vars=True, **kwargs)
 
         # this is defined by the parser later on, not at the initialization
         # it is the position in the call (first argument, second...)
