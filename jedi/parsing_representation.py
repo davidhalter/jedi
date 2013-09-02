@@ -611,7 +611,7 @@ class Flow(Scope):
         if is_internal_call:
             n = list(self.set_vars)
             for s in self.inputs:
-                n += s.set_vars
+                n += s.get_set_vars()
             if self.next:
                 n += self.next.get_set_vars(is_internal_call)
             n += super(Flow, self).get_set_vars()
@@ -786,35 +786,6 @@ class Statement(Simple):
         """ Clean up a docstring """
         self.docstr = cleandoc(literal_eval(string))
 
-    @property
-    def set_vars(self):
-        """
-        Removes all executions and uses in lookups.
-        Important mainly for assosiative arrays::
-
-            a = 3
-            b = {}
-            b[a] = 3
-
-        `a` is in this case not a set_var, it is used to index the dict.
-        """
-
-        if self._set_vars is None:
-            _set_vars = []
-            def search_calls(calls):
-                for call in calls:
-                    if isinstance(call, Array):
-                        for stmt in call:
-                            search_calls(stmt.get_commands())
-                    elif isinstance(call, Call):
-                        if call.type == Call.NAME:
-                            _set_vars.append(call.name)
-
-            for calls, operation in self.assignment_details:
-                search_calls(calls)
-            self._set_vars = _set_vars
-        return self._set_vars + self.as_names
-
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
             pieces = [c.get_code() if isinstance(c, Simple) else unicode(c)
@@ -833,7 +804,24 @@ class Statement(Simple):
 
     def get_set_vars(self):
         """ Get the names for the statement. """
-        return list(self.set_vars)
+        if self._set_vars is None:
+            self._set_vars = []
+            def search_calls(calls):
+                for call in calls:
+                    if isinstance(call, Array):
+                        for stmt in call:
+                            search_calls(stmt.get_commands())
+                    elif isinstance(call, Call):
+                        if call.type == Call.NAME:
+                            self._set_vars.append(call.name)
+
+            for calls, operation in self.assignment_details:
+                search_calls(calls)
+        return self._set_vars + self.as_names
+
+    @property
+    def set_vars(self):
+        return self.get_set_vars()
 
     def is_global(self):
         # first keyword of the first token is global -> must be a global
@@ -1152,7 +1140,7 @@ class Param(Statement):
 
     def get_name(self):
         """ get the name of the param """
-        n = self.set_vars or self.used_vars
+        n = self.get_set_vars() or self.used_vars
         if len(n) > 1:
             debug.warning("Multiple param names (%s)." % n)
         return n[0]
