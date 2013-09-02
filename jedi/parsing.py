@@ -389,11 +389,24 @@ class Parser(object):
 
         if not tok_list:
             return None, tok
-        # print 'new_stat', set_vars, used_vars
-        if self.freshscope and not self.no_docstr and len(tok_list) == 1 \
-                and self.last_token[0] == tokenize.STRING:
-            self._scope.add_docstr(self.last_token[1])
-            return None, tok
+
+        first_tok = tok_list[0]
+        # docstrings
+        if len(tok_list) == 1 and not isinstance(first_tok, pr.Name) \
+                and first_tok[0] == tokenize.STRING:
+            # Normal docstring check
+            if self.freshscope and not self.no_docstr:
+                self._scope.add_docstr(first_tok[1])
+                return None, tok
+
+            # Attribute docstring (PEP 224) support (sphinx uses it, e.g.)
+            # If string literal is being parsed...
+            elif first_tok[0] == tokenize.STRING:
+                with common.ignored(IndexError, AttributeError):
+                    # ...then set it as a docstring
+                    self._scope.statements[-1].add_docstr(first_tok[1])
+                    return None, tok
+
 
         stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
                           first_pos, self.end_pos, as_names=as_names)
@@ -403,17 +416,6 @@ class Parser(object):
 
         # TODO somehow this is important here. But it slows down Jedi, remove!
         stmt.get_set_vars()
-
-        first_tok = stmt.token_list[0]
-        # Attribute docstring (PEP 224) support (sphinx uses it, e.g.)
-        # If string literal is being parsed...
-        if len(stmt.token_list) == 1 \
-                and not isinstance(first_tok, pr.Name) \
-                and first_tok[0] == tokenize.STRING:
-            with common.ignored(IndexError, AttributeError):
-                # ... then set it as a docstring
-                self._scope.statements[-1].add_docstr(first_tok[1])
-                return None, tok
 
         if tok in always_break + not_first_break:
             self._gen.push_last_back()
