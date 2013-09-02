@@ -821,6 +821,10 @@ class Statement(Simple):
 
             for calls, operation in self.assignment_details:
                 search_calls(calls)
+
+            if not self.assignment_details and isinstance(self, Param):
+                # In the case of Param, it's also a defining name without ``=``
+                search_calls(self.get_commands())
         return self._set_vars + self.as_names
 
     def is_global(self):
@@ -1139,7 +1143,7 @@ class Param(Statement):
 
     def get_name(self):
         """ get the name of the param """
-        n = self.get_set_vars() or self.used_vars
+        n = self.get_set_vars()
         if len(n) > 1:
             debug.warning("Multiple param names (%s)." % n)
         return n[0]
