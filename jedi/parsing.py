@@ -394,21 +394,23 @@ class Parser(object):
                 and self.last_token[0] == tokenize.STRING:
             self._scope.add_docstr(self.last_token[1])
             return None, tok
-        else:
-            stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
-                              first_pos, self.end_pos, as_names=as_names)
 
-            stmt.parent = self.top_module
-            self._check_user_stmt(stmt)
+        stmt = stmt_class(self.module, set_vars, used_vars, tok_list,
+                          first_pos, self.end_pos, as_names=as_names)
 
+        stmt.parent = self.top_module
+        self._check_user_stmt(stmt)
+
+        # TODO somehow this is important here. But it slows down Jedi, remove!
+        stmt.get_set_vars()
+
+        first_tok = stmt.token_list[0]
         # Attribute docstring (PEP 224) support (sphinx uses it, e.g.)
-        with common.ignored(IndexError, AttributeError):
-            # If string literal is being parsed
-            first_tok = stmt.token_list[0]
-            if (not stmt.get_set_vars()
-                    and not stmt.used_vars
-                    and len(stmt.token_list) == 1
-                    and first_tok[0] == tokenize.STRING):
+        # If string literal is being parsed...
+        if len(stmt.token_list) == 1 \
+                and not isinstance(first_tok, pr.Name) \
+                and first_tok[0] == tokenize.STRING:
+            with common.ignored(IndexError, AttributeError):
                 # ... then set it as a docstring
                 self._scope.statements[-1].add_docstr(first_tok[1])
 
