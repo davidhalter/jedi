@@ -82,7 +82,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         normally self.
         """
         try:
-            return str(func.params[0].used_vars[0])
+            return str(func.params[0].get_name())
         except IndexError:
             return None
 
