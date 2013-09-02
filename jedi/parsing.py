@@ -413,6 +413,7 @@ class Parser(object):
             with common.ignored(IndexError, AttributeError):
                 # ... then set it as a docstring
                 self._scope.statements[-1].add_docstr(first_tok[1])
+                return None, tok
 
         if tok in always_break + not_first_break:
             self._gen.push_last_back()

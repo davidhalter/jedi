@@ -7,7 +7,7 @@ def test_get_code():
 class SomeClass(object, mixin):
     def __init__(self):
         self.xy = 3.0
-        'statement docstr'
+        """statement docstr"""
     def some_method(self):
         return 1
     def yield_method(self):

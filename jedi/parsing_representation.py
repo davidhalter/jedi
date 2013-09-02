@@ -800,6 +800,8 @@ class Statement(Simple):
 
         code = ''.join(assemble(*a) for a in self.assignment_details)
         code += assemble(self.get_commands())
+        if self.docstr:
+            code += '\n"""%s"""' % self.docstr
 
         if new_line:
             return code + '\n'
