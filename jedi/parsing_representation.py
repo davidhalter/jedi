@@ -762,12 +762,17 @@ class Statement(Simple):
                  'docstr')
 
     def __init__(self, module, set_vars, used_vars, token_list,
-                 start_pos, end_pos, parent=None):
+                 start_pos, end_pos, parent=None, set_name_parents=True):
         super(Statement, self).__init__(module, start_pos, end_pos)
         self.used_vars = used_vars
         self.token_list = token_list
-        for s in set_vars + used_vars:
-            s.parent = self.use_as_parent
+        if set_name_parents:
+            for t in token_list:
+                if isinstance(t, Name):
+                    t.parent = self.use_as_parent
+        for t in set_vars + used_vars:
+            if isinstance(t, Name):
+                t.parent = self.use_as_parent
         self.set_vars = self._remove_executions_from_set_vars(set_vars)
         self.parent = parent
         self.docstr = ''
@@ -795,6 +800,14 @@ class Statement(Simple):
 
         if not set_vars:
             return []
+
+        """
+        _set_vars = []
+        def search_calls(calls):
+            for calls, operation in self.assignment_details:
+                search_elements()
+        set_vars
+"""
 
         result = set(set_vars)
         last = None
@@ -964,7 +977,7 @@ class Statement(Simple):
                 return None, tok
 
             statement = stmt_class(self._sub_module, [], [], token_list,
-                                   start_pos, end_pos, self.parent)
+                                   start_pos, end_pos, self.parent, set_name_parents=False)
             statement.used_vars = used_vars
             return statement, tok
 
@@ -1007,7 +1020,7 @@ class Statement(Simple):
                     for stmt in arr:
                         used_vars += stmt.used_vars
                     start_pos = arr.start_pos[0], arr.start_pos[1] - 1
-                    stmt = Statement(self._sub_module, [], used_vars, [],
+                    stmt = Statement(self._sub_module, [], used_vars, used_vars,
                                      start_pos, arr.end_pos)
                     arr.parent = stmt
                     stmt.token_list = stmt._commands = [arr]
@@ -1017,7 +1030,7 @@ class Statement(Simple):
                 return stmt, tok
 
             st = Statement(self._sub_module, [], [], token_list, start_pos,
-                           end_pos)
+                           end_pos, set_name_parents=False)
 
             middle, tok = parse_stmt_or_arr(token_iterator,
                                             added_breaks=['in'])
@@ -1111,7 +1124,7 @@ class Statement(Simple):
                         if isinstance(t, tuple) else t.start_pos
 
                 stmt = Statement(self._sub_module, [], [], result,
-                                 start_pos, e, self.parent)
+                                 start_pos, e, self.parent, set_name_parents=False)
                 stmt._commands = result
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
                                              stmt.start_pos, stmt)
@@ -1134,10 +1147,8 @@ class Param(Statement):
     __slots__ = ('position_nr', 'is_generated', 'annotation_stmt',
                  'parent_function')
 
-    def __init__(self, module, set_vars, used_vars, token_list,
-                 start_pos, end_pos, parent=None):
-        super(Param, self).__init__(module, set_vars, used_vars, token_list,
-                                    start_pos, end_pos, parent)
+    def __init__(self, *args, **kwargs):
+        super(Param, self).__init__(*args, **kwargs)
 
         # this is defined by the parser later on, not at the initialization
         # it is the position in the call (first argument, second...)
