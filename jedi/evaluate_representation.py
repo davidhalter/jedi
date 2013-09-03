@@ -469,7 +469,7 @@ class Execution(Executable):
 
         if base.isinstance(Class):
             # There maybe executions of executions.
-            stmts = [Instance(base, self.var_args)]
+            return [Instance(base, self.var_args)]
         elif isinstance(base, Generator):
             return base.iter_content()
         else:

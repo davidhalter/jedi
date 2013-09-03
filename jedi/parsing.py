@@ -408,9 +408,6 @@ class Parser(object):
         stmt.parent = self.top_module
         self._check_user_stmt(stmt)
 
-        # TODO somehow this is important here. But it slows down Jedi, remove!
-        stmt.get_set_vars()
-
         if tok in always_break + not_first_break:
             self._gen.push_last_back()
         return stmt, tok

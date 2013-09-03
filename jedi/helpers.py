@@ -13,6 +13,11 @@ def fast_parent_copy(obj):
     new_elements = {}
 
     def recursion(obj):
+        if isinstance(obj, pr.Statement):
+            # Need to set _set_vars, otherwise the cache is not working
+            # correctly, don't know why.
+            obj.get_set_vars()
+
         new_obj = copy.copy(obj)
         new_elements[obj] = new_obj
 
