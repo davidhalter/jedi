@@ -19,7 +19,7 @@ import difflib
 from jedi import common
 from jedi import modules
 from jedi import helpers
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 
 
 class Refactoring(object):

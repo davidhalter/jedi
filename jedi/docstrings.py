@@ -17,7 +17,7 @@ annotations.
 import re
 
 from jedi import cache
-from jedi import parsing
+from jedi.parser import Parser
 import evaluate
 import evaluate_representation as er
 
@@ -51,7 +51,7 @@ def follow_param(param):
                 param_str)
             user_position = (2, 0)
 
-        p = parsing.Parser(param_str, None, user_position,
+        p = Parser(param_str, None, user_position,
                            no_docstr=True)
         if p.user_stmt is None:
             return []
@@ -124,7 +124,7 @@ def find_return_types(func):
     if not type_str:
         return []
 
-    p = parsing.Parser(type_str, None, (1, 0), no_docstr=True)
+    p = Parser(type_str, None, (1, 0), no_docstr=True)
     if p.user_stmt is None:
         return []
     p.user_stmt.parent = func

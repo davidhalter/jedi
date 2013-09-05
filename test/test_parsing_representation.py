@@ -1,4 +1,4 @@
-from jedi.parsing import Parser
+from jedi.parser import Parser
 
 def test_get_code():
     """Use the same code that the parser also generates, to compare"""

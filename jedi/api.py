@@ -13,8 +13,8 @@ import os
 import warnings
 from itertools import chain
 
-from jedi import parsing
-from jedi import parsing_representation as pr
+from jedi.parser import Parser
+from jedi.parser import representation as pr
 from jedi import debug
 from jedi import settings
 from jedi import helpers
@@ -244,7 +244,7 @@ class Script(object):
 
     def _get_under_cursor_stmt(self, cursor_txt):
         offset = self._line - 1, self._column
-        r = parsing.Parser(cursor_txt, no_docstr=True, offset=offset)
+        r = Parser(cursor_txt, no_docstr=True, offset=offset)
         try:
             stmt = r.module.statements[0]
         except IndexError:
@@ -668,7 +668,7 @@ def defined_names(source, path=None, source_encoding='utf-8'):
 
     :rtype: list of api_classes.Definition
     """
-    parser = parsing.Parser(
+    parser = Parser(
         modules.source_to_unicode(source, source_encoding),
         module_path=path,
     )

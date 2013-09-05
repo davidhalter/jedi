@@ -56,12 +56,12 @@ from __future__ import with_statement
 import os
 
 from jedi import cache
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 from jedi import modules
 from jedi import settings
 from jedi import common
 from jedi import debug
-from jedi import fast_parser
+from jedi.parser import fast as fast_parser
 import api_classes
 import evaluate
 import imports

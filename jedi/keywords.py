@@ -4,7 +4,7 @@ import pydoc
 import keyword
 
 from jedi._compatibility import is_py3k
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 from jedi import common
 import builtin
 

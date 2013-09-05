@@ -1,4 +1,4 @@
-from jedi.parsing import Parser
+from jedi.parser import Parser
 from jedi import parsing_representation as pr
 
 def test_user_statement_on_import():

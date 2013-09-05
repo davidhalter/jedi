@@ -23,8 +23,8 @@ from ast import literal_eval
 
 from jedi._compatibility import exec_function, unicode
 from jedi import cache
-from jedi import parsing_representation as pr
-from jedi import fast_parser
+from jedi.parser import representation as pr
+from jedi.parser import fast
 from jedi import debug
 from jedi import common
 
@@ -54,7 +54,7 @@ class CachedModule(object):
     def _load_module(self):
         source = self._get_source()
         p = self.path or self.name
-        p = fast_parser.FastParser(source, p)
+        p = fast.FastParser(source, p)
         cache.save_module(self.path, self.name, p)
         return p
 
@@ -112,7 +112,7 @@ class ModuleWithCursor(Module):
             # Call the parser already here, because it will be used anyways.
             # Also, the position is here important (which will not be used by
             # default), therefore fill the cache here.
-            self._parser = fast_parser.FastParser(self.source, self.path,
+            self._parser = fast.FastParser(self.source, self.path,
                                                   self.position)
             # don't pickle that module, because it's changing fast
             cache.save_module(self.path, self.name, self._parser,

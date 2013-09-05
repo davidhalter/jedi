@@ -3,7 +3,7 @@ from __future__ import with_statement
 import copy
 
 from jedi import common
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 
 
 def fast_parent_copy(obj):

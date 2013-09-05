@@ -34,7 +34,7 @@ import inspect
 
 from jedi import common
 from jedi import debug
-from jedi import parsing
+from jedi.parser import Parser
 from jedi import modules
 import evaluate
 
@@ -435,7 +435,7 @@ class Builtin(object):
             class Container(object):
                 FunctionType = types.FunctionType
             source = _generate_code(Container, depth=0)
-            parser = parsing.Parser(source, None)
+            parser = Parser(source, None)
             module = parser.module
             module.parent = self.scope
             typ = evaluate.follow_path(iter(['FunctionType']), module, module)

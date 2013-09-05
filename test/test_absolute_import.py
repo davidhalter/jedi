@@ -3,7 +3,7 @@ Tests ``from __future__ import absolute_import`` (only important for
 Python 2.X)
 """
 import jedi
-from jedi.parsing import Parser
+from jedi.parser import Parser
 from . import helpers
 
 

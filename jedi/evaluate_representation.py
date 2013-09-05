@@ -15,7 +15,7 @@ import copy
 import itertools
 
 from jedi._compatibility import use_metaclass, next, hasattr, unicode
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 from jedi import cache
 from jedi import helpers
 from jedi import debug
