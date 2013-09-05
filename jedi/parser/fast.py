@@ -7,8 +7,8 @@ import re
 
 from jedi._compatibility import use_metaclass
 from jedi import settings
-from jedi import parsing
-from jedi import parsing_representation as pr
+from jedi.parser import Parser
+from jedi.parser import representation as pr
 from jedi import cache
 from jedi import common
 
@@ -62,10 +62,10 @@ class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
     def __call__(self, source, module_path=None, user_position=None):
         if not settings.fast_parser:
-            return parsing.Parser(source, module_path, user_position)
+            return Parser(source, module_path, user_position)
 
         pi = cache.parser_cache.get(module_path, None)
-        if pi is None or isinstance(pi.parser, parsing.Parser):
+        if pi is None or isinstance(pi.parser, Parser):
             p = super(CachedFastParser, self).__call__(source, module_path,
                                                        user_position)
         else:
@@ -406,7 +406,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             if nodes[index].code != code:
                 raise ValueError()
         except ValueError:
-            p = parsing.Parser(parser_code, self.module_path,
+            p = Parser(parser_code, self.module_path,
                                self.user_position, offset=(line_offset, 0),
                                is_fast_parser=True, top_module=self.module,
                                no_docstr=no_docstr)

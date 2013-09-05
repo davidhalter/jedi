@@ -23,7 +23,7 @@ import keyword
 from jedi._compatibility import next, StringIO
 from jedi import debug
 from jedi import common
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 
 
 class Parser(object):
