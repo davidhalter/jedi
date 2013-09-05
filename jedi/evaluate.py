@@ -477,7 +477,7 @@ def check_getattr(inst, name_str):
     result = []
     # str is important to lose the NamePart!
     module = builtin.Builtin.scope
-    name = pr.String(module, str(name_str), (0, 0), (0, 0), inst)
+    name = pr.String(module, "'%s'" % name_str, (0, 0), (0, 0), inst)
     with common.ignored(KeyError):
         result = inst.execute_subscope_by_name('__getattr__', [name])
     if not result:

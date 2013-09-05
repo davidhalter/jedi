@@ -1214,7 +1214,11 @@ class Literal(StatementElement):
         return type(self.value).__name__
 
     def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self.literal)
+        if is_py3k:
+            s = self.literal
+        else:
+            s = self.literal.encode('ascii', 'replace')
+        return "<%s: %s>" % (type(self).__name__, s)
 
 
 class String(Literal):

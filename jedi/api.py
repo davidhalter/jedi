@@ -529,8 +529,7 @@ class Script(object):
         if call is None:
             user_stmt = self._user_stmt()
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
-                call, index, _ = helpers.search_call_signatures(
-                    user_stmt, self._pos)
+                call, index, _ = helpers.search_call_signatures(user_stmt, self._pos)
         debug.speed('func_call parsed')
         return call, index
 

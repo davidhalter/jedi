@@ -861,7 +861,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                     continue
                 key = key_commands[0]
                 if isinstance(key, pr.String):
-                    str_key = key.name
+                    str_key = key.value
                 elif isinstance(key, pr.Name):
                     str_key = str(key)
 

@@ -123,12 +123,12 @@ def search_call_signatures(stmt, pos):
     # some parts will of the statement will be removed
     stmt = fast_parent_copy(stmt)
     arr, index = array_for_pos(stmt, pos, [pr.Array.TUPLE, pr.Array.NOARRAY])
-    if arr is not None and isinstance(arr.parent, pr.Call):
+    if arr is not None and isinstance(arr.parent, pr.StatementElement):
         call = arr.parent
-        while isinstance(call.parent, pr.Call):
+        while isinstance(call.parent, pr.StatementElement):
             call = call.parent
         arr.parent.execution = None
-        return call if isinstance(call, pr.Name) else None, index, False
+        return call if isinstance(call, pr.Call) else None, index, False
     return None, 0, False
 
 
