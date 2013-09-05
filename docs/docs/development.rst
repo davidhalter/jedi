@@ -44,25 +44,25 @@ The Jedi Core
 
 The core of Jedi consists of three parts:
 
-- :ref:`Parser <parsing>`
+- :ref:`Parser <parser>`
 - :ref:`Python code evaluation <evaluate>`
 - :ref:`API <dev-api>`
 
 Most people are probably interested in :ref:`code evaluation <evaluate>`,
 because that's where all the magic happens. I need to introduce the :ref:`parser
-<parsing>` first, because :mod:`evaluate` uses it extensively.
+<parser>` first, because :mod:`evaluate` uses it extensively.
 
-.. _parsing:
+.. _parser:
 
-Parser (parsing.py)
-~~~~~~~~~~~~~~~~~~~
+Parser (parser/__init__.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: parsing
+.. automodule:: parser
 
-Parser Representation (parser_representation.py)
+Parser Representation (parser/representation.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: parsing_representation
+.. automodule:: parser.representation
 
 Class inheritance diagram:
 
@@ -144,10 +144,10 @@ Dynamic Arrays & Function Parameters (dynamic.py)
 
 .. _fast_parser:
 
-Fast Parser (fast_parser.py)
+Fast Parser (parser/fast.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: fast_parser
+.. automodule:: parser.fast
 
 .. _docstrings:
 
