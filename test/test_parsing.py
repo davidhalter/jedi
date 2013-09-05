@@ -1,5 +1,5 @@
 from jedi.parser import Parser
-from jedi import parsing_representation as pr
+from jedi.parser import representation as pr
 
 def test_user_statement_on_import():
     """github #285"""

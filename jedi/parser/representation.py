@@ -18,7 +18,7 @@ which is being used in a function definition.
 The easiest way to play with this module is to use :class:`parsing.Parser`.
 :attr:`parsing.Parser.module` holds an instance of :class:`SubModule`:
 
->>> from jedi.parsing import Parser
+>>> from jedi.parser import Parser
 >>> parser = Parser('import os', 'example.py')
 >>> submodule = parser.module
 >>> submodule
@@ -241,7 +241,7 @@ class Scope(Simple, IsScope):
         """
         Get all defined names in this scope.
 
-        >>> from jedi.parsing import Parser
+        >>> from jedi.parser import Parser
         >>> parser = Parser('''
         ... a = x
         ... b = y

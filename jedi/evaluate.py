@@ -125,7 +125,7 @@ def get_names_of_scope(scope, position=None, star_search=True,
     This function is used to include names from outer scopes.  For example,
     when the current scope is function:
 
-    >>> from jedi.parsing import Parser
+    >>> from jedi.parser import Parser
     >>> parser = Parser('''
     ... x = ['a', 'b', 'c']
     ... def func():

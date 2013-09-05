@@ -10,7 +10,8 @@ from .helpers import TestCase, cwd_at
 
 import jedi
 from jedi import Script
-from jedi import api, parsing
+from jedi import api
+from jedi.parser import Parser
 
 #jedi.set_debug_function()
 
@@ -115,7 +116,7 @@ class TestRegression(TestCase):
     def test_end_pos(self):
         # jedi issue #150
         s = "x()\nx( )\nx(  )\nx (  )"
-        parser = parsing.Parser(s)
+        parser = Parser(s)
         for i, s in enumerate(parser.module.statements, 3):
             for c in s.get_commands():
                 self.assertEqual(c.execution.end_pos[1], i)
