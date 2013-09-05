@@ -11,7 +11,6 @@ you can read the documentation there.
 import string
 import re
 from token import *
-from codecs import lookup, BOM_UTF8
 import collections
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
