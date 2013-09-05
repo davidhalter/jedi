@@ -8,7 +8,7 @@ import imp
 import os
 try:
     import importlib
-except:
+except ImportError:
     pass
 
 is_py3k = sys.hexversion >= 0x03000000
