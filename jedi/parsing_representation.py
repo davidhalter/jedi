@@ -1141,13 +1141,12 @@ class Param(Statement):
 
 
 class StatementElement(Simple):
-    def __init__(self, module, type, start_pos, end_pos, parent):
-        super(StatementElement, self).__init__(module, start_pos, end_pos)
+    def __init__(self, module, start_pos, end_pos, parent):
+        super(type(self), self).__init__(module, start_pos, end_pos)
+
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
         self.parent = parent
-        self.type = type
-
         self.next = None
         self.execution = None
 
@@ -1196,28 +1195,36 @@ class StatementElement(Simple):
 
 
 class Call(StatementElement):
-    """
-    `Call` contains a call, e.g. `foo.bar` and owns the executions of those
-    calls, which are `Array`s.
-    """
-    NAME = 1
-    NUMBER = 2
-    STRING = 3
-
-    def __init__(self, module, name, type, start_pos, end_pos, parent=None):
-        super(Call, self).__init__(module, type, start_pos, end_pos, parent)
+    def __init__(self, module, name, start_pos, end_pos, parent=None):
+        super(type(self), self).__init__(module, start_pos, end_pos, parent)
         self.name = name
 
     def get_code(self):
-        if self.type == Call.NAME:
-            s = self.name.get_code()
-        else:
-            s = '' if self.name is None else repr(self.name)
+        return self.name.get_code() + super(Call, self).get_code()
+
+    def __repr__(self):
+        return "<%s: %s>" % (type(self).__name__, self.name)
+
+
+class Literal(StatementElement):
+    def __init__(self, module, literal, start_pos, end_pos, parent=None):
+        super(type(self), self).__init__(module, start_pos, end_pos, parent)
+        self.literal = literal
+
+    def get_code(self):
+        s = '' if self.literal is None else repr(self.literal)
         return s + super(Call, self).get_code()
 
     def __repr__(self):
-        return "<%s: %s>" % \
-            (type(self).__name__, self.name)
+        return "<%s: %s>" % (type(self).__name__, self.literal)
+
+
+class String(Literal):
+    pass
+
+
+class Number(Call):
+    pass
 
 
 class Array(StatementElement):
@@ -1238,8 +1245,9 @@ class Array(StatementElement):
     SET = 'set'
 
     def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None):
-        super(Array, self).__init__(module, arr_type, start_pos, (None, None), parent)
+        super(Array, self).__init__(module, start_pos, (None, None), parent)
         self.end_pos = None, None
+        self.type = arr_type
         self.values = []
         self.keys = []
 
