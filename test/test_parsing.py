@@ -25,25 +25,27 @@ class TestCallAndName():
         assert call.name.end_pos == call.end_pos == (1, 4)
 
         call = self.get_call('1.0\n')
-        assert call.name == 1.0
+        assert call.value == 1.0
         assert call.start_pos == (1, 0)
         assert call.end_pos == (1, 3)
 
     def test_call_type(self):
         call = self.get_call('hello')
-        assert call.type == pr.Call.NAME
+        assert isinstance(call, pr.Call)
         assert type(call.name) == pr.Name
 
-        call = self.get_call('1.0')
-        assert type(call.name) == float
-        assert call.type == pr.Call.NUMBER
-        call = self.get_call('1')
-        assert type(call.name) == int
-        assert call.type == pr.Call.NUMBER
+    def test_literal_type(self):
+        literal = self.get_call('1.0')
+        assert isinstance(literal, pr.Number)
+        assert type(literal.value) == float
 
-        call = self.get_call('"hello"')
-        assert call.type == pr.Call.STRING
-        assert call.name == 'hello'
+        literal = self.get_call('1')
+        assert isinstance(literal, pr.Number)
+        assert type(literal.value) == int
+
+        literal = self.get_call('"hello"')
+        assert isinstance(literal, pr.String)
+        assert literal.value == 'hello'
 
 class TestSubscopes():
     def get_sub(self, source):
