@@ -807,8 +807,7 @@ class Statement(Simple):
                         for stmt in call:
                             search_calls(stmt.get_commands())
                     elif isinstance(call, Call):
-                        if call.type == Call.NAME:
-                            self._set_vars.append(call.name)
+                        self._set_vars.append(call.name)
 
             for calls, operation in self.assignment_details:
                 search_calls(calls)
@@ -1138,7 +1137,7 @@ class Param(Statement):
 
 class StatementElement(Simple):
     def __init__(self, module, start_pos, end_pos, parent):
-        super(type(self), self).__init__(module, start_pos, end_pos)
+        super(StatementElement, self).__init__(module, start_pos, end_pos)
 
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
@@ -1192,7 +1191,7 @@ class StatementElement(Simple):
 
 class Call(StatementElement):
     def __init__(self, module, name, start_pos, end_pos, parent=None):
-        super(type(self), self).__init__(module, start_pos, end_pos, parent)
+        super(Call, self).__init__(module, start_pos, end_pos, parent)
         self.name = name
 
     def get_code(self):
@@ -1204,12 +1203,15 @@ class Call(StatementElement):
 
 class Literal(StatementElement):
     def __init__(self, module, literal, start_pos, end_pos, parent=None):
-        super(type(self), self).__init__(module, start_pos, end_pos, parent)
+        super(Literal, self).__init__(module, start_pos, end_pos, parent)
         self.literal = literal
         self.value = literal_eval(literal)
 
     def get_code(self):
-        return self.literal + super(Call, self).get_code()
+        return self.literal + super(Literal, self).get_code()
+
+    def type_as_string(self):
+        return type(self.value).__name__
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.literal)
@@ -1219,7 +1221,7 @@ class String(Literal):
     pass
 
 
-class Number(Call):
+class Number(Literal):
     pass
 
 

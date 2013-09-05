@@ -860,7 +860,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 if len(key_commands) != 1:  # cannot deal with complex strings
                     continue
                 key = key_commands[0]
-                if isinstance(key, pr.Call) and key.type == pr.Call.STRING:
+                if isinstance(key, pr.String):
                     str_key = key.name
                 elif isinstance(key, pr.Name):
                     str_key = str(key)

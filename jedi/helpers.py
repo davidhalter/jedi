@@ -47,14 +47,14 @@ def fast_parent_copy(obj):
                 continue
             elif isinstance(value, list):
                 setattr(new_obj, key, list_rec(value))
-            elif isinstance(value, (pr.Simple, pr.Call)):
+            elif isinstance(value, pr.Simple):
                 setattr(new_obj, key, recursion(value))
         return new_obj
 
     def list_rec(list_obj):
         copied_list = list_obj[:]   # lists, tuples, strings, unicode
         for i, el in enumerate(copied_list):
-            if isinstance(el, (pr.Simple, pr.Call)):
+            if isinstance(el, pr.Simple):
                 copied_list[i] = recursion(el)
             elif isinstance(el, list):
                 copied_list[i] = list_rec(el)
@@ -109,7 +109,7 @@ def array_for_pos(stmt, pos, array_types=None):
         arr = None
         if isinstance(command, pr.Array):
             arr, index = search_array(command, pos)
-        elif isinstance(command, pr.Call):
+        elif isinstance(command, pr.StatementElement):
             arr, index = search_call(command, pos)
         if arr is not None:
             return arr, index
@@ -128,7 +128,7 @@ def search_call_signatures(stmt, pos):
         while isinstance(call.parent, pr.Call):
             call = call.parent
         arr.parent.execution = None
-        return call if call.type == pr.Call.NAME else None, index, False
+        return call if isinstance(call, pr.Name) else None, index, False
     return None, 0, False
 
 
