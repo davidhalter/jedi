@@ -1052,15 +1052,11 @@ class Statement(Simple):
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:
-                c_type = Call.NAME
+                cls = Call
                 if is_literal:
-                    tok = literal_eval(tok)
-                    if token_type == tokenize.STRING:
-                        c_type = Call.STRING
-                    elif token_type == tokenize.NUMBER:
-                        c_type = Call.NUMBER
+                    cls = String if token_type == tokenize.STRING else Number
 
-                call = Call(self._sub_module, tok, c_type, start_pos, end_pos, self)
+                call = cls(self._sub_module, tok, start_pos, end_pos, self)
                 if is_chain:
                     result[-1].set_next(call)
                 else:
@@ -1210,10 +1206,10 @@ class Literal(StatementElement):
     def __init__(self, module, literal, start_pos, end_pos, parent=None):
         super(type(self), self).__init__(module, start_pos, end_pos, parent)
         self.literal = literal
+        self.value = literal_eval(literal)
 
     def get_code(self):
-        s = '' if self.literal is None else repr(self.literal)
-        return s + super(Call, self).get_code()
+        return self.literal + super(Call, self).get_code()
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.literal)
