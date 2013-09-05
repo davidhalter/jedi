@@ -575,7 +575,7 @@ def _check_isinstance_type(stmt, search_name):
         assert isinstance(obj[0], pr.Call)
         # names fit?
         assert str(obj[0].name) == search_name
-        assert isinstance(classes[0], pr.Call)  # can be type or tuple
+        assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
     except AssertionError:
         return []
 

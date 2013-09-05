@@ -321,7 +321,8 @@ def sys_path_with_modifications(module):
             if not isinstance(p, pr.Statement):
                 continue
             commands = p.get_commands()
-            if len(commands) != 1:  # sys.path command is just one thing.
+            # sys.path command is just one thing.
+            if len(commands) != 1 or not isinstance(commands[0], pr.Call):
                 continue
             call = commands[0]
             n = call.name

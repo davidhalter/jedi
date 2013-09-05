@@ -1069,13 +1069,13 @@ class Statement(Simple):
             elif tok in brackets.keys():
                 arr, is_ass = parse_array(token_iterator, brackets[tok],
                                           start_pos)
-                if result and isinstance(result[-1], Call):
+                if result and isinstance(result[-1], StatementElement):
                     result[-1].set_execution(arr)
                 else:
                     arr.parent = self
                     result.append(arr)
             elif tok == '.':
-                if result and isinstance(result[-1], Call):
+                if result and isinstance(result[-1], StatementElement):
                     is_chain = True
             elif tok == ',':  # implies a tuple
                 # commands is now an array not a statement anymore
@@ -1140,18 +1140,9 @@ class Param(Statement):
         return n[0]
 
 
-class Call(Simple):
-    """
-    `Call` contains a call, e.g. `foo.bar` and owns the executions of those
-    calls, which are `Array`s.
-    """
-    NAME = 1
-    NUMBER = 2
-    STRING = 3
-
-    def __init__(self, module, name, type, start_pos, end_pos, parent=None):
-        super(Call, self).__init__(module, start_pos, end_pos)
-        self.name = name
+class StatementElement(Simple):
+    def __init__(self, module, type, start_pos, end_pos, parent):
+        super(StatementElement, self).__init__(module, start_pos, end_pos)
         # parent is not the oposite of next. The parent of c: a = [b.c] would
         # be an array.
         self.parent = parent
@@ -1196,22 +1187,40 @@ class Call(Simple):
                 yield y
 
     def get_code(self):
-        if self.type == Call.NAME:
-            s = self.name.get_code()
-        else:
-            s = '' if self.name is None else repr(self.name)
+        s = ''
         if self.execution is not None:
             s += self.execution.get_code()
         if self.next is not None:
             s += '.' + self.next.get_code()
         return s
 
+
+class Call(StatementElement):
+    """
+    `Call` contains a call, e.g. `foo.bar` and owns the executions of those
+    calls, which are `Array`s.
+    """
+    NAME = 1
+    NUMBER = 2
+    STRING = 3
+
+    def __init__(self, module, name, type, start_pos, end_pos, parent=None):
+        super(Call, self).__init__(module, type, start_pos, end_pos, parent)
+        self.name = name
+
+    def get_code(self):
+        if self.type == Call.NAME:
+            s = self.name.get_code()
+        else:
+            s = '' if self.name is None else repr(self.name)
+        return s + super(Call, self).get_code()
+
     def __repr__(self):
         return "<%s: %s>" % \
             (type(self).__name__, self.name)
 
 
-class Array(Call):
+class Array(StatementElement):
     """
     Describes the different python types for an array, but also empty
     statements. In the Python syntax definitions this type is named 'atom'.
@@ -1229,7 +1238,7 @@ class Array(Call):
     SET = 'set'
 
     def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None):
-        super(Array, self).__init__(module, None, arr_type, start_pos, (None, None), parent)
+        super(Array, self).__init__(module, arr_type, start_pos, (None, None), parent)
         self.end_pos = None, None
         self.values = []
         self.keys = []

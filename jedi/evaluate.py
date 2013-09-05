@@ -668,7 +668,7 @@ def follow_call_list(call_list, follow_array=False):
                 result.append(call)
             # The string tokens are just operations (+, -, etc.)
             elif not isinstance(call, (str, unicode)):
-                if str(call.name) == 'if':
+                if isinstance(call, pr.Call) and str(call.name) == 'if':
                     # Ternary operators.
                     while True:
                         try:
