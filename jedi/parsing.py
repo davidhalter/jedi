@@ -26,10 +26,6 @@ from jedi import common
 from jedi import parsing_representation as pr
 
 
-class ParserError(Exception):
-    pass
-
-
 class Parser(object):
     """
     This class is used to parse a Python file, it then divides them into a
