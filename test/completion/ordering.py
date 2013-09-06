@@ -170,9 +170,8 @@ math.cos
 # do the same for star imports
 cosh = 3
 from math import *
-# This doesn't work, but that's not a problem, star imports should be at the
+# cosh doesn't work, but that's not a problem, star imports should be at the
 # start of EVERY script!
-##? []
 cosh.real
 
 cosh = 3
