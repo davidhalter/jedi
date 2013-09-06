@@ -507,7 +507,7 @@ class Script(object):
 
         This would return ``None``.
 
-        :rtype: :class:`api_classes.CallDef`
+        :rtype: list of :class:`api_classes.CallDef`
         """
 
         call, index = self._func_call_and_param_index()
