@@ -7,7 +7,7 @@ std library stuff
 # -----------------
 arr = ['']
 
-#? int()
+#? str()
 sorted(arr)[0]
 
 #? str()

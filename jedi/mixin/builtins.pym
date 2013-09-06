@@ -199,6 +199,10 @@ class reversed():
         return self.__next__()
 
 
+def sorted(iterable, cmp=None, key=None, reverse=False):
+    return iterable
+
+
 #--------------------------------------------------------
 # basic types
 #--------------------------------------------------------
