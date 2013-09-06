@@ -3,6 +3,17 @@ std library stuff
 """
 
 # -----------------
+# builtins
+# -----------------
+arr = ['']
+
+#? int()
+sorted(arr)[0]
+
+#? str()
+next(reversed(arr))
+
+# -----------------
 # re
 # -----------------
 import re
