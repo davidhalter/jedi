@@ -76,6 +76,12 @@ c
 #! 0 ['def c']
 c()
 
+class BeforeAssignment():
+    x = 3
+    def __init__(self):
+        #! 13 ['x = 3']
+        self.x = ''
+
 # -----------------
 # imports
 # -----------------
