@@ -13,6 +13,9 @@ sorted(arr)[0]
 #? str()
 next(reversed(arr))
 
+#? str()
+next(open(''))
+
 # -----------------
 # re
 # -----------------

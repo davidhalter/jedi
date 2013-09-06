@@ -26,6 +26,13 @@ def range(start, stop=None, step=1):
     return [0]
 
 
+class file():
+    def __iter__(self):
+        yield ''
+    def next(self):
+        return ''
+
+
 class xrange():
     # Attention: this function doesn't exist in Py3k (there it is range).
     def __iter__(self):
