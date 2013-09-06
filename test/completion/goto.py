@@ -76,11 +76,20 @@ c
 #! 0 ['def c']
 c()
 
-class BeforeAssignment():
+
+class ClassVar():
     x = 3
 
-#! 18 ['x = 3']
-BeforeAssignment.x = ''
+#! ['x = 3']
+ClassVar.x
+#! ['x = 3']
+ClassVar().x
+
+# before assignments
+#! 10 ['x = 3']
+ClassVar.x = ''
+#! 12 ['x = 3']
+ClassVar().x = ''
 
 # -----------------
 # imports
