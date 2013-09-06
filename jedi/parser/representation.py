@@ -807,6 +807,16 @@ class Statement(Simple):
                         for stmt in call:
                             search_calls(stmt.get_commands())
                     elif isinstance(call, Call):
+                        c = call
+                        # Check if there's an execution in it, if so this is
+                        # not a set_var.
+                        is_execution = False
+                        while c:
+                            if Array.is_type(c.execution, Array.TUPLE):
+                                is_execution = True
+                            c = c.next
+                        if is_execution:
+                            continue
                         self._set_vars.append(call.name)
 
             for calls, operation in self.assignment_details:
