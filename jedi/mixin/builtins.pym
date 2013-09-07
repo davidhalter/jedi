@@ -203,7 +203,7 @@ class reversed():
         return next(self.__iter__())
 
     def next(self):
-        return self.__next__()
+        return next(self.__iter__())
 
 
 def sorted(iterable, cmp=None, key=None, reverse=False):
