@@ -119,6 +119,7 @@ class TestCase(object):
                 self.script = jedi.Script(f.read(), self.line, self.column, self.path)
             self.completions = getattr(self.script, self.operation)()
             if print_result:
+                print("{path}: Line {line} column {column}".format(**self.__dict__))
                 self.show_location(self.line, self.column)
                 self.show_operation()
         except jedi.NotFoundError:
