@@ -12,6 +12,11 @@ Jedi - an awesome autocompletion library for Python
 
 .. image:: https://pypip.in/d/jedi/badge.png
     :target: https://crate.io/packages/jedi/
+    :alt: Number of PyPI downloads
+
+.. image:: https://pypip.in/v/jedi/badge.png
+    :target: https://crate.io/packages/jedi/
+    :alt: Latest PyPI version
 
 Jedi is an autocompletion tool for Python that can be used in IDEs/editors.
 Jedi works. Jedi is fast. It understands all of the basic Python syntax
