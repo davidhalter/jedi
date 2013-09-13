@@ -136,7 +136,8 @@ class Script(object):
         bs = builtin.Builtin.scope
         completions = get_completions(user_stmt, bs)
 
-        if not dot:  # named params have no dots
+        if not dot:
+            # add named params
             for call_def in self.call_signatures():
                 if not call_def.module.is_builtin():
                     for p in call_def.params:

@@ -397,3 +397,15 @@ class TestX(object):
         var = self.conditional_method()
         #? int()
         var
+
+# -----------------
+# mro method
+# -----------------
+
+class A(object):
+    pass
+
+#? ['mro']
+A.mro
+#? []
+A().mro

@@ -253,9 +253,9 @@ def _generate_code(scope, mixin_funcs={}, depth=0):
 
     code += get_doc(scope)
 
+    # Remove some magic vars, (TODO why?)
     names = set(dir(scope)) - set(['__file__', '__name__', '__doc__',
-                                   '__path__', '__package__']) \
-        | set(['mro'])
+                                   '__path__', '__package__'])
 
     classes, funcs, stmts, members = get_scope_objects(names)
 

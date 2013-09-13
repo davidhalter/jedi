@@ -151,7 +151,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         """
         names = self._get_self_attributes()
 
-        class_names = self.base.get_defined_names()
+        class_names = self.base.instance_names()
         for var in class_names:
             names.append(InstanceElement(self, var, True))
         return names
@@ -164,7 +164,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         yield self, self._get_self_attributes()
 
         names = []
-        class_names = self.base.get_defined_names()
+        class_names = self.base.instance_names()
         for var in class_names:
             names.append(InstanceElement(self, var, True))
         yield self, names
@@ -270,7 +270,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         return supers
 
     @cache.memoize_default(default=())
-    def get_defined_names(self):
+    def instance_names(self):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
             for i in iterable:
@@ -285,11 +285,17 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         # TODO mro!
         for cls in self.get_super_classes():
             # Get the inherited names.
-            for i in cls.get_defined_names():
+            for i in cls.instance_names():
                 if not in_iterable(i, result):
                     super_result.append(i)
         result += super_result
         return result
+
+    @cache.memoize_default(default=())
+    def get_defined_names(self):
+        result = self.instance_names()
+        type_cls = evaluate.find_name(builtin.Builtin.scope, 'type')[0]
+        return result + type_cls.base.get_defined_names()
 
     def get_subscope_by_name(self, name):
         for sub in reversed(self.subscopes):
