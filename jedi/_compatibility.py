@@ -33,7 +33,9 @@ def find_module_py33(string, path=None):
             module_path = loader.get_filename(string)
             module_file = open(module_path)
     except AttributeError:
-        module_path = loader.load_module(string).__name__
+        # is builtin module
+        loader.load_module(string)
+        module_path = string
         module_file = None
 
     return module_file, module_path, is_package
