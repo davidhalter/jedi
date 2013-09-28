@@ -101,7 +101,6 @@ def setup_readline(namespace_module=__main__, combine_old_completer=False):
         if old_completer and combine_old_completer:
             completer = combine_completers(completer, old_completer)
         readline.set_completer(completer)
-        print(readline.get_completer())
         readline.parse_and_bind("tab: complete")
         # jedi itself does the case matching
         readline.parse_and_bind("set completion-ignore-case on")
