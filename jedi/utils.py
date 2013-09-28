@@ -7,6 +7,38 @@ import __main__
 
 from jedi import Interpreter
 
+class JediRL():
+    def __init__(self, namespace_module):
+        self.namespace_module = namespace_module
+
+    def complete(self, text, state):
+        """
+        This complete stuff is pretty weird, a generator would make
+        a lot more sense, but probably due to backwards compatibility
+        this is still the way how it works.
+
+        The only important part is stuff in the ``state == 0`` flow,
+        everything else has been copied from the ``rlcompleter`` std.
+        library module.
+        """
+        if state == 0:
+            import os, sys
+            sys.path.insert(0, os.getcwd())
+            # Calling python doesn't have a path, so add to sys.path.
+            try:
+                interpreter = Interpreter(text, [self.namespace_module.__dict__])
+
+                path, dot, like = interpreter._get_completion_parts()
+                before = text[:len(text) - len(like)]
+                completions = interpreter.completions()
+            finally:
+                sys.path.pop(0)
+
+            self.matches = [before + c.name_with_symbols for c in completions]
+        try:
+            return self.matches[state]
+        except IndexError:
+            return None
 
 def setup_readline(namespace_module=__main__):
     """
@@ -49,42 +81,14 @@ def setup_readline(namespace_module=__main__):
     bash).
 
     """
-    class JediRL():
-        def complete(self, text, state):
-            """
-            This complete stuff is pretty weird, a generator would make
-            a lot more sense, but probably due to backwards compatibility
-            this is still the way how it works.
 
-            The only important part is stuff in the ``state == 0`` flow,
-            everything else has been copied from the ``rlcompleter`` std.
-            library module.
-            """
-            if state == 0:
-                import os, sys
-                sys.path.insert(0, os.getcwd())
-                # Calling python doesn't have a path, so add to sys.path.
-                try:
-                    interpreter = Interpreter(text, [namespace_module.__dict__])
-
-                    path, dot, like = interpreter._get_completion_parts()
-                    before = text[:len(text) - len(like)]
-                    completions = interpreter.completions()
-                finally:
-                    sys.path.pop(0)
-
-                self.matches = [before + c.name_with_symbols for c in completions]
-            try:
-                return self.matches[state]
-            except IndexError:
-                return None
 
     try:
         import readline
     except ImportError:
         print("Module readline not available.")
     else:
-        readline.set_completer(JediRL().complete)
+        readline.set_completer(JediRL(namespace_module).complete)
         readline.parse_and_bind("tab: complete")
         # jedi itself does the case matching
         readline.parse_and_bind("set completion-ignore-case on")
