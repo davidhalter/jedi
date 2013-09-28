@@ -40,7 +40,7 @@ class JediRL():
         except IndexError:
             return None
 
-def setup_readline(namespace_module=__main__):
+def setup_readline(namespace_module=__main__, combine_old_completer=False):
     """
     Install Jedi completer to :mod:`readline`.
 
@@ -88,7 +88,20 @@ def setup_readline(namespace_module=__main__):
     except ImportError:
         print("Module readline not available.")
     else:
-        readline.set_completer(JediRL(namespace_module).complete)
+        if hasattr(__main__, 'get_ipython'):
+            # We are in IPython. IPython resets the readline completer with
+            # each prompt, which we don't want, so let's disable that.
+            ip = __main__.get_ipython()
+            if combine_old_completer:
+                # Try to merge IPython completion and Jedi completion
+                ip.set_readline_completer()
+            ip.has_readline = False
+        old_completer = readline.get_completer()
+        completer = JediRL(namespace_module).complete
+        if old_completer and combine_old_completer:
+            completer = combine_completers(completer, old_completer)
+        readline.set_completer(completer)
+        print(readline.get_completer())
         readline.parse_and_bind("tab: complete")
         # jedi itself does the case matching
         readline.parse_and_bind("set completion-ignore-case on")
@@ -99,3 +112,17 @@ def setup_readline(namespace_module=__main__):
         readline.parse_and_bind("set completion-prefix-display-length 2")
         # No delimiters, Jedi handles that.
         readline.set_completer_delims('')
+
+def combine_completers(first, second, firststate=0):
+    """
+    Returns a function that calls completer first then completer second,
+    assuming first stops after firststate.
+    """
+    # firststate is the state that JediRL.complete stops after. Right now, it
+    # is just 0.
+    def completer(text, state):
+        if state <= firststate:
+            return first(text, state)
+        else:
+            return second(text, state - firststate)
+    return completer
