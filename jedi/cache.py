@@ -23,6 +23,7 @@ import os
 import sys
 import json
 import hashlib
+import gc
 try:
     import cPickle as pickle
 except ImportError:
@@ -256,8 +257,12 @@ class _ModulePickling(object):
             return None
 
         with open(self._get_hashed_path(path), 'rb') as f:
-            parser_cache_item = pickle.load(f)
-
+            try:
+                gc.disable()
+                parser_cache_item = pickle.load(f)
+            finally:
+                gc.enable()
+                
         debug.dbg('pickle loaded', path)
         parser_cache[path] = parser_cache_item
         return parser_cache_item.parser
