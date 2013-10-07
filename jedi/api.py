@@ -377,7 +377,7 @@ class Script(object):
         scopes |= keywords.keywords(string=goto_path, pos=self._pos)
 
         d = set([api_classes.Definition(s) for s in scopes
-                 if not isinstance(s, imports.ImportPath._GlobalNamespace)])
+                 if s is not imports.ImportPath.GlobalNamespace])
         return self._sorted_defs(d)
 
     @api_classes._clear_caches_after_call
@@ -392,7 +392,7 @@ class Script(object):
         """
         results, _ = self._goto()
         d = [api_classes.Definition(d) for d in set(results)
-             if not isinstance(d, imports.ImportPath._GlobalNamespace)]
+             if d is not imports.ImportPath.GlobalNamespace]
         return self._sorted_defs(d)
 
     def _goto(self, add_import_name=False):

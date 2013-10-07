@@ -39,11 +39,11 @@ class ImportPath(pr.Base):
     """
     An ImportPath is the path of a `pr.Import` object.
     """
-    class _GlobalNamespace(object):
+    class GlobalNamespace(object):
         def __init__(self):
             self.line_offset = 0
 
-    GlobalNamespace = _GlobalNamespace()
+    GlobalNamespace = GlobalNamespace()
 
     def __init__(self, import_stmt, is_like_search=False, kill_count=0,
                  direct_resolve=False, is_just_from=False):
