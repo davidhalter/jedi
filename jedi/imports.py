@@ -41,17 +41,7 @@ class ImportPath(pr.Base):
     """
     class _GlobalNamespace(object):
         def __init__(self):
-            self.start_pos = 0, 0
             self.line_offset = 0
-
-        def get_defined_names(self):
-            return []
-
-        def get_imports(self):
-            return []
-
-        def get_parent_until(self):
-            return None
 
     GlobalNamespace = _GlobalNamespace()
 
