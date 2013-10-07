@@ -318,9 +318,6 @@ class ImportPath(pr.Base):
         else:
             sys_path_mod = list(modules.get_sys_path())
 
-        def module_not_found():
-            raise ModuleNotFound('The module you searched has not been found')
-
         current_namespace = (None, None, None)
         # now execute those paths
         rest = []
@@ -350,10 +347,7 @@ class ImportPath(pr.Base):
                         rest = self.import_path[i:]
                         break
                     else:
-                        module_not_found()
-
-        if current_namespace == (None, None, False):
-            module_not_found()
+                        raise ModuleNotFound('The module you searched has not been found')
 
         sys_path_mod.pop(0)  # TODO why is this here?
         path = current_namespace[1]
