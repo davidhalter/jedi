@@ -36,6 +36,7 @@ def find_module_py33(string, path=None):
         # is builtin module
         module_path = string
         module_file = None
+        is_package = False
 
     return module_file, module_path, is_package
 
