@@ -17,5 +17,10 @@ def test_import_not_in_sys_path():
     """
     non-direct imports (not in sys.path)
     """
-    a = jedi.Script(path='module.py', line=3).goto_definitions()
+    a = jedi.Script(path='module.py', line=5).goto_definitions()
     assert a[0].name == 'int'
+
+    a = jedi.Script(path='module.py', line=6).goto_definitions()
+    assert a[0].name == 'str'
+    a = jedi.Script(path='module.py', line=7).goto_definitions()
+    assert a[0].name == 'str'
