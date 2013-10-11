@@ -20,6 +20,6 @@ Aaron Meurer (@asmeurer) <asmeurer@gmail.com>
 Lubos Trilety <ltrilety@redhat.com>
 Akinori Hattori (@hattya)
 srusskih (@srusskih)
-
+Steven Silvester (@blink1073)
 
 Note: (@user) means a github user name.
