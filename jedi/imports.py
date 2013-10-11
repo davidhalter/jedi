@@ -351,7 +351,6 @@ class ImportPath(pr.Base):
                     else:
                         raise ModuleNotFound('The module you searched has not been found')
 
-        sys_path.pop(0)  # TODO why is this here?
         path = current_namespace[1]
         is_package_directory = current_namespace[2]
 
