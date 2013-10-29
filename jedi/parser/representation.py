@@ -361,7 +361,7 @@ class SubModule(Scope, Module):
         """ This is used for the goto functions. """
         if self._name is not None:
             return self._name
-        if self.path is None:
+        if not self.path:
             string = ''  # no path -> empty name
         else:
             sep = (re.escape(os.path.sep),) * 2
