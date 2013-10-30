@@ -361,14 +361,14 @@ class SubModule(Scope, Module):
         """ This is used for the goto functions. """
         if self._name is not None:
             return self._name
-        if not self.path:
-            string = ''  # no path -> empty name
-        else:
+        try:
             sep = (re.escape(os.path.sep),) * 2
             r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep,
                           self.path)
             # remove PEP 3149 names
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+        except TypeError:
+            string = ''
         # positions are not real therefore choose (0, 0)
         names = [(string, (0, 0))]
         self._name = Name(self, names, (0, 0), (0, 0), self.use_as_parent)
