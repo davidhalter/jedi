@@ -275,6 +275,24 @@ class ModuleWithCursor(Module):
     def get_position_line(self):
         return self.get_line(self.position[0])[:self.position[1]]
 
+def read_pth_paths(path):
+    """ Read .pth files to find other paths. """
+    with open(path) as f:
+        for line in f:
+            if line.startswith("import"):
+                continue
+            elif line.startswith("#"):
+                continue
+            yield line.rstrip()
+
+def gather_site_dir_paths(path):
+    for f in os.listdir(path):
+        if f.endswith('.pth'):
+            for module_path in read_pth_paths(os.path.join(path, f)):
+                if not os.path.isabs(module_path):
+                    module_path = os.path.join(path, module_path)
+
+                yield os.path.abspath(module_path)
 
 def get_sys_path():
     def check_virtual_env(sys_path):
@@ -286,6 +304,9 @@ def get_sys_path():
         p = os.path.join(
             venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
         sys_path.insert(0, p)
+
+        for path in gather_site_dir_paths(p):
+            sys_path.insert(1, path)
 
     check_virtual_env(sys.path)
     return [p for p in sys.path if p != ""]
