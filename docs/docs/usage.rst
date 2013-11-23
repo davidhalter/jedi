@@ -19,22 +19,22 @@ Editor Plugins
 
 Vim:
 
-- `jedi-vim <http://github.com/davidhalter/jedi-vim>`_
-- `YouCompleteMe <http://valloric.github.io/YouCompleteMe/>`_
+- jedi-vim_
+- YouCompleteMe_
 
 Emacs:
 
-- `Jedi.el <https://github.com/tkf/emacs-jedi>`_
+- Jedi.el_
 - company-jedi_
 
 Sublime Text 2/3:
 
-- `SublimeJEDI <https://github.com/srusskih/SublimeJEDI>`_  (ST2 & ST3)
-- `anaconda <https://github.com/DamnWidget/anaconda>`_ (only ST3)
+- SublimeJEDI_ (ST2 & ST3)
+- anaconda_ (only ST3)
 
 SynWrite:
 
-- `SynJedi <http://uvviewsoft.com/synjedi/>`_
+- SynJedi_
 
 
 .. _other-software:
@@ -64,4 +64,11 @@ Using a custom ``$HOME/.pythonrc.py``
 
 .. autofunction:: jedi.utils.setup_readline
 
+.. _jedi-vim: https://github.com/davidhalter/jedi-vim
+.. _youcompleteme: http://valloric.github.io/YouCompleteMe/
+.. _Jedi.el: https://github.com/tkf/emacs-jedi
 .. _company-jedi: https://github.com/proofit404/company-jedi
+.. _sublimejedi: https://github.com/srusskih/SublimeJEDI
+.. _anaconda: https://github.com/DamnWidget/anaconda
+.. _SynJedi: http://uvviewsoft.com/synjedi/
+.. _wdb: https://github.com/Kozea/wdb
