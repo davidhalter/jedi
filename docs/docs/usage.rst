@@ -25,6 +25,7 @@ Vim:
 Emacs:
 
 - `Jedi.el <https://github.com/tkf/emacs-jedi>`_
+- company-jedi_
 
 Sublime Text 2/3:
 
@@ -62,3 +63,5 @@ Using a custom ``$HOME/.pythonrc.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: jedi.utils.setup_readline
+
+.. _company-jedi: https://github.com/proofit404/company-jedi
