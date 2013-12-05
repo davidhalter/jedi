@@ -1,6 +1,7 @@
 from jedi.parser import Parser
 from jedi.parser import representation as pr
 
+
 def test_user_statement_on_import():
     """github #285"""
     s = "from datetime import (\n" \
@@ -9,7 +10,7 @@ def test_user_statement_on_import():
     for pos in [(2, 1), (2, 4)]:
         u = Parser(s, user_position=pos).user_stmt
         assert isinstance(u, pr.Import)
-        assert u.defunct == False
+        assert u.defunct is False
         assert [str(n) for n in u.get_defined_names()] == ['time']
 
 
@@ -47,6 +48,7 @@ class TestCallAndName():
         assert isinstance(literal, pr.String)
         assert literal.value == 'hello'
 
+
 class TestSubscopes():
     def get_sub(self, source):
         return Parser(source).module.subscopes[0]
@@ -61,6 +63,7 @@ class TestSubscopes():
         assert name.start_pos == (1, len('def '))
         assert name.end_pos == (1, len('def foo'))
         assert str(name) == 'foo'
+
 
 class TestImports():
     def get_import(self, source):

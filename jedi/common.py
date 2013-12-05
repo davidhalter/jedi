@@ -146,8 +146,13 @@ class NoErrorTokenizer(object):
         if self.is_fast_parser \
                 and self.previous[0] in (tokenize.INDENT, tokenize.NL, None,
                                          tokenize.NEWLINE, tokenize.DEDENT) \
-                and c[0] not in (tokenize.COMMENT, tokenize.INDENT,
-                                 tokenize.NL, tokenize.NEWLINE, tokenize.DEDENT):
+                and c[0] not in (
+                    tokenize.COMMENT,
+                    tokenize.INDENT,
+                    tokenize.NL,
+                    tokenize.NEWLINE,
+                    tokenize.DEDENT
+                ):
             # print c, tokenize.tok_name[c[0]]
 
             tok = c[1]

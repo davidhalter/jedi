@@ -24,6 +24,7 @@ from jedi._compatibility import next, StringIO
 from jedi import debug
 from jedi import common
 from jedi.parser import representation as pr
+from jedi.parser import token as token_pr
 
 
 class Parser(object):
@@ -271,8 +272,11 @@ class Parser(object):
         first_pos = self.start_pos
         token_type, cname = self.next()
         if token_type != tokenize.NAME:
-            debug.warning("class: syntax err, token is not a name@%s (%s: %s)"
-                          % (self.start_pos[0], tokenize.tok_name[token_type], cname))
+            debug.warning(
+                "class: syntax err, token is not a name@%s (%s: %s)" % (
+                    self.start_pos[0], tokenize.tok_name[token_type], cname
+                )
+            )
             return None
 
         cname = pr.Name(self.module, [(cname, self.start_pos)], self.start_pos,
@@ -345,11 +349,17 @@ class Parser(object):
                    or tok in breaks and level <= 0):
             try:
                 # print 'parse_stmt', tok, tokenize.tok_name[token_type]
-                tok_list.append(self._current + (self.start_pos,))
+                tok_list.append(
+                    token_pr.Token.from_tuple(
+                        self._current + (self.start_pos,)
+                    )
+                )
                 if tok == 'as':
                     token_type, tok = self.next()
                     if token_type == tokenize.NAME:
-                        n, token_type, tok = self._parse_dot_name(self._current)
+                        n, token_type, tok = self._parse_dot_name(
+                            self._current
+                        )
                         if n:
                             set_vars.append(n)
                             as_names.append(n)
@@ -396,7 +406,6 @@ class Parser(object):
                     self._scope.statements[-1].add_docstr(first_tok[1])
                     return None, tok
 
-
         stmt = stmt_class(self.module, tok_list, first_pos, self.end_pos,
                           as_names=as_names,
                           names_are_set_vars=names_are_set_vars)
@@ -435,9 +444,11 @@ class Parser(object):
                 s = s.parent
             raise
 
-        if self.user_position and (self.start_pos[0] == self.user_position[0]
-                                   or self.user_scope is None
-                                   and self.start_pos[0] >= self.user_position[0]):
+        if self.user_position and (
+            self.start_pos[0] == self.user_position[0]
+            or self.user_scope is None
+            and self.start_pos[0] >= self.user_position[0]
+        ):
             debug.dbg('user scope found [%s] = %s' %
                      (self.parserline.replace('\n', ''), repr(self._scope)))
             self.user_scope = self._scope
@@ -489,8 +500,9 @@ class Parser(object):
                         and not isinstance(self._scope, pr.SubModule):
                     self._scope = self.module
 
-            use_as_parent_scope = self.top_module if isinstance(self._scope,
-                                                                pr.SubModule) else self._scope
+            use_as_parent_scope = self.top_module if isinstance(
+                self._scope, pr.SubModule
+            ) else self._scope
             first_pos = self.start_pos
             if tok == 'def':
                 func = self._parse_function()
