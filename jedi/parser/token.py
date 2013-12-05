@@ -34,7 +34,7 @@ class Token(object):
     # Backward compatibility
     def __getitem__(self, key):
         # Builds the same structure as tuple used to have
-        if key == 0:
+        if key   == 0:
             return self.token_type
         elif key == 1:
             return self.token
@@ -46,7 +46,7 @@ class Token(object):
     # Backward compatibility
     def __setitem__(self, key, value):
         # setitem analogous to
-        if key == 0:
+        if key   == 0:
             self.token_type       = value
         elif key == 1:
             self.token            = value
