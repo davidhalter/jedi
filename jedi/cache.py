@@ -262,7 +262,7 @@ class _ModulePickling(object):
                 parser_cache_item = pickle.load(f)
             finally:
                 gc.enable()
-                
+
         debug.dbg('pickle loaded', path)
         parser_cache[path] = parser_cache_item
         return parser_cache_item.parser
