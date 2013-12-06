@@ -2,12 +2,45 @@
 
 We want to have a token_list and start_position for everything the
 tokenizer returns. Therefore we need a memory efficient class. We
-found that a flat object with slots is the best. The Token object is
-that plus indexing and string backwards compatibility.
-
+found that a flat object with slots is the best.
 """
 
+
 class Token(object):
+    """The token object is an efficient representation of the structure
+    (token_type, token, (start_pos_line, start_pos_col)). It has indexer
+    methods that maintain compatibility to existing code that expects the above
+    structure.
+
+    >>> tuple(Token(1,2,3,4))
+    (1, 2, (3, 4))
+    >>> str(Token(1, "test", 1, 1))
+    'test'
+    >>> repr(Token(1, "test", 1, 1))
+    "<Token: (1, 'test', (1, 1))>"
+    >>> Token(1, 2, 3, 4).__getstate__()
+    (1, 2, 3, 4)
+    >>> a = Token(0, 0, 0, 0)
+    >>> a.__setstate__((1, 2, 3, 4))
+    >>> a
+    <Token: (1, 2, (3, 4))>
+    >>> a[2] = (2, 1)
+    >>> a
+    <Token: (1, 2, (2, 1))>
+    >>> a.start_pos
+    (2, 1)
+    >>> a.token
+    2
+    >>> a.start_pos = (3, 4)
+    >>> a
+    <Token: (1, 2, (3, 4))>
+    >>> a.start_pos
+    (3, 4)
+    >>> a.start_pos_col
+    4
+    >>> Token.from_tuple((6, 5, (4, 3)))
+    <Token: (6, 5, (4, 3))>
+    """
     __slots__ = [
         "token_type", "token", "start_pos_line", "start_pos_col"
     ]
@@ -41,11 +74,11 @@ class Token(object):
         elif key == 2:
             return (self.start_pos_line, self.start_pos_col)
         else:
-            raise IndexError()
+            raise IndexError("list index out of range")
 
     # Backward compatibility
     def __setitem__(self, key, value):
-        # setitem analogous to
+        # setitem analogous to getitem
         if key   == 0:
             self.token_type       = value
         elif key == 1:
@@ -54,7 +87,7 @@ class Token(object):
             self.start_pos_line   = value[0]
             self.start_pos_col    = value[1]
         else:
-            raise IndexError()
+            raise IndexError("list index out of range")
 
     # Backward compatibility
     def __getattr__(self, attr):
@@ -62,17 +95,27 @@ class Token(object):
         if attr == "start_pos":
             return (self.start_pos_line, self.start_pos_col)
         else:
-            raise AttributeError(
-                "type '%s' has no attriubte '%s'" % (
-                    type(self),
-                    attr
-                )
-            )
+            return object.__getattr__(self, attr)
 
-    # Make cache footprint smaller
+    def __setattr__(self, attr, value):
+        # setattr analogous to getattr for symmetry
+        if attr == "start_pos":
+            self.start_pos_line = value[0]
+            self.start_pos_col  = value[1]
+        else:
+            object.__setattr__(self, attr, value)
+
+    # Make cache footprint smaller for faster unpickling
     def __getstate__(self):
-        return tuple(self)
+        return (
+            self.token_type,
+            self.token,
+            self.start_pos_line,
+            self.start_pos_col,
+        )
 
     def __setstate__(self, state):
-        for i in range(len(state)):
-            self[i] = state[i]
+        self.token_type     = state[0]
+        self.token          = state[1]
+        self.start_pos_line = state[2]
+        self.start_pos_col  = state[3]
