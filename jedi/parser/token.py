@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
 """ Efficient representation of tokens
 
 We want to have a token_list and start_position for everything the
 tokenizer returns. Therefore we need a memory efficient class. We
 found that a flat object with slots is the best.
 """
+
+from jedi._compatibility import unicode
 
 
 class Token(object):
@@ -14,8 +17,8 @@ class Token(object):
 
     >>> tuple(Token(1,2,3,4))
     (1, 2, (3, 4))
-    >>> str(Token(1, "test", 1, 1))
-    'test'
+    >>> unicode(Token(1, "test", 1, 1)) == "test"
+    True
     >>> repr(Token(1, "test", 1, 1))
     "<Token: (1, 'test', (1, 1))>"
     >>> Token(1, 2, 3, 4).__getstate__()
@@ -40,6 +43,8 @@ class Token(object):
     4
     >>> Token.from_tuple((6, 5, (4, 3)))
     <Token: (6, 5, (4, 3))>
+    >>> unicode(Token(1, u"😷", 1 ,1)) + "p" == u"😷p"
+    True
     """
     __slots__ = [
         "token_type", "token", "start_pos_line", "start_pos_col"
@@ -60,9 +65,13 @@ class Token(object):
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, tuple(self))
 
-    # Backward compatibility
+    # Backward compatibility py2
+    def __unicode__(self):
+        return unicode(self.token)
+
+    # Backward compatibility py3
     def __str__(self):
-        return str(self.token)
+        return unicode(self.token)
 
     # Backward compatibility
     def __getitem__(self, key):
