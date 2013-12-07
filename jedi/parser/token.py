@@ -6,7 +6,7 @@ tokenizer returns. Therefore we need a memory efficient class. We
 found that a flat object with slots is the best.
 """
 
-from jedi._compatibility import unicode, u
+from jedi._compatibility import utf8, unicode
 
 
 class Token(object):
@@ -43,7 +43,7 @@ class Token(object):
     4
     >>> Token.from_tuple((6, 5, (4, 3)))
     <Token: (6, 5, (4, 3))>
-    >>> unicode(Token(1, u"😷", 1 ,1)) + "p" == u"😷p"
+    >>> unicode(Token(1, utf8("😷"), 1 ,1)) + "p" == utf8("😷p")
     True
     """
     __slots__ = [
