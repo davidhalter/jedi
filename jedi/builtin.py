@@ -35,8 +35,27 @@ import inspect
 from jedi import common
 from jedi import debug
 from jedi.parser import Parser
+from jedi.parser import representation as pr
 from jedi import modules
 import evaluate
+
+
+class BuiltinParser(object):
+    """
+    This object is a lite parser for builtin modules.
+    
+    :param path: The path of the module.
+    :param module: The module object.
+    """
+    def __init__(self, path, module):
+        self.module = pr.SubModule(path)
+        self.module.docstr = module.__doc__
+        self.module.global_vars = [self.create_name(i) for i in dir(module)]
+
+    def create_name(self, string):
+        """Create a Name object for a string that resides in our SubModule"""
+        names = [(string, (0, 0))]
+        return pr.Name(self.module, names, (0, 0), (0, 0), self.module)
 
 
 class BuiltinModule(modules.CachedModule):
@@ -177,6 +196,10 @@ class BuiltinModule(modules.CachedModule):
                 # in the case of Py3k xrange is now range
                 mixin_dct['range'] = mixin_dct['xrange']
             return mixin_dct
+
+    def _load_module(self):
+        """Override the default behavior to use a fast BuiltinParser"""
+        return BuiltinParser(self.path or self.name, self.module)
 
 
 def _generate_code(scope, mixin_funcs={}, depth=0):
