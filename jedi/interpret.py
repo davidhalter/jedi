@@ -6,6 +6,7 @@ import itertools
 import tokenize
 
 from jedi.parser import representation as pr
+from jedi.parser import token
 
 
 class ObjectImporter(object):
@@ -156,11 +157,13 @@ class ObjectImporter(object):
             names=[(rhs, (0, 0))],
             start_pos=(0, 0),
             end_pos=(None, None))
-        token_list = [lhsname, (tokenize.OP, '=', (0, 0)), rhsname]
+        token_list = [lhsname, token.Token.from_tuple(
+            (tokenize.OP, '=', (0, 0))
+        ), rhsname]
         if call:
             token_list.extend([
-                (tokenize.OP, '(', (0, 0)),
-                (tokenize.OP, ')', (0, 0)),
+                token.Token.from_tuple((tokenize.OP, '(', (0, 0))),
+                token.Token.from_tuple((tokenize.OP, ')', (0, 0))),
             ])
         return pr.Statement(
             module=submodule,

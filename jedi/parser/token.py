@@ -27,18 +27,10 @@ class Token(object):
     >>> a.__setstate__((1, 2, 3, 4))
     >>> a
     <Token: (1, 2, (3, 4))>
-    >>> a[2] = (2, 1)
-    >>> a
-    <Token: (1, 2, (2, 1))>
-    >>> a.start_pos
-    (2, 1)
-    >>> a.token
-    2
-    >>> a.start_pos = (3, 4)
-    >>> a
-    <Token: (1, 2, (3, 4))>
     >>> a.start_pos
     (3, 4)
+    >>> a.token
+    2
     >>> a.start_pos_col
     4
     >>> Token.from_tuple((6, 5, (4, 3)))
@@ -47,7 +39,7 @@ class Token(object):
     True
     """
     __slots__ = [
-        "token_type", "token", "start_pos_line", "start_pos_col"
+        "_token_type", "_token", "_start_pos_line", "_start_pos_col"
     ]
 
     @classmethod
@@ -57,10 +49,10 @@ class Token(object):
     def __init__(
         self, token_type, token, start_pos_line, start_pos_col
     ):
-        self.token_type     = token_type
-        self.token          = token
-        self.start_pos_line = start_pos_line
-        self.start_pos_col  = start_pos_col
+        self._token_type     = token_type
+        self._token          = token
+        self._start_pos_line = start_pos_line
+        self._start_pos_col  = start_pos_col
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, tuple(self))
@@ -85,34 +77,40 @@ class Token(object):
         else:
             raise IndexError("list index out of range")
 
-    # Backward compatibility
-    def __setitem__(self, key, value):
-        # setitem analogous to getitem
-        if key   == 0:
-            self.token_type       = value
-        elif key == 1:
-            self.token            = value
-        elif key == 2:
-            self.start_pos_line   = value[0]
-            self.start_pos_col    = value[1]
-        else:
-            raise IndexError("list index out of range")
+    @property
+    def token_type(self):
+        return self._token_type
+
+    @property
+    def token(self):
+        return self._token
+
+    @property
+    def start_pos_line(self):
+        return self._start_pos_line
+
+    @property
+    def start_pos_col(self):
+        return self._start_pos_col
 
     # Backward compatibility
-    def __getattr__(self, attr):
-        # Expose the missing start_pos attribute
-        if attr == "start_pos":
-            return (self.start_pos_line, self.start_pos_col)
-        else:
-            return object.__getattr__(self, attr)
+    @property
+    def start_pos(self):
+        return (self.start_pos_line, self.start_pos_col)
 
-    def __setattr__(self, attr, value):
-        # setattr analogous to getattr for symmetry
-        if attr == "start_pos":
-            self.start_pos_line = value[0]
-            self.start_pos_col  = value[1]
+    @property
+    def end_pos(self):
+        """Returns end position respecting multiline tokens."""
+        end_pos_line     = self.start_pos_line
+        lines            = unicode(self).split('\n')
+        end_pos_line    += len(lines) - 1
+        end_pos_col      = self.start_pos_col
+        # Check for multiline token
+        if self.start_pos_line == end_pos_line:
+            end_pos_col += len(lines[-1])
         else:
-            object.__setattr__(self, attr, value)
+            end_pos_col  = len(lines[-1])
+        return (end_pos_line, end_pos_col)
 
     # Make cache footprint smaller for faster unpickling
     def __getstate__(self):
@@ -124,7 +122,7 @@ class Token(object):
         )
 
     def __setstate__(self, state):
-        self.token_type     = state[0]
-        self.token          = state[1]
-        self.start_pos_line = state[2]
-        self.start_pos_col  = state[3]
+        self._token_type     = state[0]
+        self._token          = state[1]
+        self._start_pos_line = state[2]
+        self._start_pos_col  = state[3]
