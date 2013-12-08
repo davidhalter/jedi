@@ -220,7 +220,7 @@ def save_module(path, name, parser, pickling=True):
 
 class _ModulePickling(object):
 
-    version = 4
+    version = 5
     """
     Version number (integer) for file system cache.
 
@@ -262,7 +262,7 @@ class _ModulePickling(object):
                 parser_cache_item = pickle.load(f)
             finally:
                 gc.enable()
-                
+
         debug.dbg('pickle loaded', path)
         parser_cache[path] = parser_cache_item
         return parser_cache_item.parser

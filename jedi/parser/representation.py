@@ -898,7 +898,7 @@ class Statement(Simple):
 
             c = token_iterator.current[1]
             arr.end_pos = c.end_pos if isinstance(c, Simple) \
-                else (c[2][0], c[2][1] + len(c[1]))
+                else c.end_pos
             return arr, break_tok
 
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
@@ -920,9 +920,10 @@ class Statement(Simple):
                         # it's not possible to set it earlier
                         tok.parent = self
                 else:
-                    token_type, tok, start_tok_pos = tok_temp
-                    last_end_pos = end_pos
-                    end_pos = start_tok_pos[0], start_tok_pos[1] + len(tok)
+                    tok           = tok_temp.token
+                    start_tok_pos = tok_temp.start_pos
+                    last_end_pos  = end_pos
+                    end_pos       = tok_temp.end_pos
                     if first:
                         first = False
                         start_pos = start_tok_pos
@@ -932,8 +933,12 @@ class Statement(Simple):
                         if lambd is not None:
                             token_list.append(lambd)
                     elif tok == 'for':
-                        list_comp, tok = parse_list_comp(token_iterator,
-                                                         token_list, start_pos, last_end_pos)
+                        list_comp, tok = parse_list_comp(
+                            token_iterator,
+                            token_list,
+                            start_pos,
+                            last_end_pos
+                        )
                         if list_comp is not None:
                             token_list = [list_comp]
 
@@ -944,9 +949,12 @@ class Statement(Simple):
 
                     if level == 0 and tok in closing_brackets \
                             or tok in added_breaks \
-                            or level == 1 and (tok == ','
-                                               or maybe_dict and tok == ':'
-                                               or is_assignment(tok) and break_on_assignment):
+                            or level == 1 and (
+                                tok == ','
+                                or maybe_dict and tok == ':'
+                                or is_assignment(tok)
+                                and break_on_assignment
+                            ):
                         end_pos = end_pos[0], end_pos[1] - 1
                         break
                 token_list.append(tok_temp)
@@ -954,8 +962,14 @@ class Statement(Simple):
             if not token_list:
                 return None, tok
 
-            statement = stmt_class(self._sub_module, token_list,
-                                   start_pos, end_pos, self.parent, set_name_parents=False)
+            statement = stmt_class(
+                self._sub_module,
+                token_list,
+                start_pos,
+                end_pos,
+                self.parent,
+                set_name_parents=False
+            )
             return statement, tok
 
         def parse_lambda(token_iterator):
@@ -984,8 +998,9 @@ class Statement(Simple):
             return lambd, tok
 
         def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
-            def parse_stmt_or_arr(token_iterator, added_breaks=(),
-                                    names_are_set_vars=False):
+            def parse_stmt_or_arr(
+                token_iterator, added_breaks=(), names_are_set_vars=False
+            ):
                 stmt, tok = parse_stmt(token_iterator,
                                        added_breaks=added_breaks)
                 if not stmt:
@@ -1039,12 +1054,16 @@ class Statement(Simple):
                 start_pos = tok.start_pos
                 end_pos = tok.end_pos
             else:
-                token_type, tok, start_pos = tok_temp
-                end_pos = start_pos[0], start_pos[1] + len(tok)
+                token_type = tok_temp.token_type
+                tok        = tok_temp.token
+                start_pos  = tok_temp.start_pos
+                end_pos    = tok_temp.end_pos
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
-                    self._assignment_details.append((result, tok))
+                    self._assignment_details.append(
+                        (result, tok_temp.token)
+                    )
                     result = []
                     is_chain = False
                     continue
@@ -1072,8 +1091,9 @@ class Statement(Simple):
                     result.append(call)
                 is_chain = False
             elif tok in brackets.keys():
-                arr, is_ass = parse_array(token_iterator, brackets[tok],
-                                          start_pos)
+                arr, is_ass = parse_array(
+                    token_iterator, brackets[tok], start_pos
+                )
                 if result and isinstance(result[-1], StatementElement):
                     result[-1].set_execution(arr)
                 else:
@@ -1098,8 +1118,14 @@ class Statement(Simple):
                     e = (t[2][0], t[2][1] + len(t[1])) \
                         if isinstance(t, tuple) else t.start_pos
 
-                stmt = Statement(self._sub_module, result,
-                                 start_pos, e, self.parent, set_name_parents=False)
+                stmt = Statement(
+                    self._sub_module,
+                    result,
+                    start_pos,
+                    e,
+                    self.parent,
+                    set_name_parents=False
+                )
                 stmt._commands = result
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
                                              stmt.start_pos, stmt)
