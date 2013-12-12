@@ -2,11 +2,18 @@ import jedi.parser as parser
 import difflib
 
 code_basic_features = '''
+"""A mod docstring"""
+
 def a_function(a_argument, a_default = "default"):
-    """A docstring"""
+    """A func docstring"""
 
     a_result = 3 * a_argument
     print(a_result)  # a comment
+    b = """
+from
+to""" + "huhu"
+
+
     if a_default == "default":
         return str(a_result)
     else
@@ -22,7 +29,10 @@ def diff_code_assert(a, b, n=4):
             n=n,
             lineterm=""
         ))
-        assert False, "Code does not match:\n%s" % diff
+        assert False, "Code does not match:\n%s\n\ncreated code:\n%s" % (
+            diff,
+            b
+        )
     pass
 
 
@@ -32,5 +42,5 @@ def test_basic_parsing():
     prs = parser.Parser(code_basic_features)
     diff_code_assert(
         code_basic_features,
-        prs.top_module.get_code()
+        prs.top_module.get_code2()
     )

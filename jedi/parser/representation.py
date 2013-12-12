@@ -46,6 +46,15 @@ from jedi import common
 from jedi import debug
 
 
+class GetCodeState(object):
+    """A helper class for passing the state of get_code in a thread-safe
+    manner"""
+    __slots__ = ("last_pos")
+
+    def __init__(self):
+        self.last_pos = (0, 0)
+
+
 class Base(object):
     """
     This is just here to have an isinstance check, which is also used on
@@ -59,6 +68,29 @@ class Base(object):
 
     def isinstance(self, *cls):
         return isinstance(self, cls)
+
+    @property
+    def newline(self):
+        """Returns the newline type for the current code."""
+        #TODO: we need newline detection
+        return "\n"
+
+    @property
+    def whitespace(self):
+        """Returns the whitespace type for the current code: tab or space."""
+        #TODO: we need tab detection
+        return " "
+
+    def space(self, from_pos, to_pos):
+        """Return the space between two tokens"""
+        linecount = to_pos[0] - from_pos[0]
+        if linecount == 0:
+            return self.whitespace * (to_pos[1] - from_pos[1])
+        else:
+            return "%s%s" % (
+                self.newline * linecount,
+                self.whitespace * to_pos[1],
+            )
 
 
 class Simple(Base):
@@ -190,6 +222,10 @@ class Scope(Simple, IsScope):
             if isinstance(s, Scope):
                 i += s.get_imports()
         return i
+
+    def get_code2(self, state=GetCodeState()):
+        string = []
+        return "".join(string)
 
     def get_code(self, first_indent=False, indention='    '):
         """
