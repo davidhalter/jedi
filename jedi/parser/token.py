@@ -156,5 +156,4 @@ class TokenDocstring(TokenNoCompat):
 
     def as_string(self):
         """Returns a literal cleaned version of the token"""
-        str_ = cleandoc(literal_eval(self.token))
-        return str_
+        return cleandoc(literal_eval(self.token))
