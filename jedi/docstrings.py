@@ -38,7 +38,12 @@ REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 def follow_param(param):
     func = param.parent_function
     # print func, param, param.parent_function
-    param_str = _search_param_in_docstr(func.docstr, str(param.get_name()))
+    if not func.docstr:
+        return []
+    param_str = _search_param_in_docstr(
+        func.docstr.as_string(),
+        str(param.get_name())
+    )
     user_position = (1, 0)
 
     if param_str is not None:
@@ -51,8 +56,9 @@ def follow_param(param):
                 param_str)
             user_position = (2, 0)
 
-        p = Parser(param_str, None, user_position,
-                           no_docstr=True)
+        p = Parser(
+            param_str, None, user_position, no_docstr=True
+        )
         if p.user_stmt is None:
             return []
         return evaluate.follow_statement(p.user_stmt)
@@ -120,7 +126,9 @@ def find_return_types(func):
     if isinstance(func, er.Function):
         func = func.base_func
 
-    type_str = search_return_in_docstr(func.docstr)
+    if not func.docstr:
+        return []
+    type_str = search_return_in_docstr(func.docstr.as_string())
     if not type_str:
         return []
 

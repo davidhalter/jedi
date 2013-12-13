@@ -44,6 +44,7 @@ from ast import literal_eval
 from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3k
 from jedi import common
 from jedi import debug
+from jedi.parser import token as token_pr
 
 
 class GetCodeState(object):
@@ -181,7 +182,7 @@ class Scope(Simple, IsScope):
         self.subscopes = []
         self.imports = []
         self.statements = []
-        self.docstr = ''
+        self.docstr = None
         self.asserts = []
         # Needed here for fast_parser, because the fast_parser splits and
         # returns will be in "normal" modules.
@@ -207,9 +208,9 @@ class Scope(Simple, IsScope):
         self.statements.append(stmt)
         return stmt
 
-    def add_docstr(self, string):
+    def add_docstr(self, token):
         """ Clean up a docstring """
-        self.docstr = cleandoc(literal_eval(string))
+        self.docstr = token
 
     def add_import(self, imp):
         self.imports.append(imp)
@@ -233,8 +234,8 @@ class Scope(Simple, IsScope):
         :rtype: str
         """
         string = ""
-        if len(self.docstr) > 0:
-            string += '"""' + self.docstr + '"""\n'
+        if self.docstr:
+            string += '"""' + self.docstr.as_string() + '"""\n'
 
         objs = self.subscopes + self.imports + self.statements + self.returns
         for obj in sorted(objs, key=lambda x: x.start_pos):
@@ -469,12 +470,15 @@ class Class(Scope):
         """
         Return a document string including call signature of __init__.
         """
+        docstr = ""
+        if self.docstr:
+            docstr = self.docstr.as_string()
         for sub in self.subscopes:
             if sub.name.names[-1] == '__init__':
                 return '%s\n\n%s' % (
                     sub.get_call_signature(funcname=self.name.names[-1]),
-                    self.docstr)
-        return self.docstr
+                    docstr)
+        return docstr
 
 
 class Function(Scope):
@@ -554,7 +558,13 @@ class Function(Scope):
     @property
     def doc(self):
         """ Return a document string including call signature. """
-        return '%s\n\n%s' % (self.get_call_signature(), self.docstr)
+        docstr = ""
+        if self.docstr:
+            docstr = self.docstr.as_string()
+        return '%s\n\n%s' % (
+            self.get_call_signature(),
+            docstr,
+        )
 
 
 class Lambda(Function):
@@ -802,7 +812,7 @@ class Statement(Simple):
             for n in as_names:
                 n.parent = self.use_as_parent
         self.parent = parent
-        self.docstr = ''
+        self.docstr = None
         self._set_vars = None
         self.as_names = list(as_names)
 
@@ -811,9 +821,9 @@ class Statement(Simple):
         self._assignment_details = []
         # this is important for other scripts
 
-    def add_docstr(self, string):
+    def add_docstr(self, token):
         """ Clean up a docstring """
-        self.docstr = cleandoc(literal_eval(string))
+        self.docstr = token
 
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
@@ -826,7 +836,7 @@ class Statement(Simple):
         code = ''.join(assemble(*a) for a in self.assignment_details)
         code += assemble(self.get_commands())
         if self.docstr:
-            code += '\n"""%s"""' % self.docstr
+            code += '\n"""%s"""' % self.docstr.as_string()
 
         if new_line:
             return code + '\n'

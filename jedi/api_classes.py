@@ -252,6 +252,8 @@ class BaseDefinition(object):
 
         See :attr:`doc` for example.
         """
+        if isinstance(self._definition.docstr, pr.token_pr.TokenDocstring):
+            return unicode(self._definition.docstr.as_string())
         try:
             return unicode(self._definition.docstr)
         except AttributeError:

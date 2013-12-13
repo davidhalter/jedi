@@ -395,7 +395,9 @@ class Parser(object):
                 and first_tok.token_type == tokenize.STRING:
             # Normal docstring check
             if self.freshscope and not self.no_docstr:
-                self._scope.add_docstr(first_tok.token)
+                self._scope.add_docstr(
+                    token_pr.TokenDocstring(first_tok)
+                )
                 return None, tok
 
             # Attribute docstring (PEP 224) support (sphinx uses it, e.g.)
@@ -403,7 +405,9 @@ class Parser(object):
             elif first_tok.token_type == tokenize.STRING:
                 with common.ignored(IndexError, AttributeError):
                     # ...then set it as a docstring
-                    self._scope.statements[-1].add_docstr(first_tok.token)
+                    self._scope.statements[-1].add_docstr(
+                        token_pr.TokenDocstring(first_tok)
+                    )
                     return None, tok
 
         stmt = stmt_class(self.module, tok_list, first_pos, self.end_pos,
