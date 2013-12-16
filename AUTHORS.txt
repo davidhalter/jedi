@@ -21,5 +21,6 @@ Lubos Trilety <ltrilety@redhat.com>
 Akinori Hattori (@hattya)
 srusskih (@srusskih)
 Steven Silvester (@blink1073)
+Colin Duquesnoy (@ColinDuquesnoy) <colin.duquesnoy@gmail.com>
 
 Note: (@user) means a github user name.

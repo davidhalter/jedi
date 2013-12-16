@@ -5,6 +5,8 @@ use its methods.
 Additionally you can add a debug function with :func:`set_debug_function` and
 catch :exc:`NotFoundError` which is being raised if your completion is not
 possible.
+
+.. warning:: Please, note that Jedi is **not thread safe**.
 """
 from __future__ import with_statement
 
