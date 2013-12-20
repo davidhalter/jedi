@@ -22,5 +22,6 @@ Akinori Hattori (@hattya)
 srusskih (@srusskih)
 Steven Silvester (@blink1073)
 Colin Duquesnoy (@ColinDuquesnoy) <colin.duquesnoy@gmail.com>
+Oscar Campos (@DamnWidget) <oscar.campos@member.fsf.org>
 
 Note: (@user) means a github user name.
