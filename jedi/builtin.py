@@ -352,6 +352,8 @@ def _parse_function_doc(func):
 
     # get full string, parse round parentheses: def func(a, (b,c))
     try:
+        if not hasattr(func, "__name__"):
+            return '', 'pass'
         count = 0
         debug.dbg(func, func.__name__, doc)
         start = doc.index('(')
