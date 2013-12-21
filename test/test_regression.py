@@ -169,8 +169,3 @@ class TestRegression(TestCase):
             "    yield 1\n" \
             "abc()."
         assert Script(s).completions()
-
-    def test_pyqt(self):
-        code = "from PyQt4.Qt import QDialog; QDialog."
-        s = jedi.Script(code)
-        assert s.completions()
