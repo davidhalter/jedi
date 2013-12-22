@@ -352,6 +352,9 @@ def _parse_function_doc(func):
 
     # get full string, parse round parentheses: def func(a, (b,c))
     try:
+        # unbound methods such as pyqtSignals have no __name__
+        if not hasattr(func, "__name__"):
+            return '', 'pass'
         count = 0
         debug.dbg(func, func.__name__, doc)
         start = doc.index('(')
