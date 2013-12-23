@@ -405,7 +405,7 @@ class Execution(Executable):
     multiple calls to functions and recursion has to be avoided. But this is
     responsibility of the decorators.
     """
-    def follow_var_arg(self, index):
+    def _follow_var_arg(self, index):
         try:
             stmt = self.var_args[index]
         except IndexError:
@@ -438,8 +438,8 @@ class Execution(Executable):
             # some implementations of builtins:
             if func_name == 'getattr':
                 # follow the first param
-                objects = self.follow_var_arg(0)
-                names = self.follow_var_arg(1)
+                objects = self._follow_var_arg(0)
+                names = self._follow_var_arg(1)
                 for obj in objects:
                     if not isinstance(obj, (Instance, Class, pr.Module)):
                         debug.warning('getattr called without instance')
@@ -457,7 +457,7 @@ class Execution(Executable):
             elif func_name == 'type':
                 # otherwise it would be a metaclass
                 if len(self.var_args) == 1:
-                    objects = self.follow_var_arg(0)
+                    objects = self._follow_var_arg(0)
                     return [o.base for o in objects if isinstance(o, Instance)]
             elif func_name == 'super':
                 # TODO make this able to detect multiple inheritance supers
@@ -501,7 +501,7 @@ class Execution(Executable):
         """ A normal Function execution """
         # Feed the listeners, with the params.
         for listener in func.listeners:
-            listener.execute(self.get_params())
+            listener.execute(self._get_params())
         if func.is_generator and not evaluate_generator:
             return [Generator(func, self.var_args)]
         else:
@@ -512,7 +512,7 @@ class Execution(Executable):
             return stmts
 
     @cache.memoize_default(default=())
-    def get_params(self):
+    def _get_params(self):
         """
         This returns the params for an Execution/Instance and is injected as a
         'hack' into the pr.Function class.
@@ -566,7 +566,7 @@ class Execution(Executable):
             param_dict[str(param.get_name())] = param
         # There may be calls, which don't fit all the params, this just ignores
         # it.
-        var_arg_iterator = self.get_var_args_iterator()
+        var_arg_iterator = self._get_var_args_iterator()
 
         non_matching_keys = []
         keys_used = set()
@@ -641,7 +641,7 @@ class Execution(Executable):
                 result.append(gen_param_name_copy(param_dict[k]))
         return result
 
-    def get_var_args_iterator(self):
+    def _get_var_args_iterator(self):
         """
         Yields a key/value pair, the key is None, if its not a named arg.
         """
@@ -702,12 +702,12 @@ class Execution(Executable):
         Call the default method with the own instance (self implements all
         the necessary functions). Add also the params.
         """
-        return self.get_params() + pr.Scope.get_set_vars(self)
+        return self._get_params() + pr.Scope.get_set_vars(self)
 
     get_set_vars = get_defined_names
 
     @common.rethrow_uncaught
-    def copy_properties(self, prop):
+    def _copy_properties(self, prop):
         """
         Literally copies a property of a Function. Copying is very expensive,
         because it is something like `copy.deepcopy`. However, these copied
@@ -751,22 +751,22 @@ class Execution(Executable):
     @property
     @cache.memoize_default()
     def returns(self):
-        return self.copy_properties('returns')
+        return self._copy_properties('returns')
 
     @property
     @cache.memoize_default()
     def asserts(self):
-        return self.copy_properties('asserts')
+        return self._copy_properties('asserts')
 
     @property
     @cache.memoize_default()
     def statements(self):
-        return self.copy_properties('statements')
+        return self._copy_properties('statements')
 
     @property
     @cache.memoize_default()
     def subscopes(self):
-        return self.copy_properties('subscopes')
+        return self._copy_properties('subscopes')
 
     def get_statement_for_position(self, pos):
         return pr.Scope.get_statement_for_position(self, pos)
