@@ -38,14 +38,14 @@ class Executable(pr.IsScope):
         self.var_args = var_args
 
     def get_parent_until(self, *args, **kwargs):
-        return self.decorated.get_parent_until(*args, **kwargs)
+        return self._decorated.get_parent_until(*args, **kwargs)
 
     @property
     def parent(self):
-        return self.decorated.parent
+        return self._decorated.parent
 
     @property
-    def decorated(self):
+    def _decorated(self):
         """
         Instance doesn't care about decorators and Execution overrides this
         """
@@ -418,7 +418,7 @@ class Execution(Executable):
 
     @property
     @cache.memoize_default()
-    def decorated(self):
+    def _decorated(self):
         """Get the decorated version of the input"""
         base = self.base
         if self.base.isinstance(Function):
@@ -429,7 +429,7 @@ class Execution(Executable):
     @recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
-        base = self.decorated
+        base = self._decorated
         stmts = []
         if base.parent == builtin.Builtin.scope \
                 and not isinstance(base, (Generator, Array)):
@@ -527,7 +527,7 @@ class Execution(Executable):
                 parent = self.var_args.parent
                 start_pos = self.var_args.start_pos
             else:
-                parent = self.decorated
+                parent = self._decorated
                 start_pos = 0, 0
 
             new_param = copy.copy(param)
@@ -554,15 +554,15 @@ class Execution(Executable):
 
         result = []
         start_offset = 0
-        if isinstance(self.decorated, InstanceElement):
+        if isinstance(self._decorated, InstanceElement):
             # Care for self -> just exclude it and add the instance
             start_offset = 1
-            self_name = copy.copy(self.decorated.params[0].get_name())
-            self_name.parent = self.decorated.instance
+            self_name = copy.copy(self._decorated.params[0].get_name())
+            self_name.parent = self._decorated.instance
             result.append(self_name)
 
         param_dict = {}
-        for param in self.decorated.params:
+        for param in self._decorated.params:
             param_dict[str(param.get_name())] = param
         # There may be calls, which don't fit all the params, this just ignores
         # it.
@@ -571,7 +571,7 @@ class Execution(Executable):
         non_matching_keys = []
         keys_used = set()
         keys_only = False
-        for param in self.decorated.params[start_offset:]:
+        for param in self._decorated.params[start_offset:]:
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
             # Wrong value count is just ignored. If you try to test cases that
@@ -715,7 +715,7 @@ class Execution(Executable):
         execution.
         """
         # Copy all these lists into this local function.
-        attr = getattr(self.decorated, prop)
+        attr = getattr(self._decorated, prop)
         objects = []
         for element in attr:
             if element is None:
@@ -731,7 +731,7 @@ class Execution(Executable):
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'imports', '_sub_module']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
-        return getattr(self.decorated, name)
+        return getattr(self._decorated, name)
 
     @cache.memoize_default()
     @common.rethrow_uncaught
@@ -773,7 +773,7 @@ class Execution(Executable):
 
     def __repr__(self):
         return "<%s of %s>" % \
-            (type(self).__name__, self.decorated)
+            (type(self).__name__, self._decorated)
 
 
 class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):

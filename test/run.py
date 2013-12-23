@@ -276,7 +276,6 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
                 yield case
 
 
-
 docoptstr = """
 Using run.py to make debugging easier with integration tests.
 
@@ -339,7 +338,7 @@ if __name__ == '__main__':
             return 0
         else:
             print("\ttest fail @%d, actual = %s, desired = %s"
-                    % (case.line_nr - 1, actual, desired))
+                  % (case.line_nr - 1, actual, desired))
             return 1
 
     import traceback
