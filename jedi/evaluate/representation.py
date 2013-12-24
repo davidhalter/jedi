@@ -22,9 +22,9 @@ from jedi import debug
 from jedi import common
 from jedi.evaluate import imports
 from jedi.evaluate import builtin
-import recursion
-import docstrings
-import dynamic
+from jedi import recursion
+from jedi import docstrings
+from jedi import dynamic
 
 
 class Executable(pr.IsScope):

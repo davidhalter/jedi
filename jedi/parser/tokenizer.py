@@ -8,6 +8,7 @@ Basically this is a stripped down version of the standard library module, so
 you can read the documentation there.
 """
 
+from __future__ import absolute_import
 import string
 import re
 from token import *

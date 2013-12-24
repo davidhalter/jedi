@@ -81,9 +81,9 @@ from jedi import debug
 from jedi.evaluate import representation as er
 from jedi.evaluate import builtin
 from jedi.evaluate import imports
-import recursion
-import docstrings
-import dynamic
+from jedi import recursion
+from jedi import docstrings
+from jedi import dynamic
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):

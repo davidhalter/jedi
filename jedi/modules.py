@@ -16,7 +16,6 @@ Apart from those classes there's a ``sys.path`` fetching function, as well as
 from __future__ import with_statement
 
 import re
-import tokenizer as tokenize
 import sys
 import os
 from ast import literal_eval
@@ -24,6 +23,7 @@ from ast import literal_eval
 from jedi._compatibility import exec_function, unicode
 from jedi import cache
 from jedi.parser import representation as pr
+from jedi.parser import tokenizer as tokenize
 from jedi.parser import fast
 from jedi import debug
 from jedi import common
