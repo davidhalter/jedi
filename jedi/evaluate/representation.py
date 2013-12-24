@@ -22,7 +22,7 @@ from jedi import debug
 from jedi import common
 from jedi.evaluate import imports
 from jedi.evaluate import builtin
-from jedi import recursion
+from jedi.evaluate import recursion
 from jedi import docstrings
 from jedi import dynamic
 

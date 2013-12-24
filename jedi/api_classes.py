@@ -3,8 +3,6 @@ The :mod:`api_classes` module contains the return classes of the API. These
 classes are the much bigger part of the whole API, because they contain the
 interesting information about completion and goto operations.
 """
-from __future__ import with_statement
-
 import warnings
 import functools
 
@@ -16,7 +14,6 @@ from jedi import cache
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi import keywords
-import recursion
 import dynamic
 
 
@@ -27,7 +24,7 @@ def _clear_caches():
     """
     cache.clear_caches()
     dynamic.search_param_cache.clear()
-    recursion.ExecutionRecursionDecorator.reset()
+    #recursion.ExecutionRecursionDecorator.reset()
 
     evaluate.follow_statement.reset()
 
