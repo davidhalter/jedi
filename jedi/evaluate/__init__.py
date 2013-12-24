@@ -642,7 +642,7 @@ class Evaluator(object):
             elif current.type not in [pr.Array.DICT]:
                 # Scope must be a class or func - make an instance or execution.
                 debug.dbg('exe', scope)
-                result = er.Execution(scope, current).get_return_types()
+                result = self.execute(scope, current)
             else:
                 # Curly braces are not allowed, because they make no sense.
                 debug.warning('strange function call with {}', current, scope)
@@ -657,6 +657,9 @@ class Evaluator(object):
             result = imports.strip_imports(self.find_name(scope, current,
                                            position=position))
         return self.follow_paths(path, set(result), call_scope, position=position)
+
+    def execute(self, scope, params):
+        return er.Execution(scope, params).get_return_types()
 
     def goto(self, stmt, call_path=None):
         if call_path is None:
