@@ -147,9 +147,9 @@ class ParamListener(object):
 def search_params(param):
     """
     This is a dynamic search for params. If you try to complete a type:
+
     >>> def func(foo):
-    >>>     # here is the completion
-    >>>     foo
+    ...     foo
     >>> func(1)
     >>> func("")
 
@@ -186,12 +186,12 @@ def search_params(param):
                     # ``follow_call_path`` on the call_path and it would
                     # also work.
                     def listRightIndex(lst, value):
-                        return len(lst) - lst[-1::-1].index(value) -1
+                        return len(lst) - lst[-1::-1].index(value) - 1
 
                     # Need to take right index, because there could be a
                     # func usage before.
                     i = listRightIndex(call_path, func_name)
-                    first, last = call_path[:i], call_path[i+1:]
+                    first, last = call_path[:i], call_path[i + 1:]
                     if not last and not call_path.index(func_name) != i:
                         continue
                     scopes = [scope]
@@ -204,9 +204,8 @@ def search_params(param):
                                                resolve_decorator=False)
 
                         c = [getattr(escope, 'base_func', None) or escope.base
-                            for escope in s
-                            if escope.isinstance(er.Function, er.Class)
-                        ]
+                             for escope in s
+                             if escope.isinstance(er.Function, er.Class)]
                         if compare in c:
                             # only if we have the correct function we execute
                             # it, otherwise just ignore it.

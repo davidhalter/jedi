@@ -264,7 +264,7 @@ def find_name(scope, name_str, position=None, search_global=False,
                                     t = 'tuple' if c == '*' else 'dict'
                                     res_new = [er.Instance(
                                         find_name(builtin.Builtin.scope, t)[0])
-                                        ]
+                                    ]
                             if not r.assignment_details:
                                 # this means that there are no default params,
                                 # so just ignore it.
@@ -436,8 +436,8 @@ def find_name(scope, name_str, position=None, search_global=False,
         if not result and isinstance(nscope, er.Instance):
             # __getattr__ / __getattribute__
             result += check_getattr(nscope, name_str)
-        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s' % (name_str, scope,
-             nscope, u(result), position))
+        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
+                  % (name_str, scope, nscope, u(result), position))
         return result
 
     def descriptor_check(result):

@@ -160,7 +160,7 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not evaluate.filter_private_variable(s,
-                        user_stmt or self._parser.user_scope, n):
+                            user_stmt or self._parser.user_scope, n):
                     new = api_classes.Completion(c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
@@ -552,7 +552,6 @@ class Script(object):
                         cur_name_part = name_part
                     kill_count += 1
 
-
         context = self._module.get_context()
         just_from = next(context) == 'from'
 
@@ -656,8 +655,6 @@ class Interpreter(Script):
                                     (0, 0), (0, 0), scope)
                         completions.append((n, scope))
             return completions
-
-
 
 
 def defined_names(source, path=None, encoding='utf-8'):
