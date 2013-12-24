@@ -51,8 +51,6 @@ would check whether a flow has the form of ``if isinstance(a, type_or_tuple)``.
 Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
 check for -> a is a string). There's big potential in these checks.
 """
-from __future__ import with_statement
-
 import os
 
 from jedi import cache
