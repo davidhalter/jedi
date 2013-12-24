@@ -117,7 +117,8 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
 
 class Evaluator(object):
     def __init__(self):
-        self.memoize_cache = {}
+        self.memoize_cache = {}  # for memoize decorators
+        self.recursion_detector = recursion.RecursionDetector()
 
     def get_names_of_scope(self, scope, position=None, star_search=True,
                            include_builtin=True):
@@ -475,7 +476,7 @@ class Evaluator(object):
         return descriptor_check(remove_statements(filter_name(scope_generator)))
 
     @memoize_default(default=(), cache_is_in_self=True)
-    @recursion.RecursionDecorator
+    @recursion.recursion_decorator
     def follow_statement(self, stmt, seek_name=None):
         """
         The starting point of the completion. A statement always owns a call list,

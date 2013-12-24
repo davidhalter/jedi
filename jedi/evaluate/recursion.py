@@ -14,23 +14,27 @@ from jedi.evaluate import builtin
 from jedi.evaluate import interfaces
 
 
-class RecursionDecorator(object):
+def recursion_decorator(func):
+    def run(evaluator, stmt, *args, **kwargs):
+        rec_detect = evaluator.recursion_detector
+        # print stmt, len(self.node_statements())
+        if rec_detect.push_stmt(stmt):
+            return []
+        else:
+            result = func(evaluator, stmt, *args, **kwargs)
+            rec_detect.pop_stmt()
+        return result
+    return run
+
+
+class RecursionDetector(object):
     """
     A decorator to detect recursions in statements. In a recursion a statement
     at the same place, in the same module may not be executed two times.
     """
-    def __init__(self, func):
-        self.func = func
-        self.reset()
-
-    def __call__(self, evaluator, stmt, *args, **kwargs):
-        # print stmt, len(self.node_statements())
-        if self.push_stmt(stmt):
-            return []
-        else:
-            result = self.func(evaluator, stmt, *args, **kwargs)
-            self.pop_stmt()
-        return result
+    def __init__(self):
+        self.top = None
+        self.current = None
 
     def push_stmt(self, stmt):
         self.current = _RecursionNode(stmt, self.current)
@@ -56,10 +60,6 @@ class RecursionDecorator(object):
                 return test
             if not test:
                 return False
-
-    def reset(self):
-        self.top = None
-        self.current = None
 
     def node_statements(self):
         result = []

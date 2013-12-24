@@ -187,7 +187,7 @@ class ImportPath(pr.Base):
         """
         Returns the imported modules.
         """
-        if self._evaluator.follow_statement.push_stmt(self.import_stmt):
+        if self._evaluator.recursion_detector.push_stmt(self.import_stmt):
             # check recursion
             return []
 
@@ -229,7 +229,7 @@ class ImportPath(pr.Base):
             scopes = [ImportPath.GlobalNamespace]
         debug.dbg('after import', scopes)
 
-        self._evaluator.follow_statement.pop_stmt()
+        self._evaluator.recursion_detector.pop_stmt()
         return scopes
 
     def _is_relative_import(self):

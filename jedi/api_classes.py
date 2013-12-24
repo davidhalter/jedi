@@ -24,7 +24,7 @@ def _clear_caches():
     """
     cache.clear_caches()
     dynamic.search_param_cache.clear()
-    #recursion.ExecutionRecursionDecorator.reset()
+    recursion.ExecutionRecursionDecorator.reset()
 
     evaluate.follow_statement.reset()
 
