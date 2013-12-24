@@ -25,7 +25,7 @@ from jedi import cache
 from jedi import modules
 from jedi import interpret
 from jedi._compatibility import next, unicode, builtins
-from jedi.evaluate import Evaluator
+from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
 from jedi import keywords
 from jedi.evaluate import builtin
@@ -160,7 +160,7 @@ class Script(object):
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
-                if not evaluate.filter_private_variable(s,
+                if not filter_private_variable(s,
                             user_stmt or self._parser.user_scope, n):
                     new = api_classes.Completion(c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
@@ -181,7 +181,7 @@ class Script(object):
             scopes = list(self._prepare_goto(path, True))
         except NotFoundError:
             scopes = []
-            scope_generator = evaluate.get_names_of_scope(
+            scope_generator = self._evaluator.get_names_of_scope(
                 self._parser.user_scope, self._pos)
             completions = []
             for scope, name_list in scope_generator:
