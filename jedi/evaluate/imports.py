@@ -196,7 +196,7 @@ class ImportPath(pr.Base):
                 scope, rest = self._follow_file_system()
             except ModuleNotFound:
                 debug.warning('Module not found: ' + str(self.import_stmt))
-                self._evaluator.follow_statement.pop_stmt()
+                self._evaluator.recursion_detector.pop_stmt()
                 return []
 
             scopes = [scope]

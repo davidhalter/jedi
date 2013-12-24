@@ -587,7 +587,7 @@ class Evaluator(object):
         current = next(path)
 
         if isinstance(current, pr.Array):
-            result = [er.Array(current)]
+            result = [er.Array(self, current)]
         else:
             if isinstance(current, pr.NamePart):
                 # This is the first global lookup.

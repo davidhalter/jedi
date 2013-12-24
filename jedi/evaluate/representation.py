@@ -506,7 +506,7 @@ class Execution(Executable):
         for listener in func.listeners:
             listener.execute(self._get_params())
         if func.is_generator and not evaluate_generator:
-            return [Generator(func, self.var_args)]
+            return [Generator(self._evaluator, func, self.var_args)]
         else:
             """
             stmts = docstrings.find_return_types(func)
