@@ -130,9 +130,9 @@ class ImportPath(pr.Base):
                         # ``sys.modules`` modification.
                         p = (0, 0)
                         names.append(pr.Name(self.GlobalNamespace, [('path', p)],
-                                       p, p, self.import_stmt))
+                                     p, p, self.import_stmt))
                     continue
-                for s, scope_names in evaluate.get_names_of_scope(scope,
+                for s, scope_names in self._evaluator.get_names_of_scope(scope,
                                                                   include_builtin=False):
                     for n in scope_names:
                         if self.import_stmt.from_ns is None \
@@ -186,7 +186,7 @@ class ImportPath(pr.Base):
         """
         Returns the imported modules.
         """
-        if evaluate.follow_statement.push_stmt(self.import_stmt):
+        if self._evaluator.follow_statement.push_stmt(self.import_stmt):
             # check recursion
             return []
 
@@ -195,7 +195,7 @@ class ImportPath(pr.Base):
                 scope, rest = self._follow_file_system()
             except ModuleNotFound:
                 debug.warning('Module not found: ' + str(self.import_stmt))
-                evaluate.follow_statement.pop_stmt()
+                self._evaluator.follow_statement.pop_stmt()
                 return []
 
             scopes = [scope]
@@ -210,15 +210,15 @@ class ImportPath(pr.Base):
                     # ``os.path``, because it's a very important one in Python
                     # that is being achieved by messing with ``sys.modules`` in
                     # ``os``.
-                    scopes = evaluate.follow_path(iter(rest), scope, scope)
+                    scopes = self._evaluator.follow_path(iter(rest), scope, scope)
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
-                        evaluate.find_name(s, rest[0], is_goto=True)
+                        self._evaluator.find_name(s, rest[0], is_goto=True)
                         for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
-                        evaluate.follow_path(iter(rest), s, s)
+                        self._evaluator.follow_path(iter(rest), s, s)
                         for s in scopes)
             scopes = list(scopes)
 
@@ -228,7 +228,7 @@ class ImportPath(pr.Base):
             scopes = [ImportPath.GlobalNamespace]
         debug.dbg('after import', scopes)
 
-        evaluate.follow_statement.pop_stmt()
+        self._evaluator.follow_statement.pop_stmt()
         return scopes
 
     def _is_relative_import(self):

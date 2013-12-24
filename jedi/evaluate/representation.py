@@ -252,7 +252,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     important for descriptors (if the descriptor methods are evaluated or not).
     """
     def __init__(self, evaluator, base):
-        self.evaluator = evaluator
+        self._evaluator = evaluator
         self.base = base
 
     @cache.memoize_default(default=())
@@ -261,14 +261,14 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         # TODO care for mro stuff (multiple super classes).
         for s in self.base.supers:
             # Super classes are statements.
-            for cls in self.evaluator.follow_statement(s):
+            for cls in self._evaluator.follow_statement(s):
                 if not isinstance(cls, Class):
                     debug.warning('Received non class, as a super class')
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
         if not supers and self.base.parent != builtin.Builtin.scope:
             # add `object` to classes
-            supers += self.evaluator.find_name(builtin.Builtin.scope, 'object')
+            supers += self._evaluator.find_name(builtin.Builtin.scope, 'object')
         return supers
 
     @cache.memoize_default(default=())
@@ -296,7 +296,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     @cache.memoize_default(default=())
     def get_defined_names(self):
         result = self.instance_names()
-        type_cls = self.evaluator.find_name(builtin.Builtin.scope, 'type')[0]
+        type_cls = self._evaluator.find_name(builtin.Builtin.scope, 'type')[0]
         return result + type_cls.base.get_defined_names()
 
     def get_subscope_by_name(self, name):
@@ -326,7 +326,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     """
     def __init__(self, evaluator, func, is_decorated=False):
         """ This should not be called directly """
-        self.evaluator = evaluator
+        self._evaluator = evaluator
         self.base_func = func
         self.is_decorated = is_decorated
 
@@ -342,7 +342,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
                 debug.dbg('decorator:', dec, f)
-                dec_results = set(self.evaluator.follow_statement(dec))
+                dec_results = set(self._evaluator.follow_statement(dec))
                 if not len(dec_results):
                     debug.warning('decorator not found: %s on %s' %
                                  (dec, self.base_func))
@@ -415,7 +415,7 @@ class Execution(Executable):
             return []
         else:
             if isinstance(stmt, pr.Statement):
-                return self.evaluator.follow_statement(stmt)
+                return self._evaluator.follow_statement(stmt)
             else:
                 return [stmt]  # just some arbitrary object
 
@@ -455,7 +455,7 @@ class Execution(Executable):
                         if len(arr_name.var_args) != 1:
                             debug.warning('jedi getattr is too simple')
                         key = arr_name.var_args[0]
-                        stmts += self.evaluator.follow_path(iter([key]), obj, base)
+                        stmts += self._evaluator.follow_path(iter([key]), obj, base)
                 return stmts
             elif func_name == 'type':
                 # otherwise it would be a metaclass
@@ -511,7 +511,7 @@ class Execution(Executable):
             stmts = docstrings.find_return_types(func)
             for r in self.returns:
                 if r is not None:
-                    stmts += self.evaluator.follow_statement(r)
+                    stmts += self._evaluator.follow_statement(r)
             return stmts
 
     @cache.memoize_default(default=())
@@ -666,7 +666,7 @@ class Execution(Executable):
                 if not len(commands):
                     continue
                 if commands[0] == '*':
-                    arrays = self.evaluator.follow_call_list(commands[1:])
+                    arrays = self._evaluator.follow_call_list(commands[1:])
                     # *args must be some sort of an array, otherwise -> ignore
 
                     for array in arrays:
@@ -678,7 +678,7 @@ class Execution(Executable):
                                 yield None, helpers.FakeStatement(field_stmt)
                 # **kwargs
                 elif commands[0] == '**':
-                    arrays = self.evaluator.follow_call_list(commands[1:])
+                    arrays = self._evaluator.follow_call_list(commands[1:])
                     for array in arrays:
                         if isinstance(array, Array):
                             for key_stmt, value_stmt in array.items():
@@ -831,7 +831,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base, Iterable)):
     methods which are important in this module.
     """
     def __init__(self, evaluator, array):
-        self.evaluator = evaluator
+        self._evaluator = evaluator
         self._array = array
 
     def get_index_types(self, index_arr=None):
@@ -887,7 +887,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base, Iterable)):
 
     def _follow_values(self, values):
         """ helper function for the index getters """
-        return list(itertools.chain.from_iterable(self.evaluator.follow_statement(v)
+        return list(itertools.chain.from_iterable(self._evaluator.follow_statement(v)
                                                   for v in values))
 
     def get_defined_names(self):
@@ -896,7 +896,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base, Iterable)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = self.evaluator.find_name(builtin.Builtin.scope, self._array.type)[0]
+        scope = self._evaluator.find_name(builtin.Builtin.scope, self._array.type)[0]
         scope = Instance(scope)
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]

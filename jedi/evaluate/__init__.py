@@ -203,6 +203,9 @@ def get_names_of_scope(scope, position=None, star_search=True,
 
 
 class Evaluator(object):
+    def __init__(self):
+        self.cache = None
+
     def find_name(self, scope, name_str, position=None, search_global=False,
                   is_goto=False, resolve_decorator=True):
         """
