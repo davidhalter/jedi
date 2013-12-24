@@ -62,10 +62,7 @@ from jedi import settings
 from jedi import common
 from jedi import debug
 from jedi.parser import fast as fast_parser
-import api_classes
-import evaluate
 import imports
-import evaluate_representation as er
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.

@@ -36,7 +36,6 @@ from jedi import common
 from jedi import debug
 from jedi.parser import Parser
 from jedi import modules
-import evaluate
 
 
 class BuiltinModule(modules.CachedModule):
