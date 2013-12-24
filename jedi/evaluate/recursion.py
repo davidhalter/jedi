@@ -33,7 +33,7 @@ class RecursionDecorator(object):
         return result
 
     def push_stmt(self, stmt):
-        self.current = RecursionNode(stmt, self.current)
+        self.current = _RecursionNode(stmt, self.current)
         check = self._check_recursion()
         if check:  # TODO remove False!!!!
             debug.warning('catched stmt recursion: %s against %s @%s'
@@ -70,7 +70,7 @@ class RecursionDecorator(object):
         return result
 
 
-class RecursionNode(object):
+class _RecursionNode(object):
     """ A node of the RecursionDecorator. """
     def __init__(self, stmt, parent):
         self.script = stmt.get_parent_until()
