@@ -11,6 +11,7 @@ from jedi.parser import representation as pr
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import builtin
+from jedi.evaluate import interfaces
 
 
 class RecursionDecorator(object):
@@ -131,7 +132,7 @@ class ExecutionRecursionDecorator(object):
         if cls.execution_count > settings.max_executions:
             return True
 
-        if isinstance(execution.base, (er.Generator, er.Array)):
+        if isinstance(execution.base, interfaces.Iterable):
             return False
         module = execution.get_parent_until()
         if evaluate_generator or module == builtin.Builtin.scope:

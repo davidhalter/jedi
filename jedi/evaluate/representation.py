@@ -25,6 +25,7 @@ from jedi.evaluate import builtin
 from jedi.evaluate import recursion
 from jedi import docstrings
 from jedi import dynamic
+from jedi.evaluate.interfaces import Iterable
 
 
 class Executable(pr.IsScope):
@@ -778,7 +779,7 @@ class Execution(Executable):
             (type(self).__name__, self._decorated)
 
 
-class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class Generator(use_metaclass(cache.CachedMetaClass, pr.Base, Iterable)):
     """ Cares for `yield` statements. """
     def __init__(self, func, var_args):
         super(Generator, self).__init__()
@@ -824,7 +825,7 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
         return "<%s of %s>" % (type(self).__name__, self.func)
 
 
-class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class Array(use_metaclass(cache.CachedMetaClass, pr.Base, Iterable)):
     """
     Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.
