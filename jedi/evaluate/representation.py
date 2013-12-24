@@ -20,10 +20,10 @@ from jedi import cache
 from jedi import helpers
 from jedi import debug
 from jedi import common
+from jedi.evaluate import imports
+from jedi.evaluate import builtin
 import recursion
 import docstrings
-import imports
-import builtin
 import dynamic
 
 

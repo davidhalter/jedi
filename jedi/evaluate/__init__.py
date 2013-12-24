@@ -79,10 +79,10 @@ from jedi import cache
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.evaluate import representation as er
+from jedi.evaluate import builtin
+from jedi.evaluate import imports
 import recursion
 import docstrings
-import builtin
-import imports
 import dynamic
 
 
