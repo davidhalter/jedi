@@ -16,16 +16,16 @@ import itertools
 
 from jedi._compatibility import use_metaclass, next, hasattr, unicode
 from jedi.parser import representation as pr
-from jedi import cache
 from jedi import helpers
 from jedi import debug
 from jedi import common
 from jedi.evaluate import imports
 from jedi.evaluate import builtin
 from jedi.evaluate import recursion
+from jedi.evaluate.cache import memoize_default, CachedMetaClass
+from jedi.evaluate.interfaces import Iterable
 from jedi import docstrings
 from jedi import dynamic
-from jedi.evaluate.interfaces import Iterable
 
 
 class Executable(pr.IsScope):
@@ -53,7 +53,7 @@ class Executable(pr.IsScope):
         return self.base
 
 
-class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
+class Instance(use_metaclass(CachedMetaClass, Executable)):
     """
     This class is used to evaluate instances.
     """
@@ -72,7 +72,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         # (No var_args) used.
         self.is_generated = False
 
-    @cache.memoize_default(None)
+    @memoize_default(None)
     def _get_method_execution(self, func):
         func = InstanceElement(self, func, True)
         return Execution(func, self.var_args)
@@ -87,7 +87,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         except IndexError:
             return None
 
-    @cache.memoize_default([])
+    @memoize_default([])
     def _get_self_attributes(self):
         def add_self_dot_name(name):
             """
@@ -144,7 +144,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         args = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
         return self.execute_subscope_by_name('__get__', args)
 
-    @cache.memoize_default([])
+    @memoize_default([])
     def get_defined_names(self):
         """
         Get the instance vars of a class. This includes the vars of all
@@ -190,7 +190,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
             (type(self).__name__, self.base, len(self.var_args or []))
 
 
-class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     """
     InstanceElement is a wrapper for any object, that is used as an instance
     variable (e.g. self.variable or class methods).
@@ -205,7 +205,7 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
         self.is_class_var = is_class_var
 
     @property
-    @cache.memoize_default(None)
+    @memoize_default(None)
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
@@ -246,7 +246,7 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
 
-class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
+class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
     """
     This class is not only important to extend `pr.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -255,7 +255,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         self._evaluator = evaluator
         self.base = base
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=())
     def get_super_classes(self):
         supers = []
         # TODO care for mro stuff (multiple super classes).
@@ -271,7 +271,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
             supers += self._evaluator.find_name(builtin.Builtin.scope, 'object')
         return supers
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=())
     def instance_names(self):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
@@ -293,7 +293,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         result += super_result
         return result
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=())
     def get_defined_names(self):
         result = self.instance_names()
         type_cls = self._evaluator.find_name(builtin.Builtin.scope, 'type')[0]
@@ -320,7 +320,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
-class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
+class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
@@ -330,7 +330,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         self.base_func = func
         self.is_decorated = is_decorated
 
-    @cache.memoize_default(None)
+    @memoize_default(None)
     def _decorated_func(self, instance=None):
         """
         Returns the function, that is to be executed in the end.
@@ -420,7 +420,7 @@ class Execution(Executable):
                 return [stmt]  # just some arbitrary object
 
     @property
-    @cache.memoize_default(None)
+    @memoize_default(None)
     def _decorated(self):
         """Get the decorated version of the input"""
         base = self.base
@@ -428,7 +428,7 @@ class Execution(Executable):
             base = base.get_decorated_func()
         return base
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=())
     @recursion.ExecutionRecursionDecorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
@@ -514,7 +514,7 @@ class Execution(Executable):
                     stmts += self._evaluator.follow_statement(r)
             return stmts
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=())
     def _get_params(self):
         """
         This returns the params for an Execution/Instance and is injected as a
@@ -736,7 +736,7 @@ class Execution(Executable):
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self._decorated, name)
 
-    @cache.memoize_default(None)
+    @memoize_default(None)
     @common.rethrow_uncaught
     def _scope_copy(self, scope):
         """ Copies a scope (e.g. if) in an execution """
@@ -752,22 +752,22 @@ class Execution(Executable):
             return copied
 
     @property
-    @cache.memoize_default([])
+    @memoize_default([])
     def returns(self):
         return self._copy_properties('returns')
 
     @property
-    @cache.memoize_default([])
+    @memoize_default([])
     def asserts(self):
         return self._copy_properties('asserts')
 
     @property
-    @cache.memoize_default([])
+    @memoize_default([])
     def statements(self):
         return self._copy_properties('statements')
 
     @property
-    @cache.memoize_default([])
+    @memoize_default([])
     def subscopes(self):
         return self._copy_properties('subscopes')
 
@@ -779,7 +779,7 @@ class Execution(Executable):
             (type(self).__name__, self._decorated)
 
 
-class Generator(use_metaclass(cache.CachedMetaClass, pr.Base, Iterable)):
+class Generator(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
     """ Cares for `yield` statements. """
     def __init__(self, func, var_args):
         super(Generator, self).__init__()
@@ -825,7 +825,7 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base, Iterable)):
         return "<%s of %s>" % (type(self).__name__, self.func)
 
 
-class Array(use_metaclass(cache.CachedMetaClass, pr.Base, Iterable)):
+class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
     """
     Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.

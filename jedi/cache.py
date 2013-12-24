@@ -5,9 +5,6 @@ available:
 
 - module caching (`load_module` and `save_module`), which uses pickle and is
   really important to assure low load times of modules like ``numpy``.
-- the popular ``memoize_default`` works like a typical memoize and returns the
-  default otherwise.
-- ``CachedMetaClass`` uses ``memoize_default`` to do the same with classes.
 - ``time_cache`` can be used to cache something for just a limited time span,
   which can be useful if there's user interaction and the user cannot react
   faster than a certain time.
@@ -34,9 +31,6 @@ from jedi import settings
 from jedi import common
 from jedi import debug
 
-# memoize caches will be deleted after every action
-memoize_caches = []
-
 time_caches = []
 
 star_import_cache = {}
@@ -60,12 +54,7 @@ def clear_caches(delete_all=False):
     :param delete_all: Deletes also the cache that is normally not deleted,
         like parser cache, which is important for faster parsing.
     """
-    global memoize_caches, time_caches
-
-    # memorize_caches must never be deleted, because the dicts will get lost in
-    # the wrappers.
-    for m in memoize_caches:
-        m.clear()
+    global time_caches
 
     if delete_all:
         time_caches = []
@@ -79,41 +68,6 @@ def clear_caches(delete_all=False):
                 if t < time.time():
                     # delete expired entries
                     del tc[key]
-
-
-def memoize_default(default, cache=memoize_caches):
-    """ This is a typical memoization decorator, BUT there is one difference:
-    To prevent recursion it sets defaults.
-
-    Preventing recursion is in this case the much bigger use than speed. I
-    don't think, that there is a big speed difference, but there are many cases
-    where recursion could happen (think about a = b; b = a).
-    """
-    def func(function):
-        memo = {}
-        cache.append(memo)
-
-        def wrapper(*args, **kwargs):
-            key = (args, frozenset(kwargs.items()))
-            if key in memo:
-                return memo[key]
-            else:
-                memo[key] = default
-                rv = function(*args, **kwargs)
-                memo[key] = rv
-                return rv
-        return wrapper
-    return func
-
-
-class CachedMetaClass(type):
-    """ This is basically almost the same than the decorator above, it just
-    caches class initializations. I haven't found any other way, so I do it
-    with meta classes.
-    """
-    @memoize_default(None)
-    def __call__(self, *args, **kwargs):
-        return super(CachedMetaClass, self).__call__(*args, **kwargs)
 
 
 def time_cache(time_add_setting):

@@ -291,7 +291,7 @@ def get_sys_path():
     return [p for p in sys.path if p != ""]
 
 
-@cache.memoize_default([])
+#@cache.memoize_default([]) TODO add some sort of cache again.
 def sys_path_with_modifications(module):
     def execute_code(code):
         c = "import os; from os.path import *; result=%s"

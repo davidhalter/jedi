@@ -63,6 +63,7 @@ from jedi import common
 from jedi import debug
 from jedi.parser import fast as fast_parser
 from jedi.evaluate import imports
+from jedi.evaluate.cache import memoize_default
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -140,7 +141,7 @@ class ParamListener(object):
         self.param_possibilities.append(params)
 
 
-@cache.memoize_default([])
+@memoize_default([])
 def search_params(param):
     """
     This is a dynamic search for params. If you try to complete a type:
@@ -299,7 +300,7 @@ def _scan_statement(stmt, search_name, assignment_details=False):
     return result
 
 
-@cache.memoize_default([])
+@memoize_default([])
 def _check_array_additions(compare_array, module, is_list):
     """
     Checks if a `pr.Array` has "add" statements:

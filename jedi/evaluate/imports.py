@@ -200,7 +200,7 @@ class ImportPath(pr.Base):
                 return []
 
             scopes = [scope]
-            scopes += remove_star_imports(scope)
+            scopes += remove_star_imports(self._evaluator, scope)
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:

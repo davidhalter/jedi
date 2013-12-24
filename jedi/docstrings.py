@@ -16,7 +16,7 @@ annotations.
 
 import re
 
-from jedi import cache
+from jedi.evaluate.cache import memoize_default
 from jedi.parser import Parser
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -32,7 +32,7 @@ DOCSTRING_RETURN_PATTERNS = [
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 
 
-@cache.memoize_default(None)
+@memoize_default(None)
 def follow_param(param):
     func = param.parent_function
     # print func, param, param.parent_function

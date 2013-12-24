@@ -75,13 +75,13 @@ import itertools
 
 from jedi._compatibility import next, hasattr, is_py3k, unicode, reraise, u
 from jedi import common
-from jedi import cache
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.evaluate import representation as er
 from jedi.evaluate import builtin
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
+from jedi.evaluate.cache import memoize_default
 from jedi import docstrings
 from jedi import dynamic
 
@@ -117,7 +117,7 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
 
 class Evaluator(object):
     def __init__(self):
-        self.cache = None
+        self.memoize_cache = {}
 
     def get_names_of_scope(self, scope, position=None, star_search=True,
                            include_builtin=True):
@@ -474,7 +474,7 @@ class Evaluator(object):
             return filter_name(scope_generator)
         return descriptor_check(remove_statements(filter_name(scope_generator)))
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=(), cache_is_in_self=True)
     @recursion.RecursionDecorator
     def follow_statement(self, stmt, seek_name=None):
         """
