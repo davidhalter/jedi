@@ -22,12 +22,12 @@ class RecursionDecorator(object):
         self.func = func
         self.reset()
 
-    def __call__(self, stmt, *args, **kwargs):
+    def __call__(self, evaluator, stmt, *args, **kwargs):
         # print stmt, len(self.node_statements())
         if self.push_stmt(stmt):
             return []
         else:
-            result = self.func(stmt, *args, **kwargs)
+            result = self.func(evaluator, stmt, *args, **kwargs)
             self.pop_stmt()
         return result
 

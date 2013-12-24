@@ -287,9 +287,9 @@ class Evaluator(object):
                     res_new += add
                 else:
                     if isinstance(r, pr.Class):
-                        r = er.Class(r)
+                        r = er.Class(self, r)
                     elif isinstance(r, pr.Function):
-                        r = er.Function(r)
+                        r = er.Function(self, r)
                     if r.isinstance(er.Function) and resolve_decorator:
                         r = r.get_decorated_func()
                     res_new.append(r)
@@ -472,8 +472,8 @@ class Evaluator(object):
             return filter_name(scope_generator)
         return descriptor_check(remove_statements(filter_name(scope_generator)))
 
-    @recursion.RecursionDecorator
     @cache.memoize_default(default=())
+    @recursion.RecursionDecorator
     def follow_statement(self, stmt, seek_name=None):
         """
         The starting point of the completion. A statement always owns a call list,

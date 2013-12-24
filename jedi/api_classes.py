@@ -13,7 +13,6 @@ from jedi import settings
 from jedi import common
 from jedi.parser import representation as pr
 from jedi import cache
-from jedi import evaluate
 from jedi.evaluate import representation as er
 import keywords
 import recursion

@@ -25,7 +25,7 @@ from jedi import cache
 from jedi import modules
 from jedi import interpret
 from jedi._compatibility import next, unicode, builtins
-from jedi import evaluate
+from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
 import keywords
 import api_classes
@@ -82,7 +82,7 @@ class Script(object):
         if not (0 <= self._column <= line_len):
             raise ValueError('`column` parameter is not in a valid range.')
 
-        api_classes._clear_caches()
+        #api_classes._clear_caches()  # TODO REMOVE
         debug.reset_time()
         self.source = modules.source_to_unicode(source, encoding)
         self._pos = self._line, self._column
@@ -90,6 +90,7 @@ class Script(object):
             path, source=self.source, position=self._pos)
         self._source_path = path
         self.path = None if path is None else os.path.abspath(path)
+        self._evaluator = Evaluator()
         debug.speed('init')
 
     @property
@@ -110,7 +111,7 @@ class Script(object):
         """ lazy parser."""
         return self._module.parser
 
-    @api_classes._clear_caches_after_call
+    #@api_classes._clear_caches_after_call
     def completions(self):
         """
         Return :class:`api_classes.Completion` objects. Those objects contain
@@ -242,7 +243,7 @@ class Script(object):
         else:
             # just parse one statement, take it and evaluate it
             stmt = self._get_under_cursor_stmt(goto_path)
-            scopes = evaluate.follow_statement(stmt)
+            scopes = self._evaluator.follow_statement(stmt)
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
@@ -318,7 +319,7 @@ class Script(object):
         sig = self.call_signatures()
         return sig[0] if sig else None
 
-    @api_classes._clear_caches_after_call
+    #@api_classes._clear_caches_after_call
     def goto_definitions(self):
         """
         Return the definitions of a the path under the cursor.  goto function!
@@ -382,7 +383,7 @@ class Script(object):
                  if s is not imports.ImportPath.GlobalNamespace])
         return self._sorted_defs(d)
 
-    @api_classes._clear_caches_after_call
+    #@api_classes._clear_caches_after_call
     def goto_assignments(self):
         """
         Return the first definition found. Imports and statements aren't
@@ -440,7 +441,7 @@ class Script(object):
                     definitions.append(import_name[0])
         else:
             stmt = self._get_under_cursor_stmt(goto_path)
-            defs, search_name = evaluate.goto(stmt)
+            defs, search_name = self._evaluator.goto(stmt)
             definitions = follow_inexistent_imports(defs)
             if isinstance(user_stmt, pr.Statement):
                 c = user_stmt.get_commands()
@@ -452,7 +453,7 @@ class Script(object):
                     definitions = [user_stmt]
         return definitions, search_name
 
-    @api_classes._clear_caches_after_call
+    #@api_classes._clear_caches_after_call
     def usages(self, additional_module_paths=()):
         """
         Return :class:`api_classes.Usage` objects, which contain all
@@ -496,7 +497,7 @@ class Script(object):
         settings.dynamic_flow_information = temp
         return self._sorted_defs(set(names))
 
-    @api_classes._clear_caches_after_call
+    #@api_classes._clear_caches_after_call
     def call_signatures(self):
         """
         Return the function object of the call you're currently in.
@@ -520,7 +521,7 @@ class Script(object):
 
         user_stmt = self._user_stmt()
         with common.scale_speed_settings(settings.scale_call_signatures):
-            _callable = lambda: evaluate.follow_call(call)
+            _callable = lambda: self._evaluator.follow_call(call)
             origins = cache.cache_call_signatures(_callable, user_stmt)
         debug.speed('func_call followed')
 
