@@ -25,10 +25,10 @@ from jedi import cache
 from jedi import modules
 from jedi import interpret
 from jedi._compatibility import next, unicode, builtins
+from jedi import evaluate
+from jedi.evaluate import representation as er
 import keywords
-import evaluate
 import api_classes
-import evaluate_representation as er
 import dynamic
 import imports
 import builtin

@@ -23,7 +23,6 @@ from jedi import common
 import recursion
 import docstrings
 import imports
-import evaluate
 import builtin
 import dynamic
 

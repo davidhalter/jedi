@@ -13,12 +13,12 @@ from jedi import settings
 from jedi import common
 from jedi.parser import representation as pr
 from jedi import cache
+from jedi import evaluate
+from jedi import representation as er
 import keywords
 import recursion
 import dynamic
-import evaluate
 import imports
-import evaluate_representation as er
 
 
 def _clear_caches():

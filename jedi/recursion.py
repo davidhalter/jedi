@@ -10,7 +10,7 @@ calls.
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi import settings
-import evaluate_representation as er
+from jedi.evaluate import representation as er
 import builtin
 
 
