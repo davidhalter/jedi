@@ -32,7 +32,8 @@ class Executable(pr.IsScope):
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of `pr.Array` or list.
     """
-    def __init__(self, base, var_args=()):
+    def __init__(self, evaluator, base, var_args=()):
+        self.evaluator = evaluator
         self.base = base
         self.var_args = var_args
 
@@ -55,8 +56,8 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
     """
     This class is used to evaluate instances.
     """
-    def __init__(self, base, var_args=()):
-        super(Instance, self).__init__(base, var_args)
+    def __init__(self, evaluator, base, var_args=()):
+        super(Instance, self).__init__(evaluator, base, var_args)
         if str(base.name) in ['list', 'set'] \
                 and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
@@ -249,7 +250,8 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     This class is not only important to extend `pr.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
     """
-    def __init__(self, base):
+    def __init__(self, evaluator, base):
+        self.evaluator = evaluator
         self.base = base
 
     @cache.memoize_default(default=())
@@ -258,14 +260,14 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         # TODO care for mro stuff (multiple super classes).
         for s in self.base.supers:
             # Super classes are statements.
-            for cls in evaluate.follow_statement(s):
+            for cls in self.evaluator.follow_statement(s):
                 if not isinstance(cls, Class):
                     debug.warning('Received non class, as a super class')
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
         if not supers and self.base.parent != builtin.Builtin.scope:
             # add `object` to classes
-            supers += evaluate.find_name(builtin.Builtin.scope, 'object')
+            supers += self.evaluator.find_name(builtin.Builtin.scope, 'object')
         return supers
 
     @cache.memoize_default(default=())
@@ -293,7 +295,7 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     @cache.memoize_default(default=())
     def get_defined_names(self):
         result = self.instance_names()
-        type_cls = evaluate.find_name(builtin.Builtin.scope, 'type')[0]
+        type_cls = self.evaluator.find_name(builtin.Builtin.scope, 'type')[0]
         return result + type_cls.base.get_defined_names()
 
     def get_subscope_by_name(self, name):
@@ -321,8 +323,9 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
-    def __init__(self, func, is_decorated=False):
+    def __init__(self, evaluator, func, is_decorated=False):
         """ This should not be called directly """
+        self.evaluator = evaluator
         self.base_func = func
         self.is_decorated = is_decorated
 
@@ -338,7 +341,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
                 debug.dbg('decorator:', dec, f)
-                dec_results = set(evaluate.follow_statement(dec))
+                dec_results = set(self.evaluator.follow_statement(dec))
                 if not len(dec_results):
                     debug.warning('decorator not found: %s on %s' %
                                  (dec, self.base_func))
@@ -411,7 +414,7 @@ class Execution(Executable):
             return []
         else:
             if isinstance(stmt, pr.Statement):
-                return evaluate.follow_statement(stmt)
+                return self.evaluator.follow_statement(stmt)
             else:
                 return [stmt]  # just some arbitrary object
 
@@ -451,7 +454,7 @@ class Execution(Executable):
                         if len(arr_name.var_args) != 1:
                             debug.warning('jedi getattr is too simple')
                         key = arr_name.var_args[0]
-                        stmts += evaluate.follow_path(iter([key]), obj, base)
+                        stmts += self.evaluator.follow_path(iter([key]), obj, base)
                 return stmts
             elif func_name == 'type':
                 # otherwise it would be a metaclass
@@ -507,7 +510,7 @@ class Execution(Executable):
             stmts = docstrings.find_return_types(func)
             for r in self.returns:
                 if r is not None:
-                    stmts += evaluate.follow_statement(r)
+                    stmts += self.evaluator.follow_statement(r)
             return stmts
 
     @cache.memoize_default(default=())
@@ -662,7 +665,7 @@ class Execution(Executable):
                 if not len(commands):
                     continue
                 if commands[0] == '*':
-                    arrays = evaluate.follow_call_list(commands[1:])
+                    arrays = self.evaluator.follow_call_list(commands[1:])
                     # *args must be some sort of an array, otherwise -> ignore
 
                     for array in arrays:
@@ -674,7 +677,7 @@ class Execution(Executable):
                                 yield None, helpers.FakeStatement(field_stmt)
                 # **kwargs
                 elif commands[0] == '**':
-                    arrays = evaluate.follow_call_list(commands[1:])
+                    arrays = self.evaluator.follow_call_list(commands[1:])
                     for array in arrays:
                         if isinstance(array, Array):
                             for key_stmt, value_stmt in array.items():
@@ -826,7 +829,8 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
     Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.
     """
-    def __init__(self, array):
+    def __init__(self, evaluator, array):
+        self.evaluator = evaluator
         self._array = array
 
     def get_index_types(self, index_arr=None):
@@ -882,7 +886,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def _follow_values(self, values):
         """ helper function for the index getters """
-        return list(itertools.chain.from_iterable(evaluate.follow_statement(v)
+        return list(itertools.chain.from_iterable(self.evaluator.follow_statement(v)
                                                   for v in values))
 
     def get_defined_names(self):
@@ -891,7 +895,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = evaluate.find_name(builtin.Builtin.scope, self._array.type)[0]
+        scope = self.evaluator.find_name(builtin.Builtin.scope, self._array.type)[0]
         scope = Instance(scope)
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]

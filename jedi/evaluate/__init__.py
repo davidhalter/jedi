@@ -658,8 +658,8 @@ class Evaluator(object):
                                            position=position))
         return self.follow_paths(path, set(result), call_scope, position=position)
 
-    def execute(self, scope, params):
-        return er.Execution(scope, params).get_return_types()
+    def execute(self, scope, params, evaluate_generator=False):
+        return er.Execution(scope, params).get_return_types(evaluate_generator)
 
     def goto(self, stmt, call_path=None):
         if call_path is None:
