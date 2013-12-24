@@ -498,7 +498,7 @@ class Execution(Executable):
 
         debug.dbg('exec result: %s in %s' % (stmts, self))
 
-        return imports.strip_imports(stmts)
+        return imports.strip_imports(self._evaluator, stmts)
 
     def _get_function_returns(self, func, evaluate_generator):
         """ A normal Function execution """

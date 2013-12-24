@@ -44,8 +44,9 @@ class ImportPath(pr.Base):
 
     GlobalNamespace = GlobalNamespace()
 
-    def __init__(self, import_stmt, is_like_search=False, kill_count=0,
+    def __init__(self, evaluator, import_stmt, is_like_search=False, kill_count=0,
                  direct_resolve=False, is_just_from=False):
+        self._evaluator = evaluator
         self.import_stmt = import_stmt
         self.is_like_search = is_like_search
         self.direct_resolve = direct_resolve
@@ -373,7 +374,7 @@ class ImportPath(pr.Base):
         return f.parser.module, rest
 
 
-def strip_imports(scopes):
+def strip_imports(evaluator, scopes):
     """
     Here we strip the imports - they don't get resolved necessarily.
     Really used anymore? Merge with remove_star_imports?
@@ -381,25 +382,25 @@ def strip_imports(scopes):
     result = []
     for s in scopes:
         if isinstance(s, pr.Import):
-            result += ImportPath(s).follow()
+            result += ImportPath(evaluator, s).follow()
         else:
             result.append(s)
     return result
 
 
 @cache.cache_star_import
-def remove_star_imports(scope, ignored_modules=()):
+def remove_star_imports(evaluator, scope, ignored_modules=()):
     """
     Check a module for star imports:
     >>> from module import *
 
     and follow these modules.
     """
-    modules = strip_imports(i for i in scope.get_imports() if i.star)
+    modules = strip_imports(evaluator, (i for i in scope.get_imports() if i.star))
     new = []
     for m in modules:
         if m not in ignored_modules:
-            new += remove_star_imports(m, modules)
+            new += remove_star_imports(evaluator, m, modules)
     modules += new
 
     # Filter duplicate modules.

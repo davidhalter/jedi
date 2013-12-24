@@ -115,96 +115,95 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
     return names_new
 
 
-def get_names_of_scope(scope, position=None, star_search=True,
-                       include_builtin=True):
-    """
-    Get all completions (names) possible for the current scope.
-    The star search option is only here to provide an optimization. Otherwise
-    the whole thing would probably start a little recursive madness.
-
-    This function is used to include names from outer scopes.  For example,
-    when the current scope is function:
-
-    >>> from jedi.parser import Parser
-    >>> parser = Parser('''
-    ... x = ['a', 'b', 'c']
-    ... def func():
-    ...     y = None
-    ... ''')
-    >>> scope = parser.module.subscopes[0]
-    >>> scope
-    <Function: func@3-4>
-
-    `get_names_of_scope` is a generator.  First it yields names from
-    most inner scope.
-
-    >>> pairs = list(get_names_of_scope(scope))
-    >>> pairs[0]
-    (<Function: func@3-4>, [<Name: y@4,4>])
-
-    Then it yield the names from one level outer scope.  For this
-    example, this is the most outer scope.
-
-    >>> pairs[1]
-    (<SubModule: None@1-4>, [<Name: x@2,0>, <Name: func@3,4>])
-
-    Finally, it yields names from builtin, if `include_builtin` is
-    true (default).
-
-    >>> pairs[2]                                        #doctest: +ELLIPSIS
-    (<Module: ...builtin...>, [<Name: ...>, ...])
-
-    :rtype: [(pr.Scope, [pr.Name])]
-    :return: Return an generator that yields a pair of scope and names.
-    """
-    in_func_scope = scope
-    non_flow = scope.get_parent_until(pr.Flow, reverse=True)
-    while scope:
-        if isinstance(scope, pr.SubModule) and scope.parent:
-            # we don't want submodules to report if we have modules.
-            scope = scope.parent
-            continue
-        # `pr.Class` is used, because the parent is never `Class`.
-        # Ignore the Flows, because the classes and functions care for that.
-        # InstanceElement of Class is ignored, if it is not the start scope.
-        if not (scope != non_flow and scope.isinstance(pr.Class)
-                or scope.isinstance(pr.Flow)
-                or scope.isinstance(er.Instance)
-                and non_flow.isinstance(er.Function)):
-            try:
-                if isinstance(scope, er.Instance):
-                    for g in scope.scope_generator():
-                        yield g
-                else:
-                    yield scope, get_defined_names_for_position(scope,
-                                                                position, in_func_scope)
-            except StopIteration:
-                reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
-        if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
-            # is a list comprehension
-            yield scope, scope.get_set_vars(is_internal_call=True)
-
-        scope = scope.parent
-        # This is used, because subscopes (Flow scopes) would distort the
-        # results.
-        if scope and scope.isinstance(er.Function, pr.Function, er.Execution):
-            in_func_scope = scope
-
-    # Add star imports.
-    if star_search:
-        for s in imports.remove_star_imports(non_flow.get_parent_until()):
-            for g in get_names_of_scope(s, star_search=False):
-                yield g
-
-        # Add builtins to the global scope.
-        if include_builtin:
-            builtin_scope = builtin.Builtin.scope
-            yield builtin_scope, builtin_scope.get_defined_names()
-
-
 class Evaluator(object):
     def __init__(self):
         self.cache = None
+
+    def get_names_of_scope(self, scope, position=None, star_search=True,
+                           include_builtin=True):
+        """
+        Get all completions (names) possible for the current scope.
+        The star search option is only here to provide an optimization. Otherwise
+        the whole thing would probably start a little recursive madness.
+
+        This function is used to include names from outer scopes.  For example,
+        when the current scope is function:
+
+        >>> from jedi.parser import Parser
+        >>> parser = Parser('''
+        ... x = ['a', 'b', 'c']
+        ... def func():
+        ...     y = None
+        ... ''')
+        >>> scope = parser.module.subscopes[0]
+        >>> scope
+        <Function: func@3-4>
+
+        `get_names_of_scope` is a generator.  First it yields names from
+        most inner scope.
+
+        >>> pairs = list(Evaluator().get_names_of_scope(scope))
+        >>> pairs[0]
+        (<Function: func@3-4>, [<Name: y@4,4>])
+
+        Then it yield the names from one level outer scope.  For this
+        example, this is the most outer scope.
+
+        >>> pairs[1]
+        (<SubModule: None@1-4>, [<Name: x@2,0>, <Name: func@3,4>])
+
+        Finally, it yields names from builtin, if `include_builtin` is
+        true (default).
+
+        >>> pairs[2]                                        #doctest: +ELLIPSIS
+        (<Module: ...builtin...>, [<Name: ...>, ...])
+
+        :rtype: [(pr.Scope, [pr.Name])]
+        :return: Return an generator that yields a pair of scope and names.
+        """
+        in_func_scope = scope
+        non_flow = scope.get_parent_until(pr.Flow, reverse=True)
+        while scope:
+            if isinstance(scope, pr.SubModule) and scope.parent:
+                # we don't want submodules to report if we have modules.
+                scope = scope.parent
+                continue
+            # `pr.Class` is used, because the parent is never `Class`.
+            # Ignore the Flows, because the classes and functions care for that.
+            # InstanceElement of Class is ignored, if it is not the start scope.
+            if not (scope != non_flow and scope.isinstance(pr.Class)
+                    or scope.isinstance(pr.Flow)
+                    or scope.isinstance(er.Instance)
+                    and non_flow.isinstance(er.Function)):
+                try:
+                    if isinstance(scope, er.Instance):
+                        for g in scope.scope_generator():
+                            yield g
+                    else:
+                        yield scope, get_defined_names_for_position(scope,
+                                                                    position, in_func_scope)
+                except StopIteration:
+                    reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
+            if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
+                # is a list comprehension
+                yield scope, scope.get_set_vars(is_internal_call=True)
+
+            scope = scope.parent
+            # This is used, because subscopes (Flow scopes) would distort the
+            # results.
+            if scope and scope.isinstance(er.Function, pr.Function, er.Execution):
+                in_func_scope = scope
+
+        # Add star imports.
+        if star_search:
+            for s in imports.remove_star_imports(self, non_flow.get_parent_until()):
+                for g in self.get_names_of_scope(s, star_search=False):
+                    yield g
+
+            # Add builtins to the global scope.
+            if include_builtin:
+                builtin_scope = builtin.Builtin.scope
+                yield builtin_scope, builtin_scope.get_defined_names()
 
     def find_name(self, scope, name_str, position=None, search_global=False,
                   is_goto=False, resolve_decorator=True):
@@ -458,7 +457,7 @@ class Evaluator(object):
             return res_new
 
         if search_global:
-            scope_generator = get_names_of_scope(scope, position=position)
+            scope_generator = self.get_names_of_scope(scope, position=position)
         else:
             if isinstance(scope, er.Instance):
                 scope_generator = scope.scope_generator()
@@ -545,8 +544,8 @@ class Evaluator(object):
                 if isinstance(call, pr.Lambda):
                     result.append(er.Function(call))
                 # With things like params, these can also be functions...
-                elif isinstance(call, pr.Base) and call.isinstance(er.Function,
-                        er.Class, er.Instance, dynamic.ArrayInstance):
+                elif isinstance(call, pr.Base) and call.isinstance(
+                        er.Function, er.Class, er.Instance, dynamic.ArrayInstance):
                     result.append(call)
                 # The string tokens are just operations (+, -, etc.)
                 elif not isinstance(call, (str, unicode)):
@@ -596,7 +595,7 @@ class Evaluator(object):
                 scopes = self.find_name(builtin.Builtin.scope, current.type_as_string())
                 # Make instances of those number/string objects.
                 scopes = [er.Instance(s, (current.value,)) for s in scopes]
-            result = imports.strip_imports(scopes)
+            result = imports.strip_imports(self, scopes)
 
         return self.follow_paths(path, result, scope, position=position)
 
@@ -657,7 +656,7 @@ class Evaluator(object):
                 # This is the typical lookup while chaining things.
                 if filter_private_variable(scope, call_scope, current):
                     return []
-            result = imports.strip_imports(self.find_name(scope, current,
+            result = imports.strip_imports(self, self.find_name(scope, current,
                                            position=position))
         return self.follow_paths(path, set(result), call_scope, position=position)
 

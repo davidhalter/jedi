@@ -413,7 +413,7 @@ class Script(object):
             for d in defs:
                 if isinstance(d.parent, pr.Import) \
                         and d.start_pos == (0, 0):
-                    i = imports.ImportPath(d.parent).follow(is_goto=True)
+                    i = imports.ImportPath(self._evaluator, d.parent).follow(is_goto=True)
                     definitions.remove(d)
                     definitions |= follow_inexistent_imports(i)
             return definitions
@@ -556,7 +556,7 @@ class Script(object):
         context = self._module.get_context()
         just_from = next(context) == 'from'
 
-        i = imports.ImportPath(user_stmt, is_like_search,
+        i = imports.ImportPath(self._evaluator, user_stmt, is_like_search,
                                kill_count=kill_count, direct_resolve=True,
                                is_just_from=just_from)
         return i, cur_name_part
