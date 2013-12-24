@@ -255,10 +255,12 @@ class Evaluator(object):
                                 r = func.var.params[r.position_nr]
 
                             # add docstring knowledge
-                            doc_params = docstrings.follow_param(r)
+                            """
+                            doc_params = docstrings.follow_param(r) TODO ENABLE
                             if doc_params:
                                 res_new += doc_params
                                 continue
+                                """
 
                             if not r.is_generated:
                                 res_new += dynamic.search_params(r)
@@ -267,7 +269,7 @@ class Evaluator(object):
                                     if c in ('*', '**'):
                                         t = 'tuple' if c == '*' else 'dict'
                                         res_new = [er.Instance(
-                                            self.find_name(builtin.Builtin.scope, t)[0])
+                                            self, self.find_name(builtin.Builtin.scope, t)[0])
                                         ]
                                 if not r.assignment_details:
                                     # this means that there are no default params,
@@ -284,7 +286,7 @@ class Evaluator(object):
 
                     if check_instance is not None:
                         # class renames
-                        add = [er.InstanceElement(check_instance, a, True)
+                        add = [er.InstanceElement(self, check_instance, a, True)
                                if isinstance(a, (er.Function, pr.Function))
                                else a for a in add]
                     res_new += add
@@ -346,7 +348,7 @@ class Evaluator(object):
                     if isinstance(scope, er.InstanceElement):
                         inst = scope.instance
                     else:
-                        inst = er.Instance(er.Class(until()))
+                        inst = er.Instance(self, er.Class(self, until()))
                         inst.is_generated = True
                     result.append(inst)
                 elif par.isinstance(pr.Statement):
@@ -543,7 +545,7 @@ class Evaluator(object):
                 result += self.follow_statement(call.stmt)
             else:
                 if isinstance(call, pr.Lambda):
-                    result.append(er.Function(call))
+                    result.append(er.Function(self, call))
                 # With things like params, these can also be functions...
                 elif isinstance(call, pr.Base) and call.isinstance(
                         er.Function, er.Class, er.Instance, dynamic.ArrayInstance):
@@ -595,7 +597,7 @@ class Evaluator(object):
                 # for pr.Literal
                 scopes = self.find_name(builtin.Builtin.scope, current.type_as_string())
                 # Make instances of those number/string objects.
-                scopes = [er.Instance(s, (current.value,)) for s in scopes]
+                scopes = [er.Instance(self, s, (current.value,)) for s in scopes]
             result = imports.strip_imports(self, scopes)
 
         return self.follow_paths(path, result, scope, position=position)
@@ -662,7 +664,7 @@ class Evaluator(object):
         return self.follow_paths(path, set(result), call_scope, position=position)
 
     def execute(self, scope, params, evaluate_generator=False):
-        return er.Execution(scope, params).get_return_types(evaluate_generator)
+        return er.Execution(self, scope, params).get_return_types(evaluate_generator)
 
     def goto(self, stmt, call_path=None):
         if call_path is None:

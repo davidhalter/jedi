@@ -34,7 +34,7 @@ class Executable(pr.IsScope):
     :param var_args: The param input array, consist of `pr.Array` or list.
     """
     def __init__(self, evaluator, base, var_args=()):
-        self.evaluator = evaluator
+        self._evaluator = evaluator
         self.base = base
         self.var_args = var_args
 
@@ -74,8 +74,8 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
 
     @memoize_default(None)
     def _get_method_execution(self, func):
-        func = InstanceElement(self, func, True)
-        return Execution(func, self.var_args)
+        func = InstanceElement(self._evaluator, self, func, True)
+        return Execution(self._evaluator, func, self.var_args)
 
     def _get_func_self_name(self, func):
         """
@@ -96,7 +96,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             """
             n = copy.copy(name)
             n.names = n.names[1:]
-            names.append(InstanceElement(self, n))
+            names.append(InstanceElement(self._evaluator, self, n))
 
         names = []
         # This loop adds the names of the self object, copies them and removes
@@ -125,17 +125,17 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
                     add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
-            names += Instance(s)._get_self_attributes()
+            names += Instance(self._evaluator, s)._get_self_attributes()
 
         return names
 
     def get_subscope_by_name(self, name):
         sub = self.base.get_subscope_by_name(name)
-        return InstanceElement(self, sub, True)
+        return InstanceElement(self._evaluator, self, sub, True)
 
     def execute_subscope_by_name(self, name, args=()):
         method = self.get_subscope_by_name(name)
-        return Execution(method, args).get_return_types()
+        return Execution(self._evaluator, method, args).get_return_types()
 
     def get_descriptor_return(self, obj):
         """ Throws a KeyError if there's no method. """
@@ -154,7 +154,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
 
         class_names = self.base.instance_names()
         for var in class_names:
-            names.append(InstanceElement(self, var, True))
+            names.append(InstanceElement(self._evaluator, self, var, True))
         return names
 
     def scope_generator(self):
@@ -167,7 +167,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         names = []
         class_names = self.base.instance_names()
         for var in class_names:
-            names.append(InstanceElement(self, var, True))
+            names.append(InstanceElement(self._evaluator, self, var, True))
         yield self, names
 
     def get_index_types(self, index=None):
@@ -195,9 +195,9 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     InstanceElement is a wrapper for any object, that is used as an instance
     variable (e.g. self.variable or class methods).
     """
-    def __init__(self, instance, var, is_class_var=False):
+    def __init__(self, evaluator, instance, var, is_class_var=False):
         if isinstance(var, pr.Function):
-            var = Function(var)
+            var = Function(evaluator, var)
         elif isinstance(var, pr.Class):
             var = Class(var)
         self.instance = instance
@@ -213,7 +213,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
                 and par == self.instance.base.base:
             par = self.instance
         elif not isinstance(par, pr.Module):
-            par = InstanceElement(self.instance, par, self.is_class_var)
+            par = InstanceElement(self.instance._evaluator, self.instance, par, self.is_class_var)
         return par
 
     def get_parent_until(self, *args, **kwargs):
@@ -228,13 +228,13 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
 
     def get_commands(self):
         # Copy and modify the array.
-        return [InstanceElement(self.instance, command, self.is_class_var)
+        return [InstanceElement(self.instance._evaluator, self.instance, command, self.is_class_var)
                 if not isinstance(command, unicode) else command
                 for command in self.var.get_commands()]
 
     def __iter__(self):
         for el in self.var.__iter__():
-            yield InstanceElement(self.instance, el, self.is_class_var)
+            yield InstanceElement(self.instance._evaluator, self.instance, el, self.is_class_var)
 
     def __getattr__(self, name):
         return getattr(self.var, name)
@@ -352,12 +352,12 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
                     debug.warning('multiple decorators found', self.base_func,
                                   dec_results)
                 # Create param array.
-                old_func = Function(f, is_decorated=True)
+                old_func = Function(self._evaluator, f, is_decorated=True)
                 if instance is not None and decorator.isinstance(Function):
-                    old_func = InstanceElement(instance, old_func)
+                    old_func = InstanceElement(self._evaluator, instance, old_func)
                     instance = None
 
-                wrappers = Execution(decorator, (old_func,)).get_return_types()
+                wrappers = Execution(self._evaluator, decorator, (old_func,)).get_return_types()
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
                     return None
@@ -369,7 +369,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
 
                 debug.dbg('decorator end', f)
         if f != self.base_func and isinstance(f, pr.Function):
-            f = Function(f)
+            f = Function(self._evaluator, f)
         return f
 
     def get_decorated_func(self, instance=None):
@@ -380,7 +380,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
             # If the decorator func is not found, just ignore the decorator
             # function, because sometimes decorators are just really
             # complicated.
-            return Function(self.base_func, True)
+            return Function(self._evaluator, self.base_func, True)
         return decorated_func
 
     def get_magic_method_names(self):
@@ -473,12 +473,12 @@ class Execution(Executable):
                         cls = Class(cls)
                         su = cls.get_super_classes()
                         if su:
-                            return [Instance(su[0])]
+                            return [Instance(self._evaluator, su[0])]
                 return []
 
         if base.isinstance(Class):
             # There maybe executions of executions.
-            return [Instance(base, self.var_args)]
+            return [Instance(self._evaluator, base, self.var_args)]
         elif isinstance(base, Generator):
             return base.iter_content()
         else:
@@ -508,7 +508,10 @@ class Execution(Executable):
         if func.is_generator and not evaluate_generator:
             return [Generator(func, self.var_args)]
         else:
+            """
             stmts = docstrings.find_return_types(func)
+            """
+            stmts=[]
             for r in self.returns:
                 if r is not None:
                     stmts += self._evaluator.follow_statement(r)
@@ -727,7 +730,7 @@ class Execution(Executable):
                 copied = helpers.fast_parent_copy(element)
                 copied.parent = self._scope_copy(copied.parent)
                 if isinstance(copied, pr.Function):
-                    copied = Function(copied)
+                    copied = Function(self._evaluator, copied)
             objects.append(copied)
         return objects
 
@@ -781,7 +784,8 @@ class Execution(Executable):
 
 class Generator(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
     """ Cares for `yield` statements. """
-    def __init__(self, func, var_args):
+    def __init__(self, evaluator, func, var_args):
+        # Need evaluator for `CachedMetaClass`.
         super(Generator, self).__init__()
         self.func = func
         self.var_args = var_args
@@ -807,7 +811,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
 
     def iter_content(self):
         """ returns the content of __iter__ """
-        return Execution(self.func, self.var_args).get_return_types(True)
+        return Execution(self._evaluator, self.func, self.var_args).get_return_types(True)
 
     def get_index_types(self, index=None):
         debug.warning('Tried to get array access on a generator', self)
@@ -897,7 +901,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
         """
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_name(builtin.Builtin.scope, self._array.type)[0]
-        scope = Instance(scope)
+        scope = Instance(self._evaluator, scope)
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]
 

@@ -5,7 +5,7 @@
 """
 
 
-def memoize_default(default, cache_is_in_self=False):
+def memoize_default(default, cache_is_in_self=False, first_arg_is_evaluator=False):
     """ This is a typical memoization decorator, BUT there is one difference:
     To prevent recursion it sets defaults.
 
@@ -17,6 +17,8 @@ def memoize_default(default, cache_is_in_self=False):
         def wrapper(obj, *args, **kwargs):
             if cache_is_in_self:
                 cache = obj.memoize_cache
+            elif first_arg_is_evaluator:  # needed for meta classes
+                cache = args[0].memoize_cache
             else:
                 cache = obj._evaluator.memoize_cache
 
@@ -24,7 +26,7 @@ def memoize_default(default, cache_is_in_self=False):
                 memo = cache[function]
             except KeyError:
                 memo = {}
-                cache[function] = function
+                cache[function] = memo
 
             key = (args, frozenset(kwargs.items()))
             if key in memo:
@@ -39,10 +41,11 @@ def memoize_default(default, cache_is_in_self=False):
 
 
 class CachedMetaClass(type):
-    """ This is basically almost the same than the decorator above, it just
-    caches class initializations. I haven't found any other way, so I do it
-    with meta classes.
     """
-    @memoize_default(None)
+    This is basically almost the same than the decorator above, it just caches
+    class initializations. I haven't found any other way, so I'm doing it with
+    meta classes.
+    """
+    @memoize_default(None, first_arg_is_evaluator=True)
     def __call__(self, *args, **kwargs):
         return super(CachedMetaClass, self).__call__(*args, **kwargs)
