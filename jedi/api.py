@@ -27,11 +27,11 @@ from jedi import interpret
 from jedi._compatibility import next, unicode, builtins
 from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
-import keywords
+from jedi import keywords
+from jedi.evaluate import builtin
+from jedi.evaluate import imports
 import api_classes
 import dynamic
-import imports
-import builtin
 
 
 class NotFoundError(Exception):

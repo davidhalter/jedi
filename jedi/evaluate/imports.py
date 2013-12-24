@@ -24,7 +24,7 @@ from jedi import common
 from jedi import debug
 from jedi.parser import representation as pr
 from jedi import cache
-import builtin
+from jedi.evaluate import builtin
 
 # for debugging purposes only
 imports_processed = 0

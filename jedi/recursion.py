@@ -10,7 +10,7 @@ calls.
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi import settings
-import builtin
+from jedi.evaluate import builtin
 
 
 class RecursionDecorator(object):
