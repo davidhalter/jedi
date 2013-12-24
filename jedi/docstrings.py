@@ -32,7 +32,7 @@ DOCSTRING_RETURN_PATTERNS = [
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 
 
-@cache.memoize_default()
+@cache.memoize_default(None)
 def follow_param(param):
     func = param.parent_function
     # print func, param, param.parent_function

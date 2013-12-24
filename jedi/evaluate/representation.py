@@ -72,7 +72,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         # (No var_args) used.
         self.is_generated = False
 
-    @cache.memoize_default()
+    @cache.memoize_default(None)
     def _get_method_execution(self, func):
         func = InstanceElement(self, func, True)
         return Execution(func, self.var_args)
@@ -205,7 +205,7 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
         self.is_class_var = is_class_var
 
     @property
-    @cache.memoize_default()
+    @cache.memoize_default(None)
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
@@ -330,7 +330,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         self.base_func = func
         self.is_decorated = is_decorated
 
-    @cache.memoize_default()
+    @cache.memoize_default(None)
     def _decorated_func(self, instance=None):
         """
         Returns the function, that is to be executed in the end.
@@ -420,7 +420,7 @@ class Execution(Executable):
                 return [stmt]  # just some arbitrary object
 
     @property
-    @cache.memoize_default()
+    @cache.memoize_default(None)
     def _decorated(self):
         """Get the decorated version of the input"""
         base = self.base
@@ -736,7 +736,7 @@ class Execution(Executable):
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self._decorated, name)
 
-    @cache.memoize_default()
+    @cache.memoize_default(None)
     @common.rethrow_uncaught
     def _scope_copy(self, scope):
         """ Copies a scope (e.g. if) in an execution """
@@ -752,22 +752,22 @@ class Execution(Executable):
             return copied
 
     @property
-    @cache.memoize_default()
+    @cache.memoize_default([])
     def returns(self):
         return self._copy_properties('returns')
 
     @property
-    @cache.memoize_default()
+    @cache.memoize_default([])
     def asserts(self):
         return self._copy_properties('asserts')
 
     @property
-    @cache.memoize_default()
+    @cache.memoize_default([])
     def statements(self):
         return self._copy_properties('statements')
 
     @property
-    @cache.memoize_default()
+    @cache.memoize_default([])
     def subscopes(self):
         return self._copy_properties('subscopes')
 

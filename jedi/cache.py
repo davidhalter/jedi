@@ -81,7 +81,7 @@ def clear_caches(delete_all=False):
                     del tc[key]
 
 
-def memoize_default(default=None, cache=memoize_caches):
+def memoize_default(default, cache=memoize_caches):
     """ This is a typical memoization decorator, BUT there is one difference:
     To prevent recursion it sets defaults.
 
@@ -111,7 +111,7 @@ class CachedMetaClass(type):
     caches class initializations. I haven't found any other way, so I do it
     with meta classes.
     """
-    @memoize_default()
+    @memoize_default(None)
     def __call__(self, *args, **kwargs):
         return super(CachedMetaClass, self).__call__(*args, **kwargs)
 
