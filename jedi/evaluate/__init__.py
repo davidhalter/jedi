@@ -202,274 +202,502 @@ def get_names_of_scope(scope, position=None, star_search=True,
             yield builtin_scope, builtin_scope.get_defined_names()
 
 
-def find_name(scope, name_str, position=None, search_global=False,
-              is_goto=False, resolve_decorator=True):
-    """
-    This is the search function. The most important part to debug.
-    `remove_statements` and `filter_statements` really are the core part of
-    this completion.
-
-    :param position: Position of the last statement -> tuple of line, column
-    :return: List of Names. Their parents are the scopes, they are defined in.
-    :rtype: list
-    """
-    def remove_statements(result):
+class Evaluator(object):
+    def find_name(self, scope, name_str, position=None, search_global=False,
+                  is_goto=False, resolve_decorator=True):
         """
-        This is the part where statements are being stripped.
+        This is the search function. The most important part to debug.
+        `remove_statements` and `filter_statements` really are the core part of
+        this completion.
 
-        Due to lazy evaluation, statements like a = func; b = a; b() have to be
-        evaluated.
+        :param position: Position of the last statement -> tuple of line, column
+        :return: List of Names. Their parents are the scopes, they are defined in.
+        :rtype: list
         """
-        res_new = []
-        for r in result:
-            add = []
-            if r.isinstance(pr.Statement):
-                check_instance = None
-                if isinstance(r, er.InstanceElement) and r.is_class_var:
-                    check_instance = r.instance
-                    r = r.var
+        def remove_statements(result):
+            """
+            This is the part where statements are being stripped.
 
-                # Global variables handling.
-                if r.is_global():
-                    for token_name in r.token_list[1:]:
-                        if isinstance(token_name, pr.Name):
-                            add = find_name(r.parent, str(token_name))
-                else:
-                    # generated objects are used within executions, but these
-                    # objects are in functions, and we have to dynamically
-                    # execute first.
-                    if isinstance(r, pr.Param):
-                        func = r.parent
-                        # Instances are typically faked, if the instance is not
-                        # called from outside. Here we check it for __init__
-                        # functions and return.
-                        if isinstance(func, er.InstanceElement) \
-                                and func.instance.is_generated \
-                                and hasattr(func, 'name') \
-                                and str(func.name) == '__init__' \
-                                and r.position_nr > 0:  # 0 would be self
-                            r = func.var.params[r.position_nr]
+            Due to lazy evaluation, statements like a = func; b = a; b() have to be
+            evaluated.
+            """
+            res_new = []
+            for r in result:
+                add = []
+                if r.isinstance(pr.Statement):
+                    check_instance = None
+                    if isinstance(r, er.InstanceElement) and r.is_class_var:
+                        check_instance = r.instance
+                        r = r.var
 
-                        # add docstring knowledge
-                        doc_params = docstrings.follow_param(r)
-                        if doc_params:
-                            res_new += doc_params
-                            continue
+                    # Global variables handling.
+                    if r.is_global():
+                        for token_name in r.token_list[1:]:
+                            if isinstance(token_name, pr.Name):
+                                add = self.find_name(r.parent, str(token_name))
+                    else:
+                        # generated objects are used within executions, but these
+                        # objects are in functions, and we have to dynamically
+                        # execute first.
+                        if isinstance(r, pr.Param):
+                            func = r.parent
+                            # Instances are typically faked, if the instance is not
+                            # called from outside. Here we check it for __init__
+                            # functions and return.
+                            if isinstance(func, er.InstanceElement) \
+                                    and func.instance.is_generated \
+                                    and hasattr(func, 'name') \
+                                    and str(func.name) == '__init__' \
+                                    and r.position_nr > 0:  # 0 would be self
+                                r = func.var.params[r.position_nr]
 
-                        if not r.is_generated:
-                            res_new += dynamic.search_params(r)
-                            if not res_new:
-                                c = r.get_commands()[0]
-                                if c in ('*', '**'):
-                                    t = 'tuple' if c == '*' else 'dict'
-                                    res_new = [er.Instance(
-                                        find_name(builtin.Builtin.scope, t)[0])
-                                    ]
-                            if not r.assignment_details:
-                                # this means that there are no default params,
-                                # so just ignore it.
+                            # add docstring knowledge
+                            doc_params = docstrings.follow_param(r)
+                            if doc_params:
+                                res_new += doc_params
                                 continue
 
-                    # Remove the statement docstr stuff for now, that has to be
-                    # implemented with the evaluator class.
-                    #if r.docstr:
-                        #res_new.append(r)
+                            if not r.is_generated:
+                                res_new += dynamic.search_params(r)
+                                if not res_new:
+                                    c = r.get_commands()[0]
+                                    if c in ('*', '**'):
+                                        t = 'tuple' if c == '*' else 'dict'
+                                        res_new = [er.Instance(
+                                            self.find_name(builtin.Builtin.scope, t)[0])
+                                        ]
+                                if not r.assignment_details:
+                                    # this means that there are no default params,
+                                    # so just ignore it.
+                                    continue
 
-                    scopes = follow_statement(r, seek_name=name_str)
-                    add += remove_statements(scopes)
+                        # Remove the statement docstr stuff for now, that has to be
+                        # implemented with the evaluator class.
+                        #if r.docstr:
+                            #res_new.append(r)
 
-                if check_instance is not None:
-                    # class renames
-                    add = [er.InstanceElement(check_instance, a, True)
-                           if isinstance(a, (er.Function, pr.Function))
-                           else a for a in add]
-                res_new += add
-            else:
-                if isinstance(r, pr.Class):
-                    r = er.Class(r)
-                elif isinstance(r, pr.Function):
-                    r = er.Function(r)
-                if r.isinstance(er.Function) and resolve_decorator:
-                    r = r.get_decorated_func()
-                res_new.append(r)
-        debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
-        return res_new
+                        scopes = self.follow_statement(r, seek_name=name_str)
+                        add += remove_statements(scopes)
 
-    def filter_name(scope_generator):
-        """
-        Filters all variables of a scope (which are defined in the
-        `scope_generator`), until the name fits.
-        """
-        def handle_for_loops(loop):
-            # Take the first statement (for has always only
-            # one, remember `in`). And follow it.
-            if not loop.inputs:
-                return []
-            result = get_iterator_types(follow_statement(loop.inputs[0]))
-            if len(loop.set_vars) > 1:
-                commands = loop.set_stmt.get_commands()
-                # loops with loop.set_vars > 0 only have one command
-                result = assign_tuples(commands[0], result, name_str)
-            return result
+                    if check_instance is not None:
+                        # class renames
+                        add = [er.InstanceElement(check_instance, a, True)
+                               if isinstance(a, (er.Function, pr.Function))
+                               else a for a in add]
+                    res_new += add
+                else:
+                    if isinstance(r, pr.Class):
+                        r = er.Class(r)
+                    elif isinstance(r, pr.Function):
+                        r = er.Function(r)
+                    if r.isinstance(er.Function) and resolve_decorator:
+                        r = r.get_decorated_func()
+                    res_new.append(r)
+            debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
+            return res_new
 
-        def process(name):
+        def filter_name(scope_generator):
             """
-            Returns the parent of a name, which means the element which stands
-            behind a name.
+            Filters all variables of a scope (which are defined in the
+            `scope_generator`), until the name fits.
             """
-            result = []
-            no_break_scope = False
-            par = name.parent
-            exc = pr.Class, pr.Function
-            until = lambda: par.parent.parent.get_parent_until(exc)
-            is_array_assignment = False
+            def handle_for_loops(loop):
+                # Take the first statement (for has always only
+                # one, remember `in`). And follow it.
+                if not loop.inputs:
+                    return []
+                result = get_iterator_types(self.follow_statement(loop.inputs[0]))
+                if len(loop.set_vars) > 1:
+                    commands = loop.set_stmt.get_commands()
+                    # loops with loop.set_vars > 0 only have one command
+                    result = assign_tuples(commands[0], result, name_str)
+                return result
 
-            if par is None:
-                pass
-            elif par.isinstance(pr.Flow):
-                if par.command == 'for':
-                    result += handle_for_loops(par)
-                else:
-                    debug.warning('Flow: Why are you here? %s' % par.command)
-            elif par.isinstance(pr.Param) \
-                    and par.parent is not None \
-                    and isinstance(until(), pr.Class) \
-                    and par.position_nr == 0:
-                # This is where self gets added - this happens at another
-                # place, if the var_args are clear. But sometimes the class is
-                # not known. Therefore add a new instance for self. Otherwise
-                # take the existing.
-                if isinstance(scope, er.InstanceElement):
-                    inst = scope.instance
-                else:
-                    inst = er.Instance(er.Class(until()))
-                    inst.is_generated = True
-                result.append(inst)
-            elif par.isinstance(pr.Statement):
-                def is_execution(calls):
-                    for c in calls:
-                        if isinstance(c, (unicode, str)):
-                            continue
-                        if c.isinstance(pr.Array):
-                            if is_execution(c):
-                                return True
-                        elif c.isinstance(pr.Call):
-                            # Compare start_pos, because names may be different
-                            # because of executions.
-                            if c.name.start_pos == name.start_pos \
-                                    and c.execution:
-                                return True
-                    return False
+            def process(name):
+                """
+                Returns the parent of a name, which means the element which stands
+                behind a name.
+                """
+                result = []
+                no_break_scope = False
+                par = name.parent
+                exc = pr.Class, pr.Function
+                until = lambda: par.parent.parent.get_parent_until(exc)
+                is_array_assignment = False
 
-                is_exe = False
-                for assignee, op in par.assignment_details:
-                    is_exe |= is_execution(assignee)
-
-                if is_exe:
-                    # filter array[3] = ...
-                    # TODO check executions for dict contents
-                    is_array_assignment = True
-                else:
-                    details = par.assignment_details
-                    if details and details[0][1] != '=':
-                        no_break_scope = True
-
-                    # TODO this makes self variables non-breakable. wanted?
-                    if isinstance(name, er.InstanceElement) \
-                            and not name.is_class_var:
-                        no_break_scope = True
-
-                    result.append(par)
-            else:
-                # TODO multi-level import non-breakable
-                if isinstance(par, pr.Import) and len(par.namespace) > 1:
-                    no_break_scope = True
-                result.append(par)
-            return result, no_break_scope, is_array_assignment
-
-        flow_scope = scope
-        result = []
-        # compare func uses the tuple of line/indent = line/column
-        comparison_func = lambda name: (name.start_pos)
-
-        for nscope, name_list in scope_generator:
-            break_scopes = []
-            # here is the position stuff happening (sorting of variables)
-            for name in sorted(name_list, key=comparison_func, reverse=True):
-                p = name.parent.parent if name.parent else None
-                if isinstance(p, er.InstanceElement) \
-                        and isinstance(p.var, pr.Class):
-                    p = p.var
-                if name_str == name.get_code() and p not in break_scopes:
-                    r, no_break_scope, is_array_assignment = process(name)
-                    if is_goto:
-                        if not is_array_assignment:  # shouldn't goto arr[1] =
-                            result.append(name)
+                if par is None:
+                    pass
+                elif par.isinstance(pr.Flow):
+                    if par.command == 'for':
+                        result += handle_for_loops(par)
                     else:
-                        result += r
-                    # for comparison we need the raw class
-                    s = nscope.base if isinstance(nscope, er.Class) else nscope
-                    # this means that a definition was found and is not e.g.
-                    # in if/else.
-                    if result and not no_break_scope:
-                        if not name.parent or p == s:
-                            break
-                        break_scopes.append(p)
+                        debug.warning('Flow: Why are you here? %s' % par.command)
+                elif par.isinstance(pr.Param) \
+                        and par.parent is not None \
+                        and isinstance(until(), pr.Class) \
+                        and par.position_nr == 0:
+                    # This is where self gets added - this happens at another
+                    # place, if the var_args are clear. But sometimes the class is
+                    # not known. Therefore add a new instance for self. Otherwise
+                    # take the existing.
+                    if isinstance(scope, er.InstanceElement):
+                        inst = scope.instance
+                    else:
+                        inst = er.Instance(er.Class(until()))
+                        inst.is_generated = True
+                    result.append(inst)
+                elif par.isinstance(pr.Statement):
+                    def is_execution(calls):
+                        for c in calls:
+                            if isinstance(c, (unicode, str)):
+                                continue
+                            if c.isinstance(pr.Array):
+                                if is_execution(c):
+                                    return True
+                            elif c.isinstance(pr.Call):
+                                # Compare start_pos, because names may be different
+                                # because of executions.
+                                if c.name.start_pos == name.start_pos \
+                                        and c.execution:
+                                    return True
+                        return False
 
-            while flow_scope:
-                # TODO check if result is in scope -> no evaluation necessary
-                n = dynamic.check_flow_information(flow_scope, name_str,
-                                                   position)
-                if n:
-                    result = n
-                    break
+                    is_exe = False
+                    for assignee, op in par.assignment_details:
+                        is_exe |= is_execution(assignee)
 
+                    if is_exe:
+                        # filter array[3] = ...
+                        # TODO check executions for dict contents
+                        is_array_assignment = True
+                    else:
+                        details = par.assignment_details
+                        if details and details[0][1] != '=':
+                            no_break_scope = True
+
+                        # TODO this makes self variables non-breakable. wanted?
+                        if isinstance(name, er.InstanceElement) \
+                                and not name.is_class_var:
+                            no_break_scope = True
+
+                        result.append(par)
+                else:
+                    # TODO multi-level import non-breakable
+                    if isinstance(par, pr.Import) and len(par.namespace) > 1:
+                        no_break_scope = True
+                    result.append(par)
+                return result, no_break_scope, is_array_assignment
+
+            flow_scope = scope
+            result = []
+            # compare func uses the tuple of line/indent = line/column
+            comparison_func = lambda name: (name.start_pos)
+
+            for nscope, name_list in scope_generator:
+                break_scopes = []
+                # here is the position stuff happening (sorting of variables)
+                for name in sorted(name_list, key=comparison_func, reverse=True):
+                    p = name.parent.parent if name.parent else None
+                    if isinstance(p, er.InstanceElement) \
+                            and isinstance(p.var, pr.Class):
+                        p = p.var
+                    if name_str == name.get_code() and p not in break_scopes:
+                        r, no_break_scope, is_array_assignment = process(name)
+                        if is_goto:
+                            if not is_array_assignment:  # shouldn't goto arr[1] =
+                                result.append(name)
+                        else:
+                            result += r
+                        # for comparison we need the raw class
+                        s = nscope.base if isinstance(nscope, er.Class) else nscope
+                        # this means that a definition was found and is not e.g.
+                        # in if/else.
+                        if result and not no_break_scope:
+                            if not name.parent or p == s:
+                                break
+                            break_scopes.append(p)
+
+                while flow_scope:
+                    # TODO check if result is in scope -> no evaluation necessary
+                    n = dynamic.check_flow_information(flow_scope, name_str,
+                                                       position)
+                    if n:
+                        result = n
+                        break
+
+                    if result:
+                        break
+                    if flow_scope == nscope:
+                        break
+                    flow_scope = flow_scope.parent
+                flow_scope = nscope
                 if result:
                     break
-                if flow_scope == nscope:
-                    break
-                flow_scope = flow_scope.parent
-            flow_scope = nscope
-            if result:
-                break
 
-        if not result and isinstance(nscope, er.Instance):
-            # __getattr__ / __getattribute__
-            result += check_getattr(nscope, name_str)
-        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
-                  % (name_str, scope, nscope, u(result), position))
-        return result
+            if not result and isinstance(nscope, er.Instance):
+                # __getattr__ / __getattribute__
+                result += check_getattr(nscope, name_str)
+            debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
+                      % (name_str, scope, nscope, u(result), position))
+            return result
 
-    def descriptor_check(result):
-        """Processes descriptors"""
-        res_new = []
-        for r in result:
-            if isinstance(scope, (er.Instance, er.Class)) \
-                    and hasattr(r, 'get_descriptor_return'):
-                # handle descriptors
-                with common.ignored(KeyError):
-                    res_new += r.get_descriptor_return(scope)
-                    continue
-            res_new.append(r)
-        return res_new
+        def descriptor_check(result):
+            """Processes descriptors"""
+            res_new = []
+            for r in result:
+                if isinstance(scope, (er.Instance, er.Class)) \
+                        and hasattr(r, 'get_descriptor_return'):
+                    # handle descriptors
+                    with common.ignored(KeyError):
+                        res_new += r.get_descriptor_return(scope)
+                        continue
+                res_new.append(r)
+            return res_new
 
-    if search_global:
-        scope_generator = get_names_of_scope(scope, position=position)
-    else:
-        if isinstance(scope, er.Instance):
-            scope_generator = scope.scope_generator()
+        if search_global:
+            scope_generator = get_names_of_scope(scope, position=position)
         else:
-            if isinstance(scope, (er.Class, pr.Module)):
-                # classes are only available directly via chaining?
-                # strange stuff...
-                names = scope.get_defined_names()
+            if isinstance(scope, er.Instance):
+                scope_generator = scope.scope_generator()
             else:
-                names = get_defined_names_for_position(scope, position)
-            scope_generator = iter([(scope, names)])
+                if isinstance(scope, (er.Class, pr.Module)):
+                    # classes are only available directly via chaining?
+                    # strange stuff...
+                    names = scope.get_defined_names()
+                else:
+                    names = get_defined_names_for_position(scope, position)
+                scope_generator = iter([(scope, names)])
 
-    if is_goto:
-        return filter_name(scope_generator)
-    return descriptor_check(remove_statements(filter_name(scope_generator)))
+        if is_goto:
+            return filter_name(scope_generator)
+        return descriptor_check(remove_statements(filter_name(scope_generator)))
+
+    @recursion.RecursionDecorator
+    @cache.memoize_default(default=())
+    def follow_statement(self, stmt, seek_name=None):
+        """
+        The starting point of the completion. A statement always owns a call list,
+        which are the calls, that a statement does.
+        In case multiple names are defined in the statement, `seek_name` returns
+        the result for this name.
+
+        :param stmt: A `pr.Statement`.
+        :param seek_name: A string.
+        """
+        debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))
+        commands = stmt.get_commands()
+        debug.dbg('calls: %s' % commands)
+
+        result = self.follow_call_list(commands)
+
+        # Assignment checking is only important if the statement defines multiple
+        # variables.
+        if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
+            new_result = []
+            for ass_commands, op in stmt.assignment_details:
+                new_result += find_assignments(ass_commands[0], result, seek_name)
+            result = new_result
+        return set(result)
+
+    @common.rethrow_uncaught
+    def follow_call_list(self, call_list, follow_array=False):
+        """
+        `call_list` can be either `pr.Array` or `list of list`.
+        It is used to evaluate a two dimensional object, that has calls, arrays and
+        operators in it.
+        """
+        def evaluate_list_comprehension(lc, parent=None):
+            input = lc.input
+            nested_lc = lc.input.token_list[0]
+            if isinstance(nested_lc, pr.ListComprehension):
+                # is nested LC
+                input = nested_lc.stmt
+            module = input.get_parent_until()
+            # create a for loop, which does the same as list comprehensions
+            loop = pr.ForFlow(module, [input], lc.stmt.start_pos, lc.middle, True)
+
+            loop.parent = parent or lc.get_parent_until(pr.IsScope)
+
+            if isinstance(nested_lc, pr.ListComprehension):
+                loop = evaluate_list_comprehension(nested_lc, loop)
+            return loop
+
+        result = []
+        calls_iterator = iter(call_list)
+        for call in calls_iterator:
+            if pr.Array.is_type(call, pr.Array.NOARRAY):
+                r = list(itertools.chain.from_iterable(self.follow_statement(s)
+                                                       for s in call))
+                call_path = call.generate_call_path()
+                next(call_path, None)  # the first one has been used already
+                result += self.follow_paths(call_path, r, call.parent,
+                                            position=call.start_pos)
+            elif isinstance(call, pr.ListComprehension):
+                loop = evaluate_list_comprehension(call)
+                # Caveat: parents are being changed, but this doesn't matter,
+                # because nothing else uses it.
+                call.stmt.parent = loop
+                result += self.follow_statement(call.stmt)
+            else:
+                if isinstance(call, pr.Lambda):
+                    result.append(er.Function(call))
+                # With things like params, these can also be functions...
+                elif isinstance(call, pr.Base) and call.isinstance(er.Function,
+                        er.Class, er.Instance, dynamic.ArrayInstance):
+                    result.append(call)
+                # The string tokens are just operations (+, -, etc.)
+                elif not isinstance(call, (str, unicode)):
+                    if isinstance(call, pr.Call) and str(call.name) == 'if':
+                        # Ternary operators.
+                        while True:
+                            try:
+                                call = next(calls_iterator)
+                            except StopIteration:
+                                break
+                            with common.ignored(AttributeError):
+                                if str(call.name) == 'else':
+                                    break
+                        continue
+                    result += self.follow_call(call)
+                elif call == '*':
+                    if [r for r in result if isinstance(r, er.Array)
+                       or isinstance(r, er.Instance)
+                       and str(r.name) == 'str']:
+                        # if it is an iterable, ignore * operations
+                        next(calls_iterator)
+        return set(result)
+
+    def follow_call(self, call):
+        """Follow a call is following a function, variable, string, etc."""
+        path = call.generate_call_path()
+
+        # find the statement of the Scope
+        s = call
+        while not s.parent.isinstance(pr.IsScope):
+            s = s.parent
+        return self.follow_call_path(path, s.parent, s.start_pos)
+
+    def follow_call_path(self, path, scope, position):
+        """Follows a path generated by `pr.StatementElement.generate_call_path()`"""
+        current = next(path)
+
+        if isinstance(current, pr.Array):
+            result = [er.Array(current)]
+        else:
+            if isinstance(current, pr.NamePart):
+                # This is the first global lookup.
+                scopes = self.find_name(scope, current, position=position,
+                                        search_global=True)
+            else:
+                # for pr.Literal
+                scopes = self.find_name(builtin.Builtin.scope, current.type_as_string())
+                # Make instances of those number/string objects.
+                scopes = [er.Instance(s, (current.value,)) for s in scopes]
+            result = imports.strip_imports(scopes)
+
+        return self.follow_paths(path, result, scope, position=position)
+
+    def follow_paths(self, path, results, call_scope, position=None):
+        """
+        In each result, `path` must be followed. Copies the path iterator.
+        """
+        results_new = []
+        if results:
+            if len(results) > 1:
+                iter_paths = itertools.tee(path, len(results))
+            else:
+                iter_paths = [path]
+
+            for i, r in enumerate(results):
+                fp = self.follow_path(iter_paths[i], r, call_scope, position=position)
+                if fp is not None:
+                    results_new += fp
+                else:
+                    # This means stop iteration.
+                    return results
+        return results_new
+
+    def follow_path(self, path, scope, call_scope, position=None):
+        """
+        Uses a generator and tries to complete the path, e.g.::
+
+            foo.bar.baz
+
+        `follow_path` is only responsible for completing `.bar.baz`, the rest is
+        done in the `follow_call` function.
+        """
+        # current is either an Array or a Scope.
+        try:
+            current = next(path)
+        except StopIteration:
+            return None
+        debug.dbg('follow %s in scope %s' % (current, scope))
+
+        result = []
+        if isinstance(current, pr.Array):
+            # This must be an execution, either () or [].
+            if current.type == pr.Array.LIST:
+                if hasattr(scope, 'get_index_types'):
+                    result = scope.get_index_types(current)
+            elif current.type not in [pr.Array.DICT]:
+                # Scope must be a class or func - make an instance or execution.
+                debug.dbg('exe', scope)
+                result = er.Execution(scope, current).get_return_types()
+            else:
+                # Curly braces are not allowed, because they make no sense.
+                debug.warning('strange function call with {}', current, scope)
+        else:
+            # The function must not be decorated with something else.
+            if scope.isinstance(er.Function):
+                scope = scope.get_magic_method_scope()
+            else:
+                # This is the typical lookup while chaining things.
+                if filter_private_variable(scope, call_scope, current):
+                    return []
+            result = imports.strip_imports(self.find_name(scope, current,
+                                           position=position))
+        return self.follow_paths(path, set(result), call_scope, position=position)
+
+    def goto(self, stmt, call_path=None):
+        if call_path is None:
+            commands = stmt.get_commands()
+            if len(commands) == 0:
+                return [], ''
+            # Only the first command is important, the rest should basically not
+            # happen except in broken code (e.g. docstrings that aren't code).
+            call = commands[0]
+            if isinstance(call, (str, unicode)):
+                call_path = [call]
+            else:
+                call_path = list(call.generate_call_path())
+
+        scope = stmt.get_parent_until(pr.IsScope)
+        pos = stmt.start_pos
+        call_path, search = call_path[:-1], call_path[-1]
+        pos = pos[0], pos[1] + 1
+
+        if call_path:
+            scopes = self.follow_call_path(iter(call_path), scope, pos)
+            search_global = False
+            pos = None
+        else:
+            scopes = [scope]
+            search_global = True
+        follow_res = []
+        for s in scopes:
+            follow_res += self.find_name(s, search, pos,
+                                         search_global=search_global, is_goto=True)
+        return follow_res, search
+
+
+def filter_private_variable(scope, call_scope, var_name):
+    """private variables begin with a double underline `__`"""
+    if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
+            and var_name.startswith('__') and not var_name.endswith('__'):
+        s = call_scope.get_parent_until((pr.Class, er.Instance))
+        if s != scope and s != scope.base.base:
+            return True
+    return False
 
 
 def check_getattr(inst, name_str):
@@ -590,237 +818,3 @@ def find_assignments(lhs, results, seek_name):
         return results
     else:
         return []
-
-
-@recursion.RecursionDecorator
-@cache.memoize_default(default=())
-def follow_statement(stmt, seek_name=None):
-    """
-    The starting point of the completion. A statement always owns a call list,
-    which are the calls, that a statement does.
-    In case multiple names are defined in the statement, `seek_name` returns
-    the result for this name.
-
-    :param stmt: A `pr.Statement`.
-    :param seek_name: A string.
-    """
-    debug.dbg('follow_stmt %s (%s)' % (stmt, seek_name))
-    commands = stmt.get_commands()
-    debug.dbg('calls: %s' % commands)
-
-    result = follow_call_list(commands)
-
-    # Assignment checking is only important if the statement defines multiple
-    # variables.
-    if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
-        new_result = []
-        for ass_commands, op in stmt.assignment_details:
-            new_result += find_assignments(ass_commands[0], result, seek_name)
-        result = new_result
-    return set(result)
-
-
-@common.rethrow_uncaught
-def follow_call_list(call_list, follow_array=False):
-    """
-    `call_list` can be either `pr.Array` or `list of list`.
-    It is used to evaluate a two dimensional object, that has calls, arrays and
-    operators in it.
-    """
-    def evaluate_list_comprehension(lc, parent=None):
-        input = lc.input
-        nested_lc = lc.input.token_list[0]
-        if isinstance(nested_lc, pr.ListComprehension):
-            # is nested LC
-            input = nested_lc.stmt
-        module = input.get_parent_until()
-        # create a for loop, which does the same as list comprehensions
-        loop = pr.ForFlow(module, [input], lc.stmt.start_pos, lc.middle, True)
-
-        loop.parent = parent or lc.get_parent_until(pr.IsScope)
-
-        if isinstance(nested_lc, pr.ListComprehension):
-            loop = evaluate_list_comprehension(nested_lc, loop)
-        return loop
-
-    result = []
-    calls_iterator = iter(call_list)
-    for call in calls_iterator:
-        if pr.Array.is_type(call, pr.Array.NOARRAY):
-            r = list(itertools.chain.from_iterable(follow_statement(s)
-                                                   for s in call))
-            call_path = call.generate_call_path()
-            next(call_path, None)  # the first one has been used already
-            result += follow_paths(call_path, r, call.parent,
-                                   position=call.start_pos)
-        elif isinstance(call, pr.ListComprehension):
-            loop = evaluate_list_comprehension(call)
-            # Caveat: parents are being changed, but this doesn't matter,
-            # because nothing else uses it.
-            call.stmt.parent = loop
-            result += follow_statement(call.stmt)
-        else:
-            if isinstance(call, pr.Lambda):
-                result.append(er.Function(call))
-            # With things like params, these can also be functions...
-            elif isinstance(call, pr.Base) and call.isinstance(er.Function,
-                    er.Class, er.Instance, dynamic.ArrayInstance):
-                result.append(call)
-            # The string tokens are just operations (+, -, etc.)
-            elif not isinstance(call, (str, unicode)):
-                if isinstance(call, pr.Call) and str(call.name) == 'if':
-                    # Ternary operators.
-                    while True:
-                        try:
-                            call = next(calls_iterator)
-                        except StopIteration:
-                            break
-                        with common.ignored(AttributeError):
-                            if str(call.name) == 'else':
-                                break
-                    continue
-                result += follow_call(call)
-            elif call == '*':
-                if [r for r in result if isinstance(r, er.Array)
-                   or isinstance(r, er.Instance)
-                   and str(r.name) == 'str']:
-                    # if it is an iterable, ignore * operations
-                    next(calls_iterator)
-    return set(result)
-
-
-def follow_call(call):
-    """Follow a call is following a function, variable, string, etc."""
-    path = call.generate_call_path()
-
-    # find the statement of the Scope
-    s = call
-    while not s.parent.isinstance(pr.IsScope):
-        s = s.parent
-    return follow_call_path(path, s.parent, s.start_pos)
-
-
-def follow_call_path(path, scope, position):
-    """Follows a path generated by `pr.StatementElement.generate_call_path()`"""
-    current = next(path)
-
-    if isinstance(current, pr.Array):
-        result = [er.Array(current)]
-    else:
-        if isinstance(current, pr.NamePart):
-            # This is the first global lookup.
-            scopes = find_name(scope, current, position=position,
-                               search_global=True)
-        else:
-            # for pr.Literal
-            scopes = find_name(builtin.Builtin.scope, current.type_as_string())
-            # Make instances of those number/string objects.
-            scopes = [er.Instance(s, (current.value,)) for s in scopes]
-        result = imports.strip_imports(scopes)
-
-    return follow_paths(path, result, scope, position=position)
-
-
-def follow_paths(path, results, call_scope, position=None):
-    """
-    In each result, `path` must be followed. Copies the path iterator.
-    """
-    results_new = []
-    if results:
-        if len(results) > 1:
-            iter_paths = itertools.tee(path, len(results))
-        else:
-            iter_paths = [path]
-
-        for i, r in enumerate(results):
-            fp = follow_path(iter_paths[i], r, call_scope, position=position)
-            if fp is not None:
-                results_new += fp
-            else:
-                # This means stop iteration.
-                return results
-    return results_new
-
-
-def follow_path(path, scope, call_scope, position=None):
-    """
-    Uses a generator and tries to complete the path, e.g.::
-
-        foo.bar.baz
-
-    `follow_path` is only responsible for completing `.bar.baz`, the rest is
-    done in the `follow_call` function.
-    """
-    # current is either an Array or a Scope.
-    try:
-        current = next(path)
-    except StopIteration:
-        return None
-    debug.dbg('follow %s in scope %s' % (current, scope))
-
-    result = []
-    if isinstance(current, pr.Array):
-        # This must be an execution, either () or [].
-        if current.type == pr.Array.LIST:
-            if hasattr(scope, 'get_index_types'):
-                result = scope.get_index_types(current)
-        elif current.type not in [pr.Array.DICT]:
-            # Scope must be a class or func - make an instance or execution.
-            debug.dbg('exe', scope)
-            result = er.Execution(scope, current).get_return_types()
-        else:
-            # Curly braces are not allowed, because they make no sense.
-            debug.warning('strange function call with {}', current, scope)
-    else:
-        # The function must not be decorated with something else.
-        if scope.isinstance(er.Function):
-            scope = scope.get_magic_method_scope()
-        else:
-            # This is the typical lookup while chaining things.
-            if filter_private_variable(scope, call_scope, current):
-                return []
-        result = imports.strip_imports(find_name(scope, current,
-                                                 position=position))
-    return follow_paths(path, set(result), call_scope, position=position)
-
-
-def filter_private_variable(scope, call_scope, var_name):
-    """private variables begin with a double underline `__`"""
-    if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
-            and var_name.startswith('__') and not var_name.endswith('__'):
-        s = call_scope.get_parent_until((pr.Class, er.Instance))
-        if s != scope and s != scope.base.base:
-            return True
-    return False
-
-
-def goto(stmt, call_path=None):
-    if call_path is None:
-        commands = stmt.get_commands()
-        if len(commands) == 0:
-            return [], ''
-        # Only the first command is important, the rest should basically not
-        # happen except in broken code (e.g. docstrings that aren't code).
-        call = commands[0]
-        if isinstance(call, (str, unicode)):
-            call_path = [call]
-        else:
-            call_path = list(call.generate_call_path())
-
-    scope = stmt.get_parent_until(pr.IsScope)
-    pos = stmt.start_pos
-    call_path, search = call_path[:-1], call_path[-1]
-    pos = pos[0], pos[1] + 1
-
-    if call_path:
-        scopes = follow_call_path(iter(call_path), scope, pos)
-        search_global = False
-        pos = None
-    else:
-        scopes = [scope]
-        search_global = True
-    follow_res = []
-    for s in scopes:
-        follow_res += find_name(s, search, pos,
-                                search_global=search_global, is_goto=True)
-    return follow_res, search
