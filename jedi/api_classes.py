@@ -14,7 +14,7 @@ from jedi import cache
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi import keywords
-import dynamic
+from jedi.evaluate import dynamic
 
 
 def _clear_caches():

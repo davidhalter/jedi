@@ -32,8 +32,8 @@ DOCSTRING_RETURN_PATTERNS = [
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 
 
-@memoize_default(None)
-def follow_param(param):
+@memoize_default(None, is_function=True)
+def follow_param(evaluator, param):
     func = param.parent_function
     # print func, param, param.parent_function
     param_str = _search_param_in_docstr(func.docstr, str(param.get_name()))
@@ -52,7 +52,7 @@ def follow_param(param):
         p = Parser(param_str, None, user_position, no_docstr=True)
         if p.user_stmt is None:
             return []
-        return evaluate.follow_statement(p.user_stmt)
+        return evaluator.follow_statement(p.user_stmt)
     return []
 
 

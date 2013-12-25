@@ -110,7 +110,7 @@ def get_directory_modules_for_name(mods, name):
                 yield c
 
 
-def search_param_memoize(func):
+def _search_param_memoize(func):
     """
     Is only good for search params memoize, respectively the closure,
     because it just caches the input, not the func, like normal memoize does.
@@ -137,8 +137,8 @@ class ParamListener(object):
         self.param_possibilities.append(params)
 
 
-@memoize_default([])
-def search_params(param):
+@memoize_default([], is_function=True)
+def search_params(evaluator, param):
     """
     This is a dynamic search for params. If you try to complete a type:
 
@@ -158,7 +158,7 @@ def search_params(param):
         """
         Returns the values of a param, or an empty array.
         """
-        @search_param_memoize
+        @_search_param_memoize
         def get_posibilities(module, func_name):
             try:
                 possible_stmts = module.used_names[func_name]
@@ -190,12 +190,12 @@ def search_params(param):
                         continue
                     scopes = [scope]
                     if first:
-                        scopes = evaluate.follow_call_path(iter(first), scope, pos)
+                        scopes = evaluator.follow_call_path(iter(first), scope, pos)
                         pos = None
                     for scope in scopes:
-                        s = evaluate.find_name(scope, func_name, position=pos,
-                                               search_global=not first,
-                                               resolve_decorator=False)
+                        s = evaluator.find_name(scope, func_name, position=pos,
+                                                search_global=not first,
+                                                resolve_decorator=False)
 
                         c = [getattr(escope, 'base_func', None) or escope.base
                              for escope in s
@@ -203,7 +203,7 @@ def search_params(param):
                         if compare in c:
                             # only if we have the correct function we execute
                             # it, otherwise just ignore it.
-                            evaluate.follow_paths(iter(last), s, scope)
+                            evaluator.follow_paths(iter(last), s, scope)
 
             return listener.param_possibilities
 
@@ -211,7 +211,7 @@ def search_params(param):
         for params in get_posibilities(module, func_name):
             for p in params:
                 if str(p) == param_name:
-                    result += evaluate.follow_statement(p.parent)
+                    result += evaluator.follow_statement(p.parent)
         return result
 
     func = param.get_parent_until(pr.Function)

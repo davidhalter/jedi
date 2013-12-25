@@ -83,7 +83,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import memoize_default
 from jedi import docstrings
-from jedi import dynamic
+from jedi.evaluate import dynamic
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):
@@ -263,7 +263,7 @@ class Evaluator(object):
                                 """
 
                             if not r.is_generated:
-                                res_new += dynamic.search_params(r)
+                                res_new += dynamic.search_params(self, r)
                                 if not res_new:
                                     c = r.get_commands()[0]
                                     if c in ('*', '**'):

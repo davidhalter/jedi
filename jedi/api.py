@@ -30,8 +30,8 @@ from jedi.evaluate import representation as er
 from jedi import keywords
 from jedi.evaluate import builtin
 from jedi.evaluate import imports
-import api_classes
-import dynamic
+from jedi.evaluate import dynamic
+from jedi import api_classes
 
 
 class NotFoundError(Exception):

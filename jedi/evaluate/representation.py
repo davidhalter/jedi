@@ -25,7 +25,7 @@ from jedi.evaluate import recursion
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate.interfaces import Iterable
 from jedi import docstrings
-from jedi import dynamic
+from jedi.evaluate import dynamic
 
 
 class Executable(pr.IsScope):
