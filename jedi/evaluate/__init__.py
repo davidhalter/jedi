@@ -255,12 +255,10 @@ class Evaluator(object):
                                 r = func.var.params[r.position_nr]
 
                             # add docstring knowledge
-                            """
-                            doc_params = docstrings.follow_param(r) TODO ENABLE
+                            doc_params = docstrings.follow_param(self, r)
                             if doc_params:
                                 res_new += doc_params
                                 continue
-                                """
 
                             if not r.is_generated:
                                 res_new += dynamic.search_params(self, r)

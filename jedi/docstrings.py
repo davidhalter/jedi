@@ -111,6 +111,8 @@ def find_return_types(evaluator, func):
             if match:
                 return match.group(1)
 
+    from jedi.evaluate import representation as er
+
     if isinstance(func, er.InstanceElement):
         func = func.var
 
@@ -125,4 +127,4 @@ def find_return_types(evaluator, func):
     if p.user_stmt is None:
         return []
     p.user_stmt.parent = func
-    return list(evaluate.follow_statement(p.user_stmt))
+    return list(evaluator.follow_statement(p.user_stmt))
