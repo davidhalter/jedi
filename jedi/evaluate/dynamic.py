@@ -137,7 +137,7 @@ class ParamListener(object):
         self.param_possibilities.append(params)
 
 
-@memoize_default([], is_function=True)
+@memoize_default([], evaluator_is_first_arg=True)
 def search_params(evaluator, param):
     """
     This is a dynamic search for params. If you try to complete a type:

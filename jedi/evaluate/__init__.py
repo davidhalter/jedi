@@ -477,7 +477,7 @@ class Evaluator(object):
             return filter_name(scope_generator)
         return descriptor_check(remove_statements(filter_name(scope_generator)))
 
-    @memoize_default(default=(), cache_is_in_self=True)
+    @memoize_default(default=(), evaluator_is_first_arg=True)
     @recursion.recursion_decorator
     def follow_statement(self, stmt, seek_name=None):
         """

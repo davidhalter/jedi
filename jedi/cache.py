@@ -103,14 +103,14 @@ def cache_call_signatures(stmt):
 
 
 def cache_star_import(func):
-    def wrapper(scope, *args, **kwargs):
+    def wrapper(evaluator, scope, *args, **kwargs):
         with common.ignored(KeyError):
             mods = star_import_cache[scope]
             if mods[0] + settings.star_import_cache_validity > time.time():
                 return mods[1]
         # cache is too old and therefore invalid or not available
         invalidate_star_import_cache(scope)
-        mods = func(scope, *args, **kwargs)
+        mods = func(evaluator, scope, *args, **kwargs)
         star_import_cache[scope] = time.time(), mods
 
         return mods
