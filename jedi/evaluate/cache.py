@@ -28,7 +28,7 @@ def memoize_default(default, evaluator_is_first_arg=False, second_arg_is_evaluat
                 memo = {}
                 cache[function] = memo
 
-            key = (args, frozenset(kwargs.items()))
+            key = (obj, args, frozenset(kwargs.items()))
             if key in memo:
                 return memo[key]
             else:
