@@ -192,6 +192,7 @@ def search_params(evaluator, param):
                     if first:
                         scopes = evaluator.follow_call_path(iter(first), scope, pos)
                         pos = None
+                    from jedi.evaluate import representation as er
                     for scope in scopes:
                         s = evaluator.find_name(scope, func_name, position=pos,
                                                 search_global=not first,
@@ -248,7 +249,7 @@ def search_params(evaluator, param):
     return result
 
 
-def check_array_additions(array):
+def check_array_additions(evaluator, array):
     """ Just a mapper function for the internal _check_array_additions """
     if not pr.Array.is_type(array._array, pr.Array.LIST, pr.Array.SET):
         # TODO also check for dict updates
@@ -296,8 +297,8 @@ def _scan_statement(stmt, search_name, assignment_details=False):
     return result
 
 
-@memoize_default([])
-def _check_array_additions(compare_array, module, is_list):
+@memoize_default([], evaluator_is_first_arg=True)
+def _check_array_additions(evaluator, compare_array, module, is_list):
     """
     Checks if a `pr.Array` has "add" statements:
     >>> a = [""]
@@ -324,7 +325,7 @@ def _check_array_additions(compare_array, module, is_list):
             position = c.start_pos
             scope = c.get_parent_until(pr.IsScope)
 
-            found = evaluate.follow_call_path(backtrack_path, scope, position)
+            found = evaluator.follow_call_path(backtrack_path, scope, position)
             if not compare_array in found:
                 continue
 
@@ -333,19 +334,21 @@ def _check_array_additions(compare_array, module, is_list):
                 continue  # no params: just ignore it
             if add_name in ['append', 'add']:
                 for param in params:
-                    result += evaluate.follow_statement(param)
+                    result += evaluator.follow_statement(param)
             elif add_name in ['insert']:
                 try:
                     second_param = params[1]
                 except IndexError:
                     continue
                 else:
-                    result += evaluate.follow_statement(second_param)
+                    result += evaluator.follow_statement(second_param)
             elif add_name in ['extend', 'update']:
                 for param in params:
-                    iterators = evaluate.follow_statement(param)
-                result += evaluate.get_iterator_types(iterators)
+                    iterators = evaluator.follow_statement(param)
+                result += evaluator.get_iterator_types(iterators)
         return result
+
+    from jedi.evaluate import representation as er
 
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/Execution parent """
@@ -387,21 +390,21 @@ def _check_array_additions(compare_array, module, is_list):
             if isinstance(comp_arr_parent, er.InstanceElement):
                 stmt = er.InstanceElement(comp_arr_parent.instance, stmt)
 
-            if evaluate.follow_statement.push_stmt(stmt):
+            if evaluator.follow_statement.push_stmt(stmt):
                 # check recursion
                 continue
             res += check_calls(_scan_statement(stmt, n), n)
-            evaluate.follow_statement.pop_stmt()
+            evaluator.follow_statement.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
     return res
 
 
-def check_array_instances(instance):
+def check_array_instances(evaluator, instance):
     """Used for set() and list() instances."""
     if not settings.dynamic_arrays_instances:
         return instance.var_args
-    ai = ArrayInstance(instance)
+    ai = ArrayInstance(evaluator, instance)
     return [ai]
 
 
@@ -411,7 +414,8 @@ class ArrayInstance(pr.Base):
     This is definitely a hack, but a good one :-)
     It makes it possible to use set/list conversions.
     """
-    def __init__(self, instance):
+    def __init__(self, evaluator, instance):
+        self._evaluator = evaluator
         self.instance = instance
         self.var_args = instance.var_args
 
@@ -421,8 +425,9 @@ class ArrayInstance(pr.Base):
         lists/sets are too complicated too handle that.
         """
         items = []
+        from jedi.evaluate import representation as er
         for stmt in self.var_args:
-            for typ in evaluate.follow_statement(stmt):
+            for typ in self._evaluator.follow_statement(stmt):
                 if isinstance(typ, er.Instance) and len(typ.var_args):
                     array = typ.var_args[0]
                     if isinstance(array, ArrayInstance):
@@ -435,7 +440,7 @@ class ArrayInstance(pr.Base):
                                 'ArrayInstance recursion',
                                 self.var_args)
                         continue
-                items += evaluate.get_iterator_types([typ])
+                items += self._evaluator.get_iterator_types([typ])
 
         # TODO check if exclusion of tuple is a problem here.
         if isinstance(self.var_args, tuple) or self.var_args.parent is None:
@@ -447,7 +452,7 @@ class ArrayInstance(pr.Base):
         return items
 
 
-def check_flow_information(flow, search_name, pos):
+def check_flow_information(evaluator, flow, search_name, pos):
     """ Try to find out the type of a variable just with the information that
     is given by the flows: e.g. It is also responsible for assert checks.::
 
@@ -463,17 +468,18 @@ def check_flow_information(flow, search_name, pos):
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
-            result = _check_isinstance_type(ass, search_name)
+            result = _check_isinstance_type(evaluator, ass, search_name)
             if result:
                 break
 
     if isinstance(flow, pr.Flow) and not result:
         if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
-            result = _check_isinstance_type(flow.inputs[0], search_name)
+            result = _check_isinstance_type(evaluator, flow.inputs[0], search_name)
     return result
 
 
-def _check_isinstance_type(stmt, search_name):
+def _check_isinstance_type(evaluator, stmt, search_name):
+    from jedi.evaluate import representation as er
     try:
         commands = stmt.get_commands()
         # this might be removed if we analyze and, etc
@@ -496,7 +502,7 @@ def _check_isinstance_type(stmt, search_name):
         return []
 
     result = []
-    for c in evaluate.follow_call(classes[0]):
+    for c in evaluator.follow_call(classes[0]):
         if isinstance(c, er.Array):
             result += c.get_index_types()
         else:

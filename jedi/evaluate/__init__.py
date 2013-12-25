@@ -424,8 +424,8 @@ class Evaluator(object):
 
                 while flow_scope:
                     # TODO check if result is in scope -> no evaluation necessary
-                    n = dynamic.check_flow_information(flow_scope, name_str,
-                                                       position)
+                    n = dynamic.check_flow_information(self, flow_scope,
+                                                       name_str, position)
                     if n:
                         result = n
                         break

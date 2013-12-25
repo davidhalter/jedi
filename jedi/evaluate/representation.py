@@ -62,7 +62,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         if str(base.name) in ['list', 'set'] \
                 and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
-            self.var_args = dynamic.check_array_instances(self)
+            self.var_args = dynamic.check_array_instances(evaluator, self)
         else:
             # need to execute the __init__ function, because the dynamic param
             # searching needs it.
@@ -785,8 +785,8 @@ class Execution(Executable):
 class Generator(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
     """ Cares for `yield` statements. """
     def __init__(self, evaluator, func, var_args):
-        # Need evaluator for `CachedMetaClass`.
         super(Generator, self).__init__()
+        self._evaluator = evaluator
         self.func = func
         self.var_args = var_args
 
@@ -860,7 +860,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
                         return self.get_exact_index_types(index.var_args[0])
 
         result = list(self._follow_values(self._array.values))
-        result += dynamic.check_array_additions(self)
+        result += dynamic.check_array_additions(evaluator, self)
         return set(result)
 
     def get_exact_index_types(self, mixed_index):
