@@ -199,7 +199,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         if isinstance(var, pr.Function):
             var = Function(evaluator, var)
         elif isinstance(var, pr.Class):
-            var = Class(var)
+            var = Class(evaluator, var)
         self.instance = instance
         self.var = var
         self.is_class_var = is_class_var
@@ -470,7 +470,7 @@ class Execution(Executable):
                     cls = func.get_parent_until(accept + (pr.Class,),
                                                 include_current=False)
                     if isinstance(cls, pr.Class):
-                        cls = Class(cls)
+                        cls = Class(self._evaluator, cls)
                         su = cls.get_super_classes()
                         if su:
                             return [Instance(self._evaluator, su[0])]

@@ -391,11 +391,11 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             if isinstance(comp_arr_parent, er.InstanceElement):
                 stmt = er.InstanceElement(comp_arr_parent.instance, stmt)
 
-            if evaluator.follow_statement.push_stmt(stmt):
+            if evaluator.recursion_detector.push_stmt(stmt):
                 # check recursion
                 continue
             res += check_calls(_scan_statement(stmt, n), n)
-            evaluator.follow_statement.pop_stmt()
+            evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
     return res
