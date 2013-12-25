@@ -257,7 +257,7 @@ def check_array_additions(evaluator, array):
 
     is_list = array._array.type == 'list'
     current_module = array._array.get_parent_until()
-    res = _check_array_additions(array, current_module, is_list)
+    res = _check_array_additions(evaluator, array, current_module, is_list)
     return res
 
 
@@ -345,10 +345,11 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             elif add_name in ['extend', 'update']:
                 for param in params:
                     iterators = evaluator.follow_statement(param)
-                result += evaluator.get_iterator_types(iterators)
+                result += evaluate.get_iterator_types(iterators)
         return result
 
     from jedi.evaluate import representation as er
+    from jedi import evaluate
 
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/Execution parent """
@@ -425,10 +426,10 @@ class ArrayInstance(pr.Base):
         lists/sets are too complicated too handle that.
         """
         items = []
-        from jedi.evaluate import representation as er
+        from jedi import evaluate
         for stmt in self.var_args:
             for typ in self._evaluator.follow_statement(stmt):
-                if isinstance(typ, er.Instance) and len(typ.var_args):
+                if isinstance(typ, evaluate.er.Instance) and len(typ.var_args):
                     array = typ.var_args[0]
                     if isinstance(array, ArrayInstance):
                         # prevent recursions
@@ -440,7 +441,7 @@ class ArrayInstance(pr.Base):
                                 'ArrayInstance recursion',
                                 self.var_args)
                         continue
-                items += self._evaluator.get_iterator_types([typ])
+                items += evaluate.get_iterator_types([typ])
 
         # TODO check if exclusion of tuple is a problem here.
         if isinstance(self.var_args, tuple) or self.var_args.parent is None:
@@ -448,7 +449,7 @@ class ArrayInstance(pr.Base):
 
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
-        items += _check_array_additions(self.instance, module, is_list)
+        items += _check_array_additions(self._evaluator, self.instance, module, is_list)
         return items
 
 

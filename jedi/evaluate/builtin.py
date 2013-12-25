@@ -428,8 +428,7 @@ class Builtin(object):
     def scope(self):
         return self.builtin.parser.module
 
-    @property
-    def magic_function_scope(self):
+    def magic_function_scope(self, evaluator):
         try:
             return self._magic_function_scope
         except AttributeError:
@@ -440,7 +439,7 @@ class Builtin(object):
             parser = Parser(source, None)
             module = parser.module
             module.parent = self.scope
-            typ = evaluate.follow_path(iter(['FunctionType']), module, module)
+            typ = evaluator.follow_path(iter(['FunctionType']), module, module)
 
             s = self._magic_function_scope = typ.pop()
             return s

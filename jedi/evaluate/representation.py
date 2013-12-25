@@ -384,10 +384,10 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         return decorated_func
 
     def get_magic_method_names(self):
-        return builtin.Builtin.magic_function_scope.get_defined_names()
+        return builtin.Builtin.magic_function_scope(self._evaluator).get_defined_names()
 
     def get_magic_method_scope(self):
-        return builtin.Builtin.magic_function_scope
+        return builtin.Builtin.magic_function_scope(self._evaluator)
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
@@ -860,7 +860,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
                         return self.get_exact_index_types(index.var_args[0])
 
         result = list(self._follow_values(self._array.values))
-        result += dynamic.check_array_additions(evaluator, self)
+        result += dynamic.check_array_additions(self._evaluator, self)
         return set(result)
 
     def get_exact_index_types(self, mixed_index):

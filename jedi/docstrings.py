@@ -104,7 +104,7 @@ def _strip_rest_role(type_str):
         return type_str
 
 
-def find_return_types(func):
+def find_return_types(evaluator, func):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(code)
