@@ -96,14 +96,29 @@ class _RecursionNode(object):
             and not self.is_ignored and not other.is_ignored
 
 
-class ExecutionRecursionDecorator(object):
+def execution_recursion_decorator(func):
+    def run(execution, evaluate_generator=False):
+        detector = execution._evaluator.execution_recursion_detector
+        if detector.push_execution(execution, evaluate_generator):
+            result = []
+        else:
+            result = func(execution, evaluate_generator)
+        detector.pop_execution()
+        return result
+
+    return run
+
+
+class ExecutionRecursionDetector(object):
     """
     Catches recursions of executions.
     It is designed like a Singelton. Only one instance should exist.
     """
-    def __init__(self, func):
-        self.func = func
-        self.reset()
+    def __init__(self):
+        self.recursion_level = 0
+        self.parent_execution_funcs = []
+        self.execution_funcs = set()
+        self.execution_count = 0
 
     def __call__(self, execution, evaluate_generator=False):
         debug.dbg('Execution recursions: %s' % execution, self.recursion_level,
@@ -112,16 +127,14 @@ class ExecutionRecursionDecorator(object):
             result = []
         else:
             result = self.func(execution, evaluate_generator)
-        self.cleanup()
+        self.pop_execution()
         return result
 
-    @classmethod
-    def cleanup(cls):
+    def pop_execution(cls):
         cls.parent_execution_funcs.pop()
         cls.recursion_level -= 1
 
-    @classmethod
-    def check_recursion(cls, execution, evaluate_generator):
+    def push_execution(cls, execution, evaluate_generator):
         in_par_execution_funcs = execution.base in cls.parent_execution_funcs
         in_execution_funcs = execution.base in cls.execution_funcs
         cls.recursion_level += 1
@@ -147,10 +160,3 @@ class ExecutionRecursionDecorator(object):
         if cls.execution_count > settings.max_executions_without_builtins:
             return True
         return False
-
-    @classmethod
-    def reset(cls):
-        cls.recursion_level = 0
-        cls.parent_execution_funcs = []
-        cls.execution_funcs = set()
-        cls.execution_count = 0

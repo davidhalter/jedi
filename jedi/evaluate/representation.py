@@ -429,7 +429,7 @@ class Execution(Executable):
         return base
 
     @memoize_default(default=())
-    @recursion.ExecutionRecursionDecorator
+    @recursion.execution_recursion_decorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
         base = self._decorated

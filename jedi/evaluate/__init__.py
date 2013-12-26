@@ -119,6 +119,7 @@ class Evaluator(object):
     def __init__(self):
         self.memoize_cache = {}  # for memoize decorators
         self.recursion_detector = recursion.RecursionDetector()
+        self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
 
     def get_names_of_scope(self, scope, position=None, star_search=True,
                            include_builtin=True):
