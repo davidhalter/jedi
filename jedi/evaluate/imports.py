@@ -26,9 +26,6 @@ from jedi.parser import representation as pr
 from jedi import cache
 from jedi.evaluate import builtin
 
-# for debugging purposes only
-imports_processed = 0
-
 
 class ModuleNotFound(Exception):
     pass
@@ -304,8 +301,6 @@ class ImportPath(pr.Base):
             elif self._is_relative_import():
                 path = self._get_relative_path()
 
-            global imports_processed
-            imports_processed += 1
             if path is not None:
                 importing = find_module(string, [path])
             else:

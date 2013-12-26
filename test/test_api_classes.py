@@ -11,9 +11,9 @@ import jedi
 
 def test_is_keyword():
     results = Script('import ', 1, 1, None).goto_definitions()
-    assert len(results) == 1 and results[0].is_keyword == True
+    assert len(results) == 1 and results[0].is_keyword is True
     results = Script('str', 1, 1, None).goto_definitions()
-    assert len(results) == 1 and results[0].is_keyword == False
+    assert len(results) == 1 and results[0].is_keyword is False
 
 def make_definitions():
     """
@@ -70,6 +70,7 @@ def test_function_call_signature_in_doc():
     f""").goto_definitions()
     doc = defs[0].doc
     assert "f(x, y = 1, z = 'a')" in doc
+
 
 def test_class_call_signature():
     defs = Script("""

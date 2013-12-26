@@ -17,18 +17,13 @@ from jedi import keywords
 from jedi.evaluate import dynamic
 
 
-def _clear_caches():
+def clear_caches():
     """
     Clear all caches of this and related modules. The only cache that will not
     be deleted is the module cache.
     """
     cache.clear_caches()
     dynamic.search_param_cache.clear()
-    recursion.ExecutionRecursionDecorator.reset()
-
-    evaluate.follow_statement.reset()
-
-    imports.imports_processed = 0
 
 
 def _clear_caches_after_call(func):
@@ -38,7 +33,7 @@ def _clear_caches_after_call(func):
     @functools.wraps(func)
     def wrapper(*args, **kwds):
         result = func(*args, **kwds)
-        _clear_caches()
+        clear_caches()
         return result
     return wrapper
 
@@ -416,7 +411,7 @@ class Completion(BaseDefinition):
 
             self._followed_definitions = \
                 [BaseDefinition(d, d.start_pos) for d in defs]
-            _clear_caches()
+            clear_caches()
 
         return self._followed_definitions
 

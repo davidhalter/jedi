@@ -82,7 +82,7 @@ class Script(object):
         if not (0 <= self._column <= line_len):
             raise ValueError('`column` parameter is not in a valid range.')
 
-        #api_classes._clear_caches()  # TODO REMOVE
+        api_classes.clear_caches()
         debug.reset_time()
         self.source = modules.source_to_unicode(source, encoding)
         self._pos = self._line, self._column
@@ -111,7 +111,6 @@ class Script(object):
         """ lazy parser."""
         return self._module.parser
 
-    #@api_classes._clear_caches_after_call
     def completions(self):
         """
         Return :class:`api_classes.Completion` objects. Those objects contain
@@ -319,7 +318,6 @@ class Script(object):
         sig = self.call_signatures()
         return sig[0] if sig else None
 
-    #@api_classes._clear_caches_after_call
     def goto_definitions(self):
         """
         Return the definitions of a the path under the cursor.  goto function!
@@ -383,7 +381,6 @@ class Script(object):
                  if s is not imports.ImportPath.GlobalNamespace])
         return self._sorted_defs(d)
 
-    #@api_classes._clear_caches_after_call
     def goto_assignments(self):
         """
         Return the first definition found. Imports and statements aren't
@@ -453,7 +450,6 @@ class Script(object):
                     definitions = [user_stmt]
         return definitions, search_name
 
-    #@api_classes._clear_caches_after_call
     def usages(self, additional_module_paths=()):
         """
         Return :class:`api_classes.Usage` objects, which contain all
@@ -477,8 +473,7 @@ class Script(object):
                                if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
-            definitions = dynamic.usages_add_import_modules(definitions,
-                                                            search_name)
+            definitions = usages_add_import_modules(self._evaluator, definitions, search_name)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self._parser.module)
@@ -497,7 +492,6 @@ class Script(object):
         settings.dynamic_flow_information = temp
         return self._sorted_defs(set(names))
 
-    #@api_classes._clear_caches_after_call
     def call_signatures(self):
         """
         Return the function object of the call you're currently in.
@@ -725,7 +719,7 @@ def usages(evaluator, definitions, search_name, mods):
 
         for f in follow:
             follow_res, search = evaluator.goto(call.parent, f)
-            follow_res = usages_add_import_modules(follow_res, search)
+            follow_res = usages_add_import_modules(evaluator, follow_res, search)
 
             compare_follow_res = compare_array(follow_res)
             # compare to see if they match
