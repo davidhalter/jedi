@@ -65,7 +65,8 @@ class BaseDefinition(object):
         '_sre.SRE_Pattern': 're.RegexObject',
     }.items())
 
-    def __init__(self, definition, start_pos):
+    def __init__(self, evaluator, definition, start_pos):
+        self._evaluator = evaluator
         self._start_pos = start_pos
         self._definition = definition
         """
@@ -303,8 +304,8 @@ class Completion(BaseDefinition):
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
-    def __init__(self, name, needs_dot, like_name_length, base):
-        super(Completion, self).__init__(name.parent, name.start_pos)
+    def __init__(self, evaluator, name, needs_dot, like_name_length, base):
+        super(Completion, self).__init__(evaluator, name.parent, name.start_pos)
 
         self._name = name
         self._needs_dot = needs_dot
@@ -407,7 +408,7 @@ class Completion(BaseDefinition):
         """
         if self._followed_definitions is None:
             if self._definition.isinstance(pr.Statement):
-                defs = evaluate.follow_statement(self._definition)
+                defs = self._evaluator.follow_statement(self._definition)
             elif self._definition.isinstance(pr.Import):
                 defs = imports.strip_imports(self._evaluator, [self._definition])
             else:
@@ -428,8 +429,8 @@ class Definition(BaseDefinition):
     *Definition* objects are returned from :meth:`api.Script.goto_assignments`
     or :meth:`api.Script.goto_definitions`.
     """
-    def __init__(self, definition):
-        super(Definition, self).__init__(definition, definition.start_pos)
+    def __init__(self, evaluator, definition):
+        super(Definition, self).__init__(evaluator, definition, definition.start_pos)
 
     @property
     def name(self):
@@ -546,26 +547,26 @@ class Definition(BaseDefinition):
             d = d.var
         if isinstance(d, pr.Name):
             d = d.parent
-        return _defined_names(d)
+        return _defined_names(self._evaluator, d)
 
 
-def _defined_names(scope):
+def _defined_names(evaluator, scope):
     """
     List sub-definitions (e.g., methods in class).
 
     :type scope: Scope
     :rtype: list of Definition
     """
-    pair = next(evaluate.get_names_of_scope(
+    pair = next(evaluator.get_names_of_scope(
         scope, star_search=False, include_builtin=False), None)
     names = pair[1] if pair else []
-    return [Definition(d) for d in sorted(names, key=lambda s: s.start_pos)]
+    return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class Usage(BaseDefinition):
     """TODO: document this"""
-    def __init__(self, name_part, scope):
-        super(Usage, self).__init__(scope, name_part.start_pos)
+    def __init__(self, evaluator, name_part, scope):
+        super(Usage, self).__init__(evaluator, scope, name_part.start_pos)
         self.text = unicode(name_part)
         self.end_pos = name_part.end_pos
 

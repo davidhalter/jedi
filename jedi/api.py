@@ -162,7 +162,7 @@ class Script(object):
                     or n.startswith(like):
                 if not filter_private_variable(s,
                             user_stmt or self._parser.user_scope, n):
-                    new = api_classes.Completion(c, needs_dot, len(like), s)
+                    new = api_classes.Completion(self._evaluator, c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
                         comp_dct[k]._same_name_completions.append(new)
@@ -379,7 +379,7 @@ class Script(object):
         # add keywords
         scopes |= keywords.keywords(string=goto_path, pos=self._pos)
 
-        d = set([api_classes.Definition(s) for s in scopes
+        d = set([api_classes.Definition(self._evaluator, s) for s in scopes
                  if s is not imports.ImportPath.GlobalNamespace])
         return self._sorted_defs(d)
 
@@ -394,7 +394,7 @@ class Script(object):
         :rtype: list of :class:`api_classes.Definition`
         """
         results, _ = self._goto()
-        d = [api_classes.Definition(d) for d in set(results)
+        d = [api_classes.Definition(self._evaluator, d) for d in set(results)
              if d is not imports.ImportPath.GlobalNamespace]
         return self._sorted_defs(d)
 
@@ -482,17 +482,17 @@ class Script(object):
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self._parser.module)
-        names = dynamic.usages(definitions, search_name, module)
+        names = usages(self._evaluator, definitions, search_name, module)
 
         for d in set(definitions):
             if isinstance(d, pr.Module):
-                names.append(api_classes.Usage(d, d))
+                names.append(api_classes.Usage(self._evaluator, d, d))
             elif isinstance(d, er.Instance):
                 # Instances can be ignored, because they are being created by
                 # ``__getattr__``.
                 pass
             else:
-                names.append(api_classes.Usage(d.names[-1], d))
+                names.append(api_classes.Usage(self._evaluator, d.names[-1], d))
 
         settings.dynamic_flow_information = temp
         return self._sorted_defs(set(names))
@@ -674,7 +674,7 @@ def defined_names(source, path=None, encoding='utf-8'):
         modules.source_to_unicode(source, encoding),
         module_path=path,
     )
-    return api_classes._defined_names(parser.module)
+    return api_classes._defined_names(Evaluator(), parser.module)
 
 
 def preload_module(*modules):
@@ -703,7 +703,7 @@ def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
 
 
 # TODO move to a better place.
-def usages(definitions, search_name, mods):
+def usages(evaluator, definitions, search_name, mods):
     def compare_array(definitions):
         """ `definitions` are being compared by module/start_pos, because
         sometimes the id's of the objects change (e.g. executions).
@@ -724,14 +724,14 @@ def usages(definitions, search_name, mods):
                 follow.append(call_path[:i + 1])
 
         for f in follow:
-            follow_res, search = evaluate.goto(call.parent, f)
+            follow_res, search = evaluator.goto(call.parent, f)
             follow_res = usages_add_import_modules(follow_res, search)
 
             compare_follow_res = compare_array(follow_res)
             # compare to see if they match
             if any(r in compare_definitions for r in compare_follow_res):
                 scope = call.parent
-                result.append(api_classes.Usage(search, scope))
+                result.append(api_classes.Usage(evaluator, search, scope))
 
         return result
 
@@ -741,7 +741,7 @@ def usages(definitions, search_name, mods):
     compare_definitions = compare_array(definitions)
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
-    for m in get_directory_modules_for_name(mods, search_name):
+    for m in dynamic.get_directory_modules_for_name(mods, search_name):
         try:
             stmts = m.used_names[search_name]
         except KeyError:
@@ -757,26 +757,24 @@ def usages(definitions, search_name, mods):
                             imps.append((count, name_part))
 
                 for used_count, name_part in imps:
-                    i = imports.ImportPath(_evaluator, stmt, kill_count=count - used_count,
+                    i = imports.ImportPath(evaluator, stmt, kill_count=count - used_count,
                                            direct_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
-                        names.append(api_classes.Usage(name_part, stmt))
+                        names.append(api_classes.Usage(evaluator, name_part, stmt))
             else:
-                for call in _scan_statement(stmt, search_name,
-                                            assignment_details=True):
+                for call in dynamic._scan_statement(stmt, search_name,
+                                                    assignment_details=True):
                     names += check_call(call)
     return names
 
 
-def usages_add_import_modules(definitions, search_name):
+def usages_add_import_modules(evaluator, definitions, search_name):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:
         if isinstance(d.parent, pr.Import):
-            s = imports.ImportPath(_evaluator, d.parent, direct_resolve=True)
+            s = imports.ImportPath(evaluator, d.parent, direct_resolve=True)
             with common.ignored(IndexError):
                 new.add(s.follow(is_goto=True)[0])
     return set(definitions) | new
-
-
