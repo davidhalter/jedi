@@ -14,7 +14,6 @@ from jedi import cache
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi import keywords
-from jedi.evaluate import dynamic
 
 
 def clear_caches():
@@ -23,7 +22,6 @@ def clear_caches():
     be deleted is the module cache.
     """
     cache.clear_caches()
-    dynamic.search_param_cache.clear()
 
 
 def _clear_caches_after_call(func):

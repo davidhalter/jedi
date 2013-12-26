@@ -64,7 +64,6 @@ from jedi.evaluate.cache import memoize_default
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
 search_param_modules = ['.']
-search_param_cache = {}
 
 
 def get_directory_modules_for_name(mods, name):
@@ -110,22 +109,6 @@ def get_directory_modules_for_name(mods, name):
                 yield c
 
 
-def _search_param_memoize(func):
-    """
-    Is only good for search params memoize, respectively the closure,
-    because it just caches the input, not the func, like normal memoize does.
-    """
-    def wrapper(*args, **kwargs):
-        key = (args, frozenset(kwargs.items()))
-        if key in search_param_cache:
-            return search_param_cache[key]
-        else:
-            rv = func(*args, **kwargs)
-            search_param_cache[key] = rv
-            return rv
-    return wrapper
-
-
 class ParamListener(object):
     """
     This listener is used to get the params for a function.
@@ -158,8 +141,8 @@ def search_params(evaluator, param):
         """
         Returns the values of a param, or an empty array.
         """
-        @_search_param_memoize
-        def get_posibilities(module, func_name):
+        @memoize_default([], evaluator_is_first_arg=True)
+        def get_posibilities(evaluator, module, func_name):
             try:
                 possible_stmts = module.used_names[func_name]
             except KeyError:
@@ -209,7 +192,7 @@ def search_params(evaluator, param):
             return listener.param_possibilities
 
         result = []
-        for params in get_posibilities(module, func_name):
+        for params in get_posibilities(evaluator, module, func_name):
             for p in params:
                 if str(p) == param_name:
                     result += evaluator.follow_statement(p.parent)
