@@ -31,9 +31,9 @@ from jedi import settings
 from jedi import common
 from jedi import debug
 
-time_caches = []
+_time_caches = []
 
-star_import_cache = {}
+_star_import_cache = {}
 
 # for fast_parser, should not be deleted
 parser_cache = {}
@@ -54,15 +54,15 @@ def clear_caches(delete_all=False):
     :param delete_all: Deletes also the cache that is normally not deleted,
         like parser cache, which is important for faster parsing.
     """
-    global time_caches
+    global _time_caches
 
     if delete_all:
-        time_caches = []
-        star_import_cache.clear()
+        _time_caches = []
+        _star_import_cache.clear()
         parser_cache.clear()
     else:
         # normally just kill the expired entries, not all
-        for tc in time_caches:
+        for tc in _time_caches:
             # check time_cache for expired entries
             for key, (t, value) in list(tc.items()):
                 if t < time.time():
@@ -78,7 +78,7 @@ def time_cache(time_add_setting):
     """
     def _temp(key_func):
         dct = {}
-        time_caches.append(dct)
+        _time_caches.append(dct)
 
         def wrapper(optional_callable, *args, **kwargs):
             key = key_func(*args, **kwargs)
@@ -105,13 +105,13 @@ def cache_call_signatures(stmt):
 def cache_star_import(func):
     def wrapper(evaluator, scope, *args, **kwargs):
         with common.ignored(KeyError):
-            mods = star_import_cache[scope]
+            mods = _star_import_cache[scope]
             if mods[0] + settings.star_import_cache_validity > time.time():
                 return mods[1]
         # cache is too old and therefore invalid or not available
         invalidate_star_import_cache(scope)
         mods = func(evaluator, scope, *args, **kwargs)
-        star_import_cache[scope] = time.time(), mods
+        _star_import_cache[scope] = time.time(), mods
 
         return mods
     return wrapper
@@ -120,9 +120,9 @@ def cache_star_import(func):
 def invalidate_star_import_cache(module, only_main=False):
     """ Important if some new modules are being reparsed """
     with common.ignored(KeyError):
-        t, mods = star_import_cache[module]
+        t, mods = _star_import_cache[module]
 
-        del star_import_cache[module]
+        del _star_import_cache[module]
 
         for m in mods:
             invalidate_star_import_cache(m, only_main=True)
@@ -130,7 +130,7 @@ def invalidate_star_import_cache(module, only_main=False):
     if not only_main:
         # We need a list here because otherwise the list is being changed
         # during the iteration in py3k: iteritems -> items.
-        for key, (t, mods) in list(star_import_cache.items()):
+        for key, (t, mods) in list(_star_import_cache.items()):
             if module in mods:
                 invalidate_star_import_cache(key)
 
@@ -246,7 +246,7 @@ class _ModulePickling(object):
             else:
                 # 0 means version is not defined (= always delete cache):
                 if data.get('version', 0) != self.version:
-                    self.delete_cache()
+                    self.clear_cache()
                     self.__index = {}
                 else:
                     self.__index = data['index']
@@ -265,7 +265,7 @@ class _ModulePickling(object):
             json.dump(data, f)
         self.__index = None
 
-    def delete_cache(self):
+    def clear_cache(self):
         shutil.rmtree(self._cache_directory())
 
     def _get_hashed_path(self, path):
