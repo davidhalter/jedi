@@ -312,9 +312,9 @@ class Evaluator(object):
                     return []
                 result = get_iterator_types(self.eval_statement(loop.inputs[0]))
                 if len(loop.set_vars) > 1:
-                    commands = loop.set_stmt.expression_list()
+                    expression_list = loop.set_stmt.expression_list()
                     # loops with loop.set_vars > 0 only have one command
-                    result = assign_tuples(commands[0], result, name_str)
+                    result = assign_tuples(expression_list[0], result, name_str)
                 return result
 
             def process(name):
@@ -497,8 +497,8 @@ class Evaluator(object):
         # variables.
         if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
             new_result = []
-            for ass_commands, op in stmt.assignment_details:
-                new_result += find_assignments(ass_commands[0], result, seek_name)
+            for ass_expression_list, op in stmt.assignment_details:
+                new_result += find_assignments(ass_expression_list[0], result, seek_name)
             result = new_result
         return set(result)
 
@@ -669,12 +669,12 @@ class Evaluator(object):
 
     def goto(self, stmt, call_path=None):
         if call_path is None:
-            commands = stmt.expression_list()
-            if len(commands) == 0:
+            expression_list = stmt.expression_list()
+            if len(expression_list) == 0:
                 return [], ''
             # Only the first command is important, the rest should basically not
             # happen except in broken code (e.g. docstrings that aren't code).
-            call = commands[0]
+            call = expression_list[0]
             if isinstance(call, (str, unicode)):
                 call_path = [call]
             else:

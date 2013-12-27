@@ -209,11 +209,11 @@ def search_params(evaluator, param):
     # get the param name
     if param.assignment_details:
         # first assignment details, others would be a syntax error
-        commands, op = param.assignment_details[0]
+        expression_list, op = param.assignment_details[0]
     else:
-        commands = param.expression_list()
-    offset = 1 if commands[0] in ['*', '**'] else 0
-    param_name = str(commands[offset].name)
+        expression_list = param.expression_list()
+    offset = 1 if expression_list[0] in ['*', '**'] else 0
+    param_name = str(expression_list[offset].name)
 
     # add the listener
     listener = ParamListener()
@@ -259,8 +259,8 @@ def _scan_statement(stmt, search_name, assignment_details=False):
 
     check = list(stmt.expression_list())
     if assignment_details:
-        for commands, op in stmt.assignment_details:
-            check += commands
+        for expression_list, op in stmt.assignment_details:
+            check += expression_list
 
     result = []
     for c in check:
@@ -465,10 +465,10 @@ def check_flow_information(evaluator, flow, search_name, pos):
 def _check_isinstance_type(evaluator, stmt, search_name):
     from jedi.evaluate import representation as er
     try:
-        commands = stmt.expression_list()
+        expression_list = stmt.expression_list()
         # this might be removed if we analyze and, etc
-        assert len(commands) == 1
-        call = commands[0]
+        assert len(expression_list) == 1
+        call = expression_list[0]
         assert isinstance(call, pr.Call) and str(call.name) == 'isinstance'
         assert bool(call.execution)
 

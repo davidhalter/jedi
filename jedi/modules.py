@@ -320,11 +320,11 @@ def sys_path_with_modifications(module):
         for p in possible_stmts:
             if not isinstance(p, pr.Statement):
                 continue
-            commands = p.expression_list()
+            expression_list = p.expression_list()
             # sys.path command is just one thing.
-            if len(commands) != 1 or not isinstance(commands[0], pr.Call):
+            if len(expression_list) != 1 or not isinstance(expression_list[0], pr.Call):
                 continue
-            call = commands[0]
+            call = expression_list[0]
             n = call.name
             if not isinstance(n, pr.Name) or len(n.names) != 3:
                 continue

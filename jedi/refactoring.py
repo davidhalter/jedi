@@ -176,17 +176,17 @@ def inline(script):
                    if not stmt.start_pos <= (r.line, r.column) <= stmt.end_pos]
         inlines = sorted(inlines, key=lambda x: (x.module_path, x.line, x.column),
                          reverse=True)
-        commands = stmt.expression_list()
+        expression_list = stmt.expression_list()
         # don't allow multiline refactorings for now.
         assert stmt.start_pos[0] == stmt.end_pos[0]
         index = stmt.start_pos[0] - 1
 
         line = new_lines[index]
-        replace_str = line[commands[0].start_pos[1]:stmt.end_pos[1] + 1]
+        replace_str = line[expression_list[0].start_pos[1]:stmt.end_pos[1] + 1]
         replace_str = replace_str.strip()
         # tuples need parentheses
-        if commands and isinstance(commands[0], pr.Array):
-            arr = commands[0]
+        if expression_list and isinstance(expression_list[0], pr.Array):
+            arr = expression_list[0]
             if replace_str[0] not in ['(', '[', '{'] and len(arr) > 1:
                 replace_str = '(%s)' % replace_str
 

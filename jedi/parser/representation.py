@@ -1104,7 +1104,7 @@ class Statement(Simple):
                 if result and isinstance(result[-1], StatementElement):
                     is_chain = True
             elif tok == ',':  # implies a tuple
-                # commands is now an array not a statement anymore
+                # expression is now an array not a statement anymore
                 t = result[0]
                 start_pos = t[2] if isinstance(t, tuple) else t.start_pos
 

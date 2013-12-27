@@ -594,12 +594,12 @@ class Execution(Executable):
                                                       values=[value]))
                 key, value = next(var_arg_iterator, (None, None))
 
-            commands = param.expression_list()
+            expression_list = param.expression_list()
             keys = []
             values = []
             array_type = None
             ignore_creation = False
-            if commands[0] == '*':
+            if expression_list[0] == '*':
                 # *args param
                 array_type = pr.Array.TUPLE
                 if value:
@@ -610,7 +610,7 @@ class Execution(Executable):
                         var_arg_iterator.push_back((key, value))
                         break
                     values.append(value)
-            elif commands[0] == '**':
+            elif expression_list[0] == '**':
                 # **kwargs param
                 array_type = pr.Array.DICT
                 if non_matching_keys:
@@ -633,7 +633,7 @@ class Execution(Executable):
 
             # Just ignore all the params that are without a key, after one
             # keyword argument was set.
-            if not ignore_creation and (not keys_only or commands[0] == '**'):
+            if not ignore_creation and (not keys_only or expression_list[0] == '**'):
                 keys_used.add(str(key))
                 result.append(gen_param_name_copy(param, keys=keys,
                                                   values=values, array_type=array_type))
@@ -663,11 +663,11 @@ class Execution(Executable):
                     stmt._expression_list = [old]
 
                 # *args
-                commands = stmt.expression_list()
-                if not len(commands):
+                expression_list = stmt.expression_list()
+                if not len(expression_list):
                     continue
-                if commands[0] == '*':
-                    arrays = self._evaluator.eval_expression_list(commands[1:])
+                if expression_list[0] == '*':
+                    arrays = self._evaluator.eval_expression_list(expression_list[1:])
                     # *args must be some sort of an array, otherwise -> ignore
 
                     for array in arrays:
@@ -678,8 +678,8 @@ class Execution(Executable):
                             for field_stmt in array.iter_content():
                                 yield None, helpers.FakeStatement(field_stmt)
                 # **kwargs
-                elif commands[0] == '**':
-                    arrays = self._evaluator.eval_expression_list(commands[1:])
+                elif expression_list[0] == '**':
+                    arrays = self._evaluator.eval_expression_list(expression_list[1:])
                     for array in arrays:
                         if isinstance(array, Array):
                             for key_stmt, value_stmt in array.items():
@@ -868,10 +868,10 @@ class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
             index = None
             for i, key_statement in enumerate(self._array.keys):
                 # Because we only want the key to be a string.
-                key_commands = key_statement.expression_list()
-                if len(key_commands) != 1:  # cannot deal with complex strings
+                key_expression_list = key_statement.expression_list()
+                if len(key_expression_list) != 1:  # cannot deal with complex strings
                     continue
-                key = key_commands[0]
+                key = key_expression_list[0]
                 if isinstance(key, pr.String):
                     str_key = key.value
                 elif isinstance(key, pr.Name):
