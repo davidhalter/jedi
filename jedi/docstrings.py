@@ -52,7 +52,7 @@ def follow_param(evaluator, param):
         p = Parser(param_str, None, user_position, no_docstr=True)
         if p.user_stmt is None:
             return []
-        return evaluator.follow_statement(p.user_stmt)
+        return evaluator.eval_statement(p.user_stmt)
     return []
 
 
@@ -127,4 +127,4 @@ def find_return_types(evaluator, func):
     if p.user_stmt is None:
         return []
     p.user_stmt.parent = func
-    return list(evaluator.follow_statement(p.user_stmt))
+    return list(evaluator.eval_statement(p.user_stmt))

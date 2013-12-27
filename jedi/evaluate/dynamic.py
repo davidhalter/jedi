@@ -195,7 +195,7 @@ def search_params(evaluator, param):
         for params in get_posibilities(evaluator, module, func_name):
             for p in params:
                 if str(p) == param_name:
-                    result += evaluator.follow_statement(p.parent)
+                    result += evaluator.eval_statement(p.parent)
         return result
 
     func = param.get_parent_until(pr.Function)
@@ -317,17 +317,17 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                 continue  # no params: just ignore it
             if add_name in ['append', 'add']:
                 for param in params:
-                    result += evaluator.follow_statement(param)
+                    result += evaluator.eval_statement(param)
             elif add_name in ['insert']:
                 try:
                     second_param = params[1]
                 except IndexError:
                     continue
                 else:
-                    result += evaluator.follow_statement(second_param)
+                    result += evaluator.eval_statement(second_param)
             elif add_name in ['extend', 'update']:
                 for param in params:
-                    iterators = evaluator.follow_statement(param)
+                    iterators = evaluator.eval_statement(param)
                 result += evaluate.get_iterator_types(iterators)
         return result
 
@@ -411,7 +411,7 @@ class ArrayInstance(pr.Base):
         items = []
         from jedi import evaluate
         for stmt in self.var_args:
-            for typ in self._evaluator.follow_statement(stmt):
+            for typ in self._evaluator.eval_statement(stmt):
                 if isinstance(typ, evaluate.er.Instance) and len(typ.var_args):
                     array = typ.var_args[0]
                     if isinstance(array, ArrayInstance):

@@ -22,7 +22,7 @@ def test_complete_on_empty_import():
     assert 10 < len(Script("from . import", 1, 5, '').completions()) < 30
     assert 10 < len(Script("from . import classes", 1, 5, '').completions()) < 30
     assert len(Script("import").completions()) == 0
-    if not is_py26:
+    if not is_py26:  # python 2.6 doesn't always come with a library `import*`.
         assert len(Script("import import", path='').completions()) > 0
 
     # 111

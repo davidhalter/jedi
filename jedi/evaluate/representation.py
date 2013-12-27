@@ -262,7 +262,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         # TODO care for mro stuff (multiple super classes).
         for s in self.base.supers:
             # Super classes are statements.
-            for cls in self._evaluator.follow_statement(s):
+            for cls in self._evaluator.eval_statement(s):
                 if not isinstance(cls, Class):
                     debug.warning('Received non class, as a super class')
                     continue  # Just ignore other stuff (user input error).
@@ -343,7 +343,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
                 debug.dbg('decorator:', dec, f)
-                dec_results = set(self._evaluator.follow_statement(dec))
+                dec_results = set(self._evaluator.eval_statement(dec))
                 if not len(dec_results):
                     debug.warning('decorator not found: %s on %s' %
                                  (dec, self.base_func))
@@ -416,7 +416,7 @@ class Execution(Executable):
             return []
         else:
             if isinstance(stmt, pr.Statement):
-                return self._evaluator.follow_statement(stmt)
+                return self._evaluator.eval_statement(stmt)
             else:
                 return [stmt]  # just some arbitrary object
 
@@ -512,7 +512,7 @@ class Execution(Executable):
             stmts = docstrings.find_return_types(self._evaluator, func)
             for r in self.returns:
                 if r is not None:
-                    stmts += self._evaluator.follow_statement(r)
+                    stmts += self._evaluator.eval_statement(r)
             return stmts
 
     @memoize_default(default=())
@@ -889,7 +889,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
 
     def _follow_values(self, values):
         """ helper function for the index getters """
-        return list(itertools.chain.from_iterable(self._evaluator.follow_statement(v)
+        return list(itertools.chain.from_iterable(self._evaluator.eval_statement(v)
                                                   for v in values))
 
     def get_defined_names(self):

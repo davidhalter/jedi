@@ -242,7 +242,7 @@ class Script(object):
         else:
             # just parse one statement, take it and evaluate it
             stmt = self._get_under_cursor_stmt(goto_path)
-            scopes = self._evaluator.follow_statement(stmt)
+            scopes = self._evaluator.eval_statement(stmt)
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
