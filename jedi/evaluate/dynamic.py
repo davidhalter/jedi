@@ -160,7 +160,7 @@ def search_params(evaluator, param):
 
                     # this whole stuff is just to not execute certain parts
                     # (speed improvement), basically we could just call
-                    # ``follow_call_path`` on the call_path and it would
+                    # ``eval_call_path`` on the call_path and it would
                     # also work.
                     def listRightIndex(lst, value):
                         return len(lst) - lst[-1::-1].index(value) - 1
@@ -173,7 +173,7 @@ def search_params(evaluator, param):
                         continue
                     scopes = [scope]
                     if first:
-                        scopes = evaluator.follow_call_path(iter(first), scope, pos)
+                        scopes = evaluator.eval_call_path(iter(first), scope, pos)
                         pos = None
                     from jedi.evaluate import representation as er
                     for scope in scopes:
@@ -308,7 +308,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             position = c.start_pos
             scope = c.get_parent_until(pr.IsScope)
 
-            found = evaluator.follow_call_path(backtrack_path, scope, position)
+            found = evaluator.eval_call_path(backtrack_path, scope, position)
             if not compare_array in found:
                 continue
 
