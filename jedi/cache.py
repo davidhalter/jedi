@@ -174,7 +174,7 @@ def save_module(path, name, parser, pickling=True):
 
 class _ModulePickling(object):
 
-    version = 5
+    version = 6
     """
     Version number (integer) for file system cache.
 
