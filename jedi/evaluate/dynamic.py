@@ -492,5 +492,5 @@ def _check_isinstance_type(evaluator, stmt, search_name):
         else:
             result.append(c)
     for i, c in enumerate(result):
-        result[i] = er.Instance(c)
+        result[i] = er.Instance(evaluator, c)
     return result

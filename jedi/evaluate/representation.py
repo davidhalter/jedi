@@ -196,6 +196,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     variable (e.g. self.variable or class methods).
     """
     def __init__(self, evaluator, instance, var, is_class_var=False):
+        self._evaluator = evaluator
         if isinstance(var, pr.Function):
             var = Function(evaluator, var)
         elif isinstance(var, pr.Class):
