@@ -408,7 +408,7 @@ class Completion(BaseDefinition):
                 return [self]
 
             self._followed_definitions = \
-                [BaseDefinition(d, d.start_pos) for d in defs]
+                [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
             clear_caches()
 
         return self._followed_definitions
