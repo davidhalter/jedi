@@ -211,7 +211,7 @@ def search_params(evaluator, param):
         # first assignment details, others would be a syntax error
         commands, op = param.assignment_details[0]
     else:
-        commands = param.get_commands()
+        commands = param.expression_list()
     offset = 1 if commands[0] in ['*', '**'] else 0
     param_name = str(commands[offset].name)
 
@@ -257,7 +257,7 @@ def _scan_statement(stmt, search_name, assignment_details=False):
                 result += _scan_statement(stmt, search_name)
         return result
 
-    check = list(stmt.get_commands())
+    check = list(stmt.expression_list())
     if assignment_details:
         for commands, op in stmt.assignment_details:
             check += commands
@@ -465,7 +465,7 @@ def check_flow_information(evaluator, flow, search_name, pos):
 def _check_isinstance_type(evaluator, stmt, search_name):
     from jedi.evaluate import representation as er
     try:
-        commands = stmt.get_commands()
+        commands = stmt.expression_list()
         # this might be removed if we analyze and, etc
         assert len(commands) == 1
         call = commands[0]
@@ -475,7 +475,7 @@ def _check_isinstance_type(evaluator, stmt, search_name):
         # isinstance check
         isinst = call.execution.values
         assert len(isinst) == 2  # has two params
-        obj, classes = [statement.get_commands() for statement in isinst]
+        obj, classes = [statement.expression_list() for statement in isinst]
         assert len(obj) == 1
         assert len(classes) == 1
         assert isinstance(obj[0], pr.Call)

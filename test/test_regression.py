@@ -119,7 +119,7 @@ class TestRegression(TestCase):
         s = "x()\nx( )\nx(  )\nx (  )"
         parser = Parser(s)
         for i, s in enumerate(parser.module.statements, 3):
-            for c in s.get_commands():
+            for c in s.expression_list():
                 self.assertEqual(c.execution.end_pos[1], i)
 
     def check_definition_by_marker(self, source, after_cursor, names):

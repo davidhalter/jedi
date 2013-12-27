@@ -749,7 +749,7 @@ class Statement(Simple):
     :type   start_pos: 2-tuple of int
     :param  start_pos: Position (line, column) of the Statement.
     """
-    __slots__ = ('token_list', '_set_vars', 'as_names', '_commands',
+    __slots__ = ('token_list', '_set_vars', 'as_names', '_expression_list',
                  '_assignment_details', 'docstr', '_names_are_set_vars')
 
     def __init__(self, module, token_list, start_pos, end_pos, parent=None,
@@ -771,7 +771,7 @@ class Statement(Simple):
         self.as_names = list(as_names)
 
         # cache
-        self._commands = None
+        self._expression_list = None
         self._assignment_details = []
         # this is important for other scripts
 
@@ -788,7 +788,7 @@ class Statement(Simple):
             return '%s %s ' % (''.join(pieces), assignment)
 
         code = ''.join(assemble(*a) for a in self.assignment_details)
-        code += assemble(self.get_commands())
+        code += assemble(self.expression_list())
         if self.docstr:
             code += '\n"""%s"""' % self.docstr
 
@@ -800,12 +800,12 @@ class Statement(Simple):
     def get_set_vars(self):
         """ Get the names for the statement. """
         if self._set_vars is None:
-            self._set_vars = []
+
             def search_calls(calls):
                 for call in calls:
                     if isinstance(call, Array):
                         for stmt in call:
-                            search_calls(stmt.get_commands())
+                            search_calls(stmt.expression_list())
                     elif isinstance(call, Call):
                         c = call
                         # Check if there's an execution in it, if so this is
@@ -819,12 +819,13 @@ class Statement(Simple):
                             continue
                         self._set_vars.append(call.name)
 
+            self._set_vars = []
             for calls, operation in self.assignment_details:
                 search_calls(calls)
 
             if not self.assignment_details and self._names_are_set_vars:
                 # In the case of Param, it's also a defining name without ``=``
-                search_calls(self.get_commands())
+                search_calls(self.expression_list())
         return self._set_vars + self.as_names
 
     def is_global(self):
@@ -843,14 +844,14 @@ class Statement(Simple):
         would result in ``[(Name(x), '='), (Array([Name(y), Name(z)]), '=')]``.
         """
         # parse statement which creates the assignment details.
-        self.get_commands()
+        self.expression_list()
         return self._assignment_details
 
-    def get_commands(self):
-        if self._commands is None:
-            self._commands = ['time neeeeed']  # avoid recursions
-            self._commands = self._parse_statement()
-        return self._commands
+    def expression_list(self):
+        if self._expression_list is None:
+            self._expression_list = ['time neeeeed']  # avoid recursions
+            self._expression_list = self._parse_statement()
+        return self._expression_list
 
     def _parse_statement(self):
         """
@@ -1016,7 +1017,7 @@ class Statement(Simple):
                     stmt = Statement(self._sub_module, token_list,
                                      start_pos, arr.end_pos)
                     arr.parent = stmt
-                    stmt.token_list = stmt._commands = [arr]
+                    stmt.token_list = stmt._expression_list = [arr]
                 else:
                     for t in stmt.token_list:
                         if isinstance(t, Name):
@@ -1126,7 +1127,7 @@ class Statement(Simple):
                     self.parent,
                     set_name_parents=False
                 )
-                stmt._commands = result
+                stmt._expression_list = result
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
                                              stmt.start_pos, stmt)
                 result = [arr]

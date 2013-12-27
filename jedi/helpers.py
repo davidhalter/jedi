@@ -105,7 +105,7 @@ def array_for_pos(stmt, pos, array_types=None):
     if stmt.start_pos >= pos >= stmt.end_pos:
         return None, 0
 
-    for command in stmt.get_commands():
+    for command in stmt.expression_list():
         arr = None
         if isinstance(command, pr.Array):
             arr, index = search_array(command, pos)

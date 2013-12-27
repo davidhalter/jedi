@@ -227,11 +227,11 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
             return self
         return func
 
-    def get_commands(self):
+    def expression_list(self):
         # Copy and modify the array.
         return [InstanceElement(self.instance._evaluator, self.instance, command, self.is_class_var)
                 if not isinstance(command, unicode) else command
-                for command in self.var.get_commands()]
+                for command in self.var.expression_list()]
 
     def __iter__(self):
         for el in self.var.__iter__():
@@ -545,12 +545,12 @@ class Execution(Executable):
             key_stmts = []
             for key in keys:
                 stmt = pr.Statement(self._sub_module, [], start_pos, None)
-                stmt._commands = [key]
+                stmt._expression_list = [key]
                 key_stmts.append(stmt)
             arr.keys = key_stmts
             arr.type = array_type
 
-            new_param._commands = [arr]
+            new_param._expression_list = [arr]
 
             name = copy.copy(param.get_name())
             name.parent = new_param
@@ -594,7 +594,7 @@ class Execution(Executable):
                                                       values=[value]))
                 key, value = next(var_arg_iterator, (None, None))
 
-            commands = param.get_commands()
+            commands = param.expression_list()
             keys = []
             values = []
             array_type = None
@@ -660,14 +660,14 @@ class Execution(Executable):
                     # generate a statement if it's not already one.
                     module = builtin.Builtin.scope
                     stmt = pr.Statement(module, [], (0, 0), None)
-                    stmt._commands = [old]
+                    stmt._expression_list = [old]
 
                 # *args
-                commands = stmt.get_commands()
+                commands = stmt.expression_list()
                 if not len(commands):
                     continue
                 if commands[0] == '*':
-                    arrays = self._evaluator.follow_call_list(commands[1:])
+                    arrays = self._evaluator.eval_expression_list(commands[1:])
                     # *args must be some sort of an array, otherwise -> ignore
 
                     for array in arrays:
@@ -679,12 +679,12 @@ class Execution(Executable):
                                 yield None, helpers.FakeStatement(field_stmt)
                 # **kwargs
                 elif commands[0] == '**':
-                    arrays = self._evaluator.follow_call_list(commands[1:])
+                    arrays = self._evaluator.eval_expression_list(commands[1:])
                     for array in arrays:
                         if isinstance(array, Array):
                             for key_stmt, value_stmt in array.items():
                                 # first index, is the key if syntactically correct
-                                call = key_stmt.get_commands()[0]
+                                call = key_stmt.expression_list()[0]
                                 if isinstance(call, pr.Name):
                                     yield call, value_stmt
                                 elif isinstance(call, pr.Call):
@@ -839,7 +839,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
     def get_index_types(self, index_arr=None):
         """ Get the types of a specific index or all, if not given """
         if index_arr is not None:
-            if index_arr and [x for x in index_arr if ':' in x.get_commands()]:
+            if index_arr and [x for x in index_arr if ':' in x.expression_list()]:
                 # array slicing
                 return [self]
 
@@ -868,7 +868,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
             index = None
             for i, key_statement in enumerate(self._array.keys):
                 # Because we only want the key to be a string.
-                key_commands = key_statement.get_commands()
+                key_commands = key_statement.expression_list()
                 if len(key_commands) != 1:  # cannot deal with complex strings
                     continue
                 key = key_commands[0]

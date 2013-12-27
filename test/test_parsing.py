@@ -17,7 +17,7 @@ def test_user_statement_on_import():
 class TestCallAndName():
     def get_call(self, source):
         stmt = Parser(source, no_docstr=True).module.statements[0]
-        return stmt.get_commands()[0]
+        return stmt.expression_list()[0]
 
     def test_name_and_call_positions(self):
         call = self.get_call('name\nsomething_else')

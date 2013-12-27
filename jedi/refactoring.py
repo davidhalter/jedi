@@ -176,7 +176,7 @@ def inline(script):
                    if not stmt.start_pos <= (r.line, r.column) <= stmt.end_pos]
         inlines = sorted(inlines, key=lambda x: (x.module_path, x.line, x.column),
                          reverse=True)
-        commands = stmt.get_commands()
+        commands = stmt.expression_list()
         # don't allow multiline refactorings for now.
         assert stmt.start_pos[0] == stmt.end_pos[0]
         index = stmt.start_pos[0] - 1

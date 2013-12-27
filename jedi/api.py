@@ -441,7 +441,7 @@ class Script(object):
             defs, search_name = self._evaluator.goto(stmt)
             definitions = follow_inexistent_imports(defs)
             if isinstance(user_stmt, pr.Statement):
-                c = user_stmt.get_commands()
+                c = user_stmt.expression_list()
                 if c and not isinstance(c[0], (str, unicode)) \
                         and c[0].start_pos > self._pos \
                         and not re.search(r'\.\w+$', goto_path):
@@ -466,7 +466,7 @@ class Script(object):
         user_stmt = self._user_stmt()
         definitions, search_name = self._goto(add_import_name=True)
         if isinstance(user_stmt, pr.Statement):
-            c = user_stmt.get_commands()[0]
+            c = user_stmt.expression_list()[0]
             if not isinstance(c, unicode) and self._pos < c.start_pos:
                 # the search_name might be before `=`
                 definitions = [v for v in user_stmt.get_set_vars()

@@ -30,7 +30,7 @@ To *visualize* this (simplified):
 - ``eval_statement`` - ``<Statement: datetime.date>``
 
     - Unpacking of the statement into ``[[<Call: datetime.date>]]``
-- ``follow_call_list``, calls ``eval_call`` with ``<Call: datetime.date>``
+- ``eval_expression_list``, calls ``eval_call`` with ``<Call: datetime.date>``
 - ``eval_call`` - searches the ``datetime`` name within the module.
 
 This is exactly where it starts to get complicated. Now recursions start to
@@ -264,7 +264,7 @@ class Evaluator(object):
                             if not r.is_generated:
                                 res_new += dynamic.search_params(self, r)
                                 if not res_new:
-                                    c = r.get_commands()[0]
+                                    c = r.expression_list()[0]
                                     if c in ('*', '**'):
                                         t = 'tuple' if c == '*' else 'dict'
                                         res_new = [er.Instance(
@@ -312,7 +312,7 @@ class Evaluator(object):
                     return []
                 result = get_iterator_types(self.eval_statement(loop.inputs[0]))
                 if len(loop.set_vars) > 1:
-                    commands = loop.set_stmt.get_commands()
+                    commands = loop.set_stmt.expression_list()
                     # loops with loop.set_vars > 0 only have one command
                     result = assign_tuples(commands[0], result, name_str)
                 return result
@@ -489,9 +489,9 @@ class Evaluator(object):
         :param seek_name: A string.
         """
         debug.dbg('eval_statement %s (%s)' % (stmt, seek_name))
-        commands = stmt.get_commands()
+        expression_list = stmt.expression_list()
 
-        result = self.follow_call_list(commands)
+        result = self.eval_expression_list(expression_list)
 
         # Assignment checking is only important if the statement defines multiple
         # variables.
@@ -503,9 +503,9 @@ class Evaluator(object):
         return set(result)
 
     @common.rethrow_uncaught
-    def follow_call_list(self, call_list, follow_array=False):
+    def eval_expression_list(self, expression_list, follow_array=False):
         """
-        `call_list` can be either `pr.Array` or `list of list`.
+        `expression_list` can be either `pr.Array` or `list of list`.
         It is used to evaluate a two dimensional object, that has calls, arrays and
         operators in it.
         """
@@ -525,9 +525,9 @@ class Evaluator(object):
                 loop = evaluate_list_comprehension(nested_lc, loop)
             return loop
 
-        debug.dbg('follow_call_list: %s' % call_list)
+        debug.dbg('eval_expression_list: %s' % expression_list)
         result = []
-        calls_iterator = iter(call_list)
+        calls_iterator = iter(expression_list)
         for call in calls_iterator:
             if pr.Array.is_type(call, pr.Array.NOARRAY):
                 r = list(itertools.chain.from_iterable(self.eval_statement(s)
@@ -630,7 +630,7 @@ class Evaluator(object):
             foo.bar.baz
 
         `follow_path` is only responsible for completing `.bar.baz`, the rest is
-        done in the `eval_call` function.
+        done in the `follow_call` function.
         """
         # current is either an Array or a Scope.
         try:
@@ -669,7 +669,7 @@ class Evaluator(object):
 
     def goto(self, stmt, call_path=None):
         if call_path is None:
-            commands = stmt.get_commands()
+            commands = stmt.expression_list()
             if len(commands) == 0:
                 return [], ''
             # Only the first command is important, the rest should basically not
@@ -793,7 +793,7 @@ def assign_tuples(tup, results, seek_name):
     for i, stmt in enumerate(tup):
         # Used in assignments. There is just one call and no other things,
         # therefore we can just assume, that the first part is important.
-        command = stmt.get_commands()[0]
+        command = stmt.expression_list()[0]
 
         if tup.type == pr.Array.NOARRAY:
 
