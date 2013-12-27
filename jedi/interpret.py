@@ -3,9 +3,9 @@ Module to handle interpreted Python objects.
 """
 
 import itertools
-import tokenize
 
 from jedi.parser import representation as pr
+from jedi.parser import tokenizer as tokenize
 from jedi.parser import token
 
 

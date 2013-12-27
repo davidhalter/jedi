@@ -17,7 +17,6 @@ complexity of the ``Parser`` (there's another parser sitting inside
 """
 from __future__ import with_statement
 
-import tokenizer as tokenize
 import keyword
 
 from jedi._compatibility import next, StringIO
@@ -25,6 +24,7 @@ from jedi import debug
 from jedi import common
 from jedi.parser import representation as pr
 from jedi.parser import token as token_pr
+from jedi.parser import tokenizer as tokenize
 
 
 class Parser(object):

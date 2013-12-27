@@ -66,7 +66,7 @@ def test_star_import_cache_duration():
     old, jedi.settings.star_import_cache_validity = \
             jedi.settings.star_import_cache_validity, new
 
-    cache.star_import_cache = {}  # first empty...
+    cache._star_import_cache = {}  # first empty...
     # path needs to be not-None (otherwise caching effects are not visible)
     jedi.Script('', 1, 0, '').completions()
     time.sleep(2 * new)
@@ -74,6 +74,6 @@ def test_star_import_cache_duration():
 
     # reset values
     jedi.settings.star_import_cache_validity = old
-    length = len(cache.star_import_cache)
-    cache.star_import_cache = {}
+    length = len(cache._star_import_cache)
+    cache._star_import_cache = {}
     assert length == 1

@@ -37,13 +37,13 @@ from __future__ import with_statement
 
 import os
 import re
-import tokenizer as tokenize
 from inspect import cleandoc
 from ast import literal_eval
 
 from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3k
 from jedi import common
 from jedi import debug
+from jedi.parser import tokenizer as tokenize
 
 
 class Base(object):

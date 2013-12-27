@@ -1,4 +1,4 @@
-from _compatibility import u, encoding, is_py3k
+from jedi._compatibility import u, encoding, is_py3k
 import inspect
 import time
 

@@ -7,6 +7,7 @@ import itertools
 
 from jedi import Script
 from .helpers import cwd_at
+from jedi._compatibility import is_py26
 
 
 def test_goto_definition_on_import():
@@ -21,7 +22,8 @@ def test_complete_on_empty_import():
     assert 10 < len(Script("from . import", 1, 5, '').completions()) < 30
     assert 10 < len(Script("from . import classes", 1, 5, '').completions()) < 30
     assert len(Script("import").completions()) == 0
-    assert len(Script("import import", path='').completions()) > 0
+    if not is_py26:
+        assert len(Script("import import", path='').completions()) > 0
 
     # 111
     assert Script("from datetime import").completions()[0].name == 'import'

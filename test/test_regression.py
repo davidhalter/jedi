@@ -75,13 +75,14 @@ class TestRegression(TestCase):
 
     @cwd_at('jedi')
     def test_add_dynamic_mods(self):
-        api.settings.additional_dynamic_modules = ['dynamic.py']
+        fname = '__main__.py'
+        api.settings.additional_dynamic_modules = [fname]
         # Fictional module that defines a function.
-        src1 = "def ret(a): return a"
+        src1 = "def r(a): return a"
         # Other fictional modules in another place in the fs.
-        src2 = 'from .. import setup; setup.ret(1)'
+        src2 = 'from .. import setup; setup.r(1)'
         # .parser to load the module
-        api.modules.Module(os.path.abspath('dynamic.py'), src2).parser
+        api.modules.Module(os.path.abspath(fname), src2).parser
         result = Script(src1, path='../setup.py').goto_definitions()
         assert len(result) == 1
         assert result[0].description == 'class int'

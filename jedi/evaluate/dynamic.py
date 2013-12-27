@@ -51,26 +51,19 @@ would check whether a flow has the form of ``if isinstance(a, type_or_tuple)``.
 Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
 check for -> a is a string). There's big potential in these checks.
 """
-from __future__ import with_statement
-
 import os
 
 from jedi import cache
 from jedi.parser import representation as pr
 from jedi import modules
 from jedi import settings
-from jedi import common
 from jedi import debug
 from jedi.parser import fast as fast_parser
-import api_classes
-import evaluate
-import imports
-import evaluate_representation as er
+from jedi.evaluate.cache import memoize_default
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
 search_param_modules = ['.']
-search_param_cache = {}
 
 
 def get_directory_modules_for_name(mods, name):
@@ -116,22 +109,6 @@ def get_directory_modules_for_name(mods, name):
                 yield c
 
 
-def search_param_memoize(func):
-    """
-    Is only good for search params memoize, respectively the closure,
-    because it just caches the input, not the func, like normal memoize does.
-    """
-    def wrapper(*args, **kwargs):
-        key = (args, frozenset(kwargs.items()))
-        if key in search_param_cache:
-            return search_param_cache[key]
-        else:
-            rv = func(*args, **kwargs)
-            search_param_cache[key] = rv
-            return rv
-    return wrapper
-
-
 class ParamListener(object):
     """
     This listener is used to get the params for a function.
@@ -143,8 +120,8 @@ class ParamListener(object):
         self.param_possibilities.append(params)
 
 
-@cache.memoize_default([])
-def search_params(param):
+@memoize_default([], evaluator_is_first_arg=True)
+def search_params(evaluator, param):
     """
     This is a dynamic search for params. If you try to complete a type:
 
@@ -164,8 +141,8 @@ def search_params(param):
         """
         Returns the values of a param, or an empty array.
         """
-        @search_param_memoize
-        def get_posibilities(module, func_name):
+        @memoize_default([], evaluator_is_first_arg=True)
+        def get_posibilities(evaluator, module, func_name):
             try:
                 possible_stmts = module.used_names[func_name]
             except KeyError:
@@ -196,12 +173,13 @@ def search_params(param):
                         continue
                     scopes = [scope]
                     if first:
-                        scopes = evaluate.follow_call_path(iter(first), scope, pos)
+                        scopes = evaluator.follow_call_path(iter(first), scope, pos)
                         pos = None
+                    from jedi.evaluate import representation as er
                     for scope in scopes:
-                        s = evaluate.find_name(scope, func_name, position=pos,
-                                               search_global=not first,
-                                               resolve_decorator=False)
+                        s = evaluator.find_name(scope, func_name, position=pos,
+                                                search_global=not first,
+                                                resolve_decorator=False)
 
                         c = [getattr(escope, 'base_func', None) or escope.base
                              for escope in s
@@ -209,15 +187,15 @@ def search_params(param):
                         if compare in c:
                             # only if we have the correct function we execute
                             # it, otherwise just ignore it.
-                            evaluate.follow_paths(iter(last), s, scope)
+                            evaluator.follow_paths(iter(last), s, scope)
 
             return listener.param_possibilities
 
         result = []
-        for params in get_posibilities(module, func_name):
+        for params in get_posibilities(evaluator, module, func_name):
             for p in params:
                 if str(p) == param_name:
-                    result += evaluate.follow_statement(p.parent)
+                    result += evaluator.follow_statement(p.parent)
         return result
 
     func = param.get_parent_until(pr.Function)
@@ -254,7 +232,7 @@ def search_params(param):
     return result
 
 
-def check_array_additions(array):
+def check_array_additions(evaluator, array):
     """ Just a mapper function for the internal _check_array_additions """
     if not pr.Array.is_type(array._array, pr.Array.LIST, pr.Array.SET):
         # TODO also check for dict updates
@@ -262,7 +240,7 @@ def check_array_additions(array):
 
     is_list = array._array.type == 'list'
     current_module = array._array.get_parent_until()
-    res = _check_array_additions(array, current_module, is_list)
+    res = _check_array_additions(evaluator, array, current_module, is_list)
     return res
 
 
@@ -302,8 +280,8 @@ def _scan_statement(stmt, search_name, assignment_details=False):
     return result
 
 
-@cache.memoize_default([])
-def _check_array_additions(compare_array, module, is_list):
+@memoize_default([], evaluator_is_first_arg=True)
+def _check_array_additions(evaluator, compare_array, module, is_list):
     """
     Checks if a `pr.Array` has "add" statements:
     >>> a = [""]
@@ -330,7 +308,7 @@ def _check_array_additions(compare_array, module, is_list):
             position = c.start_pos
             scope = c.get_parent_until(pr.IsScope)
 
-            found = evaluate.follow_call_path(backtrack_path, scope, position)
+            found = evaluator.follow_call_path(backtrack_path, scope, position)
             if not compare_array in found:
                 continue
 
@@ -339,19 +317,22 @@ def _check_array_additions(compare_array, module, is_list):
                 continue  # no params: just ignore it
             if add_name in ['append', 'add']:
                 for param in params:
-                    result += evaluate.follow_statement(param)
+                    result += evaluator.follow_statement(param)
             elif add_name in ['insert']:
                 try:
                     second_param = params[1]
                 except IndexError:
                     continue
                 else:
-                    result += evaluate.follow_statement(second_param)
+                    result += evaluator.follow_statement(second_param)
             elif add_name in ['extend', 'update']:
                 for param in params:
-                    iterators = evaluate.follow_statement(param)
+                    iterators = evaluator.follow_statement(param)
                 result += evaluate.get_iterator_types(iterators)
         return result
+
+    from jedi.evaluate import representation as er
+    from jedi import evaluate
 
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/Execution parent """
@@ -393,21 +374,21 @@ def _check_array_additions(compare_array, module, is_list):
             if isinstance(comp_arr_parent, er.InstanceElement):
                 stmt = er.InstanceElement(comp_arr_parent.instance, stmt)
 
-            if evaluate.follow_statement.push_stmt(stmt):
+            if evaluator.recursion_detector.push_stmt(stmt):
                 # check recursion
                 continue
             res += check_calls(_scan_statement(stmt, n), n)
-            evaluate.follow_statement.pop_stmt()
+            evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
     return res
 
 
-def check_array_instances(instance):
+def check_array_instances(evaluator, instance):
     """Used for set() and list() instances."""
     if not settings.dynamic_arrays_instances:
         return instance.var_args
-    ai = ArrayInstance(instance)
+    ai = ArrayInstance(evaluator, instance)
     return [ai]
 
 
@@ -417,7 +398,8 @@ class ArrayInstance(pr.Base):
     This is definitely a hack, but a good one :-)
     It makes it possible to use set/list conversions.
     """
-    def __init__(self, instance):
+    def __init__(self, evaluator, instance):
+        self._evaluator = evaluator
         self.instance = instance
         self.var_args = instance.var_args
 
@@ -427,9 +409,10 @@ class ArrayInstance(pr.Base):
         lists/sets are too complicated too handle that.
         """
         items = []
+        from jedi import evaluate
         for stmt in self.var_args:
-            for typ in evaluate.follow_statement(stmt):
-                if isinstance(typ, er.Instance) and len(typ.var_args):
+            for typ in self._evaluator.follow_statement(stmt):
+                if isinstance(typ, evaluate.er.Instance) and len(typ.var_args):
                     array = typ.var_args[0]
                     if isinstance(array, ArrayInstance):
                         # prevent recursions
@@ -449,88 +432,11 @@ class ArrayInstance(pr.Base):
 
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
-        items += _check_array_additions(self.instance, module, is_list)
+        items += _check_array_additions(self._evaluator, self.instance, module, is_list)
         return items
 
 
-def usages(definitions, search_name, mods):
-    def compare_array(definitions):
-        """ `definitions` are being compared by module/start_pos, because
-        sometimes the id's of the objects change (e.g. executions).
-        """
-        result = []
-        for d in definitions:
-            module = d.get_parent_until()
-            result.append((module, d.start_pos))
-        return result
-
-    def check_call(call):
-        result = []
-        follow = []  # There might be multiple search_name's in one call_path
-        call_path = list(call.generate_call_path())
-        for i, name in enumerate(call_path):
-            # name is `pr.NamePart`.
-            if name == search_name:
-                follow.append(call_path[:i + 1])
-
-        for f in follow:
-            follow_res, search = evaluate.goto(call.parent, f)
-            follow_res = usages_add_import_modules(follow_res, search)
-
-            compare_follow_res = compare_array(follow_res)
-            # compare to see if they match
-            if any(r in compare_definitions for r in compare_follow_res):
-                scope = call.parent
-                result.append(api_classes.Usage(search, scope))
-
-        return result
-
-    if not definitions:
-        return set()
-
-    compare_definitions = compare_array(definitions)
-    mods |= set([d.get_parent_until() for d in definitions])
-    names = []
-    for m in get_directory_modules_for_name(mods, search_name):
-        try:
-            stmts = m.used_names[search_name]
-        except KeyError:
-            continue
-        for stmt in stmts:
-            if isinstance(stmt, pr.Import):
-                count = 0
-                imps = []
-                for i in stmt.get_all_import_names():
-                    for name_part in i.names:
-                        count += 1
-                        if name_part == search_name:
-                            imps.append((count, name_part))
-
-                for used_count, name_part in imps:
-                    i = imports.ImportPath(stmt, kill_count=count - used_count,
-                                           direct_resolve=True)
-                    f = i.follow(is_goto=True)
-                    if set(f) & set(definitions):
-                        names.append(api_classes.Usage(name_part, stmt))
-            else:
-                for call in _scan_statement(stmt, search_name,
-                                            assignment_details=True):
-                    names += check_call(call)
-    return names
-
-
-def usages_add_import_modules(definitions, search_name):
-    """ Adds the modules of the imports """
-    new = set()
-    for d in definitions:
-        if isinstance(d.parent, pr.Import):
-            s = imports.ImportPath(d.parent, direct_resolve=True)
-            with common.ignored(IndexError):
-                new.add(s.follow(is_goto=True)[0])
-    return set(definitions) | new
-
-
-def check_flow_information(flow, search_name, pos):
+def check_flow_information(evaluator, flow, search_name, pos):
     """ Try to find out the type of a variable just with the information that
     is given by the flows: e.g. It is also responsible for assert checks.::
 
@@ -546,17 +452,18 @@ def check_flow_information(flow, search_name, pos):
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
-            result = _check_isinstance_type(ass, search_name)
+            result = _check_isinstance_type(evaluator, ass, search_name)
             if result:
                 break
 
     if isinstance(flow, pr.Flow) and not result:
         if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
-            result = _check_isinstance_type(flow.inputs[0], search_name)
+            result = _check_isinstance_type(evaluator, flow.inputs[0], search_name)
     return result
 
 
-def _check_isinstance_type(stmt, search_name):
+def _check_isinstance_type(evaluator, stmt, search_name):
+    from jedi.evaluate import representation as er
     try:
         commands = stmt.get_commands()
         # this might be removed if we analyze and, etc
@@ -579,11 +486,11 @@ def _check_isinstance_type(stmt, search_name):
         return []
 
     result = []
-    for c in evaluate.follow_call(classes[0]):
+    for c in evaluator.follow_call(classes[0]):
         if isinstance(c, er.Array):
             result += c.get_index_types()
         else:
             result.append(c)
     for i, c in enumerate(result):
-        result[i] = er.Instance(c)
+        result[i] = er.Instance(evaluator, c)
     return result

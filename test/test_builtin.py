@@ -1,4 +1,4 @@
-from jedi import builtin
+from jedi.evaluate import builtin
 
 
 def test_parse_function_doc_illegal_docstr():

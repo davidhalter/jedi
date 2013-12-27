@@ -16,16 +16,16 @@ import itertools
 
 from jedi._compatibility import use_metaclass, next, hasattr, unicode
 from jedi.parser import representation as pr
-from jedi import cache
 from jedi import helpers
 from jedi import debug
 from jedi import common
-import recursion
-import docstrings
-import imports
-import evaluate
-import builtin
-import dynamic
+from jedi.evaluate import imports
+from jedi.evaluate import builtin
+from jedi.evaluate import recursion
+from jedi.evaluate.cache import memoize_default, CachedMetaClass
+from jedi.evaluate.interfaces import Iterable
+from jedi import docstrings
+from jedi.evaluate import dynamic
 
 
 class Executable(pr.IsScope):
@@ -33,7 +33,8 @@ class Executable(pr.IsScope):
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of `pr.Array` or list.
     """
-    def __init__(self, base, var_args=()):
+    def __init__(self, evaluator, base, var_args=()):
+        self._evaluator = evaluator
         self.base = base
         self.var_args = var_args
 
@@ -52,16 +53,16 @@ class Executable(pr.IsScope):
         return self.base
 
 
-class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
+class Instance(use_metaclass(CachedMetaClass, Executable)):
     """
     This class is used to evaluate instances.
     """
-    def __init__(self, base, var_args=()):
-        super(Instance, self).__init__(base, var_args)
+    def __init__(self, evaluator, base, var_args=()):
+        super(Instance, self).__init__(evaluator, base, var_args)
         if str(base.name) in ['list', 'set'] \
                 and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
-            self.var_args = dynamic.check_array_instances(self)
+            self.var_args = dynamic.check_array_instances(evaluator, self)
         else:
             # need to execute the __init__ function, because the dynamic param
             # searching needs it.
@@ -71,10 +72,10 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         # (No var_args) used.
         self.is_generated = False
 
-    @cache.memoize_default()
+    @memoize_default(None)
     def _get_method_execution(self, func):
-        func = InstanceElement(self, func, True)
-        return Execution(func, self.var_args)
+        func = InstanceElement(self._evaluator, self, func, True)
+        return Execution(self._evaluator, func, self.var_args)
 
     def _get_func_self_name(self, func):
         """
@@ -86,7 +87,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         except IndexError:
             return None
 
-    @cache.memoize_default([])
+    @memoize_default([])
     def _get_self_attributes(self):
         def add_self_dot_name(name):
             """
@@ -95,7 +96,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
             """
             n = copy.copy(name)
             n.names = n.names[1:]
-            names.append(InstanceElement(self, n))
+            names.append(InstanceElement(self._evaluator, self, n))
 
         names = []
         # This loop adds the names of the self object, copies them and removes
@@ -124,17 +125,17 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
                     add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
-            names += Instance(s)._get_self_attributes()
+            names += Instance(self._evaluator, s)._get_self_attributes()
 
         return names
 
     def get_subscope_by_name(self, name):
         sub = self.base.get_subscope_by_name(name)
-        return InstanceElement(self, sub, True)
+        return InstanceElement(self._evaluator, self, sub, True)
 
     def execute_subscope_by_name(self, name, args=()):
         method = self.get_subscope_by_name(name)
-        return Execution(method, args).get_return_types()
+        return Execution(self._evaluator, method, args).get_return_types()
 
     def get_descriptor_return(self, obj):
         """ Throws a KeyError if there's no method. """
@@ -143,7 +144,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         args = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
         return self.execute_subscope_by_name('__get__', args)
 
-    @cache.memoize_default([])
+    @memoize_default([])
     def get_defined_names(self):
         """
         Get the instance vars of a class. This includes the vars of all
@@ -153,7 +154,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
 
         class_names = self.base.instance_names()
         for var in class_names:
-            names.append(InstanceElement(self, var, True))
+            names.append(InstanceElement(self._evaluator, self, var, True))
         return names
 
     def scope_generator(self):
@@ -166,7 +167,7 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
         names = []
         class_names = self.base.instance_names()
         for var in class_names:
-            names.append(InstanceElement(self, var, True))
+            names.append(InstanceElement(self._evaluator, self, var, True))
         yield self, names
 
     def get_index_types(self, index=None):
@@ -189,22 +190,23 @@ class Instance(use_metaclass(cache.CachedMetaClass, Executable)):
             (type(self).__name__, self.base, len(self.var_args or []))
 
 
-class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     """
     InstanceElement is a wrapper for any object, that is used as an instance
     variable (e.g. self.variable or class methods).
     """
-    def __init__(self, instance, var, is_class_var=False):
+    def __init__(self, evaluator, instance, var, is_class_var=False):
+        self._evaluator = evaluator
         if isinstance(var, pr.Function):
-            var = Function(var)
+            var = Function(evaluator, var)
         elif isinstance(var, pr.Class):
-            var = Class(var)
+            var = Class(evaluator, var)
         self.instance = instance
         self.var = var
         self.is_class_var = is_class_var
 
     @property
-    @cache.memoize_default()
+    @memoize_default(None)
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
@@ -212,7 +214,7 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
                 and par == self.instance.base.base:
             par = self.instance
         elif not isinstance(par, pr.Module):
-            par = InstanceElement(self.instance, par, self.is_class_var)
+            par = InstanceElement(self.instance._evaluator, self.instance, par, self.is_class_var)
         return par
 
     def get_parent_until(self, *args, **kwargs):
@@ -227,13 +229,13 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def get_commands(self):
         # Copy and modify the array.
-        return [InstanceElement(self.instance, command, self.is_class_var)
+        return [InstanceElement(self.instance._evaluator, self.instance, command, self.is_class_var)
                 if not isinstance(command, unicode) else command
                 for command in self.var.get_commands()]
 
     def __iter__(self):
         for el in self.var.__iter__():
-            yield InstanceElement(self.instance, el, self.is_class_var)
+            yield InstanceElement(self.instance._evaluator, self.instance, el, self.is_class_var)
 
     def __getattr__(self, name):
         return getattr(self.var, name)
@@ -245,31 +247,32 @@ class InstanceElement(use_metaclass(cache.CachedMetaClass, pr.Base)):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
 
-class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
+class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
     """
     This class is not only important to extend `pr.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
     """
-    def __init__(self, base):
+    def __init__(self, evaluator, base):
+        self._evaluator = evaluator
         self.base = base
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=())
     def get_super_classes(self):
         supers = []
         # TODO care for mro stuff (multiple super classes).
         for s in self.base.supers:
             # Super classes are statements.
-            for cls in evaluate.follow_statement(s):
+            for cls in self._evaluator.follow_statement(s):
                 if not isinstance(cls, Class):
                     debug.warning('Received non class, as a super class')
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
         if not supers and self.base.parent != builtin.Builtin.scope:
             # add `object` to classes
-            supers += evaluate.find_name(builtin.Builtin.scope, 'object')
+            supers += self._evaluator.find_name(builtin.Builtin.scope, 'object')
         return supers
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=())
     def instance_names(self):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
@@ -291,10 +294,10 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         result += super_result
         return result
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=())
     def get_defined_names(self):
         result = self.instance_names()
-        type_cls = evaluate.find_name(builtin.Builtin.scope, 'type')[0]
+        type_cls = self._evaluator.find_name(builtin.Builtin.scope, 'type')[0]
         return result + type_cls.base.get_defined_names()
 
     def get_subscope_by_name(self, name):
@@ -318,16 +321,17 @@ class Class(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
-class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
+class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
-    def __init__(self, func, is_decorated=False):
+    def __init__(self, evaluator, func, is_decorated=False):
         """ This should not be called directly """
+        self._evaluator = evaluator
         self.base_func = func
         self.is_decorated = is_decorated
 
-    @cache.memoize_default()
+    @memoize_default(None)
     def _decorated_func(self, instance=None):
         """
         Returns the function, that is to be executed in the end.
@@ -339,7 +343,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
         if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
                 debug.dbg('decorator:', dec, f)
-                dec_results = set(evaluate.follow_statement(dec))
+                dec_results = set(self._evaluator.follow_statement(dec))
                 if not len(dec_results):
                     debug.warning('decorator not found: %s on %s' %
                                  (dec, self.base_func))
@@ -349,12 +353,12 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
                     debug.warning('multiple decorators found', self.base_func,
                                   dec_results)
                 # Create param array.
-                old_func = Function(f, is_decorated=True)
+                old_func = Function(self._evaluator, f, is_decorated=True)
                 if instance is not None and decorator.isinstance(Function):
-                    old_func = InstanceElement(instance, old_func)
+                    old_func = InstanceElement(self._evaluator, instance, old_func)
                     instance = None
 
-                wrappers = Execution(decorator, (old_func,)).get_return_types()
+                wrappers = Execution(self._evaluator, decorator, (old_func,)).get_return_types()
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
                     return None
@@ -366,7 +370,7 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
 
                 debug.dbg('decorator end', f)
         if f != self.base_func and isinstance(f, pr.Function):
-            f = Function(f)
+            f = Function(self._evaluator, f)
         return f
 
     def get_decorated_func(self, instance=None):
@@ -377,14 +381,14 @@ class Function(use_metaclass(cache.CachedMetaClass, pr.IsScope)):
             # If the decorator func is not found, just ignore the decorator
             # function, because sometimes decorators are just really
             # complicated.
-            return Function(self.base_func, True)
+            return Function(self._evaluator, self.base_func, True)
         return decorated_func
 
     def get_magic_method_names(self):
-        return builtin.Builtin.magic_function_scope.get_defined_names()
+        return builtin.Builtin.magic_function_scope(self._evaluator).get_defined_names()
 
     def get_magic_method_scope(self):
-        return builtin.Builtin.magic_function_scope
+        return builtin.Builtin.magic_function_scope(self._evaluator)
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
@@ -412,12 +416,12 @@ class Execution(Executable):
             return []
         else:
             if isinstance(stmt, pr.Statement):
-                return evaluate.follow_statement(stmt)
+                return self._evaluator.follow_statement(stmt)
             else:
                 return [stmt]  # just some arbitrary object
 
     @property
-    @cache.memoize_default()
+    @memoize_default(None)
     def _decorated(self):
         """Get the decorated version of the input"""
         base = self.base
@@ -425,8 +429,8 @@ class Execution(Executable):
             base = base.get_decorated_func()
         return base
 
-    @cache.memoize_default(default=())
-    @recursion.ExecutionRecursionDecorator
+    @memoize_default(default=())
+    @recursion.execution_recursion_decorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
         base = self._decorated
@@ -452,7 +456,7 @@ class Execution(Executable):
                         if len(arr_name.var_args) != 1:
                             debug.warning('jedi getattr is too simple')
                         key = arr_name.var_args[0]
-                        stmts += evaluate.follow_path(iter([key]), obj, base)
+                        stmts += self._evaluator.follow_path(iter([key]), obj, base)
                 return stmts
             elif func_name == 'type':
                 # otherwise it would be a metaclass
@@ -467,15 +471,15 @@ class Execution(Executable):
                     cls = func.get_parent_until(accept + (pr.Class,),
                                                 include_current=False)
                     if isinstance(cls, pr.Class):
-                        cls = Class(cls)
+                        cls = Class(self._evaluator, cls)
                         su = cls.get_super_classes()
                         if su:
-                            return [Instance(su[0])]
+                            return [Instance(self._evaluator, su[0])]
                 return []
 
         if base.isinstance(Class):
             # There maybe executions of executions.
-            return [Instance(base, self.var_args)]
+            return [Instance(self._evaluator, base, self.var_args)]
         elif isinstance(base, Generator):
             return base.iter_content()
         else:
@@ -495,7 +499,7 @@ class Execution(Executable):
 
         debug.dbg('exec result: %s in %s' % (stmts, self))
 
-        return imports.strip_imports(stmts)
+        return imports.strip_imports(self._evaluator, stmts)
 
     def _get_function_returns(self, func, evaluate_generator):
         """ A normal Function execution """
@@ -503,15 +507,15 @@ class Execution(Executable):
         for listener in func.listeners:
             listener.execute(self._get_params())
         if func.is_generator and not evaluate_generator:
-            return [Generator(func, self.var_args)]
+            return [Generator(self._evaluator, func, self.var_args)]
         else:
-            stmts = docstrings.find_return_types(func)
+            stmts = docstrings.find_return_types(self._evaluator, func)
             for r in self.returns:
                 if r is not None:
-                    stmts += evaluate.follow_statement(r)
+                    stmts += self._evaluator.follow_statement(r)
             return stmts
 
-    @cache.memoize_default(default=())
+    @memoize_default(default=())
     def _get_params(self):
         """
         This returns the params for an Execution/Instance and is injected as a
@@ -663,7 +667,7 @@ class Execution(Executable):
                 if not len(commands):
                     continue
                 if commands[0] == '*':
-                    arrays = evaluate.follow_call_list(commands[1:])
+                    arrays = self._evaluator.follow_call_list(commands[1:])
                     # *args must be some sort of an array, otherwise -> ignore
 
                     for array in arrays:
@@ -675,7 +679,7 @@ class Execution(Executable):
                                 yield None, helpers.FakeStatement(field_stmt)
                 # **kwargs
                 elif commands[0] == '**':
-                    arrays = evaluate.follow_call_list(commands[1:])
+                    arrays = self._evaluator.follow_call_list(commands[1:])
                     for array in arrays:
                         if isinstance(array, Array):
                             for key_stmt, value_stmt in array.items():
@@ -724,7 +728,7 @@ class Execution(Executable):
                 copied = helpers.fast_parent_copy(element)
                 copied.parent = self._scope_copy(copied.parent)
                 if isinstance(copied, pr.Function):
-                    copied = Function(copied)
+                    copied = Function(self._evaluator, copied)
             objects.append(copied)
         return objects
 
@@ -733,7 +737,7 @@ class Execution(Executable):
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self._decorated, name)
 
-    @cache.memoize_default()
+    @memoize_default(None)
     @common.rethrow_uncaught
     def _scope_copy(self, scope):
         """ Copies a scope (e.g. if) in an execution """
@@ -749,22 +753,22 @@ class Execution(Executable):
             return copied
 
     @property
-    @cache.memoize_default()
+    @memoize_default([])
     def returns(self):
         return self._copy_properties('returns')
 
     @property
-    @cache.memoize_default()
+    @memoize_default([])
     def asserts(self):
         return self._copy_properties('asserts')
 
     @property
-    @cache.memoize_default()
+    @memoize_default([])
     def statements(self):
         return self._copy_properties('statements')
 
     @property
-    @cache.memoize_default()
+    @memoize_default([])
     def subscopes(self):
         return self._copy_properties('subscopes')
 
@@ -776,10 +780,11 @@ class Execution(Executable):
             (type(self).__name__, self._decorated)
 
 
-class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class Generator(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
     """ Cares for `yield` statements. """
-    def __init__(self, func, var_args):
+    def __init__(self, evaluator, func, var_args):
         super(Generator, self).__init__()
+        self._evaluator = evaluator
         self.func = func
         self.var_args = var_args
 
@@ -804,7 +809,7 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def iter_content(self):
         """ returns the content of __iter__ """
-        return Execution(self.func, self.var_args).get_return_types(True)
+        return Execution(self._evaluator, self.func, self.var_args).get_return_types(True)
 
     def get_index_types(self, index=None):
         debug.warning('Tried to get array access on a generator', self)
@@ -822,12 +827,13 @@ class Generator(use_metaclass(cache.CachedMetaClass, pr.Base)):
         return "<%s of %s>" % (type(self).__name__, self.func)
 
 
-class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
+class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
     """
     Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.
     """
-    def __init__(self, array):
+    def __init__(self, evaluator, array):
+        self._evaluator = evaluator
         self._array = array
 
     def get_index_types(self, index_arr=None):
@@ -852,7 +858,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
                         return self.get_exact_index_types(index.var_args[0])
 
         result = list(self._follow_values(self._array.values))
-        result += dynamic.check_array_additions(self)
+        result += dynamic.check_array_additions(self._evaluator, self)
         return set(result)
 
     def get_exact_index_types(self, mixed_index):
@@ -883,7 +889,7 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
 
     def _follow_values(self, values):
         """ helper function for the index getters """
-        return list(itertools.chain.from_iterable(evaluate.follow_statement(v)
+        return list(itertools.chain.from_iterable(self._evaluator.follow_statement(v)
                                                   for v in values))
 
     def get_defined_names(self):
@@ -892,8 +898,8 @@ class Array(use_metaclass(cache.CachedMetaClass, pr.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = evaluate.find_name(builtin.Builtin.scope, self._array.type)[0]
-        scope = Instance(scope)
+        scope = self._evaluator.find_name(builtin.Builtin.scope, self._array.type)[0]
+        scope = Instance(self._evaluator, scope)
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]
 

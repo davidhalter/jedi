@@ -226,7 +226,6 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.user_position = user_position
         self.reset_caches()
 
-
         try:
             self._parse(code)
         except:
@@ -372,8 +371,8 @@ class FastParser(use_metaclass(CachedFastParser)):
                     else:
                         self.current_node = self.current_node.add_node(node)
 
-                if self.current_node.parent and (isinstance(p.user_scope,
-                                    pr.SubModule) or p.user_scope is None) \
+                if self.current_node.parent and (isinstance(p.user_scope, pr.SubModule)
+                                                 or p.user_scope is None) \
                         and self.user_position \
                         and p.start_pos <= self.user_position < p.end_pos:
                     p.user_scope = self.current_node.parent.content_scope
@@ -407,9 +406,9 @@ class FastParser(use_metaclass(CachedFastParser)):
                 raise ValueError()
         except ValueError:
             p = Parser(parser_code, self.module_path,
-                               self.user_position, offset=(line_offset, 0),
-                               is_fast_parser=True, top_module=self.module,
-                               no_docstr=no_docstr)
+                       self.user_position, offset=(line_offset, 0),
+                       is_fast_parser=True, top_module=self.module,
+                       no_docstr=no_docstr)
             p.module.parent = self.module
         else:
             if nodes[index] != self.current_node:

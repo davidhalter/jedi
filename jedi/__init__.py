@@ -36,14 +36,6 @@ good text editor, while still having very good IDE features for Python.
 
 __version__ = 0, 7, 1, 'alpha1'
 
-import sys
-
-# python imports are hell sometimes. Especially the combination of relative
-# imports and circular imports... Just avoid it:
-sys.path.insert(0, __path__[0])
-
-from .api import Script, Interpreter, NotFoundError, set_debug_function
-from .api import preload_module, defined_names
-from . import settings
-
-sys.path.pop(0)
+from jedi.api import Script, Interpreter, NotFoundError, set_debug_function
+from jedi.api import preload_module, defined_names
+from jedi import settings

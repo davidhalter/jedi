@@ -36,7 +36,6 @@ from jedi import common
 from jedi import debug
 from jedi.parser import Parser
 from jedi import modules
-import evaluate
 
 
 class BuiltinModule(modules.CachedModule):
@@ -167,7 +166,7 @@ class BuiltinModule(modules.CachedModule):
             if name == '__builtin__' and not is_py3k:
                 name = 'builtins'
             path = os.path.dirname(os.path.abspath(__file__))
-            with open(os.path.sep.join([path, 'mixin', name]) + '.pym') as f:
+            with open(os.path.join(path, 'mixin', name) + '.pym') as f:
                 s = f.read()
         except IOError:
             return {}
@@ -429,8 +428,7 @@ class Builtin(object):
     def scope(self):
         return self.builtin.parser.module
 
-    @property
-    def magic_function_scope(self):
+    def magic_function_scope(self, evaluator):
         try:
             return self._magic_function_scope
         except AttributeError:
@@ -441,7 +439,7 @@ class Builtin(object):
             parser = Parser(source, None)
             module = parser.module
             module.parent = self.scope
-            typ = evaluate.follow_path(iter(['FunctionType']), module, module)
+            typ = evaluator.follow_path(iter(['FunctionType']), module, module)
 
             s = self._magic_function_scope = typ.pop()
             return s

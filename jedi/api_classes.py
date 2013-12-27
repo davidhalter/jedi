@@ -3,8 +3,6 @@ The :mod:`api_classes` module contains the return classes of the API. These
 classes are the much bigger part of the whole API, because they contain the
 interesting information about completion and goto operations.
 """
-from __future__ import with_statement
-
 import warnings
 import functools
 
@@ -13,26 +11,17 @@ from jedi import settings
 from jedi import common
 from jedi.parser import representation as pr
 from jedi import cache
-import keywords
-import recursion
-import dynamic
-import evaluate
-import imports
-import evaluate_representation as er
+from jedi.evaluate import representation as er
+from jedi.evaluate import imports
+from jedi import keywords
 
 
-def _clear_caches():
+def clear_caches():
     """
     Clear all caches of this and related modules. The only cache that will not
     be deleted is the module cache.
     """
     cache.clear_caches()
-    dynamic.search_param_cache.clear()
-    recursion.ExecutionRecursionDecorator.reset()
-
-    evaluate.follow_statement.reset()
-
-    imports.imports_processed = 0
 
 
 def _clear_caches_after_call(func):
@@ -42,7 +31,7 @@ def _clear_caches_after_call(func):
     @functools.wraps(func)
     def wrapper(*args, **kwds):
         result = func(*args, **kwds)
-        _clear_caches()
+        clear_caches()
         return result
     return wrapper
 
@@ -69,7 +58,8 @@ class BaseDefinition(object):
         '_sre.SRE_Pattern': 're.RegexObject',
     }.items())
 
-    def __init__(self, definition, start_pos):
+    def __init__(self, evaluator, definition, start_pos):
+        self._evaluator = evaluator
         self._start_pos = start_pos
         self._definition = definition
         """
@@ -307,8 +297,8 @@ class Completion(BaseDefinition):
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
-    def __init__(self, name, needs_dot, like_name_length, base):
-        super(Completion, self).__init__(name.parent, name.start_pos)
+    def __init__(self, evaluator, name, needs_dot, like_name_length, base):
+        super(Completion, self).__init__(evaluator, name.parent, name.start_pos)
 
         self._name = name
         self._needs_dot = needs_dot
@@ -411,15 +401,15 @@ class Completion(BaseDefinition):
         """
         if self._followed_definitions is None:
             if self._definition.isinstance(pr.Statement):
-                defs = evaluate.follow_statement(self._definition)
+                defs = self._evaluator.follow_statement(self._definition)
             elif self._definition.isinstance(pr.Import):
-                defs = imports.strip_imports([self._definition])
+                defs = imports.strip_imports(self._evaluator, [self._definition])
             else:
                 return [self]
 
             self._followed_definitions = \
-                [BaseDefinition(d, d.start_pos) for d in defs]
-            _clear_caches()
+                [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
+            clear_caches()
 
         return self._followed_definitions
 
@@ -432,8 +422,8 @@ class Definition(BaseDefinition):
     *Definition* objects are returned from :meth:`api.Script.goto_assignments`
     or :meth:`api.Script.goto_definitions`.
     """
-    def __init__(self, definition):
-        super(Definition, self).__init__(definition, definition.start_pos)
+    def __init__(self, evaluator, definition):
+        super(Definition, self).__init__(evaluator, definition, definition.start_pos)
 
     @property
     def name(self):
@@ -550,26 +540,26 @@ class Definition(BaseDefinition):
             d = d.var
         if isinstance(d, pr.Name):
             d = d.parent
-        return _defined_names(d)
+        return _defined_names(self._evaluator, d)
 
 
-def _defined_names(scope):
+def _defined_names(evaluator, scope):
     """
     List sub-definitions (e.g., methods in class).
 
     :type scope: Scope
     :rtype: list of Definition
     """
-    pair = next(evaluate.get_names_of_scope(
+    pair = next(evaluator.get_names_of_scope(
         scope, star_search=False, include_builtin=False), None)
     names = pair[1] if pair else []
-    return [Definition(d) for d in sorted(names, key=lambda s: s.start_pos)]
+    return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class Usage(BaseDefinition):
     """TODO: document this"""
-    def __init__(self, name_part, scope):
-        super(Usage, self).__init__(scope, name_part.start_pos)
+    def __init__(self, evaluator, name_part, scope):
+        super(Usage, self).__init__(evaluator, scope, name_part.start_pos)
         self.text = unicode(name_part)
         self.end_pos = name_part.end_pos
 

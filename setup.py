@@ -26,8 +26,8 @@ setup(name='jedi',
       license='MIT',
       keywords='python completion refactoring vim',
       long_description=readme,
-      packages=['jedi', 'jedi.parser'],
-      package_data={'jedi': ['mixin/*.pym']},
+      packages=['jedi', 'jedi.parser', 'jedi.evaluate'],
+      package_data={'jedi': ['evlaluate/evaluate/mixin/*.pym']},
       platforms=['any'],
       classifiers=[
           'Development Status :: 4 - Beta',
@@ -45,4 +45,4 @@ setup(name='jedi',
           'Topic :: Text Editors :: Integrated Development Environments (IDE)',
           'Topic :: Utilities',
       ],
-    )
+      )
