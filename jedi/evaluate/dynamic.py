@@ -486,7 +486,7 @@ def _check_isinstance_type(evaluator, stmt, search_name):
         return []
 
     result = []
-    for c in evaluator.follow_call(classes[0]):
+    for c in evaluator.eval_call(classes[0]):
         if isinstance(c, er.Array):
             result += c.get_index_types()
         else:

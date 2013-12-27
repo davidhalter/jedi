@@ -30,15 +30,15 @@ To *visualize* this (simplified):
 - ``eval_statement`` - ``<Statement: datetime.date>``
 
     - Unpacking of the statement into ``[[<Call: datetime.date>]]``
-- ``follow_call_list``, calls ``follow_call`` with ``<Call: datetime.date>``
-- ``follow_call`` - searches the ``datetime`` name within the module.
+- ``follow_call_list``, calls ``eval_call`` with ``<Call: datetime.date>``
+- ``eval_call`` - searches the ``datetime`` name within the module.
 
 This is exactly where it starts to get complicated. Now recursions start to
 kick in. The statement has not been resolved fully, but now we need to resolve
 the datetime import. So it continues
 
 - follow import, which happens in the :mod:`imports` module.
-- now the same ``follow_call`` as above calls ``follow_paths`` to follow the
+- now the same ``eval_call`` as above calls ``follow_paths`` to follow the
   second part of the statement ``date``.
 - After ``follow_paths`` returns with the desired ``datetime.date`` class, the
   result is being returned and the recursion finishes.
@@ -562,7 +562,7 @@ class Evaluator(object):
                                 if str(call.name) == 'else':
                                     break
                         continue
-                    result += self.follow_call(call)
+                    result += self.eval_call(call)
                 elif call == '*':
                     if [r for r in result if isinstance(r, er.Array)
                        or isinstance(r, er.Instance)
@@ -571,7 +571,7 @@ class Evaluator(object):
                         next(calls_iterator)
         return set(result)
 
-    def follow_call(self, call):
+    def eval_call(self, call):
         """Follow a call is following a function, variable, string, etc."""
         path = call.generate_call_path()
 
@@ -630,7 +630,7 @@ class Evaluator(object):
             foo.bar.baz
 
         `follow_path` is only responsible for completing `.bar.baz`, the rest is
-        done in the `follow_call` function.
+        done in the `eval_call` function.
         """
         # current is either an Array or a Scope.
         try:

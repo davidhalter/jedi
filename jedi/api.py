@@ -515,7 +515,7 @@ class Script(object):
 
         user_stmt = self._user_stmt()
         with common.scale_speed_settings(settings.scale_call_signatures):
-            _callable = lambda: self._evaluator.follow_call(call)
+            _callable = lambda: self._evaluator.eval_call(call)
             origins = cache.cache_call_signatures(_callable, user_stmt)
         debug.speed('func_call followed')
 
