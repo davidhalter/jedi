@@ -921,10 +921,10 @@ class Statement(Simple):
                         # it's not possible to set it earlier
                         tok.parent = self
                 else:
-                    tok           = tok_temp.token
+                    tok = tok_temp.token
                     start_tok_pos = tok_temp.start_pos
-                    last_end_pos  = end_pos
-                    end_pos       = tok_temp.end_pos
+                    last_end_pos = end_pos
+                    end_pos = tok_temp.end_pos
                     if first:
                         first = False
                         start_pos = start_tok_pos
@@ -1056,9 +1056,9 @@ class Statement(Simple):
                 end_pos = tok.end_pos
             else:
                 token_type = tok_temp.token_type
-                tok        = tok_temp.token
-                start_pos  = tok_temp.start_pos
-                end_pos    = tok_temp.end_pos
+                tok = tok_temp.token
+                start_pos = tok_temp.start_pos
+                end_pos = tok_temp.end_pos
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
