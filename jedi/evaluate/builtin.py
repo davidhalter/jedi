@@ -439,7 +439,7 @@ class Builtin(object):
             parser = Parser(source, None)
             module = parser.module
             module.parent = self.scope
-            typ = evaluator.follow_path(iter(['FunctionType']), module, module)
+            typ = evaluator.follow_path(iter(['FunctionType']), [module], module)
 
             s = self._magic_function_scope = typ.pop()
             return s

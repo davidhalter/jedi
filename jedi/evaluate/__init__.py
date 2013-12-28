@@ -38,13 +38,13 @@ kick in. The statement has not been resolved fully, but now we need to resolve
 the datetime import. So it continues
 
 - follow import, which happens in the :mod:`imports` module.
-- now the same ``eval_call`` as above calls ``follow_paths`` to follow the
+- now the same ``eval_call`` as above calls ``follow_path`` to follow the
   second part of the statement ``date``.
-- After ``follow_paths`` returns with the desired ``datetime.date`` class, the
+- After ``follow_path`` returns with the desired ``datetime.date`` class, the
   result is being returned and the recursion finishes.
 
 Now what would happen if we wanted ``datetime.date.foo.bar``? Just two more
-calls to ``follow_paths`` (which calls itself with a recursion). What if the
+calls to ``follow_path`` (which calls itself with a recursion). What if the
 import would contain another Statement like this::
 
     from foo import bar
@@ -534,7 +534,7 @@ class Evaluator(object):
                                                        for s in call))
                 call_path = call.generate_call_path()
                 next(call_path, None)  # the first one has been used already
-                result += self.follow_paths(call_path, r, call.parent,
+                result += self.follow_path(call_path, r, call.parent,
                                             position=call.start_pos)
             elif isinstance(call, pr.ListComprehension):
                 loop = evaluate_list_comprehension(call)
@@ -601,35 +601,31 @@ class Evaluator(object):
                 scopes = [er.Instance(self, s, (current.value,)) for s in scopes]
             result = imports.strip_imports(self, scopes)
 
-        return self.follow_paths(path, result, scope, position=position)
+        return self.follow_path(path, result, scope, position=position)
 
-    def follow_paths(self, path, results, call_scope, position=None):
+    def follow_path(self, path, types, call_scope, position=None):
         """
         In each result, `path` must be followed. Copies the path iterator.
         """
         results_new = []
-        if results:
-            if len(results) > 1:
-                iter_paths = itertools.tee(path, len(results))
-            else:
-                iter_paths = [path]
+        iter_paths = itertools.tee(path, len(types))
 
-            for i, r in enumerate(results):
-                fp = self.follow_path(iter_paths[i], r, call_scope, position=position)
-                if fp is not None:
-                    results_new += fp
-                else:
-                    # This means stop iteration.
-                    return results
+        for i, type in enumerate(types):
+            fp = self._follow_path(iter_paths[i], type, call_scope, position=position)
+            if fp is not None:
+                results_new += fp
+            else:
+                # This means stop iteration.
+                return types
         return results_new
 
-    def follow_path(self, path, scope, call_scope, position=None):
+    def _follow_path(self, path, scope, call_scope, position=None):
         """
         Uses a generator and tries to complete the path, e.g.::
 
             foo.bar.baz
 
-        `follow_path` is only responsible for completing `.bar.baz`, the rest is
+        `_follow_path` is only responsible for completing `.bar.baz`, the rest is
         done in the `follow_call` function.
         """
         # current is either an Array or a Scope.
@@ -637,7 +633,7 @@ class Evaluator(object):
             current = next(path)
         except StopIteration:
             return None
-        debug.dbg('follow_path: %s in scope %s' % (current, scope))
+        debug.dbg('_follow_path: %s in scope %s' % (current, scope))
 
         result = []
         if isinstance(current, pr.Array):
@@ -662,7 +658,7 @@ class Evaluator(object):
                     return []
             result = imports.strip_imports(self, self.find_name(scope, current,
                                            position=position))
-        return self.follow_paths(path, set(result), call_scope, position=position)
+        return self.follow_path(path, set(result), call_scope, position=position)
 
     def execute(self, scope, params, evaluate_generator=False):
         return er.Execution(self, scope, params).get_return_types(evaluate_generator)

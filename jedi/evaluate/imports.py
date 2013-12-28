@@ -208,7 +208,7 @@ class ImportPath(pr.Base):
                     # ``os.path``, because it's a very important one in Python
                     # that is being achieved by messing with ``sys.modules`` in
                     # ``os``.
-                    scopes = self._evaluator.follow_path(iter(rest), scope, scope)
+                    scopes = self._evaluator.follow_path(iter(rest), [scope], scope)
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
@@ -216,7 +216,7 @@ class ImportPath(pr.Base):
                         for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
-                        self._evaluator.follow_path(iter(rest), s, s)
+                        self._evaluator.follow_path(iter(rest), [s], s)
                         for s in scopes)
             scopes = list(scopes)
 

@@ -456,7 +456,7 @@ class Execution(Executable):
                         if len(arr_name.var_args) != 1:
                             debug.warning('jedi getattr is too simple')
                         key = arr_name.var_args[0]
-                        stmts += self._evaluator.follow_path(iter([key]), obj, base)
+                        stmts += self._evaluator.follow_path(iter([key]), [obj], base)
                 return stmts
             elif func_name == 'type':
                 # otherwise it would be a metaclass

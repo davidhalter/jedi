@@ -187,7 +187,7 @@ def search_params(evaluator, param):
                         if compare in c:
                             # only if we have the correct function we execute
                             # it, otherwise just ignore it.
-                            evaluator.follow_paths(iter(last), s, scope)
+                            evaluator.follow_path(iter(last), s, scope)
 
             return listener.param_possibilities
 
