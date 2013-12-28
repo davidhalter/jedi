@@ -535,7 +535,7 @@ class Evaluator(object):
                 call_path = call.generate_call_path()
                 next(call_path, None)  # the first one has been used already
                 result += self.follow_path(call_path, r, call.parent,
-                                            position=call.start_pos)
+                                           position=call.start_pos)
             elif isinstance(call, pr.ListComprehension):
                 loop = evaluate_list_comprehension(call)
                 # Caveat: parents are being changed, but this doesn't matter,

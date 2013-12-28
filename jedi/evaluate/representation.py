@@ -135,7 +135,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
 
     def execute_subscope_by_name(self, name, args=()):
         method = self.get_subscope_by_name(name)
-        return Execution(self._evaluator, method, args).get_return_types()
+        return self._evaluator.execute(method, args)
 
     def get_descriptor_return(self, obj):
         """ Throws a KeyError if there's no method. """
@@ -358,7 +358,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
                     old_func = InstanceElement(self._evaluator, instance, old_func)
                     instance = None
 
-                wrappers = Execution(self._evaluator, decorator, (old_func,)).get_return_types()
+                wrappers = self._evaluator.execute(decorator, (old_func,))
                 if not len(wrappers):
                     debug.warning('no wrappers found', self.base_func)
                     return None
@@ -809,7 +809,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
 
     def iter_content(self):
         """ returns the content of __iter__ """
-        return Execution(self._evaluator, self.func, self.var_args).get_return_types(True)
+        return self._evaluator.execute(self.func, self.var_args, True)
 
     def get_index_types(self, index=None):
         debug.warning('Tried to get array access on a generator', self)
