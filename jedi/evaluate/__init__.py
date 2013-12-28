@@ -588,7 +588,7 @@ class Evaluator(object):
         current = next(path)
 
         if isinstance(current, pr.Array):
-            result = [er.Array(self, current)]
+            types = [er.Array(self, current)]
         else:
             if isinstance(current, pr.NamePart):
                 # This is the first global lookup.
@@ -599,13 +599,17 @@ class Evaluator(object):
                 scopes = self.find_name(builtin.Builtin.scope, current.type_as_string())
                 # Make instances of those number/string objects.
                 scopes = [er.Instance(self, s, (current.value,)) for s in scopes]
-            result = imports.strip_imports(self, scopes)
+            types = imports.strip_imports(self, scopes)
 
-        return self.follow_path(path, result, scope, position=position)
+        return self.follow_path(path, types, scope, position=position)
 
     def follow_path(self, path, types, call_scope, position=None):
         """
-        In each result, `path` must be followed. Copies the path iterator.
+        Follows a path like::
+
+            self.follow_path(iter(['Foo', 'bar']), [a_type], from_somewhere)
+
+        to follow a call like ``module.a_type.Foo.bar`` (in ``from_somewhere``).
         """
         results_new = []
         iter_paths = itertools.tee(path, len(types))
@@ -619,46 +623,46 @@ class Evaluator(object):
                 return types
         return results_new
 
-    def _follow_path(self, path, scope, call_scope, position=None):
+    def _follow_path(self, path, type, scope, position=None):
         """
         Uses a generator and tries to complete the path, e.g.::
 
             foo.bar.baz
 
-        `_follow_path` is only responsible for completing `.bar.baz`, the rest is
-        done in the `follow_call` function.
+        `_follow_path` is only responsible for completing `.bar.baz`, the rest
+        is done in the `follow_call` function.
         """
         # current is either an Array or a Scope.
         try:
             current = next(path)
         except StopIteration:
             return None
-        debug.dbg('_follow_path: %s in scope %s' % (current, scope))
+        debug.dbg('_follow_path: %s in scope %s' % (current, type))
 
         result = []
         if isinstance(current, pr.Array):
             # This must be an execution, either () or [].
             if current.type == pr.Array.LIST:
-                if hasattr(scope, 'get_index_types'):
-                    result = scope.get_index_types(current)
+                if hasattr(type, 'get_index_types'):
+                    result = type.get_index_types(current)
             elif current.type not in [pr.Array.DICT]:
                 # Scope must be a class or func - make an instance or execution.
-                debug.dbg('exe', scope)
-                result = self.execute(scope, current)
+                debug.dbg('exe', type)
+                result = self.execute(type, current)
             else:
                 # Curly braces are not allowed, because they make no sense.
-                debug.warning('strange function call with {}', current, scope)
+                debug.warning('strange function call with {}', current, type)
         else:
             # The function must not be decorated with something else.
-            if scope.isinstance(er.Function):
-                scope = scope.get_magic_method_scope()
+            if type.isinstance(er.Function):
+                type = type.get_magic_method_scope()
             else:
                 # This is the typical lookup while chaining things.
-                if filter_private_variable(scope, call_scope, current):
+                if filter_private_variable(type, scope, current):
                     return []
-            result = imports.strip_imports(self, self.find_name(scope, current,
+            result = imports.strip_imports(self, self.find_name(type, current,
                                            position=position))
-        return self.follow_path(path, set(result), call_scope, position=position)
+        return self.follow_path(path, set(result), scope, position=position)
 
     def execute(self, scope, params, evaluate_generator=False):
         return er.Execution(self, scope, params).get_return_types(evaluate_generator)
