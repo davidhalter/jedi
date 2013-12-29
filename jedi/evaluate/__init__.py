@@ -664,8 +664,32 @@ class Evaluator(object):
                                            position=position))
         return self.follow_path(path, set(result), scope, position=position)
 
-    def execute(self, scope, params, evaluate_generator=False):
-        return er.Execution(self, scope, params).get_return_types(evaluate_generator)
+    def execute(self, obj, params, evaluate_generator=False):
+        if obj.isinstance(er.Function):
+            obj = obj.get_decorated_func()
+
+        if obj.isinstance(er.Class):
+            # There maybe executions of executions.
+            return [er.Instance(self, obj, params)]
+        elif isinstance(obj, er.Generator):
+            return obj.iter_content()
+        else:
+            stmts = []
+            try:
+                obj.returns  # Test if it is a function
+            except AttributeError:
+                if hasattr(obj, 'execute_subscope_by_name'):
+                    try:
+                        stmts = obj.execute_subscope_by_name('__call__', params)
+                    except KeyError:
+                        debug.warning("no __call__ func available", obj)
+                else:
+                    debug.warning("no execution possible", obj)
+            else:
+                stmts = er.Execution(self, obj, params).get_return_types(evaluate_generator)
+
+            debug.dbg('execute: %s in %s' % (stmts, self))
+            return imports.strip_imports(self, stmts)
 
     def goto(self, stmt, call_path=None):
         if call_path is None:

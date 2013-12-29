@@ -14,12 +14,11 @@ from __future__ import with_statement
 import copy
 import itertools
 
-from jedi._compatibility import use_metaclass, next, hasattr, unicode
+from jedi._compatibility import use_metaclass, next, unicode
 from jedi.parser import representation as pr
 from jedi import helpers
 from jedi import debug
 from jedi import common
-from jedi.evaluate import imports
 from jedi.evaluate import builtin
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
@@ -39,18 +38,11 @@ class Executable(pr.IsScope):
         self.var_args = var_args
 
     def get_parent_until(self, *args, **kwargs):
-        return self._decorated.get_parent_until(*args, **kwargs)
+        return self.base.get_parent_until(*args, **kwargs)
 
     @property
     def parent(self):
-        return self._decorated.parent
-
-    @property
-    def _decorated(self):
-        """
-        Instance doesn't care about decorators and Execution overrides this
-        """
-        return self.base
+        return self.base.parent
 
 
 class Instance(use_metaclass(CachedMetaClass, Executable)):
@@ -363,9 +355,9 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
                     debug.warning('no wrappers found', self.base_func)
                     return None
                 if len(wrappers) > 1:
+                    # TODO resolve issue with multiple wrappers -> multiple types
                     debug.warning('multiple wrappers found', self.base_func,
                                   wrappers)
-                # This is here, that the wrapper gets executed.
                 f = wrappers[0]
 
                 debug.dbg('decorator end', f)
@@ -420,20 +412,11 @@ class Execution(Executable):
             else:
                 return [stmt]  # just some arbitrary object
 
-    @property
-    @memoize_default(None)
-    def _decorated(self):
-        """Get the decorated version of the input"""
-        base = self.base
-        if self.base.isinstance(Function):
-            base = base.get_decorated_func()
-        return base
-
     @memoize_default(default=())
     @recursion.execution_recursion_decorator
     def get_return_types(self, evaluate_generator=False):
         """ Get the return types of a function. """
-        base = self._decorated
+        base = self.base
         stmts = []
         if base.parent == builtin.Builtin.scope \
                 and not isinstance(base, (Generator, Array)):
@@ -464,7 +447,7 @@ class Execution(Executable):
                     objects = self._follow_var_arg(0)
                     return [o.base for o in objects if isinstance(o, Instance)]
             elif func_name == 'super':
-                # TODO make this able to detect multiple inheritance supers
+                # TODO make this able to detect multiple inheritance super
                 accept = (pr.Function,)
                 func = self.var_args.get_parent_until(accept)
                 if func.isinstance(*accept):
@@ -477,29 +460,7 @@ class Execution(Executable):
                             return [Instance(self._evaluator, su[0])]
                 return []
 
-        if base.isinstance(Class):
-            # There maybe executions of executions.
-            return [Instance(self._evaluator, base, self.var_args)]
-        elif isinstance(base, Generator):
-            return base.iter_content()
-        else:
-            try:
-                base.returns  # Test if it is a function
-            except AttributeError:
-                if hasattr(base, 'execute_subscope_by_name'):
-                    try:
-                        stmts = base.execute_subscope_by_name('__call__',
-                                                              self.var_args)
-                    except KeyError:
-                        debug.warning("no __call__ func available", base)
-                else:
-                    debug.warning("no execution possible", base)
-            else:
-                stmts = self._get_function_returns(base, evaluate_generator)
-
-        debug.dbg('exec result: %s in %s' % (stmts, self))
-
-        return imports.strip_imports(self._evaluator, stmts)
+        return self._get_function_returns(base, evaluate_generator)
 
     def _get_function_returns(self, func, evaluate_generator):
         """ A normal Function execution """
@@ -531,7 +492,7 @@ class Execution(Executable):
                 parent = self.var_args.parent
                 start_pos = self.var_args.start_pos
             else:
-                parent = self._decorated
+                parent = self.base
                 start_pos = 0, 0
 
             new_param = copy.copy(param)
@@ -558,15 +519,15 @@ class Execution(Executable):
 
         result = []
         start_offset = 0
-        if isinstance(self._decorated, InstanceElement):
+        if isinstance(self.base, InstanceElement):
             # Care for self -> just exclude it and add the instance
             start_offset = 1
-            self_name = copy.copy(self._decorated.params[0].get_name())
-            self_name.parent = self._decorated.instance
+            self_name = copy.copy(self.base.params[0].get_name())
+            self_name.parent = self.base.instance
             result.append(self_name)
 
         param_dict = {}
-        for param in self._decorated.params:
+        for param in self.base.params:
             param_dict[str(param.get_name())] = param
         # There may be calls, which don't fit all the params, this just ignores
         # it.
@@ -575,7 +536,7 @@ class Execution(Executable):
         non_matching_keys = []
         keys_used = set()
         keys_only = False
-        for param in self._decorated.params[start_offset:]:
+        for param in self.base.params[start_offset:]:
             # The value and key can both be null. There, the defaults apply.
             # args / kwargs will just be empty arrays / dicts, respectively.
             # Wrong value count is just ignored. If you try to test cases that
@@ -719,7 +680,7 @@ class Execution(Executable):
         execution.
         """
         # Copy all these lists into this local function.
-        attr = getattr(self._decorated, prop)
+        attr = getattr(self.base, prop)
         objects = []
         for element in attr:
             if element is None:
@@ -735,7 +696,7 @@ class Execution(Executable):
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'imports', '_sub_module']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
-        return getattr(self._decorated, name)
+        return getattr(self.base, name)
 
     @memoize_default(None)
     @common.rethrow_uncaught
@@ -777,7 +738,7 @@ class Execution(Executable):
 
     def __repr__(self):
         return "<%s of %s>" % \
-            (type(self).__name__, self._decorated)
+            (type(self).__name__, self.base)
 
 
 class Generator(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
