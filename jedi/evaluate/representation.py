@@ -80,7 +80,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             return None
 
     @memoize_default([])
-    def _get_self_attributes(self):
+    def get_self_attributes(self):
         def add_self_dot_name(name):
             """
             Need to copy and rewrite the name, because names are now
@@ -117,8 +117,8 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
                     add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
-            names += Instance(self._evaluator, s)._get_self_attributes()
-
+            for inst in self._evaluator.execute(s):
+                names += inst.get_self_attributes()
         return names
 
     def get_subscope_by_name(self, name):
@@ -142,7 +142,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         Get the instance vars of a class. This includes the vars of all
         classes
         """
-        names = self._get_self_attributes()
+        names = self.get_self_attributes()
 
         class_names = self.base.instance_names()
         for var in class_names:
@@ -154,7 +154,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         An Instance has two scopes: The scope with self names and the class
         scope. Instance variables have priority over the class scope.
         """
-        yield self, self._get_self_attributes()
+        yield self, self.get_self_attributes()
 
         names = []
         class_names = self.base.instance_names()
@@ -719,8 +719,8 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
-                        'asserts', 'doc', 'docstr', 'get_parent_until', 'get_code',
-                        'subscopes']:
+                        'asserts', 'doc', 'docstr', 'get_parent_until',
+                        'get_code', 'subscopes']:
             raise AttributeError("Accessing %s of %s is not allowed."
                                  % (self, name))
         return getattr(self.func, name)
@@ -801,7 +801,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
         """
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_name(builtin.Builtin.scope, self._array.type)[0]
-        scope = Instance(self._evaluator, scope)
+        scope = self._evaluator.execute(scope)[0]  # builtins only have one class
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]
 

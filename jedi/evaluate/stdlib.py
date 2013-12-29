@@ -77,7 +77,7 @@ def builtins_super(evaluator, obj, params):
             cls = er.Class(evaluator, cls)
             su = cls.get_super_classes()
             if su:
-                return [er.Instance(evaluator, su[0])]
+                return evaluator.execute(su[0])
     return []
 
 

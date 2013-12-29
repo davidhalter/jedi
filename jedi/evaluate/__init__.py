@@ -268,9 +268,7 @@ class Evaluator(object):
                                     c = r.expression_list()[0]
                                     if c in ('*', '**'):
                                         t = 'tuple' if c == '*' else 'dict'
-                                        res_new = [er.Instance(
-                                            self, self.find_name(builtin.Builtin.scope, t)[0])
-                                        ]
+                                        res_new = self.execute(self.find_name(builtin.Builtin.scope, t)[0])
                                 if not r.assignment_details:
                                     # this means that there are no default params,
                                     # so just ignore it.
@@ -346,11 +344,11 @@ class Evaluator(object):
                     # not known. Therefore add a new instance for self. Otherwise
                     # take the existing.
                     if isinstance(scope, er.InstanceElement):
-                        inst = scope.instance
+                        result.append(scope.instance)
                     else:
-                        inst = er.Instance(self, er.Class(self, until()))
-                        inst.is_generated = True
-                    result.append(inst)
+                        for inst in self.execute(er.Class(self, until())):
+                            inst.is_generated = True
+                            result.append(inst)
                 elif par.isinstance(pr.Statement):
                     def is_execution(calls):
                         for c in calls:
@@ -599,7 +597,9 @@ class Evaluator(object):
                 # for pr.Literal
                 scopes = self.find_name(builtin.Builtin.scope, current.type_as_string())
                 # Make instances of those number/string objects.
-                scopes = [er.Instance(self, s, (current.value,)) for s in scopes]
+                scopes = itertools.chain.from_iterable(
+                    self.execute(s, (current.value,)) for s in scopes
+                )
             types = imports.strip_imports(self, scopes)
 
         return self.follow_path(path, types, scope, position=position)
@@ -665,7 +665,7 @@ class Evaluator(object):
                                            position=position))
         return self.follow_path(path, set(result), scope, position=position)
 
-    def execute(self, obj, params, evaluate_generator=False):
+    def execute(self, obj, params=(), evaluate_generator=False):
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
