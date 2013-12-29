@@ -84,6 +84,7 @@ from jedi.evaluate import recursion
 from jedi.evaluate.cache import memoize_default
 from jedi import docstrings
 from jedi.evaluate import dynamic
+from jedi.evaluate import stdlib
 
 
 def get_defined_names_for_position(scope, position=None, start_scope=None):
@@ -106,7 +107,7 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
     # because class variables are always valid and the `self.` variables, too.
     if (not position or isinstance(scope, (er.Array, er.Instance))
        or start_scope != scope
-       and isinstance(start_scope, (pr.Function, er.Execution))):
+       and isinstance(start_scope, (pr.Function, er.FunctionExecution))):
         return names
     names_new = []
     for n in names:
@@ -193,7 +194,7 @@ class Evaluator(object):
             scope = scope.parent
             # This is used, because subscopes (Flow scopes) would distort the
             # results.
-            if scope and scope.isinstance(er.Function, pr.Function, er.Execution):
+            if scope and scope.isinstance(er.Function, pr.Function, er.FunctionExecution):
                 in_func_scope = scope
 
         # Add star imports.
@@ -668,6 +669,11 @@ class Evaluator(object):
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
+        try:
+            return stdlib.execute(self, obj, params)
+        except stdlib.NotInStdLib:
+            pass
+
         if obj.isinstance(er.Class):
             # There maybe executions of executions.
             return [er.Instance(self, obj, params)]
@@ -686,7 +692,7 @@ class Evaluator(object):
                 else:
                     debug.warning("no execution possible", obj)
             else:
-                stmts = er.Execution(self, obj, params).get_return_types(evaluate_generator)
+                stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
 
             debug.dbg('execute: %s in %s' % (stmts, self))
             return imports.strip_imports(self, stmts)

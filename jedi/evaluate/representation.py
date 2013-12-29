@@ -67,7 +67,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
     @memoize_default(None)
     def _get_method_execution(self, func):
         func = InstanceElement(self._evaluator, self, func, True)
-        return Execution(self._evaluator, func, self.var_args)
+        return FunctionExecution(self._evaluator, func, self.var_args)
 
     def _get_func_self_name(self, func):
         """
@@ -392,7 +392,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
-class Execution(Executable):
+class FunctionExecution(Executable):
     """
     This class is used to evaluate functions and their returns.
 
@@ -401,69 +401,10 @@ class Execution(Executable):
     multiple calls to functions and recursion has to be avoided. But this is
     responsibility of the decorators.
     """
-    def _follow_var_arg(self, index):
-        try:
-            stmt = self.var_args[index]
-        except IndexError:
-            return []
-        else:
-            if isinstance(stmt, pr.Statement):
-                return self._evaluator.eval_statement(stmt)
-            else:
-                return [stmt]  # just some arbitrary object
-
     @memoize_default(default=())
     @recursion.execution_recursion_decorator
     def get_return_types(self, evaluate_generator=False):
-        """ Get the return types of a function. """
-        base = self.base
-        stmts = []
-        if base.parent == builtin.Builtin.scope \
-                and not isinstance(base, (Generator, Array)):
-            func_name = str(base.name)
-
-            # some implementations of builtins:
-            if func_name == 'getattr':
-                # follow the first param
-                objects = self._follow_var_arg(0)
-                names = self._follow_var_arg(1)
-                for obj in objects:
-                    if not isinstance(obj, (Instance, Class, pr.Module)):
-                        debug.warning('getattr called without instance')
-                        continue
-
-                    for arr_name in names:
-                        if not isinstance(arr_name, Instance):
-                            debug.warning('getattr called without str')
-                            continue
-                        if len(arr_name.var_args) != 1:
-                            debug.warning('jedi getattr is too simple')
-                        key = arr_name.var_args[0]
-                        stmts += self._evaluator.follow_path(iter([key]), [obj], base)
-                return stmts
-            elif func_name == 'type':
-                # otherwise it would be a metaclass
-                if len(self.var_args) == 1:
-                    objects = self._follow_var_arg(0)
-                    return [o.base for o in objects if isinstance(o, Instance)]
-            elif func_name == 'super':
-                # TODO make this able to detect multiple inheritance super
-                accept = (pr.Function,)
-                func = self.var_args.get_parent_until(accept)
-                if func.isinstance(*accept):
-                    cls = func.get_parent_until(accept + (pr.Class,),
-                                                include_current=False)
-                    if isinstance(cls, pr.Class):
-                        cls = Class(self._evaluator, cls)
-                        su = cls.get_super_classes()
-                        if su:
-                            return [Instance(self._evaluator, su[0])]
-                return []
-
-        return self._get_function_returns(base, evaluate_generator)
-
-    def _get_function_returns(self, func, evaluate_generator):
-        """ A normal Function execution """
+        func = self.base
         # Feed the listeners, with the params.
         for listener in func.listeners:
             listener.execute(self._get_params())
@@ -479,7 +420,7 @@ class Execution(Executable):
     @memoize_default(default=())
     def _get_params(self):
         """
-        This returns the params for an Execution/Instance and is injected as a
+        This returns the params for an TODO and is injected as a
         'hack' into the pr.Function class.
         This needs to be here, because Instance can have __init__ functions,
         which act the same way as normal functions.

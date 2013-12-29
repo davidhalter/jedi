@@ -335,7 +335,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     from jedi import evaluate
 
     def get_execution_parent(element, *stop_classes):
-        """ Used to get an Instance/Execution parent """
+        """ Used to get an Instance/FunctionExecution parent """
         if isinstance(element, er.Array):
             stmt = element._array.parent
         else:
@@ -350,7 +350,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
 
     search_names = ['append', 'extend', 'insert'] if is_list else \
         ['add', 'update']
-    comp_arr_parent = get_execution_parent(compare_array, er.Execution)
+    comp_arr_parent = get_execution_parent(compare_array, er.FunctionExecution)
 
     possible_stmts = []
     res = []
@@ -364,7 +364,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             # can search for the same statement, that is in the module
             # dict. Executions are somewhat special in jedi, since they
             # literally copy the contents of a function.
-            if isinstance(comp_arr_parent, er.Execution):
+            if isinstance(comp_arr_parent, er.FunctionExecution):
                 stmt = comp_arr_parent. \
                     get_statement_for_position(stmt.start_pos)
                 if stmt is None:
