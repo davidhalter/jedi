@@ -314,7 +314,7 @@ class Evaluator(object):
                 if len(loop.set_vars) > 1:
                     expression_list = loop.set_stmt.expression_list()
                     # loops with loop.set_vars > 0 only have one command
-                    result = assign_tuples(expression_list[0], result, name_str)
+                    result = _assign_tuples(expression_list[0], result, name_str)
                 return result
 
             def process(name):
@@ -498,7 +498,7 @@ class Evaluator(object):
         if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
             new_result = []
             for ass_expression_list, op in stmt.assignment_details:
-                new_result += find_assignments(ass_expression_list[0], result, seek_name)
+                new_result += _find_assignments(ass_expression_list[0], result, seek_name)
             result = new_result
         return set(result)
 
@@ -758,7 +758,7 @@ def check_getattr(inst, name_str):
     return result
 
 
-def assign_tuples(tup, results, seek_name):
+def _assign_tuples(tup, results, seek_name):
     """
     This is a normal assignment checker. In python functions and other things
     can return tuples:
@@ -797,11 +797,11 @@ def assign_tuples(tup, results, seek_name):
             r = eval_results(i)
 
         # LHS of tuples can be nested, so resolve it recursively
-        result += find_assignments(command, r, seek_name)
+        result += _find_assignments(command, r, seek_name)
     return result
 
 
-def find_assignments(lhs, results, seek_name):
+def _find_assignments(lhs, results, seek_name):
     """
     Check if `seek_name` is in the left hand side `lhs` of assignment.
 
@@ -816,7 +816,7 @@ def find_assignments(lhs, results, seek_name):
     :type seek_name: str
     """
     if isinstance(lhs, pr.Array):
-        return assign_tuples(lhs, results, seek_name)
+        return _assign_tuples(lhs, results, seek_name)
     elif lhs.name.names[-1] == seek_name:
         return results
     else:
