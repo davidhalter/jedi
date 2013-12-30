@@ -59,6 +59,7 @@ from jedi import modules
 from jedi import settings
 from jedi.parser import fast as fast_parser
 from jedi.evaluate.cache import memoize_default
+from jedi.evaluate import iterable
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -294,7 +295,6 @@ def check_flow_information(evaluator, flow, search_name, pos):
 
 
 def _check_isinstance_type(evaluator, stmt, search_name):
-    from jedi.evaluate import iterable
     try:
         expression_list = stmt.expression_list()
         # this might be removed if we analyze and, etc

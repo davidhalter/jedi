@@ -6,7 +6,6 @@ from jedi import settings
 from jedi._compatibility import use_metaclass
 from jedi.parser import representation as pr
 from jedi.evaluate import builtin
-from jedi.evaluate import dynamic
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 
 
@@ -248,11 +247,10 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
 
     from jedi.evaluate import representation as er
     from jedi import evaluate
-    from jedi.evaluate import iterable
 
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/FunctionExecution parent """
-        if isinstance(element, iterable.Array):
+        if isinstance(element, Array):
             stmt = element._array.parent
         else:
             # is an Instance with an ArrayInstance inside
@@ -293,6 +291,9 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             if evaluator.recursion_detector.push_stmt(stmt):
                 # check recursion
                 continue
+
+            # TODO should be deleted in the future
+            from jedi.evaluate import dynamic
             res += check_calls(dynamic._scan_statement(stmt, n), n)
             evaluator.recursion_detector.pop_stmt()
     # reset settings
