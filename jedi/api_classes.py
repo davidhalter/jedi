@@ -12,6 +12,7 @@ from jedi import common
 from jedi.parser import representation as pr
 from jedi import cache
 from jedi.evaluate import representation as er
+from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi import keywords
 
@@ -440,7 +441,7 @@ class Definition(BaseDefinition):
 
         if isinstance(d, pr.Name):
             return d.names[-1] if d.names else None
-        elif isinstance(d, er.Array):
+        elif isinstance(d, iterable.Array):
             return unicode(d.type)
         elif isinstance(d, (pr.Class, er.Class, er.Instance,
                             er.Function, pr.Function)):
@@ -493,7 +494,7 @@ class Definition(BaseDefinition):
         if isinstance(d, pr.Name):
             d = d.parent
 
-        if isinstance(d, er.Array):
+        if isinstance(d, iterable.Array):
             d = 'class ' + d.type
         elif isinstance(d, (pr.Class, er.Class, er.Instance)):
             d = 'class ' + unicode(d.name)

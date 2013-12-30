@@ -5,6 +5,7 @@ understand them with Jedi.
 
 from jedi.evaluate import builtin
 from jedi.evaluate import representation as er
+from jedi.evaluate import iterable
 from jedi.parser import representation as pr
 from jedi import debug
 
@@ -14,7 +15,7 @@ class NotInStdLib(LookupError):
 
 
 def execute(evaluator, obj, params):
-    if not isinstance(obj, (er.Generator, er.Array)):
+    if not isinstance(obj, (iterable.Generator, iterable.Array)):
         obj_name = str(obj.name)
         if obj.parent == builtin.Builtin.scope:
             # for now we just support builtin functions.

@@ -81,6 +81,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import builtin
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
+from jedi.evaluate import iterable
 from jedi.evaluate.cache import memoize_default
 from jedi import docstrings
 from jedi.evaluate import dynamic
@@ -105,7 +106,7 @@ def get_defined_names_for_position(scope, position=None, start_scope=None):
     names = scope.get_defined_names()
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    if (not position or isinstance(scope, (er.Array, er.Instance))
+    if (not position or isinstance(scope, (iterable.Array, er.Instance))
        or start_scope != scope
        and isinstance(start_scope, (pr.Function, er.FunctionExecution))):
         return names
@@ -563,7 +564,7 @@ class Evaluator(object):
                         continue
                     result += self.eval_call(call)
                 elif call == '*':
-                    if [r for r in result if isinstance(r, er.Array)
+                    if [r for r in result if isinstance(r, iterable.Array)
                        or isinstance(r, er.Instance)
                        and str(r.name) == 'str']:
                         # if it is an iterable, ignore * operations
@@ -587,7 +588,7 @@ class Evaluator(object):
         current = next(path)
 
         if isinstance(current, pr.Array):
-            types = [er.Array(self, current)]
+            types = [iterable.Array(self, current)]
         else:
             if isinstance(current, pr.NamePart):
                 # This is the first global lookup.
@@ -677,7 +678,7 @@ class Evaluator(object):
         if obj.isinstance(er.Class):
             # There maybe executions of executions.
             return [er.Instance(self, obj, params)]
-        elif isinstance(obj, er.Generator):
+        elif isinstance(obj, iterable.Generator):
             return obj.iter_content()
         else:
             stmts = []
@@ -763,7 +764,7 @@ def get_iterator_types(inputs):
     # Take the first statement (for has always only
     # one, remember `in`). And follow it.
     for it in inputs:
-        if isinstance(it, (er.Generator, er.Array, dynamic.ArrayInstance)):
+        if isinstance(it, (iterable.Generator, iterable.Array, dynamic.ArrayInstance)):
             iterators.append(it)
         else:
             if not hasattr(it, 'execute_subscope_by_name'):
@@ -776,7 +777,7 @@ def get_iterator_types(inputs):
 
     result = []
     for gen in iterators:
-        if isinstance(gen, er.Array):
+        if isinstance(gen, iterable.Array):
             # Array is a little bit special, since this is an internal
             # array, but there's also the list builtin, which is
             # another thing.

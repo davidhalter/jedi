@@ -333,10 +333,11 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
 
     from jedi.evaluate import representation as er
     from jedi import evaluate
+    from jedi.evaluate import iterable
 
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/FunctionExecution parent """
-        if isinstance(element, er.Array):
+        if isinstance(element, iterable.Array):
             stmt = element._array.parent
         else:
             # is an Instance with an ArrayInstance inside
@@ -463,7 +464,7 @@ def check_flow_information(evaluator, flow, search_name, pos):
 
 
 def _check_isinstance_type(evaluator, stmt, search_name):
-    from jedi.evaluate import representation as er
+    from jedi.evaluate import iterable
     try:
         expression_list = stmt.expression_list()
         # this might be removed if we analyze and, etc
@@ -487,6 +488,6 @@ def _check_isinstance_type(evaluator, stmt, search_name):
 
     result = []
     for c in evaluator.eval_call(classes[0]):
-        for typ in (c.get_index_types() if isinstance(c, er.Array) else [c]):
+        for typ in (c.get_index_types() if isinstance(c, iterable.Array) else [c]):
             result += evaluator.execute(typ)
     return result
