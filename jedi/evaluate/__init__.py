@@ -88,7 +88,7 @@ from jedi.evaluate import dynamic
 from jedi.evaluate import stdlib
 
 
-def get_defined_names_for_position(scope, position=None, start_scope=None):
+def _get_defined_names_for_position(scope, position=None, start_scope=None):
     """
     Return filtered version of ``scope.get_defined_names()``.
 
@@ -184,7 +184,7 @@ class Evaluator(object):
                         for g in scope.scope_generator():
                             yield g
                     else:
-                        yield scope, get_defined_names_for_position(scope,
+                        yield scope, _get_defined_names_for_position(scope,
                                                                     position, in_func_scope)
                 except StopIteration:
                     reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
@@ -440,7 +440,7 @@ class Evaluator(object):
 
             if not result and isinstance(nscope, er.Instance):
                 # __getattr__ / __getattribute__
-                result += check_getattr(nscope, name_str)
+                result += _check_getattr(nscope, name_str)
             debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
                       % (name_str, scope, nscope, u(result), position))
             return result
@@ -469,7 +469,7 @@ class Evaluator(object):
                     # strange stuff...
                     names = scope.get_defined_names()
                 else:
-                    names = get_defined_names_for_position(scope, position)
+                    names = _get_defined_names_for_position(scope, position)
                 scope_generator = iter([(scope, names)])
 
         if is_goto:
@@ -740,7 +740,7 @@ def filter_private_variable(scope, call_scope, var_name):
     return False
 
 
-def check_getattr(inst, name_str):
+def _check_getattr(inst, name_str):
     """Checks for both __getattr__ and __getattribute__ methods"""
     result = []
     # str is important to lose the NamePart!
