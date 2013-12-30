@@ -73,7 +73,7 @@ from __future__ import with_statement
 import sys
 import itertools
 
-from jedi._compatibility import next, hasattr, is_py3k, unicode, reraise, u
+from jedi._compatibility import next, hasattr, unicode, reraise, u
 from jedi import common
 from jedi.parser import representation as pr
 from jedi import debug
@@ -310,7 +310,7 @@ class Evaluator(object):
                 # one, remember `in`). And follow it.
                 if not loop.inputs:
                     return []
-                result = get_iterator_types(self.eval_statement(loop.inputs[0]))
+                result = iterable.get_iterator_types(self.eval_statement(loop.inputs[0]))
                 if len(loop.set_vars) > 1:
                     expression_list = loop.set_stmt.expression_list()
                     # loops with loop.set_vars > 0 only have one command
@@ -755,43 +755,6 @@ def check_getattr(inst, name_str):
         # you ever have something, let me know!
         with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattribute__', [name])
-    return result
-
-
-def get_iterator_types(inputs):
-    """Returns the types of any iterator (arrays, yields, __iter__, etc)."""
-    iterators = []
-    # Take the first statement (for has always only
-    # one, remember `in`). And follow it.
-    for it in inputs:
-        if isinstance(it, (iterable.Generator, iterable.Array, iterable.ArrayInstance)):
-            iterators.append(it)
-        else:
-            if not hasattr(it, 'execute_subscope_by_name'):
-                debug.warning('iterator/for loop input wrong', it)
-                continue
-            try:
-                iterators += it.execute_subscope_by_name('__iter__')
-            except KeyError:
-                debug.warning('iterators: No __iter__ method found.')
-
-    result = []
-    for gen in iterators:
-        if isinstance(gen, iterable.Array):
-            # Array is a little bit special, since this is an internal
-            # array, but there's also the list builtin, which is
-            # another thing.
-            result += gen.get_index_types()
-        elif isinstance(gen, er.Instance):
-            # __iter__ returned an instance.
-            name = '__next__' if is_py3k else 'next'
-            try:
-                result += gen.execute_subscope_by_name(name)
-            except KeyError:
-                debug.warning('Instance has no __next__ function', gen)
-        else:
-            # is a generator
-            result += gen.iter_content()
     return result
 
 

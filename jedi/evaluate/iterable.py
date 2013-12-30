@@ -3,7 +3,7 @@ import itertools
 from jedi import common
 from jedi import debug
 from jedi import settings
-from jedi._compatibility import use_metaclass
+from jedi._compatibility import use_metaclass, is_py3k
 from jedi.parser import representation as pr
 from jedi.evaluate import builtin
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
@@ -182,6 +182,44 @@ class ArrayMethod(object):
         return "<%s of %s>" % (type(self).__name__, self.name)
 
 
+def get_iterator_types(inputs):
+    """Returns the types of any iterator (arrays, yields, __iter__, etc)."""
+    iterators = []
+    # Take the first statement (for has always only
+    # one, remember `in`). And follow it.
+    for it in inputs:
+        if isinstance(it, (Generator, Array, ArrayInstance)):
+            iterators.append(it)
+        else:
+            if not hasattr(it, 'execute_subscope_by_name'):
+                debug.warning('iterator/for loop input wrong', it)
+                continue
+            try:
+                iterators += it.execute_subscope_by_name('__iter__')
+            except KeyError:
+                debug.warning('iterators: No __iter__ method found.')
+
+    result = []
+    from jedi.evaluate.representation import Instance
+    for gen in iterators:
+        if isinstance(gen, Array):
+            # Array is a little bit special, since this is an internal
+            # array, but there's also the list builtin, which is
+            # another thing.
+            result += gen.get_index_types()
+        elif isinstance(gen, Instance):
+            # __iter__ returned an instance.
+            name = '__next__' if is_py3k else 'next'
+            try:
+                result += gen.execute_subscope_by_name(name)
+            except KeyError:
+                debug.warning('Instance has no __next__ function', gen)
+        else:
+            # is a generator
+            result += gen.iter_content()
+    return result
+
+
 def check_array_additions(evaluator, array):
     """ Just a mapper function for the internal _check_array_additions """
     if not pr.Array.is_type(array._array, pr.Array.LIST, pr.Array.SET):
@@ -242,11 +280,10 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             elif add_name in ['extend', 'update']:
                 for param in params:
                     iterators = evaluator.eval_statement(param)
-                result += evaluate.get_iterator_types(iterators)
+                result += get_iterator_types(iterators)
         return result
 
     from jedi.evaluate import representation as er
-    from jedi import evaluate
 
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/FunctionExecution parent """
@@ -326,10 +363,10 @@ class ArrayInstance(pr.Base):
         lists/sets are too complicated too handle that.
         """
         items = []
-        from jedi import evaluate
+        from jedi.evaluate.representation import Instance
         for stmt in self.var_args:
             for typ in self._evaluator.eval_statement(stmt):
-                if isinstance(typ, evaluate.er.Instance) and len(typ.var_args):
+                if isinstance(typ, Instance) and len(typ.var_args):
                     array = typ.var_args[0]
                     if isinstance(array, ArrayInstance):
                         # prevent recursions
@@ -341,7 +378,7 @@ class ArrayInstance(pr.Base):
                                 'ArrayInstance recursion',
                                 self.var_args)
                         continue
-                items += evaluate.get_iterator_types([typ])
+                items += get_iterator_types([typ])
 
         # TODO check if exclusion of tuple is a problem here.
         if isinstance(self.var_args, tuple) or self.var_args.parent is None:
