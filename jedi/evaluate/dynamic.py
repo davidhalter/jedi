@@ -57,7 +57,6 @@ from jedi import cache
 from jedi.parser import representation as pr
 from jedi import modules
 from jedi import settings
-from jedi import debug
 from jedi.parser import fast as fast_parser
 from jedi.evaluate.cache import memoize_default
 
@@ -232,18 +231,6 @@ def search_params(evaluator, param):
     return result
 
 
-def check_array_additions(evaluator, array):
-    """ Just a mapper function for the internal _check_array_additions """
-    if not pr.Array.is_type(array._array, pr.Array.LIST, pr.Array.SET):
-        # TODO also check for dict updates
-        return []
-
-    is_list = array._array.type == 'list'
-    current_module = array._array.get_parent_until()
-    res = _check_array_additions(evaluator, array, current_module, is_list)
-    return res
-
-
 def _scan_statement(stmt, search_name, assignment_details=False):
     """ Returns the function Call that match search_name in an Array. """
     def scan_array(arr, search_name):
@@ -278,163 +265,6 @@ def _scan_statement(stmt, search_name, assignment_details=False):
                 s_new = s_new.next
 
     return result
-
-
-@memoize_default([], evaluator_is_first_arg=True)
-def _check_array_additions(evaluator, compare_array, module, is_list):
-    """
-    Checks if a `pr.Array` has "add" statements:
-    >>> a = [""]
-    >>> a.append(1)
-    """
-    if not settings.dynamic_array_additions or module.is_builtin():
-        return []
-
-    def check_calls(calls, add_name):
-        """
-        Calls are processed here. The part before the call is searched and
-        compared with the original Array.
-        """
-        result = []
-        for c in calls:
-            call_path = list(c.generate_call_path())
-            separate_index = call_path.index(add_name)
-            if add_name == call_path[-1] or separate_index == 0:
-                # this means that there is no execution -> [].append
-                # or the keyword is at the start -> append()
-                continue
-            backtrack_path = iter(call_path[:separate_index])
-
-            position = c.start_pos
-            scope = c.get_parent_until(pr.IsScope)
-
-            found = evaluator.eval_call_path(backtrack_path, scope, position)
-            if not compare_array in found:
-                continue
-
-            params = call_path[separate_index + 1]
-            if not params.values:
-                continue  # no params: just ignore it
-            if add_name in ['append', 'add']:
-                for param in params:
-                    result += evaluator.eval_statement(param)
-            elif add_name in ['insert']:
-                try:
-                    second_param = params[1]
-                except IndexError:
-                    continue
-                else:
-                    result += evaluator.eval_statement(second_param)
-            elif add_name in ['extend', 'update']:
-                for param in params:
-                    iterators = evaluator.eval_statement(param)
-                result += evaluate.get_iterator_types(iterators)
-        return result
-
-    from jedi.evaluate import representation as er
-    from jedi import evaluate
-    from jedi.evaluate import iterable
-
-    def get_execution_parent(element, *stop_classes):
-        """ Used to get an Instance/FunctionExecution parent """
-        if isinstance(element, iterable.Array):
-            stmt = element._array.parent
-        else:
-            # is an Instance with an ArrayInstance inside
-            stmt = element.var_args[0].var_args.parent
-        if isinstance(stmt, er.InstanceElement):
-            stop_classes = list(stop_classes) + [er.Function]
-        return stmt.get_parent_until(stop_classes)
-
-    temp_param_add = settings.dynamic_params_for_other_modules
-    settings.dynamic_params_for_other_modules = False
-
-    search_names = ['append', 'extend', 'insert'] if is_list else \
-        ['add', 'update']
-    comp_arr_parent = get_execution_parent(compare_array, er.FunctionExecution)
-
-    possible_stmts = []
-    res = []
-    for n in search_names:
-        try:
-            possible_stmts += module.used_names[n]
-        except KeyError:
-            continue
-        for stmt in possible_stmts:
-            # Check if the original scope is an execution. If it is, one
-            # can search for the same statement, that is in the module
-            # dict. Executions are somewhat special in jedi, since they
-            # literally copy the contents of a function.
-            if isinstance(comp_arr_parent, er.FunctionExecution):
-                stmt = comp_arr_parent. \
-                    get_statement_for_position(stmt.start_pos)
-                if stmt is None:
-                    continue
-            # InstanceElements are special, because they don't get copied,
-            # but have this wrapper around them.
-            if isinstance(comp_arr_parent, er.InstanceElement):
-                stmt = er.InstanceElement(comp_arr_parent.instance, stmt)
-
-            if evaluator.recursion_detector.push_stmt(stmt):
-                # check recursion
-                continue
-            res += check_calls(_scan_statement(stmt, n), n)
-            evaluator.recursion_detector.pop_stmt()
-    # reset settings
-    settings.dynamic_params_for_other_modules = temp_param_add
-    return res
-
-
-def check_array_instances(evaluator, instance):
-    """Used for set() and list() instances."""
-    if not settings.dynamic_arrays_instances:
-        return instance.var_args
-    ai = ArrayInstance(evaluator, instance)
-    return [ai]
-
-
-class ArrayInstance(pr.Base):
-    """
-    Used for the usage of set() and list().
-    This is definitely a hack, but a good one :-)
-    It makes it possible to use set/list conversions.
-    """
-    def __init__(self, evaluator, instance):
-        self._evaluator = evaluator
-        self.instance = instance
-        self.var_args = instance.var_args
-
-    def iter_content(self):
-        """
-        The index is here just ignored, because of all the appends, etc.
-        lists/sets are too complicated too handle that.
-        """
-        items = []
-        from jedi import evaluate
-        for stmt in self.var_args:
-            for typ in self._evaluator.eval_statement(stmt):
-                if isinstance(typ, evaluate.er.Instance) and len(typ.var_args):
-                    array = typ.var_args[0]
-                    if isinstance(array, ArrayInstance):
-                        # prevent recursions
-                        # TODO compare Modules
-                        if self.var_args.start_pos != array.var_args.start_pos:
-                            items += array.iter_content()
-                        else:
-                            debug.warning(
-                                'ArrayInstance recursion',
-                                self.var_args)
-                        continue
-                items += evaluate.get_iterator_types([typ])
-
-        # TODO check if exclusion of tuple is a problem here.
-        if isinstance(self.var_args, tuple) or self.var_args.parent is None:
-            return []  # generated var_args should not be checked for arrays
-
-        module = self.var_args.get_parent_until()
-        is_list = str(self.instance.name) == 'list'
-        items += _check_array_additions(self._evaluator, self.instance, module, is_list)
-        return items
 
 
 def check_flow_information(evaluator, flow, search_name, pos):

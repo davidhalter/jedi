@@ -547,7 +547,7 @@ class Evaluator(object):
                     result.append(er.Function(self, call))
                 # With things like params, these can also be functions...
                 elif isinstance(call, pr.Base) and call.isinstance(
-                        er.Function, er.Class, er.Instance, dynamic.ArrayInstance):
+                        er.Function, er.Class, er.Instance, iterable.ArrayInstance):
                     result.append(call)
                 # The string tokens are just operations (+, -, etc.)
                 elif not isinstance(call, (str, unicode)):
@@ -764,7 +764,7 @@ def get_iterator_types(inputs):
     # Take the first statement (for has always only
     # one, remember `in`). And follow it.
     for it in inputs:
-        if isinstance(it, (iterable.Generator, iterable.Array, dynamic.ArrayInstance)):
+        if isinstance(it, (iterable.Generator, iterable.Array, iterable.ArrayInstance)):
             iterators.append(it)
         else:
             if not hasattr(it, 'execute_subscope_by_name'):

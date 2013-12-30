@@ -19,9 +19,8 @@ from jedi import common
 from jedi.evaluate import builtin
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
-from jedi.evaluate.iterable import Array, Generator
+from jedi.evaluate import iterable
 from jedi import docstrings
-from jedi.evaluate import dynamic
 
 
 class Executable(pr.IsScope):
@@ -51,7 +50,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         if str(base.name) in ['list', 'set'] \
                 and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
-            self.var_args = dynamic.check_array_instances(evaluator, self)
+            self.var_args = iterable.check_array_instances(evaluator, self)
         else:
             # need to execute the __init__ function, because the dynamic param
             # searching needs it.
@@ -406,7 +405,7 @@ class FunctionExecution(Executable):
         for listener in func.listeners:
             listener.execute(self._get_params())
         if func.is_generator and not evaluate_generator:
-            return [Generator(self._evaluator, func, self.var_args)]
+            return [iterable.Generator(self._evaluator, func, self.var_args)]
         else:
             stmts = docstrings.find_return_types(self._evaluator, func)
             for r in self.returns:
@@ -570,17 +569,17 @@ class FunctionExecution(Executable):
                     # *args must be some sort of an array, otherwise -> ignore
 
                     for array in arrays:
-                        if isinstance(array, Array):
+                        if isinstance(array, iterable.Array):
                             for field_stmt in array:  # yield from plz!
                                 yield None, field_stmt
-                        elif isinstance(array, Generator):
+                        elif isinstance(array, iterable.Generator):
                             for field_stmt in array.iter_content():
                                 yield None, helpers.FakeStatement(field_stmt)
                 # **kwargs
                 elif expression_list[0] == '**':
                     arrays = self._evaluator.eval_expression_list(expression_list[1:])
                     for array in arrays:
-                        if isinstance(array, Array):
+                        if isinstance(array, iterable.Array):
                             for key_stmt, value_stmt in array.items():
                                 # first index, is the key if syntactically correct
                                 call = key_stmt.expression_list()[0]
