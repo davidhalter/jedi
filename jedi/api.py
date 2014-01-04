@@ -64,6 +64,8 @@ class Script(object):
         if source_path is not None:
             warnings.warn("Use path instead of source_path.", DeprecationWarning)
             path = source_path
+        self._source_path = path
+        self.path = None if path is None else os.path.abspath(path)
 
         if source is None:
             with open(path) as f:
@@ -72,24 +74,21 @@ class Script(object):
         lines = source.splitlines() or ['']
         if source and source[-1] == '\n':
             lines.append('')
-
-        self._line = max(len(lines), 1) if line is None else line
-        if not (0 < self._line <= len(lines)):
+        line = max(len(lines), 1) if line is None else line
+        if not (0 < line <= len(lines)):
             raise ValueError('`line` parameter is not in a valid range.')
 
-        line_len = len(lines[self._line - 1])
-        self._column = line_len if column is None else column
-        if not (0 <= self._column <= line_len):
+        line_len = len(lines[line - 1])
+        column = line_len if column is None else column
+        if not (0 <= column <= line_len):
             raise ValueError('`column` parameter is not in a valid range.')
+        self._pos = line, column
 
         api_classes.clear_caches()
         debug.reset_time()
         self.source = modules.source_to_unicode(source, encoding)
-        self._pos = self._line, self._column
         self._module = modules.ModuleWithCursor(
             path, source=self.source, position=self._pos)
-        self._source_path = path
-        self.path = None if path is None else os.path.abspath(path)
         self._evaluator = Evaluator()
         debug.speed('init')
 
@@ -246,7 +245,7 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        offset = self._line - 1, self._column
+        offset = self._pos[0] - 1, self._pos[1]
         r = Parser(cursor_txt, no_docstr=True, offset=offset)
         try:
             stmt = r.module.statements[0]
@@ -358,11 +357,11 @@ class Script(object):
                     call = call.next
                 # reset cursor position:
                 (row, col) = call.name.end_pos
-                _pos = (row, max(col - 1, 0))
+                pos = (row, max(col - 1, 0))
                 self._module = modules.ModuleWithCursor(
                     self._source_path,
                     source=self.source,
-                    position=_pos)
+                    position=pos)
                 # then try to find the path again
                 goto_path = self._module.get_path_under_cursor()
 

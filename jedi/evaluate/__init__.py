@@ -185,7 +185,7 @@ class Evaluator(object):
                             yield g
                     else:
                         yield scope, _get_defined_names_for_position(scope,
-                                                                    position, in_func_scope)
+                                                                     position, in_func_scope)
                 except StopIteration:
                     reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
             if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
