@@ -29,59 +29,26 @@ from jedi import debug
 from jedi import common
 
 
-class CachedModule(object):
-    """
-    The base type for all modules, which is not to be confused with
-    `parsing_representation.Module`. Caching happens here.
-    """
+def load_module(path=None, source=None, name=None):
+    def load(source):
+        if path.endswith('.py'):
+            if source is None:
+                with open(path) as f:
+                    source = f.read()
+        else:
+            # TODO refactoring remove
+            from jedi.evaluate import builtin
+            return builtin.BuiltinModule(name=path).parser.module
+        p = path or name
+        p = fast.FastParser(source_to_unicode(source), p)
+        cache.save_parser(path, name, p)
+        return p.module
 
-    def __init__(self, path=None, name=None):
-        self.path = path and os.path.abspath(path)
-        self.name = name
-        self._parser = None
-
-    @property
-    def parser(self):
-        """ get the parser lazy """
-        if self._parser is None:
-            self._parser = cache.load_module(self.path, self.name) \
-                or self._load_module()
-        return self._parser
-
-    def _get_source(self):
-        raise NotImplementedError()
-
-    def _load_module(self):
-        source = self._get_source()
-        p = self.path or self.name
-        p = fast.FastParser(source, p)
-        cache.save_module(self.path, self.name, p)
-        return p
+    cached = cache.load_parser(path, name)
+    return load(source) if cached is None else cached.module
 
 
-class Module(CachedModule):
-    """
-    Manages all files, that are parsed and caches them.
-
-    :param path: The module path of the file.
-    :param source: The source code of the file.
-    """
-    def __init__(self, path, source=None):
-        super(Module, self).__init__(path=path)
-        if source is None:
-            with open(path) as f:
-                source = f.read()
-        self.source = source_to_unicode(source)
-        self._line_cache = None
-
-    def _get_source(self):
-        """ Just one time """
-        s = self.source
-        del self.source  # memory efficiency
-        return s
-
-
-class ModuleWithCursor(Module):
+class ModuleWithCursor(object):
     """
     Manages all files, that are parsed and caches them.
     Important are the params source and path, one of them has to
@@ -93,7 +60,7 @@ class ModuleWithCursor(Module):
     for the main file.
     """
     def __init__(self, path, source, position):
-        super(ModuleWithCursor, self).__init__(path, source)
+        super(ModuleWithCursor, self).__init__()
         self.position = position
         self.source = source
         self._path_until_cursor = None
@@ -114,7 +81,7 @@ class ModuleWithCursor(Module):
             # default), therefore fill the cache here.
             self._parser = fast.FastParser(self.source, self.path, self.position)
             # don't pickle that module, because it's changing fast
-            cache.save_module(self.path, self.name, self._parser,
+            cache.save_parser(self.path, self.name, self._parser,
                               pickling=False)
         return self._parser
 
@@ -363,14 +330,14 @@ def sys_path_with_modifications(module):
         os.chdir(os.path.dirname(module.path))
 
     result = check_module(module)
-    result += detect_django_path(module.path)
+    result += _detect_django_path(module.path)
 
     # cleanup, back to old directory
     os.chdir(curdir)
     return result
 
 
-def detect_django_path(module_path):
+def _detect_django_path(module_path):
     """ Detects the path of the very well known Django library (if used) """
     result = []
     while True:

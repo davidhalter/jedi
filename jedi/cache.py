@@ -3,7 +3,7 @@ This caching is very important for speed and memory optimizations. There's
 nothing really spectacular, just some decorators. The following cache types are
 available:
 
-- module caching (`load_module` and `save_module`), which uses pickle and is
+- module caching (`load_parser` and `save_parser`), which uses pickle and is
   really important to assure low load times of modules like ``numpy``.
 - ``time_cache`` can be used to cache something for just a limited time span,
   which can be useful if there's user interaction and the user cannot react
@@ -135,18 +135,18 @@ def invalidate_star_import_cache(module, only_main=False):
                 invalidate_star_import_cache(key)
 
 
-def load_module(path, name):
+def load_parser(path, name):
     """
     Returns the module or None, if it fails.
     """
     if path is None and name is None:
         return None
 
-    tim = os.path.getmtime(path) if path else None
+    p_time = os.path.getmtime(path) if path else None
     n = name if path is None else path
     try:
         parser_cache_item = parser_cache[n]
-        if not path or tim <= parser_cache_item.change_time:
+        if not path or p_time <= parser_cache_item.change_time:
             return parser_cache_item.parser
         else:
             # In case there is already a module cached and this module
@@ -155,10 +155,10 @@ def load_module(path, name):
             invalidate_star_import_cache(parser_cache_item.parser.module)
     except KeyError:
         if settings.use_filesystem_cache:
-            return ModulePickling.load_module(n, tim)
+            return ParserPickling.load_parser(n, p_time)
 
 
-def save_module(path, name, parser, pickling=True):
+def save_parser(path, name, parser, pickling=True):
     try:
         p_time = None if not path else os.path.getmtime(path)
     except OSError:
@@ -169,10 +169,10 @@ def save_module(path, name, parser, pickling=True):
     item = ParserCacheItem(parser, p_time)
     parser_cache[n] = item
     if settings.use_filesystem_cache and pickling:
-        ModulePickling.save_module(n, item)
+        ParserPickling.save_parser(n, item)
 
 
-class _ModulePickling(object):
+class ParserPickling(object):
 
     version = 7
     """
@@ -200,7 +200,7 @@ class _ModulePickling(object):
         .. todo:: Detect interpreter (e.g., PyPy).
         """
 
-    def load_module(self, path, original_changed_time):
+    def load_parser(self, path, original_changed_time):
         try:
             pickle_changed_time = self._index[path]
         except KeyError:
@@ -221,7 +221,7 @@ class _ModulePickling(object):
         parser_cache[path] = parser_cache_item
         return parser_cache_item.parser
 
-    def save_module(self, path, parser_cache_item):
+    def save_parser(self, path, parser_cache_item):
         self.__index = None
         try:
             files = self._index
@@ -282,4 +282,4 @@ class _ModulePickling(object):
 
 
 # is a singleton
-ModulePickling = _ModulePickling()
+ParserPickling = ParserPickling()

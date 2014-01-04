@@ -24,7 +24,6 @@ from jedi import common
 from jedi import debug
 from jedi.parser import representation as pr
 from jedi import cache
-from jedi.evaluate import builtin
 
 
 class ModuleNotFound(Exception):
@@ -359,14 +358,9 @@ class ImportPath(pr.Base):
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
-            if path.endswith('.py'):
-                f = modules.Module(path, source)
-            else:
-                f = builtin.BuiltinModule(path=path)
+            return modules.load_module(path, source), rest
         else:
-            f = builtin.BuiltinModule(name=path)
-
-        return f.parser.module, rest
+            return modules.load_module(name=path), rest
 
 
 def strip_imports(evaluator, scopes):
