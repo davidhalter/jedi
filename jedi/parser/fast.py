@@ -9,8 +9,8 @@ from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.parser import Parser
 from jedi.parser import representation as pr
+from jedi.parser import tokenizer as tokenize
 from jedi import cache
-from jedi import common
 
 
 SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
@@ -256,7 +256,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     parts.append(txt)
                 current_lines[:] = []
 
-        r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(common.FLOWS)
+        r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS)
 
         self._lines = code.splitlines()
         current_lines = []
@@ -291,7 +291,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             if not in_flow:
                 m = re.match(r_keyword, l)
                 if m:
-                    in_flow = m.group(1) in common.FLOWS
+                    in_flow = m.group(1) in tokenize.FLOWS
                     if not is_decorator and not in_flow:
                         add_part()
                         add_to_last = False
