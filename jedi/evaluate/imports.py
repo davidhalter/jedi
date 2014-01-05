@@ -22,7 +22,7 @@ from jedi._compatibility import find_module
 from jedi import common
 from jedi import debug
 from jedi import cache
-from jedi import modules
+from jedi.parser import fast
 from jedi.parser import representation as pr
 from jedi.evaluate import sys_path
 
@@ -112,7 +112,7 @@ class ImportPath(pr.Base):
                     if self._is_relative_import():
                         rel_path = self._get_relative_path() + '/__init__.py'
                         if os.path.exists(rel_path):
-                            m = modules.load_module(rel_path)
+                            m = load_module(rel_path)
                             names += m.get_defined_names()
             else:
                 if on_import_stmt and isinstance(scope, pr.Module) \
@@ -359,9 +359,9 @@ class ImportPath(pr.Base):
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
-            return modules.load_module(path, source), rest
+            return load_module(path, source), rest
         else:
-            return modules.load_module(name=path), rest
+            return load_module(name=path), rest
 
 
 def strip_imports(evaluator, scopes):
@@ -395,3 +395,22 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
 
     # Filter duplicate modules.
     return set(modules)
+
+
+def load_module(path=None, source=None, name=None):
+    def load(source):
+        if path is not None and path.endswith('.py'):
+            if source is None:
+                with open(path) as f:
+                    source = f.read()
+        else:
+            # TODO refactoring remove
+            from jedi.evaluate import builtin
+            return builtin.BuiltinModule(path, name).parser.module
+        p = path or name
+        p = fast.FastParser(common.source_to_unicode(source), p)
+        cache.save_parser(path, name, p)
+        return p.module
+
+    cached = cache.load_parser(path, name)
+    return load(source) if cached is None else cached.module

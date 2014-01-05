@@ -56,7 +56,6 @@ import os
 from jedi import cache
 from jedi.common import source_to_unicode
 from jedi.parser import representation as pr
-from jedi import modules
 from jedi import settings
 from jedi.parser import fast as fast_parser
 from jedi.evaluate.cache import memoize_default
@@ -84,7 +83,8 @@ def get_directory_modules_for_name(mods, name):
         with open(path) as f:
             source = source_to_unicode(f.read())
             if name in source:
-                return modules.load_module(path, source)
+                from jedi.evaluate import imports
+                return imports.load_module(path, source)
 
     # skip non python modules
     mods = set(m for m in mods if m.path is None or m.path.endswith('.py'))

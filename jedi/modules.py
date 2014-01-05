@@ -18,29 +18,8 @@ import sys
 import os
 
 from jedi import cache
-from jedi.common import source_to_unicode
 from jedi.parser import tokenize
-from jedi.parser import fast
 from jedi import debug
-
-
-def load_module(path=None, source=None, name=None):
-    def load(source):
-        if path is not None and path.endswith('.py'):
-            if source is None:
-                with open(path) as f:
-                    source = f.read()
-        else:
-            # TODO refactoring remove
-            from jedi.evaluate import builtin
-            return builtin.BuiltinModule(path, name).parser.module
-        p = path or name
-        p = fast.FastParser(source_to_unicode(source), p)
-        cache.save_parser(path, name, p)
-        return p.module
-
-    cached = cache.load_parser(path, name)
-    return load(source) if cached is None else cached.module
 
 
 class ModuleWithCursor(object):
