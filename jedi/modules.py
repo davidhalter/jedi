@@ -1,6 +1,7 @@
 import re
 import sys
 
+from jedi.cache import underscore_memoization
 from jedi.parser import tokenize
 from jedi import debug
 
@@ -13,24 +14,21 @@ class UserContext(object):
     for the main file.
     """
     def __init__(self, source, position):
-        self.name = None
         self.source = source
         self.position = position
-        self._path_until_cursor = None
         self._line_cache = None
 
         # this two are only used, because there is no nonlocal in Python 2
         self._line_temp = None
         self._relevant_temp = None
 
+    @underscore_memoization
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
-        if self._path_until_cursor is None:  # small caching
-            self._path_until_cursor, self._start_cursor_pos = \
-                self._get_path_until_cursor(self.position)
-        return self._path_until_cursor
+        path, self._start_cursor_pos = self._calc_path_until_cursor(self.position)
+        return path
 
-    def _get_path_until_cursor(self, start_pos=None):
+    def _calc_path_until_cursor(self, start_pos=None):
         def fetch_line():
             if self._is_first:
                 self._is_first = False
@@ -145,7 +143,7 @@ class UserContext(object):
                     break
 
             try:
-                result, pos = self._get_path_until_cursor(start_pos=pos)
+                result, pos = self._calc_path_until_cursor(start_pos=pos)
                 if yield_positions:
                     yield pos
                 else:
