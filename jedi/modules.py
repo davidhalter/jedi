@@ -1,41 +1,18 @@
-"""
-Don't confuse these classes with :mod:`parsing_representation` modules, the
-modules here can access these representation with ``module.parser.module``.
-``Module`` exists mainly for caching purposes.
-
-Basically :mod:`modules` offers the classes:
-
-- ``CachedModule``, a base class for Cachedmodule.
-- ``Module`` the class for all normal Python modules (not builtins, they are at
-  home at :mod:`builtin`).
-- ``ModuleWithCursor``, holds the module information for :class:`api.Script`.
-
-Apart from those classes there's a ``sys.path`` fetching function, as well as
-`Virtual Env` and `Django` detection.
-"""
 import re
 import sys
-import os
 
-from jedi import cache
 from jedi.parser import tokenize
 from jedi import debug
 
 
-class ModuleWithCursor(object):
+class UserContext(object):
     """
-    Manages all files, that are parsed and caches them.
-    Important are the params source and path, one of them has to
-    be there.
 
     :param source: The source code of the file.
-    :param path: The module path of the file or None.
     :param position: The position, the user is currently in. Only important \
     for the main file.
     """
-    def __init__(self, path, source, position):
-        super(ModuleWithCursor, self).__init__()
-        self.path = path and os.path.abspath(path)
+    def __init__(self, source, position):
         self.name = None
         self.source = source
         self.position = position

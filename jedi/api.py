@@ -88,8 +88,7 @@ class Script(object):
         api_classes.clear_caches()
         debug.reset_time()
         self.source = common.source_to_unicode(source, encoding)
-        self._module = modules.ModuleWithCursor(
-            path, source=self.source, position=self._pos)
+        self._user_context = modules.UserContext(self.source, self._pos)
         self._evaluator = Evaluator()
         debug.speed('init')
 
@@ -127,7 +126,7 @@ class Script(object):
         """
         def get_completions(user_stmt, bs):
             if isinstance(user_stmt, pr.Import):
-                context = self._module.get_context()
+                context = self._user_context.get_context()
                 next(context)  # skip the path
                 if next(context) == 'from':
                     # completion is just "import" if before stands from ..
@@ -135,7 +134,7 @@ class Script(object):
             return self._simple_complete(path, like)
 
         debug.speed('completions start')
-        path = self._module.get_path_until_cursor()
+        path = self._user_context.get_path_until_cursor()
         if re.search('^\.|\.\.$', path):
             return []
         path, dot, like = self._get_completion_parts()
@@ -200,9 +199,9 @@ class Script(object):
                     names = s.get_magic_method_names()
                 else:
                     if isinstance(s, imports.ImportPath):
-                        under = like + self._module.get_path_after_cursor()
+                        under = like + self._user_context.get_path_after_cursor()
                         if under == 'import':
-                            current_line = self._module.get_position_line()
+                            current_line = self._user_context.get_position_line()
                             if not current_line.endswith('import import'):
                                 continue
                         a = s.import_stmt.alias
@@ -222,7 +221,7 @@ class Script(object):
 
         if is_completion and not user_stmt:
             # for statements like `from x import ` (cursor not in statement)
-            pos = next(self._module.get_context(yield_positions=True))
+            pos = next(self._user_context.get_context(yield_positions=True))
             last_stmt = pos and self._parser.module.get_statement_for_position(
                                 pos, include_imports=True)
             if isinstance(last_stmt, pr.Import):
@@ -343,16 +342,16 @@ class Script(object):
                     scopes.update(resolve_import_paths(set(s.follow())))
             return scopes
 
-        goto_path = self._module.get_path_under_cursor()
+        goto_path = self._user_context.get_path_under_cursor()
 
-        context = self._module.get_context()
+        context = self._user_context.get_context()
         scopes = set()
         lower_priority_operators = ('()', '(', ',')
         """Operators that could hide callee."""
         if next(context) in ('class', 'def'):
             scopes = set([self._parser.user_scope])
         elif not goto_path:
-            op = self._module.get_operator_under_cursor()
+            op = self._user_context.get_operator_under_cursor()
             if op and op not in lower_priority_operators:
                 scopes = set([keywords.get_operator(op, self._pos)])
 
@@ -365,12 +364,9 @@ class Script(object):
                 # reset cursor position:
                 (row, col) = call.name.end_pos
                 pos = (row, max(col - 1, 0))
-                self._module = modules.ModuleWithCursor(
-                    self._source_path,
-                    source=self.source,
-                    position=pos)
+                self._user_context = modules.UserContext(self.source, pos)
                 # then try to find the path again
-                goto_path = self._module.get_path_under_cursor()
+                goto_path = self._user_context.get_path_under_cursor()
 
         if not scopes:
             if goto_path:
@@ -421,8 +417,8 @@ class Script(object):
                     definitions |= follow_inexistent_imports(i)
             return definitions
 
-        goto_path = self._module.get_path_under_cursor()
-        context = self._module.get_context()
+        goto_path = self._user_context.get_path_under_cursor()
+        context = self._user_context.get_context()
         user_stmt = self._user_stmt()
         if next(context) in ('class', 'def'):
             user_scope = self._parser.user_scope
@@ -553,7 +549,7 @@ class Script(object):
                         cur_name_part = name_part
                     kill_count += 1
 
-        context = self._module.get_context()
+        context = self._user_context.get_context()
         just_from = next(context) == 'from'
 
         i = imports.ImportPath(self._evaluator, user_stmt, is_like_search,
@@ -566,7 +562,7 @@ class Script(object):
         Returns the parts for the completion
         :return: tuple - (path, dot, like)
         """
-        path = self._module.get_path_until_cursor()
+        path = self._user_context.get_path_until_cursor()
         match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
         return match.groups()
 
