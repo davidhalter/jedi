@@ -17,6 +17,7 @@ from itertools import chain
 
 from jedi.parser import Parser
 from jedi.parser import representation as pr
+from jedi.parser import fast
 from jedi import debug
 from jedi import settings
 from jedi import helpers
@@ -106,9 +107,15 @@ class Script(object):
         return '<%s: %s>' % (self.__class__.__name__, repr(self._source_path))
 
     @property
+    @cache.underscore_memoization
     def _parser(self):
-        """ lazy parser."""
-        return self._module.parser
+        """Get the parser lazy"""
+        path = self._source_path and os.path.abspath(self._source_path)
+        cache.invalidate_star_import_cache(path)
+        parser = fast.FastParser(self.source, path, self._pos)
+        # Don't pickle that module, because the main module is changing quickly
+        cache.save_parser(path, None, parser, pickling=False)
+        return parser
 
     def completions(self):
         """
@@ -343,7 +350,7 @@ class Script(object):
         lower_priority_operators = ('()', '(', ',')
         """Operators that could hide callee."""
         if next(context) in ('class', 'def'):
-            scopes = set([self._module.parser.user_scope])
+            scopes = set([self._parser.user_scope])
         elif not goto_path:
             op = self._module.get_operator_under_cursor()
             if op and op not in lower_priority_operators:
