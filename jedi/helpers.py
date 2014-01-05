@@ -62,14 +62,6 @@ def fast_parent_copy(obj):
     return recursion(obj)
 
 
-def check_arr_index(arr, pos):
-    positions = arr.arr_el_pos
-    for index, comma_pos in enumerate(positions):
-        if pos < comma_pos:
-            return index
-    return len(positions)
-
-
 def array_for_pos(stmt, pos, array_types=None):
     """Searches for the array and position of a tuple"""
     def search_array(arr, pos):
