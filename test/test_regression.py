@@ -12,7 +12,7 @@ import pytest
 import jedi
 from jedi import Script
 from jedi import api
-from jedi import modules
+from jedi.evaluate import imports
 from jedi.parser import Parser
 
 #jedi.set_debug_function()
@@ -84,7 +84,7 @@ class TestRegression(TestCase):
         src1 = "def r(a): return a"
         # Other fictional modules in another place in the fs.
         src2 = 'from .. import setup; setup.r(1)'
-        modules.load_module(os.path.abspath(fname), src2)
+        imports.load_module(os.path.abspath(fname), src2)
         result = Script(src1, path='../setup.py').goto_definitions()
         assert len(result) == 1
         assert result[0].description == 'class int'

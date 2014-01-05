@@ -15,20 +15,20 @@ import os
 import warnings
 from itertools import chain
 
+from jedi._compatibility import next, unicode, builtins
 from jedi.parser import Parser
 from jedi.parser import representation as pr
 from jedi.parser import fast
+from jedi.parser.user_context import UserContext
 from jedi import debug
 from jedi import settings
 from jedi import helpers
 from jedi import common
 from jedi import cache
-from jedi import modules
 from jedi import interpret
-from jedi._compatibility import next, unicode, builtins
+from jedi import keywords
 from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
-from jedi import keywords
 from jedi.evaluate import builtin
 from jedi.evaluate import imports
 from jedi.evaluate import dynamic
@@ -88,7 +88,7 @@ class Script(object):
         api_classes.clear_caches()
         debug.reset_time()
         self.source = common.source_to_unicode(source, encoding)
-        self._user_context = modules.UserContext(self.source, self._pos)
+        self._user_context = UserContext(self.source, self._pos)
         self._evaluator = Evaluator()
         debug.speed('init')
 
@@ -364,7 +364,7 @@ class Script(object):
                 # reset cursor position:
                 (row, col) = call.name.end_pos
                 pos = (row, max(col - 1, 0))
-                self._user_context = modules.UserContext(self.source, pos)
+                self._user_context = UserContext(self.source, pos)
                 # then try to find the path again
                 goto_path = self._user_context.get_path_under_cursor()
 

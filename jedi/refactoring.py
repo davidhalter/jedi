@@ -17,7 +17,6 @@ from __future__ import with_statement
 import difflib
 
 from jedi import common
-from jedi import modules
 from jedi import helpers
 from jedi.parser import representation as pr
 

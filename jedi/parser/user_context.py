@@ -8,7 +8,6 @@ from jedi import debug
 
 class UserContext(object):
     """
-
     :param source: The source code of the file.
     :param position: The position, the user is currently in. Only important \
     for the main file.
