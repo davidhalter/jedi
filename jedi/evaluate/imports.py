@@ -110,9 +110,9 @@ class ImportPath(pr.Base):
 
                     if self._is_relative_import():
                         rel_path = self._get_relative_path() + '/__init__.py'
-                        with common.ignored(IOError):
-                            m = modules.Module(rel_path)
-                            names += m.parser.module.get_defined_names()
+                        if os.path.exists(rel_path):
+                            m = modules.load_module(rel_path)
+                            names += m.get_defined_names()
             else:
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):

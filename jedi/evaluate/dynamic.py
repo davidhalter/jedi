@@ -83,7 +83,7 @@ def get_directory_modules_for_name(mods, name):
         with open(path) as f:
             source = modules.source_to_unicode(f.read())
             if name in source:
-                return modules.Module(path, source).parser.module
+                return modules.load_module(path, source)
 
     # skip non python modules
     mods = set(m for m in mods if m.path is None or m.path.endswith('.py'))

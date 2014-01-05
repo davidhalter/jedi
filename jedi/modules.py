@@ -31,14 +31,14 @@ from jedi import common
 
 def load_module(path=None, source=None, name=None):
     def load(source):
-        if path.endswith('.py'):
+        if path is not None and path.endswith('.py'):
             if source is None:
                 with open(path) as f:
                     source = f.read()
         else:
             # TODO refactoring remove
             from jedi.evaluate import builtin
-            return builtin.BuiltinModule(name=path).parser.module
+            return builtin.BuiltinModule(path, name).parser.module
         p = path or name
         p = fast.FastParser(source_to_unicode(source), p)
         cache.save_parser(path, name, p)
@@ -61,9 +61,13 @@ class ModuleWithCursor(object):
     """
     def __init__(self, path, source, position):
         super(ModuleWithCursor, self).__init__()
-        self.position = position
+        self.path = path and os.path.abspath(path)
+        self.name = None
         self.source = source
+        self.position = position
         self._path_until_cursor = None
+        self._line_cache = None
+        self._parser = None
 
         # this two are only used, because there is no nonlocal in Python 2
         self._line_temp = None

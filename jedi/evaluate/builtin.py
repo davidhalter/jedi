@@ -35,10 +35,12 @@ import inspect
 from jedi import common
 from jedi import debug
 from jedi.parser import Parser
+from jedi.parser import fast
 from jedi import modules
+from jedi import cache
 
 
-class BuiltinModule(modules.CachedModule):
+class BuiltinModule(object):
     """
     This module is a parser for all builtin modules, which are programmed in
     C/C++. It should also work on third party modules.
@@ -69,13 +71,31 @@ class BuiltinModule(modules.CachedModule):
     def __init__(self, path=None, name=None, sys_path=None):
         if sys_path is None:
             sys_path = modules.get_sys_path()
+        self.sys_path = list(sys_path)
+
         if not name:
             name = os.path.basename(path)
             name = name.rpartition('.')[0]  # cut file type (normally .so)
-        super(BuiltinModule, self).__init__(path=path, name=name)
+        self.name = name
 
-        self.sys_path = list(sys_path)
+        self.path = path and os.path.abspath(path)
+        self._parser = None
         self._module = None
+
+    @property
+    def parser(self):
+        """ get the parser lazy """
+        if self._parser is None:
+            self._parser = cache.load_parser(self.path, self.name) \
+                or self._load_module()
+        return self._parser
+
+    def _load_module(self):
+        source = _generate_code(self.module, self._load_mixins())
+        p = self.path or self.name
+        p = fast.FastParser(source, p)
+        cache.save_parser(self.path, self.name, p)
+        return p
 
     @property
     def module(self):
@@ -118,10 +138,6 @@ class BuiltinModule(modules.CachedModule):
             load_module(name, path)
         return self._module
 
-    def _get_source(self):
-        """ Override this abstract method """
-        return _generate_code(self.module, self._load_mixins())
-
     def _load_mixins(self):
         """
         Load functions that are mixed in to the standard library.
@@ -158,14 +174,14 @@ class BuiltinModule(modules.CachedModule):
                     raise NotImplementedError()
             return funcs
 
-        try:
-            name = self.name
-            # sometimes there are stupid endings like `_sqlite3.cpython-32mu`
-            name = re.sub(r'\..*', '', name)
+        name = self.name
+        # sometimes there are stupid endings like `_sqlite3.cpython-32mu`
+        name = re.sub(r'\..*', '', name)
 
-            if name == '__builtin__' and not is_py3k:
-                name = 'builtins'
-            path = os.path.dirname(os.path.abspath(__file__))
+        if name == '__builtin__' and not is_py3k:
+            name = 'builtins'
+        path = os.path.dirname(os.path.abspath(__file__))
+        try:
             with open(os.path.join(path, 'mixin', name) + '.pym') as f:
                 s = f.read()
         except IOError:
