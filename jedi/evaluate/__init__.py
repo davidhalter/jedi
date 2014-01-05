@@ -83,7 +83,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate.cache import memoize_default
-from jedi import docstrings
+from jedi.evaluate import docstrings
 from jedi.evaluate import dynamic
 from jedi.evaluate import stdlib
 

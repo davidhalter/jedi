@@ -20,7 +20,7 @@ from jedi.evaluate import builtin
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import iterable
-from jedi import docstrings
+from jedi.evaluate import docstrings
 
 
 class Executable(pr.IsScope):
