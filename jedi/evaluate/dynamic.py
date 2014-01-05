@@ -54,6 +54,7 @@ check for -> a is a string). There's big potential in these checks.
 import os
 
 from jedi import cache
+from jedi.common import source_to_unicode
 from jedi.parser import representation as pr
 from jedi import modules
 from jedi import settings
@@ -81,7 +82,7 @@ def get_directory_modules_for_name(mods, name):
 
     def check_fs(path):
         with open(path) as f:
-            source = modules.source_to_unicode(f.read())
+            source = source_to_unicode(f.read())
             if name in source:
                 return modules.load_module(path, source)
 

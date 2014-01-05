@@ -2,7 +2,10 @@
 import sys
 import contextlib
 import functools
+import re
+from ast import literal_eval
 
+from jedi._compatibility import unicode
 from jedi.parser import tokenizer as tokenize
 from jedi._compatibility import next, reraise
 from jedi import settings
@@ -197,7 +200,7 @@ def scale_speed_settings(factor):
 
 
 def indent_block(text, indention='    '):
-    """ This function indents a text block with a default of four spaces """
+    """This function indents a text block with a default of four spaces."""
     temp = ''
     while text and text[-1] == '\n':
         temp += text[-1]
@@ -208,9 +211,41 @@ def indent_block(text, indention='    '):
 
 @contextlib.contextmanager
 def ignored(*exceptions):
-    """Context manager that ignores all of the specified exceptions. This will
-    be in the standard library starting with Python 3.4."""
+    """
+    Context manager that ignores all of the specified exceptions. This will
+    be in the standard library starting with Python 3.4.
+    """
     try:
         yield
     except exceptions:
         pass
+
+
+def source_to_unicode(source, encoding=None):
+    def detect_encoding():
+        """
+        For the implementation of encoding definitions in Python, look at:
+        http://www.python.org/dev/peps/pep-0263/
+        http://docs.python.org/2/reference/lexical_analysis.html#encoding-\
+                                                                declarations
+        """
+        byte_mark = literal_eval(r"b'\xef\xbb\xbf'")
+        if source.startswith(byte_mark):
+            # UTF-8 byte-order mark
+            return 'utf-8'
+
+        first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', str(source)).group(0)
+        possible_encoding = re.search(r"coding[=:]\s*([-\w.]+)",
+                                      first_two_lines)
+        if possible_encoding:
+            return possible_encoding.group(1)
+        else:
+            # the default if nothing else has been set -> PEP 263
+            return encoding if encoding is not None else 'iso-8859-1'
+
+    if isinstance(source, unicode):
+        # only cast str/bytes
+        return source
+
+    # cast to unicode by default
+    return unicode(source, detect_encoding(), 'replace')

@@ -87,7 +87,7 @@ class Script(object):
 
         api_classes.clear_caches()
         debug.reset_time()
-        self.source = modules.source_to_unicode(source, encoding)
+        self.source = common.source_to_unicode(source, encoding)
         self._module = modules.ModuleWithCursor(
             path, source=self.source, position=self._pos)
         self._evaluator = Evaluator()
@@ -671,7 +671,7 @@ def defined_names(source, path=None, encoding='utf-8'):
     :rtype: list of api_classes.Definition
     """
     parser = Parser(
-        modules.source_to_unicode(source, encoding),
+        common.source_to_unicode(source, encoding),
         module_path=path,
     )
     return api_classes._defined_names(Evaluator(), parser.module)

@@ -86,7 +86,7 @@ def _rename(names, replace_str):
                 with open(current_path) as f:
                     source = f.read()
 
-            new_lines = modules.source_to_unicode(source).splitlines()
+            new_lines = common.source_to_unicode(source).splitlines()
             old_lines = new_lines[:]
 
         nr, indent = name.line, name.column
@@ -104,7 +104,7 @@ def extract(script, new_name):
     :type source: str
     :return: list of changed lines/changed files
     """
-    new_lines = modules.source_to_unicode(script.source).splitlines()
+    new_lines = common.source_to_unicode(script.source).splitlines()
     old_lines = new_lines[:]
 
     user_stmt = script._parser.user_stmt
@@ -163,7 +163,7 @@ def inline(script):
     """
     :type script: api.Script
     """
-    new_lines = modules.source_to_unicode(script.source).splitlines()
+    new_lines = common.source_to_unicode(script.source).splitlines()
 
     dct = {}
 
