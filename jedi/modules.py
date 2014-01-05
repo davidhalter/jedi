@@ -77,14 +77,10 @@ class ModuleWithCursor(object):
     def parser(self):
         """ get the parser lazy """
         if not self._parser:
-            with common.ignored(KeyError):
-                parser = cache.parser_cache[self.path].parser
-                cache.invalidate_star_import_cache(parser.module)
-            # Call the parser already here, because it will be used anyways.
-            # Also, the position is here important (which will not be used by
-            # default), therefore fill the cache here.
+            cache.invalidate_star_import_cache(self.path)
             self._parser = fast.FastParser(self.source, self.path, self.position)
-            # don't pickle that module, because it's changing fast
+            # don't pickle that module, because the main module is changing
+            # quickly usually.
             cache.save_parser(self.path, self.name, self._parser,
                               pickling=False)
         return self._parser

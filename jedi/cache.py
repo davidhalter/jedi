@@ -109,7 +109,7 @@ def cache_star_import(func):
             if mods[0] + settings.star_import_cache_validity > time.time():
                 return mods[1]
         # cache is too old and therefore invalid or not available
-        invalidate_star_import_cache(scope)
+        _invalidate_star_import_cache_module(scope)
         mods = func(evaluator, scope, *args, **kwargs)
         _star_import_cache[scope] = time.time(), mods
 
@@ -117,7 +117,7 @@ def cache_star_import(func):
     return wrapper
 
 
-def invalidate_star_import_cache(module, only_main=False):
+def _invalidate_star_import_cache_module(module, only_main=False):
     """ Important if some new modules are being reparsed """
     with common.ignored(KeyError):
         t, mods = _star_import_cache[module]
@@ -125,14 +125,25 @@ def invalidate_star_import_cache(module, only_main=False):
         del _star_import_cache[module]
 
         for m in mods:
-            invalidate_star_import_cache(m, only_main=True)
+            _invalidate_star_import_cache_module(m, only_main=True)
 
     if not only_main:
         # We need a list here because otherwise the list is being changed
         # during the iteration in py3k: iteritems -> items.
         for key, (t, mods) in list(_star_import_cache.items()):
             if module in mods:
-                invalidate_star_import_cache(key)
+                _invalidate_star_import_cache_module(key)
+
+
+def invalidate_star_import_cache(path):
+    """On success returns True."""
+    try:
+        parser_cache_item = parser_cache[path]
+    except KeyError:
+        return False
+    else:
+        _invalidate_star_import_cache_module(parser_cache_item.parser.module)
+        return True
 
 
 def load_parser(path, name):
@@ -152,7 +163,7 @@ def load_parser(path, name):
             # In case there is already a module cached and this module
             # has to be reparsed, we also need to invalidate the import
             # caches.
-            invalidate_star_import_cache(parser_cache_item.parser.module)
+            _invalidate_star_import_cache_module(parser_cache_item.parser.module)
     except KeyError:
         if settings.use_filesystem_cache:
             return ParserPickling.load_parser(n, p_time)
