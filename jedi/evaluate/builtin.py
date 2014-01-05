@@ -36,7 +36,7 @@ from jedi import common
 from jedi import debug
 from jedi.parser import Parser
 from jedi.parser import fast
-from jedi import modules
+from jedi.evaluate.sys_path import get_sys_path
 from jedi import cache
 
 
@@ -70,7 +70,7 @@ class BuiltinModule(object):
 
     def __init__(self, path=None, name=None, sys_path=None):
         if sys_path is None:
-            sys_path = modules.get_sys_path()
+            sys_path = get_sys_path()
         self.sys_path = list(sys_path)
 
         if not name:

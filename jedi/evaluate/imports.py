@@ -19,11 +19,12 @@ import sys
 import itertools
 
 from jedi._compatibility import find_module
-from jedi import modules
 from jedi import common
 from jedi import debug
-from jedi.parser import representation as pr
 from jedi import cache
+from jedi import modules
+from jedi.parser import representation as pr
+from jedi.evaluate import sys_path
 
 
 class ModuleNotFound(Exception):
@@ -177,7 +178,7 @@ class ImportPath(pr.Base):
                     in_path.append(new)
 
         module = self.import_stmt.get_parent_until()
-        return in_path + modules.sys_path_with_modifications(module)
+        return in_path + sys_path.sys_path_with_modifications(module)
 
     def follow(self, is_goto=False):
         """
@@ -284,7 +285,7 @@ class ImportPath(pr.Base):
                 sys_path_mod.append(temp_path)
                 old_path, temp_path = temp_path, os.path.dirname(temp_path)
         else:
-            sys_path_mod = list(modules.get_sys_path())
+            sys_path_mod = list(sys_path.get_sys_path())
 
         return self._follow_sys_path(sys_path_mod)
 
