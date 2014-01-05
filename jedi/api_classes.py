@@ -310,8 +310,6 @@ class Completion(BaseDefinition):
         # duplicate items in the completion)
         self._same_name_completions = []
 
-        self._followed_definitions = None
-
     def _complete(self, like_name):
         dot = '.' if self._needs_dot else ''
         append = ''
@@ -391,6 +389,7 @@ class Completion(BaseDefinition):
         line = '' if self.in_builtin_module else '@%s' % self.line
         return '%s: %s%s' % (t, desc, line)
 
+    @cache.underscore_memoization
     def follow_definition(self):
         """
         Return the original definitions. I strongly recommend not using it for
@@ -400,19 +399,16 @@ class Completion(BaseDefinition):
         follows all results. This means with 1000 completions (e.g.  numpy),
         it's just PITA-slow.
         """
-        if self._followed_definitions is None:
-            if self._definition.isinstance(pr.Statement):
-                defs = self._evaluator.eval_statement(self._definition)
-            elif self._definition.isinstance(pr.Import):
-                defs = imports.strip_imports(self._evaluator, [self._definition])
-            else:
-                return [self]
+        if self._definition.isinstance(pr.Statement):
+            defs = self._evaluator.eval_statement(self._definition)
+        elif self._definition.isinstance(pr.Import):
+            defs = imports.strip_imports(self._evaluator, [self._definition])
+        else:
+            return [self]
 
-            self._followed_definitions = \
-                [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
-            clear_caches()
-
-        return self._followed_definitions
+        defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
+        clear_caches()
+        return defs
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name)
