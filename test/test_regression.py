@@ -8,6 +8,7 @@ import textwrap
 
 from .helpers import TestCase, cwd_at
 
+import pytest
 import jedi
 from jedi import Script
 from jedi import api
@@ -74,6 +75,7 @@ class TestRegression(TestCase):
         s = Script("", 1, 0).completions()
         assert len(s) > 0
 
+    @pytest.mark.skip('Skip for now, test case is not really supported.')
     @cwd_at('jedi')
     def test_add_dynamic_mods(self):
         fname = '__main__.py'
