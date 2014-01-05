@@ -67,23 +67,20 @@ class ModuleWithCursor(object):
         self.position = position
         self._path_until_cursor = None
         self._line_cache = None
-        self._parser = None
 
         # this two are only used, because there is no nonlocal in Python 2
         self._line_temp = None
         self._relevant_temp = None
 
     @property
+    @cache.underscore_memoization
     def parser(self):
         """ get the parser lazy """
-        if not self._parser:
-            cache.invalidate_star_import_cache(self.path)
-            self._parser = fast.FastParser(self.source, self.path, self.position)
-            # don't pickle that module, because the main module is changing
-            # quickly usually.
-            cache.save_parser(self.path, self.name, self._parser,
-                              pickling=False)
-        return self._parser
+        cache.invalidate_star_import_cache(self.path)
+        parser = fast.FastParser(self.source, self.path, self.position)
+        # Don't pickle that module, because the main module is changing quickly
+        cache.save_parser(self.path, self.name, parser, pickling=False)
+        return parser
 
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
