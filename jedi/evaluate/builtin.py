@@ -79,16 +79,12 @@ class BuiltinModule(object):
         self.name = name
 
         self.path = path and os.path.abspath(path)
-        self._parser = None
-        self._module = None
 
     @property
+    @cache.underscore_memoization
     def parser(self):
         """ get the parser lazy """
-        if self._parser is None:
-            self._parser = cache.load_parser(self.path, self.name) \
-                or self._load_module()
-        return self._parser
+        return cache.load_parser(self.path, self.name) or self._load_module()
 
     def _load_module(self):
         source = _generate_code(self.module, self._load_mixins())
@@ -98,7 +94,9 @@ class BuiltinModule(object):
         return p
 
     @property
+    @cache.underscore_memoization
     def module(self):
+        """get module also lazy"""
         def load_module(name, path):
             if path:
                 self.sys_path.insert(0, path)
@@ -107,36 +105,33 @@ class BuiltinModule(object):
             content = {}
             try:
                 exec_function('import %s as module' % name, content)
-                self._module = content['module']
+                module = content['module']
             except AttributeError:
                 # use sys.modules, because you cannot access some modules
                 # directly. -> #59
-                self._module = sys.modules[name]
+                module = sys.modules[name]
             sys.path = temp
 
             if path:
                 self.sys_path.pop(0)
+            return module
 
         # module might already be defined
-        if not self._module:
-            path = self.path
-            name = self.name
-            if self.path:
-
-                dot_path = []
-                p = self.path
-                # search for the builtin with the correct path
-                while p and p not in sys.path:
-                    p, sep, mod = p.rpartition(os.path.sep)
-                    dot_path.append(mod.partition('.')[0])
-                if p:
-                    name = ".".join(reversed(dot_path))
-                    path = p
-                else:
-                    path = os.path.dirname(self.path)
-
-            load_module(name, path)
-        return self._module
+        path = self.path
+        name = self.name
+        if self.path:
+            dot_path = []
+            p = self.path
+            # search for the builtin with the correct path
+            while p and p not in sys.path:
+                p, sep, mod = p.rpartition(os.path.sep)
+                dot_path.append(mod.partition('.')[0])
+            if p:
+                name = ".".join(reversed(dot_path))
+                path = p
+            else:
+                path = os.path.dirname(self.path)
+        return load_module(name, path)
 
     def _load_mixins(self):
         """
@@ -432,13 +427,10 @@ class Builtin(object):
     else:
         name = '__builtin__'
 
-    _builtin = None
-
     @property
+    @cache.underscore_memoization
     def builtin(self):
-        if self._builtin is None:
-            self._builtin = BuiltinModule(name=self.name)
-        return self._builtin
+        return BuiltinModule(name=self.name)
 
     @property
     def scope(self):
