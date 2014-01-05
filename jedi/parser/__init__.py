@@ -15,8 +15,6 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
-from __future__ import with_statement
-
 import keyword
 
 from jedi._compatibility import next, StringIO
@@ -24,7 +22,7 @@ from jedi import debug
 from jedi import common
 from jedi.parser import representation as pr
 from jedi.parser import token as token_pr
-from jedi.parser import tokenizer as tokenize
+from jedi.parser import tokenize
 
 
 class Parser(object):

@@ -9,7 +9,7 @@ from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.parser import Parser
 from jedi.parser import representation as pr
-from jedi.parser import tokenizer as tokenize
+from jedi.parser import tokenize
 from jedi import cache
 
 

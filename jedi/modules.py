@@ -13,15 +13,13 @@ Basically :mod:`modules` offers the classes:
 Apart from those classes there's a ``sys.path`` fetching function, as well as
 `Virtual Env` and `Django` detection.
 """
-from __future__ import with_statement
-
 import re
 import sys
 import os
 
 from jedi import cache
 from jedi.common import source_to_unicode
-from jedi.parser import tokenizer as tokenize
+from jedi.parser import tokenize
 from jedi.parser import fast
 from jedi import debug
 

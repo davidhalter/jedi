@@ -44,7 +44,7 @@ from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3k
 from jedi import common
 from jedi import debug
 from jedi import cache
-from jedi.parser import tokenizer as tokenize
+from jedi.parser import tokenize
 
 
 class Base(object):
