@@ -574,7 +574,7 @@ class FunctionExecution(Executable):
                                 yield None, field_stmt
                         elif isinstance(array, iterable.Generator):
                             for field_stmt in array.iter_content():
-                                yield None, helpers.FakeStatement(field_stmt)
+                                yield None, FakeStatement(field_stmt)
                 # **kwargs
                 elif expression_list[0] == '**':
                     arrays = self._evaluator.eval_expression_list(expression_list[1:])
@@ -676,3 +676,13 @@ class FunctionExecution(Executable):
     def __repr__(self):
         return "<%s of %s>" % \
             (type(self).__name__, self.base)
+
+
+class FakeStatement(pr.Statement):
+    class SubModule():
+        line_offset = 0
+
+    def __init__(self, content):
+        cls = type(self)
+        p = 0, 0
+        super(cls, self).__init__(cls.SubModule, [content], p, p)

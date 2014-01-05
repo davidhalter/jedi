@@ -122,13 +122,3 @@ def search_call_signatures(stmt, pos):
         arr.parent.execution = None
         return call if isinstance(call, pr.Call) else None, index, False
     return None, 0, False
-
-
-class FakeStatement(pr.Statement):
-    class SubModule():
-        line_offset = 0
-
-    def __init__(self, content):
-        cls = type(self)
-        p = 0, 0
-        super(cls, self).__init__(cls.SubModule, [content], p, p)
