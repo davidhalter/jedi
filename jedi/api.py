@@ -22,17 +22,17 @@ from jedi.parser import fast
 from jedi.parser.user_context import UserContext
 from jedi import debug
 from jedi import settings
-from jedi import helpers
 from jedi import common
 from jedi import cache
 from jedi import interpret
 from jedi import keywords
+from jedi import api_classes
 from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
 from jedi.evaluate import builtin
 from jedi.evaluate import imports
 from jedi.evaluate import dynamic
-from jedi import api_classes
+from jedi.evaluate import helpers
 
 
 class NotFoundError(Exception):

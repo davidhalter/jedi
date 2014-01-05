@@ -13,14 +13,14 @@ import copy
 
 from jedi._compatibility import use_metaclass, next, unicode
 from jedi.parser import representation as pr
-from jedi import helpers
 from jedi import debug
 from jedi import common
+from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import builtin
 from jedi.evaluate import recursion
-from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
+from jedi.evaluate import helpers
 
 
 class Executable(pr.IsScope):
