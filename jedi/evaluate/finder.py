@@ -2,6 +2,7 @@ from jedi._compatibility import hasattr, unicode, u
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi import common
+from jedi import settings
 from jedi.evaluate import representation as er
 from jedi.evaluate import dynamic
 from jedi.evaluate import builtin
@@ -236,8 +237,8 @@ class NameFinder(object):
 
         while flow_scope:
             # TODO check if result is in scope -> no evaluation necessary
-            n = dynamic.check_flow_information(self._evaluator, flow_scope,
-                                               self.name_str, self.position)
+            n = check_flow_information(self._evaluator, flow_scope,
+                                       self.name_str, self.position)
             if n:
                 result = n
                 break
@@ -286,6 +287,62 @@ resolve_decorator))
                 else:
                     names = _get_defined_names_for_position(self.scope, self.position)
                 return iter([(self.scope, names)])
+
+
+def check_flow_information(evaluator, flow, search_name, pos):
+    """ Try to find out the type of a variable just with the information that
+    is given by the flows: e.g. It is also responsible for assert checks.::
+
+        if isinstance(k, str):
+            k.  # <- completion here
+
+    ensures that `k` is a string.
+    """
+    if not settings.dynamic_flow_information:
+        return None
+
+    result = []
+    if isinstance(flow, pr.IsScope) and not result:
+        for ass in reversed(flow.asserts):
+            if pos is None or ass.start_pos > pos:
+                continue
+            result = _check_isinstance_type(evaluator, ass, search_name)
+            if result:
+                break
+
+    if isinstance(flow, pr.Flow) and not result:
+        if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
+            result = _check_isinstance_type(evaluator, flow.inputs[0], search_name)
+    return result
+
+
+def _check_isinstance_type(evaluator, stmt, search_name):
+    try:
+        expression_list = stmt.expression_list()
+        # this might be removed if we analyze and, etc
+        assert len(expression_list) == 1
+        call = expression_list[0]
+        assert isinstance(call, pr.Call) and str(call.name) == 'isinstance'
+        assert bool(call.execution)
+
+        # isinstance check
+        isinst = call.execution.values
+        assert len(isinst) == 2  # has two params
+        obj, classes = [statement.expression_list() for statement in isinst]
+        assert len(obj) == 1
+        assert len(classes) == 1
+        assert isinstance(obj[0], pr.Call)
+        # names fit?
+        assert str(obj[0].name) == search_name
+        assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
+    except AssertionError:
+        return []
+
+    result = []
+    for c in evaluator.eval_call(classes[0]):
+        for typ in (c.get_index_types() if isinstance(c, iterable.Array) else [c]):
+            result += evaluator.execute(typ)
+    return result
 
 
 def _get_defined_names_for_position(scope, position=None, start_scope=None):
