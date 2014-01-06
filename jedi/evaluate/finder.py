@@ -154,7 +154,7 @@ class NameFinder(object):
             flow_scope = flow_scope.parent
 
         for name in names:
-            types += self._some_method(name)
+            types += self._some_method(name.parent)
 
         return self._remove_statements(types, resolve_decorator)
 
@@ -239,25 +239,21 @@ class NameFinder(object):
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
 
-    def _some_method(self, name):
+    def _some_method(self, typ):
         """
         Returns the parent of a name, which means the element which stands
         behind a name.
         """
         result = []
-        par = name.parent
         exc = pr.Class, pr.Function
-        until = lambda: par.parent.parent.get_parent_until(exc)
+        until = lambda: typ.parent.parent.get_parent_until(exc)
 
-        if par.isinstance(pr.Flow):
-            if par.command == 'for':
-                result += self._handle_for_loops(par)
-            else:
-                raise NotImplementedError("Shouldn't happen!")
-        elif par.isinstance(pr.Param) \
-                and par.parent is not None \
+        if typ.isinstance(pr.ForFlow):
+            result += self._handle_for_loops(typ)
+        elif typ.isinstance(pr.Param) \
+                and typ.parent is not None \
                 and isinstance(until(), pr.Class) \
-                and par.position_nr == 0:
+                and typ.position_nr == 0:
             # This is where self gets added - this happens at another
             # place, if the var_args are clear. But sometimes the class is
             # not known. Therefore add a new instance for self. Otherwise
@@ -268,8 +264,8 @@ class NameFinder(object):
                 for inst in self._evaluator.execute(er.Class(self._evaluator, until())):
                     inst.is_generated = True
                     result.append(inst)
-        elif par is not None:
-            result.append(par)
+        elif typ is not None:
+            result.append(typ)
         return result
 
     def _handle_for_loops(self, loop):
