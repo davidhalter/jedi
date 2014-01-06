@@ -110,99 +110,99 @@ class NameFinder(object):
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
 
+    def _handle_for_loops(self, loop):
+        # Take the first statement (for has always only
+        # one, remember `in`). And follow it.
+        if not loop.inputs:
+            return []
+        result = iterable.get_iterator_types(self._evaluator.eval_statement(loop.inputs[0]))
+        if len(loop.set_vars) > 1:
+            expression_list = loop.set_stmt.expression_list()
+            # loops with loop.set_vars > 0 only have one command
+            from jedi import evaluate
+            result = evaluate._assign_tuples(expression_list[0], result, self.name_str)
+        return result
+
+    def _process(self, name):
+        """
+        Returns the parent of a name, which means the element which stands
+        behind a name.
+        """
+        result = []
+        no_break_scope = False
+        par = name.parent
+        exc = pr.Class, pr.Function
+        until = lambda: par.parent.parent.get_parent_until(exc)
+        is_array_assignment = False
+
+        if par is None:
+            pass
+        elif par.isinstance(pr.Flow):
+            if par.command == 'for':
+                result += self._handle_for_loops(par)
+            else:
+                debug.warning('Flow: Why are you here? %s' % par.command)
+        elif par.isinstance(pr.Param) \
+                and par.parent is not None \
+                and isinstance(until(), pr.Class) \
+                and par.position_nr == 0:
+            # This is where self gets added - this happens at another
+            # place, if the var_args are clear. But sometimes the class is
+            # not known. Therefore add a new instance for self. Otherwise
+            # take the existing.
+            if isinstance(self.scope, er.InstanceElement):
+                result.append(self.scope.instance)
+            else:
+                for inst in self._evaluator.execute(er.Class(self._evaluator, until())):
+                    inst.is_generated = True
+                    result.append(inst)
+        elif par.isinstance(pr.Statement):
+            def is_execution(calls):
+                for c in calls:
+                    if isinstance(c, (unicode, str)):
+                        continue
+                    if c.isinstance(pr.Array):
+                        if is_execution(c):
+                            return True
+                    elif c.isinstance(pr.Call):
+                        # Compare start_pos, because names may be different
+                        # because of executions.
+                        if c.name.start_pos == name.start_pos \
+                                and c.execution:
+                            return True
+                return False
+
+            is_exe = False
+            for assignee, op in par.assignment_details:
+                is_exe |= is_execution(assignee)
+
+            if is_exe:
+                # filter array[3] = ...
+                # TODO check executions for dict contents
+                is_array_assignment = True
+            else:
+                details = par.assignment_details
+                if details and details[0][1] != '=':
+                    no_break_scope = True
+
+                # TODO this makes self variables non-breakable. wanted?
+                if isinstance(name, er.InstanceElement) \
+                        and not name.is_class_var:
+                    no_break_scope = True
+
+                result.append(par)
+        else:
+            # TODO multi-level import non-breakable
+            if isinstance(par, pr.Import) and len(par.namespace) > 1:
+                no_break_scope = True
+            result.append(par)
+        return result, no_break_scope, is_array_assignment
+
     def filter_name(self, scope_generator, is_goto=False):
         """
         Filters all variables of a scope (which are defined in the
         `scope_generator`), until the name fits.
         """
-        def handle_for_loops(loop):
-            # Take the first statement (for has always only
-            # one, remember `in`). And follow it.
-            if not loop.inputs:
-                return []
-            result = iterable.get_iterator_types(self._evaluator.eval_statement(loop.inputs[0]))
-            if len(loop.set_vars) > 1:
-                expression_list = loop.set_stmt.expression_list()
-                # loops with loop.set_vars > 0 only have one command
-                from jedi import evaluate
-                result = evaluate._assign_tuples(expression_list[0], result, self.name_str)
-            return result
-
-        def process(name):
-            """
-            Returns the parent of a name, which means the element which stands
-            behind a name.
-            """
-            result = []
-            no_break_scope = False
-            par = name.parent
-            exc = pr.Class, pr.Function
-            until = lambda: par.parent.parent.get_parent_until(exc)
-            is_array_assignment = False
-
-            if par is None:
-                pass
-            elif par.isinstance(pr.Flow):
-                if par.command == 'for':
-                    result += handle_for_loops(par)
-                else:
-                    debug.warning('Flow: Why are you here? %s' % par.command)
-            elif par.isinstance(pr.Param) \
-                    and par.parent is not None \
-                    and isinstance(until(), pr.Class) \
-                    and par.position_nr == 0:
-                # This is where self gets added - this happens at another
-                # place, if the var_args are clear. But sometimes the class is
-                # not known. Therefore add a new instance for self. Otherwise
-                # take the existing.
-                if isinstance(self.scope, er.InstanceElement):
-                    result.append(self.scope.instance)
-                else:
-                    for inst in self._evaluator.execute(er.Class(self._evaluator, until())):
-                        inst.is_generated = True
-                        result.append(inst)
-            elif par.isinstance(pr.Statement):
-                def is_execution(calls):
-                    for c in calls:
-                        if isinstance(c, (unicode, str)):
-                            continue
-                        if c.isinstance(pr.Array):
-                            if is_execution(c):
-                                return True
-                        elif c.isinstance(pr.Call):
-                            # Compare start_pos, because names may be different
-                            # because of executions.
-                            if c.name.start_pos == name.start_pos \
-                                    and c.execution:
-                                return True
-                    return False
-
-                is_exe = False
-                for assignee, op in par.assignment_details:
-                    is_exe |= is_execution(assignee)
-
-                if is_exe:
-                    # filter array[3] = ...
-                    # TODO check executions for dict contents
-                    is_array_assignment = True
-                else:
-                    details = par.assignment_details
-                    if details and details[0][1] != '=':
-                        no_break_scope = True
-
-                    # TODO this makes self variables non-breakable. wanted?
-                    if isinstance(name, er.InstanceElement) \
-                            and not name.is_class_var:
-                        no_break_scope = True
-
-                    result.append(par)
-            else:
-                # TODO multi-level import non-breakable
-                if isinstance(par, pr.Import) and len(par.namespace) > 1:
-                    no_break_scope = True
-                result.append(par)
-            return result, no_break_scope, is_array_assignment
-
         flow_scope = self.scope
         result = []
         # compare func uses the tuple of line/indent = line/column
@@ -217,7 +217,7 @@ class NameFinder(object):
                         and isinstance(p.var, pr.Class):
                     p = p.var
                 if self.name_str == name.get_code() and p not in break_scopes:
-                    r, no_break_scope, is_array_assignment = process(name)
+                    r, no_break_scope, is_array_assignment = self._process(name)
                     if is_goto:
                         if not is_array_assignment:  # shouldn't goto arr[1] =
                             result.append(name)
@@ -258,7 +258,7 @@ class NameFinder(object):
 
     def find(self, scopes, resolve_decorator=True):
         filtered = self.filter_name(scopes)
-        print 'f', filtered
+        #print 'f', filtered
         return self._resolve_descriptors(self._remove_statements(filtered,
 resolve_decorator))
 
