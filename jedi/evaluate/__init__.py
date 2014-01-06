@@ -186,10 +186,9 @@ class Evaluator(object):
         this completion.
 
         :param position: Position of the last statement -> tuple of line, column
-        :return: List of Names. Their parents are the scopes, they are defined in.
-        :rtype: list
+        :return: List of Names. Their parents are the types.
         """
-        f = finder.NameFinder(self, scope, name_str, position, is_goto)
+        f = finder.NameFinder(self, scope, name_str, position)
         scopes = f.scopes(search_global)
         if is_goto:
             return f.filter_name(scopes, is_goto=is_goto)

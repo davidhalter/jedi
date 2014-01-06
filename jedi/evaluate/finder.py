@@ -79,7 +79,7 @@ class NameFinder(object):
                                 c = r.expression_list()[0]
                                 if c in ('*', '**'):
                                     t = 'tuple' if c == '*' else 'dict'
-                                    res_new = evaluator.execute(self.find_name(builtin.Builtin.scope, t)[0])
+                                    res_new = evaluator.execute(evaluator.find_name(builtin.Builtin.scope, t)[0])
                             if not r.assignment_details:
                                 # this means that there are no default params,
                                 # so just ignore it.
@@ -258,7 +258,7 @@ class NameFinder(object):
 
     def find(self, scopes, resolve_decorator=True):
         filtered = self.filter_name(scopes)
-        return self._descriptor_check(self._remove_statements(filtered,
+        return self._resolve_descriptors(self._remove_statements(filtered,
 resolve_decorator))
 
     def _check_getattr(self, inst):
