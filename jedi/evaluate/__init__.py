@@ -179,7 +179,7 @@ class Evaluator(object):
                 yield builtin_scope, builtin_scope.get_defined_names()
 
     def find_types(self, scope, name_str, position=None, search_global=False,
-                  is_goto=False, resolve_decorator=True):
+                   is_goto=False, resolve_decorator=True):
         """
         This is the search function. The most important part to debug.
         `remove_statements` and `filter_statements` really are the core part of
@@ -191,7 +191,7 @@ class Evaluator(object):
         f = finder.NameFinder(self, scope, name_str, position)
         scopes = f.scopes(search_global)
         if is_goto:
-            return f.filter_name(scopes, is_goto=is_goto)
+            return f.names_to_types(f.filter_name(scopes, is_goto=is_goto))
         return f.find(scopes, resolve_decorator)
 
     @memoize_default(default=(), evaluator_is_first_arg=True)
@@ -311,7 +311,7 @@ class Evaluator(object):
             if isinstance(current, pr.NamePart):
                 # This is the first global lookup.
                 scopes = self.find_types(scope, current, position=position,
-                                        search_global=True)
+                                         search_global=True)
             else:
                 # for pr.Literal
                 scopes = self.find_types(builtin.Builtin.scope, current.type_as_string())

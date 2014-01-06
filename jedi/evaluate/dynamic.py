@@ -57,9 +57,7 @@ from jedi import cache
 from jedi.common import source_to_unicode
 from jedi.parser import representation as pr
 from jedi import settings
-from jedi.parser import fast as fast_parser
 from jedi.evaluate.cache import memoize_default
-from jedi.evaluate import iterable
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -179,8 +177,8 @@ def search_params(evaluator, param):
                     from jedi.evaluate import representation as er
                     for scope in scopes:
                         s = evaluator.find_types(scope, func_name, position=pos,
-                                                search_global=not first,
-                                                resolve_decorator=False)
+                                                 search_global=not first,
+                                                 resolve_decorator=False)
 
                         c = [getattr(escope, 'base_func', None) or escope.base
                              for escope in s

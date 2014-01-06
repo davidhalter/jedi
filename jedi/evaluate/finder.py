@@ -204,7 +204,6 @@ class NameFinder(object):
         Filters all variables of a scope (which are defined in the
         `scope_generator`), until the name fits.
         """
-        flow_scope = self.scope
         result = []
         # compare func uses the tuple of line/indent = line/column
         comparison_func = lambda name: (name.start_pos)
@@ -235,6 +234,17 @@ class NameFinder(object):
             if result:
                 break
 
+        if not result and isinstance(nscope, er.Instance):
+            # __getattr__ / __getattribute__
+            result += self._check_getattr(nscope)
+        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
+                  % (self.name_str, self.scope, nscope, u(result), self.position))
+        return result
+
+    def names_to_types(self, names):
+        result = names
+        # This adds additional types
+        flow_scope = self.scope
         while flow_scope:
             # TODO check if result is in scope -> no evaluation necessary
             n = check_flow_information(self._evaluator, flow_scope,
@@ -244,23 +254,14 @@ class NameFinder(object):
                 break
             flow_scope = flow_scope.parent
 
-        if not result and isinstance(nscope, er.Instance):
-            # __getattr__ / __getattribute__
-            result += self._check_getattr(nscope)
-        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
-                  % (self.name_str, self.scope, nscope, u(result), self.position))
         return result
 
-    def find(self, scopes, resolve_decorator=True):
-        filtered = self.filter_name(scopes)
-        return self._resolve_descriptors(self._remove_statements(filtered,
-resolve_decorator))
 
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
         result = []
-        # str is important to lose the NamePart!
         module = builtin.Builtin.scope
+        # str is important to lose the NamePart!
         name = pr.String(module, "'%s'" % self.name_str, (0, 0), (0, 0), inst)
         with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattr__', [name])
@@ -272,6 +273,12 @@ resolve_decorator))
             with common.ignored(KeyError):
                 result = inst.execute_subscope_by_name('__getattribute__', [name])
         return result
+
+    def find(self, scopes, resolve_decorator=True):
+        filtered = self.filter_name(scopes)
+        filtered = self.names_to_types(filtered)
+        return self._resolve_descriptors(self._remove_statements(filtered,
+resolve_decorator))
 
     def scopes(self, search_global=False):
         if search_global:
