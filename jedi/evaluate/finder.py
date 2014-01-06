@@ -205,13 +205,10 @@ class NameFinder(object):
         `scope_generator`), until the name fits.
         """
         result = []
-        # compare func uses the tuple of line/indent = line/column
-        comparison_func = lambda name: (name.start_pos)
-
         for nscope, name_list in scope_generator:
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
-            for name in sorted(name_list, key=comparison_func, reverse=True):
+            for name in sorted(name_list, key=lambda name: name.start_pos, reverse=True):
                 p = name.parent.parent if name.parent else None
                 if isinstance(p, er.InstanceElement) \
                         and isinstance(p.var, pr.Class):
@@ -255,7 +252,6 @@ class NameFinder(object):
             flow_scope = flow_scope.parent
 
         return result
-
 
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
