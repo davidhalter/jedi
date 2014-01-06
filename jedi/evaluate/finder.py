@@ -241,11 +241,6 @@ class NameFinder(object):
             if n:
                 result = n
                 break
-
-            if result:
-                break
-            if flow_scope == nscope:
-                break
             flow_scope = flow_scope.parent
 
         if not result and isinstance(nscope, er.Instance):
