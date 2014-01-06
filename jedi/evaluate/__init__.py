@@ -191,7 +191,7 @@ class Evaluator(object):
         f = finder.NameFinder(self, scope, name_str, position)
         scopes = f.scopes(search_global)
         if is_goto:
-            return f.filter_name(scopes, is_goto=is_goto)
+            return f.filter_name(scopes)
         return f.find(scopes, resolve_decorator)
 
     @memoize_default(default=(), evaluator_is_first_arg=True)

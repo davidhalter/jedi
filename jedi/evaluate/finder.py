@@ -205,7 +205,7 @@ class NameFinder(object):
                 return True
         return False
 
-    def filter_name(self, scope_generator, is_goto=False):
+    def filter_name(self, scope_generator):
         """
         Filters all variables of a scope (which are defined in the
         `scope_generator`), until the name fits.
@@ -244,7 +244,7 @@ class NameFinder(object):
                   % (self.name_str, self.scope, nscope, u(result), self.position))
         return result
 
-    def names_to_types(self, names, is_goto=True):
+    def names_to_types(self, names):
         result = []
         # This adds additional types
         flow_scope = self.scope
