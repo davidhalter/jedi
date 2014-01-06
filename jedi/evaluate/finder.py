@@ -124,6 +124,81 @@ class NameFinder(object):
             result = evaluate._assign_tuples(expression_list[0], result, self.name_str)
         return result
 
+    def _process_new(self, name):
+        """
+        Returns the parent of a name, which means the element which stands
+        behind a name.
+        """
+        result = []
+        no_break_scope = False
+        par = name.parent
+        exc = pr.Class, pr.Function
+        until = lambda: par.parent.parent.get_parent_until(exc)
+        is_array_assignment = False
+
+        if par is None:
+            pass
+        elif par.isinstance(pr.Flow):
+            if par.command == 'for':
+                result += self._handle_for_loops(par)
+            else:
+                debug.warning('Flow: Why are you here? %s' % par.command)
+        elif par.isinstance(pr.Param) \
+                and par.parent is not None \
+                and isinstance(until(), pr.Class) \
+                and par.position_nr == 0:
+            # This is where self gets added - this happens at another
+            # place, if the var_args are clear. But sometimes the class is
+            # not known. Therefore add a new instance for self. Otherwise
+            # take the existing.
+            if isinstance(self.scope, er.InstanceElement):
+                result.append(self.scope.instance)
+            else:
+                for inst in self._evaluator.execute(er.Class(self._evaluator, until())):
+                    inst.is_generated = True
+                    result.append(inst)
+        elif par.isinstance(pr.Statement):
+            def is_execution(calls):
+                for c in calls:
+                    if isinstance(c, (unicode, str)):
+                        continue
+                    if c.isinstance(pr.Array):
+                        if is_execution(c):
+                            return True
+                    elif c.isinstance(pr.Call):
+                        # Compare start_pos, because names may be different
+                        # because of executions.
+                        if c.name.start_pos == name.start_pos \
+                                and c.execution:
+                            return True
+                return False
+
+            is_exe = False
+            for assignee, op in par.assignment_details:
+                is_exe |= is_execution(assignee)
+
+            if is_exe:
+                # filter array[3] = ...
+                # TODO check executions for dict contents
+                is_array_assignment = True
+            else:
+                details = par.assignment_details
+                if details and details[0][1] != '=':
+                    no_break_scope = True
+
+                # TODO this makes self variables non-breakable. wanted?
+                if isinstance(name, er.InstanceElement) \
+                        and not name.is_class_var:
+                    no_break_scope = True
+
+                result.append(par)
+        else:
+            # TODO multi-level import non-breakable
+            if isinstance(par, pr.Import) and len(par.namespace) > 1:
+                no_break_scope = True
+            result.append(par)
+        return result, no_break_scope, is_array_assignment
+
     def _process(self, name):
         """
         Returns the parent of a name, which means the element which stands
@@ -208,7 +283,7 @@ class NameFinder(object):
         for nscope, name_list in scope_generator:
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
-            for name in sorted(name_list, key=lambda name: name.start_pos, reverse=True):
+            for name in sorted(name_list, key=lambda n: n.start_pos, reverse=True):
                 p = name.parent.parent if name.parent else None
                 if isinstance(p, er.InstanceElement) \
                         and isinstance(p.var, pr.Class):
@@ -219,7 +294,8 @@ class NameFinder(object):
                         if not is_array_assignment:  # shouldn't goto arr[1] =
                             result.append(name)
                     else:
-                        result += r
+                        if not is_array_assignment:  # shouldn't goto arr[1] =
+                            result.append(name)
                     # for comparison we need the raw class
                     s = nscope.base if isinstance(nscope, er.Class) else nscope
                     # this means that a definition was found and is not e.g.
@@ -233,14 +309,18 @@ class NameFinder(object):
 
         if not result and isinstance(self.scope, er.Instance):
             # __getattr__ / __getattribute__
-            result += self._check_getattr(self.scope)
+            class FuckingHack():
+                line_offset = 0
+            p = 0, 0
+            result += [pr.Name(FuckingHack(), [(str(r.name), p)], p, p, r)
+                       for r in self._check_getattr(self.scope)]
 
         debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
                   % (self.name_str, self.scope, nscope, u(result), self.position))
         return result
 
     def names_to_types(self, names, is_goto=True):
-        result = names
+        result = []
         # This adds additional types
         flow_scope = self.scope
         while flow_scope:
@@ -248,10 +328,12 @@ class NameFinder(object):
             n = check_flow_information(self._evaluator, flow_scope,
                                        self.name_str, self.position)
             if n:
-                result = n
-                break
+                return n
             flow_scope = flow_scope.parent
 
+        for name in names:
+            res, _, _ = self._process_new(name)
+            result += res
         return result
 
     def _check_getattr(self, inst):
