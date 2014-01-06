@@ -126,25 +126,21 @@ class NameFinder(object):
             result = evaluate._assign_tuples(expression_list[0], result, self.name_str)
         return result
 
-    def _process_new(self, name):
+    def _some_method(self, name):
         """
         Returns the parent of a name, which means the element which stands
         behind a name.
         """
         result = []
-        no_break_scope = False
         par = name.parent
         exc = pr.Class, pr.Function
         until = lambda: par.parent.parent.get_parent_until(exc)
-        is_array_assignment = False
 
-        if par is None:
-            pass
-        elif par.isinstance(pr.Flow):
+        if par.isinstance(pr.Flow):
             if par.command == 'for':
                 result += self._handle_for_loops(par)
             else:
-                debug.warning('Flow: Why are you here? %s' % par.command)
+                raise NotImplementedError("Shouldn't happen!")
         elif par.isinstance(pr.Param) \
                 and par.parent is not None \
                 and isinstance(until(), pr.Class) \
@@ -159,47 +155,9 @@ class NameFinder(object):
                 for inst in self._evaluator.execute(er.Class(self._evaluator, until())):
                     inst.is_generated = True
                     result.append(inst)
-        elif par.isinstance(pr.Statement):
-            def is_execution(calls):
-                for c in calls:
-                    if isinstance(c, (unicode, str)):
-                        continue
-                    if c.isinstance(pr.Array):
-                        if is_execution(c):
-                            return True
-                    elif c.isinstance(pr.Call):
-                        # Compare start_pos, because names may be different
-                        # because of executions.
-                        if c.name.start_pos == name.start_pos \
-                                and c.execution:
-                            return True
-                return False
-
-            is_exe = False
-            for assignee, op in par.assignment_details:
-                is_exe |= is_execution(assignee)
-
-            if is_exe:
-                # filter array[3] = ...
-                # TODO check executions for dict contents
-                is_array_assignment = True
-            else:
-                details = par.assignment_details
-                if details and details[0][1] != '=':
-                    no_break_scope = True
-
-                # TODO this makes self variables non-breakable. wanted?
-                if isinstance(name, er.InstanceElement) \
-                        and not name.is_class_var:
-                    no_break_scope = True
-
-                result.append(par)
-        else:
-            # TODO multi-level import non-breakable
-            if isinstance(par, pr.Import) and len(par.namespace) > 1:
-                no_break_scope = True
+        elif par is not None:
             result.append(par)
-        return result, no_break_scope, is_array_assignment
+        return result
 
     def _process(self, name):
         """
@@ -301,8 +259,7 @@ class NameFinder(object):
             flow_scope = flow_scope.parent
 
         for name in names:
-            res, _, _ = self._process_new(name)
-            result += res
+            result += self._some_method(name)
         return result
 
     def _check_getattr(self, inst):
