@@ -231,23 +231,22 @@ class NameFinder(object):
                         if not name.parent or p == s:
                             break
                         break_scopes.append(p)
-
-            while flow_scope:
-                # TODO check if result is in scope -> no evaluation necessary
-                n = dynamic.check_flow_information(self._evaluator, flow_scope,
-                                                   self.name_str, self.position)
-                if n:
-                    result = n
-                    break
-
-                if result:
-                    break
-                if flow_scope == nscope:
-                    break
-                flow_scope = flow_scope.parent
-            flow_scope = nscope
             if result:
                 break
+
+        while flow_scope:
+            # TODO check if result is in scope -> no evaluation necessary
+            n = dynamic.check_flow_information(self._evaluator, flow_scope,
+                                               self.name_str, self.position)
+            if n:
+                result = n
+                break
+
+            if result:
+                break
+            if flow_scope == nscope:
+                break
+            flow_scope = flow_scope.parent
 
         if not result and isinstance(nscope, er.Instance):
             # __getattr__ / __getattribute__
@@ -258,7 +257,6 @@ class NameFinder(object):
 
     def find(self, scopes, resolve_decorator=True):
         filtered = self.filter_name(scopes)
-        #print 'f', filtered
         return self._resolve_descriptors(self._remove_statements(filtered,
 resolve_decorator))
 

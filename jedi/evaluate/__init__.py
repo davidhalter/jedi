@@ -444,7 +444,7 @@ class Evaluator(object):
         follow_res = []
         for s in scopes:
             follow_res += self.find_types(s, search, pos,
-                                         search_global=search_global, is_goto=True)
+                                          search_global=search_global, is_goto=True)
         return follow_res, search
 
 
