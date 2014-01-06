@@ -1,3 +1,5 @@
+import copy
+
 from jedi._compatibility import hasattr, unicode, u
 from jedi.parser import representation as pr
 from jedi import debug
@@ -309,11 +311,10 @@ class NameFinder(object):
 
         if not result and isinstance(self.scope, er.Instance):
             # __getattr__ / __getattribute__
-            class FuckingHack():
-                line_offset = 0
-            p = 0, 0
-            result += [pr.Name(FuckingHack(), [(str(r.name), p)], p, p, r)
-                       for r in self._check_getattr(self.scope)]
+            for r in self._check_getattr(self.scope):
+                new_name = copy.copy(r.name)
+                new_name.parent = r
+                result.append(new_name)
 
         debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
                   % (self.name_str, self.scope, nscope, u(result), self.position))
