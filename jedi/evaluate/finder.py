@@ -19,18 +19,144 @@ class NameFinder(object):
         self.name_str = name_str
         self.position = position
 
-    def _resolve_descriptors(self, types):
-        """Processes descriptors"""
+    def find(self, scopes, resolve_decorator=True):
+        filtered = self.filter_name(scopes)
+        filtered = self._names_to_types(filtered, resolve_decorator)
+        return self._resolve_descriptors(filtered)
+
+    def scopes(self, search_global=False):
+        if search_global:
+            return self._evaluator.get_names_of_scope(self.scope, self.position)
+        else:
+            if isinstance(self.scope, er.Instance):
+                return self.scope.scope_generator()
+            else:
+                if isinstance(self.scope, (er.Class, pr.Module)):
+                    # classes are only available directly via chaining?
+                    # strange stuff...
+                    names = self.scope.get_defined_names()
+                else:
+                    names = _get_defined_names_for_position(self.scope, self.position)
+                return iter([(self.scope, names)])
+
+    def filter_name(self, scope_generator):
+        """
+        Filters all variables of a scope (which are defined in the
+        `scope_generator`), until the name fits.
+        """
         result = []
-        for r in types:
-            if isinstance(self.scope, (er.Instance, er.Class)) \
-                    and hasattr(r, 'get_descriptor_return'):
-                # handle descriptors
-                with common.ignored(KeyError):
-                    result += r.get_descriptor_return(self.scope)
-                    continue
-            result.append(r)
+        for nscope, name_list in scope_generator:
+            break_scopes = []
+            # here is the position stuff happening (sorting of variables)
+            for name in sorted(name_list, key=lambda n: n.start_pos, reverse=True):
+                p = name.parent.parent if name.parent else None
+                if isinstance(p, er.InstanceElement) \
+                        and isinstance(p.var, pr.Class):
+                    p = p.var
+                if self.name_str == name.get_code() and p not in break_scopes:
+                    if not self._name_is_array_assignment(name):
+                        result.append(name)  # `arr[1] =` is not the definition
+                    # for comparison we need the raw class
+                    s = nscope.base if isinstance(nscope, er.Class) else nscope
+                    # this means that a definition was found and is not e.g.
+                    # in if/else.
+                    if result and not self._name_is_no_break_scope(name):
+                        if not name.parent or p == s:
+                            break
+                        break_scopes.append(p)
+            if result:
+                break
+
+        if not result and isinstance(self.scope, er.Instance):
+            # __getattr__ / __getattribute__
+            for r in self._check_getattr(self.scope):
+                new_name = copy.copy(r.name)
+                new_name.parent = r
+                result.append(new_name)
+
+        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
+                  % (self.name_str, self.scope, nscope, u(result), self.position))
         return result
+
+    def _check_getattr(self, inst):
+        """Checks for both __getattr__ and __getattribute__ methods"""
+        result = []
+        module = builtin.Builtin.scope
+        # str is important to lose the NamePart!
+        name = pr.String(module, "'%s'" % self.name_str, (0, 0), (0, 0), inst)
+        with common.ignored(KeyError):
+            result = inst.execute_subscope_by_name('__getattr__', [name])
+        if not result:
+            # this is a little bit special. `__getattribute__` is executed
+            # before anything else. But: I know no use case, where this
+            # could be practical and the jedi would return wrong types. If
+            # you ever have something, let me know!
+            with common.ignored(KeyError):
+                result = inst.execute_subscope_by_name('__getattribute__', [name])
+        return result
+
+    def _name_is_no_break_scope(self, name):
+        """
+        Returns the parent of a name, which means the element which stands
+        behind a name.
+        """
+        par = name.parent
+        if par.isinstance(pr.Statement):
+            details = par.assignment_details
+            if details and details[0][1] != '=':
+                return True
+
+            if isinstance(name, er.InstanceElement) \
+                    and not name.is_class_var:
+                return True
+        elif isinstance(par, pr.Import) and len(par.namespace) > 1:
+            # TODO multi-level import non-breakable
+            return True
+        return False
+
+    def _name_is_array_assignment(self, name):
+        if name.parent.isinstance(pr.Statement):
+            def is_execution(calls):
+                for c in calls:
+                    if isinstance(c, (unicode, str)):
+                        continue
+                    if c.isinstance(pr.Array):
+                        if is_execution(c):
+                            return True
+                    elif c.isinstance(pr.Call):
+                        # Compare start_pos, because names may be different
+                        # because of executions.
+                        if c.name.start_pos == name.start_pos \
+                                and c.execution:
+                            return True
+                return False
+
+            is_exe = False
+            for assignee, op in name.parent.assignment_details:
+                is_exe |= is_execution(assignee)
+
+            if is_exe:
+                # filter array[3] = ...
+                # TODO check executions for dict contents
+                return True
+        return False
+
+    def _names_to_types(self, names, resolve_decorator):
+        types = []
+        # This adds additional types
+        flow_scope = self.scope
+        while flow_scope:
+            # TODO check if result is in scope -> no evaluation necessary
+            n = check_flow_information(self._evaluator, flow_scope,
+                                       self.name_str, self.position)
+            if n:
+                return n
+            flow_scope = flow_scope.parent
+
+        for name in names:
+            types += self._some_method(name)
+
+        return self._remove_statements(types, resolve_decorator)
 
     def _remove_statements(self, result, resolve_decorator=True):
         """
@@ -113,19 +239,6 @@ class NameFinder(object):
         debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
         return res_new
 
-    def _handle_for_loops(self, loop):
-        # Take the first statement (for has always only
-        # one, remember `in`). And follow it.
-        if not loop.inputs:
-            return []
-        result = iterable.get_iterator_types(self._evaluator.eval_statement(loop.inputs[0]))
-        if len(loop.set_vars) > 1:
-            expression_list = loop.set_stmt.expression_list()
-            # loops with loop.set_vars > 0 only have one command
-            from jedi import evaluate
-            result = evaluate._assign_tuples(expression_list[0], result, self.name_str)
-        return result
-
     def _some_method(self, name):
         """
         Returns the parent of a name, which means the element which stands
@@ -159,144 +272,31 @@ class NameFinder(object):
             result.append(par)
         return result
 
-    def _name_is_no_break_scope(self, name):
-        """
-        Returns the parent of a name, which means the element which stands
-        behind a name.
-        """
-        par = name.parent
-        if par.isinstance(pr.Statement):
-            details = par.assignment_details
-            if details and details[0][1] != '=':
-                return True
-
-            if isinstance(name, er.InstanceElement) \
-                    and not name.is_class_var:
-                return True
-        elif isinstance(par, pr.Import) and len(par.namespace) > 1:
-            # TODO multi-level import non-breakable
-            return True
-        return False
-
-    def _name_is_array_assignment(self, name):
-        if name.parent.isinstance(pr.Statement):
-            def is_execution(calls):
-                for c in calls:
-                    if isinstance(c, (unicode, str)):
-                        continue
-                    if c.isinstance(pr.Array):
-                        if is_execution(c):
-                            return True
-                    elif c.isinstance(pr.Call):
-                        # Compare start_pos, because names may be different
-                        # because of executions.
-                        if c.name.start_pos == name.start_pos \
-                                and c.execution:
-                            return True
-                return False
-
-            is_exe = False
-            for assignee, op in name.parent.assignment_details:
-                is_exe |= is_execution(assignee)
-
-            if is_exe:
-                # filter array[3] = ...
-                # TODO check executions for dict contents
-                return True
-        return False
-
-    def filter_name(self, scope_generator):
-        """
-        Filters all variables of a scope (which are defined in the
-        `scope_generator`), until the name fits.
-        """
-        result = []
-        for nscope, name_list in scope_generator:
-            break_scopes = []
-            # here is the position stuff happening (sorting of variables)
-            for name in sorted(name_list, key=lambda n: n.start_pos, reverse=True):
-                p = name.parent.parent if name.parent else None
-                if isinstance(p, er.InstanceElement) \
-                        and isinstance(p.var, pr.Class):
-                    p = p.var
-                if self.name_str == name.get_code() and p not in break_scopes:
-                    if not self._name_is_array_assignment(name):
-                        result.append(name)  # `arr[1] =` is not the definition
-                    # for comparison we need the raw class
-                    s = nscope.base if isinstance(nscope, er.Class) else nscope
-                    # this means that a definition was found and is not e.g.
-                    # in if/else.
-                    if result and not self._name_is_no_break_scope(name):
-                        if not name.parent or p == s:
-                            break
-                        break_scopes.append(p)
-            if result:
-                break
-
-        if not result and isinstance(self.scope, er.Instance):
-            # __getattr__ / __getattribute__
-            for r in self._check_getattr(self.scope):
-                new_name = copy.copy(r.name)
-                new_name.parent = r
-                result.append(new_name)
-
-        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
-                  % (self.name_str, self.scope, nscope, u(result), self.position))
+    def _handle_for_loops(self, loop):
+        # Take the first statement (for has always only
+        # one, remember `in`). And follow it.
+        if not loop.inputs:
+            return []
+        result = iterable.get_iterator_types(self._evaluator.eval_statement(loop.inputs[0]))
+        if len(loop.set_vars) > 1:
+            expression_list = loop.set_stmt.expression_list()
+            # loops with loop.set_vars > 0 only have one command
+            from jedi import evaluate
+            result = evaluate._assign_tuples(expression_list[0], result, self.name_str)
         return result
 
-    def names_to_types(self, names):
+    def _resolve_descriptors(self, types):
+        """Processes descriptors"""
         result = []
-        # This adds additional types
-        flow_scope = self.scope
-        while flow_scope:
-            # TODO check if result is in scope -> no evaluation necessary
-            n = check_flow_information(self._evaluator, flow_scope,
-                                       self.name_str, self.position)
-            if n:
-                return n
-            flow_scope = flow_scope.parent
-
-        for name in names:
-            result += self._some_method(name)
+        for r in types:
+            if isinstance(self.scope, (er.Instance, er.Class)) \
+                    and hasattr(r, 'get_descriptor_return'):
+                # handle descriptors
+                with common.ignored(KeyError):
+                    result += r.get_descriptor_return(self.scope)
+                    continue
+            result.append(r)
         return result
-
-    def _check_getattr(self, inst):
-        """Checks for both __getattr__ and __getattribute__ methods"""
-        result = []
-        module = builtin.Builtin.scope
-        # str is important to lose the NamePart!
-        name = pr.String(module, "'%s'" % self.name_str, (0, 0), (0, 0), inst)
-        with common.ignored(KeyError):
-            result = inst.execute_subscope_by_name('__getattr__', [name])
-        if not result:
-            # this is a little bit special. `__getattribute__` is executed
-            # before anything else. But: I know no use case, where this
-            # could be practical and the jedi would return wrong types. If
-            # you ever have something, let me know!
-            with common.ignored(KeyError):
-                result = inst.execute_subscope_by_name('__getattribute__', [name])
-        return result
-
-    def find(self, scopes, resolve_decorator=True):
-        filtered = self.filter_name(scopes)
-        filtered = self.names_to_types(filtered)
-        return self._resolve_descriptors(self._remove_statements(filtered,
-resolve_decorator))
-
-    def scopes(self, search_global=False):
-        if search_global:
-            return self._evaluator.get_names_of_scope(self.scope, self.position)
-        else:
-            if isinstance(self.scope, er.Instance):
-                return self.scope.scope_generator()
-            else:
-                if isinstance(self.scope, (er.Class, pr.Module)):
-                    # classes are only available directly via chaining?
-                    # strange stuff...
-                    names = self.scope.get_defined_names()
-                else:
-                    names = _get_defined_names_for_position(self.scope, self.position)
-                return iter([(self.scope, names)])
 
 
 def check_flow_information(evaluator, flow, search_name, pos):
