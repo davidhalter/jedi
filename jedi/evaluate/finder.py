@@ -206,35 +206,11 @@ class NameFinder(object):
         Returns the parent of a name, which means the element which stands
         behind a name.
         """
-        result = []
         no_break_scope = False
         par = name.parent
-        exc = pr.Class, pr.Function
-        until = lambda: par.parent.parent.get_parent_until(exc)
         is_array_assignment = False
 
-        if par is None:
-            pass
-        elif par.isinstance(pr.Flow):
-            if par.command == 'for':
-                result += self._handle_for_loops(par)
-            else:
-                debug.warning('Flow: Why are you here? %s' % par.command)
-        elif par.isinstance(pr.Param) \
-                and par.parent is not None \
-                and isinstance(until(), pr.Class) \
-                and par.position_nr == 0:
-            # This is where self gets added - this happens at another
-            # place, if the var_args are clear. But sometimes the class is
-            # not known. Therefore add a new instance for self. Otherwise
-            # take the existing.
-            if isinstance(self.scope, er.InstanceElement):
-                result.append(self.scope.instance)
-            else:
-                for inst in self._evaluator.execute(er.Class(self._evaluator, until())):
-                    inst.is_generated = True
-                    result.append(inst)
-        elif par.isinstance(pr.Statement):
+        if par.isinstance(pr.Statement):
             def is_execution(calls):
                 for c in calls:
                     if isinstance(c, (unicode, str)):
@@ -267,14 +243,10 @@ class NameFinder(object):
                 if isinstance(name, er.InstanceElement) \
                         and not name.is_class_var:
                     no_break_scope = True
-
-                result.append(par)
-        else:
+        elif isinstance(par, pr.Import) and len(par.namespace) > 1:
             # TODO multi-level import non-breakable
-            if isinstance(par, pr.Import) and len(par.namespace) > 1:
-                no_break_scope = True
-            result.append(par)
-        return result, no_break_scope, is_array_assignment
+            no_break_scope = True
+        return no_break_scope, is_array_assignment
 
     def filter_name(self, scope_generator, is_goto=False):
         """
@@ -291,13 +263,9 @@ class NameFinder(object):
                         and isinstance(p.var, pr.Class):
                     p = p.var
                 if self.name_str == name.get_code() and p not in break_scopes:
-                    r, no_break_scope, is_array_assignment = self._process(name)
-                    if is_goto:
-                        if not is_array_assignment:  # shouldn't goto arr[1] =
-                            result.append(name)
-                    else:
-                        if not is_array_assignment:  # shouldn't goto arr[1] =
-                            result.append(name)
+                    no_break_scope, is_array_assignment = self._process(name)
+                    if not is_array_assignment:  # shouldn't goto arr[1] =
+                        result.append(name)
                     # for comparison we need the raw class
                     s = nscope.base if isinstance(nscope, er.Class) else nscope
                     # this means that a definition was found and is not e.g.
