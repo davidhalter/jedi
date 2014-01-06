@@ -178,7 +178,7 @@ def search_params(evaluator, param):
                         pos = None
                     from jedi.evaluate import representation as er
                     for scope in scopes:
-                        s = evaluator.find_name(scope, func_name, position=pos,
+                        s = evaluator.find_types(scope, func_name, position=pos,
                                                 search_global=not first,
                                                 resolve_decorator=False)
 

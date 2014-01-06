@@ -129,7 +129,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = self._evaluator.find_name(builtin.Builtin.scope, self._array.type)[0]
+        scope = self._evaluator.find_types(builtin.Builtin.scope, self._array.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]

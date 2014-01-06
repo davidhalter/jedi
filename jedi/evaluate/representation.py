@@ -257,7 +257,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
                 supers.append(cls)
         if not supers and self.base.parent != builtin.Builtin.scope:
             # add `object` to classes
-            supers += self._evaluator.find_name(builtin.Builtin.scope, 'object')
+            supers += self._evaluator.find_types(builtin.Builtin.scope, 'object')
         return supers
 
     @memoize_default(default=())
@@ -285,7 +285,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
     @memoize_default(default=())
     def get_defined_names(self):
         result = self.instance_names()
-        type_cls = self._evaluator.find_name(builtin.Builtin.scope, 'type')[0]
+        type_cls = self._evaluator.find_types(builtin.Builtin.scope, 'type')[0]
         return result + type_cls.base.get_defined_names()
 
     def get_subscope_by_name(self, name):

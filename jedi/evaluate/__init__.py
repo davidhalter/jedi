@@ -178,7 +178,7 @@ class Evaluator(object):
                 builtin_scope = builtin.Builtin.scope
                 yield builtin_scope, builtin_scope.get_defined_names()
 
-    def find_name(self, scope, name_str, position=None, search_global=False,
+    def find_types(self, scope, name_str, position=None, search_global=False,
                   is_goto=False, resolve_decorator=True):
         """
         This is the search function. The most important part to debug.
@@ -310,11 +310,11 @@ class Evaluator(object):
         else:
             if isinstance(current, pr.NamePart):
                 # This is the first global lookup.
-                scopes = self.find_name(scope, current, position=position,
+                scopes = self.find_types(scope, current, position=position,
                                         search_global=True)
             else:
                 # for pr.Literal
-                scopes = self.find_name(builtin.Builtin.scope, current.type_as_string())
+                scopes = self.find_types(builtin.Builtin.scope, current.type_as_string())
                 # Make instances of those number/string objects.
                 scopes = itertools.chain.from_iterable(
                     self.execute(s, (current.value,)) for s in scopes
@@ -380,7 +380,7 @@ class Evaluator(object):
                 # This is the typical lookup while chaining things.
                 if filter_private_variable(type, scope, current):
                     return []
-            result = imports.strip_imports(self, self.find_name(type, current,
+            result = imports.strip_imports(self, self.find_types(type, current,
                                            position=position))
         return self.follow_path(path, set(result), scope, position=position)
 
@@ -443,7 +443,7 @@ class Evaluator(object):
             search_global = True
         follow_res = []
         for s in scopes:
-            follow_res += self.find_name(s, search, pos,
+            follow_res += self.find_types(s, search, pos,
                                          search_global=search_global, is_goto=True)
         return follow_res, search
 

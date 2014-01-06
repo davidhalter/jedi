@@ -212,7 +212,7 @@ class ImportPath(pr.Base):
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
-                        self._evaluator.find_name(s, rest[0], is_goto=True)
+                        self._evaluator.find_types(s, rest[0], is_goto=True)
                         for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
