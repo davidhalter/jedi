@@ -159,16 +159,27 @@ class NameFinder(object):
             result.append(par)
         return result
 
-    def _process(self, name):
+    def _name_is_no_break_scope(self, name):
         """
         Returns the parent of a name, which means the element which stands
         behind a name.
         """
-        no_break_scope = False
         par = name.parent
-        is_array_assignment = False
-
         if par.isinstance(pr.Statement):
+            details = par.assignment_details
+            if details and details[0][1] != '=':
+                return True
+
+            if isinstance(name, er.InstanceElement) \
+                    and not name.is_class_var:
+                return True
+        elif isinstance(par, pr.Import) and len(par.namespace) > 1:
+            # TODO multi-level import non-breakable
+            return True
+        return False
+
+    def _name_is_array_assignment(self, name):
+        if name.parent.isinstance(pr.Statement):
             def is_execution(calls):
                 for c in calls:
                     if isinstance(c, (unicode, str)):
@@ -185,26 +196,14 @@ class NameFinder(object):
                 return False
 
             is_exe = False
-            for assignee, op in par.assignment_details:
+            for assignee, op in name.parent.assignment_details:
                 is_exe |= is_execution(assignee)
 
             if is_exe:
                 # filter array[3] = ...
                 # TODO check executions for dict contents
-                is_array_assignment = True
-            else:
-                details = par.assignment_details
-                if details and details[0][1] != '=':
-                    no_break_scope = True
-
-                # TODO this makes self variables non-breakable. wanted?
-                if isinstance(name, er.InstanceElement) \
-                        and not name.is_class_var:
-                    no_break_scope = True
-        elif isinstance(par, pr.Import) and len(par.namespace) > 1:
-            # TODO multi-level import non-breakable
-            no_break_scope = True
-        return no_break_scope, is_array_assignment
+                return True
+        return False
 
     def filter_name(self, scope_generator, is_goto=False):
         """
@@ -221,14 +220,13 @@ class NameFinder(object):
                         and isinstance(p.var, pr.Class):
                     p = p.var
                 if self.name_str == name.get_code() and p not in break_scopes:
-                    no_break_scope, is_array_assignment = self._process(name)
-                    if not is_array_assignment:  # shouldn't goto arr[1] =
-                        result.append(name)
+                    if not self._name_is_array_assignment(name):
+                        result.append(name)  # `arr[1] =` is not the definition
                     # for comparison we need the raw class
                     s = nscope.base if isinstance(nscope, er.Class) else nscope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
-                    if result and not no_break_scope:
+                    if result and not self._name_is_no_break_scope(name):
                         if not name.parent or p == s:
                             break
                         break_scopes.append(p)
