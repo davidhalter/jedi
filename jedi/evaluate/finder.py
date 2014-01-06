@@ -231,14 +231,11 @@ class NameFinder(object):
             if result:
                 break
 
-        if not result and isinstance(nscope, er.Instance):
-            # __getattr__ / __getattribute__
-            result += self._check_getattr(nscope)
         debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
                   % (self.name_str, self.scope, nscope, u(result), self.position))
         return result
 
-    def names_to_types(self, names):
+    def names_to_types(self, names, is_goto=True):
         result = names
         # This adds additional types
         flow_scope = self.scope
@@ -250,6 +247,10 @@ class NameFinder(object):
                 result = n
                 break
             flow_scope = flow_scope.parent
+
+        if not result and isinstance(self.scope, er.Instance):
+            # __getattr__ / __getattribute__
+            result += self._check_getattr(self.scope)
 
         return result
 
