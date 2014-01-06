@@ -721,6 +721,14 @@ def usages(evaluator, definitions, search_name, mods):
 
         for f in follow:
             follow_res, search = evaluator.goto(call.parent, f)
+            # names can change (getattr stuff), therefore filter names that
+            # don't match `search_name`.
+
+            # TODO add something like that in the future - for now usages are
+            # completely broken anyway.
+            #follow_res = [r for r in follow_res if str(r) == search]
+            #print search.start_pos,search_name.start_pos
+            #print follow_res, search, search_name, [(r, r.start_pos) for r in follow_res]
             follow_res = usages_add_import_modules(evaluator, follow_res, search)
 
             compare_follow_res = compare_array(follow_res)

@@ -136,9 +136,9 @@ class NestedClass():
     def __getattr__(self, name):
         return self
 
-# Shouldn't find a definition, because there's no name defined (used ``getattr``).
-
-#< (0, 14),
+# Shouldn't find a definition, because there's other `instance`.
+# TODO reenable that test
+##< (0, 14),
 NestedClass().instance
 
 
