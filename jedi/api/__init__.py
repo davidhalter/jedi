@@ -669,7 +669,7 @@ def defined_names(source, path=None, encoding='utf-8'):
         common.source_to_unicode(source, encoding),
         module_path=path,
     )
-    return classes._defined_names(Evaluator(), parser.module)
+    return classes.defined_names(Evaluator(), parser.module)
 
 
 def preload_module(*modules):

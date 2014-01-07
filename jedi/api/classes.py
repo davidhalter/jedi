@@ -537,10 +537,10 @@ class Definition(BaseDefinition):
             d = d.var
         if isinstance(d, pr.Name):
             d = d.parent
-        return _defined_names(self._evaluator, d)
+        return defined_names(self._evaluator, d)
 
 
-def _defined_names(evaluator, scope):
+def defined_names(evaluator, scope):
     """
     List sub-definitions (e.g., methods in class).
 
