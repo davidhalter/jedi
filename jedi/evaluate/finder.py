@@ -155,11 +155,14 @@ class NameFinder(object):
             flow_scope = flow_scope.parent
 
         for name in names:
-            types += self._remove_statements(name.parent, resolve_decorator)
-
+            typ = name.parent
+            if typ.isinstance(pr.ForFlow):
+                types += self._handle_for_loops(typ)
+            else:
+                types += self._remove_statements(typ, resolve_decorator)
         return types
 
-    def _remove_statements(self, r, resolve_decorator=True):
+    def _remove_statements(self, r, resolve_decorator=False):
         """
         This is the part where statements are being stripped.
 
@@ -237,8 +240,7 @@ class NameFinder(object):
                 #if r.docstr:
                     #res_new.append(r)
 
-                for scope in evaluator.eval_statement(r, seek_name=self.name_str):
-                    add += self._remove_statements(scope)
+                add += evaluator.eval_statement(r, seek_name=self.name_str)
 
             if check_instance is not None:
                 # class renames
@@ -246,16 +248,15 @@ class NameFinder(object):
                        if isinstance(a, (er.Function, pr.Function))
                        else a for a in add]
             res_new += add
-        elif r.isinstance(pr.ForFlow):
-            res_new += self._handle_for_loops(r)
         else:
             if isinstance(r, pr.Class):
-                r = er.Class(evaluator, r)
+                r = er.Class(self._evaluator, r)
             elif isinstance(r, pr.Function):
-                r = er.Function(evaluator, r)
+                r = er.Function(self._evaluator, r)
             if r.isinstance(er.Function) and resolve_decorator:
                 r = r.get_decorated_func()
             res_new.append(r)
+
         return res_new
 
     def _handle_for_loops(self, loop):
