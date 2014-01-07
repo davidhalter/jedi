@@ -1,3 +1,6 @@
+"""
+Imitate the parser representation.
+"""
 from jedi.cache import underscore_memoization
 
 
@@ -9,6 +12,9 @@ class PyObject(object):
     def get_defined_names(self):
         for name in dir(self.obj):
             yield PyName(self, name)
+
+    def isinstance(self, *obj):
+        return isinstance(self, obj)
 
 
 class PyName(object):
@@ -22,3 +28,6 @@ class PyName(object):
     @underscore_memoization
     def parent(self):
         return PyObject(getattr(self._obj.obj, self._name), self._obj)
+
+    def get_code(self):
+        return self._name
