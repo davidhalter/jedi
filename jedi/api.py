@@ -31,7 +31,6 @@ from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
 from jedi.evaluate import builtin
 from jedi.evaluate import imports
-from jedi.evaluate import dynamic
 from jedi.evaluate import helpers
 
 
@@ -767,8 +766,8 @@ def usages(evaluator, definitions, search_name, mods):
                     if set(f) & set(definitions):
                         names.append(api_classes.Usage(evaluator, name_part, stmt))
             else:
-                for call in dynamic._scan_statement(stmt, search_name,
-                                                    assignment_details=True):
+                for call in helpers.scan_statement(stmt, search_name,
+                                                   assignment_details=True):
                     names += check_call(call)
     return names
 

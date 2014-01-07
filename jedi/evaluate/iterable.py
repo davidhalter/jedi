@@ -6,6 +6,7 @@ from jedi import settings
 from jedi._compatibility import use_metaclass, is_py3k
 from jedi.parser import representation as pr
 from jedi.evaluate import builtin
+from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 
 
@@ -329,9 +330,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                 # check recursion
                 continue
 
-            # TODO should be deleted in the future
-            from jedi.evaluate import dynamic
-            res += check_calls(dynamic._scan_statement(stmt, n), n)
+            res += check_calls(helpers.scan_statement(stmt, n), n)
             evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add

@@ -168,3 +168,39 @@ def search_call_signatures(stmt, pos):
         arr.parent.execution = None
         return call if isinstance(call, pr.Call) else None, index, False
     return None, 0, False
+
+
+def scan_statement(stmt, search_name, assignment_details=False):
+    """ Returns the function Call that match search_name in an Array. """
+    def scan_array(arr, search_name):
+        result = []
+        if arr.type == pr.Array.DICT:
+            for key_stmt, value_stmt in arr.items():
+                result += scan_statement(key_stmt, search_name)
+                result += scan_statement(value_stmt, search_name)
+        else:
+            for stmt in arr:
+                result += scan_statement(stmt, search_name)
+        return result
+
+    check = list(stmt.expression_list())
+    if assignment_details:
+        for expression_list, op in stmt.assignment_details:
+            check += expression_list
+
+    result = []
+    for c in check:
+        if isinstance(c, pr.Array):
+            result += scan_array(c, search_name)
+        elif isinstance(c, pr.Call):
+            s_new = c
+            while s_new is not None:
+                n = s_new.name
+                if isinstance(n, pr.Name) and search_name in n.names:
+                    result.append(c)
+
+                if s_new.execution is not None:
+                    result += scan_array(s_new.execution, search_name)
+                s_new = s_new.next
+
+    return result
