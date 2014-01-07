@@ -745,7 +745,7 @@ def usages(evaluator, definitions, search_name, mods):
     compare_definitions = compare_array(definitions)
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
-    for m in dynamic.get_directory_modules_for_name(mods, search_name):
+    for m in helpers.get_modules_containing_name(mods, search_name):
         try:
             stmts = m.used_names[search_name]
         except KeyError:
