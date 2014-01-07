@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import copy
 
 from jedi import common
@@ -60,14 +58,6 @@ def fast_parent_copy(obj):
                 copied_list[i] = list_rec(el)
         return copied_list
     return recursion(obj)
-
-
-def check_arr_index(arr, pos):
-    positions = arr.arr_el_pos
-    for index, comma_pos in enumerate(positions):
-        if pos < comma_pos:
-            return index
-    return len(positions)
 
 
 def array_for_pos(stmt, pos, array_types=None):
@@ -132,11 +122,37 @@ def search_call_signatures(stmt, pos):
     return None, 0, False
 
 
-class FakeStatement(pr.Statement):
-    class SubModule():
-        line_offset = 0
+def scan_statement_for_calls(stmt, search_name, assignment_details=False):
+    """ Returns the function Calls that match search_name in an Array. """
+    def scan_array(arr, search_name):
+        result = []
+        if arr.type == pr.Array.DICT:
+            for key_stmt, value_stmt in arr.items():
+                result += scan_statement_for_calls(key_stmt, search_name)
+                result += scan_statement_for_calls(value_stmt, search_name)
+        else:
+            for stmt in arr:
+                result += scan_statement_for_calls(stmt, search_name)
+        return result
 
-    def __init__(self, content):
-        cls = type(self)
-        p = 0, 0
-        super(cls, self).__init__(cls.SubModule, [content], p, p)
+    check = list(stmt.expression_list())
+    if assignment_details:
+        for expression_list, op in stmt.assignment_details:
+            check += expression_list
+
+    result = []
+    for c in check:
+        if isinstance(c, pr.Array):
+            result += scan_array(c, search_name)
+        elif isinstance(c, pr.Call):
+            s_new = c
+            while s_new is not None:
+                n = s_new.name
+                if isinstance(n, pr.Name) and search_name in n.names:
+                    result.append(c)
+
+                if s_new.execution is not None:
+                    result += scan_array(s_new.execution, search_name)
+                s_new = s_new.next
+
+    return result

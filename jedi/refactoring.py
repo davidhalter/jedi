@@ -12,13 +12,10 @@ following functions (sometimes bug-prone):
 - extract variable
 - inline variable
 """
-from __future__ import with_statement
-
 import difflib
 
 from jedi import common
-from jedi import modules
-from jedi import helpers
+from jedi.evaluate import helpers
 from jedi.parser import representation as pr
 
 
@@ -86,7 +83,7 @@ def _rename(names, replace_str):
                 with open(current_path) as f:
                     source = f.read()
 
-            new_lines = modules.source_to_unicode(source).splitlines()
+            new_lines = common.source_to_unicode(source).splitlines()
             old_lines = new_lines[:]
 
         nr, indent = name.line, name.column
@@ -104,7 +101,7 @@ def extract(script, new_name):
     :type source: str
     :return: list of changed lines/changed files
     """
-    new_lines = modules.source_to_unicode(script.source).splitlines()
+    new_lines = common.source_to_unicode(script.source).splitlines()
     old_lines = new_lines[:]
 
     user_stmt = script._parser.user_stmt
@@ -163,7 +160,7 @@ def inline(script):
     """
     :type script: api.Script
     """
-    new_lines = modules.source_to_unicode(script.source).splitlines()
+    new_lines = common.source_to_unicode(script.source).splitlines()
 
     dct = {}
 

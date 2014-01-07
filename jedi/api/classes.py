@@ -12,6 +12,7 @@ from jedi import common
 from jedi.parser import representation as pr
 from jedi import cache
 from jedi.evaluate import representation as er
+from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi import keywords
 
@@ -309,8 +310,6 @@ class Completion(BaseDefinition):
         # duplicate items in the completion)
         self._same_name_completions = []
 
-        self._followed_definitions = None
-
     def _complete(self, like_name):
         dot = '.' if self._needs_dot else ''
         append = ''
@@ -390,6 +389,7 @@ class Completion(BaseDefinition):
         line = '' if self.in_builtin_module else '@%s' % self.line
         return '%s: %s%s' % (t, desc, line)
 
+    @cache.underscore_memoization
     def follow_definition(self):
         """
         Return the original definitions. I strongly recommend not using it for
@@ -399,19 +399,16 @@ class Completion(BaseDefinition):
         follows all results. This means with 1000 completions (e.g.  numpy),
         it's just PITA-slow.
         """
-        if self._followed_definitions is None:
-            if self._definition.isinstance(pr.Statement):
-                defs = self._evaluator.eval_statement(self._definition)
-            elif self._definition.isinstance(pr.Import):
-                defs = imports.strip_imports(self._evaluator, [self._definition])
-            else:
-                return [self]
+        if self._definition.isinstance(pr.Statement):
+            defs = self._evaluator.eval_statement(self._definition)
+        elif self._definition.isinstance(pr.Import):
+            defs = imports.strip_imports(self._evaluator, [self._definition])
+        else:
+            return [self]
 
-            self._followed_definitions = \
-                [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
-            clear_caches()
-
-        return self._followed_definitions
+        defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
+        clear_caches()
+        return defs
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name)
@@ -440,7 +437,7 @@ class Definition(BaseDefinition):
 
         if isinstance(d, pr.Name):
             return d.names[-1] if d.names else None
-        elif isinstance(d, er.Array):
+        elif isinstance(d, iterable.Array):
             return unicode(d.type)
         elif isinstance(d, (pr.Class, er.Class, er.Instance,
                             er.Function, pr.Function)):
@@ -493,7 +490,7 @@ class Definition(BaseDefinition):
         if isinstance(d, pr.Name):
             d = d.parent
 
-        if isinstance(d, er.Array):
+        if isinstance(d, iterable.Array):
             d = 'class ' + d.type
         elif isinstance(d, (pr.Class, er.Class, er.Instance)):
             d = 'class ' + unicode(d.name)
@@ -540,10 +537,10 @@ class Definition(BaseDefinition):
             d = d.var
         if isinstance(d, pr.Name):
             d = d.parent
-        return _defined_names(self._evaluator, d)
+        return defined_names(self._evaluator, d)
 
 
-def _defined_names(evaluator, scope):
+def defined_names(evaluator, scope):
     """
     List sub-definitions (e.g., methods in class).
 

@@ -9,22 +9,19 @@ instantiated. This class represents these cases.
 So, why is there also a ``Class`` class here? Well, there are decorators and
 they change classes in Python 3.
 """
-from __future__ import with_statement
-
 import copy
-import itertools
 
-from jedi._compatibility import use_metaclass, next, unicode
+from jedi._compatibility import use_metaclass, unicode
 from jedi.parser import representation as pr
-from jedi import helpers
 from jedi import debug
 from jedi import common
+from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import builtin
 from jedi.evaluate import recursion
-from jedi.evaluate.cache import memoize_default, CachedMetaClass
-from jedi.evaluate.interfaces import Iterable
-from jedi import docstrings
-from jedi.evaluate import dynamic
+from jedi.evaluate import iterable
+from jedi.evaluate import docstrings
+from jedi.evaluate import helpers
+from jedi.evaluate import param
 
 
 class Executable(pr.IsScope):
@@ -54,7 +51,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         if str(base.name) in ['list', 'set'] \
                 and builtin.Builtin.scope == base.get_parent_until():
             # compare the module path with the builtin name.
-            self.var_args = dynamic.check_array_instances(evaluator, self)
+            self.var_args = iterable.check_array_instances(evaluator, self)
         else:
             # need to execute the __init__ function, because the dynamic param
             # searching needs it.
@@ -80,7 +77,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             return None
 
     @memoize_default([])
-    def _get_self_attributes(self):
+    def get_self_attributes(self):
         def add_self_dot_name(name):
             """
             Need to copy and rewrite the name, because names are now
@@ -117,8 +114,8 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
                     add_self_dot_name(n)
 
         for s in self.base.get_super_classes():
-            names += Instance(self._evaluator, s)._get_self_attributes()
-
+            for inst in self._evaluator.execute(s):
+                names += inst.get_self_attributes()
         return names
 
     def get_subscope_by_name(self, name):
@@ -142,7 +139,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         Get the instance vars of a class. This includes the vars of all
         classes
         """
-        names = self._get_self_attributes()
+        names = self.get_self_attributes()
 
         class_names = self.base.instance_names()
         for var in class_names:
@@ -154,7 +151,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         An Instance has two scopes: The scope with self names and the class
         scope. Instance variables have priority over the class scope.
         """
-        yield self, self._get_self_attributes()
+        yield self, self.get_self_attributes()
 
         names = []
         class_names = self.base.instance_names()
@@ -261,7 +258,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
                 supers.append(cls)
         if not supers and self.base.parent != builtin.Builtin.scope:
             # add `object` to classes
-            supers += self._evaluator.find_name(builtin.Builtin.scope, 'object')
+            supers += self._evaluator.find_types(builtin.Builtin.scope, 'object')
         return supers
 
     @memoize_default(default=())
@@ -289,7 +286,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
     @memoize_default(default=())
     def get_defined_names(self):
         result = self.instance_names()
-        type_cls = self._evaluator.find_name(builtin.Builtin.scope, 'type')[0]
+        type_cls = self._evaluator.find_types(builtin.Builtin.scope, 'type')[0]
         return result + type_cls.base.get_defined_names()
 
     def get_subscope_by_name(self, name):
@@ -409,7 +406,7 @@ class FunctionExecution(Executable):
         for listener in func.listeners:
             listener.execute(self._get_params())
         if func.is_generator and not evaluate_generator:
-            return [Generator(self._evaluator, func, self.var_args)]
+            return [iterable.Generator(self._evaluator, func, self.var_args)]
         else:
             stmts = docstrings.find_return_types(self._evaluator, func)
             for r in self.returns:
@@ -425,183 +422,7 @@ class FunctionExecution(Executable):
         This needs to be here, because Instance can have __init__ functions,
         which act the same way as normal functions.
         """
-        def gen_param_name_copy(param, keys=(), values=(), array_type=None):
-            """
-            Create a param with the original scope (of varargs) as parent.
-            """
-            if isinstance(self.var_args, pr.Array):
-                parent = self.var_args.parent
-                start_pos = self.var_args.start_pos
-            else:
-                parent = self.base
-                start_pos = 0, 0
-
-            new_param = copy.copy(param)
-            new_param.is_generated = True
-            if parent is not None:
-                new_param.parent = parent
-
-            # create an Array (-> needed for *args/**kwargs tuples/dicts)
-            arr = pr.Array(self._sub_module, start_pos, array_type, parent)
-            arr.values = values
-            key_stmts = []
-            for key in keys:
-                stmt = pr.Statement(self._sub_module, [], start_pos, None)
-                stmt._expression_list = [key]
-                key_stmts.append(stmt)
-            arr.keys = key_stmts
-            arr.type = array_type
-
-            new_param._expression_list = [arr]
-
-            name = copy.copy(param.get_name())
-            name.parent = new_param
-            return name
-
-        result = []
-        start_offset = 0
-        if isinstance(self.base, InstanceElement):
-            # Care for self -> just exclude it and add the instance
-            start_offset = 1
-            self_name = copy.copy(self.base.params[0].get_name())
-            self_name.parent = self.base.instance
-            result.append(self_name)
-
-        param_dict = {}
-        for param in self.base.params:
-            param_dict[str(param.get_name())] = param
-        # There may be calls, which don't fit all the params, this just ignores
-        # it.
-        var_arg_iterator = self._get_var_args_iterator()
-
-        non_matching_keys = []
-        keys_used = set()
-        keys_only = False
-        for param in self.base.params[start_offset:]:
-            # The value and key can both be null. There, the defaults apply.
-            # args / kwargs will just be empty arrays / dicts, respectively.
-            # Wrong value count is just ignored. If you try to test cases that
-            # are not allowed in Python, Jedi will maybe not show any
-            # completions.
-            key, value = next(var_arg_iterator, (None, None))
-            while key:
-                keys_only = True
-                try:
-                    key_param = param_dict[str(key)]
-                except KeyError:
-                    non_matching_keys.append((key, value))
-                else:
-                    keys_used.add(str(key))
-                    result.append(gen_param_name_copy(key_param,
-                                                      values=[value]))
-                key, value = next(var_arg_iterator, (None, None))
-
-            expression_list = param.expression_list()
-            keys = []
-            values = []
-            array_type = None
-            ignore_creation = False
-            if expression_list[0] == '*':
-                # *args param
-                array_type = pr.Array.TUPLE
-                if value:
-                    values.append(value)
-                for key, value in var_arg_iterator:
-                    # Iterate until a key argument is found.
-                    if key:
-                        var_arg_iterator.push_back((key, value))
-                        break
-                    values.append(value)
-            elif expression_list[0] == '**':
-                # **kwargs param
-                array_type = pr.Array.DICT
-                if non_matching_keys:
-                    keys, values = zip(*non_matching_keys)
-            elif not keys_only:
-                # normal param
-                if value is not None:
-                    values = [value]
-                else:
-                    if param.assignment_details:
-                        # No value: return the default values.
-                        ignore_creation = True
-                        result.append(param.get_name())
-                        param.is_generated = True
-                    else:
-                        # If there is no assignment detail, that means there is
-                        # no assignment, just the result. Therefore nothing has
-                        # to be returned.
-                        values = []
-
-            # Just ignore all the params that are without a key, after one
-            # keyword argument was set.
-            if not ignore_creation and (not keys_only or expression_list[0] == '**'):
-                keys_used.add(str(key))
-                result.append(gen_param_name_copy(param, keys=keys,
-                                                  values=values, array_type=array_type))
-
-        if keys_only:
-            # sometimes param arguments are not completely written (which would
-            # create an Exception, but we have to handle that).
-            for k in set(param_dict) - keys_used:
-                result.append(gen_param_name_copy(param_dict[k]))
-        return result
-
-    def _get_var_args_iterator(self):
-        """
-        Yields a key/value pair, the key is None, if its not a named arg.
-        """
-        def iterate():
-            # `var_args` is typically an Array, and not a list.
-            for stmt in self.var_args:
-                if not isinstance(stmt, pr.Statement):
-                    if stmt is None:
-                        yield None, None
-                        continue
-                    old = stmt
-                    # generate a statement if it's not already one.
-                    module = builtin.Builtin.scope
-                    stmt = pr.Statement(module, [], (0, 0), None)
-                    stmt._expression_list = [old]
-
-                # *args
-                expression_list = stmt.expression_list()
-                if not len(expression_list):
-                    continue
-                if expression_list[0] == '*':
-                    arrays = self._evaluator.eval_expression_list(expression_list[1:])
-                    # *args must be some sort of an array, otherwise -> ignore
-
-                    for array in arrays:
-                        if isinstance(array, Array):
-                            for field_stmt in array:  # yield from plz!
-                                yield None, field_stmt
-                        elif isinstance(array, Generator):
-                            for field_stmt in array.iter_content():
-                                yield None, helpers.FakeStatement(field_stmt)
-                # **kwargs
-                elif expression_list[0] == '**':
-                    arrays = self._evaluator.eval_expression_list(expression_list[1:])
-                    for array in arrays:
-                        if isinstance(array, Array):
-                            for key_stmt, value_stmt in array.items():
-                                # first index, is the key if syntactically correct
-                                call = key_stmt.expression_list()[0]
-                                if isinstance(call, pr.Name):
-                                    yield call, value_stmt
-                                elif isinstance(call, pr.Call):
-                                    yield call.name, value_stmt
-                # Normal arguments (including key arguments).
-                else:
-                    if stmt.assignment_details:
-                        key_arr, op = stmt.assignment_details[0]
-                        # named parameter
-                        if key_arr and isinstance(key_arr[0], pr.Call):
-                            yield key_arr[0].name, stmt
-                    else:
-                        yield None, stmt
-
-        return iter(common.PushBackIterator(iterate()))
+        return param.get_params(self._evaluator, self.base, self.var_args)
 
     def get_defined_names(self):
         """
@@ -680,174 +501,3 @@ class FunctionExecution(Executable):
     def __repr__(self):
         return "<%s of %s>" % \
             (type(self).__name__, self.base)
-
-
-class Generator(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
-    """ Cares for `yield` statements. """
-    def __init__(self, evaluator, func, var_args):
-        super(Generator, self).__init__()
-        self._evaluator = evaluator
-        self.func = func
-        self.var_args = var_args
-
-    def get_defined_names(self):
-        """
-        Returns a list of names that define a generator, which can return the
-        content of a generator.
-        """
-        names = []
-        none_pos = (0, 0)
-        executes_generator = ('__next__', 'send')
-        for n in ('close', 'throw') + executes_generator:
-            name = pr.Name(builtin.Builtin.scope, [(n, none_pos)],
-                           none_pos, none_pos)
-            if n in executes_generator:
-                name.parent = self
-            else:
-                name.parent = builtin.Builtin.scope
-            names.append(name)
-        debug.dbg('generator names', names)
-        return names
-
-    def iter_content(self):
-        """ returns the content of __iter__ """
-        return self._evaluator.execute(self.func, self.var_args, True)
-
-    def get_index_types(self, index=None):
-        debug.warning('Tried to get array access on a generator', self)
-        return []
-
-    def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
-                        'asserts', 'doc', 'docstr', 'get_parent_until', 'get_code',
-                        'subscopes']:
-            raise AttributeError("Accessing %s of %s is not allowed."
-                                 % (self, name))
-        return getattr(self.func, name)
-
-    def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.func)
-
-
-class Array(use_metaclass(CachedMetaClass, pr.Base, Iterable)):
-    """
-    Used as a mirror to pr.Array, if needed. It defines some getter
-    methods which are important in this module.
-    """
-    def __init__(self, evaluator, array):
-        self._evaluator = evaluator
-        self._array = array
-
-    def get_index_types(self, index_arr=None):
-        """ Get the types of a specific index or all, if not given """
-        if index_arr is not None:
-            if index_arr and [x for x in index_arr if ':' in x.expression_list()]:
-                # array slicing
-                return [self]
-
-            index_possibilities = self._follow_values(index_arr)
-            if len(index_possibilities) == 1:
-                # This is indexing only one element, with a fixed index number,
-                # otherwise it just ignores the index (e.g. [1+1]).
-                index = index_possibilities[0]
-                if isinstance(index, Instance) \
-                        and str(index.name) in ['int', 'str'] \
-                        and len(index.var_args) == 1:
-                    # TODO this is just very hackish and a lot of use cases are
-                    # being ignored
-                    with common.ignored(KeyError, IndexError,
-                                        UnboundLocalError, TypeError):
-                        return self.get_exact_index_types(index.var_args[0])
-
-        result = list(self._follow_values(self._array.values))
-        result += dynamic.check_array_additions(self._evaluator, self)
-        return set(result)
-
-    def get_exact_index_types(self, mixed_index):
-        """ Here the index is an int/str. Raises IndexError/KeyError """
-        index = mixed_index
-        if self.type == pr.Array.DICT:
-            index = None
-            for i, key_statement in enumerate(self._array.keys):
-                # Because we only want the key to be a string.
-                key_expression_list = key_statement.expression_list()
-                if len(key_expression_list) != 1:  # cannot deal with complex strings
-                    continue
-                key = key_expression_list[0]
-                if isinstance(key, pr.String):
-                    str_key = key.value
-                elif isinstance(key, pr.Name):
-                    str_key = str(key)
-
-                if mixed_index == str_key:
-                    index = i
-                    break
-            if index is None:
-                raise KeyError('No key found in dictionary')
-
-        # Can raise an IndexError
-        values = [self._array.values[index]]
-        return self._follow_values(values)
-
-    def _follow_values(self, values):
-        """ helper function for the index getters """
-        return list(itertools.chain.from_iterable(self._evaluator.eval_statement(v)
-                                                  for v in values))
-
-    def get_defined_names(self):
-        """
-        This method generates all `ArrayMethod` for one pr.Array.
-        It returns e.g. for a list: append, pop, ...
-        """
-        # `array.type` is a string with the type, e.g. 'list'.
-        scope = self._evaluator.find_name(builtin.Builtin.scope, self._array.type)[0]
-        scope = Instance(self._evaluator, scope)
-        names = scope.get_defined_names()
-        return [ArrayMethod(n) for n in names]
-
-    @property
-    def parent(self):
-        return builtin.Builtin.scope
-
-    def get_parent_until(self):
-        return builtin.Builtin.scope
-
-    def __getattr__(self, name):
-        if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
-                        'get_parent_until', 'items']:
-            raise AttributeError('Strange access on %s: %s.' % (self, name))
-        return getattr(self._array, name)
-
-    def __getitem__(self):
-        return self._array.__getitem__()
-
-    def __iter__(self):
-        return self._array.__iter__()
-
-    def __len__(self):
-        return self._array.__len__()
-
-    def __repr__(self):
-        return "<e%s of %s>" % (type(self).__name__, self._array)
-
-
-class ArrayMethod(object):
-    """
-    A name, e.g. `list.append`, it is used to access the original array
-    methods.
-    """
-    def __init__(self, name):
-        super(ArrayMethod, self).__init__()
-        self.name = name
-
-    def __getattr__(self, name):
-        # Set access privileges:
-        if name not in ['parent', 'names', 'start_pos', 'end_pos', 'get_code']:
-            raise AttributeError('Strange accesson %s: %s.' % (self, name))
-        return getattr(self.name, name)
-
-    def get_parent_until(self):
-        return builtin.Builtin.scope
-
-    def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.name)

@@ -68,12 +68,10 @@ backtracking algorithm.
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
-from __future__ import with_statement
-
 import sys
 import itertools
 
-from jedi._compatibility import next, hasattr, is_py3k, unicode, reraise, u
+from jedi._compatibility import next, hasattr, unicode, reraise
 from jedi import common
 from jedi.parser import representation as pr
 from jedi import debug
@@ -81,39 +79,10 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import builtin
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
+from jedi.evaluate import iterable
 from jedi.evaluate.cache import memoize_default
-from jedi import docstrings
-from jedi.evaluate import dynamic
 from jedi.evaluate import stdlib
-
-
-def get_defined_names_for_position(scope, position=None, start_scope=None):
-    """
-    Return filtered version of ``scope.get_defined_names()``.
-
-    This function basically does what :meth:`scope.get_defined_names
-    <parsing_representation.Scope.get_defined_names>` does.
-
-    - If `position` is given, delete all names defined after `position`.
-    - For special objects like instances, `position` is ignored and all
-      names are returned.
-
-    :type     scope: :class:`parsing_representation.IsScope`
-    :param    scope: Scope in which names are searched.
-    :param position: The position as a line/column tuple, default is infinity.
-    """
-    names = scope.get_defined_names()
-    # Instances have special rules, always return all the possible completions,
-    # because class variables are always valid and the `self.` variables, too.
-    if (not position or isinstance(scope, (er.Array, er.Instance))
-       or start_scope != scope
-       and isinstance(start_scope, (pr.Function, er.FunctionExecution))):
-        return names
-    names_new = []
-    for n in names:
-        if n.start_pos[0] is not None and n.start_pos < position:
-            names_new.append(n)
-    return names_new
+from jedi.evaluate import finder
 
 
 class Evaluator(object):
@@ -183,8 +152,7 @@ class Evaluator(object):
                         for g in scope.scope_generator():
                             yield g
                     else:
-                        yield scope, get_defined_names_for_position(scope,
-                                                                    position, in_func_scope)
+                        yield scope, finder._get_defined_names_for_position(scope, position, in_func_scope)
                 except StopIteration:
                     reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
             if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
@@ -208,274 +176,21 @@ class Evaluator(object):
                 builtin_scope = builtin.Builtin.scope
                 yield builtin_scope, builtin_scope.get_defined_names()
 
-    def find_name(self, scope, name_str, position=None, search_global=False,
-                  is_goto=False, resolve_decorator=True):
+    def find_types(self, scope, name_str, position=None, search_global=False,
+                   is_goto=False, resolve_decorator=True):
         """
         This is the search function. The most important part to debug.
         `remove_statements` and `filter_statements` really are the core part of
         this completion.
 
         :param position: Position of the last statement -> tuple of line, column
-        :return: List of Names. Their parents are the scopes, they are defined in.
-        :rtype: list
+        :return: List of Names. Their parents are the types.
         """
-        def remove_statements(result):
-            """
-            This is the part where statements are being stripped.
-
-            Due to lazy evaluation, statements like a = func; b = a; b() have to be
-            evaluated.
-            """
-            res_new = []
-            for r in result:
-                add = []
-                if r.isinstance(pr.Statement):
-                    check_instance = None
-                    if isinstance(r, er.InstanceElement) and r.is_class_var:
-                        check_instance = r.instance
-                        r = r.var
-
-                    # Global variables handling.
-                    if r.is_global():
-                        for token_name in r.token_list[1:]:
-                            if isinstance(token_name, pr.Name):
-                                add = self.find_name(r.parent, str(token_name))
-                    else:
-                        # generated objects are used within executions, but these
-                        # objects are in functions, and we have to dynamically
-                        # execute first.
-                        if isinstance(r, pr.Param):
-                            func = r.parent
-                            # Instances are typically faked, if the instance is not
-                            # called from outside. Here we check it for __init__
-                            # functions and return.
-                            if isinstance(func, er.InstanceElement) \
-                                    and func.instance.is_generated \
-                                    and hasattr(func, 'name') \
-                                    and str(func.name) == '__init__' \
-                                    and r.position_nr > 0:  # 0 would be self
-                                r = func.var.params[r.position_nr]
-
-                            # add docstring knowledge
-                            doc_params = docstrings.follow_param(self, r)
-                            if doc_params:
-                                res_new += doc_params
-                                continue
-
-                            if not r.is_generated:
-                                res_new += dynamic.search_params(self, r)
-                                if not res_new:
-                                    c = r.expression_list()[0]
-                                    if c in ('*', '**'):
-                                        t = 'tuple' if c == '*' else 'dict'
-                                        res_new = [er.Instance(
-                                            self, self.find_name(builtin.Builtin.scope, t)[0])
-                                        ]
-                                if not r.assignment_details:
-                                    # this means that there are no default params,
-                                    # so just ignore it.
-                                    continue
-
-                        # Remove the statement docstr stuff for now, that has to be
-                        # implemented with the evaluator class.
-                        #if r.docstr:
-                            #res_new.append(r)
-
-                        scopes = self.eval_statement(r, seek_name=name_str)
-                        add += remove_statements(scopes)
-
-                    if check_instance is not None:
-                        # class renames
-                        add = [er.InstanceElement(self, check_instance, a, True)
-                               if isinstance(a, (er.Function, pr.Function))
-                               else a for a in add]
-                    res_new += add
-                else:
-                    if isinstance(r, pr.Class):
-                        r = er.Class(self, r)
-                    elif isinstance(r, pr.Function):
-                        r = er.Function(self, r)
-                    if r.isinstance(er.Function) and resolve_decorator:
-                        r = r.get_decorated_func()
-                    res_new.append(r)
-            debug.dbg('sfn remove, new: %s, old: %s' % (res_new, result))
-            return res_new
-
-        def filter_name(scope_generator):
-            """
-            Filters all variables of a scope (which are defined in the
-            `scope_generator`), until the name fits.
-            """
-            def handle_for_loops(loop):
-                # Take the first statement (for has always only
-                # one, remember `in`). And follow it.
-                if not loop.inputs:
-                    return []
-                result = get_iterator_types(self.eval_statement(loop.inputs[0]))
-                if len(loop.set_vars) > 1:
-                    expression_list = loop.set_stmt.expression_list()
-                    # loops with loop.set_vars > 0 only have one command
-                    result = assign_tuples(expression_list[0], result, name_str)
-                return result
-
-            def process(name):
-                """
-                Returns the parent of a name, which means the element which stands
-                behind a name.
-                """
-                result = []
-                no_break_scope = False
-                par = name.parent
-                exc = pr.Class, pr.Function
-                until = lambda: par.parent.parent.get_parent_until(exc)
-                is_array_assignment = False
-
-                if par is None:
-                    pass
-                elif par.isinstance(pr.Flow):
-                    if par.command == 'for':
-                        result += handle_for_loops(par)
-                    else:
-                        debug.warning('Flow: Why are you here? %s' % par.command)
-                elif par.isinstance(pr.Param) \
-                        and par.parent is not None \
-                        and isinstance(until(), pr.Class) \
-                        and par.position_nr == 0:
-                    # This is where self gets added - this happens at another
-                    # place, if the var_args are clear. But sometimes the class is
-                    # not known. Therefore add a new instance for self. Otherwise
-                    # take the existing.
-                    if isinstance(scope, er.InstanceElement):
-                        inst = scope.instance
-                    else:
-                        inst = er.Instance(self, er.Class(self, until()))
-                        inst.is_generated = True
-                    result.append(inst)
-                elif par.isinstance(pr.Statement):
-                    def is_execution(calls):
-                        for c in calls:
-                            if isinstance(c, (unicode, str)):
-                                continue
-                            if c.isinstance(pr.Array):
-                                if is_execution(c):
-                                    return True
-                            elif c.isinstance(pr.Call):
-                                # Compare start_pos, because names may be different
-                                # because of executions.
-                                if c.name.start_pos == name.start_pos \
-                                        and c.execution:
-                                    return True
-                        return False
-
-                    is_exe = False
-                    for assignee, op in par.assignment_details:
-                        is_exe |= is_execution(assignee)
-
-                    if is_exe:
-                        # filter array[3] = ...
-                        # TODO check executions for dict contents
-                        is_array_assignment = True
-                    else:
-                        details = par.assignment_details
-                        if details and details[0][1] != '=':
-                            no_break_scope = True
-
-                        # TODO this makes self variables non-breakable. wanted?
-                        if isinstance(name, er.InstanceElement) \
-                                and not name.is_class_var:
-                            no_break_scope = True
-
-                        result.append(par)
-                else:
-                    # TODO multi-level import non-breakable
-                    if isinstance(par, pr.Import) and len(par.namespace) > 1:
-                        no_break_scope = True
-                    result.append(par)
-                return result, no_break_scope, is_array_assignment
-
-            flow_scope = scope
-            result = []
-            # compare func uses the tuple of line/indent = line/column
-            comparison_func = lambda name: (name.start_pos)
-
-            for nscope, name_list in scope_generator:
-                break_scopes = []
-                # here is the position stuff happening (sorting of variables)
-                for name in sorted(name_list, key=comparison_func, reverse=True):
-                    p = name.parent.parent if name.parent else None
-                    if isinstance(p, er.InstanceElement) \
-                            and isinstance(p.var, pr.Class):
-                        p = p.var
-                    if name_str == name.get_code() and p not in break_scopes:
-                        r, no_break_scope, is_array_assignment = process(name)
-                        if is_goto:
-                            if not is_array_assignment:  # shouldn't goto arr[1] =
-                                result.append(name)
-                        else:
-                            result += r
-                        # for comparison we need the raw class
-                        s = nscope.base if isinstance(nscope, er.Class) else nscope
-                        # this means that a definition was found and is not e.g.
-                        # in if/else.
-                        if result and not no_break_scope:
-                            if not name.parent or p == s:
-                                break
-                            break_scopes.append(p)
-
-                while flow_scope:
-                    # TODO check if result is in scope -> no evaluation necessary
-                    n = dynamic.check_flow_information(self, flow_scope,
-                                                       name_str, position)
-                    if n:
-                        result = n
-                        break
-
-                    if result:
-                        break
-                    if flow_scope == nscope:
-                        break
-                    flow_scope = flow_scope.parent
-                flow_scope = nscope
-                if result:
-                    break
-
-            if not result and isinstance(nscope, er.Instance):
-                # __getattr__ / __getattribute__
-                result += check_getattr(nscope, name_str)
-            debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
-                      % (name_str, scope, nscope, u(result), position))
-            return result
-
-        def descriptor_check(result):
-            """Processes descriptors"""
-            res_new = []
-            for r in result:
-                if isinstance(scope, (er.Instance, er.Class)) \
-                        and hasattr(r, 'get_descriptor_return'):
-                    # handle descriptors
-                    with common.ignored(KeyError):
-                        res_new += r.get_descriptor_return(scope)
-                        continue
-                res_new.append(r)
-            return res_new
-
-        if search_global:
-            scope_generator = self.get_names_of_scope(scope, position=position)
-        else:
-            if isinstance(scope, er.Instance):
-                scope_generator = scope.scope_generator()
-            else:
-                if isinstance(scope, (er.Class, pr.Module)):
-                    # classes are only available directly via chaining?
-                    # strange stuff...
-                    names = scope.get_defined_names()
-                else:
-                    names = get_defined_names_for_position(scope, position)
-                scope_generator = iter([(scope, names)])
-
+        f = finder.NameFinder(self, scope, name_str, position)
+        scopes = f.scopes(search_global)
         if is_goto:
-            return filter_name(scope_generator)
-        return descriptor_check(remove_statements(filter_name(scope_generator)))
+            return f.filter_name(scopes)
+        return f.find(scopes, resolve_decorator)
 
     @memoize_default(default=(), evaluator_is_first_arg=True)
     @recursion.recursion_decorator
@@ -499,7 +214,7 @@ class Evaluator(object):
         if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
             new_result = []
             for ass_expression_list, op in stmt.assignment_details:
-                new_result += find_assignments(ass_expression_list[0], result, seek_name)
+                new_result += _find_assignments(ass_expression_list[0], result, seek_name)
             result = new_result
         return set(result)
 
@@ -548,7 +263,7 @@ class Evaluator(object):
                     result.append(er.Function(self, call))
                 # With things like params, these can also be functions...
                 elif isinstance(call, pr.Base) and call.isinstance(
-                        er.Function, er.Class, er.Instance, dynamic.ArrayInstance):
+                        er.Function, er.Class, er.Instance, iterable.ArrayInstance):
                     result.append(call)
                 # The string tokens are just operations (+, -, etc.)
                 elif not isinstance(call, (str, unicode)):
@@ -565,7 +280,7 @@ class Evaluator(object):
                         continue
                     result += self.eval_call(call)
                 elif call == '*':
-                    if [r for r in result if isinstance(r, er.Array)
+                    if [r for r in result if isinstance(r, iterable.Array)
                        or isinstance(r, er.Instance)
                        and str(r.name) == 'str']:
                         # if it is an iterable, ignore * operations
@@ -589,17 +304,19 @@ class Evaluator(object):
         current = next(path)
 
         if isinstance(current, pr.Array):
-            types = [er.Array(self, current)]
+            types = [iterable.Array(self, current)]
         else:
             if isinstance(current, pr.NamePart):
                 # This is the first global lookup.
-                scopes = self.find_name(scope, current, position=position,
-                                        search_global=True)
+                scopes = self.find_types(scope, current, position=position,
+                                         search_global=True)
             else:
                 # for pr.Literal
-                scopes = self.find_name(builtin.Builtin.scope, current.type_as_string())
+                scopes = self.find_types(builtin.Builtin.scope, current.type_as_string())
                 # Make instances of those number/string objects.
-                scopes = [er.Instance(self, s, (current.value,)) for s in scopes]
+                scopes = itertools.chain.from_iterable(
+                    self.execute(s, (current.value,)) for s in scopes
+                )
             types = imports.strip_imports(self, scopes)
 
         return self.follow_path(path, types, scope, position=position)
@@ -661,11 +378,11 @@ class Evaluator(object):
                 # This is the typical lookup while chaining things.
                 if filter_private_variable(type, scope, current):
                     return []
-            result = imports.strip_imports(self, self.find_name(type, current,
+            result = imports.strip_imports(self, self.find_types(type, current,
                                            position=position))
         return self.follow_path(path, set(result), scope, position=position)
 
-    def execute(self, obj, params, evaluate_generator=False):
+    def execute(self, obj, params=(), evaluate_generator=False):
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
@@ -677,7 +394,7 @@ class Evaluator(object):
         if obj.isinstance(er.Class):
             # There maybe executions of executions.
             return [er.Instance(self, obj, params)]
-        elif isinstance(obj, er.Generator):
+        elif isinstance(obj, iterable.Generator):
             return obj.iter_content()
         else:
             stmts = []
@@ -724,8 +441,8 @@ class Evaluator(object):
             search_global = True
         follow_res = []
         for s in scopes:
-            follow_res += self.find_name(s, search, pos,
-                                         search_global=search_global, is_goto=True)
+            follow_res += self.find_types(s, search, pos,
+                                          search_global=search_global, is_goto=True)
         return follow_res, search
 
 
@@ -739,62 +456,7 @@ def filter_private_variable(scope, call_scope, var_name):
     return False
 
 
-def check_getattr(inst, name_str):
-    """Checks for both __getattr__ and __getattribute__ methods"""
-    result = []
-    # str is important to lose the NamePart!
-    module = builtin.Builtin.scope
-    name = pr.String(module, "'%s'" % name_str, (0, 0), (0, 0), inst)
-    with common.ignored(KeyError):
-        result = inst.execute_subscope_by_name('__getattr__', [name])
-    if not result:
-        # this is a little bit special. `__getattribute__` is executed
-        # before anything else. But: I know no use case, where this
-        # could be practical and the jedi would return wrong types. If
-        # you ever have something, let me know!
-        with common.ignored(KeyError):
-            result = inst.execute_subscope_by_name('__getattribute__', [name])
-    return result
-
-
-def get_iterator_types(inputs):
-    """Returns the types of any iterator (arrays, yields, __iter__, etc)."""
-    iterators = []
-    # Take the first statement (for has always only
-    # one, remember `in`). And follow it.
-    for it in inputs:
-        if isinstance(it, (er.Generator, er.Array, dynamic.ArrayInstance)):
-            iterators.append(it)
-        else:
-            if not hasattr(it, 'execute_subscope_by_name'):
-                debug.warning('iterator/for loop input wrong', it)
-                continue
-            try:
-                iterators += it.execute_subscope_by_name('__iter__')
-            except KeyError:
-                debug.warning('iterators: No __iter__ method found.')
-
-    result = []
-    for gen in iterators:
-        if isinstance(gen, er.Array):
-            # Array is a little bit special, since this is an internal
-            # array, but there's also the list builtin, which is
-            # another thing.
-            result += gen.get_index_types()
-        elif isinstance(gen, er.Instance):
-            # __iter__ returned an instance.
-            name = '__next__' if is_py3k else 'next'
-            try:
-                result += gen.execute_subscope_by_name(name)
-            except KeyError:
-                debug.warning('Instance has no __next__ function', gen)
-        else:
-            # is a generator
-            result += gen.iter_content()
-    return result
-
-
-def assign_tuples(tup, results, seek_name):
+def _assign_tuples(tup, results, seek_name):
     """
     This is a normal assignment checker. In python functions and other things
     can return tuples:
@@ -833,11 +495,11 @@ def assign_tuples(tup, results, seek_name):
             r = eval_results(i)
 
         # LHS of tuples can be nested, so resolve it recursively
-        result += find_assignments(command, r, seek_name)
+        result += _find_assignments(command, r, seek_name)
     return result
 
 
-def find_assignments(lhs, results, seek_name):
+def _find_assignments(lhs, results, seek_name):
     """
     Check if `seek_name` is in the left hand side `lhs` of assignment.
 
@@ -852,7 +514,7 @@ def find_assignments(lhs, results, seek_name):
     :type seek_name: str
     """
     if isinstance(lhs, pr.Array):
-        return assign_tuples(lhs, results, seek_name)
+        return _assign_tuples(lhs, results, seek_name)
     elif lhs.name.names[-1] == seek_name:
         return results
     else:

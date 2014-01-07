@@ -33,8 +33,6 @@ statements in this scope.  Check this out:
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 """
-from __future__ import with_statement
-
 import os
 import re
 from inspect import cleandoc
@@ -43,7 +41,8 @@ from ast import literal_eval
 from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3k
 from jedi import common
 from jedi import debug
-from jedi.parser import tokenizer as tokenize
+from jedi import cache
+from jedi.parser import tokenize
 
 
 class Base(object):
@@ -331,7 +330,6 @@ class SubModule(Scope, Module):
         super(SubModule, self).__init__(self, start_pos)
         self.path = path
         self.global_vars = []
-        self._name = None
         self.used_names = {}
         self.temp_used_names = []
         # this may be changed depending on fast_parser
@@ -357,10 +355,9 @@ class SubModule(Scope, Module):
         return n
 
     @property
+    @cache.underscore_memoization
     def name(self):
         """ This is used for the goto functions. """
-        if self._name is not None:
-            return self._name
         if self.path is None:
             string = ''  # no path -> empty name
         else:
@@ -371,8 +368,7 @@ class SubModule(Scope, Module):
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # positions are not real therefore choose (0, 0)
         names = [(string, (0, 0))]
-        self._name = Name(self, names, (0, 0), (0, 0), self.use_as_parent)
-        return self._name
+        return Name(self, names, (0, 0), (0, 0), self.use_as_parent)
 
     def is_builtin(self):
         return not (self.path is None or self.path.endswith('.py'))
@@ -771,7 +767,6 @@ class Statement(Simple):
         self.as_names = list(as_names)
 
         # cache
-        self._expression_list = None
         self._assignment_details = []
         # this is important for other scripts
 
@@ -847,14 +842,11 @@ class Statement(Simple):
         self.expression_list()
         return self._assignment_details
 
+    @cache.underscore_memoization
     def expression_list(self):
-        if self._expression_list is None:
-            self._expression_list = ['time neeeeed']  # avoid recursions
-            self._expression_list = self._parse_statement()
-        return self._expression_list
-
-    def _parse_statement(self):
         """
+        Parse a statement.
+
         This is not done in the main parser, because it might be slow and
         most of the statements won't need this data anyway. This is something
         'like' a lazy execution.

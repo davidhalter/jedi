@@ -3,7 +3,7 @@ This caching is very important for speed and memory optimizations. There's
 nothing really spectacular, just some decorators. The following cache types are
 available:
 
-- module caching (`load_module` and `save_module`), which uses pickle and is
+- module caching (`load_parser` and `save_parser`), which uses pickle and is
   really important to assure low load times of modules like ``numpy``.
 - ``time_cache`` can be used to cache something for just a limited time span,
   which can be useful if there's user interaction and the user cannot react
@@ -13,8 +13,6 @@ This module is one of the reasons why |jedi| is not thread-safe. As you can see
 there are global variables, which are holding the cache information. Some of
 these variables are being cleaned after every API usage.
 """
-from __future__ import with_statement
-
 import time
 import os
 import sys
@@ -102,6 +100,37 @@ def cache_call_signatures(stmt):
     return None if module_path is None else (module_path, stmt.start_pos)
 
 
+def underscore_memoization(func):
+    """
+    Decorator for methods::
+
+        class A(object):
+            def x(self):
+                if self._x:
+                    self._x = 10
+                return self._x
+
+    Becomes::
+
+        class A(object):
+            @underscore_memoization
+            def x(self):
+                return 10
+
+    A now has an attribute ``_x`` written by this decorator.
+    """
+    def wrapper(self):
+        name = '_' + func.__name__
+        try:
+            return getattr(self, name)
+        except AttributeError:
+            result = func(self)
+            setattr(self, name, result)
+            return result
+
+    return wrapper
+
+
 def cache_star_import(func):
     def wrapper(evaluator, scope, *args, **kwargs):
         with common.ignored(KeyError):
@@ -109,7 +138,7 @@ def cache_star_import(func):
             if mods[0] + settings.star_import_cache_validity > time.time():
                 return mods[1]
         # cache is too old and therefore invalid or not available
-        invalidate_star_import_cache(scope)
+        _invalidate_star_import_cache_module(scope)
         mods = func(evaluator, scope, *args, **kwargs)
         _star_import_cache[scope] = time.time(), mods
 
@@ -117,7 +146,7 @@ def cache_star_import(func):
     return wrapper
 
 
-def invalidate_star_import_cache(module, only_main=False):
+def _invalidate_star_import_cache_module(module, only_main=False):
     """ Important if some new modules are being reparsed """
     with common.ignored(KeyError):
         t, mods = _star_import_cache[module]
@@ -125,40 +154,51 @@ def invalidate_star_import_cache(module, only_main=False):
         del _star_import_cache[module]
 
         for m in mods:
-            invalidate_star_import_cache(m, only_main=True)
+            _invalidate_star_import_cache_module(m, only_main=True)
 
     if not only_main:
         # We need a list here because otherwise the list is being changed
         # during the iteration in py3k: iteritems -> items.
         for key, (t, mods) in list(_star_import_cache.items()):
             if module in mods:
-                invalidate_star_import_cache(key)
+                _invalidate_star_import_cache_module(key)
 
 
-def load_module(path, name):
+def invalidate_star_import_cache(path):
+    """On success returns True."""
+    try:
+        parser_cache_item = parser_cache[path]
+    except KeyError:
+        return False
+    else:
+        _invalidate_star_import_cache_module(parser_cache_item.parser.module)
+        return True
+
+
+def load_parser(path, name):
     """
     Returns the module or None, if it fails.
     """
     if path is None and name is None:
         return None
 
-    tim = os.path.getmtime(path) if path else None
+    p_time = os.path.getmtime(path) if path else None
     n = name if path is None else path
     try:
         parser_cache_item = parser_cache[n]
-        if not path or tim <= parser_cache_item.change_time:
+        if not path or p_time <= parser_cache_item.change_time:
             return parser_cache_item.parser
         else:
             # In case there is already a module cached and this module
             # has to be reparsed, we also need to invalidate the import
             # caches.
-            invalidate_star_import_cache(parser_cache_item.parser.module)
+            _invalidate_star_import_cache_module(parser_cache_item.parser.module)
     except KeyError:
         if settings.use_filesystem_cache:
-            return ModulePickling.load_module(n, tim)
+            return ParserPickling.load_parser(n, p_time)
 
 
-def save_module(path, name, parser, pickling=True):
+def save_parser(path, name, parser, pickling=True):
     try:
         p_time = None if not path else os.path.getmtime(path)
     except OSError:
@@ -169,10 +209,10 @@ def save_module(path, name, parser, pickling=True):
     item = ParserCacheItem(parser, p_time)
     parser_cache[n] = item
     if settings.use_filesystem_cache and pickling:
-        ModulePickling.save_module(n, item)
+        ParserPickling.save_parser(n, item)
 
 
-class _ModulePickling(object):
+class ParserPickling(object):
 
     version = 7
     """
@@ -200,7 +240,7 @@ class _ModulePickling(object):
         .. todo:: Detect interpreter (e.g., PyPy).
         """
 
-    def load_module(self, path, original_changed_time):
+    def load_parser(self, path, original_changed_time):
         try:
             pickle_changed_time = self._index[path]
         except KeyError:
@@ -221,7 +261,7 @@ class _ModulePickling(object):
         parser_cache[path] = parser_cache_item
         return parser_cache_item.parser
 
-    def save_module(self, path, parser_cache_item):
+    def save_parser(self, path, parser_cache_item):
         self.__index = None
         try:
             files = self._index
@@ -282,4 +322,4 @@ class _ModulePickling(object):
 
 
 # is a singleton
-ModulePickling = _ModulePickling()
+ParserPickling = ParserPickling()

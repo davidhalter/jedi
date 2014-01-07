@@ -21,7 +21,6 @@ possible to access functions like ``list`` and ``int`` directly, the same way
 |jedi| access other functions.
 """
 
-from __future__ import with_statement
 from jedi._compatibility import exec_function, is_py3k
 
 import re
@@ -35,10 +34,12 @@ import inspect
 from jedi import common
 from jedi import debug
 from jedi.parser import Parser
-from jedi import modules
+from jedi.parser import fast
+from jedi.evaluate.sys_path import get_sys_path
+from jedi import cache
 
 
-class BuiltinModule(modules.CachedModule):
+class BuiltinModule(object):
     """
     This module is a parser for all builtin modules, which are programmed in
     C/C++. It should also work on third party modules.
@@ -68,17 +69,33 @@ class BuiltinModule(modules.CachedModule):
 
     def __init__(self, path=None, name=None, sys_path=None):
         if sys_path is None:
-            sys_path = modules.get_sys_path()
+            sys_path = get_sys_path()
+        self.sys_path = list(sys_path)
+
         if not name:
             name = os.path.basename(path)
             name = name.rpartition('.')[0]  # cut file type (normally .so)
-        super(BuiltinModule, self).__init__(path=path, name=name)
+        self.name = name
 
-        self.sys_path = list(sys_path)
-        self._module = None
+        self.path = path and os.path.abspath(path)
 
     @property
+    @cache.underscore_memoization
+    def parser(self):
+        """ get the parser lazy """
+        return cache.load_parser(self.path, self.name) or self._load_module()
+
+    def _load_module(self):
+        source = _generate_code(self.module, self._load_mixins())
+        p = self.path or self.name
+        p = fast.FastParser(source, p)
+        cache.save_parser(self.path, self.name, p)
+        return p
+
+    @property
+    @cache.underscore_memoization
     def module(self):
+        """get module also lazy"""
         def load_module(name, path):
             if path:
                 self.sys_path.insert(0, path)
@@ -87,40 +104,33 @@ class BuiltinModule(modules.CachedModule):
             content = {}
             try:
                 exec_function('import %s as module' % name, content)
-                self._module = content['module']
+                module = content['module']
             except AttributeError:
                 # use sys.modules, because you cannot access some modules
                 # directly. -> #59
-                self._module = sys.modules[name]
+                module = sys.modules[name]
             sys.path = temp
 
             if path:
                 self.sys_path.pop(0)
+            return module
 
         # module might already be defined
-        if not self._module:
-            path = self.path
-            name = self.name
-            if self.path:
-
-                dot_path = []
-                p = self.path
-                # search for the builtin with the correct path
-                while p and p not in sys.path:
-                    p, sep, mod = p.rpartition(os.path.sep)
-                    dot_path.append(mod.partition('.')[0])
-                if p:
-                    name = ".".join(reversed(dot_path))
-                    path = p
-                else:
-                    path = os.path.dirname(self.path)
-
-            load_module(name, path)
-        return self._module
-
-    def _get_source(self):
-        """ Override this abstract method """
-        return _generate_code(self.module, self._load_mixins())
+        path = self.path
+        name = self.name
+        if self.path:
+            dot_path = []
+            p = self.path
+            # search for the builtin with the correct path
+            while p and p not in sys.path:
+                p, sep, mod = p.rpartition(os.path.sep)
+                dot_path.append(mod.partition('.')[0])
+            if p:
+                name = ".".join(reversed(dot_path))
+                path = p
+            else:
+                path = os.path.dirname(self.path)
+        return load_module(name, path)
 
     def _load_mixins(self):
         """
@@ -158,14 +168,14 @@ class BuiltinModule(modules.CachedModule):
                     raise NotImplementedError()
             return funcs
 
-        try:
-            name = self.name
-            # sometimes there are stupid endings like `_sqlite3.cpython-32mu`
-            name = re.sub(r'\..*', '', name)
+        name = self.name
+        # sometimes there are stupid endings like `_sqlite3.cpython-32mu`
+        name = re.sub(r'\..*', '', name)
 
-            if name == '__builtin__' and not is_py3k:
-                name = 'builtins'
-            path = os.path.dirname(os.path.abspath(__file__))
+        if name == '__builtin__' and not is_py3k:
+            name = 'builtins'
+        path = os.path.dirname(os.path.abspath(__file__))
+        try:
             with open(os.path.join(path, 'mixin', name) + '.pym') as f:
                 s = f.read()
         except IOError:
@@ -416,13 +426,10 @@ class Builtin(object):
     else:
         name = '__builtin__'
 
-    _builtin = None
-
     @property
+    @cache.underscore_memoization
     def builtin(self):
-        if self._builtin is None:
-            self._builtin = BuiltinModule(name=self.name)
-        return self._builtin
+        return BuiltinModule(name=self.name)
 
     @property
     def scope(self):

@@ -111,14 +111,6 @@ def find_return_types(evaluator, func):
             if match:
                 return match.group(1)
 
-    from jedi.evaluate import representation as er
-
-    if isinstance(func, er.InstanceElement):
-        func = func.var
-
-    if isinstance(func, er.Function):
-        func = func.base_func
-
     type_str = search_return_in_docstr(func.docstr)
     if not type_str:
         return []

@@ -11,20 +11,20 @@ correct implementation is delegated to _compatibility.
 This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
-from __future__ import with_statement
-
 import os
 import pkgutil
 import sys
 import itertools
 
 from jedi._compatibility import find_module
-from jedi import modules
 from jedi import common
 from jedi import debug
-from jedi.parser import representation as pr
 from jedi import cache
-from jedi.evaluate import builtin
+from jedi.parser import fast
+from jedi.parser import representation as pr
+from jedi.evaluate import sys_path
+from jedi import settings
+from jedi.common import source_to_unicode
 
 
 class ModuleNotFound(Exception):
@@ -111,9 +111,9 @@ class ImportPath(pr.Base):
 
                     if self._is_relative_import():
                         rel_path = self._get_relative_path() + '/__init__.py'
-                        with common.ignored(IOError):
-                            m = modules.Module(rel_path)
-                            names += m.parser.module.get_defined_names()
+                        if os.path.exists(rel_path):
+                            m = load_module(rel_path)
+                            names += m.get_defined_names()
             else:
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
@@ -178,7 +178,7 @@ class ImportPath(pr.Base):
                     in_path.append(new)
 
         module = self.import_stmt.get_parent_until()
-        return in_path + modules.sys_path_with_modifications(module)
+        return in_path + sys_path.sys_path_with_modifications(module)
 
     def follow(self, is_goto=False):
         """
@@ -212,7 +212,7 @@ class ImportPath(pr.Base):
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
-                        self._evaluator.find_name(s, rest[0], is_goto=True)
+                        self._evaluator.find_types(s, rest[0], is_goto=True)
                         for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
@@ -285,7 +285,7 @@ class ImportPath(pr.Base):
                 sys_path_mod.append(temp_path)
                 old_path, temp_path = temp_path, os.path.dirname(temp_path)
         else:
-            sys_path_mod = list(modules.get_sys_path())
+            sys_path_mod = list(sys_path.get_sys_path())
 
         return self._follow_sys_path(sys_path_mod)
 
@@ -359,14 +359,9 @@ class ImportPath(pr.Base):
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
-            if path.endswith('.py'):
-                f = modules.Module(path, source)
-            else:
-                f = builtin.BuiltinModule(path=path)
+            return load_module(path, source), rest
         else:
-            f = builtin.BuiltinModule(name=path)
-
-        return f.parser.module, rest
+            return load_module(name=path), rest
 
 
 def strip_imports(evaluator, scopes):
@@ -400,3 +395,65 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
 
     # Filter duplicate modules.
     return set(modules)
+
+
+def load_module(path=None, source=None, name=None):
+    def load(source):
+        if path is not None and path.endswith('.py'):
+            if source is None:
+                with open(path) as f:
+                    source = f.read()
+        else:
+            # TODO refactoring remove
+            from jedi.evaluate import builtin
+            return builtin.BuiltinModule(path, name).parser.module
+        p = path or name
+        p = fast.FastParser(common.source_to_unicode(source), p)
+        cache.save_parser(path, name, p)
+        return p.module
+
+    cached = cache.load_parser(path, name)
+    return load(source) if cached is None else cached.module
+
+
+def get_modules_containing_name(mods, name):
+    """
+    Search a name in the directories of modules.
+    """
+    def check_python_file(path):
+        try:
+            return cache.parser_cache[path].parser.module
+        except KeyError:
+            try:
+                return check_fs(path)
+            except IOError:
+                return None
+
+    def check_fs(path):
+        with open(path) as f:
+            source = source_to_unicode(f.read())
+            if name in source:
+                return load_module(path, source)
+
+    # skip non python modules
+    mods = set(m for m in mods if m.path is None or m.path.endswith('.py'))
+    mod_paths = set()
+    for m in mods:
+        mod_paths.add(m.path)
+        yield m
+
+    if settings.dynamic_params_for_other_modules:
+        paths = set(settings.additional_dynamic_modules)
+        for p in mod_paths:
+            if p is not None:
+                d = os.path.dirname(p)
+                for entry in os.listdir(d):
+                    if entry not in mod_paths:
+                        if entry.endswith('.py'):
+                            paths.add(d + os.path.sep + entry)
+
+        for p in sorted(paths):
+            # make testing easier, sort it - same results on every interpreter
+            c = check_python_file(p)
+            if c is not None and c not in mods:
+                yield c
