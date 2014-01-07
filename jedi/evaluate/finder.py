@@ -158,8 +158,10 @@ class NameFinder(object):
             typ = name.parent
             if typ.isinstance(pr.ForFlow):
                 types += self._handle_for_loops(typ)
+            elif isinstance(typ, pr.Param):
+                types += self._eval_param(typ)
             elif typ.isinstance(pr.Statement):
-                types += self._remove_statements(typ, resolve_decorator)
+                types += self._remove_statements(typ)
             else:
                 if isinstance(typ, pr.Class):
                     typ = er.Class(self._evaluator, typ)
@@ -170,7 +172,7 @@ class NameFinder(object):
                 types.append(typ)
         return types
 
-    def _remove_statements(self, r, resolve_decorator=False):
+    def _remove_statements(self, stmt):
         """
         This is the part where statements are being stripped.
 
@@ -178,38 +180,31 @@ class NameFinder(object):
         evaluated.
         """
         evaluator = self._evaluator
-        res_new = []
-        add = []
-        check_instance = None
-        if isinstance(r, er.InstanceElement) and r.is_class_var:
-            check_instance = r.instance
-            r = r.var
-
-        # Global variables handling.
-        if r.is_global():
-            for token_name in r.token_list[1:]:
+        types = []
+        if stmt.is_global():
+            # global keyword handling.
+            for token_name in stmt.token_list[1:]:
                 if isinstance(token_name, pr.Name):
-                    return evaluator.find_types(r.parent, str(token_name))
+                    return evaluator.find_types(stmt.parent, str(token_name))
         else:
-            # generated objects are used within executions, but these
-            # objects are in functions, and we have to dynamically
-            # execute first.
-            if isinstance(r, pr.Param):
-                return self._eval_param(r)
             # Remove the statement docstr stuff for now, that has to be
             # implemented with the evaluator class.
-            #if r.docstr:
-                #res_new.append(r)
+            #if stmt.docstr:
+                #res_new.append(stmt)
 
-            add += evaluator.eval_statement(r, seek_name=self.name_str)
+            check_instance = None
+            if isinstance(stmt, er.InstanceElement) and stmt.is_class_var:
+                check_instance = stmt.instance
+                stmt = stmt.var
 
-        if check_instance is not None:
-            # class renames
-            add = [er.InstanceElement(evaluator, check_instance, a, True)
-                   if isinstance(a, (er.Function, pr.Function))
-                   else a for a in add]
+            types += evaluator.eval_statement(stmt, seek_name=self.name_str)
 
-        return res_new + add
+            if check_instance is not None:
+                # class renames
+                types = [er.InstanceElement(evaluator, check_instance, a, True)
+                         if isinstance(a, (er.Function, pr.Function))
+                         else a for a in types]
+        return types
 
     def _eval_param(self, r):
         evaluator = self._evaluator
@@ -222,10 +217,10 @@ class NameFinder(object):
         if func is not None \
                 and isinstance(until(), pr.Class) \
                 and r.position_nr == 0:
-            # This is where self gets added - this happens at another
-            # place, if the var_args are clear. But sometimes the class is
-            # not known. Therefore add a new instance for self. Otherwise
-            # take the existing.
+            # This is where self gets added - this happens at another place, if
+            # the var_args are clear. But sometimes the class is not known.
+            # Therefore add a new instance for self. Otherwise take the
+            # existing.
             if isinstance(self.scope, er.InstanceElement):
                 res_new.append(self.scope.instance)
             else:
@@ -234,9 +229,8 @@ class NameFinder(object):
                     res_new.append(inst)
             return res_new
 
-        # Instances are typically faked, if the instance is not
-        # called from outside. Here we check it for __init__
-        # functions and return.
+        # Instances are typically faked, if the instance is not called from
+        # outside. Here we check it for __init__ functions and return.
         if isinstance(func, er.InstanceElement) \
                 and func.instance.is_generated \
                 and hasattr(func, 'name') \
