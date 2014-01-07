@@ -211,20 +211,15 @@ class NameFinder(object):
         res_new = []
         func = r.parent
 
-        exc = pr.Class, pr.Function
-        until = lambda: func.parent.get_parent_until(exc)
+        cls = func.parent.get_parent_until((pr.Class, pr.Function))
 
-        if func is not None \
-                and isinstance(until(), pr.Class) \
-                and r.position_nr == 0:
-            # This is where self gets added - this happens at another place, if
-            # the var_args are clear. But sometimes the class is not known.
-            # Therefore add a new instance for self. Otherwise take the
-            # existing.
+        if isinstance(cls, pr.Class) and r.position_nr == 0:
+            # This is where we add self - if it has never been
+            # instantiated.
             if isinstance(self.scope, er.InstanceElement):
                 res_new.append(self.scope.instance)
             else:
-                for inst in self._evaluator.execute(er.Class(self._evaluator, until())):
+                for inst in evaluator.execute(er.Class(evaluator, cls)):
                     inst.is_generated = True
                     res_new.append(inst)
             return res_new
@@ -232,19 +227,16 @@ class NameFinder(object):
         # Instances are typically faked, if the instance is not called from
         # outside. Here we check it for __init__ functions and return.
         if isinstance(func, er.InstanceElement) \
-                and func.instance.is_generated \
-                and hasattr(func, 'name') \
-                and str(func.name) == '__init__' \
-                and r.position_nr > 0:  # 0 would be self
+                and func.instance.is_generated and str(func.name) == '__init__':
             r = func.var.params[r.position_nr]
 
-        # add docstring knowledge
+        # Add docstring knowledge.
         doc_params = docstrings.follow_param(evaluator, r)
         if doc_params:
-            res_new += doc_params
-            return res_new
+            return doc_params
 
         if not r.is_generated:
+            # Param owns no information itself.
             res_new += dynamic.search_params(evaluator, r)
             if not res_new:
                 c = r.expression_list()[0]
