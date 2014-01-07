@@ -53,9 +53,8 @@ def get_params(evaluator, func, var_args):
     param_dict = {}
     for param in func.params:
         param_dict[str(param.get_name())] = param
-    # There may be calls, which don't fit all the params, this just ignores
-    # it.
-    var_arg_iterator = _get_var_args_iterator(evaluator, var_args)
+    # There may be calls, which don't fit all the params, this just ignores it.
+    var_arg_iterator = common.PushBackIterator(_var_args_iterator(evaluator, var_args))
 
     non_matching_keys = []
     keys_used = set()
@@ -63,9 +62,8 @@ def get_params(evaluator, func, var_args):
     for param in func.params[start_offset:]:
         # The value and key can both be null. There, the defaults apply.
         # args / kwargs will just be empty arrays / dicts, respectively.
-        # Wrong value count is just ignored. If you try to test cases that
-        # are not allowed in Python, Jedi will maybe not show any
-        # completions.
+        # Wrong value count is just ignored. If you try to test cases that are
+        # not allowed in Python, Jedi will maybe not show any completions.
         key, value = next(var_arg_iterator, (None, None))
         while key:
             keys_only = True
@@ -75,8 +73,7 @@ def get_params(evaluator, func, var_args):
                 non_matching_keys.append((key, value))
             else:
                 keys_used.add(str(key))
-                result.append(gen_param_name_copy(key_param,
-                                                  values=[value]))
+                result.append(gen_param_name_copy(key_param, values=[value]))
             key, value = next(var_arg_iterator, (None, None))
 
         expression_list = param.expression_list()
@@ -111,17 +108,17 @@ def get_params(evaluator, func, var_args):
                     result.append(param.get_name())
                     param.is_generated = True
                 else:
-                    # If there is no assignment detail, that means there is
-                    # no assignment, just the result. Therefore nothing has
-                    # to be returned.
+                    # If there is no assignment detail, that means there is no
+                    # assignment, just the result. Therefore nothing has to be
+                    # returned.
                     values = []
 
-        # Just ignore all the params that are without a key, after one
-        # keyword argument was set.
+        # Just ignore all the params that are without a key, after one keyword
+        # argument was set.
         if not ignore_creation and (not keys_only or expression_list[0] == '**'):
             keys_used.add(str(key))
-            result.append(gen_param_name_copy(param, keys=keys,
-                                              values=values, array_type=array_type))
+            result.append(gen_param_name_copy(param, keys=keys, values=values,
+                                              array_type=array_type))
 
     if keys_only:
         # sometimes param arguments are not completely written (which would
@@ -131,61 +128,55 @@ def get_params(evaluator, func, var_args):
     return result
 
 
-def _get_var_args_iterator(evaluator, var_args):
+def _var_args_iterator(evaluator, var_args):
     """
     Yields a key/value pair, the key is None, if its not a named arg.
     """
-    def iterate():
-        # `var_args` is typically an Array, and not a list.
-        for stmt in var_args:
-            if not isinstance(stmt, pr.Statement):
-                if stmt is None:
-                    yield None, None
-                    continue
-                old = stmt
-                # generate a statement if it's not already one.
-                module = builtin.Builtin.scope
-                stmt = pr.Statement(module, [], (0, 0), None)
-                stmt._expression_list = [old]
-
-            # *args
-            expression_list = stmt.expression_list()
-            if not len(expression_list):
+    # `var_args` is typically an Array, and not a list.
+    for stmt in var_args:
+        if not isinstance(stmt, pr.Statement):
+            if stmt is None:
+                yield None, None
                 continue
-            if expression_list[0] == '*':
-                arrays = evaluator.eval_expression_list(expression_list[1:])
-                # *args must be some sort of an array, otherwise -> ignore
+            old = stmt
+            # generate a statement if it's not already one.
+            module = builtin.Builtin.scope
+            stmt = pr.Statement(module, [], (0, 0), None)
+            stmt._expression_list = [old]
 
-                for array in arrays:
-                    if isinstance(array, iterable.Array):
-                        for field_stmt in array:  # yield from plz!
-                            yield None, field_stmt
-                    elif isinstance(array, iterable.Generator):
-                        for field_stmt in array.iter_content():
-                            yield None, _FakeStatement(field_stmt)
-            # **kwargs
-            elif expression_list[0] == '**':
-                arrays = evaluator.eval_expression_list(expression_list[1:])
-                for array in arrays:
-                    if isinstance(array, iterable.Array):
-                        for key_stmt, value_stmt in array.items():
-                            # first index, is the key if syntactically correct
-                            call = key_stmt.expression_list()[0]
-                            if isinstance(call, pr.Name):
-                                yield call, value_stmt
-                            elif isinstance(call, pr.Call):
-                                yield call.name, value_stmt
-            # Normal arguments (including key arguments).
+        # *args
+        expression_list = stmt.expression_list()
+        if not len(expression_list):
+            continue
+        if expression_list[0] == '*':
+            # *args must be some sort of an array, otherwise -> ignore
+            for array in evaluator.eval_expression_list(expression_list[1:]):
+                if isinstance(array, iterable.Array):
+                    for field_stmt in array:  # yield from plz!
+                        yield None, field_stmt
+                elif isinstance(array, iterable.Generator):
+                    for field_stmt in array.iter_content():
+                        yield None, _FakeStatement(field_stmt)
+        # **kwargs
+        elif expression_list[0] == '**':
+            for array in evaluator.eval_expression_list(expression_list[1:]):
+                if isinstance(array, iterable.Array):
+                    for key_stmt, value_stmt in array.items():
+                        # first index, is the key if syntactically correct
+                        call = key_stmt.expression_list()[0]
+                        if isinstance(call, pr.Name):
+                            yield call, value_stmt
+                        elif isinstance(call, pr.Call):
+                            yield call.name, value_stmt
+        # Normal arguments (including key arguments).
+        else:
+            if stmt.assignment_details:
+                key_arr, op = stmt.assignment_details[0]
+                # named parameter
+                if key_arr and isinstance(key_arr[0], pr.Call):
+                    yield key_arr[0].name, stmt
             else:
-                if stmt.assignment_details:
-                    key_arr, op = stmt.assignment_details[0]
-                    # named parameter
-                    if key_arr and isinstance(key_arr[0], pr.Call):
-                        yield key_arr[0].name, stmt
-                else:
-                    yield None, stmt
-
-    return iter(common.PushBackIterator(iterate()))
+                yield None, stmt
 
 
 class _FakeSubModule():
@@ -194,6 +185,5 @@ class _FakeSubModule():
 
 class _FakeStatement(pr.Statement):
     def __init__(self, content):
-        cls = type(self)
         p = 0, 0
-        super(cls, self).__init__(_FakeSubModule, [content], p, p)
+        super(_FakeStatement, self).__init__(_FakeSubModule, [content], p, p)
