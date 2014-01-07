@@ -330,7 +330,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                 # check recursion
                 continue
 
-            res += check_calls(helpers.scan_statement(stmt, n), n)
+            res += check_calls(helpers.scan_statement_for_calls(stmt, n), n)
             evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add

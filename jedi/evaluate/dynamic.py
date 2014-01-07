@@ -103,7 +103,7 @@ def search_params(evaluator, param):
             for stmt in possible_stmts:
                 if isinstance(stmt, pr.Import):
                     continue
-                calls = helpers.scan_statement(stmt, func_name)
+                calls = helpers.scan_statement_for_calls(stmt, func_name)
                 for c in calls:
                     # no execution means that params cannot be set
                     call_path = list(c.generate_call_path())

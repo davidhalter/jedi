@@ -170,17 +170,17 @@ def search_call_signatures(stmt, pos):
     return None, 0, False
 
 
-def scan_statement(stmt, search_name, assignment_details=False):
-    """ Returns the function Call that match search_name in an Array. """
+def scan_statement_for_calls(stmt, search_name, assignment_details=False):
+    """ Returns the function Calls that match search_name in an Array. """
     def scan_array(arr, search_name):
         result = []
         if arr.type == pr.Array.DICT:
             for key_stmt, value_stmt in arr.items():
-                result += scan_statement(key_stmt, search_name)
-                result += scan_statement(value_stmt, search_name)
+                result += scan_statement_for_calls(key_stmt, search_name)
+                result += scan_statement_for_calls(value_stmt, search_name)
         else:
             for stmt in arr:
-                result += scan_statement(stmt, search_name)
+                result += scan_statement_for_calls(stmt, search_name)
         return result
 
     check = list(stmt.expression_list())
