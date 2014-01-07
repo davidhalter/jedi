@@ -161,14 +161,13 @@ class NameFinder(object):
             elif typ.isinstance(pr.Statement):
                 types += self._remove_statements(typ, resolve_decorator)
             else:
-                r = typ
-                if isinstance(r, pr.Class):
-                    r = er.Class(self._evaluator, r)
-                elif isinstance(r, pr.Function):
-                    r = er.Function(self._evaluator, r)
-                if r.isinstance(er.Function) and resolve_decorator:
-                    r = r.get_decorated_func()
-                types.append(r)
+                if isinstance(typ, pr.Class):
+                    typ = er.Class(self._evaluator, typ)
+                elif isinstance(typ, pr.Function):
+                    typ = er.Function(self._evaluator, typ)
+                if typ.isinstance(er.Function) and resolve_decorator:
+                    typ = typ.get_decorated_func()
+                types.append(typ)
         return types
 
     def _remove_statements(self, r, resolve_decorator=False):
@@ -190,59 +189,13 @@ class NameFinder(object):
         if r.is_global():
             for token_name in r.token_list[1:]:
                 if isinstance(token_name, pr.Name):
-                    add = evaluator.find_types(r.parent, str(token_name))
+                    return evaluator.find_types(r.parent, str(token_name))
         else:
             # generated objects are used within executions, but these
             # objects are in functions, and we have to dynamically
             # execute first.
             if isinstance(r, pr.Param):
-                func = r.parent
-
-                exc = pr.Class, pr.Function
-                until = lambda: func.parent.get_parent_until(exc)
-
-                if func is not None \
-                        and isinstance(until(), pr.Class) \
-                        and r.position_nr == 0:
-                    # This is where self gets added - this happens at another
-                    # place, if the var_args are clear. But sometimes the class is
-                    # not known. Therefore add a new instance for self. Otherwise
-                    # take the existing.
-                    if isinstance(self.scope, er.InstanceElement):
-                        res_new.append(self.scope.instance)
-                    else:
-                        for inst in self._evaluator.execute(er.Class(self._evaluator, until())):
-                            inst.is_generated = True
-                            res_new.append(inst)
-                    return res_new
-
-                # Instances are typically faked, if the instance is not
-                # called from outside. Here we check it for __init__
-                # functions and return.
-                if isinstance(func, er.InstanceElement) \
-                        and func.instance.is_generated \
-                        and hasattr(func, 'name') \
-                        and str(func.name) == '__init__' \
-                        and r.position_nr > 0:  # 0 would be self
-                    r = func.var.params[r.position_nr]
-
-                # add docstring knowledge
-                doc_params = docstrings.follow_param(evaluator, r)
-                if doc_params:
-                    res_new += doc_params
-                    return res_new
-
-                if not r.is_generated:
-                    res_new += dynamic.search_params(evaluator, r)
-                    if not res_new:
-                        c = r.expression_list()[0]
-                        if c in ('*', '**'):
-                            t = 'tuple' if c == '*' else 'dict'
-                            res_new = evaluator.execute(evaluator.find_types(builtin.Builtin.scope, t)[0])
-                    if not r.assignment_details:
-                        # this means that there are no default params,
-                        # so just ignore it.
-                        return res_new
+                return self._eval_param(r)
             # Remove the statement docstr stuff for now, that has to be
             # implemented with the evaluator class.
             #if r.docstr:
@@ -257,6 +210,58 @@ class NameFinder(object):
                    else a for a in add]
 
         return res_new + add
+
+    def _eval_param(self, r):
+        evaluator = self._evaluator
+        res_new = []
+        func = r.parent
+
+        exc = pr.Class, pr.Function
+        until = lambda: func.parent.get_parent_until(exc)
+
+        if func is not None \
+                and isinstance(until(), pr.Class) \
+                and r.position_nr == 0:
+            # This is where self gets added - this happens at another
+            # place, if the var_args are clear. But sometimes the class is
+            # not known. Therefore add a new instance for self. Otherwise
+            # take the existing.
+            if isinstance(self.scope, er.InstanceElement):
+                res_new.append(self.scope.instance)
+            else:
+                for inst in self._evaluator.execute(er.Class(self._evaluator, until())):
+                    inst.is_generated = True
+                    res_new.append(inst)
+            return res_new
+
+        # Instances are typically faked, if the instance is not
+        # called from outside. Here we check it for __init__
+        # functions and return.
+        if isinstance(func, er.InstanceElement) \
+                and func.instance.is_generated \
+                and hasattr(func, 'name') \
+                and str(func.name) == '__init__' \
+                and r.position_nr > 0:  # 0 would be self
+            r = func.var.params[r.position_nr]
+
+        # add docstring knowledge
+        doc_params = docstrings.follow_param(evaluator, r)
+        if doc_params:
+            res_new += doc_params
+            return res_new
+
+        if not r.is_generated:
+            res_new += dynamic.search_params(evaluator, r)
+            if not res_new:
+                c = r.expression_list()[0]
+                if c in ('*', '**'):
+                    t = 'tuple' if c == '*' else 'dict'
+                    res_new = evaluator.execute(evaluator.find_types(builtin.Builtin.scope, t)[0])
+            if not r.assignment_details:
+                # this means that there are no default params,
+                # so just ignore it.
+                return res_new
+        return set(res_new) | evaluator.eval_statement(r, seek_name=self.name_str)
 
     def _handle_for_loops(self, loop):
         # Take the first statement (for has always only
