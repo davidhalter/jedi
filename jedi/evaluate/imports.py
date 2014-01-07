@@ -25,6 +25,8 @@ from jedi import cache
 from jedi.parser import fast
 from jedi.parser import representation as pr
 from jedi.evaluate import sys_path
+from jedi import settings
+from jedi.common import source_to_unicode
 
 
 class ModuleNotFound(Exception):
@@ -414,3 +416,46 @@ def load_module(path=None, source=None, name=None):
 
     cached = cache.load_parser(path, name)
     return load(source) if cached is None else cached.module
+
+
+def get_modules_containing_name(mods, name):
+    """
+    Search a name in the directories of modules.
+    """
+    def check_python_file(path):
+        try:
+            return cache.parser_cache[path].parser.module
+        except KeyError:
+            try:
+                return check_fs(path)
+            except IOError:
+                return None
+
+    def check_fs(path):
+        with open(path) as f:
+            source = source_to_unicode(f.read())
+            if name in source:
+                return load_module(path, source)
+
+    # skip non python modules
+    mods = set(m for m in mods if m.path is None or m.path.endswith('.py'))
+    mod_paths = set()
+    for m in mods:
+        mod_paths.add(m.path)
+        yield m
+
+    if settings.dynamic_params_for_other_modules:
+        paths = set(settings.additional_dynamic_modules)
+        for p in mod_paths:
+            if p is not None:
+                d = os.path.dirname(p)
+                for entry in os.listdir(d):
+                    if entry not in mod_paths:
+                        if entry.endswith('.py'):
+                            paths.add(d + os.path.sep + entry)
+
+        for p in sorted(paths):
+            # make testing easier, sort it - same results on every interpreter
+            c = check_python_file(p)
+            if c is not None and c not in mods:
+                yield c

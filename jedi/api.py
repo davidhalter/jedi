@@ -744,7 +744,7 @@ def usages(evaluator, definitions, search_name, mods):
     compare_definitions = compare_array(definitions)
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
-    for m in helpers.get_modules_containing_name(mods, search_name):
+    for m in imports.get_modules_containing_name(mods, search_name):
         try:
             stmts = m.used_names[search_name]
         except KeyError:
@@ -766,8 +766,7 @@ def usages(evaluator, definitions, search_name, mods):
                     if set(f) & set(definitions):
                         names.append(api_classes.Usage(evaluator, name_part, stmt))
             else:
-                for call in helpers.scan_statements(stmt, search_name,
-                                                   assignment_details=True):
+                for call in helpers.scan_statement_for_calls(stmt, search_name, assignment_details=True):
                     names += check_call(call)
     return names
 

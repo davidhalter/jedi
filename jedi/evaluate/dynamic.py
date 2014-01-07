@@ -55,6 +55,7 @@ from jedi.parser import representation as pr
 from jedi import settings
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import memoize_default
+from jedi.evaluate import imports
 
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
@@ -173,7 +174,7 @@ def search_params(evaluator, param):
 
     result = []
     # This is like backtracking: Get the first possible result.
-    for mod in helpers.get_modules_containing_name([current_module], func_name):
+    for mod in imports.get_modules_containing_name([current_module], func_name):
         result = get_params_for_module(mod)
         if result:
             break
