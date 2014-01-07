@@ -26,7 +26,7 @@ from jedi import common
 from jedi import cache
 from jedi import interpret
 from jedi import keywords
-from jedi import api_classes
+from jedi.api import classes
 from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
 from jedi.evaluate import builtin
@@ -84,7 +84,7 @@ class Script(object):
             raise ValueError('`column` parameter is not in a valid range.')
         self._pos = line, column
 
-        api_classes.clear_caches()
+        classes.clear_caches()
         debug.reset_time()
         self.source = common.source_to_unicode(source, encoding)
         self._user_context = UserContext(self.source, self._pos)
@@ -117,11 +117,11 @@ class Script(object):
 
     def completions(self):
         """
-        Return :class:`api_classes.Completion` objects. Those objects contain
+        Return :class:`classes.Completion` objects. Those objects contain
         information about the completions, more than just names.
 
         :return: Completion objects, sorted by name and __ comes last.
-        :rtype: list of :class:`api_classes.Completion`
+        :rtype: list of :class:`classes.Completion`
         """
         def get_completions(user_stmt, bs):
             if isinstance(user_stmt, pr.Import):
@@ -165,7 +165,7 @@ class Script(object):
                     or n.startswith(like):
                 if not filter_private_variable(s,
                             user_stmt or self._parser.user_scope, n):
-                    new = api_classes.Completion(self._evaluator, c, needs_dot, len(like), s)
+                    new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
                         comp_dct[k]._same_name_completions.append(new)
@@ -332,7 +332,7 @@ class Script(object):
         because Python itself is a dynamic language, which means depending on
         an option you can have two different versions of a function.
 
-        :rtype: list of :class:`api_classes.Definition`
+        :rtype: list of :class:`classes.Definition`
         """
         def resolve_import_paths(scopes):
             for s in scopes.copy():
@@ -378,7 +378,7 @@ class Script(object):
         # add keywords
         scopes |= keywords.keywords(string=goto_path, pos=self._pos)
 
-        d = set([api_classes.Definition(self._evaluator, s) for s in scopes
+        d = set([classes.Definition(self._evaluator, s) for s in scopes
                  if s is not imports.ImportPath.GlobalNamespace])
         return self._sorted_defs(d)
 
@@ -389,10 +389,10 @@ class Script(object):
         dynamic language, which means depending on an option you can have two
         different versions of a function.
 
-        :rtype: list of :class:`api_classes.Definition`
+        :rtype: list of :class:`classes.Definition`
         """
         results, _ = self._goto()
-        d = [api_classes.Definition(self._evaluator, d) for d in set(results)
+        d = [classes.Definition(self._evaluator, d) for d in set(results)
              if d is not imports.ImportPath.GlobalNamespace]
         return self._sorted_defs(d)
 
@@ -453,14 +453,14 @@ class Script(object):
 
     def usages(self, additional_module_paths=()):
         """
-        Return :class:`api_classes.Usage` objects, which contain all
+        Return :class:`classes.Usage` objects, which contain all
         names that point to the definition of the name under the cursor. This
         is very useful for refactoring (renaming), or to show all usages of a
         variable.
 
         .. todo:: Implement additional_module_paths
 
-        :rtype: list of :class:`api_classes.Usage`
+        :rtype: list of :class:`classes.Usage`
         """
         temp, settings.dynamic_flow_information = \
             settings.dynamic_flow_information, False
@@ -482,13 +482,13 @@ class Script(object):
 
         for d in set(definitions):
             if isinstance(d, pr.Module):
-                names.append(api_classes.Usage(self._evaluator, d, d))
+                names.append(classes.Usage(self._evaluator, d, d))
             elif isinstance(d, er.Instance):
                 # Instances can be ignored, because they are being created by
                 # ``__getattr__``.
                 pass
             else:
-                names.append(api_classes.Usage(self._evaluator, d.names[-1], d))
+                names.append(classes.Usage(self._evaluator, d.names[-1], d))
 
         settings.dynamic_flow_information = temp
         return self._sorted_defs(set(names))
@@ -507,7 +507,7 @@ class Script(object):
 
         This would return ``None``.
 
-        :rtype: list of :class:`api_classes.CallDef`
+        :rtype: list of :class:`classes.CallDef`
         """
 
         call, index = self._func_call_and_param_index()
@@ -520,7 +520,7 @@ class Script(object):
             origins = cache.cache_call_signatures(_callable, user_stmt)
         debug.speed('func_call followed')
 
-        return [api_classes.CallDef(o, index, call) for o in origins
+        return [classes.CallDef(o, index, call) for o in origins
                 if o.isinstance(er.Function, er.Instance, er.Class)]
 
     def _func_call_and_param_index(self):
@@ -663,13 +663,13 @@ def defined_names(source, path=None, encoding='utf-8'):
     `defined_names` method which can be used to get sub-definitions
     (e.g., methods in class).
 
-    :rtype: list of api_classes.Definition
+    :rtype: list of classes.Definition
     """
     parser = Parser(
         common.source_to_unicode(source, encoding),
         module_path=path,
     )
-    return api_classes._defined_names(Evaluator(), parser.module)
+    return classes._defined_names(Evaluator(), parser.module)
 
 
 def preload_module(*modules):
@@ -734,7 +734,7 @@ def usages(evaluator, definitions, search_name, mods):
             # compare to see if they match
             if any(r in compare_definitions for r in compare_follow_res):
                 scope = call.parent
-                result.append(api_classes.Usage(evaluator, search, scope))
+                result.append(classes.Usage(evaluator, search, scope))
 
         return result
 
@@ -764,7 +764,7 @@ def usages(evaluator, definitions, search_name, mods):
                                            direct_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
-                        names.append(api_classes.Usage(evaluator, name_part, stmt))
+                        names.append(classes.Usage(evaluator, name_part, stmt))
             else:
                 for call in helpers.scan_statement_for_calls(stmt, search_name, assignment_details=True):
                     names += check_call(call)
