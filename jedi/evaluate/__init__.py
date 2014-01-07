@@ -68,8 +68,6 @@ backtracking algorithm.
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
-from __future__ import with_statement
-
 import sys
 import itertools
 

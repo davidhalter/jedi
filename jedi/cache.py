@@ -13,8 +13,6 @@ This module is one of the reasons why |jedi| is not thread-safe. As you can see
 there are global variables, which are holding the cache information. Some of
 these variables are being cleaned after every API usage.
 """
-from __future__ import with_statement
-
 import time
 import os
 import sys

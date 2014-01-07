@@ -12,8 +12,6 @@ following functions (sometimes bug-prone):
 - extract variable
 - inline variable
 """
-from __future__ import with_statement
-
 import difflib
 
 from jedi import common

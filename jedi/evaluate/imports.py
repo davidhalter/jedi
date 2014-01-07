@@ -11,8 +11,6 @@ correct implementation is delegated to _compatibility.
 This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
-from __future__ import with_statement
-
 import os
 import pkgutil
 import sys

@@ -33,8 +33,6 @@ statements in this scope.  Check this out:
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 """
-from __future__ import with_statement
-
 import os
 import re
 from inspect import cleandoc

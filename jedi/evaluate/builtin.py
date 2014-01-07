@@ -21,7 +21,6 @@ possible to access functions like ``list`` and ``int`` directly, the same way
 |jedi| access other functions.
 """
 
-from __future__ import with_statement
 from jedi._compatibility import exec_function, is_py3k
 
 import re

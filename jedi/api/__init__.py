@@ -8,8 +8,6 @@ possible.
 
 .. warning:: Please, note that Jedi is **not thread safe**.
 """
-from __future__ import with_statement
-
 import re
 import os
 import warnings
