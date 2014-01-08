@@ -83,6 +83,7 @@ from jedi.evaluate import iterable
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import stdlib
 from jedi.evaluate import finder
+from jedi.evaluate import compiled
 
 
 class Evaluator(object):
@@ -391,7 +392,9 @@ class Evaluator(object):
         except stdlib.NotInStdLib:
             pass
 
-        if obj.isinstance(er.Class):
+        if isinstance(obj, compiled.PyObject):
+            return obj.execute(params)
+        elif obj.isinstance(er.Class):
             # There maybe executions of executions.
             return [er.Instance(self, obj, params)]
         elif isinstance(obj, iterable.Generator):
