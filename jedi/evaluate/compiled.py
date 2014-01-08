@@ -20,6 +20,9 @@ class PyObject(object):
         self.instantiated = instantiated
         self.doc = inspect.getdoc(obj)
 
+    def __repr__(self):
+        return '<%s: %s>' % (type(self).__name__, self.obj)
+
     @underscore_memoization
     def _parse_function_doc(self):
         if self.doc is None:
@@ -31,10 +34,10 @@ class PyObject(object):
         # We don't want to execute properties, therefore we have to try to get
         # the class
         cls = self
-        if not (inspect.isclass(cls) or inspect.ismodule(cls)):
+        if not (inspect.isclass(self.obj) or inspect.ismodule(self.obj)):
             cls = PyObject(self.obj.__class__, self.parent)
 
-        for name in dir(cls):
+        for name in dir(cls.obj):
             yield PyName(cls, name)
 
     def isinstance(self, *obj):
@@ -47,15 +50,14 @@ class PyObject(object):
 
     def execute(self, params):
         if inspect.isclass(self.obj):
-            return [PyObject(self.obj, self.parent, True)]
+            yield PyObject(self.obj, self.parent, True)
         elif inspect.isbuiltin(self.obj) or inspect.ismethod(self.obj) \
                 or inspect.ismethoddescriptor(self.obj):
-
-            self.doc
-            return []
-        else:
-            return []
-        return []
+            for name in self._parse_function_doc()[1].split():
+                try:
+                    yield PyObject(getattr(_builtins, name), builtin, True)
+                except AttributeError:
+                    pass
 
 
 class PyName(object):
@@ -86,13 +88,14 @@ docstr_defaults = {
     'character': 'str',
     'integer': 'int',
     'dictionary': 'dict',
+    'string': 'str',
 }
 
 if is_py3k:
     #docstr_defaults['file object'] = 'import io; return io.TextIOWrapper()'
     pass  # TODO reenable
 else:
-    docstr_defaults['file object'] = file
+    docstr_defaults['file object'] = 'file'
 
 
 def _parse_function_doc(doc):
@@ -152,10 +155,7 @@ def _parse_function_doc(doc):
         ret_str = re.sub(r'[nN]ew (.*)', r'\1()', ret_str)
 
         ret = docstr_defaults.get(ret_str, ret_str)
-        if ret == ret_str and ret not in ['None', 'object', 'tuple', 'set']:
-            debug.dbg('not working', ret_str)
 
-        ret = ('return ' if 'return' not in ret else '') + ret
     return param_str, ret
 
 
