@@ -3,11 +3,13 @@ Imitate the parser representation.
 """
 import inspect
 import re
+import sys
 
-from jedi._compatibility import builtins as _builtins, is_py3k
+from jedi._compatibility import builtins as _builtins, is_py3k, exec_function
 from jedi import debug
 from jedi.parser.representation import Base
 from jedi.cache import underscore_memoization
+from jedi.evaluate.sys_path import get_sys_path
 
 
 # TODO
@@ -22,7 +24,7 @@ class PyObject(Base):
         self.doc = inspect.getdoc(obj)
 
         # comply with the parser
-        self.get_parent_until = lambda: parent
+        self.get_parent_until = lambda *args, **kwargs: parent
         self.start_pos = 0, 0
 
     def __repr__(self):
@@ -72,8 +74,10 @@ class PyObject(Base):
                     pass
 
     def get_self_attributes(self):
-        # Instance compatibility
-        return []
+        return []  # Instance compatibility
+
+    def get_imports(self):
+        return []  # Builtins don't have imports
 
 
 class PyName(object):
@@ -103,6 +107,25 @@ class PyName(object):
 
     def get_code(self):
         return self._name
+
+
+def load_module(path, name):
+    sys_path = get_sys_path()
+    if path:
+        sys_path.insert(0, path)
+
+    temp, sys.path = sys.path, sys_path
+    content = {}
+    try:
+        exec_function('import %s as module' % name, content)
+        module = content['module']
+    except AttributeError:
+        # use sys.modules, because you cannot access some modules
+        # directly. -> github issue #59
+        module = sys.modules[name]
+    sys.path = temp
+
+    return PyObject(module)
 
 
 docstr_defaults = {
