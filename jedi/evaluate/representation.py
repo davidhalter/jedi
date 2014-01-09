@@ -16,7 +16,7 @@ from jedi.parser import representation as pr
 from jedi import debug
 from jedi import common
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
@@ -49,7 +49,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
     def __init__(self, evaluator, base, var_args=()):
         super(Instance, self).__init__(evaluator, base, var_args)
         if str(base.name) in ['list', 'set'] \
-                and builtin.Builtin.scope == base.get_parent_until():
+                and compiled.builtin == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = iterable.check_array_instances(evaluator, self)
         else:
@@ -256,9 +256,9 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
                     debug.warning('Received non class, as a super class')
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
-        if not supers and self.base.parent != builtin.Builtin.scope:
+        if not supers and self.base.parent != compiled.builtin:
             # add `object` to classes
-            supers += self._evaluator.find_types(builtin.Builtin.scope, 'object')
+            supers += self._evaluator.find_types(compiled.builtin, 'object')
         return supers
 
     @memoize_default(default=())
@@ -286,7 +286,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
     @memoize_default(default=())
     def get_defined_names(self):
         result = self.instance_names()
-        type_cls = self._evaluator.find_types(builtin.Builtin.scope, 'type')[0]
+        type_cls = self._evaluator.find_types(compiled.builtin, 'type')[0]
         return result + type_cls.base.get_defined_names()
 
     def get_subscope_by_name(self, name):

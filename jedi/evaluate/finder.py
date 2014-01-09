@@ -7,7 +7,7 @@ from jedi import common
 from jedi import settings
 from jedi.evaluate import representation as er
 from jedi.evaluate import dynamic
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import docstrings
 from jedi.evaluate import iterable
 
@@ -82,7 +82,7 @@ class NameFinder(object):
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
         result = []
-        module = builtin.Builtin.scope
+        module = compiled.builtin
         # str is important to lose the NamePart!
         name = pr.String(module, "'%s'" % self.name_str, (0, 0), (0, 0), inst)
         with common.ignored(KeyError):
@@ -242,7 +242,8 @@ class NameFinder(object):
                 c = r.expression_list()[0]
                 if c in ('*', '**'):
                     t = 'tuple' if c == '*' else 'dict'
-                    res_new = evaluator.execute(evaluator.find_types(builtin.Builtin.scope, t)[0])
+                    typ = evaluator.find_types(compiled.builtin, t)[0]
+                    res_new = evaluator.execute(typ)
             if not r.assignment_details:
                 # this means that there are no default params,
                 # so just ignore it.

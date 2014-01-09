@@ -76,7 +76,6 @@ from jedi import common
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.evaluate import representation as er
-from jedi.evaluate import builtin
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
@@ -312,7 +311,7 @@ class Evaluator(object):
                                          search_global=True)
             else:
                 # for pr.Literal
-                scopes = self.find_types(builtin.Builtin.scope, current.type_as_string())
+                scopes = self.find_types(compiled.builtin, current.type_as_string())
                 # Make instances of those number/string objects.
                 scopes = itertools.chain.from_iterable(
                     self.execute(s, (current.value,)) for s in scopes
