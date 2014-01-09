@@ -63,7 +63,7 @@ class PyObject(Base):
     @property
     def name(self):
         # might not exist sometimes (raises AttributeError)
-        return self.obj.__name__
+        return self._cls().obj.__name__
 
     def execute(self, params):
         t = self.type()
