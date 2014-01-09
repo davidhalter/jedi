@@ -43,12 +43,13 @@ class PyObject(Base):
         elif inspect.isbuiltin(self.obj) or inspect.ismethod(self.obj) \
                 or inspect.ismethoddescriptor(self.obj):
             return 'def'
+        raise NotImplementedError()
 
     def get_defined_names(self):
         # We don't want to execute properties, therefore we have to try to get
         # the class
         cls = self
-        if not inspect.isclass(self.obj):
+        if self.type() not in ('class', 'module'):
             cls = PyObject(self.obj.__class__, self.parent)
 
         for name in dir(cls.obj):
@@ -60,10 +61,10 @@ class PyObject(Base):
         return self.obj.__name__
 
     def execute(self, params):
-        if inspect.isclass(self.obj):
+        t = self.type()
+        if t == 'class':
             yield PyObject(self.obj, self.parent, True)
-        elif inspect.isbuiltin(self.obj) or inspect.ismethod(self.obj) \
-                or inspect.ismethoddescriptor(self.obj):
+        elif t == 'def':
             for name in self._parse_function_doc()[1].split():
                 try:
                     yield PyObject(getattr(_builtins, name), builtin, True)
@@ -76,6 +77,9 @@ class PyName(object):
         self._obj = obj
         self._name = name
         self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
+
+    def __repr__(self):
+        return '<%s: %s.%s>' % (type(self).__name__, self._obj.obj, self._name)
 
     @property
     @underscore_memoization

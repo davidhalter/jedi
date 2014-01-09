@@ -493,7 +493,9 @@ class Definition(BaseDefinition):
         if isinstance(d, pr.Name):
             d = d.parent
 
-        if isinstance(d, iterable.Array):
+        if isinstance(d, compiled.PyObject):
+            d = d.type() + ' ' + d.name
+        elif isinstance(d, iterable.Array):
             d = 'class ' + d.type
         elif isinstance(d, (pr.Class, er.Class, er.Instance)):
             d = 'class ' + unicode(d.name)
