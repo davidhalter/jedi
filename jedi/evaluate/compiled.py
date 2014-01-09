@@ -71,6 +71,10 @@ class PyObject(Base):
                 except AttributeError:
                     pass
 
+    def get_self_attributes(self):
+        # Instance compatibility
+        return []
+
 
 class PyName(object):
     def __init__(self, obj, name):

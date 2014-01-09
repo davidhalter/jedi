@@ -3,7 +3,7 @@ Implementations of standard library functions, because it's not possible to
 understand them with Jedi.
 """
 
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.parser import representation as pr
@@ -17,7 +17,7 @@ class NotInStdLib(LookupError):
 def execute(evaluator, obj, params):
     if not isinstance(obj, (iterable.Generator, iterable.Array)):
         obj_name = str(obj.name)
-        if obj.parent == builtin.Builtin.scope:
+        if obj.parent == compiled.builtin:
             # for now we just support builtin functions.
             try:
                 return _implemented['builtins'][obj_name](evaluator, obj, params)

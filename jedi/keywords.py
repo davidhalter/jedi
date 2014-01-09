@@ -4,7 +4,7 @@ import keyword
 from jedi._compatibility import is_py3k
 from jedi.parser import representation as pr
 from jedi import common
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 
 try:
     from pydoc_data import topics as pydoc_topics
@@ -43,7 +43,7 @@ class Keyword(object):
     def __init__(self, name, pos):
         self.name = name
         self.start_pos = pos
-        self.parent = builtin.Builtin.scope
+        self.parent = compiled.builtin
 
     def get_parent_until(self):
         return self.parent

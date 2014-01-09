@@ -141,8 +141,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         """
         names = self.get_self_attributes()
 
-        class_names = self.base.instance_names()
-        for var in class_names:
+        for var in self.base.instance_names():
             names.append(InstanceElement(self._evaluator, self, var, True))
         return names
 
@@ -154,8 +153,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         yield self, self.get_self_attributes()
 
         names = []
-        class_names = self.base.instance_names()
-        for var in class_names:
+        for var in self.base.instance_names():
             names.append(InstanceElement(self._evaluator, self, var, True))
         yield self, names
 
@@ -263,6 +261,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
 
     @memoize_default(default=())
     def instance_names(self):
+        # TODO REMOVE instance_names
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
             for i in iterable:
@@ -277,9 +276,12 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         # TODO mro!
         for cls in self.get_super_classes():
             # Get the inherited names.
-            for i in cls.instance_names():
-                if not in_iterable(i, result):
-                    super_result.append(i)
+            if isinstance(cls, compiled.PyObject):
+                super_result += cls.get_defined_names()
+            else:
+                for i in cls.instance_names():
+                    if not in_iterable(i, result):
+                        super_result.append(i)
         result += super_result
         return result
 
@@ -287,7 +289,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
     def get_defined_names(self):
         result = self.instance_names()
         type_cls = self._evaluator.find_types(compiled.builtin, 'type')[0]
-        return result + type_cls.base.get_defined_names()
+        return result + list(type_cls.get_defined_names())
 
     def get_subscope_by_name(self, name):
         for sub in reversed(self.subscopes):
@@ -374,10 +376,10 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         return decorated_func
 
     def get_magic_method_names(self):
-        return builtin.Builtin.magic_function_scope(self._evaluator).get_defined_names()
+        return compiled.magic_function_scope(self._evaluator).get_defined_names()
 
     def get_magic_method_scope(self):
-        return builtin.Builtin.magic_function_scope(self._evaluator)
+        return compiled.magic_function_scope(self._evaluator)
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)

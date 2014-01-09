@@ -27,7 +27,7 @@ from jedi import keywords
 from jedi.api import classes
 from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate import helpers
 
@@ -137,8 +137,8 @@ class Script(object):
         path, dot, like = self._get_completion_parts()
 
         user_stmt = self._user_stmt(True)
-        bs = builtin.Builtin.scope
-        completions = get_completions(user_stmt, bs)
+        b = compiled.builtin
+        completions = get_completions(user_stmt, b)
 
         if not dot:
             # add named params
@@ -149,8 +149,7 @@ class Script(object):
 
             if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords
-                completions += ((k, bs) for k in keywords.keyword_names(
-                    all=True))
+                completions += ((k, b) for k in keywords.keyword_names(all=True))
 
         needs_dot = not dot and path
 

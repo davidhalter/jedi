@@ -5,7 +5,7 @@ from jedi import debug
 from jedi import settings
 from jedi._compatibility import use_metaclass, is_py3k
 from jedi.parser import representation as pr
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 
@@ -27,12 +27,12 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         none_pos = (0, 0)
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
-            name = pr.Name(builtin.Builtin.scope, [(n, none_pos)],
+            name = pr.Name(compiled.builtin, [(n, none_pos)],
                            none_pos, none_pos)
             if n in executes_generator:
                 name.parent = self
             else:
-                name.parent = builtin.Builtin.scope
+                name.parent = compiled.builtin
             names.append(name)
         debug.dbg('generator names', names)
         return names
@@ -130,17 +130,17 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = self._evaluator.find_types(builtin.Builtin.scope, self._array.type)[0]
+        scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]
 
     @property
     def parent(self):
-        return builtin.Builtin.scope
+        return compiled.builtin
 
     def get_parent_until(self):
-        return builtin.Builtin.scope
+        return compiled.builtin
 
     def __getattr__(self, name):
         if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
@@ -177,7 +177,7 @@ class ArrayMethod(object):
         return getattr(self.name, name)
 
     def get_parent_until(self):
-        return builtin.Builtin.scope
+        return compiled.builtin
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.name)
