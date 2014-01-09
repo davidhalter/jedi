@@ -93,6 +93,10 @@ class PyName(object):
             # -> just set it to None
             return PyObject(None, builtin)
 
+    @property
+    def names(self):
+        return [self._name]  # compatibility with parser.representation.Name
+
     def get_code(self):
         return self._name
 
