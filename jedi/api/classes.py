@@ -14,6 +14,7 @@ from jedi import cache
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
+from jedi.evaluate import compiled
 from jedi import keywords
 
 
@@ -70,8 +71,11 @@ class BaseDefinition(object):
 
         # generate a path to the definition
         self._module = definition.get_parent_until()
-        self.module_path = self._module.path
-        """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
+        if self.in_builtin_module():
+            self.module_path = None
+        else:
+            self.module_path = self._module.path
+            """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
 
     @property
     def start_pos(self):
@@ -177,8 +181,7 @@ class BaseDefinition(object):
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        return not (self.module_path is None or
-                    self.module_path.endswith('.py'))
+        return isinstance(self._module, compiled.PyObject)
 
     @property
     def line_nr(self):
@@ -518,12 +521,7 @@ class Definition(BaseDefinition):
         .. todo:: Add full path. This function is should return a
             `module.class.function` path.
         """
-        if self.module_path.endswith('.py') \
-                and not isinstance(self._definition, pr.Module):
-            position = '@%s' % (self.line)
-        else:
-            # is a builtin or module
-            position = ''
+        position = '' if self.in_builtin_module else '@%s' % (self.line)
         return "%s:%s%s" % (self.module_name, self.description, position)
 
     def defined_names(self):

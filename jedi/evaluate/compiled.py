@@ -6,6 +6,7 @@ import re
 
 from jedi._compatibility import builtins as _builtins, is_py3k
 from jedi import debug
+from jedi.parser.representation import Base
 from jedi.cache import underscore_memoization
 
 
@@ -13,12 +14,16 @@ from jedi.cache import underscore_memoization
 # unbound methods such as pyqtSignals have no __name__
 # if not hasattr(func, "__name__"):
 
-class PyObject(object):
+class PyObject(Base):
     def __init__(self, obj, parent=None, instantiated=False):
         self.obj = obj
         self.parent = parent
         self.instantiated = instantiated
         self.doc = inspect.getdoc(obj)
+
+        # comply with the parser
+        self.get_parent_until = lambda: parent
+        self.start_pos = 0, 0
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.obj)
@@ -30,18 +35,24 @@ class PyObject(object):
 
         return _parse_function_doc(self.doc)
 
+    def type(self):
+        if inspect.isclass(self.obj):
+            return 'class'
+        elif inspect.ismodule(self.obj):
+            return 'module'
+        elif inspect.isbuiltin(self.obj) or inspect.ismethod(self.obj) \
+                or inspect.ismethoddescriptor(self.obj):
+            return 'def'
+
     def get_defined_names(self):
         # We don't want to execute properties, therefore we have to try to get
         # the class
         cls = self
-        if not (inspect.isclass(self.obj) or inspect.ismodule(self.obj)):
+        if not inspect.isclass(self.obj):
             cls = PyObject(self.obj.__class__, self.parent)
 
         for name in dir(cls.obj):
             yield PyName(cls, name)
-
-    def isinstance(self, *obj):
-        return isinstance(self, obj)
 
     @property
     def name(self):
@@ -64,7 +75,6 @@ class PyName(object):
     def __init__(self, obj, name):
         self._obj = obj
         self._name = name
-
         self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
 
     @property

@@ -174,8 +174,7 @@ class Evaluator(object):
 
             # Add builtins to the global scope.
             if include_builtin:
-                builtin_scope = builtin.Builtin.scope
-                yield builtin_scope, builtin_scope.get_defined_names()
+                yield compiled.builtin, compiled.builtin.get_defined_names()
 
     def find_types(self, scope, name_str, position=None, search_global=False,
                    is_goto=False, resolve_decorator=True):
