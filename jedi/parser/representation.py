@@ -1239,9 +1239,6 @@ class Literal(StatementElement):
     def get_code(self):
         return self.literal + super(Literal, self).get_code()
 
-    def type_as_string(self):
-        return type(self.value).__name__
-
     def __repr__(self):
         if is_py3k:
             s = self.literal

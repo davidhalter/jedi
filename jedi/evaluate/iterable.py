@@ -3,7 +3,7 @@ import itertools
 from jedi import common
 from jedi import debug
 from jedi import settings
-from jedi._compatibility import use_metaclass, is_py3k
+from jedi._compatibility import use_metaclass, is_py3k, unicode
 from jedi.parser import representation as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
@@ -78,16 +78,10 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
                 index = index_possibilities[0]
-
-                from jedi.evaluate.representation import Instance
-                if isinstance(index, Instance) \
-                        and str(index.name) in ['int', 'str'] \
-                        and len(index.var_args) == 1:
-                    # TODO this is just very hackish and a lot of use cases are
-                    # being ignored
-                    with common.ignored(KeyError, IndexError,
-                                        UnboundLocalError, TypeError):
-                        return self.get_exact_index_types(index.var_args[0])
+                if isinstance(index, compiled.PyObject) \
+                        and isinstance(index.obj, (int, str, unicode)):
+                    with common.ignored(KeyError, IndexError, TypeError):
+                        return self.get_exact_index_types(index.obj)
 
         result = list(self._follow_values(self._array.values))
         result += check_array_additions(self._evaluator, self)

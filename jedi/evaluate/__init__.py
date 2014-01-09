@@ -307,16 +307,12 @@ class Evaluator(object):
         else:
             if isinstance(current, pr.NamePart):
                 # This is the first global lookup.
-                scopes = self.find_types(scope, current, position=position,
-                                         search_global=True)
+                types = self.find_types(scope, current, position=position,
+                                        search_global=True)
             else:
                 # for pr.Literal
-                scopes = self.find_types(compiled.builtin, current.type_as_string())
-                # Make instances of those number/string objects.
-                scopes = itertools.chain.from_iterable(
-                    self.execute(s, (current.value,)) for s in scopes
-                )
-            types = imports.strip_imports(self, scopes)
+                types = [compiled.create(current.value)]
+            types = imports.strip_imports(self, types)
 
         return self.follow_path(path, types, scope, position=position)
 
@@ -412,7 +408,7 @@ class Evaluator(object):
             else:
                 stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
 
-            debug.dbg('execute: %s in %s' % (stmts, self))
+            debug.dbg('execute: %s in %s' % (stmts, obj))
             return imports.strip_imports(self, stmts)
 
     def goto(self, stmt, call_path=None):

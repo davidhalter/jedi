@@ -68,7 +68,8 @@ class PyObject(Base):
     def execute(self, params):
         t = self.type()
         if t == 'class':
-            yield PyObject(self.obj, self.parent, True)
+            if not self.instantiated:
+                yield PyObject(self.obj, self.parent, True)
         elif t == 'def':
             for name in self._parse_function_doc()[1].split():
                 try:
@@ -213,3 +214,7 @@ def _parse_function_doc(doc):
 
 builtin = PyObject(_builtins)
 magic_function_class = PyObject(type(load_module), parent=builtin)
+
+
+def create(obj):
+    return PyObject(obj, builtin)
