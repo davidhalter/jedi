@@ -212,3 +212,4 @@ def _parse_function_doc(doc):
 
 
 builtin = PyObject(_builtins)
+magic_function_class = PyObject(type(load_module), parent=builtin)

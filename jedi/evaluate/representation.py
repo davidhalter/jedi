@@ -376,10 +376,10 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         return decorated_func
 
     def get_magic_function_names(self):
-        return compiled.magic_function_scope(self._evaluator).get_defined_names()
+        return compiled.magic_function_class.get_defined_names()
 
     def get_magic_function_scope(self):
-        return compiled.magic_function_scope(self._evaluator)
+        return compiled.magic_function_class.get_defined_names()
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
