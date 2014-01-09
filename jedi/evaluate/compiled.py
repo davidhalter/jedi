@@ -4,6 +4,7 @@ Imitate the parser representation.
 import inspect
 import re
 import sys
+import os
 
 from jedi._compatibility import builtins as _builtins, is_py3k, exec_function
 from jedi import debug
@@ -24,7 +25,7 @@ class PyObject(Base):
         self.doc = inspect.getdoc(obj)
 
         # comply with the parser
-        self.get_parent_until = lambda *args, **kwargs: parent
+        self.get_parent_until = lambda *args, **kwargs: parent or self
         self.start_pos = 0, 0
 
     def __repr__(self):
@@ -38,22 +39,24 @@ class PyObject(Base):
         return _parse_function_doc(self.doc)
 
     def type(self):
-        if inspect.isclass(self.obj):
+        cls = self._cls().obj
+        if inspect.isclass(cls):
             return 'class'
-        elif inspect.ismodule(self.obj):
+        elif inspect.ismodule(cls):
             return 'module'
-        elif inspect.isbuiltin(self.obj) or inspect.ismethod(self.obj) \
-                or inspect.ismethoddescriptor(self.obj):
+        elif inspect.isbuiltin(cls) or inspect.ismethod(cls) \
+                or inspect.ismethoddescriptor(cls):
             return 'def'
-        raise NotImplementedError()
+
+    @underscore_memoization
+    def _cls(self):
+        # Ensures that a PyObject is returned that is not an instance (like list)
+        if not (inspect.isclass(self.obj) or inspect.ismodule(self.obj)):
+            return PyObject(self.obj.__class__, self.parent, True)
+        return self
 
     def get_defined_names(self):
-        # We don't want to execute properties, therefore we have to try to get
-        # the class
-        cls = self
-        if self.type() not in ('class', 'module'):
-            cls = PyObject(self.obj.__class__, self.parent)
-
+        cls = self._cls()
         for name in dir(cls.obj):
             yield PyName(cls, name)
 
@@ -110,6 +113,10 @@ class PyName(object):
 
 
 def load_module(path, name):
+    if not name:
+        name = os.path.basename(path)
+        name = name.rpartition('.')[0]  # cut file type (normally .so)
+
     sys_path = get_sys_path()
     if path:
         sys_path.insert(0, path)
