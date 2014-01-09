@@ -379,7 +379,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         return compiled.magic_function_class.get_defined_names()
 
     def get_magic_function_scope(self):
-        return compiled.magic_function_class.get_defined_names()
+        return compiled.magic_function_class
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)

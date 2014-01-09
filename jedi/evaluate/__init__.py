@@ -331,8 +331,8 @@ class Evaluator(object):
         results_new = []
         iter_paths = itertools.tee(path, len(types))
 
-        for i, type in enumerate(types):
-            fp = self._follow_path(iter_paths[i], type, call_scope, position=position)
+        for i, typ in enumerate(types):
+            fp = self._follow_path(iter_paths[i], typ, call_scope, position=position)
             if fp is not None:
                 results_new += fp
             else:
@@ -340,7 +340,7 @@ class Evaluator(object):
                 return types
         return results_new
 
-    def _follow_path(self, path, type, scope, position=None):
+    def _follow_path(self, path, typ, scope, position=None):
         """
         Uses a generator and tries to complete the path, e.g.::
 
@@ -354,31 +354,31 @@ class Evaluator(object):
             current = next(path)
         except StopIteration:
             return None
-        debug.dbg('_follow_path: %s in scope %s' % (current, type))
+        debug.dbg('_follow_path: %s in scope %s' % (current, typ))
 
         result = []
         if isinstance(current, pr.Array):
             # This must be an execution, either () or [].
             if current.type == pr.Array.LIST:
-                if hasattr(type, 'get_index_types'):
-                    result = type.get_index_types(current)
+                if hasattr(typ, 'get_index_types'):
+                    result = typ.get_index_types(current)
             elif current.type not in [pr.Array.DICT]:
                 # Scope must be a class or func - make an instance or execution.
-                debug.dbg('exe', type)
-                result = self.execute(type, current)
+                debug.dbg('exe', typ)
+                result = self.execute(typ, current)
             else:
                 # Curly braces are not allowed, because they make no sense.
-                debug.warning('strange function call with {}', current, type)
+                debug.warning('strange function call with {}', current, typ)
         else:
             # The function must not be decorated with something else.
-            if type.isinstance(er.Function):
-                type = type.get_magic_function_scope()
+            if typ.isinstance(er.Function):
+                typ = typ.get_magic_function_scope()
             else:
                 # This is the typical lookup while chaining things.
-                if filter_private_variable(type, scope, current):
+                if filter_private_variable(typ, scope, current):
                     return []
-            result = imports.strip_imports(self, self.find_types(type, current,
-                                           position=position))
+            types = self.find_types(typ, current, position=position)
+            result = imports.strip_imports(self, types)
         return self.follow_path(path, set(result), scope, position=position)
 
     def execute(self, obj, params=(), evaluate_generator=False):
@@ -391,7 +391,7 @@ class Evaluator(object):
             pass
 
         if isinstance(obj, compiled.PyObject):
-            return obj.execute(params)
+            return list(obj.execute(params))
         elif obj.isinstance(er.Class):
             # There maybe executions of executions.
             return [er.Instance(self, obj, params)]
