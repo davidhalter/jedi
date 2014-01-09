@@ -192,7 +192,7 @@ class Script(object):
             debug.dbg('possible scopes', scopes)
             for s in scopes:
                 if s.isinstance(er.Function):
-                    names = s.get_magic_method_names()
+                    names = s.get_magic_function_names()
                 else:
                     if isinstance(s, imports.ImportPath):
                         under = like + self._user_context.get_path_after_cursor()

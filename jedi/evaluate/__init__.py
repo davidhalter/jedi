@@ -372,7 +372,7 @@ class Evaluator(object):
         else:
             # The function must not be decorated with something else.
             if type.isinstance(er.Function):
-                type = type.get_magic_method_scope()
+                type = type.get_magic_function_scope()
             else:
                 # This is the typical lookup while chaining things.
                 if filter_private_variable(type, scope, current):

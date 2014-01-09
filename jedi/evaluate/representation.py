@@ -375,10 +375,10 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
             return Function(self._evaluator, self.base_func, True)
         return decorated_func
 
-    def get_magic_method_names(self):
+    def get_magic_function_names(self):
         return compiled.magic_function_scope(self._evaluator).get_defined_names()
 
-    def get_magic_method_scope(self):
+    def get_magic_function_scope(self):
         return compiled.magic_function_scope(self._evaluator)
 
     def __getattr__(self, name):
