@@ -1,4 +1,5 @@
 from jedi._compatibility import builtins
+from jedi.parser.representation import Function
 from jedi.evaluate import compiled
 from jedi.evaluate import Evaluator
 
@@ -13,3 +14,7 @@ def test_simple():
     assert len(objs) == 1
     assert objs[0].obj is str
     assert objs[0].instantiated is True
+
+
+def test_fake_loading():
+    assert isinstance(compiled.create(reversed), Function)

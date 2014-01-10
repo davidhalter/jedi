@@ -65,6 +65,8 @@ def _load_fakes(module_name):
 
 def _load_module(module):
     module_name = module.__name__
+    if module_name == '__builtin__' and not is_py3k:
+        module_name = 'builtins'
     try:
         return modules[module_name]
     except KeyError:
@@ -74,7 +76,7 @@ def _load_module(module):
                 source = f.read()
         except IOError:
             return {}
-        module = Parser(source).module
+        module = Parser(source, module_name).module
         modules[module_name] = module
         return module
 
@@ -82,7 +84,7 @@ def _load_module(module):
 def get_faked(module, obj):
     def from_scope(scope, obj):
         for s in scope.subscopes:
-            if s.name == obj.name:
+            if str(s.name) == obj.__name__:
                 return s
 
     mod = _load_module(module)

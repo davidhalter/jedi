@@ -74,7 +74,7 @@ class PyObject(Base):
         elif t == 'def':
             for name in self._parse_function_doc()[1].split():
                 try:
-                    yield PyObject(getattr(_builtins, name), builtin, True)
+                    yield create(getattr(_builtins, name), builtin, True)
                 except AttributeError:
                     pass
 
@@ -99,7 +99,7 @@ class PyName(object):
     def parent(self):
         try:
             # this has a builtin_function_or_method
-            return PyObject(getattr(self._obj.obj, self._name), self._obj)
+            return create(getattr(self._obj.obj, self._name), self._obj)
         except AttributeError:
             # happens e.g. in properties of
             # PyQt4.QtGui.QStyleOptionComboBox.currentText
