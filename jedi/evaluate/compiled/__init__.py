@@ -11,6 +11,7 @@ from jedi import debug
 from jedi.parser.representation import Base
 from jedi.cache import underscore_memoization
 from jedi.evaluate.sys_path import get_sys_path
+from . import fake
 
 
 # TODO
@@ -51,9 +52,7 @@ class PyObject(Base):
     @underscore_memoization
     def _cls(self):
         # Ensures that a PyObject is returned that is not an instance (like list)
-        if not (inspect.isclass(self.obj) or inspect.ismodule(self.obj)
-                or inspect.isbuiltin(self.obj) or inspect.ismethod(self.obj)
-                or inspect.ismethoddescriptor(self.obj)):
+        if fake.is_class_instance(self.obj):
             return PyObject(self.obj.__class__, self.parent, True)
         return self
 
@@ -218,5 +217,23 @@ builtin = PyObject(_builtins)
 magic_function_class = PyObject(type(load_module), parent=builtin)
 
 
-def create(obj):
-    return PyObject(obj, builtin)
+def create(obj, parent=builtin, instantiated=False, module=None):
+    if module is None:
+        if not inspect.ismodule(obj):
+            module = obj.__class__ if fake.is_class_instance(obj) else obj
+            if not (inspect.isbuiltin(module) or inspect.isclass(module)):
+                module = obj.__objclass__
+            try:
+                imp_plz = obj.__module__
+            except AttributeError:
+                # Unfortunately in some cases like `int` there's no __module__
+                module = builtin
+            else:
+                module = PyObject(__import__(imp_plz))
+
+        faked = fake.get_faked(module.obj, obj)
+        if faked is not None:
+            faked.parent = parent
+            return faked
+
+    return PyObject(obj, parent, instantiated)
