@@ -17,4 +17,4 @@ def test_simple():
 
 
 def test_fake_loading():
-    assert isinstance(compiled.create(reversed), Function)
+    assert isinstance(compiled.create(next), Function)

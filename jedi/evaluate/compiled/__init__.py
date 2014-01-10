@@ -26,11 +26,14 @@ class PyObject(Base):
         self.doc = inspect.getdoc(obj)
 
         # comply with the parser
-        self.get_parent_until = lambda *args, **kwargs: parent or self
         self.start_pos = 0, 0
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.obj)
+
+    def get_parent_until(self, *args, **kwargs):
+        # compiled modules only use functions and classes/methods (2 levels)
+        return getattr(self.parent, 'parent', self.parent) or self
 
     @underscore_memoization
     def _parse_function_doc(self):
@@ -99,7 +102,8 @@ class PyName(object):
     def parent(self):
         try:
             # this has a builtin_function_or_method
-            return create(getattr(self._obj.obj, self._name), self._obj)
+            return create(getattr(self._obj.obj, self._name), self._obj,
+                          module=self._obj.get_parent_until())
         except AttributeError:
             # happens e.g. in properties of
             # PyQt4.QtGui.QStyleOptionComboBox.currentText
@@ -160,7 +164,6 @@ def _parse_function_doc(doc):
     TODO docstrings like utime(path, (atime, mtime)) and a(b [, b]) -> None
     TODO docstrings like 'tuple of integers'
     """
-
     # parse round parentheses: def func(a, (b,c))
     try:
         count = 0
@@ -218,8 +221,8 @@ magic_function_class = PyObject(type(load_module), parent=builtin)
 
 
 def create(obj, parent=builtin, instantiated=False, module=None):
-    if module is None:
-        if not inspect.ismodule(obj):
+    if not inspect.ismodule(obj):
+        if module is None:
             module = obj.__class__ if fake.is_class_instance(obj) else obj
             if not (inspect.isbuiltin(module) or inspect.isclass(module)):
                 module = obj.__objclass__
