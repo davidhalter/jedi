@@ -3,6 +3,7 @@ Implementations of standard library functions, because it's not possible to
 understand them with Jedi.
 """
 
+from jedi._compatibility import unicode
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
@@ -44,18 +45,18 @@ def builtins_getattr(evaluator, obj, params):
     objects = _follow_param(evaluator, params, 0)
     names = _follow_param(evaluator, params, 1)
     for obj in objects:
-        if not isinstance(obj, (er.Instance, er.Class, pr.Module)):
+        if not isinstance(obj, (er.Instance, er.Class, pr.Module, compiled.PyObject)):
             debug.warning('getattr called without instance')
             continue
 
-        for arr_name in names:
-            if not isinstance(arr_name, er.Instance):
+        for name in names:
+            s = unicode, str
+            print name
+            if isinstance(name, compiled.PyObject) and isinstance(name.obj, s):
+                stmts += evaluator.follow_path(iter([name.obj]), [obj], obj)
+            else:
                 debug.warning('getattr called without str')
                 continue
-            if len(arr_name.var_args) != 1:
-                debug.warning('jedi getattr is too simple')
-            key = arr_name.var_args[0]
-            stmts += evaluator.follow_path(iter([key]), [obj], obj)
     return stmts
 
 

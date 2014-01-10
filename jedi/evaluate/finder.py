@@ -71,9 +71,10 @@ class NameFinder(object):
         if not result and isinstance(self.scope, er.Instance):
             # __getattr__ / __getattribute__
             for r in self._check_getattr(self.scope):
-                new_name = copy.copy(r.name)
-                new_name.parent = r
-                result.append(new_name)
+                if not isinstance(r, compiled.PyObject):
+                    new_name = copy.copy(r.name)
+                    new_name.parent = r
+                    result.append(new_name)
 
         debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
                   % (self.name_str, self.scope, nscope, u(result), self.position))
@@ -82,9 +83,8 @@ class NameFinder(object):
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
         result = []
-        module = compiled.builtin
         # str is important to lose the NamePart!
-        name = pr.String(module, "'%s'" % self.name_str, (0, 0), (0, 0), inst)
+        name = compiled.name_from_string(self.name_str)
         with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattr__', [name])
         if not result:

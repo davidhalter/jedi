@@ -51,7 +51,9 @@ class PyObject(Base):
     @underscore_memoization
     def _cls(self):
         # Ensures that a PyObject is returned that is not an instance (like list)
-        if not (inspect.isclass(self.obj) or inspect.ismodule(self.obj)):
+        if not (inspect.isclass(self.obj) or inspect.ismodule(self.obj)
+                or inspect.isbuiltin(self.obj) or inspect.ismethod(self.obj)
+                or inspect.ismethoddescriptor(self.obj)):
             return PyObject(self.obj.__class__, self.parent, True)
         return self
 
@@ -89,9 +91,12 @@ class PyName(object):
         self._obj = obj
         self._name = name
         self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
+        #if not type(name) is str:
+        #    print obj, name
+        #    raise NotImplementedError()
 
     def __repr__(self):
-        return '<%s: %s.%s>' % (type(self).__name__, self._obj.obj, self._name)
+        return '<%s: (%s).%s>' % (type(self).__name__, repr(self._obj.obj), self._name)
 
     @property
     @underscore_memoization
@@ -218,3 +223,7 @@ magic_function_class = PyObject(type(load_module), parent=builtin)
 
 def create(obj):
     return PyObject(obj, builtin)
+
+
+def name_from_string(string):
+    return PyName(create(string), string)

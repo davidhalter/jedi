@@ -2,7 +2,6 @@ import copy
 
 from jedi.parser import representation as pr
 from jedi.evaluate import iterable
-from jedi.evaluate import compiled
 from jedi.evaluate import common
 
 
@@ -140,7 +139,7 @@ def _var_args_iterator(evaluator, var_args):
                 continue
             old = stmt
             # generate a statement if it's not already one.
-            stmt = pr.Statement(compiled.builtin, [], (0, 0), None)
+            stmt = pr.Statement(_FakeSubModule, [], (0, 0), None)
             stmt._expression_list = [old]
 
         # *args
