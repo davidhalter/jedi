@@ -84,7 +84,7 @@ class NameFinder(object):
         """Checks for both __getattr__ and __getattribute__ methods"""
         result = []
         # str is important to lose the NamePart!
-        name = compiled.name_from_string(self.name_str)
+        name = compiled.create(str(self.name_str))
         with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattr__', [name])
         if not result:

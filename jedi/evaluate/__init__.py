@@ -258,16 +258,15 @@ class Evaluator(object):
                 call.stmt.parent = loop
                 result += self.eval_statement(call.stmt)
             else:
-                if isinstance(call, compiled.PyName):
-                    print call, call.parent
-                    result.append(call.parent)
-                elif isinstance(call, pr.Lambda):
+                if isinstance(call, pr.Lambda):
                     result.append(er.Function(self, call))
                 # With things like params, these can also be functions...
                 elif isinstance(call, pr.Base) and call.isinstance(
                         er.Function, er.Class, er.Instance, iterable.ArrayInstance):
                     result.append(call)
                 # The string tokens are just operations (+, -, etc.)
+                elif isinstance(call, compiled.PyObject):
+                    result.append(call)
                 elif not isinstance(call, (str, unicode)):
                     if isinstance(call, pr.Call) and str(call.name) == 'if':
                         # Ternary operators.

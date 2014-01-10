@@ -339,7 +339,7 @@ class Wrapper2():
         return getattr(Base(), name)
 
 #? int()
-Wrapper(Base()).ret
+Wrapper(Base()).ret(3)
 
 #? int()
 Wrapper2(Base()).ret(3)

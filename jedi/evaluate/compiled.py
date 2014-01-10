@@ -91,9 +91,6 @@ class PyName(object):
         self._obj = obj
         self._name = name
         self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
-        #if not type(name) is str:
-        #    print obj, name
-        #    raise NotImplementedError()
 
     def __repr__(self):
         return '<%s: (%s).%s>' % (type(self).__name__, repr(self._obj.obj), self._name)
@@ -223,7 +220,3 @@ magic_function_class = PyObject(type(load_module), parent=builtin)
 
 def create(obj):
     return PyObject(obj, builtin)
-
-
-def name_from_string(string):
-    return PyName(create(string), string)

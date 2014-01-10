@@ -51,7 +51,6 @@ def builtins_getattr(evaluator, obj, params):
 
         for name in names:
             s = unicode, str
-            print name
             if isinstance(name, compiled.PyObject) and isinstance(name.obj, s):
                 stmts += evaluator.follow_path(iter([name.obj]), [obj], obj)
             else:
