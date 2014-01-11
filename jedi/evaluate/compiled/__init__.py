@@ -69,7 +69,7 @@ class PyObject(Base):
         # might not exist sometimes (raises AttributeError)
         return self._cls().obj.__name__
 
-    def execute(self, params):
+    def execute(self, evaluator, params):
         t = self.type()
         if t == 'class':
             if not self.instantiated:
@@ -77,9 +77,15 @@ class PyObject(Base):
         elif t == 'def':
             for name in self._parse_function_doc()[1].split():
                 try:
-                    yield create(getattr(_builtins, name), builtin, True)
+                    bltn_obj = create(getattr(_builtins, name), builtin, module=builtin)
                 except AttributeError:
-                    pass
+                    continue
+                else:
+                    if isinstance(bltn_obj, PyObject):
+                        yield bltn_obj
+                    else:
+                        for result in evaluator.execute(bltn_obj, params):
+                            yield result
 
     def get_self_attributes(self):
         return []  # Instance compatibility

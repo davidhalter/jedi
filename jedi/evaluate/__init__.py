@@ -195,13 +195,12 @@ class Evaluator(object):
     @recursion.recursion_decorator
     def eval_statement(self, stmt, seek_name=None):
         """
-        The starting point of the completion. A statement always owns a call list,
-        which are the calls, that a statement does.
-        In case multiple names are defined in the statement, `seek_name` returns
-        the result for this name.
+        The starting point of the completion. A statement always owns a call
+        list, which are the calls, that a statement does. In case multiple
+        names are defined in the statement, `seek_name` returns the result for
+        this name.
 
         :param stmt: A `pr.Statement`.
-        :param seek_name: A string.
         """
         debug.dbg('eval_statement %s (%s)' % (stmt, seek_name))
         expression_list = stmt.expression_list()
@@ -389,7 +388,7 @@ class Evaluator(object):
             pass
 
         if isinstance(obj, compiled.PyObject):
-            return list(obj.execute(params))
+            return list(obj.execute(self, params))
         elif obj.isinstance(er.Class):
             # There maybe executions of executions.
             return [er.Instance(self, obj, params)]
