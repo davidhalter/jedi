@@ -155,7 +155,7 @@ def _var_args_iterator(evaluator, var_args):
                         yield None, field_stmt
                 elif isinstance(array, iterable.Generator):
                     for field_stmt in array.iter_content():
-                        yield None, helpers._FakeStatement([field_stmt])
+                        yield None, helpers.FakeStatement([field_stmt])
         # **kwargs
         elif expression_list[0] == '**':
             for array in evaluator.eval_expression_list(expression_list[1:]):

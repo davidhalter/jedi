@@ -228,7 +228,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     >>> a = [""]
     >>> a.append(1)
     """
-    if not settings.dynamic_array_additions or module.is_builtin():
+    if not settings.dynamic_array_additions or isinstance(module, compiled.PyObject):
         return []
 
     def check_calls(calls, add_name):
