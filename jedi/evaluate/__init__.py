@@ -193,6 +193,7 @@ class Evaluator(object):
 
     @memoize_default(default=(), evaluator_is_first_arg=True)
     @recursion.recursion_decorator
+    @debug.increase_indent
     def eval_statement(self, stmt, seek_name=None):
         """
         The starting point of the completion. A statement always owns a call
@@ -377,6 +378,7 @@ class Evaluator(object):
             result = imports.strip_imports(self, types)
         return self.follow_path(path, set(result), scope, position=position)
 
+    @debug.increase_indent
     def execute(self, obj, params=(), evaluate_generator=False):
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
