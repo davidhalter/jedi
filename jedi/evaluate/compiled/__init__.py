@@ -105,24 +105,24 @@ class PyObject(Base):
 class PyName(object):
     def __init__(self, obj, name):
         self._obj = obj
-        self._name = name
+        self.name = name
         self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
 
     def __repr__(self):
-        return '<%s: (%s).%s>' % (type(self).__name__, repr(self._obj.obj), self._name)
+        return '<%s: (%s).%s>' % (type(self).__name__, repr(self._obj.obj), self.name)
 
     @property
     @underscore_memoization
     def parent(self):
         module = self._obj.get_parent_until()
-        return _create_from_name(module, self._obj, self._name)
+        return _create_from_name(module, self._obj, self.name)
 
     @property
     def names(self):
-        return [self._name]  # compatibility with parser.representation.Name
+        return [self.name]  # compatibility with parser.representation.Name
 
     def get_code(self):
-        return self._name
+        return self.name
 
 
 def load_module(path, name):
@@ -223,7 +223,14 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-builtin = PyObject(_builtins)
+class Builtin(PyObject):
+    def get_defined_names(self):
+        # Filter None, because it's really just a keyword, nobody wants to
+        # access it.
+        return [d for d in super(Builtin, self).get_defined_names() if d.name != 'None']
+
+
+builtin = Builtin(_builtins)
 magic_function_class = PyObject(type(load_module), parent=builtin)
 
 
