@@ -235,13 +235,13 @@ magic_function_class = PyObject(type(load_module), parent=builtin)
 
 
 def _create_from_name(module, parent, name):
-    faked = fake.get_faked(module.obj, parent, name)
+    faked = fake.get_faked(module.obj, parent.obj, name)
     if faked is not None:
         faked.parent = parent
         return faked
 
     try:
-        obj = getattr(parent, name)
+        obj = getattr(parent.obj, name)
     except AttributeError:
         # happens e.g. in properties of
         # PyQt4.QtGui.QStyleOptionComboBox.currentText
