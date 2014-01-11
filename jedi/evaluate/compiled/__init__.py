@@ -19,14 +19,15 @@ from . import fake
 # if not hasattr(func, "__name__"):
 
 class PyObject(Base):
+    # comply with the parser
+    start_pos = 0, 0
+    asserts = []
+
     def __init__(self, obj, parent=None, instantiated=False):
         self.obj = obj
         self.parent = parent
         self.instantiated = instantiated
         self.doc = inspect.getdoc(obj)
-
-        # comply with the parser
-        self.start_pos = 0, 0
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.obj)
@@ -52,6 +53,9 @@ class PyObject(Base):
                 or inspect.ismethoddescriptor(cls):
             return 'def'
 
+    def is_executable_class(self):
+        return inspect.isclass(self.obj)
+
     @underscore_memoization
     def _cls(self):
         # Ensures that a PyObject is returned that is not an instance (like list)
@@ -64,28 +68,33 @@ class PyObject(Base):
         for name in dir(cls.obj):
             yield PyName(cls, name)
 
+    def instance_names(self):
+        # TODO REMOVE (temporary until the Instance method is removed)
+        return self.get_defined_names()
+
+    def get_subscope_by_name(self, name):
+        if name in dir(self._cls().obj):
+            return PyName(self._cls, name).parent
+        else:
+            raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
+
     @property
     def name(self):
         # might not exist sometimes (raises AttributeError)
         return self._cls().obj.__name__
 
-    def execute(self, evaluator, params):
-        t = self.type()
-        if t == 'class':
-            if not self.instantiated:
-                yield PyObject(self.obj, self.parent, True)
-        elif t == 'def':
-            for name in self._parse_function_doc()[1].split():
-                try:
-                    bltn_obj = create(getattr(_builtins, name), builtin, module=builtin)
-                except AttributeError:
-                    continue
+    def execute_function(self, evaluator, params):
+        for name in self._parse_function_doc()[1].split():
+            try:
+                bltn_obj = create(getattr(_builtins, name), builtin, module=builtin)
+            except AttributeError:
+                continue
+            else:
+                if isinstance(bltn_obj, PyObject):
+                    yield bltn_obj
                 else:
-                    if isinstance(bltn_obj, PyObject):
-                        yield bltn_obj
-                    else:
-                        for result in evaluator.execute(bltn_obj, params):
-                            yield result
+                    for result in evaluator.execute(bltn_obj, params):
+                        yield result
 
     def get_self_attributes(self):
         return []  # Instance compatibility

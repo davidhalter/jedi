@@ -87,6 +87,8 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             n.names = n.names[1:]
             names.append(InstanceElement(self._evaluator, self, n))
 
+        if isinstance(self.base, compiled.PyObject):
+            return []
         names = []
         # This loop adds the names of the self object, copies them and removes
         # the self.

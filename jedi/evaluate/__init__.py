@@ -361,7 +361,6 @@ class Evaluator(object):
                     result = typ.get_index_types(current)
             elif current.type not in [pr.Array.DICT]:
                 # Scope must be a class or func - make an instance or execution.
-                debug.dbg('exe', typ)
                 result = self.execute(typ, current)
             else:
                 # Curly braces are not allowed, because they make no sense.
@@ -382,13 +381,17 @@ class Evaluator(object):
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
+        debug.dbg('execute:', obj, params)
         try:
             return stdlib.execute(self, obj, params)
         except stdlib.NotInStdLib:
             pass
 
         if isinstance(obj, compiled.PyObject):
-            return list(obj.execute(self, params))
+            if obj.is_executable_class():
+                return [er.Instance(self, obj, params)]
+            else:
+                return list(obj.execute_function(self, params))
         elif obj.isinstance(er.Class):
             # There maybe executions of executions.
             return [er.Instance(self, obj, params)]
@@ -409,7 +412,7 @@ class Evaluator(object):
             else:
                 stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
 
-            debug.dbg('execute: %s in %s' % (stmts, obj))
+            debug.dbg('execute result: %s in %s' % (stmts, obj))
             return imports.strip_imports(self, stmts)
 
     def goto(self, stmt, call_path=None):
