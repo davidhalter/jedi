@@ -24,16 +24,10 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         content of a generator.
         """
         names = []
-        none_pos = (0, 0)
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
-            name = pr.Name(compiled.builtin, [(n, none_pos)],
-                           none_pos, none_pos)
-            if n in executes_generator:
-                name.parent = self
-            else:
-                name.parent = compiled.builtin
-            names.append(name)
+            parent = self if n in executes_generator else compiled.builtin
+            names.append(helpers.FakeName(n, parent))
         debug.dbg('generator names', names)
         return names
 

@@ -59,7 +59,7 @@ class PyObject(Base):
     def _cls(self):
         # Ensures that a PyObject is returned that is not an instance (like list)
         if fake.is_class_instance(self.obj):
-            return PyObject(self.obj.__class__, self.parent, True)
+            return PyObject(self.obj.__class__, self.parent)
         return self
 
     def get_defined_names(self):

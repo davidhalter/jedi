@@ -156,3 +156,19 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
                 s_new = s_new.next
 
     return result
+
+
+class FakeSubModule():
+    line_offset = 0
+
+
+class FakeStatement(pr.Statement):
+    def __init__(self, token_list):
+        p = 0, 0
+        super(FakeStatement, self).__init__(FakeSubModule, token_list, p, p)
+
+
+class FakeName(pr.Name):
+    def __init__(self, name, parent=None):
+        p = 0, 0
+        super(FakeName, self).__init__(FakeSubModule, [(name, p)], p, p, parent)

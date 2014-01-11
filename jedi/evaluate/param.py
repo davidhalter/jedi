@@ -3,6 +3,7 @@ import copy
 from jedi.parser import representation as pr
 from jedi.evaluate import iterable
 from jedi.evaluate import common
+from jedi.evaluate import helpers
 
 
 def get_params(evaluator, func, var_args):
@@ -23,11 +24,11 @@ def get_params(evaluator, func, var_args):
             new_param.parent = parent
 
         # create an Array (-> needed for *args/**kwargs tuples/dicts)
-        arr = pr.Array(_FakeSubModule, start_pos, array_type, parent)
+        arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
         arr.values = values
         key_stmts = []
         for key in keys:
-            stmt = pr.Statement(_FakeSubModule, [], start_pos, None)
+            stmt = pr.Statement(helpers.FakeSubModule, [], start_pos, None)
             stmt._expression_list = [key]
             key_stmts.append(stmt)
         arr.keys = key_stmts
@@ -139,7 +140,7 @@ def _var_args_iterator(evaluator, var_args):
                 continue
             old = stmt
             # generate a statement if it's not already one.
-            stmt = pr.Statement(_FakeSubModule, [], (0, 0), None)
+            stmt = pr.Statement(helpers.FakeSubModule, [], (0, 0), None)
             stmt._expression_list = [old]
 
         # *args
@@ -154,7 +155,7 @@ def _var_args_iterator(evaluator, var_args):
                         yield None, field_stmt
                 elif isinstance(array, iterable.Generator):
                     for field_stmt in array.iter_content():
-                        yield None, _FakeStatement(field_stmt)
+                        yield None, helpers._FakeStatement([field_stmt])
         # **kwargs
         elif expression_list[0] == '**':
             for array in evaluator.eval_expression_list(expression_list[1:]):
@@ -175,13 +176,3 @@ def _var_args_iterator(evaluator, var_args):
                     yield key_arr[0].name, stmt
             else:
                 yield None, stmt
-
-
-class _FakeSubModule():
-    line_offset = 0
-
-
-class _FakeStatement(pr.Statement):
-    def __init__(self, content):
-        p = 0, 0
-        super(_FakeStatement, self).__init__(_FakeSubModule, [content], p, p)
