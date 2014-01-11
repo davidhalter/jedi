@@ -34,7 +34,7 @@ class PyObject(Base):
 
     def get_parent_until(self, *args, **kwargs):
         # compiled modules only use functions and classes/methods (2 levels)
-        return getattr(self.parent, 'parent', self.parent) or self
+        return getattr(self.parent, 'parent', self.parent) or self.parent or self
 
     @underscore_memoization
     def _parse_function_doc(self):
@@ -74,7 +74,8 @@ class PyObject(Base):
 
     def get_subscope_by_name(self, name):
         if name in dir(self._cls().obj):
-            return PyName(self._cls, name).parent
+            print PyName(self._cls(), name).parent
+            return PyName(self._cls(), name).parent
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
@@ -116,14 +117,14 @@ class PyName(object):
     @underscore_memoization
     def parent(self):
         try:
-            # this has a builtin_function_or_method
-            return create(getattr(self._obj.obj, self._name), self._obj,
-                          module=self._obj.get_parent_until())
+            o = getattr(self._obj.obj, self._name)
         except AttributeError:
             # happens e.g. in properties of
             # PyQt4.QtGui.QStyleOptionComboBox.currentText
             # -> just set it to None
             return PyObject(None, builtin)
+        else:
+            return create(o, self._obj, module=self._obj.get_parent_until())
 
     @property
     def names(self):

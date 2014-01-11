@@ -75,7 +75,7 @@ def _load_module(module):
             with open(os.path.join(path, 'fake', module_name) + '.pym') as f:
                 source = f.read()
         except IOError:
-            return {}
+            return
         module = Parser(source, module_name).module
         modules[module_name] = module
         return module
@@ -88,6 +88,8 @@ def get_faked(module, obj):
                 return s
 
     mod = _load_module(module)
+    if mod is None:
+        return
 
     # Having the module as a `parser.representation.module`, we need to scan
     # for methods.
@@ -97,8 +99,10 @@ def get_faked(module, obj):
         return from_scope(mod, obj)
     elif not inspect.isclass(obj):
         # object is a method or descriptor
-        cls = obj.__objclass__
-        return from_scope(from_scope(mod, cls), obj)
+        cls = from_scope(mod, obj.__objclass__)
+        if cls is None:
+            return
+        return from_scope(cls, obj)
 
 
 def is_class_instance(obj):
