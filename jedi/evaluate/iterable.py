@@ -96,6 +96,8 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
                     str_key = key.value
                 elif isinstance(key, pr.Name):
                     str_key = str(key)
+                else:
+                    continue
 
                 if mixed_index == str_key:
                     index = i

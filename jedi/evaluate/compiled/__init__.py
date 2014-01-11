@@ -109,6 +109,7 @@ class PyObject(Base):
         for name in dir(self._cls().obj):
             f = fake.get_faked(module.obj, self.obj, name)
             if f:
+                f.parent = self
                 faked_subscopes.append(f)
         return faked_subscopes
 

@@ -163,9 +163,10 @@ class FakeSubModule():
 
 
 class FakeStatement(pr.Statement):
-    def __init__(self, token_list):
+    def __init__(self, expression_list):
         p = 0, 0
-        super(FakeStatement, self).__init__(FakeSubModule, token_list, p, p)
+        super(FakeStatement, self).__init__(FakeSubModule, expression_list, p, p)
+        self._expression_list = expression_list
 
 
 class FakeName(pr.Name):

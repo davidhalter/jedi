@@ -143,7 +143,7 @@ class Script(object):
         if not dot:
             # add named params
             for call_def in self.call_signatures():
-                if not call_def.module.is_builtin():
+                if not isinstance(call_def.module, compiled.PyObject):
                     for p in call_def.params:
                         completions.append((p.get_name(), p))
 

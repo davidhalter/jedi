@@ -282,8 +282,8 @@ class Evaluator(object):
                     result += self.eval_call(call)
                 elif call == '*':
                     if [r for r in result if isinstance(r, iterable.Array)
-                       or isinstance(r, er.Instance)
-                       and str(r.name) == 'str']:
+                            or isinstance(r, compiled.PyObject)
+                            and isinstance(r.obj, (str, unicode))]:
                         # if it is an iterable, ignore * operations
                         next(calls_iterator)
         return set(result)
@@ -452,8 +452,8 @@ def filter_private_variable(scope, call_scope, var_name):
     if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
             and var_name.startswith('__') and not var_name.endswith('__'):
         s = call_scope.get_parent_until((pr.Class, er.Instance))
-        if not isinstance(scope.base, compiled.PyObject):
-            if s != scope and s != scope.base.base:
+        if s != scope and (isinstance(scope.base, compiled.PyObject)
+                           or s != scope.base.base):
                 return True
     return False
 
