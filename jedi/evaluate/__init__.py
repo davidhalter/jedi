@@ -411,7 +411,6 @@ class Evaluator(object):
                         debug.warning("no __call__ func available", obj)
                 else:
                     debug.warning("no execution possible", obj)
-                    raise NotImplementedError()
             else:
                 stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
 

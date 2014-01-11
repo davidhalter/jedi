@@ -23,10 +23,9 @@ class PyObject(Base):
     start_pos = 0, 0
     asserts = []
 
-    def __init__(self, obj, parent=None, instantiated=False):
+    def __init__(self, obj, parent=None):
         self.obj = obj
         self.parent = parent
-        self.instantiated = instantiated
         self.doc = inspect.getdoc(obj)
 
     def __repr__(self):
@@ -74,7 +73,6 @@ class PyObject(Base):
 
     def get_subscope_by_name(self, name):
         if name in dir(self._cls().obj):
-            print PyName(self._cls(), name).parent
             return PyName(self._cls(), name).parent
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
@@ -87,7 +85,7 @@ class PyObject(Base):
     def execute_function(self, evaluator, params):
         for name in self._parse_function_doc()[1].split():
             try:
-                bltn_obj = create(getattr(_builtins, name), builtin, module=builtin)
+                bltn_obj = _create_from_name(builtin, builtin, name)
             except AttributeError:
                 continue
             else:
@@ -116,15 +114,8 @@ class PyName(object):
     @property
     @underscore_memoization
     def parent(self):
-        try:
-            o = getattr(self._obj.obj, self._name)
-        except AttributeError:
-            # happens e.g. in properties of
-            # PyQt4.QtGui.QStyleOptionComboBox.currentText
-            # -> just set it to None
-            return PyObject(None, builtin)
-        else:
-            return create(o, self._obj, module=self._obj.get_parent_until())
+        module = self._obj.get_parent_until()
+        return _create_from_name(module, self._obj, self._name)
 
     @property
     def names(self):
@@ -236,23 +227,31 @@ builtin = PyObject(_builtins)
 magic_function_class = PyObject(type(load_module), parent=builtin)
 
 
-def create(obj, parent=builtin, instantiated=False, module=None):
-    if not inspect.ismodule(obj):
-        if module is None:
-            module = obj.__class__ if fake.is_class_instance(obj) else obj
-            if not (inspect.isbuiltin(module) or inspect.isclass(module)):
-                module = obj.__objclass__
-            try:
-                imp_plz = obj.__module__
-            except AttributeError:
-                # Unfortunately in some cases like `int` there's no __module__
-                module = builtin
-            else:
-                module = PyObject(__import__(imp_plz))
+def _create_from_name(module, parent, name):
+    faked = fake.get_faked(module.obj, parent, name)
+    if faked is not None:
+        faked.parent = parent
+        return faked
 
-        faked = fake.get_faked(module.obj, obj)
+    try:
+        obj = getattr(parent, name)
+    except AttributeError:
+        # happens e.g. in properties of
+        # PyQt4.QtGui.QStyleOptionComboBox.currentText
+        # -> just set it to None
+        obj = None
+    return PyObject(obj, parent)
+
+
+def create(obj, parent=builtin, module=None):
+    """
+    A very weird interface class to this module. The more options provided the
+    more acurate loading compiled objects is.
+    """
+    if not inspect.ismodule(parent):
+        faked = fake.get_faked(module and module.obj, obj)
         if faked is not None:
             faked.parent = parent
             return faked
 
-    return PyObject(obj, parent, instantiated)
+    return PyObject(obj, parent)

@@ -122,7 +122,6 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
 
     def get_subscope_by_name(self, name):
         sub = self.base.get_subscope_by_name(name)
-        print sub
         return InstanceElement(self._evaluator, self, sub, True)
 
     def execute_subscope_by_name(self, name, args=()):
@@ -204,9 +203,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
                 and par == self.instance.base.base:
             par = self.instance
         elif not isinstance(par, (pr.Module, compiled.PyObject)):
-            print 'HA', par, self.var
             par = InstanceElement(self.instance._evaluator, self.instance, par, self.is_class_var)
-            print 'H2A', par
         return par
 
     def get_parent_until(self, *args, **kwargs):

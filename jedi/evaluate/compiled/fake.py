@@ -8,7 +8,7 @@ import re
 import os
 import inspect
 
-from jedi._compatibility import is_py3k
+from jedi._compatibility import is_py3k, builtins
 from jedi.parser import Parser
 
 modules = {}
@@ -67,6 +67,7 @@ def _load_module(module):
     module_name = module.__name__
     if module_name == '__builtin__' and not is_py3k:
         module_name = 'builtins'
+
     try:
         return modules[module_name]
     except KeyError:
@@ -81,11 +82,27 @@ def _load_module(module):
         return module
 
 
-def get_faked(module, obj):
-    def from_scope(scope, obj):
+def get_faked(module, obj, name=None):
+    def from_scope(scope, obj_name):
         for s in scope.subscopes:
-            if str(s.name) == obj.__name__:
+            if str(s.name) == obj_name:
                 return s
+
+    # Crazy underscore actions to try to escape all the internal madness.
+    obj = obj.__class__ if is_class_instance(obj) else obj
+    if module is None:
+        try:
+            module = obj.__objclass__
+        except AttributeError:
+            pass
+
+        try:
+            imp_plz = obj.__module__
+        except AttributeError:
+            # Unfortunately in some cases like `int` there's no __module__
+            module = builtins
+        else:
+            module = __import__(imp_plz)
 
     mod = _load_module(module)
     if mod is None:
@@ -93,16 +110,20 @@ def get_faked(module, obj):
 
     # Having the module as a `parser.representation.module`, we need to scan
     # for methods.
-    if is_class_instance(obj):
-        obj = obj.__class__
-    if inspect.isbuiltin(obj):
-        return from_scope(mod, obj)
-    elif not inspect.isclass(obj):
-        # object is a method or descriptor
-        cls = from_scope(mod, obj.__objclass__)
-        if cls is None:
-            return
-        return from_scope(cls, obj)
+    if name is None:
+        if inspect.isbuiltin(obj):
+            return from_scope(mod, obj.__name__)
+        elif not inspect.isclass(obj):
+            # object is a method or descriptor
+            cls = from_scope(mod, obj.__objclass__.__name__)
+            if cls is None:
+                return
+            return from_scope(cls, obj.__name__)
+    else:
+        if obj == module:
+            return from_scope(mod, name)
+        else:
+            return from_scope(mod, name)
 
 
 def is_class_instance(obj):
