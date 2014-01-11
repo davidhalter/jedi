@@ -389,7 +389,7 @@ class Evaluator(object):
         except stdlib.NotInStdLib:
             pass
 
-        if isinstance(obj, compiled.PyObject):
+        if obj.isinstance(compiled.PyObject):
             if obj.is_executable_class():
                 return [er.Instance(self, obj, params)]
             else:
@@ -401,9 +401,9 @@ class Evaluator(object):
             return obj.iter_content()
         else:
             stmts = []
-            try:
-                obj.returns  # Test if it is a function
-            except AttributeError:
+            if obj.isinstance(er.Function):
+                stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
+            else:
                 if hasattr(obj, 'execute_subscope_by_name'):
                     try:
                         stmts = obj.execute_subscope_by_name('__call__', params)
@@ -411,8 +411,6 @@ class Evaluator(object):
                         debug.warning("no __call__ func available", obj)
                 else:
                     debug.warning("no execution possible", obj)
-            else:
-                stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
 
             debug.dbg('execute result: %s in %s' % (stmts, obj))
             return imports.strip_imports(self, stmts)
@@ -454,8 +452,9 @@ def filter_private_variable(scope, call_scope, var_name):
     if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
             and var_name.startswith('__') and not var_name.endswith('__'):
         s = call_scope.get_parent_until((pr.Class, er.Instance))
-        if s != scope and s != scope.base.base:
-            return True
+        if not isinstance(scope.base, compiled.PyObject):
+            if s != scope and s != scope.base.base:
+                return True
     return False
 
 

@@ -87,8 +87,6 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             n.names = n.names[1:]
             names.append(InstanceElement(self._evaluator, self, n))
 
-        if isinstance(self.base, compiled.PyObject):
-            return []
         names = []
         # This loop adds the names of the self object, copies them and removes
         # the self.
@@ -115,9 +113,10 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
                 if n.names[0] == self_name and len(n.names) == 2:
                     add_self_dot_name(n)
 
-        for s in self.base.get_super_classes():
-            for inst in self._evaluator.execute(s):
-                names += inst.get_self_attributes()
+        if not isinstance(self.base, compiled.PyObject):
+            for s in self.base.get_super_classes():
+                for inst in self._evaluator.execute(s):
+                    names += inst.get_self_attributes()
         return names
 
     def get_subscope_by_name(self, name):

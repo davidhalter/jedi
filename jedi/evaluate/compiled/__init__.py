@@ -83,6 +83,8 @@ class PyObject(Base):
         return self._cls().obj.__name__
 
     def execute_function(self, evaluator, params):
+        if self.type() != 'def':
+            return
         for name in self._parse_function_doc()[1].split():
             try:
                 bltn_obj = _create_from_name(builtin, builtin, name)
@@ -94,6 +96,21 @@ class PyObject(Base):
                 else:
                     for result in evaluator.execute(bltn_obj, params):
                         yield result
+
+    @property
+    @underscore_memoization
+    def subscopes(self):
+        """
+        Returns only the faked scopes - the other ones are not important for
+        internal analysis.
+        """
+        module = self.get_parent_until()
+        faked_subscopes = []
+        for name in dir(self._cls().obj):
+            f = fake.get_faked(module.obj, self.obj, name)
+            if f:
+                faked_subscopes.append(f)
+        return faked_subscopes
 
     def get_self_attributes(self):
         return []  # Instance compatibility
@@ -236,6 +253,7 @@ magic_function_class = PyObject(type(load_module), parent=builtin)
 
 def _create_from_name(module, parent, name):
     faked = fake.get_faked(module.obj, parent.obj, name)
+    # only functions are necessary.
     if faked is not None:
         faked.parent = parent
         return faked

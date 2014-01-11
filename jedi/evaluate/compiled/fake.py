@@ -10,6 +10,7 @@ import inspect
 
 from jedi._compatibility import is_py3k, builtins
 from jedi.parser import Parser
+from jedi.parser.representation import Class
 
 modules = {}
 
@@ -63,7 +64,7 @@ def _load_fakes(module_name):
         return mixin_dct
 
 
-def _load_module(module):
+def _load_faked_module(module):
     module_name = module.__name__
     if module_name == '__builtin__' and not is_py3k:
         module_name = 'builtins'
@@ -82,7 +83,7 @@ def _load_module(module):
         return module
 
 
-def get_faked(module, obj, name=None):
+def _faked(module, obj, name=None):
     def from_scope(scope, obj_name):
         for s in scope.subscopes:
             if str(s.name) == obj_name:
@@ -104,26 +105,35 @@ def get_faked(module, obj, name=None):
         else:
             module = __import__(imp_plz)
 
-    mod = _load_module(module)
-    if mod is None:
+    faked_mod = _load_faked_module(module)
+    if faked_mod is None:
         return
 
     # Having the module as a `parser.representation.module`, we need to scan
     # for methods.
     if name is None:
         if inspect.isbuiltin(obj):
-            return from_scope(mod, obj.__name__)
+            return from_scope(faked_mod, obj.__name__)
         elif not inspect.isclass(obj):
             # object is a method or descriptor
-            cls = from_scope(mod, obj.__objclass__.__name__)
+            cls = from_scope(faked_mod, obj.__objclass__.__name__)
             if cls is None:
                 return
             return from_scope(cls, obj.__name__)
     else:
         if obj == module:
-            return from_scope(mod, name)
+            return from_scope(faked_mod, name)
         else:
-            return from_scope(mod, name)
+            cls = from_scope(faked_mod, obj.__name__)
+            if cls is None:
+                return
+            return from_scope(cls, name)
+
+
+def get_faked(*args, **kwargs):
+    result = _faked(*args, **kwargs)
+    if not isinstance(result, Class):
+        return result
 
 
 def is_class_instance(obj):

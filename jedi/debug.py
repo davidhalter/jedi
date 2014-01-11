@@ -24,6 +24,7 @@ enable_notice = False
 # callback, interface: level, str
 debug_function = None
 ignored_modules = ['jedi.evaluate.builtin', 'jedi.parser']
+debug_indent = -1
 
 
 def reset_time():
