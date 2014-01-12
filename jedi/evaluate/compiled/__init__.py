@@ -126,6 +126,9 @@ class PyName(object):
         self.name = name
         self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
 
+    def get_parent_until(self):
+        return self.parent.get_parent_until()
+
     def __repr__(self):
         return '<%s: (%s).%s>' % (type(self).__name__, repr(self._obj.obj), self.name)
 
