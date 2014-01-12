@@ -146,7 +146,9 @@ class Evaluator(object):
             if not (scope != non_flow and scope.isinstance(pr.Class)
                     or scope.isinstance(pr.Flow)
                     or scope.isinstance(er.Instance)
-                    and non_flow.isinstance(er.Function)):
+                    and non_flow.isinstance(er.Function)
+                    or isinstance(scope, compiled.PyObject)
+                    and scope.type() == 'class' and in_func_scope != scope):
                 try:
                     if isinstance(scope, er.Instance):
                         for g in scope.scope_generator():
