@@ -4,6 +4,7 @@ Utilities for end-users.
 
 from __future__ import absolute_import
 import __main__
+import pdb
 
 from jedi import Interpreter
 
@@ -100,6 +101,7 @@ def setup_readline(namespace_module=__main__, combine_old_completer=False):
         completer = JediRL(namespace_module).complete
         if old_completer and combine_old_completer:
             completer = combine_completers(completer, old_completer)
+        pdb.Pdb.complete = completer
         readline.set_completer(completer)
         readline.parse_and_bind("tab: complete")
         # jedi itself does the case matching
