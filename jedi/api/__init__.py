@@ -518,7 +518,8 @@ class Script(object):
         debug.speed('func_call followed')
 
         return [classes.CallDef(o, index, call) for o in origins
-                if o.isinstance(er.Function, er.Instance, er.Class)]
+                if o.isinstance(er.Function, er.Instance, er.Class)
+                or isinstance(o, compiled.PyObject) and o.type() != 'module']
 
     def _func_call_and_param_index(self):
         debug.speed('func_call start')

@@ -15,7 +15,7 @@ class TestCallSignatures(TestCase):
             assert signatures[0].call_name == expected_name
             assert signatures[0].index == expected_index
 
-    def test_call_signatures(self):
+    def test_simple(self):
         def run(source, name, index=0, column=None, line=1):
             self._run(source, name, index, line, column)
 
@@ -72,7 +72,7 @@ class TestCallSignatures(TestCase):
             "func(alpha='101',"
         run(s, 'func', 0, column=13, line=2)
 
-    def test_function_definition_complex(self):
+    def test_complex(self):
         s = """
                 def abc(a,b):
                     pass
@@ -106,7 +106,7 @@ class TestCallSignatures(TestCase):
         # just don't throw an exception (if numpy doesn't exist, just ignore it)
         assert Script(s).call_signatures() == []
 
-    def test_function_definition_empty_paren_pre_space(self):
+    def test_call_signatures_empty_parentheses_pre_space(self):
         s = textwrap.dedent("""\
         def f(a, b):
             pass
