@@ -114,6 +114,32 @@ class PyName(object):
     def get_code(self):
         return self._name
 
+import os.path as osp
+import imp
+def get_parent_until(path):
+    """
+    Given a file path, determine the full module path
+
+    e.g. '/usr/lib/python2.7/dist-packages/numpy/core/__init__.pyc' yields
+    'numpy.core'
+    """
+    dirname = osp.dirname(path)
+    try:
+        mod = osp.basename(path)
+        mod = osp.splitext(mod)[0]
+        imp.find_module(mod, [dirname])
+    except ImportError:
+        return
+    items = [mod]
+    while 1:
+        items.append(osp.basename(dirname))
+        try:
+            dirname = osp.dirname(dirname)
+            imp.find_module('__init__', [dirname + os.sep])
+        except ImportError:
+            break
+    return '.'.join(reversed(items))
+
 
 def load_module(path, name):
     if not name:
@@ -133,6 +159,12 @@ def load_module(path, name):
         # use sys.modules, because you cannot access some modules
         # directly. -> github issue #59
         module = sys.modules[name]
+    except ImportError:
+        name = get_parent_until(path)
+        if name in sys.modules:
+            module = sys.modules[name]
+        else:
+            module = __import__(name, fromlist=[name.rpartition('.')[-1]])
     sys.path = temp
 
     return PyObject(module)
