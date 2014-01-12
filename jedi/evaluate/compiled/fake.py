@@ -4,7 +4,6 @@ written in C (binaries), but my autocompletion only understands Python code. By
 mixing in Python code, the autocompletion should work much better for builtins.
 """
 
-import re
 import os
 import inspect
 
@@ -14,52 +13,6 @@ from jedi.parser.representation import Class
 from jedi.evaluate.helpers import FakeName
 
 modules = {}
-
-
-def _load_fakes(module_name):
-    regex = r'^(def|class)\s+([\w\d]+)'
-
-    def process_code(code, depth=0):
-        funcs = {}
-        matches = list(re.finditer(regex, code, re.MULTILINE))
-        positions = [m.start() for m in matches]
-        for i, pos in enumerate(positions):
-            try:
-                code_block = code[pos:positions[i + 1]]
-            except IndexError:
-                code_block = code[pos:len(code)]
-            structure_name = matches[i].group(1)
-            name = matches[i].group(2)
-            if structure_name == 'def':
-                funcs[name] = code_block
-            elif structure_name == 'class':
-                if depth > 0:
-                    raise NotImplementedError()
-
-                # remove class line
-                c = re.sub(r'^[^\n]+', '', code_block)
-                # remove whitespace
-                c = re.compile(r'^[ ]{4}', re.MULTILINE).sub('', c)
-
-                funcs[name] = process_code(c)
-            else:
-                raise NotImplementedError()
-        return funcs
-
-    if module_name == '__builtin__' and not is_py3k:
-        module_name = 'builtins'
-    path = os.path.dirname(os.path.abspath(__file__))
-    try:
-        with open(os.path.join(path, 'mixin', module_name) + '.pym') as f:
-            s = f.read()
-    except IOError:
-        return {}
-    else:
-        mixin_dct = process_code(s)
-        if is_py3k and module_name == 'builtins':
-            # in the case of Py3k xrange is now range
-            mixin_dct['range'] = mixin_dct['xrange']
-        return mixin_dct
 
 
 def _load_faked_module(module):
