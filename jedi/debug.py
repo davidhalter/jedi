@@ -1,11 +1,14 @@
 from jedi._compatibility import u, encoding, is_py3k
 import inspect
+import os
 import time
 
 try:
-    # Use colorama for nicer console output.
-    from colorama import Fore, init
-    init()
+    if not os.name == 'nt':
+        # Use colorama for nicer console output.
+        from colorama import Fore, init
+        init()
+    # does not work on Windows, as pyreadline and colorama interfere
 except ImportError:
     class Fore(object):
         RED = ''
