@@ -75,16 +75,18 @@ def _load_faked_module(module):
             with open(os.path.join(path, 'fake', module_name) + '.pym') as f:
                 source = f.read()
         except IOError:
+            modules[module_name] = None
             return
         module = Parser(source, module_name).module
+        modules[module_name] = module
+
         if module_name == 'builtins' and not is_py3k:
             # There are two implementations of `open` for either python 2/3.
-            # -> Rename the python2 version.
+            # -> Rename the python2 version (`look at fake/builtins.pym`).
             open_func = search_scope(module, 'open')
             open_func.name = FakeName('open_python3')
             open_func = search_scope(module, 'open_python2')
             open_func.name = FakeName('open')
-        modules[module_name] = module
         return module
 
 
