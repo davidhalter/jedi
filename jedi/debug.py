@@ -8,7 +8,9 @@ try:
         # Use colorama for nicer console output.
         from colorama import Fore, init
         init()
-    # does not work on Windows, as pyreadline and colorama interfere
+        # does not work on Windows, as pyreadline and colorama interfere
+    else:
+        raise ImportError
 except ImportError:
     class Fore(object):
         RED = ''
