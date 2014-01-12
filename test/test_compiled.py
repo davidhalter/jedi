@@ -23,6 +23,10 @@ def test_fake_loading():
     assert isinstance(from_name, Function)
 
 
+def test_fake_docstr():
+    assert compiled.create(next).docstr == next.__doc__
+
+
 def test_parse_function_doc_illegal_docstr():
     docstr = """
     test_func(o
