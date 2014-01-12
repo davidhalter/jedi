@@ -129,8 +129,11 @@ class PyName(object):
     def get_parent_until(self):
         return self.parent.get_parent_until()
 
+    def __str__(self):
+        return self.name
+
     def __repr__(self):
-        return '<%s: (%s).%s>' % (type(self).__name__, repr(self._obj.obj), self.name)
+        return '<%s: (%s).%s>' % (type(self).__name__, self._obj.name, self.name)
 
     @property
     @underscore_memoization

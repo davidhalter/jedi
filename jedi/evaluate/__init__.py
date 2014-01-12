@@ -128,7 +128,7 @@ class Evaluator(object):
         true (default).
 
         >>> pairs[2]                                        #doctest: +ELLIPSIS
-        (<Module: ...builtin...>, [<Name: ...>, ...])
+        (<Builtin: ...builtin...>, [<PyName: ...>, ...])
 
         :rtype: [(pr.Scope, [pr.Name])]
         :return: Return an generator that yields a pair of scope and names.
