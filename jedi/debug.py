@@ -4,13 +4,13 @@ import os
 import time
 
 try:
-    if not os.name == 'nt':
+    if os.name == 'nt':
+        # does not work on Windows, as pyreadline and colorama interfere
+        raise ImportError
+    else:
         # Use colorama for nicer console output.
         from colorama import Fore, init
         init()
-        # does not work on Windows, as pyreadline and colorama interfere
-    else:
-        raise ImportError
 except ImportError:
     class Fore(object):
         RED = ''

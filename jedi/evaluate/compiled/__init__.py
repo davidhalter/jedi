@@ -6,7 +6,7 @@ import re
 import sys
 import os
 
-from jedi._compatibility import builtins as _builtins, is_py3k, exec_function
+from jedi._compatibility import builtins as _builtins, exec_function
 from jedi import debug
 from jedi.parser.representation import Base
 from jedi.cache import underscore_memoization
@@ -22,6 +22,7 @@ class PyObject(Base):
     # comply with the parser
     start_pos = 0, 0
     asserts = []
+    path = None  # modules have this attribute - set it to None.
 
     def __init__(self, obj, parent=None):
         self.obj = obj
@@ -182,12 +183,6 @@ docstr_defaults = {
     'dictionary': 'dict',
     'string': 'str',
 }
-
-if is_py3k:
-    #docstr_defaults['file object'] = 'import io; return io.TextIOWrapper()'
-    pass  # TODO reenable
-else:
-    docstr_defaults['file object'] = 'file'
 
 
 def _parse_function_doc(doc):

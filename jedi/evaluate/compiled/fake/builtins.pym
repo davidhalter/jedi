@@ -45,6 +45,15 @@ class xrange():
         return 1
 
 
+def open(file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True):
+    import io
+    return io.TextIOWrapper(file, mode, buffering, encoding, errors, newline, closefd)
+
+
+def open_python2(name, mode=None, buffering=None):
+    return file(name, mode, buffering)
+
+
 #--------------------------------------------------------
 # descriptors
 #--------------------------------------------------------

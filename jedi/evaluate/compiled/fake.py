@@ -11,6 +11,7 @@ import inspect
 from jedi._compatibility import is_py3k, builtins
 from jedi.parser import Parser
 from jedi.parser.representation import Class
+from jedi.evaluate.helpers import FakeName
 
 modules = {}
 
@@ -76,16 +77,24 @@ def _load_faked_module(module):
         except IOError:
             return
         module = Parser(source, module_name).module
+        if module_name == 'builtins' and not is_py3k:
+            # There are two implementations of `open` for either python 2/3.
+            # -> Rename the python2 version.
+            open_func = search_scope(module, 'open')
+            open_func.name = FakeName('open_python3')
+            open_func = search_scope(module, 'open_python2')
+            open_func.name = FakeName('open')
         modules[module_name] = module
         return module
 
 
-def _faked(module, obj, name=None):
-    def from_scope(scope, obj_name):
-        for s in scope.subscopes:
-            if str(s.name) == obj_name:
-                return s
+def search_scope(scope, obj_name):
+    for s in scope.subscopes:
+        if str(s.name) == obj_name:
+            return s
 
+
+def _faked(module, obj, name=None):
     # Crazy underscore actions to try to escape all the internal madness.
     obj = obj.__class__ if is_class_instance(obj) else obj
     if module is None:
@@ -110,21 +119,21 @@ def _faked(module, obj, name=None):
     # for methods.
     if name is None:
         if inspect.isbuiltin(obj):
-            return from_scope(faked_mod, obj.__name__)
+            return search_scope(faked_mod, obj.__name__)
         elif not inspect.isclass(obj):
             # object is a method or descriptor
-            cls = from_scope(faked_mod, obj.__objclass__.__name__)
+            cls = search_scope(faked_mod, obj.__objclass__.__name__)
             if cls is None:
                 return
-            return from_scope(cls, obj.__name__)
+            return search_scope(cls, obj.__name__)
     else:
         if obj == module:
-            return from_scope(faked_mod, name)
+            return search_scope(faked_mod, name)
         else:
-            cls = from_scope(faked_mod, obj.__name__)
+            cls = search_scope(faked_mod, obj.__name__)
             if cls is None:
                 return
-            return from_scope(cls, name)
+            return search_scope(cls, name)
 
 
 def get_faked(*args, **kwargs):
