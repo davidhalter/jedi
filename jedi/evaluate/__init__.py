@@ -451,10 +451,16 @@ def filter_private_variable(scope, call_scope, var_name):
     """private variables begin with a double underline `__`"""
     if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
             and var_name.startswith('__') and not var_name.endswith('__'):
-        s = call_scope.get_parent_until((pr.Class, er.Instance))
-        if s != scope and (isinstance(scope.base, compiled.PyObject)
-                           or s != scope.base.base):
-                return True
+        s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.PyObject))
+        #if s != scope and (isinstance(scope.base, compiled.PyObject)
+        #                   or s != scope.base.base):
+        if s != scope:
+            if isinstance(scope.base, compiled.PyObject):
+                if s != scope.base:
+                    return True
+            else:
+                if s != scope.base.base:
+                    return True
     return False
 
 
