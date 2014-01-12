@@ -45,9 +45,6 @@ def _load_fakes(module_name):
                 raise NotImplementedError()
         return funcs
 
-    # sometimes there are stupid endings like `_sqlite3.cpython-32mu`
-    module_name = re.sub(r'\..*', '', module_name)
-
     if module_name == '__builtin__' and not is_py3k:
         module_name = 'builtins'
     path = os.path.dirname(os.path.abspath(__file__))

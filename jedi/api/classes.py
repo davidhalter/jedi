@@ -173,11 +173,11 @@ class BaseDefinition(object):
         The module name.
 
         >>> from jedi import Script
-        >>> source = 'import datetime'
-        >>> script = Script(source, 1, len(source), 'example.py')
+        >>> source = 'import json'
+        >>> script = Script(source, path='example.py')
         >>> d = script.goto_definitions()[0]
         >>> print(d.module_name)                       # doctest: +ELLIPSIS
-        datetime
+        json
         """
         return str(self._module.name)
 

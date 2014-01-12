@@ -563,11 +563,10 @@ class Script(object):
         match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
         return match.groups()
 
-    @staticmethod
-    def _sorted_defs(d):
+    def _sorted_defs(self, d):
         # Note: `or ''` below is required because `module_path` could be
         #       None and you can't compare None and str in Python 3.
-        return sorted(d, key=lambda x: (x.module_path or '', x.line, x.column))
+        return sorted(d, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
 
 
 class Interpreter(Script):

@@ -154,6 +154,9 @@ def load_module(path, name):
         name = os.path.basename(path)
         name = name.rpartition('.')[0]  # cut file type (normally .so)
 
+    # sometimes there are endings like `_sqlite3.cpython-32mu`
+    name = re.sub(r'\..*', '', name)
+
     sys_path = get_sys_path()
     if path:
         sys_path.insert(0, path)

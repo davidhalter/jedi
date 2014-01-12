@@ -2,24 +2,23 @@
 Test all things related to the ``jedi.api`` module.
 """
 
-from jedi import common, api
+from jedi import api
 from pytest import raises
 
 
 def test_preload_modules():
     def check_loaded(*modules):
         # +1 for None module (currently used)
-        assert len(new) == len(modules) + 1
-        for i in modules + ('__builtin__',):
-            assert [i in k for k in new.keys() if k is not None]
+        assert len(parser_cache) == len(modules) + 1
+        for i in modules:
+            assert [i in k for k in parser_cache.keys() if k is not None]
 
     from jedi import cache
     temp_cache, cache.parser_cache = cache.parser_cache, {}
-    new = cache.parser_cache
-    with common.ignored(KeyError): # performance of tests -> no reload
-        new['__builtin__'] = temp_cache['__builtin__']
+    parser_cache = cache.parser_cache
 
-    api.preload_module('datetime')
+    api.preload_module('sys')
+    check_loaded()  # compiled (c_builtin) modules shouldn't be in the cache.
     api.preload_module('json', 'token')
     check_loaded('json', 'token')
 
@@ -28,6 +27,7 @@ def test_preload_modules():
 
 def test_empty_script():
     assert api.Script('')
+
 
 def test_line_number_errors():
     """
