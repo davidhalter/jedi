@@ -71,7 +71,6 @@ class CompiledObject(Base):
             yield CompiledName(cls, name)
 
     def instance_names(self):
-        # TODO REMOVE (temporary until the Instance method is removed)
         return self.get_defined_names()
 
     def get_subscope_by_name(self, name):

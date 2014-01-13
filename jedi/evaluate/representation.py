@@ -262,7 +262,6 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
 
     @memoize_default(default=())
     def instance_names(self):
-        # TODO REMOVE instance_names
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
             for i in iterable:
