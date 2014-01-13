@@ -6,6 +6,8 @@ from __future__ import absolute_import
 import __main__
 from collections import namedtuple
 import re
+import os
+import sys
 
 from jedi import Interpreter
 
@@ -34,15 +36,15 @@ def setup_readline(namespace_module=__main__):
 
     This will fallback to the readline completer if Jedi is not installed.
     The readline completer will only complete names in the global namespace,
-    so for example,
+    so for example::
 
-    >>> ran<TAB> # doctest: +SKIP
+        ran<TAB>
 
     will complete to ``range``
 
-    with both Jedi and readline, but
+    with both Jedi and readline, but::
 
-    >>> range(10).cou<TAB> # doctest: +SKIP
+        range(10).cou<TAB>
 
     will show complete to ``range(10).count`` only with Jedi.
 
@@ -63,7 +65,6 @@ def setup_readline(namespace_module=__main__):
             library module.
             """
             if state == 0:
-                import os, sys
                 sys.path.insert(0, os.getcwd())
                 # Calling python doesn't have a path, so add to sys.path.
                 try:
