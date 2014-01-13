@@ -103,6 +103,9 @@ It's very easy to create an editor plugin that uses Jedi. See `Plugin API
 <https://jedi.jedidjah.ch/en/latest/docs/plugin-api.html>`_ for more
 information.
 
+If you have specific questions, please add an issue or ask on `stackoverflow
+<https://stackoverflow.com>`_ with the label ``python-jedi``.
+
 
 Development
 ===========
