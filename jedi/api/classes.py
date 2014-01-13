@@ -237,7 +237,7 @@ class BaseDefinition(object):
 
         """
         try:
-            return self._definition.doc
+            return self._definition.doc or ''  # Always a String, never None.
         except AttributeError:
             return self.raw_doc
 

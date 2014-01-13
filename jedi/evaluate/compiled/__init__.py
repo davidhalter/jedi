@@ -56,7 +56,13 @@ class PyObject(Base):
     def _cls(self):
         # Ensures that a PyObject is returned that is not an instance (like list)
         if fake.is_class_instance(self.obj):
-            return PyObject(self.obj.__class__, self.parent)
+            try:
+                c = self.obj.__class__
+            except AttributeError:
+                # happens with numpy.core.umath._UFUNC_API (you get it
+                # automatically by doing `import numpy`.
+                c = type(None)
+            return PyObject(c, self.parent)
         return self
 
     def get_defined_names(self):
