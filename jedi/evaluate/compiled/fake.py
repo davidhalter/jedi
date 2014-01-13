@@ -51,7 +51,6 @@ def search_scope(scope, obj_name):
 
 def _faked(module, obj, name):
     # Crazy underscore actions to try to escape all the internal madness.
-    obj = obj.__class__ if is_class_instance(obj) else obj
     if module is None:
         try:
             module = obj.__objclass__
@@ -92,11 +91,12 @@ def _faked(module, obj, name):
 
 
 def get_faked(module, obj, name=None):
+    obj = obj.__class__ if is_class_instance(obj) else obj
     result = _faked(module, obj, name)
     if not isinstance(result, Class) and result is not None:
         # Set the docstr which was previously not set (faked modules don't
         # contain it).
-        result.docstr = obj.__doc__
+        result.docstr = obj.__doc__ or ''
         return result
 
 
