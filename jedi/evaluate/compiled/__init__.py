@@ -6,7 +6,7 @@ import re
 import sys
 import os
 
-from jedi._compatibility import builtins as _builtins, exec_function
+from jedi._compatibility import builtins as _builtins
 from jedi import debug
 from jedi.parser.representation import Base
 from jedi.cache import underscore_memoization
@@ -160,8 +160,8 @@ def load_module(path, name):
     # sometimes there are endings like `_sqlite3.cpython-32mu`
     name = re.sub(r'\..*', '', name)
 
+    dot_path = []
     if path:
-        dot_path = []
         p = path
         # if path is not in sys.path, we need to make a well defined import
         # like `from numpy.core import umath.`
@@ -179,10 +179,8 @@ def load_module(path, name):
         sys_path.insert(0, path)
 
     temp, sys.path = sys.path, sys_path
-    content = {}
     try:
-        exec_function('import %s as module' % name, content)
-        module = content['module']
+        module = __import__(name, {}, {}, dot_path[:-1])
     except AttributeError:
         # use sys.modules, because you cannot access some modules
         # directly. -> github issue #59
