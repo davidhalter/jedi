@@ -14,10 +14,6 @@ from jedi.evaluate.sys_path import get_sys_path
 from . import fake
 
 
-# TODO
-# unbound methods such as pyqtSignals have no __name__
-# if not hasattr(func, "__name__"):
-
 class PyObject(Base):
     # comply with the parser
     start_pos = 0, 0
@@ -158,6 +154,20 @@ def load_module(path, name):
     # sometimes there are endings like `_sqlite3.cpython-32mu`
     name = re.sub(r'\..*', '', name)
 
+    if path:
+        dot_path = []
+        p = path
+        # if path is not in sys.path, we need to make a well defined import
+        # like `from numpy.core import umath.`
+        while p and p not in sys.path:
+            p, sep, mod = p.rpartition(os.path.sep)
+            dot_path.insert(0, mod.partition('.')[0])
+        if p:
+            name = ".".join(dot_path)
+            path = p
+        else:
+            path = os.path.dirname(path)
+
     sys_path = get_sys_path()
     if path:
         sys_path.insert(0, path)
@@ -172,7 +182,6 @@ def load_module(path, name):
         # directly. -> github issue #59
         module = sys.modules[name]
     sys.path = temp
-
     return PyObject(module)
 
 
