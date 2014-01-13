@@ -101,4 +101,4 @@ class TestSetupReadline(TestCase):
 
 
 def test_version_info():
-    assert utils.version_info()[:2] > 0.7
+    assert utils.version_info()[:2] > (0, 7)
