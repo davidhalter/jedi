@@ -23,7 +23,7 @@ from jedi import settings
 from jedi import common
 from jedi import cache
 from jedi import interpret
-from jedi import keywords
+from jedi.api import keywords
 from jedi.api import classes
 from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er

@@ -9,13 +9,13 @@ import functools
 from jedi._compatibility import unicode, next
 from jedi import settings
 from jedi import common
-from jedi.parser import representation as pr
 from jedi import cache
+from jedi.parser import representation as pr
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
-from jedi import keywords
+from jedi.api import keywords
 
 
 def clear_caches():
