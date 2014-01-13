@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 """
 This is a convenience script to test the speed and memory usage of Jedi with
 large libraries.
