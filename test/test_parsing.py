@@ -37,15 +37,15 @@ class TestCallAndName():
 
     def test_literal_type(self):
         literal = self.get_call('1.0')
-        assert isinstance(literal, pr.Number)
+        assert isinstance(literal, pr.Literal)
         assert type(literal.value) == float
 
         literal = self.get_call('1')
-        assert isinstance(literal, pr.Number)
+        assert isinstance(literal, pr.Literal)
         assert type(literal.value) == int
 
         literal = self.get_call('"hello"')
-        assert isinstance(literal, pr.String)
+        assert isinstance(literal, pr.Literal)
         assert literal.value == 'hello'
 
 

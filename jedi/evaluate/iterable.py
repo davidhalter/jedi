@@ -92,14 +92,14 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
                 if len(key_expression_list) != 1:  # cannot deal with complex strings
                     continue
                 key = key_expression_list[0]
-                if isinstance(key, pr.String):
-                    str_key = key.value
+                if isinstance(key, pr.Literal):
+                    key = key.value
                 elif isinstance(key, pr.Name):
-                    str_key = str(key)
+                    key = str(key)
                 else:
                     continue
 
-                if mixed_index == str_key:
+                if mixed_index == key:
                     index = i
                     break
             if index is None:

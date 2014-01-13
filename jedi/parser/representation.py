@@ -1069,9 +1069,7 @@ class Statement(Simple):
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:
-                cls = Call
-                if is_literal:
-                    cls = String if token_type == tokenize.STRING else Number
+                cls = Literal if is_literal else Call
 
                 call = cls(self._sub_module, tok, start_pos, end_pos, self)
                 if is_chain:
@@ -1241,14 +1239,6 @@ class Literal(StatementElement):
         else:
             s = self.literal.encode('ascii', 'replace')
         return "<%s: %s>" % (type(self).__name__, s)
-
-
-class String(Literal):
-    pass
-
-
-class Number(Literal):
-    pass
 
 
 class Array(StatementElement):
