@@ -138,7 +138,7 @@ class BaseDefinition(object):
         """
         # generate the type
         stripped = self._definition
-        if isinstance(stripped, compiled.PyObject):
+        if isinstance(stripped, compiled.CompiledObject):
             return stripped.type()
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
@@ -183,7 +183,7 @@ class BaseDefinition(object):
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        return isinstance(self._module, compiled.PyObject)
+        return isinstance(self._module, compiled.CompiledObject)
 
     @property
     def line_nr(self):
@@ -440,7 +440,7 @@ class Definition(BaseDefinition):
         if isinstance(d, er.InstanceElement):
             d = d.var
 
-        if isinstance(d, compiled.PyObject):
+        if isinstance(d, compiled.CompiledObject):
             return d.name
         elif isinstance(d, pr.Name):
             return d.names[-1] if d.names else None
@@ -496,7 +496,7 @@ class Definition(BaseDefinition):
         if isinstance(d, pr.Name):
             d = d.parent
 
-        if isinstance(d, compiled.PyObject):
+        if isinstance(d, compiled.CompiledObject):
             d = d.type() + ' ' + d.name
         elif isinstance(d, iterable.Array):
             d = 'class ' + d.type

@@ -14,7 +14,7 @@ from jedi.evaluate.sys_path import get_sys_path
 from . import fake
 
 
-class PyObject(Base):
+class CompiledObject(Base):
     # comply with the parser
     start_pos = 0, 0
     asserts = []
@@ -54,7 +54,7 @@ class PyObject(Base):
 
     @underscore_memoization
     def _cls(self):
-        # Ensures that a PyObject is returned that is not an instance (like list)
+        # Ensures that a CompiledObject is returned that is not an instance (like list)
         if fake.is_class_instance(self.obj):
             try:
                 c = self.obj.__class__
@@ -62,13 +62,13 @@ class PyObject(Base):
                 # happens with numpy.core.umath._UFUNC_API (you get it
                 # automatically by doing `import numpy`.
                 c = type(None)
-            return PyObject(c, self.parent)
+            return CompiledObject(c, self.parent)
         return self
 
     def get_defined_names(self):
         cls = self._cls()
         for name in dir(cls.obj):
-            yield PyName(cls, name)
+            yield CompiledName(cls, name)
 
     def instance_names(self):
         # TODO REMOVE (temporary until the Instance method is removed)
@@ -76,7 +76,7 @@ class PyObject(Base):
 
     def get_subscope_by_name(self, name):
         if name in dir(self._cls().obj):
-            return PyName(self._cls(), name).parent
+            return CompiledName(self._cls(), name).parent
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
@@ -94,7 +94,7 @@ class PyObject(Base):
             except AttributeError:
                 continue
             else:
-                if isinstance(bltn_obj, PyObject):
+                if isinstance(bltn_obj, CompiledObject):
                     yield bltn_obj
                 else:
                     for result in evaluator.execute(bltn_obj, params):
@@ -123,7 +123,7 @@ class PyObject(Base):
         return []  # Builtins don't have imports
 
 
-class PyName(object):
+class CompiledName(object):
     def __init__(self, obj, name):
         self._obj = obj
         self.name = name
@@ -186,7 +186,7 @@ def load_module(path, name):
         # directly. -> github issue #59
         module = sys.modules[name]
     sys.path = temp
-    return PyObject(module)
+    return CompiledObject(module)
 
 
 docstr_defaults = {
@@ -258,7 +258,7 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-class Builtin(PyObject):
+class Builtin(CompiledObject):
     def get_defined_names(self):
         # Filter None, because it's really just a keyword, nobody wants to
         # access it.
@@ -266,7 +266,7 @@ class Builtin(PyObject):
 
 
 builtin = Builtin(_builtins)
-magic_function_class = PyObject(type(load_module), parent=builtin)
+magic_function_class = CompiledObject(type(load_module), parent=builtin)
 
 
 def _create_from_name(module, parent, name):
@@ -283,7 +283,7 @@ def _create_from_name(module, parent, name):
         # PyQt4.QtGui.QStyleOptionComboBox.currentText
         # -> just set it to None
         obj = None
-    return PyObject(obj, parent)
+    return CompiledObject(obj, parent)
 
 
 def create(obj, parent=builtin, module=None):
@@ -297,4 +297,4 @@ def create(obj, parent=builtin, module=None):
             faked.parent = parent
             return faked
 
-    return PyObject(obj, parent)
+    return CompiledObject(obj, parent)

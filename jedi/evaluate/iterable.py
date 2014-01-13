@@ -72,7 +72,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
                 index = index_possibilities[0]
-                if isinstance(index, compiled.PyObject) \
+                if isinstance(index, compiled.CompiledObject) \
                         and isinstance(index.obj, (int, str, unicode)):
                     with common.ignored(KeyError, IndexError, TypeError):
                         return self.get_exact_index_types(index.obj)
@@ -230,7 +230,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     >>> a = [""]
     >>> a.append(1)
     """
-    if not settings.dynamic_array_additions or isinstance(module, compiled.PyObject):
+    if not settings.dynamic_array_additions or isinstance(module, compiled.CompiledObject):
         return []
 
     def check_calls(calls, add_name):

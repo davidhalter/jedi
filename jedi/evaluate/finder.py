@@ -71,7 +71,7 @@ class NameFinder(object):
         if not result and isinstance(self.scope, er.Instance):
             # __getattr__ / __getattribute__
             for r in self._check_getattr(self.scope):
-                if not isinstance(r, compiled.PyObject):
+                if not isinstance(r, compiled.CompiledObject):
                     new_name = copy.copy(r.name)
                     new_name.parent = r
                     result.append(new_name)

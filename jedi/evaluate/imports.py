@@ -436,7 +436,7 @@ def get_modules_containing_name(mods, name):
                 return load_module(path, source)
 
     # skip non python modules
-    mods = set(m for m in mods if not isinstance(m, compiled.PyObject))
+    mods = set(m for m in mods if not isinstance(m, compiled.CompiledObject))
     mod_paths = set()
     for m in mods:
         mod_paths.add(m.path)

@@ -113,7 +113,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
                 if n.names[0] == self_name and len(n.names) == 2:
                     add_self_dot_name(n)
 
-        if not isinstance(self.base, compiled.PyObject):
+        if not isinstance(self.base, compiled.CompiledObject):
             for s in self.base.get_super_classes():
                 for inst in self._evaluator.execute(s):
                     names += inst.get_self_attributes()
@@ -201,7 +201,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
                 or isinstance(par, pr.Class) \
                 and par == self.instance.base.base:
             par = self.instance
-        elif not isinstance(par, (pr.Module, compiled.PyObject)):
+        elif not isinstance(par, (pr.Module, compiled.CompiledObject)):
             par = InstanceElement(self.instance._evaluator, self.instance, par, self.is_class_var)
         return par
 
@@ -277,7 +277,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         # TODO mro!
         for cls in self.get_super_classes():
             # Get the inherited names.
-            if isinstance(cls, compiled.PyObject):
+            if isinstance(cls, compiled.CompiledObject):
                 super_result += cls.get_defined_names()
             else:
                 for i in cls.instance_names():

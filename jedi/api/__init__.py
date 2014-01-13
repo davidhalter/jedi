@@ -143,7 +143,7 @@ class Script(object):
         if not dot:
             # add named params
             for call_def in self.call_signatures():
-                if not isinstance(call_def.module, compiled.PyObject):
+                if not isinstance(call_def.module, compiled.CompiledObject):
                     for p in call_def.params:
                         completions.append((p.get_name(), p))
 
@@ -519,7 +519,7 @@ class Script(object):
 
         return [classes.CallDef(o, index, call) for o in origins
                 if o.isinstance(er.Function, er.Instance, er.Class)
-                or isinstance(o, compiled.PyObject) and o.type() != 'module']
+                or isinstance(o, compiled.CompiledObject) and o.type() != 'module']
 
     def _func_call_and_param_index(self):
         debug.speed('func_call start')

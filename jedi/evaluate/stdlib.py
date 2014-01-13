@@ -45,13 +45,13 @@ def builtins_getattr(evaluator, obj, params):
     objects = _follow_param(evaluator, params, 0)
     names = _follow_param(evaluator, params, 1)
     for obj in objects:
-        if not isinstance(obj, (er.Instance, er.Class, pr.Module, compiled.PyObject)):
+        if not isinstance(obj, (er.Instance, er.Class, pr.Module, compiled.CompiledObject)):
             debug.warning('getattr called without instance')
             continue
 
         for name in names:
             s = unicode, str
-            if isinstance(name, compiled.PyObject) and isinstance(name.obj, s):
+            if isinstance(name, compiled.CompiledObject) and isinstance(name.obj, s):
                 stmts += evaluator.follow_path(iter([name.obj]), [obj], obj)
             else:
                 debug.warning('getattr called without str')

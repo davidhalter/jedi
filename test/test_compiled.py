@@ -6,8 +6,8 @@ from jedi.evaluate import Evaluator
 
 def test_simple():
     e = Evaluator()
-    bltn = compiled.PyObject(builtins)
-    obj = compiled.PyObject('_str_', bltn)
+    bltn = compiled.CompiledObject(builtins)
+    obj = compiled.CompiledObject('_str_', bltn)
     upper = e.find_types(obj, 'upper')
     assert len(upper) == 1
     objs = list(e.execute(upper[0]))

@@ -128,7 +128,7 @@ class Evaluator(object):
         true (default).
 
         >>> pairs[2]                                        #doctest: +ELLIPSIS
-        (<Builtin: ...builtin...>, [<PyName: ...>, ...])
+        (<Builtin: ...builtin...>, [<CompiledName: ...>, ...])
 
         :rtype: [(pr.Scope, [pr.Name])]
         :return: Return an generator that yields a pair of scope and names.
@@ -147,7 +147,7 @@ class Evaluator(object):
                     or scope.isinstance(pr.Flow)
                     or scope.isinstance(er.Instance)
                     and non_flow.isinstance(er.Function)
-                    or isinstance(scope, compiled.PyObject)
+                    or isinstance(scope, compiled.CompiledObject)
                     and scope.type() == 'class' and in_func_scope != scope):
                 try:
                     if isinstance(scope, er.Instance):
@@ -267,7 +267,7 @@ class Evaluator(object):
                         er.Function, er.Class, er.Instance, iterable.ArrayInstance):
                     result.append(call)
                 # The string tokens are just operations (+, -, etc.)
-                elif isinstance(call, compiled.PyObject):
+                elif isinstance(call, compiled.CompiledObject):
                     result.append(call)
                 elif not isinstance(call, (str, unicode)):
                     if isinstance(call, pr.Call) and str(call.name) == 'if':
@@ -284,7 +284,7 @@ class Evaluator(object):
                     result += self.eval_call(call)
                 elif call == '*':
                     if [r for r in result if isinstance(r, iterable.Array)
-                            or isinstance(r, compiled.PyObject)
+                            or isinstance(r, compiled.CompiledObject)
                             and isinstance(r.obj, (str, unicode))]:
                         # if it is an iterable, ignore * operations
                         next(calls_iterator)
@@ -391,7 +391,7 @@ class Evaluator(object):
         except stdlib.NotInStdLib:
             pass
 
-        if obj.isinstance(compiled.PyObject):
+        if obj.isinstance(compiled.CompiledObject):
             if obj.is_executable_class():
                 return [er.Instance(self, obj, params)]
             else:
@@ -453,9 +453,9 @@ def filter_private_variable(scope, call_scope, var_name):
     """private variables begin with a double underline `__`"""
     if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
             and var_name.startswith('__') and not var_name.endswith('__'):
-        s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.PyObject))
+        s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.CompiledObject))
         if s != scope:
-            if isinstance(scope.base, compiled.PyObject):
+            if isinstance(scope.base, compiled.CompiledObject):
                 if s != scope.base:
                     return True
             else:
