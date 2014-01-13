@@ -76,13 +76,13 @@ from jedi import common
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.evaluate import representation as er
-from jedi.evaluate import builtin
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import stdlib
 from jedi.evaluate import finder
+from jedi.evaluate import compiled
 
 
 class Evaluator(object):
@@ -128,7 +128,7 @@ class Evaluator(object):
         true (default).
 
         >>> pairs[2]                                        #doctest: +ELLIPSIS
-        (<Module: ...builtin...>, [<Name: ...>, ...])
+        (<Builtin: ...builtin...>, [<PyName: ...>, ...])
 
         :rtype: [(pr.Scope, [pr.Name])]
         :return: Return an generator that yields a pair of scope and names.
@@ -146,7 +146,9 @@ class Evaluator(object):
             if not (scope != non_flow and scope.isinstance(pr.Class)
                     or scope.isinstance(pr.Flow)
                     or scope.isinstance(er.Instance)
-                    and non_flow.isinstance(er.Function)):
+                    and non_flow.isinstance(er.Function)
+                    or isinstance(scope, compiled.PyObject)
+                    and scope.type() == 'class' and in_func_scope != scope):
                 try:
                     if isinstance(scope, er.Instance):
                         for g in scope.scope_generator():
@@ -173,8 +175,7 @@ class Evaluator(object):
 
             # Add builtins to the global scope.
             if include_builtin:
-                builtin_scope = builtin.Builtin.scope
-                yield builtin_scope, builtin_scope.get_defined_names()
+                yield compiled.builtin, compiled.builtin.get_defined_names()
 
     def find_types(self, scope, name_str, position=None, search_global=False,
                    is_goto=False, resolve_decorator=True):
@@ -194,15 +195,15 @@ class Evaluator(object):
 
     @memoize_default(default=(), evaluator_is_first_arg=True)
     @recursion.recursion_decorator
+    @debug.increase_indent
     def eval_statement(self, stmt, seek_name=None):
         """
-        The starting point of the completion. A statement always owns a call list,
-        which are the calls, that a statement does.
-        In case multiple names are defined in the statement, `seek_name` returns
-        the result for this name.
+        The starting point of the completion. A statement always owns a call
+        list, which are the calls, that a statement does. In case multiple
+        names are defined in the statement, `seek_name` returns the result for
+        this name.
 
         :param stmt: A `pr.Statement`.
-        :param seek_name: A string.
         """
         debug.dbg('eval_statement %s (%s)' % (stmt, seek_name))
         expression_list = stmt.expression_list()
@@ -266,6 +267,8 @@ class Evaluator(object):
                         er.Function, er.Class, er.Instance, iterable.ArrayInstance):
                     result.append(call)
                 # The string tokens are just operations (+, -, etc.)
+                elif isinstance(call, compiled.PyObject):
+                    result.append(call)
                 elif not isinstance(call, (str, unicode)):
                     if isinstance(call, pr.Call) and str(call.name) == 'if':
                         # Ternary operators.
@@ -281,8 +284,8 @@ class Evaluator(object):
                     result += self.eval_call(call)
                 elif call == '*':
                     if [r for r in result if isinstance(r, iterable.Array)
-                       or isinstance(r, er.Instance)
-                       and str(r.name) == 'str']:
+                            or isinstance(r, compiled.PyObject)
+                            and isinstance(r.obj, (str, unicode))]:
                         # if it is an iterable, ignore * operations
                         next(calls_iterator)
         return set(result)
@@ -308,16 +311,12 @@ class Evaluator(object):
         else:
             if isinstance(current, pr.NamePart):
                 # This is the first global lookup.
-                scopes = self.find_types(scope, current, position=position,
-                                         search_global=True)
+                types = self.find_types(scope, current, position=position,
+                                        search_global=True)
             else:
                 # for pr.Literal
-                scopes = self.find_types(builtin.Builtin.scope, current.type_as_string())
-                # Make instances of those number/string objects.
-                scopes = itertools.chain.from_iterable(
-                    self.execute(s, (current.value,)) for s in scopes
-                )
-            types = imports.strip_imports(self, scopes)
+                types = [compiled.create(current.value)]
+            types = imports.strip_imports(self, types)
 
         return self.follow_path(path, types, scope, position=position)
 
@@ -332,8 +331,8 @@ class Evaluator(object):
         results_new = []
         iter_paths = itertools.tee(path, len(types))
 
-        for i, type in enumerate(types):
-            fp = self._follow_path(iter_paths[i], type, call_scope, position=position)
+        for i, typ in enumerate(types):
+            fp = self._follow_path(iter_paths[i], typ, call_scope, position=position)
             if fp is not None:
                 results_new += fp
             else:
@@ -341,7 +340,7 @@ class Evaluator(object):
                 return types
         return results_new
 
-    def _follow_path(self, path, type, scope, position=None):
+    def _follow_path(self, path, typ, scope, position=None):
         """
         Uses a generator and tries to complete the path, e.g.::
 
@@ -355,52 +354,58 @@ class Evaluator(object):
             current = next(path)
         except StopIteration:
             return None
-        debug.dbg('_follow_path: %s in scope %s' % (current, type))
+        debug.dbg('_follow_path: %s in scope %s' % (current, typ))
 
         result = []
         if isinstance(current, pr.Array):
             # This must be an execution, either () or [].
             if current.type == pr.Array.LIST:
-                if hasattr(type, 'get_index_types'):
-                    result = type.get_index_types(current)
+                if hasattr(typ, 'get_index_types'):
+                    result = typ.get_index_types(current)
             elif current.type not in [pr.Array.DICT]:
                 # Scope must be a class or func - make an instance or execution.
-                debug.dbg('exe', type)
-                result = self.execute(type, current)
+                result = self.execute(typ, current)
             else:
                 # Curly braces are not allowed, because they make no sense.
-                debug.warning('strange function call with {}', current, type)
+                debug.warning('strange function call with {}', current, typ)
         else:
             # The function must not be decorated with something else.
-            if type.isinstance(er.Function):
-                type = type.get_magic_method_scope()
+            if typ.isinstance(er.Function):
+                typ = typ.get_magic_function_scope()
             else:
                 # This is the typical lookup while chaining things.
-                if filter_private_variable(type, scope, current):
+                if filter_private_variable(typ, scope, current):
                     return []
-            result = imports.strip_imports(self, self.find_types(type, current,
-                                           position=position))
+            types = self.find_types(typ, current, position=position)
+            result = imports.strip_imports(self, types)
         return self.follow_path(path, set(result), scope, position=position)
 
+    @debug.increase_indent
     def execute(self, obj, params=(), evaluate_generator=False):
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
+        debug.dbg('execute:', obj, params)
         try:
             return stdlib.execute(self, obj, params)
         except stdlib.NotInStdLib:
             pass
 
-        if obj.isinstance(er.Class):
+        if obj.isinstance(compiled.PyObject):
+            if obj.is_executable_class():
+                return [er.Instance(self, obj, params)]
+            else:
+                return list(obj.execute_function(self, params))
+        elif obj.isinstance(er.Class):
             # There maybe executions of executions.
             return [er.Instance(self, obj, params)]
         elif isinstance(obj, iterable.Generator):
             return obj.iter_content()
         else:
             stmts = []
-            try:
-                obj.returns  # Test if it is a function
-            except AttributeError:
+            if obj.isinstance(er.Function):
+                stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
+            else:
                 if hasattr(obj, 'execute_subscope_by_name'):
                     try:
                         stmts = obj.execute_subscope_by_name('__call__', params)
@@ -408,10 +413,8 @@ class Evaluator(object):
                         debug.warning("no __call__ func available", obj)
                 else:
                     debug.warning("no execution possible", obj)
-            else:
-                stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
 
-            debug.dbg('execute: %s in %s' % (stmts, self))
+            debug.dbg('execute result: %s in %s' % (stmts, obj))
             return imports.strip_imports(self, stmts)
 
     def goto(self, stmt, call_path=None):
@@ -450,9 +453,14 @@ def filter_private_variable(scope, call_scope, var_name):
     """private variables begin with a double underline `__`"""
     if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
             and var_name.startswith('__') and not var_name.endswith('__'):
-        s = call_scope.get_parent_until((pr.Class, er.Instance))
-        if s != scope and s != scope.base.base:
-            return True
+        s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.PyObject))
+        if s != scope:
+            if isinstance(scope.base, compiled.PyObject):
+                if s != scope.base:
+                    return True
+            else:
+                if s != scope.base.base:
+                    return True
     return False
 
 

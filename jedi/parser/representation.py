@@ -362,16 +362,12 @@ class SubModule(Scope, Module):
             string = ''  # no path -> empty name
         else:
             sep = (re.escape(os.path.sep),) * 2
-            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep,
-                          self.path)
+            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self.path)
             # remove PEP 3149 names
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # positions are not real therefore choose (0, 0)
         names = [(string, (0, 0))]
         return Name(self, names, (0, 0), (0, 0), self.use_as_parent)
-
-    def is_builtin(self):
-        return not (self.path is None or self.path.endswith('.py'))
 
     @property
     def has_explicit_absolute_import(self):
@@ -1238,9 +1234,6 @@ class Literal(StatementElement):
 
     def get_code(self):
         return self.literal + super(Literal, self).get_code()
-
-    def type_as_string(self):
-        return type(self.value).__name__
 
     def __repr__(self):
         if is_py3k:

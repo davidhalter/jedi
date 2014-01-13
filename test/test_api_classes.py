@@ -15,6 +15,7 @@ def test_is_keyword():
     results = Script('str', 1, 1, None).goto_definitions()
     assert len(results) == 1 and results[0].is_keyword is False
 
+
 def make_definitions():
     """
     Return a list of definitions for parametrized tests.

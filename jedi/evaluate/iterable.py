@@ -3,9 +3,9 @@ import itertools
 from jedi import common
 from jedi import debug
 from jedi import settings
-from jedi._compatibility import use_metaclass, is_py3k
+from jedi._compatibility import use_metaclass, is_py3k, unicode
 from jedi.parser import representation as pr
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 
@@ -24,16 +24,10 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         content of a generator.
         """
         names = []
-        none_pos = (0, 0)
         executes_generator = ('__next__', 'send')
         for n in ('close', 'throw') + executes_generator:
-            name = pr.Name(builtin.Builtin.scope, [(n, none_pos)],
-                           none_pos, none_pos)
-            if n in executes_generator:
-                name.parent = self
-            else:
-                name.parent = builtin.Builtin.scope
-            names.append(name)
+            parent = self if n in executes_generator else compiled.builtin
+            names.append(helpers.FakeName(n, parent))
         debug.dbg('generator names', names)
         return names
 
@@ -78,16 +72,10 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
                 index = index_possibilities[0]
-
-                from jedi.evaluate.representation import Instance
-                if isinstance(index, Instance) \
-                        and str(index.name) in ['int', 'str'] \
-                        and len(index.var_args) == 1:
-                    # TODO this is just very hackish and a lot of use cases are
-                    # being ignored
-                    with common.ignored(KeyError, IndexError,
-                                        UnboundLocalError, TypeError):
-                        return self.get_exact_index_types(index.var_args[0])
+                if isinstance(index, compiled.PyObject) \
+                        and isinstance(index.obj, (int, str, unicode)):
+                    with common.ignored(KeyError, IndexError, TypeError):
+                        return self.get_exact_index_types(index.obj)
 
         result = list(self._follow_values(self._array.values))
         result += check_array_additions(self._evaluator, self)
@@ -108,6 +96,8 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
                     str_key = key.value
                 elif isinstance(key, pr.Name):
                     str_key = str(key)
+                else:
+                    continue
 
                 if mixed_index == str_key:
                     index = i
@@ -130,17 +120,17 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = self._evaluator.find_types(builtin.Builtin.scope, self._array.type)[0]
+        scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]
 
     @property
     def parent(self):
-        return builtin.Builtin.scope
+        return compiled.builtin
 
     def get_parent_until(self):
-        return builtin.Builtin.scope
+        return compiled.builtin
 
     def __getattr__(self, name):
         if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
@@ -177,7 +167,7 @@ class ArrayMethod(object):
         return getattr(self.name, name)
 
     def get_parent_until(self):
-        return builtin.Builtin.scope
+        return compiled.builtin
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.name)
@@ -240,7 +230,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     >>> a = [""]
     >>> a.append(1)
     """
-    if not settings.dynamic_array_additions or module.is_builtin():
+    if not settings.dynamic_array_additions or isinstance(module, compiled.PyObject):
         return []
 
     def check_calls(calls, add_name):

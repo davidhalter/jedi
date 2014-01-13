@@ -16,7 +16,7 @@ from jedi.parser import representation as pr
 from jedi import debug
 from jedi import common
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
@@ -49,7 +49,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
     def __init__(self, evaluator, base, var_args=()):
         super(Instance, self).__init__(evaluator, base, var_args)
         if str(base.name) in ['list', 'set'] \
-                and builtin.Builtin.scope == base.get_parent_until():
+                and compiled.builtin == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = iterable.check_array_instances(evaluator, self)
         else:
@@ -113,9 +113,10 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
                 if n.names[0] == self_name and len(n.names) == 2:
                     add_self_dot_name(n)
 
-        for s in self.base.get_super_classes():
-            for inst in self._evaluator.execute(s):
-                names += inst.get_self_attributes()
+        if not isinstance(self.base, compiled.PyObject):
+            for s in self.base.get_super_classes():
+                for inst in self._evaluator.execute(s):
+                    names += inst.get_self_attributes()
         return names
 
     def get_subscope_by_name(self, name):
@@ -141,8 +142,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         """
         names = self.get_self_attributes()
 
-        class_names = self.base.instance_names()
-        for var in class_names:
+        for var in self.base.instance_names():
             names.append(InstanceElement(self._evaluator, self, var, True))
         return names
 
@@ -154,8 +154,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         yield self, self.get_self_attributes()
 
         names = []
-        class_names = self.base.instance_names()
-        for var in class_names:
+        for var in self.base.instance_names():
             names.append(InstanceElement(self._evaluator, self, var, True))
         yield self, names
 
@@ -199,10 +198,10 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
-            or isinstance(par, pr.Class) \
+                or isinstance(par, pr.Class) \
                 and par == self.instance.base.base:
             par = self.instance
-        elif not isinstance(par, pr.Module):
+        elif not isinstance(par, (pr.Module, compiled.PyObject)):
             par = InstanceElement(self.instance._evaluator, self.instance, par, self.is_class_var)
         return par
 
@@ -256,13 +255,14 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
                     debug.warning('Received non class, as a super class')
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
-        if not supers and self.base.parent != builtin.Builtin.scope:
+        if not supers and self.base.parent != compiled.builtin:
             # add `object` to classes
-            supers += self._evaluator.find_types(builtin.Builtin.scope, 'object')
+            supers += self._evaluator.find_types(compiled.builtin, 'object')
         return supers
 
     @memoize_default(default=())
     def instance_names(self):
+        # TODO REMOVE instance_names
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
             for i in iterable:
@@ -277,17 +277,20 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         # TODO mro!
         for cls in self.get_super_classes():
             # Get the inherited names.
-            for i in cls.instance_names():
-                if not in_iterable(i, result):
-                    super_result.append(i)
+            if isinstance(cls, compiled.PyObject):
+                super_result += cls.get_defined_names()
+            else:
+                for i in cls.instance_names():
+                    if not in_iterable(i, result):
+                        super_result.append(i)
         result += super_result
         return result
 
     @memoize_default(default=())
     def get_defined_names(self):
         result = self.instance_names()
-        type_cls = self._evaluator.find_types(builtin.Builtin.scope, 'type')[0]
-        return result + type_cls.base.get_defined_names()
+        type_cls = self._evaluator.find_types(compiled.builtin, 'type')[0]
+        return result + list(type_cls.get_defined_names())
 
     def get_subscope_by_name(self, name):
         for sub in reversed(self.subscopes):
@@ -373,11 +376,11 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
             return Function(self._evaluator, self.base_func, True)
         return decorated_func
 
-    def get_magic_method_names(self):
-        return builtin.Builtin.magic_function_scope(self._evaluator).get_defined_names()
+    def get_magic_function_names(self):
+        return compiled.magic_function_class.get_defined_names()
 
-    def get_magic_method_scope(self):
-        return builtin.Builtin.magic_function_scope(self._evaluator)
+    def get_magic_function_scope(self):
+        return compiled.magic_function_class
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)

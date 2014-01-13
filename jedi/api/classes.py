@@ -14,6 +14,7 @@ from jedi import cache
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
+from jedi.evaluate import compiled
 from jedi import keywords
 
 
@@ -70,8 +71,11 @@ class BaseDefinition(object):
 
         # generate a path to the definition
         self._module = definition.get_parent_until()
-        self.module_path = self._module.path
-        """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
+        if self.in_builtin_module():
+            self.module_path = None
+        else:
+            self.module_path = self._module.path
+            """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
 
     @property
     def start_pos(self):
@@ -134,8 +138,10 @@ class BaseDefinition(object):
         """
         # generate the type
         stripped = self._definition
-        if isinstance(self._definition, er.InstanceElement):
-            stripped = self._definition.var
+        if isinstance(stripped, compiled.PyObject):
+            return stripped.type()
+        if isinstance(stripped, er.InstanceElement):
+            stripped = stripped.var
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
         return type(stripped).__name__.lower()
@@ -167,18 +173,17 @@ class BaseDefinition(object):
         The module name.
 
         >>> from jedi import Script
-        >>> source = 'import datetime'
-        >>> script = Script(source, 1, len(source), 'example.py')
+        >>> source = 'import json'
+        >>> script = Script(source, path='example.py')
         >>> d = script.goto_definitions()[0]
         >>> print(d.module_name)                       # doctest: +ELLIPSIS
-        datetime
+        json
         """
         return str(self._module.name)
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        return not (self.module_path is None or
-                    self.module_path.endswith('.py'))
+        return isinstance(self._module, compiled.PyObject)
 
     @property
     def line_nr(self):
@@ -232,7 +237,7 @@ class BaseDefinition(object):
 
         """
         try:
-            return self._definition.doc
+            return self._definition.doc or ''  # Always a String, never None.
         except AttributeError:
             return self.raw_doc
 
@@ -435,7 +440,9 @@ class Definition(BaseDefinition):
         if isinstance(d, er.InstanceElement):
             d = d.var
 
-        if isinstance(d, pr.Name):
+        if isinstance(d, compiled.PyObject):
+            return d.name
+        elif isinstance(d, pr.Name):
             return d.names[-1] if d.names else None
         elif isinstance(d, iterable.Array):
             return unicode(d.type)
@@ -454,7 +461,6 @@ class Definition(BaseDefinition):
                 return d.assignment_details[0][1].values[0][0].name.names[-1]
             except IndexError:
                 return None
-        return None
 
     @property
     def description(self):
@@ -490,7 +496,9 @@ class Definition(BaseDefinition):
         if isinstance(d, pr.Name):
             d = d.parent
 
-        if isinstance(d, iterable.Array):
+        if isinstance(d, compiled.PyObject):
+            d = d.type() + ' ' + d.name
+        elif isinstance(d, iterable.Array):
             d = 'class ' + d.type
         elif isinstance(d, (pr.Class, er.Class, er.Instance)):
             d = 'class ' + unicode(d.name)
@@ -518,12 +526,7 @@ class Definition(BaseDefinition):
         .. todo:: Add full path. This function is should return a
             `module.class.function` path.
         """
-        if self.module_path.endswith('.py') \
-                and not isinstance(self._definition, pr.Module):
-            position = '@%s' % (self.line)
-        else:
-            # is a builtin or module
-            position = ''
+        position = '' if self.in_builtin_module else '@%s' % (self.line)
         return "%s:%s%s" % (self.module_name, self.description, position)
 
     def defined_names(self):

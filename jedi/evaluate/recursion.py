@@ -10,7 +10,7 @@ calls.
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi import settings
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import iterable
 
 
@@ -82,7 +82,7 @@ class _RecursionNode(object):
         # The same's true for the builtins, because the builtins are really
         # simple.
         self.is_ignored = isinstance(stmt, pr.Param) \
-            or (self.script == builtin.Builtin.scope)
+            or (self.script == compiled.builtin)
 
     def __eq__(self, other):
         if not other:
@@ -148,7 +148,7 @@ class ExecutionRecursionDetector(object):
         if isinstance(execution.base, (iterable.Array, iterable.Generator)):
             return False
         module = execution.get_parent_until()
-        if evaluate_generator or module == builtin.Builtin.scope:
+        if evaluate_generator or module == compiled.builtin:
             return False
 
         if in_par_execution_funcs:

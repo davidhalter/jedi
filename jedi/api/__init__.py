@@ -27,7 +27,7 @@ from jedi import keywords
 from jedi.api import classes
 from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate import helpers
 
@@ -137,20 +137,19 @@ class Script(object):
         path, dot, like = self._get_completion_parts()
 
         user_stmt = self._user_stmt(True)
-        bs = builtin.Builtin.scope
-        completions = get_completions(user_stmt, bs)
+        b = compiled.builtin
+        completions = get_completions(user_stmt, b)
 
         if not dot:
             # add named params
             for call_def in self.call_signatures():
-                if not call_def.module.is_builtin():
+                if not isinstance(call_def.module, compiled.PyObject):
                     for p in call_def.params:
                         completions.append((p.get_name(), p))
 
             if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords
-                completions += ((k, bs) for k in keywords.keyword_names(
-                    all=True))
+                completions += ((k, b) for k in keywords.keyword_names(all=True))
 
         needs_dot = not dot and path
 
@@ -193,7 +192,7 @@ class Script(object):
             debug.dbg('possible scopes', scopes)
             for s in scopes:
                 if s.isinstance(er.Function):
-                    names = s.get_magic_method_names()
+                    names = s.get_magic_function_names()
                 else:
                     if isinstance(s, imports.ImportPath):
                         under = like + self._user_context.get_path_after_cursor()
@@ -519,7 +518,8 @@ class Script(object):
         debug.speed('func_call followed')
 
         return [classes.CallDef(o, index, call) for o in origins
-                if o.isinstance(er.Function, er.Instance, er.Class)]
+                if o.isinstance(er.Function, er.Instance, er.Class)
+                or isinstance(o, compiled.PyObject) and o.type() != 'module']
 
     def _func_call_and_param_index(self):
         debug.speed('func_call start')
@@ -563,11 +563,10 @@ class Script(object):
         match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
         return match.groups()
 
-    @staticmethod
-    def _sorted_defs(d):
+    def _sorted_defs(self, d):
         # Note: `or ''` below is required because `module_path` could be
         #       None and you can't compare None and str in Python 3.
-        return sorted(d, key=lambda x: (x.module_path or '', x.line, x.column))
+        return sorted(d, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
 
 
 class Interpreter(Script):

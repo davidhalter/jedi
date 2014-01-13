@@ -7,7 +7,7 @@ from jedi import common
 from jedi import settings
 from jedi.evaluate import representation as er
 from jedi.evaluate import dynamic
-from jedi.evaluate import builtin
+from jedi.evaluate import compiled
 from jedi.evaluate import docstrings
 from jedi.evaluate import iterable
 
@@ -71,9 +71,10 @@ class NameFinder(object):
         if not result and isinstance(self.scope, er.Instance):
             # __getattr__ / __getattribute__
             for r in self._check_getattr(self.scope):
-                new_name = copy.copy(r.name)
-                new_name.parent = r
-                result.append(new_name)
+                if not isinstance(r, compiled.PyObject):
+                    new_name = copy.copy(r.name)
+                    new_name.parent = r
+                    result.append(new_name)
 
         debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
                   % (self.name_str, self.scope, nscope, u(result), self.position))
@@ -82,9 +83,8 @@ class NameFinder(object):
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
         result = []
-        module = builtin.Builtin.scope
         # str is important to lose the NamePart!
-        name = pr.String(module, "'%s'" % self.name_str, (0, 0), (0, 0), inst)
+        name = compiled.create(str(self.name_str))
         with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattr__', [name])
         if not result:
@@ -242,7 +242,8 @@ class NameFinder(object):
                 c = r.expression_list()[0]
                 if c in ('*', '**'):
                     t = 'tuple' if c == '*' else 'dict'
-                    res_new = evaluator.execute(evaluator.find_types(builtin.Builtin.scope, t)[0])
+                    typ = evaluator.find_types(compiled.builtin, t)[0]
+                    res_new = evaluator.execute(typ)
             if not r.assignment_details:
                 # this means that there are no default params,
                 # so just ignore it.

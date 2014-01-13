@@ -25,6 +25,7 @@ from jedi.parser import representation as pr
 from jedi.evaluate import sys_path
 from jedi import settings
 from jedi.common import source_to_unicode
+from jedi.evaluate import compiled
 
 
 class ModuleNotFound(Exception):
@@ -381,8 +382,9 @@ def strip_imports(evaluator, scopes):
 @cache.cache_star_import
 def remove_star_imports(evaluator, scope, ignored_modules=()):
     """
-    Check a module for star imports:
-    >>> from module import *
+    Check a module for star imports::
+
+        from module import *
 
     and follow these modules.
     """
@@ -404,9 +406,7 @@ def load_module(path=None, source=None, name=None):
                 with open(path) as f:
                     source = f.read()
         else:
-            # TODO refactoring remove
-            from jedi.evaluate import builtin
-            return builtin.BuiltinModule(path, name).parser.module
+            return compiled.load_module(path, name)
         p = path or name
         p = fast.FastParser(common.source_to_unicode(source), p)
         cache.save_parser(path, name, p)
@@ -436,7 +436,7 @@ def get_modules_containing_name(mods, name):
                 return load_module(path, source)
 
     # skip non python modules
-    mods = set(m for m in mods if m.path is None or m.path.endswith('.py'))
+    mods = set(m for m in mods if not isinstance(m, compiled.PyObject))
     mod_paths = set()
     for m in mods:
         mod_paths.add(m.path)
