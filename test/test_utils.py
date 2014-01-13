@@ -98,3 +98,7 @@ class TestSetupReadline(TestCase):
             assert self.completions('colorama')
             assert self.completions('colorama.Fore.BLACK') == ['colorama.Fore.BLACK']
             del self.namespace.colorama
+
+
+def test_version_info():
+    assert utils.version_info()[:2] > 0.7

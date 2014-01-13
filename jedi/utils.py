@@ -4,6 +4,8 @@ Utilities for end-users.
 
 from __future__ import absolute_import
 import __main__
+from collections import namedtuple
+import re
 
 from jedi import Interpreter
 
@@ -95,3 +97,14 @@ def setup_readline(namespace_module=__main__):
         readline.parse_and_bind("set completion-prefix-display-length 2")
         # No delimiters, Jedi handles that.
         readline.set_completer_delims('')
+
+
+def version_info():
+    """
+    Returns a namedtuple of Jedi's version, similar to Python's
+    ``sys.version_info``.
+    """
+    Version = namedtuple('Version', 'major, minor, micro, releaselevel, serial')
+    from jedi import __version__
+    tupl = re.findall('[a-z]+|\d+', __version__)
+    return Version(*[x if i == 3 else int(x) for i, x in enumerate(tupl)])
