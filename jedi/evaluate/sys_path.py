@@ -75,14 +75,14 @@ def sys_path_with_modifications(module):
                 res = execute_code(exe.get_code())
                 if res is not None:
                     sys_path.insert(0, res)
-                    debug.dbg('sys path inserted: %s' % res)
+                    debug.dbg('sys path inserted: %s', res)
                 exe.type = exe_type
                 exe.values.insert(0, exe_pop)
             elif array_cmd == 'append':
                 res = execute_code(exe.get_code())
                 if res is not None:
                     sys_path.append(res)
-                    debug.dbg('sys path added: %s' % res)
+                    debug.dbg('sys path added: %s', res)
         return sys_path
 
     if module.path is None:
@@ -115,6 +115,6 @@ def _detect_django_path(module_path):
 
         with common.ignored(IOError):
             with open(module_path + os.path.sep + 'manage.py'):
-                debug.dbg('Found django path: %s' % module_path)
+                debug.dbg('Found django path: %s', module_path)
                 result.append(module_path)
     return result

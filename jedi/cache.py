@@ -257,7 +257,7 @@ class ParserPickling(object):
             finally:
                 gc.enable()
 
-        debug.dbg('pickle loaded', path)
+        debug.dbg('pickle loaded: %s', path)
         parser_cache[path] = parser_cache_item
         return parser_cache_item.parser
 

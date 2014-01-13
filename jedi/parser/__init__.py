@@ -269,11 +269,8 @@ class Parser(object):
         first_pos = self.start_pos
         token_type, cname = self.next()
         if token_type != tokenize.NAME:
-            debug.warning(
-                "class: syntax err, token is not a name@%s (%s: %s)" % (
-                    self.start_pos[0], tokenize.tok_name[token_type], cname
-                )
-            )
+            debug.warning("class: syntax err, token is not a name@%s (%s: %s)",
+                          self.start_pos[0], tokenize.tok_name[token_type], cname)
             return None
 
         cname = pr.Name(self.module, [(cname, self.start_pos)], self.start_pos,
@@ -286,7 +283,7 @@ class Parser(object):
             token_type, _next = self.next()
 
         if _next != ':':
-            debug.warning("class syntax: %s@%s" % (cname, self.start_pos[0]))
+            debug.warning("class syntax: %s@%s", cname, self.start_pos[0])
             return None
 
         # because of 2 line class initializations
@@ -446,8 +443,8 @@ class Parser(object):
             or self.user_scope is None
             and self.start_pos[0] >= self.user_position[0]
         ):
-            debug.dbg('user scope found [%s] = %s' %
-                     (self.parserline.replace('\n', ''), repr(self._scope)))
+            debug.dbg('user scope found [%s] = %s',
+                      self.parserline.replace('\n', ''), self._scope)
             self.user_scope = self._scope
 
         self._current = typ, tok
@@ -473,8 +470,8 @@ class Parser(object):
         # This iterator stuff is not intentional. It grew historically.
         for token_type, tok in self.iterator:
             self.module.temp_used_names = []
-            # debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
-            #    % (tok, tokenize.tok_name[token_type], start_position[0]))
+            # debug.dbg('main: tok=[%s] type=[%s] indent=[%s]', \
+            #           tok, tokenize.tok_name[token_type], start_position[0])
 
             while token_type == tokenize.DEDENT and self._scope != self.module:
                 token_type, tok = self.next()
@@ -504,8 +501,7 @@ class Parser(object):
             if tok == 'def':
                 func = self._parse_function()
                 if func is None:
-                    debug.warning("function: syntax error@%s" %
-                                  self.start_pos[0])
+                    debug.warning("function: syntax error@%s", self.start_pos[0])
                     continue
                 self.freshscope = True
                 self._scope = self._scope.add_scope(func, self._decorators)
@@ -549,7 +545,7 @@ class Parser(object):
                     tok = 'import'
                     mod = None
                 if not mod and not relative_count or tok != "import":
-                    debug.warning("from: syntax error@%s" % self.start_pos[0])
+                    debug.warning("from: syntax error@%s", self.start_pos[0])
                     defunct = True
                     if tok != 'import':
                         self._gen.push_last_back()

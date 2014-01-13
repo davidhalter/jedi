@@ -28,7 +28,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         for n in ('close', 'throw') + executes_generator:
             parent = self if n in executes_generator else compiled.builtin
             names.append(helpers.FakeName(n, parent))
-        debug.dbg('generator names', names)
+        debug.dbg('generator names: %s', names)
         return names
 
     def iter_content(self):
@@ -36,7 +36,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         return self._evaluator.execute(self.func, self.var_args, True)
 
     def get_index_types(self, index=None):
-        debug.warning('Tried to get array access on a generator', self)
+        debug.warning('Tried to get array access on a generator: %s', self)
         return []
 
     def __getattr__(self, name):
@@ -183,7 +183,7 @@ def get_iterator_types(inputs):
             iterators.append(it)
         else:
             if not hasattr(it, 'execute_subscope_by_name'):
-                debug.warning('iterator/for loop input wrong', it)
+                debug.warning('iterator/for loop input wrong: %s', it)
                 continue
             try:
                 iterators += it.execute_subscope_by_name('__iter__')
@@ -204,7 +204,7 @@ def get_iterator_types(inputs):
             try:
                 result += gen.execute_subscope_by_name(name)
             except KeyError:
-                debug.warning('Instance has no __next__ function', gen)
+                debug.warning('Instance has no __next__ function in %s.', gen)
         else:
             # is a generator
             result += gen.iter_content()
@@ -363,9 +363,7 @@ class ArrayInstance(pr.Base):
                         if self.var_args.start_pos != array.var_args.start_pos:
                             items += array.iter_content()
                         else:
-                            debug.warning(
-                                'ArrayInstance recursion',
-                                self.var_args)
+                            debug.warning('ArrayInstance recursion %s', self.var_args)
                         continue
                 items += get_iterator_types([typ])
 

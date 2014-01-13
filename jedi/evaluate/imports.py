@@ -94,7 +94,7 @@ class ImportPath(pr.Base):
         n = pr.Name(i._sub_module, names, zero, zero, self.import_stmt)
         new = pr.Import(i._sub_module, zero, zero, n)
         new.parent = parent
-        debug.dbg('Generated a nested import: %s' % new)
+        debug.dbg('Generated a nested import: %s', new)
         return new
 
     def get_defined_names(self, on_import_stmt=False):
@@ -193,7 +193,7 @@ class ImportPath(pr.Base):
             try:
                 scope, rest = self._follow_file_system()
             except ModuleNotFound:
-                debug.warning('Module not found: ' + str(self.import_stmt))
+                debug.warning('Module not found: %s', self.import_stmt)
                 self._evaluator.recursion_detector.pop_stmt()
                 return []
 
@@ -225,7 +225,7 @@ class ImportPath(pr.Base):
                 scopes.append(self._get_nested_import(scope))
         else:
             scopes = [ImportPath.GlobalNamespace]
-        debug.dbg('after import', scopes)
+        debug.dbg('after import: %s', scopes)
 
         self._evaluator.recursion_detector.pop_stmt()
         return scopes
@@ -295,7 +295,7 @@ class ImportPath(pr.Base):
         Find a module with a path (of the module, like usb.backend.libusb10).
         """
         def follow_str(ns_path, string):
-            debug.dbg('follow_module', ns_path, string)
+            debug.dbg('follow_module %s %s', ns_path, string)
             path = None
             if ns_path:
                 path = ns_path
@@ -305,7 +305,7 @@ class ImportPath(pr.Base):
             if path is not None:
                 importing = find_module(string, [path])
             else:
-                debug.dbg('search_module', string, self.file_path)
+                debug.dbg('search_module %s %s', string, self.file_path)
                 # Override the sys.path. It works only good that way.
                 # Injecting the path directly into `find_module` did not work.
                 sys.path, temp = sys_path, sys.path

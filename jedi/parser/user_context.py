@@ -99,7 +99,7 @@ class UserContext(object):
                 string += tok
                 last_type = token_type
         except tokenize.TokenError:
-            debug.warning("Tokenize couldn't finish", sys.exc_info)
+            debug.warning("Tokenize couldn't finish: %s", sys.exc_info)
 
         # string can still contain spaces at the end
         return string[::-1].strip(), start_cursor

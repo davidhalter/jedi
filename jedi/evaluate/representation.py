@@ -334,16 +334,15 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         # Only enter it, if has not already been processed.
         if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
-                debug.dbg('decorator:', dec, f)
+                debug.dbg('decorator: %s %s', dec, f)
                 dec_results = set(self._evaluator.eval_statement(dec))
                 if not len(dec_results):
-                    debug.warning('decorator not found: %s on %s' %
-                                 (dec, self.base_func))
+                    debug.warning('decorator not found: %s on %s', dec, self.base_func)
                     return None
                 decorator = dec_results.pop()
                 if dec_results:
-                    debug.warning('multiple decorators found', self.base_func,
-                                  dec_results)
+                    debug.warning('multiple decorators found %s %s',
+                                  self.base_func, dec_results)
                 # Create param array.
                 old_func = Function(self._evaluator, f, is_decorated=True)
                 if instance is not None and decorator.isinstance(Function):
@@ -352,15 +351,15 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
 
                 wrappers = self._evaluator.execute(decorator, (old_func,))
                 if not len(wrappers):
-                    debug.warning('no wrappers found', self.base_func)
+                    debug.warning('no wrappers found %s', self.base_func)
                     return None
                 if len(wrappers) > 1:
                     # TODO resolve issue with multiple wrappers -> multiple types
-                    debug.warning('multiple wrappers found', self.base_func,
-                                  wrappers)
+                    debug.warning('multiple wrappers found %s %s',
+                                  self.base_func, wrappers)
                 f = wrappers[0]
 
-                debug.dbg('decorator end', f)
+                debug.dbg('decorator end %s', f)
         if f != self.base_func and isinstance(f, pr.Function):
             f = Function(self._evaluator, f)
         return f

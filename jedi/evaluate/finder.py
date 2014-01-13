@@ -22,7 +22,7 @@ class NameFinder(object):
     def find(self, scopes, resolve_decorator=True):
         names = self.filter_name(scopes)
         types = self._names_to_types(names, resolve_decorator)
-        debug.dbg('_names_to_types: %s, old: %s' % (names, types))
+        debug.dbg('_names_to_types: %s, old: %s', names, types)
         return self._resolve_descriptors(types)
 
     def scopes(self, search_global=False):
@@ -76,8 +76,8 @@ class NameFinder(object):
                     new_name.parent = r
                     result.append(new_name)
 
-        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s'
-                  % (self.name_str, self.scope, nscope, u(result), self.position))
+        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s', self.name_str,
+                  self.scope, nscope, u(result), self.position)
         return result
 
     def _check_getattr(self, inst):

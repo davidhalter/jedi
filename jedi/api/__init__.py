@@ -189,7 +189,7 @@ class Script(object):
                     completions.append((c, scope))
         else:
             completions = []
-            debug.dbg('possible scopes', scopes)
+            debug.dbg('possible completion scopes: %s', scopes)
             for s in scopes:
                 if s.isinstance(er.Function):
                     names = s.get_magic_function_names()
@@ -229,7 +229,7 @@ class Script(object):
         Base for completions/goto. Basically it returns the resolved scopes
         under cursor.
         """
-        debug.dbg('start: %s in %s' % (goto_path, self._parser.user_scope))
+        debug.dbg('start: %s in %s', goto_path, self._parser.user_scope)
 
         user_stmt = self._user_stmt(is_completion)
         if not user_stmt and len(goto_path.split('\n')) > 1:

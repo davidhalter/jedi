@@ -477,7 +477,7 @@ class Function(Scope):
             try:
                 n.append(p.get_name())
             except IndexError:
-                debug.warning("multiple names in param %s" % n)
+                debug.warning("multiple names in param %s", n)
         return n
 
     def get_call_signature(self, width=72, funcname=None):
@@ -1018,12 +1018,12 @@ class Statement(Simple):
 
             middle, tok = parse_stmt_or_arr(token_iterator, ['in'], True)
             if tok != 'in' or middle is None:
-                debug.warning('list comprehension middle @%s' % str(start_pos))
+                debug.warning('list comprehension middle @%s', start_pos)
                 return None, tok
 
             in_clause, tok = parse_stmt_or_arr(token_iterator)
             if in_clause is None:
-                debug.warning('list comprehension in @%s' % str(start_pos))
+                debug.warning('list comprehension in @%s', start_pos)
                 return None, tok
 
             return ListComprehension(st, middle, in_clause, self), tok
@@ -1156,7 +1156,7 @@ class Param(Statement):
         """ get the name of the param """
         n = self.get_set_vars()
         if len(n) > 1:
-            debug.warning("Multiple param names (%s)." % n)
+            debug.warning("Multiple param names (%s).", n)
         return n[0]
 
 

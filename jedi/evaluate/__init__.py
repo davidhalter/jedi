@@ -205,7 +205,7 @@ class Evaluator(object):
 
         :param stmt: A `pr.Statement`.
         """
-        debug.dbg('eval_statement %s (%s)' % (stmt, seek_name))
+        debug.dbg('eval_statement %s (%s)', stmt, seek_name)
         expression_list = stmt.expression_list()
 
         result = self.eval_expression_list(expression_list)
@@ -242,7 +242,7 @@ class Evaluator(object):
                 loop = evaluate_list_comprehension(nested_lc, loop)
             return loop
 
-        debug.dbg('eval_expression_list: %s' % expression_list)
+        debug.dbg('eval_expression_list: %s', expression_list)
         result = []
         calls_iterator = iter(expression_list)
         for call in calls_iterator:
@@ -354,7 +354,7 @@ class Evaluator(object):
             current = next(path)
         except StopIteration:
             return None
-        debug.dbg('_follow_path: %s in scope %s' % (current, typ))
+        debug.dbg('_follow_path: %s in scope %s', current, typ)
 
         result = []
         if isinstance(current, pr.Array):
@@ -367,7 +367,7 @@ class Evaluator(object):
                 result = self.execute(typ, current)
             else:
                 # Curly braces are not allowed, because they make no sense.
-                debug.warning('strange function call with {}', current, typ)
+                debug.warning('strange function call with {} %s %s', current, typ)
         else:
             # The function must not be decorated with something else.
             if typ.isinstance(er.Function):
@@ -385,7 +385,7 @@ class Evaluator(object):
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
-        debug.dbg('execute:', obj, params)
+        debug.dbg('execute: %s %s', obj, params)
         try:
             return stdlib.execute(self, obj, params)
         except stdlib.NotInStdLib:
@@ -410,11 +410,11 @@ class Evaluator(object):
                     try:
                         stmts = obj.execute_subscope_by_name('__call__', params)
                     except KeyError:
-                        debug.warning("no __call__ func available", obj)
+                        debug.warning("no __call__ func available %s", obj)
                 else:
-                    debug.warning("no execution possible", obj)
+                    debug.warning("no execution possible %s", obj)
 
-            debug.dbg('execute result: %s in %s' % (stmts, obj))
+            debug.dbg('execute result: %s in %s', stmts, obj)
             return imports.strip_imports(self, stmts)
 
     def goto(self, stmt, call_path=None):
@@ -482,8 +482,8 @@ def _assign_tuples(tup, results, seek_name):
             try:
                 func = r.get_exact_index_types
             except AttributeError:
-                debug.warning("invalid tuple lookup %s of result %s in %s"
-                              % (tup, results, seek_name))
+                debug.warning("invalid tuple lookup %s of result %s in %s",
+                              tup, results, seek_name)
             else:
                 with common.ignored(IndexError):
                     types += func(index)

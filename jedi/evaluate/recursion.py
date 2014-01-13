@@ -40,8 +40,8 @@ class RecursionDetector(object):
         self.current = _RecursionNode(stmt, self.current)
         check = self._check_recursion()
         if check:  # TODO remove False!!!!
-            debug.warning('catched stmt recursion: %s against %s @%s'
-                          % (stmt, check.stmt, stmt.start_pos))
+            debug.warning('catched stmt recursion: %s against %s @%s', stmt,
+                          check.stmt, stmt.start_pos)
             self.pop_stmt()
             return True
         return False
@@ -121,7 +121,7 @@ class ExecutionRecursionDetector(object):
         self.execution_count = 0
 
     def __call__(self, execution, evaluate_generator=False):
-        debug.dbg('Execution recursions: %s' % execution, self.recursion_level,
+        debug.dbg('Execution recursions: %s', execution, self.recursion_level,
                   self.execution_count, len(self.execution_funcs))
         if self.check_recursion(execution, evaluate_generator):
             result = []

@@ -49,20 +49,20 @@ def increase_indent(func):
     return wrapper
 
 
-def dbg(*args):
+def dbg(message, *args):
     """ Looks at the stack, to see if a debug message should be printed. """
     if debug_function and enable_notice:
         frm = inspect.stack()[1]
         mod = inspect.getmodule(frm[0])
         if not (mod.__name__ in ignored_modules):
             i = ' ' * debug_indent
-            debug_function(NOTICE, i + 'dbg: ' + ', '.join(u(a) for a in args))
+            debug_function(NOTICE, i + 'dbg: ' + message % args)
 
 
-def warning(*args):
+def warning(message, *args):
     if debug_function and enable_warning:
         i = ' ' * debug_indent
-        debug_function(WARNING, i + 'warning: ' + ', '.join(u(a) for a in args))
+        debug_function(WARNING, i + 'warning: ' + message % args)
 
 
 def speed(name):
