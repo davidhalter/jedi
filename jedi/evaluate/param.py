@@ -28,9 +28,7 @@ def get_params(evaluator, func, var_args):
         arr.values = values
         key_stmts = []
         for key in keys:
-            stmt = pr.Statement(helpers.FakeSubModule, [], start_pos, None)
-            stmt._expression_list = [key]
-            key_stmts.append(stmt)
+            key_stmts.append(helpers.FakeStatement([key], start_pos))
         arr.keys = key_stmts
         arr.type = array_type
 
@@ -140,8 +138,7 @@ def _var_args_iterator(evaluator, var_args):
                 continue
             old = stmt
             # generate a statement if it's not already one.
-            stmt = pr.Statement(helpers.FakeSubModule, [], (0, 0), None)
-            stmt._expression_list = [old]
+            stmt = helpers.FakeStatement([old])
 
         # *args
         expression_list = stmt.expression_list()
