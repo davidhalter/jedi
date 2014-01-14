@@ -1,7 +1,6 @@
 """
 To ensure compatibility from Python ``2.6`` - ``3.3``, a module has been
-created. Clearly there is huge need to use conforming syntax. But many changes
-(e.g. ``property``, ``hasattr`` in ``2.5``) can be rewritten in pure python.
+created. Clearly there is huge need to use conforming syntax.
 """
 import sys
 import imp
@@ -147,16 +146,13 @@ class Python3Method(object):
         else:
             return lambda *args, **kwargs: self.func(obj, *args, **kwargs)
 
+
 def use_metaclass(meta, *bases):
     """ Create a class with a metaclass. """
     if not bases:
         bases = (object,)
     return meta("HackClass", bases, {})
 
-try:
-    from functools import reduce  # Python 3
-except ImportError:
-    reduce = reduce
 
 try:
     encoding = sys.stdout.encoding
@@ -164,6 +160,7 @@ try:
         encoding = 'utf-8'
 except AttributeError:
     encoding = 'ascii'
+
 
 def u(string):
     """Cast to unicode DAMMIT!

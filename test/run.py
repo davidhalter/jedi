@@ -101,7 +101,8 @@ import re
 from ast import literal_eval
 
 import jedi
-from jedi._compatibility import unicode, reduce, StringIO, is_py3k
+from functools import reduce
+from jedi._compatibility import unicode, StringIO, is_py3k
 
 
 TEST_COMPLETIONS = 0
