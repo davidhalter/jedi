@@ -102,7 +102,7 @@ from ast import literal_eval
 
 import jedi
 from functools import reduce
-from jedi._compatibility import unicode, StringIO, is_py3k
+from jedi._compatibility import unicode, StringIO, is_py3
 
 
 TEST_COMPLETIONS = 0
@@ -217,7 +217,7 @@ def collect_file_tests(lines, lines_to_execute):
     test_type = None
     for line_nr, line in enumerate(lines):
         line_nr += 1  # py2.5 doesn't know about the additional enumerate param
-        if not is_py3k:
+        if not is_py3:
             line = unicode(line, 'UTF-8')
         if correct:
             r = re.match('^(\d+)\s*(.*)$', correct)

@@ -38,7 +38,7 @@ import re
 from inspect import cleandoc
 from ast import literal_eval
 
-from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3k
+from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3
 from jedi import common
 from jedi import debug
 from jedi import cache
@@ -122,7 +122,7 @@ class Simple(Base):
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
-        if not is_py3k:
+        if not is_py3:
             code = code.encode(encoding, 'replace')
         return "<%s: %s@%s,%s>" % \
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
@@ -1234,7 +1234,7 @@ class Literal(StatementElement):
         return self.literal + super(Literal, self).get_code()
 
     def __repr__(self):
-        if is_py3k:
+        if is_py3:
             s = self.literal
         else:
             s = self.literal.encode('ascii', 'replace')

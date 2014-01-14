@@ -7,7 +7,7 @@ mixing in Python code, the autocompletion should work much better for builtins.
 import os
 import inspect
 
-from jedi._compatibility import is_py3k, builtins
+from jedi._compatibility import is_py3, builtins
 from jedi.parser import Parser
 from jedi.parser.representation import Class
 from jedi.evaluate.helpers import FakeName
@@ -17,7 +17,7 @@ modules = {}
 
 def _load_faked_module(module):
     module_name = module.__name__
-    if module_name == '__builtin__' and not is_py3k:
+    if module_name == '__builtin__' and not is_py3:
         module_name = 'builtins'
 
     try:
@@ -33,7 +33,7 @@ def _load_faked_module(module):
         module = Parser(source, module_name).module
         modules[module_name] = module
 
-        if module_name == 'builtins' and not is_py3k:
+        if module_name == 'builtins' and not is_py3:
             # There are two implementations of `open` for either python 2/3.
             # -> Rename the python2 version (`look at fake/builtins.pym`).
             open_func = search_scope(module, 'open')

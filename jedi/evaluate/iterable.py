@@ -3,7 +3,7 @@ import itertools
 from jedi import common
 from jedi import debug
 from jedi import settings
-from jedi._compatibility import use_metaclass, is_py3k, unicode
+from jedi._compatibility import use_metaclass, is_py3, unicode
 from jedi.parser import representation as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
@@ -200,7 +200,7 @@ def get_iterator_types(inputs):
             result += gen.get_index_types()
         elif isinstance(gen, Instance):
             # __iter__ returned an instance.
-            name = '__next__' if is_py3k else 'next'
+            name = '__next__' if is_py3 else 'next'
             try:
                 result += gen.execute_subscope_by_name(name)
             except KeyError:

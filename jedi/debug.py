@@ -1,4 +1,4 @@
-from jedi._compatibility import u, encoding, is_py3k
+from jedi._compatibility import encoding, is_py3
 import inspect
 import os
 import time
@@ -80,7 +80,7 @@ def print_to_stdout(level, str_out):
         col = Fore.RED
     else:
         col = Fore.YELLOW
-    if not is_py3k:
+    if not is_py3:
         str_out = str_out.encode(encoding, 'replace')
     print(col + str_out + Fore.RESET)
 

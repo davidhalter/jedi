@@ -1,7 +1,7 @@
 import pydoc
 import keyword
 
-from jedi._compatibility import is_py3k
+from jedi._compatibility import is_py3
 from jedi import common
 from jedi.evaluate import compiled
 
@@ -11,7 +11,7 @@ except ImportError:
     # Python 2.6
     import pydoc_topics
 
-if is_py3k:
+if is_py3:
     keys = keyword.kwlist
 else:
     keys = keyword.kwlist + ['None', 'False', 'True']
