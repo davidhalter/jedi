@@ -40,18 +40,16 @@ class Module(pr.Simple, pr.Module):
             return getattr(self.parsers[0].module, name)
 
     @property
+    @cache.underscore_none_memoization
     def used_names(self):
-        if self._used_names is None:
-            dct = {}
-            for p in self.parsers:
-                for k, statement_set in p.module.used_names.items():
-                    if k in dct:
-                        dct[k] |= statement_set
-                    else:
-                        dct[k] = set(statement_set)
-
-            self._used_names = dct
-        return self._used_names
+        used_names = {}
+        for p in self.parsers:
+            for k, statement_set in p.module.used_names.items():
+                if k in used_names:
+                    used_names[k] |= statement_set
+                else:
+                    used_names[k] = set(statement_set)
+        return used_names
 
     def __repr__(self):
         return "<%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -200,27 +198,28 @@ class FastParser(use_metaclass(CachedFastParser)):
             raise
 
     @property
+    @cache.underscore_none_memoization
     def user_scope(self):
-        if self._user_scope is None:
-            for p in self.parsers:
-                if p.user_scope:
-                    if isinstance(p.user_scope, pr.SubModule):
-                        continue
-                    self._user_scope = p.user_scope
+        user_scope = None
+        for p in self.parsers:
+            if p.user_scope:
+                if isinstance(p.user_scope, pr.SubModule):
+                    continue
+                user_scope = p.user_scope
 
-        if isinstance(self._user_scope, pr.SubModule) \
-                or self._user_scope is None:
-            self._user_scope = self.module
-        return self._user_scope
+        if isinstance(user_scope, pr.SubModule) or user_scope is None:
+            user_scope = self.module
+        return user_scope
 
     @property
+    @cache.underscore_none_memoization
     def user_stmt(self):
-        if self._user_stmt is None:
-            for p in self.parsers:
-                if p.user_stmt:
-                    self._user_stmt = p.user_stmt
-                    break
-        return self._user_stmt
+        user_stmt = None
+        for p in self.parsers:
+            if p.user_stmt:
+                user_stmt = p.user_stmt
+                break
+        return user_stmt
 
     def update(self, code, user_position=None):
         self.user_position = user_position

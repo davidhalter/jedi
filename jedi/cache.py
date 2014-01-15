@@ -131,6 +131,19 @@ def underscore_memoization(func):
     return wrapper
 
 
+def underscore_none_memoization(func):
+    """Like ``underscore_memoization`` just with None instead of exceptions."""
+    def wrapper(self):
+        name = '_' + func.__name__
+        value = getattr(self, name)
+        if value is None:
+            value = func(self)
+            setattr(self, name, value)
+        return value
+
+    return wrapper
+
+
 def cache_star_import(func):
     def wrapper(evaluator, scope, *args, **kwargs):
         with common.ignored(KeyError):
