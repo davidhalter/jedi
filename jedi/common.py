@@ -13,7 +13,6 @@ class MultiLevelStopIteration(Exception):
     """
     StopIteration's get catched pretty easy by for loops, let errors propagate.
     """
-    pass
 
 
 class UncaughtAttributeError(Exception):
@@ -29,7 +28,11 @@ class UncaughtAttributeError(Exception):
     """
 
 
-def rethrow_uncaught(func):
+def safe_property(func):
+    return property(reraise_uncaught(func))
+
+
+def reraise_uncaught(func):
     """
     Re-throw uncaught `AttributeError`.
 

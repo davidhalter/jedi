@@ -125,7 +125,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         names = scope.get_defined_names()
         return [ArrayMethod(n) for n in names]
 
-    @property
+    @common.safe_property
     def parent(self):
         return compiled.builtin
 

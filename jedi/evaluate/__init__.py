@@ -219,7 +219,6 @@ class Evaluator(object):
             result = new_result
         return set(result)
 
-    @common.rethrow_uncaught
     def eval_expression_list(self, expression_list, follow_array=False):
         """
         `expression_list` can be either `pr.Array` or `list of list`.

@@ -37,7 +37,7 @@ class Executable(pr.IsScope):
     def get_parent_until(self, *args, **kwargs):
         return self.base.get_parent_until(*args, **kwargs)
 
-    @property
+    @common.safe_property
     def parent(self):
         return self.base.parent
 
@@ -193,7 +193,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         self.var = var
         self.is_class_var = is_class_var
 
-    @property
+    @common.safe_property
     @memoize_default(None)
     def parent(self):
         par = self.var.parent
@@ -297,7 +297,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
                 return sub
         raise KeyError("Couldn't find subscope.")
 
-    @property
+    @common.safe_property
     def name(self):
         return self.base.name
 
@@ -434,7 +434,6 @@ class FunctionExecution(Executable):
 
     get_set_vars = get_defined_names
 
-    @common.rethrow_uncaught
     def _copy_properties(self, prop):
         """
         Literally copies a property of a Function. Copying is very expensive,
@@ -462,7 +461,6 @@ class FunctionExecution(Executable):
         return getattr(self.base, name)
 
     @memoize_default(None)
-    @common.rethrow_uncaught
     def _scope_copy(self, scope):
         """ Copies a scope (e.g. if) in an execution """
         # TODO method uses different scopes than the subscopes property.
@@ -476,22 +474,22 @@ class FunctionExecution(Executable):
             copied.parent = self._scope_copy(copied.parent)
             return copied
 
-    @property
+    @common.safe_property
     @memoize_default([])
     def returns(self):
         return self._copy_properties('returns')
 
-    @property
+    @common.safe_property
     @memoize_default([])
     def asserts(self):
         return self._copy_properties('asserts')
 
-    @property
+    @common.safe_property
     @memoize_default([])
     def statements(self):
         return self._copy_properties('statements')
 
-    @property
+    @common.safe_property
     @memoize_default([])
     def subscopes(self):
         return self._copy_properties('subscopes')
