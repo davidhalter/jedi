@@ -113,6 +113,20 @@ class Script(object):
         cache.save_parser(path, None, parser, pickling=False)
         return parser
 
+    def _user_stmt(self, is_completion=False):
+        user_stmt = self._parser.user_stmt
+
+        debug.speed('parsed')
+
+        if is_completion and not user_stmt:
+            # for statements like `from x import ` (cursor not in statement)
+            pos = next(self._user_context.get_context(yield_positions=True))
+            last_stmt = pos and self._parser.module.get_statement_for_position(
+                                pos, include_imports=True)
+            if isinstance(last_stmt, pr.Import):
+                user_stmt = last_stmt
+        return user_stmt
+
     def completions(self):
         """
         Return :class:`classes.Completion` objects. Those objects contain
@@ -210,19 +224,6 @@ class Script(object):
                 for c in names:
                     completions.append((c, s))
         return completions
-
-    def _user_stmt(self, is_completion=False):
-        user_stmt = self._parser.user_stmt
-        debug.speed('parsed')
-
-        if is_completion and not user_stmt:
-            # for statements like `from x import ` (cursor not in statement)
-            pos = next(self._user_context.get_context(yield_positions=True))
-            last_stmt = pos and self._parser.module.get_statement_for_position(
-                                pos, include_imports=True)
-            if isinstance(last_stmt, pr.Import):
-                user_stmt = last_stmt
-        return user_stmt
 
     def _prepare_goto(self, goto_path, is_completion=False):
         """

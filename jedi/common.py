@@ -123,9 +123,8 @@ def source_to_unicode(source, encoding=None):
     def detect_encoding():
         """
         For the implementation of encoding definitions in Python, look at:
-        http://www.python.org/dev/peps/pep-0263/
-        http://docs.python.org/2/reference/lexical_analysis.html#encoding-\
-                                                                declarations
+        - http://www.python.org/dev/peps/pep-0263/
+        - http://docs.python.org/2/reference/lexical_analysis.html#encoding-declarations
         """
         byte_mark = literal_eval(r"b'\xef\xbb\xbf'")
         if source.startswith(byte_mark):
