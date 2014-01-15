@@ -7,6 +7,7 @@ import re
 
 from jedi._compatibility import use_metaclass
 from jedi import settings
+from jedi import common
 from jedi.parser import Parser
 from jedi.parser import representation as pr
 from jedi.parser import tokenize
@@ -28,7 +29,8 @@ class Module(pr.Simple, pr.Module):
     def reset_caches(self):
         """ This module does a whole lot of caching, because it uses different
         parsers. """
-        self._used_names = None
+        with common.ignored(AttributeError):
+            del self._used_names
         for p in self.parsers:
             p.user_scope = None
             p.user_stmt = None
@@ -40,7 +42,7 @@ class Module(pr.Simple, pr.Module):
             return getattr(self.parsers[0].module, name)
 
     @property
-    @cache.underscore_none_memoization
+    @cache.underscore_memoization
     def used_names(self):
         used_names = {}
         for p in self.parsers:
@@ -198,7 +200,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             raise
 
     @property
-    @cache.underscore_none_memoization
+    @cache.underscore_memoization
     def user_scope(self):
         user_scope = None
         for p in self.parsers:
@@ -212,7 +214,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         return user_scope
 
     @property
-    @cache.underscore_none_memoization
+    @cache.underscore_memoization
     def user_stmt(self):
         user_stmt = None
         for p in self.parsers:
@@ -431,8 +433,10 @@ class FastParser(use_metaclass(CachedFastParser)):
         return p, node
 
     def reset_caches(self):
-        self._user_scope = None
-        self._user_stmt = None
+        with common.ignored(AttributeError):
+            del self._user_scope
+        with common.ignored(AttributeError):
+            del self._user_stmt
         self.module.reset_caches()
         if self.current_node is not None:
             self.current_node.reset_contents()
