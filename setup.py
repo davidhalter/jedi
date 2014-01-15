@@ -13,10 +13,9 @@ __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 
 import jedi
-VERSION = '.'.join(str(x) for x in jedi.__version__)
 
 setup(name='jedi',
-      version=VERSION,
+      version=jedi.__version__,
       description='An autocompletion tool for Python that can be used for text editors.',
       author=__AUTHOR__,
       author_email=__AUTHOR_EMAIL__,
