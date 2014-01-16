@@ -104,7 +104,7 @@ def extract(script, new_name):
     new_lines = common.source_to_unicode(script.source).splitlines()
     old_lines = new_lines[:]
 
-    user_stmt = script._parser.user_stmt
+    user_stmt = script._parser.user_stmt()
 
     # TODO care for multiline extracts
     dct = {}

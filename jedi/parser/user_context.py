@@ -1,8 +1,11 @@
 import re
+import os
 import sys
 
-from jedi.cache import underscore_memoization
+from jedi import cache
 from jedi.parser import tokenize
+from jedi.parser import fast
+from jedi.parser import representation
 from jedi import debug
 
 
@@ -21,7 +24,7 @@ class UserContext(object):
         self._line_temp = None
         self._relevant_temp = None
 
-    @underscore_memoization
+    @cache.underscore_memoization
     def get_path_until_cursor(self):
         """ Get the path under the cursor. """
         path, self._start_cursor_pos = self._calc_path_until_cursor(self.position)
@@ -175,3 +178,39 @@ class UserContext(object):
 
     def get_position_line(self):
         return self.get_line(self.position[0])[:self.position[1]]
+
+
+class UserContextParser(object):
+    def __init__(self, source, path, position, user_context):
+        self._source = source
+        self._path = path and os.path.abspath(path)
+        self._position = position
+        self._user_context = user_context
+
+    @cache.underscore_memoization
+    def _parser(self):
+        cache.invalidate_star_import_cache(self._path)
+        parser = fast.FastParser(self._source, self._path, self._position)
+        # Don't pickle that module, because the main module is changing quickly
+        cache.save_parser(self._path, None, parser, pickling=False)
+        return parser
+
+    def user_stmt(self, is_completion=False):
+        user_stmt = self._parser().user_stmt
+
+        debug.speed('parsed')
+
+        if is_completion and not user_stmt:
+            # for statements like `from x import ` (cursor not in statement)
+            pos = next(self._user_context.get_context(yield_positions=True))
+            last_stmt = pos and self._parser().module.get_statement_for_position(
+                                pos, include_imports=True)
+            if isinstance(last_stmt, representation.Import):
+                user_stmt = last_stmt
+        return user_stmt
+
+    def user_scope(self):
+        return self._parser().user_scope
+
+    def module(self):
+        return self._parser().module

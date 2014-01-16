@@ -17,7 +17,7 @@ from jedi._compatibility import next, unicode, builtins
 from jedi.parser import Parser
 from jedi.parser import representation as pr
 from jedi.parser import fast
-from jedi.parser.user_context import UserContext
+from jedi.parser.user_context import UserContext, UserContextParser
 from jedi import debug
 from jedi import settings
 from jedi import common
@@ -86,6 +86,7 @@ class Script(object):
         debug.reset_time()
         self.source = common.source_to_unicode(source, encoding)
         self._user_context = UserContext(self.source, self._pos)
+        self._parser = UserContextParser(self.source, path, self._pos, self._user_context)
         self._evaluator = Evaluator()
         debug.speed('init')
 
@@ -101,31 +102,6 @@ class Script(object):
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, repr(self._source_path))
-
-    @property
-    @cache.underscore_memoization
-    def _parser(self):
-        """Get the parser lazy"""
-        path = self._source_path and os.path.abspath(self._source_path)
-        cache.invalidate_star_import_cache(path)
-        parser = fast.FastParser(self.source, path, self._pos)
-        # Don't pickle that module, because the main module is changing quickly
-        cache.save_parser(path, None, parser, pickling=False)
-        return parser
-
-    def _user_stmt(self, is_completion=False):
-        user_stmt = self._parser.user_stmt
-
-        debug.speed('parsed')
-
-        if is_completion and not user_stmt:
-            # for statements like `from x import ` (cursor not in statement)
-            pos = next(self._user_context.get_context(yield_positions=True))
-            last_stmt = pos and self._parser.module.get_statement_for_position(
-                                pos, include_imports=True)
-            if isinstance(last_stmt, pr.Import):
-                user_stmt = last_stmt
-        return user_stmt
 
     def completions(self):
         """
@@ -150,7 +126,7 @@ class Script(object):
             return []
         path, dot, like = self._get_completion_parts()
 
-        user_stmt = self._user_stmt(True)
+        user_stmt = self._parser.user_stmt(True)
         b = compiled.builtin
         completions = get_completions(user_stmt, b)
 
@@ -175,7 +151,7 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not filter_private_variable(s,
-                            user_stmt or self._parser.user_scope, n):
+                            user_stmt or self._parser.user_scope(), n):
                     new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
@@ -196,7 +172,7 @@ class Script(object):
         except NotFoundError:
             scopes = []
             scope_generator = self._evaluator.get_names_of_scope(
-                self._parser.user_scope, self._pos)
+                self._parser.user_scope(), self._pos)
             completions = []
             for scope, name_list in scope_generator:
                 for c in name_list:
@@ -230,9 +206,9 @@ class Script(object):
         Base for completions/goto. Basically it returns the resolved scopes
         under cursor.
         """
-        debug.dbg('start: %s in %s', goto_path, self._parser.user_scope)
+        debug.dbg('start: %s in %s', goto_path, self._parser.user_scope())
 
-        user_stmt = self._user_stmt(is_completion)
+        user_stmt = self._parser.user_stmt(is_completion)
         if not user_stmt and len(goto_path.split('\n')) > 1:
             # If the user_stmt is not defined and the goto_path is multi line,
             # something's strange. Most probably the backwards tokenizer
@@ -254,7 +230,7 @@ class Script(object):
             stmt = r.module.statements[0]
         except IndexError:
             raise NotFoundError()
-        stmt.parent = self._parser.user_scope
+        stmt.parent = self._parser.user_scope()
         return stmt
 
     def complete(self):
@@ -346,7 +322,7 @@ class Script(object):
         lower_priority_operators = ('()', '(', ',')
         """Operators that could hide callee."""
         if next(context) in ('class', 'def'):
-            scopes = set([self._parser.user_scope])
+            scopes = set([self._parser.user_scope()])
         elif not goto_path:
             op = self._user_context.get_operator_under_cursor()
             if op and op not in lower_priority_operators:
@@ -416,9 +392,9 @@ class Script(object):
 
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
-        user_stmt = self._user_stmt()
+        user_stmt = self._parser.user_stmt()
         if next(context) in ('class', 'def'):
-            user_scope = self._parser.user_scope
+            user_scope = self._parser.user_scope()
             definitions = set([user_scope.name])
             search_name = unicode(user_scope.name)
         elif isinstance(user_stmt, pr.Import):
@@ -462,7 +438,7 @@ class Script(object):
         """
         temp, settings.dynamic_flow_information = \
             settings.dynamic_flow_information, False
-        user_stmt = self._user_stmt()
+        user_stmt = self._parser.user_stmt()
         definitions, search_name = self._goto(add_import_name=True)
         if isinstance(user_stmt, pr.Statement):
             c = user_stmt.expression_list()[0]
@@ -475,7 +451,7 @@ class Script(object):
             definitions = usages_add_import_modules(self._evaluator, definitions, search_name)
 
         module = set([d.get_parent_until() for d in definitions])
-        module.add(self._parser.module)
+        module.add(self._parser.module())
         names = usages(self._evaluator, definitions, search_name, module)
 
         for d in set(definitions):
@@ -512,7 +488,7 @@ class Script(object):
         if call is None:
             return []
 
-        user_stmt = self._user_stmt()
+        user_stmt = self._parser.user_stmt()
         with common.scale_speed_settings(settings.scale_call_signatures):
             _callable = lambda: self._evaluator.eval_call(call)
             origins = cache.cache_call_signatures(_callable, user_stmt)
@@ -526,7 +502,7 @@ class Script(object):
         debug.speed('func_call start')
         call, index = None, 0
         if call is None:
-            user_stmt = self._user_stmt()
+            user_stmt = self._parser.user_stmt()
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
                 call, index, _ = helpers.search_call_signatures(user_stmt, self._pos)
         debug.speed('func_call parsed')
@@ -606,12 +582,12 @@ class Interpreter(Script):
         self.namespaces = namespaces
 
         # Here we add the namespaces to the current parser.
-        importer = interpret.ObjectImporter(self._parser.user_scope)
+        importer = interpret.ObjectImporter(self._parser.user_scope())
         for ns in namespaces:
             importer.import_raw_namespace(ns)
 
     def _simple_complete(self, path, like):
-        user_stmt = self._user_stmt(True)
+        user_stmt = self._parser.user_stmt(True)
         is_simple_path = not path or re.search('^[\w][\w\d.]*$', path)
         if isinstance(user_stmt, pr.Import) or not is_simple_path:
             return super(type(self), self)._simple_complete(path, like)
@@ -644,8 +620,8 @@ class Interpreter(Script):
             for n in namespaces:
                 for name in dir(n):
                     if name.lower().startswith(like.lower()):
-                        scope = self._parser.module
-                        n = pr.Name(self._parser.module, [(name, (0, 0))],
+                        scope = self._parser.module()
+                        n = pr.Name(self._parser.module(), [(name, (0, 0))],
                                     (0, 0), (0, 0), scope)
                         completions.append((n, scope))
             return completions
