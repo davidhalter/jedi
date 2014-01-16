@@ -195,16 +195,21 @@ class UserContextParser(object):
         cache.save_parser(self._path, None, parser, pickling=False)
         return parser
 
+    @cache.underscore_memoization
+    def _get_user_stmt(self):
+        return self.module().get_statement_for_position(self._position,
+                                                        include_imports=True)
+
     def user_stmt(self, is_completion=False):
-        user_stmt = self._parser().user_stmt
+        user_stmt = self._get_user_stmt()
 
         debug.speed('parsed')
 
         if is_completion and not user_stmt:
             # for statements like `from x import ` (cursor not in statement)
             pos = next(self._user_context.get_context(yield_positions=True))
-            last_stmt = pos and self._parser().module.get_statement_for_position(
-                                pos, include_imports=True)
+            last_stmt = pos and \
+                self.module().get_statement_for_position(pos, include_imports=True)
             if isinstance(last_stmt, representation.Import):
                 user_stmt = last_stmt
         return user_stmt

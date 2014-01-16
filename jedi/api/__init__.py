@@ -16,7 +16,6 @@ from itertools import chain
 from jedi._compatibility import next, unicode, builtins
 from jedi.parser import Parser
 from jedi.parser import representation as pr
-from jedi.parser import fast
 from jedi.parser.user_context import UserContext, UserContextParser
 from jedi import debug
 from jedi import settings
