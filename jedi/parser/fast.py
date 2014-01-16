@@ -174,6 +174,11 @@ class ParserNode(object):
         self._set_items(node.parser, set_parent=set_parent)
         node.old_children = node.children
         node.children = []
+
+        scope = self.content_scope
+        while scope is not None:
+            scope.end_pos = node.content_scope.end_pos
+            scope = scope.parent
         return node
 
     def add_parser(self, parser, code):
