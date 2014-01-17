@@ -17,7 +17,7 @@ annotations.
 import re
 
 from jedi.evaluate.cache import memoize_default
-from jedi.parser.user_context import UserContextParser
+from jedi.parser import Parser
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
@@ -37,7 +37,7 @@ def follow_param(evaluator, param):
     func = param.parent_function
     # print func, param, param.parent_function
     param_str = _search_param_in_docstr(func.docstr, str(param.get_name()))
-    user_position = (1, 0)
+    position = (1, 0)
 
     if param_str is not None:
 
@@ -47,12 +47,13 @@ def follow_param(evaluator, param):
             param_str = 'import %s\n%s' % (
                 param_str.rsplit('.', 1)[0],
                 param_str)
-            user_position = (2, 0)
+            position = (2, 0)
 
-        p = UserContextParser(param_str, None, user_position, no_docstr=True)
-        if p.user_stmt() is None:
+        p = Parser(param_str, no_docstr=True)
+        stmt = p.module.get_statement_for_position(position)
+        if stmt is None:
             return []
-        return evaluator.eval_statement(p.user_stmt())
+        return evaluator.eval_statement(stmt)
     return []
 
 
@@ -115,8 +116,9 @@ def find_return_types(evaluator, func):
     if not type_str:
         return []
 
-    p = UserContextParser(type_str, None, (1, 0), no_docstr=True)
-    if p.user_stmt() is None:
+    p = Parser(type_str, None, no_docstr=True)
+    stmt = p.module.get_statement_for_position((1, 0))
+    if stmt is None:
         return []
-    p.user_stmt().parent = func
-    return list(evaluator.eval_statement(p.user_stmt()))
+    stmt.parent = func
+    return list(evaluator.eval_statement(stmt))
