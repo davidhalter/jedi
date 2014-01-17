@@ -214,8 +214,19 @@ class UserContextParser(object):
                 user_stmt = last_stmt
         return user_stmt
 
+    @cache.underscore_memoization
     def user_scope(self):
-        return self._parser().user_scope
+        user_stmt = self._get_user_stmt()
+        if user_stmt is None:
+            def scan(scope):
+                for s in scope.statements + scope.subscopes:
+                    if isinstance(s, representation.Scope):
+                        if s.start_pos <= self._position <= s.end_pos:
+                            return scan(s) or s
+
+            return scan(self.module()) or self.module()
+        else:
+            return user_stmt.parent
 
     def module(self):
         return self._parser().module
