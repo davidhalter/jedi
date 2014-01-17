@@ -567,10 +567,12 @@ class Parser(object):
                 set_stmt, tok = self._parse_statement(added_breaks=['in'],
                                                       names_are_set_vars=True)
                 if tok != 'in':
-                    debug.warning('syntax err, for flow incomplete @%s',
-                                  self.start_pos[0])
+                    debug.warning('syntax err, for flow incomplete @%s', self.start_pos[0])
 
-                statement, tok = self._parse_statement()
+                try:
+                    statement, tok = self._parse_statement()
+                except StopIteration:
+                    statement, tok = None, None
                 s = [] if statement is None else [statement]
                 f = pr.ForFlow(self.module, s, first_pos, set_stmt)
                 self._scope = self._scope.add_statement(f)

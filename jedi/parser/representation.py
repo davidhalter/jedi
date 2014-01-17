@@ -275,6 +275,10 @@ class Scope(Simple, IsScope):
         if self.isinstance(Function):
             checks += self.params + self.decorators
             checks += [r for r in self.returns if r is not None]
+        if self.isinstance(Flow):
+            checks += self.inputs
+        if isinstance(self, ForFlow):
+            checks.append(self.set_stmt)
 
         for s in checks:
             if isinstance(s, Flow):
