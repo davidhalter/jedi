@@ -593,8 +593,7 @@ class Parser(object):
                 # multiple inputs because of with
                 inputs = []
                 first = True
-                while first or command == 'with' \
-                        and tok not in [':', '\n']:
+                while first or command == 'with' and tok not in [':', '\n']:
                     statement, tok = \
                         self._parse_statement(added_breaks=added_breaks)
                     if command == 'except' and tok == ',':
@@ -608,25 +607,21 @@ class Parser(object):
                         inputs.append(statement)
                     first = False
 
-                if tok == ':':
-                    f = pr.Flow(self.module, command, inputs, first_pos)
-                    if command in extended_flow:
-                        # the last statement has to be another part of
-                        # the flow statement, because a dedent releases the
-                        # main scope, so just take the last statement.
-                        try:
-                            s = self._scope.statements[-1].set_next(f)
-                        except (AttributeError, IndexError):
-                            # If set_next doesn't exist, just add it.
-                            s = self._scope.add_statement(f)
-                    else:
+                f = pr.Flow(self.module, command, inputs, first_pos)
+                if command in extended_flow:
+                    # the last statement has to be another part of
+                    # the flow statement, because a dedent releases the
+                    # main scope, so just take the last statement.
+                    try:
+                        s = self._scope.statements[-1].set_next(f)
+                    except (AttributeError, IndexError):
+                        # If set_next doesn't exist, just add it.
                         s = self._scope.add_statement(f)
-                    self._scope = s
                 else:
-                    for i in inputs:
-                        i.parent = use_as_parent_scope
-                    debug.warning('syntax err, flow started @%s',
-                                  self.start_pos[0])
+                    s = self._scope.add_statement(f)
+                self._scope = s
+                if tok != ':':
+                    debug.warning('syntax err, flow started @%s', self.start_pos[0])
             # returns
             elif tok in ['return', 'yield']:
                 s = self.start_pos
