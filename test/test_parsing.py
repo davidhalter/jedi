@@ -1,4 +1,5 @@
 from jedi.parser import Parser
+from jedi.parser.user_context import UserContextParser
 from jedi.parser import representation as pr
 
 
@@ -8,7 +9,7 @@ def test_user_statement_on_import():
         "    time)"
 
     for pos in [(2, 1), (2, 4)]:
-        u = Parser(s, user_position=pos).user_stmt
+        u = UserContextParser(s, None, pos).user_stmt()
         assert isinstance(u, pr.Import)
         assert u.defunct is False
         assert [str(n) for n in u.get_defined_names()] == ['time']
