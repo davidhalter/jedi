@@ -3,8 +3,8 @@ import os
 import sys
 
 from jedi import cache
-from jedi.parser import tokenize
-from jedi.parser import fast
+from jedi.parser import tokenize, Parser
+from jedi.parser.fast import FastParser
 from jedi.parser import representation
 from jedi import debug
 
@@ -181,16 +181,20 @@ class UserContext(object):
 
 
 class UserContextParser(object):
-    def __init__(self, source, path, position, user_context):
+    def __init__(self, source, path, position, user_context=None, no_docstr=False):
         self._source = source
         self._path = path and os.path.abspath(path)
         self._position = position
         self._user_context = user_context
+        self._no_docstr = no_docstr
 
     @cache.underscore_memoization
     def _parser(self):
         cache.invalidate_star_import_cache(self._path)
-        parser = fast.FastParser(self._source, self._path, self._position)
+        if self._no_docstr:
+            parser = Parser(self._source, self._path, self._position, no_docstr=self._no_docstr)
+        else:
+            parser = FastParser(self._source, self._path, self._position)
         # Don't pickle that module, because the main module is changing quickly
         cache.save_parser(self._path, None, parser, pickling=False)
         return parser

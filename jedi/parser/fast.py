@@ -31,9 +31,6 @@ class Module(pr.Simple, pr.Module):
         parsers. """
         with common.ignored(AttributeError):
             del self._used_names
-        for p in self.parsers:
-            p.user_scope = None
-            p.user_stmt = None
 
     def __getattr__(self, name):
         if name.startswith('__'):
@@ -107,7 +104,6 @@ class ParserNode(object):
         for key, c in self._contents.items():
             setattr(scope, key, list(c))
         scope.is_generator = self._is_generator
-        self.parser.user_scope = self.parser.module
 
         if self.parent is None:
             # Global vars of the first one can be deleted, in the global scope
@@ -189,8 +185,6 @@ class FastParser(use_metaclass(CachedFastParser)):
     def __init__(self, code, module_path=None, user_position=None):
         # set values like `pr.Module`.
         self.module_path = module_path
-        self.user_position = user_position
-        self._user_scope = None
 
         self.current_node = None
         self.parsers = []
@@ -204,30 +198,6 @@ class FastParser(use_metaclass(CachedFastParser)):
             self.parsers[:] = []
             raise
 
-    @property
-    @cache.underscore_memoization
-    def user_scope(self):
-        user_scope = None
-        for p in self.parsers:
-            if p.user_scope:
-                if isinstance(p.user_scope, pr.SubModule):
-                    continue
-                user_scope = p.user_scope
-
-        if isinstance(user_scope, pr.SubModule) or user_scope is None:
-            user_scope = self.module
-        return user_scope
-
-    @property
-    @cache.underscore_memoization
-    def user_stmt(self):
-        user_stmt = None
-        for p in self.parsers:
-            if p.user_stmt:
-                user_stmt = p.user_stmt
-                break
-        return user_stmt
-
     def update(self, code, user_position=None):
         self.user_position = user_position
         self.reset_caches()
@@ -238,14 +208,6 @@ class FastParser(use_metaclass(CachedFastParser)):
             # FastParser is cached, be careful with exceptions
             self.parsers[:] = []
             raise
-
-    def _scan_user_scope(self, sub_module):
-        """ Scan with self.user_position. """
-        for scope in sub_module.statements + sub_module.subscopes:
-            if isinstance(scope, pr.Scope):
-                if scope.start_pos <= self.user_position <= scope.end_pos:
-                    return self._scan_user_scope(scope) or scope
-        return None
 
     def _split_parts(self, code):
         """
@@ -377,12 +339,6 @@ class FastParser(use_metaclass(CachedFastParser)):
                     else:
                         self.current_node = self.current_node.add_node(node)
 
-                if self.current_node.parent and (isinstance(p.user_scope, pr.SubModule)
-                                                 or p.user_scope is None) \
-                        and self.user_position \
-                        and p.start_pos <= self.user_position < p.end_pos:
-                    p.user_scope = self.current_node.parent.content_scope
-
                 self.parsers.append(p)
 
                 is_first = False
@@ -411,8 +367,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             if nodes[index].code != code:
                 raise ValueError()
         except ValueError:
-            p = Parser(parser_code, self.module_path,
-                       self.user_position, offset=(line_offset, 0),
+            p = Parser(parser_code, self.module_path, offset=(line_offset, 0),
                        is_fast_parser=True, top_module=self.module,
                        no_docstr=no_docstr)
             p.module.parent = self.module
@@ -424,24 +379,10 @@ class FastParser(use_metaclass(CachedFastParser)):
             p = node.parser
             m = p.module
             m.line_offset += line_offset + 1 - m.start_pos[0]
-            if self.user_position is not None and \
-                    m.start_pos[0] <= self.user_position[0] <= m.end_pos[0]:
-                # It's important to take care of the whole user
-                # positioning stuff, if no reparsing is being done.
-                p.user_stmt = m.get_statement_for_position(
-                    self.user_position, include_imports=True)
-                if p.user_stmt:
-                    p.user_scope = p.user_stmt.parent
-                else:
-                    p.user_scope = self._scan_user_scope(m) or m
 
         return p, node
 
     def reset_caches(self):
-        with common.ignored(AttributeError):
-            del self._user_scope
-        with common.ignored(AttributeError):
-            del self._user_stmt
         self.module.reset_caches()
         if self.current_node is not None:
             self.current_node.reset_contents()

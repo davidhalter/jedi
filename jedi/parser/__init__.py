@@ -43,9 +43,6 @@ class Parser(object):
     def __init__(self, source, module_path=None, user_position=None,
                  no_docstr=False, offset=(0, 0), is_fast_parser=None,
                  top_module=None):
-        self.user_position = user_position
-        self.user_scope = None
-        self.user_stmt = None
         self.no_docstr = no_docstr
 
         self.start_pos = self.end_pos = 1 + offset[0], offset[1]
@@ -84,28 +81,6 @@ class Parser(object):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
-
-    def _check_user_stmt(self, simple):
-        # this is not user checking, just update the used_names
-        for tok_name in self.module.temp_used_names:
-            try:
-                self.module.used_names[tok_name].add(simple)
-            except KeyError:
-                self.module.used_names[tok_name] = set([simple])
-        self.module.temp_used_names = []
-
-        if not self.user_position:
-            return
-        # the position is right
-        if simple.start_pos <= self.user_position <= simple.end_pos:
-            if self.user_stmt is not None:
-                # if there is already a user position (another import, because
-                # imports are splitted) the names are checked.
-                for n in simple.get_set_vars():
-                    if n.start_pos < self.user_position <= n.end_pos:
-                        self.user_stmt = simple
-            else:
-                self.user_stmt = simple
 
     def _parse_dot_name(self, pre_used_token=None):
         """
@@ -252,11 +227,7 @@ class Parser(object):
             return None
 
         # because of 2 line func param definitions
-        scope = pr.Function(self.module, fname, params, first_pos, annotation)
-        if self.user_scope and scope != self.user_scope \
-                and self.user_position > first_pos:
-            self.user_scope = scope
-        return scope
+        return pr.Function(self.module, fname, params, first_pos, annotation)
 
     def _parse_class(self):
         """
@@ -286,12 +257,7 @@ class Parser(object):
             debug.warning("class syntax: %s@%s", cname, self.start_pos[0])
             return None
 
-        # because of 2 line class initializations
-        scope = pr.Class(self.module, cname, super, first_pos)
-        if self.user_scope and scope != self.user_scope \
-                and self.user_position > first_pos:
-            self.user_scope = scope
-        return scope
+        return pr.Class(self.module, cname, super, first_pos)
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
                          stmt_class=pr.Statement, names_are_set_vars=False):
@@ -405,7 +371,6 @@ class Parser(object):
                           names_are_set_vars=names_are_set_vars)
 
         stmt.parent = self.top_module
-        self._check_user_stmt(stmt)
 
         if tok in always_break + not_first_break:
             self._gen.push_last_back()
@@ -437,15 +402,6 @@ class Parser(object):
                 s.end_pos = self.end_pos
                 s = s.parent
             raise
-
-        if self.user_position and (
-            self.start_pos[0] == self.user_position[0]
-            or self.user_scope is None
-            and self.start_pos[0] >= self.user_position[0]
-        ):
-            debug.dbg('user scope found [%s] = %s',
-                      self.parserline.replace('\n', ''), self._scope)
-            self.user_scope = self._scope
 
         self._current = typ, tok
         return self._current
@@ -522,12 +478,10 @@ class Parser(object):
                     end_pos = self.end_pos if count + 1 == len(imports) else e
                     i = pr.Import(self.module, first_pos, end_pos, m,
                                   alias, defunct=defunct)
-                    self._check_user_stmt(i)
                     self._scope.add_import(i)
                 if not imports:
                     i = pr.Import(self.module, first_pos, self.end_pos, None,
                                   defunct=True)
-                    self._check_user_stmt(i)
                 self.freshscope = False
             elif tok == 'from':
                 defunct = False
@@ -559,7 +513,6 @@ class Parser(object):
                     i = pr.Import(self.module, first_pos, end_pos, name,
                                   alias, mod, star, relative_count,
                                   defunct=defunct or defunct2)
-                    self._check_user_stmt(i)
                     self._scope.add_import(i)
                 self.freshscope = False
             # loops
