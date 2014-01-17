@@ -215,7 +215,7 @@ class Evaluator(object):
         if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
             new_result = []
             for ass_expression_list, op in stmt.assignment_details:
-                new_result += _find_assignments(ass_expression_list[0], result, seek_name)
+                new_result += finder.find_assignments(ass_expression_list[0], result, seek_name)
             result = new_result
         return set(result)
 
@@ -461,68 +461,3 @@ def filter_private_variable(scope, call_scope, var_name):
                 if s != scope.base.base:
                     return True
     return False
-
-
-def _assign_tuples(tup, results, seek_name):
-    """
-    This is a normal assignment checker. In python functions and other things
-    can return tuples:
-    >>> a, b = 1, ""
-    >>> a, (b, c) = 1, ("", 1.0)
-
-    Here, if `seek_name` is "a", the number type will be returned.
-    The first part (before `=`) is the param tuples, the second one result.
-
-    :type tup: pr.Array
-    """
-    def eval_results(index):
-        types = []
-        for r in results:
-            try:
-                func = r.get_exact_index_types
-            except AttributeError:
-                debug.warning("invalid tuple lookup %s of result %s in %s",
-                              tup, results, seek_name)
-            else:
-                with common.ignored(IndexError):
-                    types += func(index)
-        return types
-
-    result = []
-    for i, stmt in enumerate(tup):
-        # Used in assignments. There is just one call and no other things,
-        # therefore we can just assume, that the first part is important.
-        command = stmt.expression_list()[0]
-
-        if tup.type == pr.Array.NOARRAY:
-
-                # unnessecary braces -> just remove.
-            r = results
-        else:
-            r = eval_results(i)
-
-        # LHS of tuples can be nested, so resolve it recursively
-        result += _find_assignments(command, r, seek_name)
-    return result
-
-
-def _find_assignments(lhs, results, seek_name):
-    """
-    Check if `seek_name` is in the left hand side `lhs` of assignment.
-
-    `lhs` can simply be a variable (`pr.Call`) or a tuple/list (`pr.Array`)
-    representing the following cases::
-
-        a = 1        # lhs is pr.Call
-        (a, b) = 2   # lhs is pr.Array
-
-    :type lhs: pr.Call
-    :type results: list
-    :type seek_name: str
-    """
-    if isinstance(lhs, pr.Array):
-        return _assign_tuples(lhs, results, seek_name)
-    elif lhs.name.names[-1] == seek_name:
-        return results
-    else:
-        return []
