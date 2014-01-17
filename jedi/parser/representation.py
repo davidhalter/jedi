@@ -277,7 +277,7 @@ class Scope(Simple, IsScope):
             checks += [r for r in self.returns if r is not None]
         if self.isinstance(Flow):
             checks += self.inputs
-        if isinstance(self, ForFlow):
+        if self.isinstance(ForFlow) and self.set_stmt is not None:
             checks.append(self.set_stmt)
 
         for s in checks:
