@@ -10,6 +10,10 @@ try:
     else:
         # Use colorama for nicer console output.
         from colorama import Fore, init
+        from colorama import initialise
+        # pytest resets the stream at the end - causes troubles. Since after
+        # every output the stream is reset automatically we don't need this.
+        initialise.atexit_done = True
         init()
 except ImportError:
     class Fore(object):
