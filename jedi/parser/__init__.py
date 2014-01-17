@@ -82,6 +82,15 @@ class Parser(object):
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
 
+    def _check_user_stmt(self, simple):
+        # this is not user checking, just update the used_names
+        for tok_name in self.module.temp_used_names:
+            try:
+                self.module.used_names[tok_name].add(simple)
+            except KeyError:
+                self.module.used_names[tok_name] = set([simple])
+        self.module.temp_used_names = []
+
     def _parse_dot_name(self, pre_used_token=None):
         """
         The dot name parser parses a name, variable or function and returns
@@ -371,6 +380,7 @@ class Parser(object):
                           names_are_set_vars=names_are_set_vars)
 
         stmt.parent = self.top_module
+        self._check_user_stmt(stmt)
 
         if tok in always_break + not_first_break:
             self._gen.push_last_back()
@@ -478,10 +488,12 @@ class Parser(object):
                     end_pos = self.end_pos if count + 1 == len(imports) else e
                     i = pr.Import(self.module, first_pos, end_pos, m,
                                   alias, defunct=defunct)
+                    self._check_user_stmt(i)
                     self._scope.add_import(i)
                 if not imports:
                     i = pr.Import(self.module, first_pos, self.end_pos, None,
                                   defunct=True)
+                    self._check_user_stmt(i)
                 self.freshscope = False
             elif tok == 'from':
                 defunct = False
@@ -513,6 +525,7 @@ class Parser(object):
                     i = pr.Import(self.module, first_pos, end_pos, name,
                                   alias, mod, star, relative_count,
                                   defunct=defunct or defunct2)
+                    self._check_user_stmt(i)
                     self._scope.add_import(i)
                 self.freshscope = False
             # loops

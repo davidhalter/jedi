@@ -119,4 +119,4 @@ def find_return_types(evaluator, func):
     if p.user_stmt() is None:
         return []
     p.user_stmt().parent = func
-    return list(evaluator.eval_statement(p.user_stmt))
+    return list(evaluator.eval_statement(p.user_stmt()))

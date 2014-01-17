@@ -195,8 +195,8 @@ class UserContextParser(object):
             parser = Parser(self._source, self._path, self._position, no_docstr=self._no_docstr)
         else:
             parser = FastParser(self._source, self._path, self._position)
-        # Don't pickle that module, because the main module is changing quickly
-        cache.save_parser(self._path, None, parser, pickling=False)
+            # Don't pickle that module, because the main module is changing quickly
+            cache.save_parser(self._path, None, parser, pickling=False)
         return parser
 
     @cache.underscore_memoization
