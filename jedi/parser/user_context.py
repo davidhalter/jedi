@@ -192,9 +192,9 @@ class UserContextParser(object):
     def _parser(self):
         cache.invalidate_star_import_cache(self._path)
         if self._no_docstr:
-            parser = Parser(self._source, self._path, self._position, no_docstr=self._no_docstr)
+            parser = Parser(self._source, self._path, no_docstr=self._no_docstr)
         else:
-            parser = FastParser(self._source, self._path, self._position)
+            parser = FastParser(self._source, self._path)
             # Don't pickle that module, because the main module is changing quickly
             cache.save_parser(self._path, None, parser, pickling=False)
         return parser

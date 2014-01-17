@@ -57,17 +57,16 @@ class Module(pr.Simple, pr.Module):
 
 class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
-    def __call__(self, source, module_path=None, user_position=None):
+    def __call__(self, source, module_path=None):
         if not settings.fast_parser:
-            return Parser(source, module_path, user_position)
+            return Parser(source, module_path)
 
         pi = cache.parser_cache.get(module_path, None)
         if pi is None or isinstance(pi.parser, Parser):
-            p = super(CachedFastParser, self).__call__(source, module_path,
-                                                       user_position)
+            p = super(CachedFastParser, self).__call__(source, module_path)
         else:
             p = pi.parser  # pi is a `cache.ParserCacheItem`
-            p.update(source, user_position)
+            p.update(source)
         return p
 
 
@@ -182,7 +181,7 @@ class ParserNode(object):
 
 
 class FastParser(use_metaclass(CachedFastParser)):
-    def __init__(self, code, module_path=None, user_position=None):
+    def __init__(self, code, module_path=None):
         # set values like `pr.Module`.
         self.module_path = module_path
 
@@ -198,8 +197,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             self.parsers[:] = []
             raise
 
-    def update(self, code, user_position=None):
-        self.user_position = user_position
+    def update(self, code):
         self.reset_caches()
 
         try:

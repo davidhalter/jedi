@@ -34,15 +34,12 @@ class Parser(object):
     :type source: str
     :param module_path: The path of the module in the file system, may be None.
     :type module_path: str
-    :param user_position: The line/column, the user is currently on.
-    :type user_position: tuple(int, int)
     :param no_docstr: If True, a string at the beginning is not a docstr.
     :param is_fast_parser: -> for fast_parser
     :param top_module: Use this module as a parent instead of `self.module`.
     """
-    def __init__(self, source, module_path=None, user_position=None,
-                 no_docstr=False, offset=(0, 0), is_fast_parser=None,
-                 top_module=None):
+    def __init__(self, source, module_path=None, no_docstr=False,
+                 offset=(0, 0), is_fast_parser=None, top_module=None):
         self.no_docstr = no_docstr
 
         self.start_pos = self.end_pos = 1 + offset[0], offset[1]
