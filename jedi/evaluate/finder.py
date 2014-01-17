@@ -1,6 +1,7 @@
 import copy
+import sys
 
-from jedi._compatibility import hasattr, unicode, u
+from jedi._compatibility import hasattr, unicode, u, reraise
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi import common
@@ -10,6 +11,7 @@ from jedi.evaluate import dynamic
 from jedi.evaluate import compiled
 from jedi.evaluate import docstrings
 from jedi.evaluate import iterable
+from jedi.evaluate import imports
 
 
 class NameFinder(object):
@@ -27,7 +29,7 @@ class NameFinder(object):
 
     def scopes(self, search_global=False):
         if search_global:
-            return self._evaluator.get_names_of_scope(self.scope, self.position)
+            return get_names_of_scope(self._evaluator, self.scope, self.position)
         else:
             if isinstance(self.scope, er.Instance):
                 return self.scope.scope_generator()
@@ -359,6 +361,93 @@ def _get_defined_names_for_position(scope, position=None, start_scope=None):
         if n.start_pos[0] is not None and n.start_pos < position:
             names_new.append(n)
     return names_new
+
+
+def get_names_of_scope(evaluator, scope, position=None, star_search=True, include_builtin=True):
+    """
+    Get all completions (names) possible for the current scope. The star search
+    option is only here to provide an optimization. Otherwise the whole thing
+    would probably start a little recursive madness.
+
+    This function is used to include names from outer scopes. For example, when
+    the current scope is function:
+
+    >>> from jedi.parser import Parser
+    >>> parser = Parser('''
+    ... x = ['a', 'b', 'c']
+    ... def func():
+    ...     y = None
+    ... ''')
+    >>> scope = parser.module.subscopes[0]
+    >>> scope
+    <Function: func@3-4>
+
+    `get_names_of_scope` is a generator.  First it yields names from most inner
+    scope.
+
+    >>> from jedi.evaluate import Evaluator
+    >>> pairs = list(get_names_of_scope(Evaluator(), scope))
+    >>> pairs[0]
+    (<Function: func@3-4>, [<Name: y@4,4>])
+
+    Then it yield the names from one level outer scope. For this example, this
+    is the most outer scope.
+
+    >>> pairs[1]
+    (<SubModule: None@1-4>, [<Name: x@2,0>, <Name: func@3,4>])
+
+    Finally, it yields names from builtin, if `include_builtin` is
+    true (default).
+
+    >>> pairs[2]                                        #doctest: +ELLIPSIS
+    (<Builtin: ...builtin...>, [<CompiledName: ...>, ...])
+
+    :rtype: [(pr.Scope, [pr.Name])]
+    :return: Return an generator that yields a pair of scope and names.
+    """
+    in_func_scope = scope
+    non_flow = scope.get_parent_until(pr.Flow, reverse=True)
+    while scope:
+        if isinstance(scope, pr.SubModule) and scope.parent:
+            # we don't want submodules to report if we have modules.
+            scope = scope.parent
+            continue
+        # `pr.Class` is used, because the parent is never `Class`.
+        # Ignore the Flows, because the classes and functions care for that.
+        # InstanceElement of Class is ignored, if it is not the start scope.
+        if not (scope != non_flow and scope.isinstance(pr.Class)
+                or scope.isinstance(pr.Flow)
+                or scope.isinstance(er.Instance)
+                and non_flow.isinstance(er.Function)
+                or isinstance(scope, compiled.CompiledObject)
+                and scope.type() == 'class' and in_func_scope != scope):
+            try:
+                if isinstance(scope, er.Instance):
+                    for g in scope.scope_generator():
+                        yield g
+                else:
+                    yield scope, _get_defined_names_for_position(scope, position, in_func_scope)
+            except StopIteration:
+                reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
+        if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
+            # is a list comprehension
+            yield scope, scope.get_set_vars(is_internal_call=True)
+
+        scope = scope.parent
+        # This is used, because subscopes (Flow scopes) would distort the
+        # results.
+        if scope and scope.isinstance(er.Function, pr.Function, er.FunctionExecution):
+            in_func_scope = scope
+
+    # Add star imports.
+    if star_search:
+        for s in imports.remove_star_imports(evaluator, non_flow.get_parent_until()):
+            for g in get_names_of_scope(evaluator, s, star_search=False):
+                yield g
+
+        # Add builtins to the global scope.
+        if include_builtin:
+            yield compiled.builtin, compiled.builtin.get_defined_names()
 
 
 def _assign_tuples(tup, results, seek_name):

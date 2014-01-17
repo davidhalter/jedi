@@ -16,6 +16,7 @@ from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.api import keywords
+from jedi.evaluate.finder import get_names_of_scope
 
 
 def clear_caches():
@@ -550,8 +551,8 @@ def defined_names(evaluator, scope):
     :type scope: Scope
     :rtype: list of Definition
     """
-    pair = next(evaluator.get_names_of_scope(
-        scope, star_search=False, include_builtin=False), None)
+    pair = next(get_names_of_scope(evaluator, scope, star_search=False,
+                                   include_builtin=False), None)
     names = pair[1] if pair else []
     return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 

@@ -131,8 +131,9 @@ class ImportPath(pr.Base):
                         names.append(pr.Name(self.GlobalNamespace, [('path', p)],
                                      p, p, self.import_stmt))
                     continue
-                for s, scope_names in self._evaluator.get_names_of_scope(scope,
-                                                                  include_builtin=False):
+                from jedi.evaluate import finder
+                for s, scope_names in finder.get_names_of_scope(self._evaluator,
+                                                                scope, include_builtin=False):
                     for n in scope_names:
                         if self.import_stmt.from_ns is None \
                                 or self.is_partial_import:

@@ -29,6 +29,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate import helpers
+from jedi.evaluate.finder import get_names_of_scope
 
 
 class NotFoundError(Exception):
@@ -170,8 +171,9 @@ class Script(object):
             scopes = list(self._prepare_goto(path, True))
         except NotFoundError:
             scopes = []
-            scope_generator = self._evaluator.get_names_of_scope(
-                self._parser.user_scope(), self._pos)
+            scope_generator = get_names_of_scope(self._evaluator,
+                                                 self._parser.user_scope(),
+                                                 self._pos)
             completions = []
             for scope, name_list in scope_generator:
                 for c in name_list:
