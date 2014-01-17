@@ -566,25 +566,16 @@ class Parser(object):
             elif tok == 'for':
                 set_stmt, tok = self._parse_statement(added_breaks=['in'],
                                                       names_are_set_vars=True)
-                if tok == 'in':
-                    statement, tok = self._parse_statement()
-                    if tok == ':':
-                        s = [] if statement is None else [statement]
-                        f = pr.ForFlow(self.module, s, first_pos, set_stmt)
-                        self._scope = self._scope.add_statement(f)
-                    else:
-                        debug.warning('syntax err, for flow started @%s',
-                                      self.start_pos[0])
-                        if statement is not None:
-                            statement.parent = use_as_parent_scope
-                        if set_stmt is not None:
-                            set_stmt.parent = use_as_parent_scope
-                else:
+                if tok != 'in':
                     debug.warning('syntax err, for flow incomplete @%s',
                                   self.start_pos[0])
-                    if set_stmt is not None:
-                        set_stmt.parent = use_as_parent_scope
 
+                statement, tok = self._parse_statement()
+                s = [] if statement is None else [statement]
+                f = pr.ForFlow(self.module, s, first_pos, set_stmt)
+                self._scope = self._scope.add_statement(f)
+                if tok != ':':
+                    debug.warning('syntax err, for flow started @%s', self.start_pos[0])
             elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
                 added_breaks = []
                 command = tok
