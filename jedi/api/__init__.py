@@ -21,9 +21,9 @@ from jedi import debug
 from jedi import settings
 from jedi import common
 from jedi import cache
-from jedi import interpret
 from jedi.api import keywords
 from jedi.api import classes
+from jedi.api import interpreter
 from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
@@ -150,8 +150,7 @@ class Script(object):
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
-                if not filter_private_variable(s,
-                            user_stmt or self._parser.user_scope(), n):
+                if not filter_private_variable(s, user_stmt or self._parser.user_scope(), n):
                     new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
@@ -548,7 +547,6 @@ class Script(object):
 
 
 class Interpreter(Script):
-
     """
     Jedi API for Python REPLs.
 
@@ -562,7 +560,6 @@ class Interpreter(Script):
     >>> script = Interpreter('join().up', [namespace])
     >>> print(script.completions()[0].name)
     upper
-
     """
 
     def __init__(self, source, namespaces=[], **kwds):
@@ -583,9 +580,7 @@ class Interpreter(Script):
         self.namespaces = namespaces
 
         # Here we add the namespaces to the current parser.
-        importer = interpret.ObjectImporter(self._parser.user_scope())
-        for ns in namespaces:
-            importer.import_raw_namespace(ns)
+        interpreter.create(namespaces[0], self._parser.module())
 
     def _simple_complete(self, path, like):
         user_stmt = self._parser.user_stmt(True)

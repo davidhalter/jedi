@@ -290,7 +290,7 @@ def create(obj, parent=builtin, module=None):
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
-    if not inspect.ismodule(parent):
+    if not inspect.ismodule(obj):
         faked = fake.get_faked(module and module.obj, obj)
         if faked is not None:
             faked.parent = parent
