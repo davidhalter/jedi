@@ -1,4 +1,5 @@
 import inspect
+import re
 
 from jedi._compatibility import builtins
 from jedi import debug
@@ -63,9 +64,10 @@ class LazyName(helpers.FakeName):
         except AttributeError:
             pass
         else:
-            if path.endswith('.pyc'):
+            path = re.sub('c$', '', path)
+            if path.endswith('.py'):
                 # cut the `c` from `.pyc`
-                with open(path[:-1]) as f:
+                with open(path) as f:
                     mod = FastParser(f.read(), path[:-1]).module
                 if not parser_path:
                     return mod
