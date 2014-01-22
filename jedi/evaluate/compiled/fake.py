@@ -49,21 +49,27 @@ def search_scope(scope, obj_name):
             return s
 
 
+def get_module(obj):
+    if inspect.ismodule(obj):
+        return obj
+    try:
+        obj = obj.__objclass__
+    except AttributeError:
+        pass
+
+    try:
+        imp_plz = obj.__module__
+    except AttributeError:
+        # Unfortunately in some cases like `int` there's no __module__
+        return builtins
+    else:
+        return __import__(imp_plz)
+
+
 def _faked(module, obj, name):
     # Crazy underscore actions to try to escape all the internal madness.
     if module is None:
-        try:
-            module = obj.__objclass__
-        except AttributeError:
-            pass
-
-        try:
-            imp_plz = obj.__module__
-        except AttributeError:
-            # Unfortunately in some cases like `int` there's no __module__
-            module = builtins
-        else:
-            module = __import__(imp_plz)
+        module = get_module(obj)
 
     faked_mod = _load_faked_module(module)
     if faked_mod is None:

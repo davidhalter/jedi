@@ -632,7 +632,7 @@ class Parser(object):
             else:
                 if token_type not in [tokenize.COMMENT, tokenize.INDENT,
                                       tokenize.NEWLINE, tokenize.NL]:
-                    debug.warning('token not classified', tok, token_type,
-                                  self.start_pos[0])
+                    debug.warning('token not classified %s %s %s', tok,
+                                  token_type, self.start_pos[0])
                 continue
             self.no_docstr = False

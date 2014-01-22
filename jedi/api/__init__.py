@@ -580,7 +580,7 @@ class Interpreter(Script):
         self.namespaces = namespaces
 
         # Here we add the namespaces to the current parser.
-        interpreter.create(namespaces[0], self._parser.module())
+        interpreter.create(self._evaluator, namespaces[0], self._parser.module())
 
     def _simple_complete(self, path, like):
         user_stmt = self._parser.user_stmt(True)

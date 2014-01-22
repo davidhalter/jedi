@@ -89,7 +89,7 @@ class CompiledObject(Base):
             return
         for name in self._parse_function_doc()[1].split():
             try:
-                bltn_obj = _create_from_name(builtin, builtin, name)
+                bltn_obj = create_from_name(builtin, builtin, name)
             except AttributeError:
                 continue
             else:
@@ -141,7 +141,7 @@ class CompiledName(object):
     @underscore_memoization
     def parent(self):
         module = self._obj.get_parent_until()
-        return _create_from_name(module, self._obj, self.name)
+        return create_from_name(module, self._obj, self.name)
 
     @property
     def names(self):
@@ -268,7 +268,7 @@ builtin = Builtin(_builtins)
 magic_function_class = CompiledObject(type(load_module), parent=builtin)
 
 
-def _create_from_name(module, parent, name):
+def create_from_name(module, parent, name):
     faked = fake.get_faked(module.obj, parent.obj, name)
     # only functions are necessary.
     if faked is not None:
