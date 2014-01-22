@@ -67,6 +67,8 @@ class LazyName(helpers.FakeName):
                 # cut the `c` from `.pyc`
                 with open(path[:-1]) as f:
                     mod = FastParser(f.read(), path[:-1]).module
+                if not parser_path:
+                    return mod
                 found = self._evaluator.eval_call_path(iter(parser_path), mod, None)
                 if found:
                     return found[0]
@@ -83,4 +85,6 @@ class LazyName(helpers.FakeName):
 
 def create(evaluator, namespace, parser_module):
     ns = InterpreterNamespace(evaluator, namespace, parser_module)
-    parser_module.statements[0].parent = ns
+    for attr_name in pr.SCOPE_CONTENTS:
+        for something in getattr(parser_module, attr_name):
+            something.parent = ns

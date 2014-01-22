@@ -44,6 +44,8 @@ from jedi import debug
 from jedi import cache
 from jedi.parser import tokenize
 
+SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
+
 
 class Base(object):
     """

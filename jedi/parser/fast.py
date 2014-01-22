@@ -14,9 +14,6 @@ from jedi.parser import tokenize
 from jedi import cache
 
 
-SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
-
-
 class Module(pr.Simple, pr.Module):
     def __init__(self, parsers):
         super(Module, self).__init__(self, (1, 0))
@@ -91,7 +88,7 @@ class ParserNode(object):
 
         scope = self.content_scope
         self._contents = {}
-        for c in SCOPE_CONTENTS:
+        for c in pr.SCOPE_CONTENTS:
             self._contents[c] = list(getattr(scope, c))
         self._is_generator = scope.is_generator
 
@@ -142,7 +139,7 @@ class ParserNode(object):
     def _set_items(self, parser, set_parent=False):
         # insert parser objects into current structure
         scope = self.content_scope
-        for c in SCOPE_CONTENTS:
+        for c in pr.SCOPE_CONTENTS:
             content = getattr(scope, c)
             items = getattr(parser.module, c)
             if set_parent:
