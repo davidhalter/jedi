@@ -588,7 +588,7 @@ class Interpreter(Script):
         if isinstance(user_stmt, pr.Import) or not is_simple_path:
             return super(type(self), self)._simple_complete(path, like)
         else:
-            class NamespaceModule:
+            class NamespaceModule(object):
                 def __getattr__(_, name):
                     for n in self.namespaces:
                         try:
@@ -613,12 +613,11 @@ class Interpreter(Script):
                         pass
 
             completions = []
-            for n in namespaces:
-                for name in dir(n):
+            for namespace in namespaces:
+                for name in dir(namespace):
                     if name.lower().startswith(like.lower()):
                         scope = self._parser.module()
-                        n = pr.Name(self._parser.module(), [(name, (0, 0))],
-                                    (0, 0), (0, 0), scope)
+                        n = helpers.FakeName(name, scope)
                         completions.append((n, scope))
             return completions
 

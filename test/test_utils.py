@@ -5,7 +5,7 @@ from .helpers import TestCase, cwd_at
 
 
 class TestSetupReadline(TestCase):
-    class NameSpace():
+    class NameSpace(object):
         pass
 
     def __init__(self, *args, **kwargs):
