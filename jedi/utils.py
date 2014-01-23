@@ -9,10 +9,10 @@ import re
 import os
 import sys
 
-from jedi import Interpreter
+from jedi import Interpreter, preload_module
 
 
-def setup_readline(namespace_module=__main__):
+def setup_readline(namespace_module=__main__, *preload_modules):
     """
     Install Jedi completer to :mod:`readline`.
 
@@ -98,6 +98,8 @@ def setup_readline(namespace_module=__main__):
         readline.parse_and_bind("set completion-prefix-display-length 2")
         # No delimiters, Jedi handles that.
         readline.set_completer_delims('')
+        mods = preload_modules or 're'
+        preload_module(*mods)
 
 
 def version_info():
