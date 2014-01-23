@@ -105,3 +105,11 @@ a, b = next(gen())
 a
 #? str() float()
 b
+
+# -----------------
+# More complicated access
+# -----------------
+
+# `close` is a method wrapper.
+#? ['__call__']
+gen().close.__call__
