@@ -19,11 +19,12 @@ import sys
 import json
 import hashlib
 import gc
+import inspect
+import shutil
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
-import shutil
 
 from jedi import settings
 from jedi import common
@@ -119,12 +120,15 @@ def underscore_memoization(func):
 
     A now has an attribute ``_x`` written by this decorator.
     """
+    name = '_' + func.__name__
+
     def wrapper(self):
-        name = '_' + func.__name__
         try:
             return getattr(self, name)
         except AttributeError:
             result = func(self)
+            if inspect.isgenerator(result):
+                result = list(result)
             setattr(self, name, result)
             return result
 

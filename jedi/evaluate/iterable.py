@@ -12,7 +12,7 @@ from jedi.cache import underscore_memoization
 
 
 class Generator(use_metaclass(CachedMetaClass, pr.Base)):
-    """ Cares for `yield` statements. """
+    """Handling of `yield` functions."""
     def __init__(self, evaluator, func, var_args):
         super(Generator, self).__init__()
         self._evaluator = evaluator
@@ -28,10 +28,11 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         executes_generator = '__next__', 'send', 'next'
         for name in compiled.generator_obj.get_defined_names():
             if name.name in executes_generator:
+                print(name)
                 parent = self
                 # TODO parents are fucked up
                 #pr.Function(module, name, [], (0, 0), None)
-                yield helpers.FakeName(name, parent)
+                yield helpers.FakeName(name.name, parent)
             else:
                 yield name
 
