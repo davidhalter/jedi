@@ -303,6 +303,8 @@ class Evaluator(object):
         except stdlib.NotInStdLib:
             pass
 
+        if isinstance(obj, iterable.GeneratorMethod):
+            return obj.execute()
         if obj.isinstance(compiled.CompiledObject):
             if obj.is_executable_class():
                 return [er.Instance(self, obj, params)]
@@ -311,8 +313,6 @@ class Evaluator(object):
         elif obj.isinstance(er.Class):
             # There maybe executions of executions.
             return [er.Instance(self, obj, params)]
-        elif isinstance(obj, iterable.Generator):
-            return obj.iter_content()
         else:
             stmts = []
             if obj.isinstance(er.Function):

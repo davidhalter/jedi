@@ -118,8 +118,21 @@ b
 #? ['__call__']
 gen().close.__call__
 
+#? 
+gen().throw()
+
 #? ['co_consts']
 gen().gi_code.co_consts
 
 #? []
 gen.gi_code.co_consts
+
+# `send` is also a method wrapper.
+#? ['__call__']
+gen().send.__call__
+
+#? tuple()
+gen().send()
+
+#? 
+gen()()

@@ -28,10 +28,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         executes_generator = '__next__', 'send', 'next'
         for name in compiled.generator_obj.get_defined_names():
             if name.name in executes_generator:
-                print(name)
-                parent = self
-                # TODO parents are fucked up
-                #pr.Function(module, name, [], (0, 0), None)
+                parent = GeneratorMethod(self, name.parent)
                 yield helpers.FakeName(name.name, parent)
             else:
                 yield name
@@ -54,6 +51,19 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.func)
+
+
+class GeneratorMethod(object):
+    """``__next__`` and ``send`` methods."""
+    def __init__(self, generator, builtin_func):
+        self._builtin_func = builtin_func
+        self._generator = generator
+
+    def execute(self):
+        return self._generator.iter_content()
+
+    def __getattr__(self, name):
+        return getattr(self._builtin_func, name)
 
 
 class Array(use_metaclass(CachedMetaClass, pr.Base)):
