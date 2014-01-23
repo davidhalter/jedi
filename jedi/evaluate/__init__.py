@@ -305,7 +305,7 @@ class Evaluator(object):
 
         if isinstance(obj, iterable.GeneratorMethod):
             return obj.execute()
-        if obj.isinstance(compiled.CompiledObject):
+        elif obj.isinstance(compiled.CompiledObject):
             if obj.is_executable_class():
                 return [er.Instance(self, obj, params)]
             else:

@@ -87,6 +87,7 @@ class CompiledObject(Base):
     def execute_function(self, evaluator, params):
         if self.type() != 'def':
             return
+
         for name in self._parse_function_doc()[1].split():
             try:
                 bltn_obj = _create_from_name(builtin, builtin, name)
@@ -94,7 +95,9 @@ class CompiledObject(Base):
                 continue
             else:
                 if isinstance(bltn_obj, CompiledObject):
-                    yield bltn_obj
+                    # We want everything except None.
+                    if bltn_obj.obj is not None:
+                        yield bltn_obj
                 else:
                     for result in evaluator.execute(bltn_obj, params):
                         yield result
