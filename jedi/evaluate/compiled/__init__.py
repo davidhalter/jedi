@@ -264,8 +264,14 @@ class Builtin(CompiledObject):
         return [d for d in super(Builtin, self).get_defined_names() if d.name != 'None']
 
 
+def _a_generator(foo):
+    """Used to have an object to return for generators."""
+    yield 42
+    yield foo
+
 builtin = Builtin(_builtins)
 magic_function_class = CompiledObject(type(load_module), parent=builtin)
+generator_obj = CompiledObject(_a_generator(1.0))
 
 
 def _create_from_name(module, parent, name):

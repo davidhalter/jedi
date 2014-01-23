@@ -8,6 +8,7 @@ from jedi.parser import representation as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
+from jedi.cache import underscore_memoization
 
 
 class Generator(use_metaclass(CachedMetaClass, pr.Base)):
@@ -18,18 +19,21 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         self.func = func
         self.var_args = var_args
 
+    @underscore_memoization
     def get_defined_names(self):
         """
         Returns a list of names that define a generator, which can return the
         content of a generator.
         """
-        names = []
-        executes_generator = ('__next__', 'send')
-        for n in ('close', 'throw') + executes_generator:
-            parent = self if n in executes_generator else compiled.builtin
-            names.append(helpers.FakeName(n, parent))
-        debug.dbg('generator names: %s', names)
-        return names
+        executes_generator = '__next__', 'send', 'next'
+        for name in compiled.generator_obj.get_defined_names():
+            if name.name in executes_generator:
+                parent = self
+                # TODO parents are fucked up
+                #pr.Function(module, name, [], (0, 0), None)
+                yield helpers.FakeName(name, parent)
+            else:
+                yield name
 
     def iter_content(self):
         """ returns the content of __iter__ """

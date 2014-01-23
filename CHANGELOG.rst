@@ -12,8 +12,6 @@ Changelog
 * REPL completion is starting to become usable.
 * Various small API changes. Generally this released focused on stability, though.
 
-
-
 0.7.0 (2013-08-09)
 ++++++++++++++++++
 * switched from LGPL to MIT license
