@@ -110,4 +110,5 @@ def is_class_instance(obj):
     """Like inspect.* methods."""
     return not (inspect.isclass(obj) or inspect.ismodule(obj)
                 or inspect.isbuiltin(obj) or inspect.ismethod(obj)
-                or inspect.ismethoddescriptor(obj))
+                or inspect.ismethoddescriptor(obj) or inspect.iscode(obj)
+                or inspect.isgenerator(obj))
