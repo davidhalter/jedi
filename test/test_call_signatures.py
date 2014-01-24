@@ -3,6 +3,7 @@ import textwrap
 from .helpers import TestCase
 from jedi import Script
 
+
 class TestCallSignatures(TestCase):
     def _run(self, source, expected_name, expected_index=0, line=None, column=None):
         signatures = Script(source, line, column).call_signatures()
@@ -126,3 +127,11 @@ class TestCallSignatures(TestCase):
                 pass
         f(""")
         assert len(Script(s).call_signatures()) == 2
+
+    def test_call_signatures_whitespace(self):
+        s = textwrap.dedent("""\
+        abs( 
+        def x():
+            pass
+        """)
+        self._run(s, 'abs', 0, line=1, column=5)
