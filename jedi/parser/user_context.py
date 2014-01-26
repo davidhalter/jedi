@@ -197,16 +197,20 @@ class UserContextParser(object):
         return parser
 
     @cache.underscore_memoization
-    def _get_user_stmt(self):
-        return self.module().get_statement_for_position(self._position,
-                                                        include_imports=True)
-
-    def user_stmt(self, check_whitespace=False):
-        user_stmt = self._get_user_stmt()
-
+    def user_stmt(self):
+        module = self.module()
         debug.speed('parsed')
+        return module.get_statement_for_position(self._position, include_imports=True)
 
-        if check_whitespace and not user_stmt:
+    @cache.underscore_memoization
+    def user_stmt_with_whitespace(self):
+        """
+        Returns the statement under the cursor even if the statement lies
+        before the cursor.
+        """
+        user_stmt = self.user_stmt()
+
+        if not user_stmt:
             # for statements like `from x import ` (cursor not in statement)
             # or `abs( ` where the cursor is out in the whitespace.
             pos = next(self._user_context.get_context(yield_positions=True))
@@ -215,7 +219,7 @@ class UserContextParser(object):
 
     @cache.underscore_memoization
     def user_scope(self):
-        user_stmt = self._get_user_stmt()
+        user_stmt = self.user_stmt()
         if user_stmt is None:
             def scan(scope):
                 for s in scope.statements + scope.subscopes:

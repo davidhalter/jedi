@@ -126,7 +126,7 @@ class Script(object):
             return []
         path, dot, like = self._get_completion_parts()
 
-        user_stmt = self._parser.user_stmt(True)
+        user_stmt = self._parser.user_stmt_with_whitespace()
         b = compiled.builtin
         completions = get_completions(user_stmt, b)
 
@@ -208,7 +208,10 @@ class Script(object):
         """
         debug.dbg('start: %s in %s', goto_path, self._parser.user_scope())
 
-        user_stmt = self._parser.user_stmt(is_completion)
+        if is_completion:
+            user_stmt = self._parser.user_stmt_with_whitespace()
+        else:
+            user_stmt = self._parser.user_stmt()
         if not user_stmt and len(goto_path.split('\n')) > 1:
             # If the user_stmt is not defined and the goto_path is multi line,
             # something's strange. Most probably the backwards tokenizer
@@ -488,7 +491,7 @@ class Script(object):
         if call is None:
             return []
 
-        user_stmt = self._parser.user_stmt(True)
+        user_stmt = self._parser.user_stmt_with_whitespace()
         with common.scale_speed_settings(settings.scale_call_signatures):
             _callable = lambda: self._evaluator.eval_call(call)
             origins = cache.cache_call_signatures(_callable, user_stmt)
@@ -502,7 +505,7 @@ class Script(object):
         debug.speed('func_call start')
         call, index = None, 0
         if call is None:
-            user_stmt = self._parser.user_stmt(True)
+            user_stmt = self._parser.user_stmt_with_whitespace()
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
                 call, index, _ = helpers.search_call_signatures(user_stmt, self._pos)
         debug.speed('func_call parsed')
@@ -583,7 +586,7 @@ class Interpreter(Script):
         interpreter.create(self._evaluator, namespaces[0], self._parser.module())
 
     def _simple_complete(self, path, like):
-        user_stmt = self._parser.user_stmt(True)
+        user_stmt = self._parser.user_stmt_with_whitespace()
         is_simple_path = not path or re.search('^[\w][\w\d.]*$', path)
         if isinstance(user_stmt, pr.Import) or not is_simple_path:
             return super(type(self), self)._simple_complete(path, like)
