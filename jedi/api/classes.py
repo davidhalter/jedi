@@ -557,25 +557,6 @@ def defined_names(evaluator, scope):
     return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
-class Usage(BaseDefinition):
-    """TODO: document this"""
-    def __init__(self, evaluator, name_part, scope):
-        super(Usage, self).__init__(evaluator, scope, name_part.start_pos)
-        self.text = unicode(name_part)
-        self.end_pos = name_part.end_pos
-
-    @property
-    def description(self):
-        return "%s@%s,%s" % (self.text, self.line, self.column)
-
-    def __eq__(self, other):
-        return self._start_pos == other._start_pos \
-            and self.module_path == other.module_path
-
-    def __hash__(self):
-        return hash((self._start_pos, self.module_path))
-
-
 class CallDef(object):
     """
     `CallDef` objects is the return value of `Script.function_definition`.
