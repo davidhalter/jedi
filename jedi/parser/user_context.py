@@ -126,6 +126,7 @@ class UserContext(object):
             + (after.group(0) if after is not None else '')
 
     def get_context(self, yield_positions=False):
+        self.get_path_until_cursor()  # In case _start_cursor_pos is undefined.
         pos = self._start_cursor_pos
         while True:
             # remove non important white space
@@ -200,18 +201,16 @@ class UserContextParser(object):
         return self.module().get_statement_for_position(self._position,
                                                         include_imports=True)
 
-    def user_stmt(self, is_completion=False):
+    def user_stmt(self, check_whitespace=False):
         user_stmt = self._get_user_stmt()
 
         debug.speed('parsed')
 
-        if is_completion and not user_stmt:
+        if check_whitespace and not user_stmt:
             # for statements like `from x import ` (cursor not in statement)
+            # or `abs( ` where the cursor is out in the whitespace.
             pos = next(self._user_context.get_context(yield_positions=True))
-            last_stmt = pos and \
-                self.module().get_statement_for_position(pos, include_imports=True)
-            if isinstance(last_stmt, representation.Import):
-                user_stmt = last_stmt
+            user_stmt = self.module().get_statement_for_position(pos, include_imports=True)
         return user_stmt
 
     @cache.underscore_memoization

@@ -488,7 +488,7 @@ class Script(object):
         if call is None:
             return []
 
-        user_stmt = self._parser.user_stmt()
+        user_stmt = self._parser.user_stmt(True)
         with common.scale_speed_settings(settings.scale_call_signatures):
             _callable = lambda: self._evaluator.eval_call(call)
             origins = cache.cache_call_signatures(_callable, user_stmt)
@@ -502,7 +502,7 @@ class Script(object):
         debug.speed('func_call start')
         call, index = None, 0
         if call is None:
-            user_stmt = self._parser.user_stmt()
+            user_stmt = self._parser.user_stmt(True)
             if user_stmt is not None and isinstance(user_stmt, pr.Statement):
                 call, index, _ = helpers.search_call_signatures(user_stmt, self._pos)
         debug.speed('func_call parsed')
