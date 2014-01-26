@@ -213,6 +213,11 @@ class UserContextParser(object):
         if not user_stmt:
             # for statements like `from x import ` (cursor not in statement)
             # or `abs( ` where the cursor is out in the whitespace.
+            if self._user_context.get_path_under_cursor():
+                # We really should have a user_stmt, but the parser couldn't
+                # process it - probably a Syntax Error.
+                debug.warning('Something is probably wrong with the syntax under the cursor.')
+                return None
             pos = next(self._user_context.get_context(yield_positions=True))
             user_stmt = self.module().get_statement_for_position(pos, include_imports=True)
         return user_stmt
