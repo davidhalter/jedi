@@ -231,3 +231,17 @@ def f(**kwargs):
 if isinstance(j, int):
     #< 
     j
+
+# -----------------
+# Dynamic Param Search
+# -----------------
+
+class DynamicParam():
+    def foo(self):
+        return
+
+def check(instance):
+    #< 13 (-5,8), (0,13)
+    instance.foo()
+
+check(DynamicParam())
