@@ -12,11 +12,11 @@ sys.path.append(sys.path[1] + '/thirdparty')
 # syntax err
 sys.path.append('a' +* '/thirdparty')
 
-#? ['evaluate', 'evaluate_representation']
+#? ['evaluate']
 import evaluate
 
-#? ['goto']
-evaluate.goto
+#? ['Evaluator']
+evaluate.Evaluator
 
 #? ['jedi_']
 import jedi_

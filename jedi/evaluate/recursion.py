@@ -10,34 +10,38 @@ calls.
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi import settings
-import evaluate_representation as er
-import builtin
+from jedi.evaluate import compiled
+from jedi.evaluate import iterable
 
 
-class RecursionDecorator(object):
+def recursion_decorator(func):
+    def run(evaluator, stmt, *args, **kwargs):
+        rec_detect = evaluator.recursion_detector
+        # print stmt, len(self.node_statements())
+        if rec_detect.push_stmt(stmt):
+            return []
+        else:
+            result = func(evaluator, stmt, *args, **kwargs)
+            rec_detect.pop_stmt()
+        return result
+    return run
+
+
+class RecursionDetector(object):
     """
     A decorator to detect recursions in statements. In a recursion a statement
     at the same place, in the same module may not be executed two times.
     """
-    def __init__(self, func):
-        self.func = func
-        self.reset()
-
-    def __call__(self, stmt, *args, **kwargs):
-        # print stmt, len(self.node_statements())
-        if self.push_stmt(stmt):
-            return []
-        else:
-            result = self.func(stmt, *args, **kwargs)
-            self.pop_stmt()
-        return result
+    def __init__(self):
+        self.top = None
+        self.current = None
 
     def push_stmt(self, stmt):
-        self.current = RecursionNode(stmt, self.current)
+        self.current = _RecursionNode(stmt, self.current)
         check = self._check_recursion()
         if check:  # TODO remove False!!!!
-            debug.warning('catched stmt recursion: %s against %s @%s'
-                          % (stmt, check.stmt, stmt.start_pos))
+            debug.warning('catched stmt recursion: %s against %s @%s', stmt,
+                          check.stmt, stmt.start_pos)
             self.pop_stmt()
             return True
         return False
@@ -57,10 +61,6 @@ class RecursionDecorator(object):
             if not test:
                 return False
 
-    def reset(self):
-        self.top = None
-        self.current = None
-
     def node_statements(self):
         result = []
         n = self.current
@@ -70,7 +70,7 @@ class RecursionDecorator(object):
         return result
 
 
-class RecursionNode(object):
+class _RecursionNode(object):
     """ A node of the RecursionDecorator. """
     def __init__(self, stmt, parent):
         self.script = stmt.get_parent_until()
@@ -82,7 +82,7 @@ class RecursionNode(object):
         # The same's true for the builtins, because the builtins are really
         # simple.
         self.is_ignored = isinstance(stmt, pr.Param) \
-            or (self.script == builtin.Builtin.scope)
+            or (self.script == compiled.builtin)
 
     def __eq__(self, other):
         if not other:
@@ -96,32 +96,45 @@ class RecursionNode(object):
             and not self.is_ignored and not other.is_ignored
 
 
-class ExecutionRecursionDecorator(object):
+def execution_recursion_decorator(func):
+    def run(execution, evaluate_generator=False):
+        detector = execution._evaluator.execution_recursion_detector
+        if detector.push_execution(execution, evaluate_generator):
+            result = []
+        else:
+            result = func(execution, evaluate_generator)
+        detector.pop_execution()
+        return result
+
+    return run
+
+
+class ExecutionRecursionDetector(object):
     """
     Catches recursions of executions.
     It is designed like a Singelton. Only one instance should exist.
     """
-    def __init__(self, func):
-        self.func = func
-        self.reset()
+    def __init__(self):
+        self.recursion_level = 0
+        self.parent_execution_funcs = []
+        self.execution_funcs = set()
+        self.execution_count = 0
 
     def __call__(self, execution, evaluate_generator=False):
-        debug.dbg('Execution recursions: %s' % execution, self.recursion_level,
+        debug.dbg('Execution recursions: %s', execution, self.recursion_level,
                   self.execution_count, len(self.execution_funcs))
         if self.check_recursion(execution, evaluate_generator):
             result = []
         else:
             result = self.func(execution, evaluate_generator)
-        self.cleanup()
+        self.pop_execution()
         return result
 
-    @classmethod
-    def cleanup(cls):
+    def pop_execution(cls):
         cls.parent_execution_funcs.pop()
         cls.recursion_level -= 1
 
-    @classmethod
-    def check_recursion(cls, execution, evaluate_generator):
+    def push_execution(cls, execution, evaluate_generator):
         in_par_execution_funcs = execution.base in cls.parent_execution_funcs
         in_execution_funcs = execution.base in cls.execution_funcs
         cls.recursion_level += 1
@@ -132,10 +145,10 @@ class ExecutionRecursionDecorator(object):
         if cls.execution_count > settings.max_executions:
             return True
 
-        if isinstance(execution.base, (er.Generator, er.Array)):
+        if isinstance(execution.base, (iterable.Array, iterable.Generator)):
             return False
         module = execution.get_parent_until()
-        if evaluate_generator or module == builtin.Builtin.scope:
+        if evaluate_generator or module == compiled.builtin:
             return False
 
         if in_par_execution_funcs:
@@ -147,10 +160,3 @@ class ExecutionRecursionDecorator(object):
         if cls.execution_count > settings.max_executions_without_builtins:
             return True
         return False
-
-    @classmethod
-    def reset(cls):
-        cls.recursion_level = 0
-        cls.parent_execution_funcs = []
-        cls.execution_funcs = set()
-        cls.execution_count = 0

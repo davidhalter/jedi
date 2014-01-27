@@ -16,10 +16,8 @@ annotations.
 
 import re
 
-from jedi import cache
+from jedi.evaluate.cache import memoize_default
 from jedi.parser import Parser
-import evaluate
-import evaluate_representation as er
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
@@ -34,8 +32,8 @@ DOCSTRING_RETURN_PATTERNS = [
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 
 
-@cache.memoize_default()
-def follow_param(param):
+@memoize_default(None, evaluator_is_first_arg=True)
+def follow_param(evaluator, param):
     func = param.parent_function
     # print func, param, param.parent_function
     if not func.docstr:
@@ -44,7 +42,7 @@ def follow_param(param):
         func.docstr.as_string(),
         str(param.get_name())
     )
-    user_position = (1, 0)
+    position = (1, 0)
 
     if param_str is not None:
 
@@ -54,14 +52,13 @@ def follow_param(param):
             param_str = 'import %s\n%s' % (
                 param_str.rsplit('.', 1)[0],
                 param_str)
-            user_position = (2, 0)
+            position = (2, 0)
 
-        p = Parser(
-            param_str, None, user_position, no_docstr=True
-        )
-        if p.user_stmt is None:
+        p = Parser(param_str, no_docstr=True)
+        stmt = p.module.get_statement_for_position(position)
+        if stmt is None:
             return []
-        return evaluate.follow_statement(p.user_stmt)
+        return evaluator.eval_statement(stmt)
     return []
 
 
@@ -113,18 +110,12 @@ def _strip_rest_role(type_str):
         return type_str
 
 
-def find_return_types(func):
+def find_return_types(evaluator, func):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(code)
             if match:
                 return match.group(1)
-
-    if isinstance(func, er.InstanceElement):
-        func = func.var
-
-    if isinstance(func, er.Function):
-        func = func.base_func
 
     if not func.docstr:
         return []
@@ -132,8 +123,9 @@ def find_return_types(func):
     if not type_str:
         return []
 
-    p = Parser(type_str, None, (1, 0), no_docstr=True)
-    if p.user_stmt is None:
+    p = Parser(type_str, None, no_docstr=True)
+    stmt = p.module.get_statement_for_position((1, 0))
+    if stmt is None:
         return []
-    p.user_stmt.parent = func
-    return list(evaluate.follow_statement(p.user_stmt))
+    stmt.parent = func
+    return list(evaluator.eval_statement(stmt))

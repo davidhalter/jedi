@@ -1,4 +1,5 @@
 from jedi.parser import Parser
+from jedi.parser.user_context import UserContextParser
 from jedi.parser import representation as pr
 
 
@@ -8,7 +9,7 @@ def test_user_statement_on_import():
         "    time)"
 
     for pos in [(2, 1), (2, 4)]:
-        u = Parser(s, user_position=pos).user_stmt
+        u = UserContextParser(s, None, pos, None).user_stmt()
         assert isinstance(u, pr.Import)
         assert u.defunct is False
         assert [str(n) for n in u.get_defined_names()] == ['time']
@@ -17,7 +18,7 @@ def test_user_statement_on_import():
 class TestCallAndName():
     def get_call(self, source):
         stmt = Parser(source, no_docstr=True).module.statements[0]
-        return stmt.get_commands()[0]
+        return stmt.expression_list()[0]
 
     def test_name_and_call_positions(self):
         call = self.get_call('name\nsomething_else')
@@ -37,15 +38,15 @@ class TestCallAndName():
 
     def test_literal_type(self):
         literal = self.get_call('1.0')
-        assert isinstance(literal, pr.Number)
+        assert isinstance(literal, pr.Literal)
         assert type(literal.value) == float
 
         literal = self.get_call('1')
-        assert isinstance(literal, pr.Number)
+        assert isinstance(literal, pr.Literal)
         assert type(literal.value) == int
 
         literal = self.get_call('"hello"')
-        assert isinstance(literal, pr.String)
+        assert isinstance(literal, pr.Literal)
         assert literal.value == 'hello'
 
 

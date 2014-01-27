@@ -3,6 +3,15 @@
 Changelog
 ---------
 
++0.8.0 (2013-03-01)
++++++++++++++++++++
+
+* Memory Consumption for compiled modules (e.g. builtins, sys) has been reduced
+    drastically. Loading times are down as well (it takes basically as long as
+    an import).
+* REPL completion is starting to become usable.
+* Various small API changes. Generally this released focused on stability, though.
+
 0.7.0 (2013-08-09)
 ++++++++++++++++++
 * switched from LGPL to MIT license

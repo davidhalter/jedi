@@ -1,11 +1,20 @@
-from _compatibility import u, encoding, is_py3k
+from jedi._compatibility import encoding, is_py3
 import inspect
+import os
 import time
 
 try:
-    # Use colorama for nicer console output.
-    from colorama import Fore, init
-    init()
+    if os.name == 'nt':
+        # does not work on Windows, as pyreadline and colorama interfere
+        raise ImportError
+    else:
+        # Use colorama for nicer console output.
+        from colorama import Fore, init
+        from colorama import initialise
+        # pytest resets the stream at the end - causes troubles. Since after
+        # every output the stream is reset automatically we don't need this.
+        initialise.atexit_done = True
+        init()
 except ImportError:
     class Fore(object):
         RED = ''
@@ -23,32 +32,48 @@ enable_notice = False
 
 # callback, interface: level, str
 debug_function = None
-ignored_modules = ['parsing', 'builtin', 'jedi.builtin', 'jedi.parsing']
+ignored_modules = ['jedi.evaluate.builtin', 'jedi.parser']
+debug_indent = -1
 
 
 def reset_time():
-    global start_time
+    global start_time, debug_indent
     start_time = time.time()
+    debug_indent = -1
 
 
-def dbg(*args):
+def increase_indent(func):
+    """Decorator for makin """
+    def wrapper(*args, **kwargs):
+        global debug_indent
+        debug_indent += 1
+        result = func(*args, **kwargs)
+        debug_indent -= 1
+        return result
+    return wrapper
+
+
+def dbg(message, *args):
     """ Looks at the stack, to see if a debug message should be printed. """
     if debug_function and enable_notice:
         frm = inspect.stack()[1]
         mod = inspect.getmodule(frm[0])
         if not (mod.__name__ in ignored_modules):
-            debug_function(NOTICE, 'dbg: ' + ', '.join(u(a) for a in args))
+            i = ' ' * debug_indent
+            debug_function(NOTICE, i + 'dbg: ' + message % args)
 
 
-def warning(*args):
+def warning(message, *args):
     if debug_function and enable_warning:
-        debug_function(WARNING, 'warning: ' + ', '.join(u(a) for a in args))
+        i = ' ' * debug_indent
+        debug_function(WARNING, i + 'warning: ' + message % args)
 
 
 def speed(name):
     if debug_function and enable_speed:
         now = time.time()
-        debug_function(SPEED, 'speed: ' + '%s %s' % (name, now - start_time))
+        i = ' ' * debug_indent
+        debug_function(SPEED, i + 'speed: ' + '%s %s' % (name, now - start_time))
 
 
 def print_to_stdout(level, str_out):
@@ -59,7 +84,7 @@ def print_to_stdout(level, str_out):
         col = Fore.RED
     else:
         col = Fore.YELLOW
-    if not is_py3k:
+    if not is_py3:
         str_out = str_out.encode(encoding, 'replace')
     print(col + str_out + Fore.RESET)
 

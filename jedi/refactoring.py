@@ -12,13 +12,10 @@ following functions (sometimes bug-prone):
 - extract variable
 - inline variable
 """
-from __future__ import with_statement
-
 import difflib
 
 from jedi import common
-from jedi import modules
-from jedi import helpers
+from jedi.evaluate import helpers
 from jedi.parser import representation as pr
 
 
@@ -86,7 +83,7 @@ def _rename(names, replace_str):
                 with open(current_path) as f:
                     source = f.read()
 
-            new_lines = modules.source_to_unicode(source).splitlines()
+            new_lines = common.source_to_unicode(source).splitlines()
             old_lines = new_lines[:]
 
         nr, indent = name.line, name.column
@@ -104,10 +101,10 @@ def extract(script, new_name):
     :type source: str
     :return: list of changed lines/changed files
     """
-    new_lines = modules.source_to_unicode(script.source).splitlines()
+    new_lines = common.source_to_unicode(script.source).splitlines()
     old_lines = new_lines[:]
 
-    user_stmt = script._parser.user_stmt
+    user_stmt = script._parser.user_stmt()
 
     # TODO care for multiline extracts
     dct = {}
@@ -163,7 +160,7 @@ def inline(script):
     """
     :type script: api.Script
     """
-    new_lines = modules.source_to_unicode(script.source).splitlines()
+    new_lines = common.source_to_unicode(script.source).splitlines()
 
     dct = {}
 
@@ -176,17 +173,17 @@ def inline(script):
                    if not stmt.start_pos <= (r.line, r.column) <= stmt.end_pos]
         inlines = sorted(inlines, key=lambda x: (x.module_path, x.line, x.column),
                          reverse=True)
-        commands = stmt.get_commands()
+        expression_list = stmt.expression_list()
         # don't allow multiline refactorings for now.
         assert stmt.start_pos[0] == stmt.end_pos[0]
         index = stmt.start_pos[0] - 1
 
         line = new_lines[index]
-        replace_str = line[commands[0].start_pos[1]:stmt.end_pos[1] + 1]
+        replace_str = line[expression_list[0].start_pos[1]:stmt.end_pos[1] + 1]
         replace_str = replace_str.strip()
         # tuples need parentheses
-        if commands and isinstance(commands[0], pr.Array):
-            arr = commands[0]
+        if expression_list and isinstance(expression_list[0], pr.Array):
+            arr = expression_list[0]
             if replace_str[0] not in ['(', '[', '{'] and len(arr) > 1:
                 replace_str = '(%s)' % replace_str
 

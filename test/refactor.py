@@ -7,7 +7,7 @@ from __future__ import with_statement
 import os
 import re
 
-from jedi._compatibility import reduce
+from functools import reduce
 import jedi
 from jedi import refactoring
 

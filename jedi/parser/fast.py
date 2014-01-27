@@ -7,13 +7,11 @@ import re
 
 from jedi._compatibility import use_metaclass
 from jedi import settings
+from jedi import common
 from jedi.parser import Parser
 from jedi.parser import representation as pr
+from jedi.parser import tokenize
 from jedi import cache
-from jedi import common
-
-
-SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
 
 
 class Module(pr.Simple, pr.Module):
@@ -28,10 +26,8 @@ class Module(pr.Simple, pr.Module):
     def reset_caches(self):
         """ This module does a whole lot of caching, because it uses different
         parsers. """
-        self._used_names = None
-        for p in self.parsers:
-            p.user_scope = None
-            p.user_stmt = None
+        with common.ignored(AttributeError):
+            del self._used_names
 
     def __getattr__(self, name):
         if name.startswith('__'):
@@ -40,18 +36,16 @@ class Module(pr.Simple, pr.Module):
             return getattr(self.parsers[0].module, name)
 
     @property
+    @cache.underscore_memoization
     def used_names(self):
-        if self._used_names is None:
-            dct = {}
-            for p in self.parsers:
-                for k, statement_set in p.module.used_names.items():
-                    if k in dct:
-                        dct[k] |= statement_set
-                    else:
-                        dct[k] = set(statement_set)
-
-            self._used_names = dct
-        return self._used_names
+        used_names = {}
+        for p in self.parsers:
+            for k, statement_set in p.module.used_names.items():
+                if k in used_names:
+                    used_names[k] |= statement_set
+                else:
+                    used_names[k] = set(statement_set)
+        return used_names
 
     def __repr__(self):
         return "<%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -60,17 +54,16 @@ class Module(pr.Simple, pr.Module):
 
 class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
-    def __call__(self, source, module_path=None, user_position=None):
+    def __call__(self, source, module_path=None):
         if not settings.fast_parser:
-            return Parser(source, module_path, user_position)
+            return Parser(source, module_path)
 
         pi = cache.parser_cache.get(module_path, None)
         if pi is None or isinstance(pi.parser, Parser):
-            p = super(CachedFastParser, self).__call__(source, module_path,
-                                                       user_position)
+            p = super(CachedFastParser, self).__call__(source, module_path)
         else:
             p = pi.parser  # pi is a `cache.ParserCacheItem`
-            p.update(source, user_position)
+            p.update(source)
         return p
 
 
@@ -95,7 +88,7 @@ class ParserNode(object):
 
         scope = self.content_scope
         self._contents = {}
-        for c in SCOPE_CONTENTS:
+        for c in pr.SCOPE_CONTENTS:
             self._contents[c] = list(getattr(scope, c))
         self._is_generator = scope.is_generator
 
@@ -107,7 +100,6 @@ class ParserNode(object):
         for key, c in self._contents.items():
             setattr(scope, key, list(c))
         scope.is_generator = self._is_generator
-        self.parser.user_scope = self.parser.module
 
         if self.parent is None:
             # Global vars of the first one can be deleted, in the global scope
@@ -147,7 +139,7 @@ class ParserNode(object):
     def _set_items(self, parser, set_parent=False):
         # insert parser objects into current structure
         scope = self.content_scope
-        for c in SCOPE_CONTENTS:
+        for c in pr.SCOPE_CONTENTS:
             content = getattr(scope, c)
             items = getattr(parser.module, c)
             if set_parent:
@@ -174,6 +166,11 @@ class ParserNode(object):
         self._set_items(node.parser, set_parent=set_parent)
         node.old_children = node.children
         node.children = []
+
+        scope = self.content_scope
+        while scope is not None:
+            scope.end_pos = node.content_scope.end_pos
+            scope = scope.parent
         return node
 
     def add_parser(self, parser, code):
@@ -181,11 +178,9 @@ class ParserNode(object):
 
 
 class FastParser(use_metaclass(CachedFastParser)):
-    def __init__(self, code, module_path=None, user_position=None):
+    def __init__(self, code, module_path=None):
         # set values like `pr.Module`.
         self.module_path = module_path
-        self.user_position = user_position
-        self._user_scope = None
 
         self.current_node = None
         self.parsers = []
@@ -199,33 +194,8 @@ class FastParser(use_metaclass(CachedFastParser)):
             self.parsers[:] = []
             raise
 
-    @property
-    def user_scope(self):
-        if self._user_scope is None:
-            for p in self.parsers:
-                if p.user_scope:
-                    if isinstance(p.user_scope, pr.SubModule):
-                        continue
-                    self._user_scope = p.user_scope
-
-        if isinstance(self._user_scope, pr.SubModule) \
-                or self._user_scope is None:
-            self._user_scope = self.module
-        return self._user_scope
-
-    @property
-    def user_stmt(self):
-        if self._user_stmt is None:
-            for p in self.parsers:
-                if p.user_stmt:
-                    self._user_stmt = p.user_stmt
-                    break
-        return self._user_stmt
-
-    def update(self, code, user_position=None):
-        self.user_position = user_position
+    def update(self, code):
         self.reset_caches()
-
 
         try:
             self._parse(code)
@@ -233,14 +203,6 @@ class FastParser(use_metaclass(CachedFastParser)):
             # FastParser is cached, be careful with exceptions
             self.parsers[:] = []
             raise
-
-    def _scan_user_scope(self, sub_module):
-        """ Scan with self.user_position. """
-        for scope in sub_module.statements + sub_module.subscopes:
-            if isinstance(scope, pr.Scope):
-                if scope.start_pos <= self.user_position <= scope.end_pos:
-                    return self._scan_user_scope(scope) or scope
-        return None
 
     def _split_parts(self, code):
         """
@@ -257,7 +219,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     parts.append(txt)
                 current_lines[:] = []
 
-        r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(common.FLOWS)
+        r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS)
 
         self._lines = code.splitlines()
         current_lines = []
@@ -292,7 +254,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             if not in_flow:
                 m = re.match(r_keyword, l)
                 if m:
-                    in_flow = m.group(1) in common.FLOWS
+                    in_flow = m.group(1) in tokenize.FLOWS
                     if not is_decorator and not in_flow:
                         add_part()
                         add_to_last = False
@@ -372,12 +334,6 @@ class FastParser(use_metaclass(CachedFastParser)):
                     else:
                         self.current_node = self.current_node.add_node(node)
 
-                if self.current_node.parent and (isinstance(p.user_scope,
-                                    pr.SubModule) or p.user_scope is None) \
-                        and self.user_position \
-                        and p.start_pos <= self.user_position < p.end_pos:
-                    p.user_scope = self.current_node.parent.content_scope
-
                 self.parsers.append(p)
 
                 is_first = False
@@ -406,10 +362,9 @@ class FastParser(use_metaclass(CachedFastParser)):
             if nodes[index].code != code:
                 raise ValueError()
         except ValueError:
-            p = Parser(parser_code, self.module_path,
-                               self.user_position, offset=(line_offset, 0),
-                               is_fast_parser=True, top_module=self.module,
-                               no_docstr=no_docstr)
+            p = Parser(parser_code, self.module_path, offset=(line_offset, 0),
+                       is_fast_parser=True, top_module=self.module,
+                       no_docstr=no_docstr)
             p.module.parent = self.module
         else:
             if nodes[index] != self.current_node:
@@ -419,22 +374,10 @@ class FastParser(use_metaclass(CachedFastParser)):
             p = node.parser
             m = p.module
             m.line_offset += line_offset + 1 - m.start_pos[0]
-            if self.user_position is not None and \
-                    m.start_pos[0] <= self.user_position[0] <= m.end_pos[0]:
-                # It's important to take care of the whole user
-                # positioning stuff, if no reparsing is being done.
-                p.user_stmt = m.get_statement_for_position(
-                    self.user_position, include_imports=True)
-                if p.user_stmt:
-                    p.user_scope = p.user_stmt.parent
-                else:
-                    p.user_scope = self._scan_user_scope(m) or m
 
         return p, node
 
     def reset_caches(self):
-        self._user_scope = None
-        self._user_stmt = None
         self.module.reset_caches()
         if self.current_node is not None:
             self.current_node.reset_contents()

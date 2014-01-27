@@ -15,9 +15,6 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
-from __future__ import with_statement
-
-import tokenizer as tokenize
 import keyword
 
 from jedi._compatibility import next, StringIO
@@ -25,6 +22,7 @@ from jedi import debug
 from jedi import common
 from jedi.parser import representation as pr
 from jedi.parser import token as token_pr
+from jedi.parser import tokenize
 
 
 class Parser(object):
@@ -36,18 +34,12 @@ class Parser(object):
     :type source: str
     :param module_path: The path of the module in the file system, may be None.
     :type module_path: str
-    :param user_position: The line/column, the user is currently on.
-    :type user_position: tuple(int, int)
     :param no_docstr: If True, a string at the beginning is not a docstr.
     :param is_fast_parser: -> for fast_parser
     :param top_module: Use this module as a parent instead of `self.module`.
     """
-    def __init__(self, source, module_path=None, user_position=None,
-                 no_docstr=False, offset=(0, 0), is_fast_parser=None,
-                 top_module=None):
-        self.user_position = user_position
-        self.user_scope = None
-        self.user_stmt = None
+    def __init__(self, source, module_path=None, no_docstr=False,
+                 offset=(0, 0), is_fast_parser=None, top_module=None):
         self.no_docstr = no_docstr
 
         self.start_pos = self.end_pos = 1 + offset[0], offset[1]
@@ -58,8 +50,7 @@ class Parser(object):
 
         source = source + '\n'  # end with \n, because the parser needs it
         buf = StringIO(source)
-        self._gen = common.NoErrorTokenizer(buf.readline, offset,
-                                            is_fast_parser)
+        self._gen = tokenize.NoErrorTokenizer(buf.readline, offset, is_fast_parser)
         self.top_module = top_module or self.module
         try:
             self._parse()
@@ -96,19 +87,6 @@ class Parser(object):
             except KeyError:
                 self.module.used_names[tok_name] = set([simple])
         self.module.temp_used_names = []
-
-        if not self.user_position:
-            return
-        # the position is right
-        if simple.start_pos <= self.user_position <= simple.end_pos:
-            if self.user_stmt is not None:
-                # if there is already a user position (another import, because
-                # imports are splitted) the names are checked.
-                for n in simple.get_set_vars():
-                    if n.start_pos < self.user_position <= n.end_pos:
-                        self.user_stmt = simple
-            else:
-                self.user_stmt = simple
 
     def _parse_dot_name(self, pre_used_token=None):
         """
@@ -255,11 +233,7 @@ class Parser(object):
             return None
 
         # because of 2 line func param definitions
-        scope = pr.Function(self.module, fname, params, first_pos, annotation)
-        if self.user_scope and scope != self.user_scope \
-                and self.user_position > first_pos:
-            self.user_scope = scope
-        return scope
+        return pr.Function(self.module, fname, params, first_pos, annotation)
 
     def _parse_class(self):
         """
@@ -272,11 +246,8 @@ class Parser(object):
         first_pos = self.start_pos
         token_type, cname = self.next()
         if token_type != tokenize.NAME:
-            debug.warning(
-                "class: syntax err, token is not a name@%s (%s: %s)" % (
-                    self.start_pos[0], tokenize.tok_name[token_type], cname
-                )
-            )
+            debug.warning("class: syntax err, token is not a name@%s (%s: %s)",
+                          self.start_pos[0], tokenize.tok_name[token_type], cname)
             return None
 
         cname = pr.Name(self.module, [(cname, self.start_pos)], self.start_pos,
@@ -289,15 +260,10 @@ class Parser(object):
             token_type, _next = self.next()
 
         if _next != ':':
-            debug.warning("class syntax: %s@%s" % (cname, self.start_pos[0]))
+            debug.warning("class syntax: %s@%s", cname, self.start_pos[0])
             return None
 
-        # because of 2 line class initializations
-        scope = pr.Class(self.module, cname, super, first_pos)
-        if self.user_scope and scope != self.user_scope \
-                and self.user_position > first_pos:
-            self.user_scope = scope
-        return scope
+        return pr.Class(self.module, cname, super, first_pos)
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
                          stmt_class=pr.Statement, names_are_set_vars=False):
@@ -448,15 +414,6 @@ class Parser(object):
                 s = s.parent
             raise
 
-        if self.user_position and (
-            self.start_pos[0] == self.user_position[0]
-            or self.user_scope is None
-            and self.start_pos[0] >= self.user_position[0]
-        ):
-            debug.dbg('user scope found [%s] = %s' %
-                     (self.parserline.replace('\n', ''), repr(self._scope)))
-            self.user_scope = self._scope
-
         self._current = typ, tok
         return self._current
 
@@ -480,8 +437,8 @@ class Parser(object):
         # This iterator stuff is not intentional. It grew historically.
         for token_type, tok in self.iterator:
             self.module.temp_used_names = []
-            # debug.dbg('main: tok=[%s] type=[%s] indent=[%s]'\
-            #    % (tok, tokenize.tok_name[token_type], start_position[0]))
+            # debug.dbg('main: tok=[%s] type=[%s] indent=[%s]', \
+            #           tok, tokenize.tok_name[token_type], start_position[0])
 
             while token_type == tokenize.DEDENT and self._scope != self.module:
                 token_type, tok = self.next()
@@ -511,8 +468,7 @@ class Parser(object):
             if tok == 'def':
                 func = self._parse_function()
                 if func is None:
-                    debug.warning("function: syntax error@%s" %
-                                  self.start_pos[0])
+                    debug.warning("function: syntax error@%s", self.start_pos[0])
                     continue
                 self.freshscope = True
                 self._scope = self._scope.add_scope(func, self._decorators)
@@ -556,7 +512,7 @@ class Parser(object):
                     tok = 'import'
                     mod = None
                 if not mod and not relative_count or tok != "import":
-                    debug.warning("from: syntax error@%s" % self.start_pos[0])
+                    debug.warning("from: syntax error@%s", self.start_pos[0])
                     defunct = True
                     if tok != 'import':
                         self._gen.push_last_back()
@@ -577,25 +533,18 @@ class Parser(object):
             elif tok == 'for':
                 set_stmt, tok = self._parse_statement(added_breaks=['in'],
                                                       names_are_set_vars=True)
-                if tok == 'in':
-                    statement, tok = self._parse_statement()
-                    if tok == ':':
-                        s = [] if statement is None else [statement]
-                        f = pr.ForFlow(self.module, s, first_pos, set_stmt)
-                        self._scope = self._scope.add_statement(f)
-                    else:
-                        debug.warning('syntax err, for flow started @%s',
-                                      self.start_pos[0])
-                        if statement is not None:
-                            statement.parent = use_as_parent_scope
-                        if set_stmt is not None:
-                            set_stmt.parent = use_as_parent_scope
-                else:
-                    debug.warning('syntax err, for flow incomplete @%s',
-                                  self.start_pos[0])
-                    if set_stmt is not None:
-                        set_stmt.parent = use_as_parent_scope
+                if tok != 'in':
+                    debug.warning('syntax err, for flow incomplete @%s', self.start_pos[0])
 
+                try:
+                    statement, tok = self._parse_statement()
+                except StopIteration:
+                    statement, tok = None, None
+                s = [] if statement is None else [statement]
+                f = pr.ForFlow(self.module, s, first_pos, set_stmt)
+                self._scope = self._scope.add_statement(f)
+                if tok != ':':
+                    debug.warning('syntax err, for flow started @%s', self.start_pos[0])
             elif tok in ['if', 'while', 'try', 'with'] + extended_flow:
                 added_breaks = []
                 command = tok
@@ -604,8 +553,7 @@ class Parser(object):
                 # multiple inputs because of with
                 inputs = []
                 first = True
-                while first or command == 'with' \
-                        and tok not in [':', '\n']:
+                while first or command == 'with' and tok not in [':', '\n']:
                     statement, tok = \
                         self._parse_statement(added_breaks=added_breaks)
                     if command == 'except' and tok == ',':
@@ -619,25 +567,21 @@ class Parser(object):
                         inputs.append(statement)
                     first = False
 
-                if tok == ':':
-                    f = pr.Flow(self.module, command, inputs, first_pos)
-                    if command in extended_flow:
-                        # the last statement has to be another part of
-                        # the flow statement, because a dedent releases the
-                        # main scope, so just take the last statement.
-                        try:
-                            s = self._scope.statements[-1].set_next(f)
-                        except (AttributeError, IndexError):
-                            # If set_next doesn't exist, just add it.
-                            s = self._scope.add_statement(f)
-                    else:
+                f = pr.Flow(self.module, command, inputs, first_pos)
+                if command in extended_flow:
+                    # the last statement has to be another part of
+                    # the flow statement, because a dedent releases the
+                    # main scope, so just take the last statement.
+                    try:
+                        s = self._scope.statements[-1].set_next(f)
+                    except (AttributeError, IndexError):
+                        # If set_next doesn't exist, just add it.
                         s = self._scope.add_statement(f)
-                    self._scope = s
                 else:
-                    for i in inputs:
-                        i.parent = use_as_parent_scope
-                    debug.warning('syntax err, flow started @%s',
-                                  self.start_pos[0])
+                    s = self._scope.add_statement(f)
+                self._scope = s
+                if tok != ':':
+                    debug.warning('syntax err, flow started @%s', self.start_pos[0])
             # returns
             elif tok in ['return', 'yield']:
                 s = self.start_pos
@@ -692,7 +636,7 @@ class Parser(object):
             else:
                 if token_type not in [tokenize.COMMENT, tokenize.INDENT,
                                       tokenize.NEWLINE, tokenize.NL]:
-                    debug.warning('token not classified', tok, token_type,
-                                  self.start_pos[0])
+                    debug.warning('token not classified %s %s %s', tok,
+                                  token_type, self.start_pos[0])
                 continue
             self.no_docstr = False

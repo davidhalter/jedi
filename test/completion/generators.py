@@ -1,7 +1,6 @@
 # -----------------
 # yield statement
 # -----------------
-
 def gen():
     yield 1
     yield ""
@@ -13,6 +12,7 @@ next(gen_exe)
 #? int() str() list
 next(gen_exe, list)
 
+
 def gen_ret(value):
     yield value
 
@@ -21,6 +21,7 @@ next(gen_ret(1))
 
 #? []
 next(gen_ret())
+
 
 # -----------------
 # generators should not be indexable
@@ -38,6 +39,7 @@ get()[0]
 for a in get():
     #? int() str()
     a
+
 
 class Get():
     def __iter__(self):
@@ -62,6 +64,7 @@ next(g)
 g = iter([1.0])
 #? float()
 next(g)
+
 
 # -----------------
 # __next__
@@ -90,6 +93,7 @@ for c in Counter(3, 8):
     #? int()
     print c
 
+
 # -----------------
 # tuples
 # -----------------
@@ -105,3 +109,30 @@ a, b = next(gen())
 a
 #? str() float()
 b
+
+# -----------------
+# More complicated access
+# -----------------
+
+# `close` is a method wrapper.
+#? ['__call__']
+gen().close.__call__
+
+#? 
+gen().throw()
+
+#? ['co_consts']
+gen().gi_code.co_consts
+
+#? []
+gen.gi_code.co_consts
+
+# `send` is also a method wrapper.
+#? ['__call__']
+gen().send.__call__
+
+#? tuple()
+gen().send()
+
+#? 
+gen()()

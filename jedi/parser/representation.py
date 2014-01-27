@@ -33,18 +33,21 @@ statements in this scope.  Check this out:
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 """
-from __future__ import with_statement
-
 import os
 import re
-import tokenizer as tokenize
 from inspect import cleandoc
 from ast import literal_eval
 
-from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3k
+from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3
 from jedi import common
 from jedi import debug
+from jedi import cache
+from jedi.parser import tokenize
 from jedi.parser import token as token_pr
+
+
+SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
+
 
 
 class GetCodeState(object):
@@ -54,7 +57,6 @@ class GetCodeState(object):
 
     def __init__(self):
         self.last_pos = (0, 0)
-
 
 class Base(object):
     """
@@ -156,7 +158,7 @@ class Simple(Base):
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
-        if not is_py3k:
+        if not is_py3:
             code = code.encode(encoding, 'replace')
         return "<%s: %s@%s,%s>" % \
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
@@ -313,6 +315,10 @@ class Scope(Simple, IsScope):
         if self.isinstance(Function):
             checks += self.params + self.decorators
             checks += [r for r in self.returns if r is not None]
+        if self.isinstance(Flow):
+            checks += self.inputs
+        if self.isinstance(ForFlow) and self.set_stmt is not None:
+            checks.append(self.set_stmt)
 
         for s in checks:
             if isinstance(s, Flow):
@@ -368,7 +374,6 @@ class SubModule(Scope, Module):
         super(SubModule, self).__init__(self, start_pos)
         self.path = path
         self.global_vars = []
-        self._name = None
         self.used_names = {}
         self.temp_used_names = []
         # this may be changed depending on fast_parser
@@ -394,25 +399,19 @@ class SubModule(Scope, Module):
         return n
 
     @property
+    @cache.underscore_memoization
     def name(self):
         """ This is used for the goto functions. """
-        if self._name is not None:
-            return self._name
         if self.path is None:
             string = ''  # no path -> empty name
         else:
             sep = (re.escape(os.path.sep),) * 2
-            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep,
-                          self.path)
+            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self.path)
             # remove PEP 3149 names
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # positions are not real therefore choose (0, 0)
         names = [(string, (0, 0))]
-        self._name = Name(self, names, (0, 0), (0, 0), self.use_as_parent)
-        return self._name
-
-    def is_builtin(self):
-        return not (self.path is None or self.path.endswith('.py'))
+        return Name(self, names, (0, 0), (0, 0), self.use_as_parent)
 
     @property
     def has_explicit_absolute_import(self):
@@ -525,7 +524,7 @@ class Function(Scope):
             try:
                 n.append(p.get_name())
             except IndexError:
-                debug.warning("multiple names in param %s" % n)
+                debug.warning("multiple names in param %s", n)
         return n
 
     def get_call_signature(self, width=72, funcname=None):
@@ -795,7 +794,7 @@ class Statement(Simple):
     :type   start_pos: 2-tuple of int
     :param  start_pos: Position (line, column) of the Statement.
     """
-    __slots__ = ('token_list', '_set_vars', 'as_names', '_commands',
+    __slots__ = ('token_list', '_set_vars', 'as_names', '_expression_list',
                  '_assignment_details', 'docstr', '_names_are_set_vars')
 
     def __init__(self, module, token_list, start_pos, end_pos, parent=None,
@@ -817,7 +816,6 @@ class Statement(Simple):
         self.as_names = list(as_names)
 
         # cache
-        self._commands = None
         self._assignment_details = []
         # this is important for other scripts
 
@@ -834,7 +832,7 @@ class Statement(Simple):
             return '%s %s ' % (''.join(pieces), assignment)
 
         code = ''.join(assemble(*a) for a in self.assignment_details)
-        code += assemble(self.get_commands())
+        code += assemble(self.expression_list())
         if self.docstr:
             code += '\n"""%s"""' % self.docstr.as_string()
 
@@ -846,12 +844,12 @@ class Statement(Simple):
     def get_set_vars(self):
         """ Get the names for the statement. """
         if self._set_vars is None:
-            self._set_vars = []
+
             def search_calls(calls):
                 for call in calls:
                     if isinstance(call, Array):
                         for stmt in call:
-                            search_calls(stmt.get_commands())
+                            search_calls(stmt.expression_list())
                     elif isinstance(call, Call):
                         c = call
                         # Check if there's an execution in it, if so this is
@@ -865,12 +863,13 @@ class Statement(Simple):
                             continue
                         self._set_vars.append(call.name)
 
+            self._set_vars = []
             for calls, operation in self.assignment_details:
                 search_calls(calls)
 
             if not self.assignment_details and self._names_are_set_vars:
                 # In the case of Param, it's also a defining name without ``=``
-                search_calls(self.get_commands())
+                search_calls(self.expression_list())
         return self._set_vars + self.as_names
 
     def is_global(self):
@@ -889,17 +888,14 @@ class Statement(Simple):
         would result in ``[(Name(x), '='), (Array([Name(y), Name(z)]), '=')]``.
         """
         # parse statement which creates the assignment details.
-        self.get_commands()
+        self.expression_list()
         return self._assignment_details
 
-    def get_commands(self):
-        if self._commands is None:
-            self._commands = ['time neeeeed']  # avoid recursions
-            self._commands = self._parse_statement()
-        return self._commands
-
-    def _parse_statement(self):
+    @cache.underscore_memoization
+    def expression_list(self):
         """
+        Parse a statement.
+
         This is not done in the main parser, because it might be slow and
         most of the statements won't need this data anyway. This is something
         'like' a lazy execution.
@@ -966,10 +962,10 @@ class Statement(Simple):
                         # it's not possible to set it earlier
                         tok.parent = self
                 else:
-                    tok           = tok_temp.token
+                    tok = tok_temp.token
                     start_tok_pos = tok_temp.start_pos
-                    last_end_pos  = end_pos
-                    end_pos       = tok_temp.end_pos
+                    last_end_pos = end_pos
+                    end_pos = tok_temp.end_pos
                     if first:
                         first = False
                         start_pos = start_tok_pos
@@ -1062,7 +1058,7 @@ class Statement(Simple):
                     stmt = Statement(self._sub_module, token_list,
                                      start_pos, arr.end_pos)
                     arr.parent = stmt
-                    stmt.token_list = stmt._commands = [arr]
+                    stmt.token_list = stmt._expression_list = [arr]
                 else:
                     for t in stmt.token_list:
                         if isinstance(t, Name):
@@ -1075,12 +1071,12 @@ class Statement(Simple):
 
             middle, tok = parse_stmt_or_arr(token_iterator, ['in'], True)
             if tok != 'in' or middle is None:
-                debug.warning('list comprehension middle @%s' % str(start_pos))
+                debug.warning('list comprehension middle @%s', start_pos)
                 return None, tok
 
             in_clause, tok = parse_stmt_or_arr(token_iterator)
             if in_clause is None:
-                debug.warning('list comprehension in @%s' % str(start_pos))
+                debug.warning('list comprehension in @%s', start_pos)
                 return None, tok
 
             return ListComprehension(st, middle, in_clause, self), tok
@@ -1101,9 +1097,9 @@ class Statement(Simple):
                 end_pos = tok.end_pos
             else:
                 token_type = tok_temp.token_type
-                tok        = tok_temp.token
-                start_pos  = tok_temp.start_pos
-                end_pos    = tok_temp.end_pos
+                tok = tok_temp.token
+                start_pos = tok_temp.start_pos
+                end_pos = tok_temp.end_pos
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
@@ -1126,9 +1122,7 @@ class Statement(Simple):
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
             if isinstance(tok, Name) or is_literal:
-                cls = Call
-                if is_literal:
-                    cls = String if token_type == tokenize.STRING else Number
+                cls = Literal if is_literal else Call
 
                 call = cls(self._sub_module, tok, start_pos, end_pos, self)
                 if is_chain:
@@ -1149,7 +1143,7 @@ class Statement(Simple):
                 if result and isinstance(result[-1], StatementElement):
                     is_chain = True
             elif tok == ',':  # implies a tuple
-                # commands is now an array not a statement anymore
+                # expression is now an array not a statement anymore
                 t = result[0]
                 start_pos = t[2] if isinstance(t, tuple) else t.start_pos
 
@@ -1172,7 +1166,7 @@ class Statement(Simple):
                     self.parent,
                     set_name_parents=False
                 )
-                stmt._commands = result
+                stmt._expression_list = result
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
                                              stmt.start_pos, stmt)
                 result = [arr]
@@ -1213,7 +1207,7 @@ class Param(Statement):
         """ get the name of the param """
         n = self.get_set_vars()
         if len(n) > 1:
-            debug.warning("Multiple param names (%s)." % n)
+            debug.warning("Multiple param names (%s).", n)
         return n[0]
 
 
@@ -1292,23 +1286,12 @@ class Literal(StatementElement):
     def get_code(self):
         return self.literal + super(Literal, self).get_code()
 
-    def type_as_string(self):
-        return type(self.value).__name__
-
     def __repr__(self):
-        if is_py3k:
+        if is_py3:
             s = self.literal
         else:
             s = self.literal.encode('ascii', 'replace')
         return "<%s: %s>" % (type(self).__name__, s)
-
-
-class String(Literal):
-    pass
-
-
-class Number(Literal):
-    pass
 
 
 class Array(StatementElement):

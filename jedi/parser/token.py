@@ -151,8 +151,16 @@ class TokenDocstring(TokenNoCompat):
 
     as_string() will clean the token representing the docstring.
     """
-    def __init__(self, token):
-        self.__setstate__(token.__getstate__())
+    def __init__(self, token=None, state=None):
+        if token:
+            self.__setstate__(token.__getstate__())
+        else:
+            self.__setstate__(state)
+
+    @classmethod
+    def fake_docstring(cls, docstr):
+        # TODO: fixme when tests are up again
+        return TokenDocstring(state=(0, '"""\n%s\n"""' % docstr, 0, 0))
 
     def as_string(self):
         """Returns a literal cleaned version of the token"""

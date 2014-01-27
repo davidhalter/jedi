@@ -3,36 +3,28 @@ The :mod:`api_classes` module contains the return classes of the API. These
 classes are the much bigger part of the whole API, because they contain the
 interesting information about completion and goto operations.
 """
-from __future__ import with_statement
-
 import warnings
 import functools
 
 from jedi._compatibility import unicode, next
 from jedi import settings
 from jedi import common
-from jedi.parser import representation as pr
 from jedi import cache
-import keywords
-import recursion
-import dynamic
-import evaluate
-import imports
-import evaluate_representation as er
+from jedi.parser import representation as pr
+from jedi.evaluate import representation as er
+from jedi.evaluate import iterable
+from jedi.evaluate import imports
+from jedi.evaluate import compiled
+from jedi.api import keywords
+from jedi.evaluate.finder import get_names_of_scope
 
 
-def _clear_caches():
+def clear_caches():
     """
     Clear all caches of this and related modules. The only cache that will not
     be deleted is the module cache.
     """
     cache.clear_caches()
-    dynamic.search_param_cache.clear()
-    recursion.ExecutionRecursionDecorator.reset()
-
-    evaluate.follow_statement.reset()
-
-    imports.imports_processed = 0
 
 
 def _clear_caches_after_call(func):
@@ -42,7 +34,7 @@ def _clear_caches_after_call(func):
     @functools.wraps(func)
     def wrapper(*args, **kwds):
         result = func(*args, **kwds)
-        _clear_caches()
+        clear_caches()
         return result
     return wrapper
 
@@ -69,7 +61,8 @@ class BaseDefinition(object):
         '_sre.SRE_Pattern': 're.RegexObject',
     }.items())
 
-    def __init__(self, definition, start_pos):
+    def __init__(self, evaluator, definition, start_pos):
+        self._evaluator = evaluator
         self._start_pos = start_pos
         self._definition = definition
         """
@@ -79,8 +72,11 @@ class BaseDefinition(object):
 
         # generate a path to the definition
         self._module = definition.get_parent_until()
-        self.module_path = self._module.path
-        """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
+        if self.in_builtin_module():
+            self.module_path = None
+        else:
+            self.module_path = self._module.path
+            """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
 
     @property
     def start_pos(self):
@@ -143,8 +139,10 @@ class BaseDefinition(object):
         """
         # generate the type
         stripped = self._definition
-        if isinstance(self._definition, er.InstanceElement):
-            stripped = self._definition.var
+        if isinstance(stripped, compiled.CompiledObject):
+            return stripped.type()
+        if isinstance(stripped, er.InstanceElement):
+            stripped = stripped.var
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
         return type(stripped).__name__.lower()
@@ -176,18 +174,17 @@ class BaseDefinition(object):
         The module name.
 
         >>> from jedi import Script
-        >>> source = 'import datetime'
-        >>> script = Script(source, 1, len(source), 'example.py')
+        >>> source = 'import json'
+        >>> script = Script(source, path='example.py')
         >>> d = script.goto_definitions()[0]
         >>> print(d.module_name)                       # doctest: +ELLIPSIS
-        datetime
+        json
         """
         return str(self._module.name)
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        return not (self.module_path is None or
-                    self.module_path.endswith('.py'))
+        return isinstance(self._module, compiled.CompiledObject)
 
     @property
     def line_nr(self):
@@ -241,7 +238,7 @@ class BaseDefinition(object):
 
         """
         try:
-            return self._definition.doc
+            return self._definition.doc or ''  # Always a String, never None.
         except AttributeError:
             return self.raw_doc
 
@@ -309,8 +306,8 @@ class Completion(BaseDefinition):
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
-    def __init__(self, name, needs_dot, like_name_length, base):
-        super(Completion, self).__init__(name.parent, name.start_pos)
+    def __init__(self, evaluator, name, needs_dot, like_name_length, base):
+        super(Completion, self).__init__(evaluator, name.parent, name.start_pos)
 
         self._name = name
         self._needs_dot = needs_dot
@@ -320,8 +317,6 @@ class Completion(BaseDefinition):
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
         self._same_name_completions = []
-
-        self._followed_definitions = None
 
     def _complete(self, like_name):
         dot = '.' if self._needs_dot else ''
@@ -402,6 +397,7 @@ class Completion(BaseDefinition):
         line = '' if self.in_builtin_module else '@%s' % self.line
         return '%s: %s%s' % (t, desc, line)
 
+    @cache.underscore_memoization
     def follow_definition(self):
         """
         Return the original definitions. I strongly recommend not using it for
@@ -411,19 +407,16 @@ class Completion(BaseDefinition):
         follows all results. This means with 1000 completions (e.g.  numpy),
         it's just PITA-slow.
         """
-        if self._followed_definitions is None:
-            if self._definition.isinstance(pr.Statement):
-                defs = evaluate.follow_statement(self._definition)
-            elif self._definition.isinstance(pr.Import):
-                defs = imports.strip_imports([self._definition])
-            else:
-                return [self]
+        if self._definition.isinstance(pr.Statement):
+            defs = self._evaluator.eval_statement(self._definition)
+        elif self._definition.isinstance(pr.Import):
+            defs = imports.strip_imports(self._evaluator, [self._definition])
+        else:
+            return [self]
 
-            self._followed_definitions = \
-                [BaseDefinition(d, d.start_pos) for d in defs]
-            _clear_caches()
-
-        return self._followed_definitions
+        defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
+        clear_caches()
+        return defs
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name)
@@ -434,8 +427,8 @@ class Definition(BaseDefinition):
     *Definition* objects are returned from :meth:`api.Script.goto_assignments`
     or :meth:`api.Script.goto_definitions`.
     """
-    def __init__(self, definition):
-        super(Definition, self).__init__(definition, definition.start_pos)
+    def __init__(self, evaluator, definition):
+        super(Definition, self).__init__(evaluator, definition, definition.start_pos)
 
     @property
     def name(self):
@@ -450,9 +443,11 @@ class Definition(BaseDefinition):
         if isinstance(d, er.InstanceElement):
             d = d.var
 
-        if isinstance(d, pr.Name):
+        if isinstance(d, compiled.CompiledObject):
+            return d.name
+        elif isinstance(d, pr.Name):
             return d.names[-1] if d.names else None
-        elif isinstance(d, er.Array):
+        elif isinstance(d, iterable.Array):
             return unicode(d.type)
         elif isinstance(d, (pr.Class, er.Class, er.Instance,
                             er.Function, pr.Function)):
@@ -469,7 +464,6 @@ class Definition(BaseDefinition):
                 return d.assignment_details[0][1].values[0][0].name.names[-1]
             except IndexError:
                 return None
-        return None
 
     @property
     def description(self):
@@ -505,7 +499,9 @@ class Definition(BaseDefinition):
         if isinstance(d, pr.Name):
             d = d.parent
 
-        if isinstance(d, er.Array):
+        if isinstance(d, compiled.CompiledObject):
+            d = d.type() + ' ' + d.name
+        elif isinstance(d, iterable.Array):
             d = 'class ' + d.type
         elif isinstance(d, (pr.Class, er.Class, er.Instance)):
             d = 'class ' + unicode(d.name)
@@ -533,12 +529,7 @@ class Definition(BaseDefinition):
         .. todo:: Add full path. This function is should return a
             `module.class.function` path.
         """
-        if self.module_path.endswith('.py') \
-                and not isinstance(self._definition, pr.Module):
-            position = '@%s' % (self.line)
-        else:
-            # is a builtin or module
-            position = ''
+        position = '' if self.in_builtin_module else '@%s' % (self.line)
         return "%s:%s%s" % (self.module_name, self.description, position)
 
     def defined_names(self):
@@ -552,26 +543,26 @@ class Definition(BaseDefinition):
             d = d.var
         if isinstance(d, pr.Name):
             d = d.parent
-        return _defined_names(d)
+        return defined_names(self._evaluator, d)
 
 
-def _defined_names(scope):
+def defined_names(evaluator, scope):
     """
     List sub-definitions (e.g., methods in class).
 
     :type scope: Scope
     :rtype: list of Definition
     """
-    pair = next(evaluate.get_names_of_scope(
-        scope, star_search=False, include_builtin=False), None)
+    pair = next(get_names_of_scope(evaluator, scope, star_search=False,
+                                   include_builtin=False), None)
     names = pair[1] if pair else []
-    return [Definition(d) for d in sorted(names, key=lambda s: s.start_pos)]
+    return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class Usage(BaseDefinition):
     """TODO: document this"""
-    def __init__(self, name_part, scope):
-        super(Usage, self).__init__(scope, name_part.start_pos)
+    def __init__(self, evaluator, name_part, scope):
+        super(Usage, self).__init__(evaluator, scope, name_part.start_pos)
         self.text = unicode(name_part)
         self.end_pos = name_part.end_pos
 

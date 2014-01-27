@@ -11,24 +11,21 @@ correct implementation is delegated to _compatibility.
 This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
-from __future__ import with_statement
-
 import os
 import pkgutil
 import sys
 import itertools
 
 from jedi._compatibility import find_module
-from jedi import modules
 from jedi import common
 from jedi import debug
-from jedi.parser import representation as pr
 from jedi import cache
-import builtin
-import evaluate
-
-# for debugging purposes only
-imports_processed = 0
+from jedi.parser import fast
+from jedi.parser import representation as pr
+from jedi.evaluate import sys_path
+from jedi import settings
+from jedi.common import source_to_unicode
+from jedi.evaluate import compiled
 
 
 class ModuleNotFound(Exception):
@@ -45,8 +42,9 @@ class ImportPath(pr.Base):
 
     GlobalNamespace = GlobalNamespace()
 
-    def __init__(self, import_stmt, is_like_search=False, kill_count=0,
+    def __init__(self, evaluator, import_stmt, is_like_search=False, kill_count=0,
                  direct_resolve=False, is_just_from=False):
+        self._evaluator = evaluator
         self.import_stmt = import_stmt
         self.is_like_search = is_like_search
         self.direct_resolve = direct_resolve
@@ -96,7 +94,7 @@ class ImportPath(pr.Base):
         n = pr.Name(i._sub_module, names, zero, zero, self.import_stmt)
         new = pr.Import(i._sub_module, zero, zero, n)
         new.parent = parent
-        debug.dbg('Generated a nested import: %s' % new)
+        debug.dbg('Generated a nested import: %s', new)
         return new
 
     def get_defined_names(self, on_import_stmt=False):
@@ -114,9 +112,9 @@ class ImportPath(pr.Base):
 
                     if self._is_relative_import():
                         rel_path = self._get_relative_path() + '/__init__.py'
-                        with common.ignored(IOError):
-                            m = modules.Module(rel_path)
-                            names += m.parser.module.get_defined_names()
+                        if os.path.exists(rel_path):
+                            m = load_module(rel_path)
+                            names += m.get_defined_names()
             else:
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
@@ -131,10 +129,11 @@ class ImportPath(pr.Base):
                         # ``sys.modules`` modification.
                         p = (0, 0)
                         names.append(pr.Name(self.GlobalNamespace, [('path', p)],
-                                       p, p, self.import_stmt))
+                                     p, p, self.import_stmt))
                     continue
-                for s, scope_names in evaluate.get_names_of_scope(scope,
-                                                                  include_builtin=False):
+                from jedi.evaluate import finder
+                for s, scope_names in finder.get_names_of_scope(self._evaluator,
+                                                                scope, include_builtin=False):
                     for n in scope_names:
                         if self.import_stmt.from_ns is None \
                                 or self.is_partial_import:
@@ -181,13 +180,13 @@ class ImportPath(pr.Base):
                     in_path.append(new)
 
         module = self.import_stmt.get_parent_until()
-        return in_path + modules.sys_path_with_modifications(module)
+        return in_path + sys_path.sys_path_with_modifications(module)
 
     def follow(self, is_goto=False):
         """
         Returns the imported modules.
         """
-        if evaluate.follow_statement.push_stmt(self.import_stmt):
+        if self._evaluator.recursion_detector.push_stmt(self.import_stmt):
             # check recursion
             return []
 
@@ -195,12 +194,12 @@ class ImportPath(pr.Base):
             try:
                 scope, rest = self._follow_file_system()
             except ModuleNotFound:
-                debug.warning('Module not found: ' + str(self.import_stmt))
-                evaluate.follow_statement.pop_stmt()
+                debug.warning('Module not found: %s', self.import_stmt)
+                self._evaluator.recursion_detector.pop_stmt()
                 return []
 
             scopes = [scope]
-            scopes += remove_star_imports(scope)
+            scopes += remove_star_imports(self._evaluator, scope)
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
@@ -211,15 +210,15 @@ class ImportPath(pr.Base):
                     # ``os.path``, because it's a very important one in Python
                     # that is being achieved by messing with ``sys.modules`` in
                     # ``os``.
-                    scopes = evaluate.follow_path(iter(rest), scope, scope)
+                    scopes = self._evaluator.follow_path(iter(rest), [scope], scope)
             elif rest:
                 if is_goto:
                     scopes = itertools.chain.from_iterable(
-                        evaluate.find_name(s, rest[0], is_goto=True)
+                        self._evaluator.find_types(s, rest[0], is_goto=True)
                         for s in scopes)
                 else:
                     scopes = itertools.chain.from_iterable(
-                        evaluate.follow_path(iter(rest), s, s)
+                        self._evaluator.follow_path(iter(rest), [s], s)
                         for s in scopes)
             scopes = list(scopes)
 
@@ -227,9 +226,9 @@ class ImportPath(pr.Base):
                 scopes.append(self._get_nested_import(scope))
         else:
             scopes = [ImportPath.GlobalNamespace]
-        debug.dbg('after import', scopes)
+        debug.dbg('after import: %s', scopes)
 
-        evaluate.follow_statement.pop_stmt()
+        self._evaluator.recursion_detector.pop_stmt()
         return scopes
 
     def _is_relative_import(self):
@@ -288,7 +287,7 @@ class ImportPath(pr.Base):
                 sys_path_mod.append(temp_path)
                 old_path, temp_path = temp_path, os.path.dirname(temp_path)
         else:
-            sys_path_mod = list(modules.get_sys_path())
+            sys_path_mod = list(sys_path.get_sys_path())
 
         return self._follow_sys_path(sys_path_mod)
 
@@ -297,19 +296,17 @@ class ImportPath(pr.Base):
         Find a module with a path (of the module, like usb.backend.libusb10).
         """
         def follow_str(ns_path, string):
-            debug.dbg('follow_module', ns_path, string)
+            debug.dbg('follow_module %s %s', ns_path, string)
             path = None
             if ns_path:
                 path = ns_path
             elif self._is_relative_import():
                 path = self._get_relative_path()
 
-            global imports_processed
-            imports_processed += 1
             if path is not None:
                 importing = find_module(string, [path])
             else:
-                debug.dbg('search_module', string, self.file_path)
+                debug.dbg('search_module %s %s', string, self.file_path)
                 # Override the sys.path. It works only good that way.
                 # Injecting the path directly into `find_module` did not work.
                 sys.path, temp = sys_path, sys.path
@@ -364,17 +361,12 @@ class ImportPath(pr.Base):
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
-            if path.endswith('.py'):
-                f = modules.Module(path, source)
-            else:
-                f = builtin.BuiltinModule(path=path)
+            return load_module(path, source), rest
         else:
-            f = builtin.BuiltinModule(name=path)
-
-        return f.parser.module, rest
+            return load_module(name=path), rest
 
 
-def strip_imports(scopes):
+def strip_imports(evaluator, scopes):
     """
     Here we strip the imports - they don't get resolved necessarily.
     Really used anymore? Merge with remove_star_imports?
@@ -382,26 +374,87 @@ def strip_imports(scopes):
     result = []
     for s in scopes:
         if isinstance(s, pr.Import):
-            result += ImportPath(s).follow()
+            result += ImportPath(evaluator, s).follow()
         else:
             result.append(s)
     return result
 
 
 @cache.cache_star_import
-def remove_star_imports(scope, ignored_modules=()):
+def remove_star_imports(evaluator, scope, ignored_modules=()):
     """
-    Check a module for star imports:
-    >>> from module import *
+    Check a module for star imports::
+
+        from module import *
 
     and follow these modules.
     """
-    modules = strip_imports(i for i in scope.get_imports() if i.star)
+    modules = strip_imports(evaluator, (i for i in scope.get_imports() if i.star))
     new = []
     for m in modules:
         if m not in ignored_modules:
-            new += remove_star_imports(m, modules)
+            new += remove_star_imports(evaluator, m, modules)
     modules += new
 
     # Filter duplicate modules.
     return set(modules)
+
+
+def load_module(path=None, source=None, name=None):
+    def load(source):
+        if path is not None and path.endswith('.py'):
+            if source is None:
+                with open(path) as f:
+                    source = f.read()
+        else:
+            return compiled.load_module(path, name)
+        p = path or name
+        p = fast.FastParser(common.source_to_unicode(source), p)
+        cache.save_parser(path, name, p)
+        return p.module
+
+    cached = cache.load_parser(path, name)
+    return load(source) if cached is None else cached.module
+
+
+def get_modules_containing_name(mods, name):
+    """
+    Search a name in the directories of modules.
+    """
+    def check_python_file(path):
+        try:
+            return cache.parser_cache[path].parser.module
+        except KeyError:
+            try:
+                return check_fs(path)
+            except IOError:
+                return None
+
+    def check_fs(path):
+        with open(path) as f:
+            source = source_to_unicode(f.read())
+            if name in source:
+                return load_module(path, source)
+
+    # skip non python modules
+    mods = set(m for m in mods if not isinstance(m, compiled.CompiledObject))
+    mod_paths = set()
+    for m in mods:
+        mod_paths.add(m.path)
+        yield m
+
+    if settings.dynamic_params_for_other_modules:
+        paths = set(settings.additional_dynamic_modules)
+        for p in mod_paths:
+            if p is not None:
+                d = os.path.dirname(p)
+                for entry in os.listdir(d):
+                    if entry not in mod_paths:
+                        if entry.endswith('.py'):
+                            paths.add(d + os.path.sep + entry)
+
+        for p in sorted(paths):
+            # make testing easier, sort it - same results on every interpreter
+            c = check_python_file(p)
+            if c is not None and c not in mods:
+                yield c

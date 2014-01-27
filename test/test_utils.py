@@ -5,7 +5,7 @@ from .helpers import TestCase, cwd_at
 
 
 class TestSetupReadline(TestCase):
-    class NameSpace():
+    class NameSpace(object):
         pass
 
     def __init__(self, *args, **kwargs):
@@ -98,3 +98,7 @@ class TestSetupReadline(TestCase):
             assert self.completions('colorama')
             assert self.completions('colorama.Fore.BLACK') == ['colorama.Fore.BLACK']
             del self.namespace.colorama
+
+
+def test_version_info():
+    assert utils.version_info()[:2] > (0, 7)

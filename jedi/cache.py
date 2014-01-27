@@ -3,11 +3,8 @@ This caching is very important for speed and memory optimizations. There's
 nothing really spectacular, just some decorators. The following cache types are
 available:
 
-- module caching (`load_module` and `save_module`), which uses pickle and is
+- module caching (`load_parser` and `save_parser`), which uses pickle and is
   really important to assure low load times of modules like ``numpy``.
-- the popular ``memoize_default`` works like a typical memoize and returns the
-  default otherwise.
-- ``CachedMetaClass`` uses ``memoize_default`` to do the same with classes.
 - ``time_cache`` can be used to cache something for just a limited time span,
   which can be useful if there's user interaction and the user cannot react
   faster than a certain time.
@@ -16,30 +13,26 @@ This module is one of the reasons why |jedi| is not thread-safe. As you can see
 there are global variables, which are holding the cache information. Some of
 these variables are being cleaned after every API usage.
 """
-from __future__ import with_statement
-
 import time
 import os
 import sys
 import json
 import hashlib
 import gc
+import inspect
+import shutil
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
-import shutil
 
 from jedi import settings
 from jedi import common
 from jedi import debug
 
-# memoize caches will be deleted after every action
-memoize_caches = []
+_time_caches = []
 
-time_caches = []
-
-star_import_cache = {}
+_star_import_cache = {}
 
 # for fast_parser, should not be deleted
 parser_cache = {}
@@ -60,60 +53,20 @@ def clear_caches(delete_all=False):
     :param delete_all: Deletes also the cache that is normally not deleted,
         like parser cache, which is important for faster parsing.
     """
-    global memoize_caches, time_caches
-
-    # memorize_caches must never be deleted, because the dicts will get lost in
-    # the wrappers.
-    for m in memoize_caches:
-        m.clear()
+    global _time_caches
 
     if delete_all:
-        time_caches = []
-        star_import_cache.clear()
+        _time_caches = []
+        _star_import_cache.clear()
         parser_cache.clear()
     else:
         # normally just kill the expired entries, not all
-        for tc in time_caches:
+        for tc in _time_caches:
             # check time_cache for expired entries
             for key, (t, value) in list(tc.items()):
                 if t < time.time():
                     # delete expired entries
                     del tc[key]
-
-
-def memoize_default(default=None, cache=memoize_caches):
-    """ This is a typical memoization decorator, BUT there is one difference:
-    To prevent recursion it sets defaults.
-
-    Preventing recursion is in this case the much bigger use than speed. I
-    don't think, that there is a big speed difference, but there are many cases
-    where recursion could happen (think about a = b; b = a).
-    """
-    def func(function):
-        memo = {}
-        cache.append(memo)
-
-        def wrapper(*args, **kwargs):
-            key = (args, frozenset(kwargs.items()))
-            if key in memo:
-                return memo[key]
-            else:
-                memo[key] = default
-                rv = function(*args, **kwargs)
-                memo[key] = rv
-                return rv
-        return wrapper
-    return func
-
-
-class CachedMetaClass(type):
-    """ This is basically almost the same than the decorator above, it just
-    caches class initializations. I haven't found any other way, so I do it
-    with meta classes.
-    """
-    @memoize_default()
-    def __call__(self, *args, **kwargs):
-        return super(CachedMetaClass, self).__call__(*args, **kwargs)
 
 
 def time_cache(time_add_setting):
@@ -124,7 +77,7 @@ def time_cache(time_add_setting):
     """
     def _temp(key_func):
         dct = {}
-        time_caches.append(dct)
+        _time_caches.append(dct)
 
         def wrapper(optional_callable, *args, **kwargs):
             key = key_func(*args, **kwargs)
@@ -148,63 +101,108 @@ def cache_call_signatures(stmt):
     return None if module_path is None else (module_path, stmt.start_pos)
 
 
+def underscore_memoization(func):
+    """
+    Decorator for methods::
+
+        class A(object):
+            def x(self):
+                if self._x:
+                    self._x = 10
+                return self._x
+
+    Becomes::
+
+        class A(object):
+            @underscore_memoization
+            def x(self):
+                return 10
+
+    A now has an attribute ``_x`` written by this decorator.
+    """
+    name = '_' + func.__name__
+
+    def wrapper(self):
+        try:
+            return getattr(self, name)
+        except AttributeError:
+            result = func(self)
+            if inspect.isgenerator(result):
+                result = list(result)
+            setattr(self, name, result)
+            return result
+
+    return wrapper
+
+
 def cache_star_import(func):
-    def wrapper(scope, *args, **kwargs):
+    def wrapper(evaluator, scope, *args, **kwargs):
         with common.ignored(KeyError):
-            mods = star_import_cache[scope]
+            mods = _star_import_cache[scope]
             if mods[0] + settings.star_import_cache_validity > time.time():
                 return mods[1]
         # cache is too old and therefore invalid or not available
-        invalidate_star_import_cache(scope)
-        mods = func(scope, *args, **kwargs)
-        star_import_cache[scope] = time.time(), mods
+        _invalidate_star_import_cache_module(scope)
+        mods = func(evaluator, scope, *args, **kwargs)
+        _star_import_cache[scope] = time.time(), mods
 
         return mods
     return wrapper
 
 
-def invalidate_star_import_cache(module, only_main=False):
+def _invalidate_star_import_cache_module(module, only_main=False):
     """ Important if some new modules are being reparsed """
     with common.ignored(KeyError):
-        t, mods = star_import_cache[module]
+        t, mods = _star_import_cache[module]
 
-        del star_import_cache[module]
+        del _star_import_cache[module]
 
         for m in mods:
-            invalidate_star_import_cache(m, only_main=True)
+            _invalidate_star_import_cache_module(m, only_main=True)
 
     if not only_main:
         # We need a list here because otherwise the list is being changed
         # during the iteration in py3k: iteritems -> items.
-        for key, (t, mods) in list(star_import_cache.items()):
+        for key, (t, mods) in list(_star_import_cache.items()):
             if module in mods:
-                invalidate_star_import_cache(key)
+                _invalidate_star_import_cache_module(key)
 
 
-def load_module(path, name):
+def invalidate_star_import_cache(path):
+    """On success returns True."""
+    try:
+        parser_cache_item = parser_cache[path]
+    except KeyError:
+        return False
+    else:
+        _invalidate_star_import_cache_module(parser_cache_item.parser.module)
+        return True
+
+
+def load_parser(path, name):
     """
     Returns the module or None, if it fails.
     """
     if path is None and name is None:
         return None
 
-    tim = os.path.getmtime(path) if path else None
+    p_time = os.path.getmtime(path) if path else None
     n = name if path is None else path
     try:
         parser_cache_item = parser_cache[n]
-        if not path or tim <= parser_cache_item.change_time:
+        if not path or p_time <= parser_cache_item.change_time:
             return parser_cache_item.parser
         else:
             # In case there is already a module cached and this module
             # has to be reparsed, we also need to invalidate the import
             # caches.
-            invalidate_star_import_cache(parser_cache_item.parser.module)
+            _invalidate_star_import_cache_module(parser_cache_item.parser.module)
     except KeyError:
         if settings.use_filesystem_cache:
-            return ModulePickling.load_module(n, tim)
+            return ParserPickling.load_parser(n, p_time)
 
 
-def save_module(path, name, parser, pickling=True):
+def save_parser(path, name, parser, pickling=True):
     try:
         p_time = None if not path else os.path.getmtime(path)
     except OSError:
@@ -215,12 +213,12 @@ def save_module(path, name, parser, pickling=True):
     item = ParserCacheItem(parser, p_time)
     parser_cache[n] = item
     if settings.use_filesystem_cache and pickling:
-        ModulePickling.save_module(n, item)
+        ParserPickling.save_parser(n, item)
 
 
-class _ModulePickling(object):
+class ParserPickling(object):
 
-    version = 5
+    version = 9
     """
     Version number (integer) for file system cache.
 
@@ -246,7 +244,7 @@ class _ModulePickling(object):
         .. todo:: Detect interpreter (e.g., PyPy).
         """
 
-    def load_module(self, path, original_changed_time):
+    def load_parser(self, path, original_changed_time):
         try:
             pickle_changed_time = self._index[path]
         except KeyError:
@@ -263,11 +261,11 @@ class _ModulePickling(object):
             finally:
                 gc.enable()
 
-        debug.dbg('pickle loaded', path)
+        debug.dbg('pickle loaded: %s', path)
         parser_cache[path] = parser_cache_item
         return parser_cache_item.parser
 
-    def save_module(self, path, parser_cache_item):
+    def save_parser(self, path, parser_cache_item):
         self.__index = None
         try:
             files = self._index
@@ -292,7 +290,7 @@ class _ModulePickling(object):
             else:
                 # 0 means version is not defined (= always delete cache):
                 if data.get('version', 0) != self.version:
-                    self.delete_cache()
+                    self.clear_cache()
                     self.__index = {}
                 else:
                     self.__index = data['index']
@@ -311,7 +309,7 @@ class _ModulePickling(object):
             json.dump(data, f)
         self.__index = None
 
-    def delete_cache(self):
+    def clear_cache(self):
         shutil.rmtree(self._cache_directory())
 
     def _get_hashed_path(self, path):
@@ -328,4 +326,4 @@ class _ModulePickling(object):
 
 
 # is a singleton
-ModulePickling = _ModulePickling()
+ParserPickling = ParserPickling()
