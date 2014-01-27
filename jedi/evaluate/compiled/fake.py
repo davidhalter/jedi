@@ -9,6 +9,7 @@ import inspect
 
 from jedi._compatibility import is_py3, builtins
 from jedi.parser import Parser
+from jedi.parser import token as token_pr
 from jedi.parser.representation import Class
 from jedi.evaluate.helpers import FakeName
 
@@ -102,7 +103,9 @@ def get_faked(module, obj, name=None):
     if not isinstance(result, Class) and result is not None:
         # Set the docstr which was previously not set (faked modules don't
         # contain it).
-        result.docstr = obj.__doc__ or ''
+        result.docstr = None
+        if obj.__doc__:
+            result.docstr = token_pr.TokenDocstring.fake_docstring(obj.__doc__)
         return result
 
 

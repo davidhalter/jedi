@@ -5,6 +5,8 @@ We want to have a token_list and start_position for everything the
 tokenizer returns. Therefore we need a memory efficient class. We
 found that a flat object with slots is the best.
 """
+from inspect import cleandoc
+from ast import literal_eval
 
 from jedi._compatibility import utf8, unicode
 
@@ -59,10 +61,16 @@ class Token(object):
 
     # Backward compatibility py2
     def __unicode__(self):
-        return unicode(self.token)
+        return self.as_string()
 
     # Backward compatibility py3
     def __str__(self):
+        return self.as_string()
+
+    def as_string(self):
+        """For backward compatibilty str(token) or unicode(token) will work.
+        BUT please use as_string() instead, because it is independant from the
+        python version."""
         return unicode(self.token)
 
     # Backward compatibility
@@ -93,7 +101,6 @@ class Token(object):
     def start_pos_col(self):
         return self._start_pos_col
 
-    # Backward compatibility
     @property
     def start_pos(self):
         return (self.start_pos_line, self.start_pos_col)
@@ -126,3 +133,35 @@ class Token(object):
         self._token          = state[1]
         self._start_pos_line = state[2]
         self._start_pos_col  = state[3]
+
+
+class TokenNoCompat(Token):
+    def __unicode__(self):
+        raise NotImplementedError("Compatibility only for basic token.")
+
+    def __str__(self):
+        raise NotImplementedError("Compatibility only for basic token.")
+
+    def __getitem__(self, key):
+        raise NotImplementedError("Compatibility only for basic token.")
+
+
+class TokenDocstring(TokenNoCompat):
+    """A string token that is a docstring.
+
+    as_string() will clean the token representing the docstring.
+    """
+    def __init__(self, token=None, state=None):
+        if token:
+            self.__setstate__(token.__getstate__())
+        else:
+            self.__setstate__(state)
+
+    @classmethod
+    def fake_docstring(cls, docstr):
+        # TODO: fixme when tests are up again
+        return TokenDocstring(state=(0, '"""\n%s\n"""' % docstr, 0, 0))
+
+    def as_string(self):
+        """Returns a literal cleaned version of the token"""
+        return cleandoc(literal_eval(self.token))
