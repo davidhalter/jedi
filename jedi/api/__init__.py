@@ -126,7 +126,7 @@ class Script(object):
         path = self._user_context.get_path_until_cursor()
         if re.search('^\.|\.\.$', path):
             return []
-        path, dot, like = self._get_completion_parts()
+        path, dot, like = helpers.completion_parts(path)
 
         user_stmt = self._parser.user_stmt_with_whitespace()
         b = compiled.builtin
@@ -218,7 +218,8 @@ class Script(object):
             return []
 
         if isinstance(user_stmt, pr.Import):
-            scopes = [self._get_on_import_stmt(user_stmt, is_completion)[0]]
+            scopes = [helpers.get_on_import_stmt(self._evaluator, self._user_context,
+                                                 user_stmt, is_completion)[0]]
         else:
             # just parse one statement, take it and evaluate it
             stmt = self._get_under_cursor_stmt(goto_path)
@@ -344,7 +345,7 @@ class Script(object):
         definitions = resolve_import_paths(definitions)
         d = set([classes.Definition(self._evaluator, s) for s in definitions
                  if s is not imports.ImportPath.GlobalNamespace])
-        return self._sorted_defs(d)
+        return helpers.sorted_definitions(d)
 
     def goto_assignments(self):
         """
@@ -358,7 +359,7 @@ class Script(object):
         results, _ = self._goto()
         d = [classes.Definition(self._evaluator, d) for d in set(results)
              if d is not imports.ImportPath.GlobalNamespace]
-        return self._sorted_defs(d)
+        return helpers.sorted_definitions(d)
 
     def _goto(self, add_import_name=False):
         """
@@ -388,7 +389,8 @@ class Script(object):
             definitions = set([user_scope.name])
             search_name = unicode(user_scope.name)
         elif isinstance(user_stmt, pr.Import):
-            s, name_part = self._get_on_import_stmt(user_stmt)
+            s, name_part = helpers.get_on_import_stmt(self._evaluator,
+                                                   self._user_context, user_stmt)
             try:
                 definitions = [s.follow(is_goto=True)[0]]
             except IndexError:
@@ -455,7 +457,7 @@ class Script(object):
                 names.append(usages.Usage(self._evaluator, d.names[-1], d))
 
         settings.dynamic_flow_information = temp
-        return self._sorted_defs(set(names))
+        return helpers.sorted_definitions(set(names))
 
     def call_signatures(self):
         """
@@ -487,43 +489,6 @@ class Script(object):
         return [classes.CallDef(o, index, call) for o in origins
                 if o.isinstance(er.Function, er.Instance, er.Class)
                 or isinstance(o, compiled.CompiledObject) and o.type() != 'module']
-
-    def _get_on_import_stmt(self, user_stmt, is_like_search=False):
-        """ Resolve the user statement, if it is an import. Only resolve the
-        parts until the user position. """
-        import_names = user_stmt.get_all_import_names()
-        kill_count = -1
-        cur_name_part = None
-        for i in import_names:
-            if user_stmt.alias == i:
-                continue
-            for name_part in i.names:
-                if name_part.end_pos >= self._pos:
-                    if not cur_name_part:
-                        cur_name_part = name_part
-                    kill_count += 1
-
-        context = self._user_context.get_context()
-        just_from = next(context) == 'from'
-
-        i = imports.ImportPath(self._evaluator, user_stmt, is_like_search,
-                               kill_count=kill_count, direct_resolve=True,
-                               is_just_from=just_from)
-        return i, cur_name_part
-
-    def _get_completion_parts(self):
-        """
-        Returns the parts for the completion
-        :return: tuple - (path, dot, like)
-        """
-        path = self._user_context.get_path_until_cursor()
-        match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path, flags=re.S)
-        return match.groups()
-
-    def _sorted_defs(self, d):
-        # Note: `or ''` below is required because `module_path` could be
-        #       None and you can't compare None and str in Python 3.
-        return sorted(d, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
 
 
 class Interpreter(Script):
