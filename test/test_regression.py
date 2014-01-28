@@ -55,11 +55,6 @@ class TestRegression(TestCase):
 
         self.assertRaises(jedi.NotFoundError, get_def, cls)
 
-    def test_operator_doc(self):
-        r = list(Script("a == b", 1, 3).goto_definitions())
-        assert len(r) == 1
-        assert len(r[0].doc) > 100
-
     def test_goto_definition_at_zero(self):
         assert Script("a", 1, 1).goto_definitions() == []
         s = Script("str", 1, 1).goto_definitions()
@@ -142,7 +137,8 @@ class TestRegression(TestCase):
                 break
         column = len(line) - len(after_cursor)
         defs = Script(source, i + 1, column).goto_definitions()
-        self.assertEqual([d.name for d in defs], names)
+        print(defs)
+        assert [d.name for d in defs] == names
 
     def test_backslash_continuation(self):
         """
@@ -163,7 +159,7 @@ class TestRegression(TestCase):
         x = 0
         a = \
           [1, 2, 3, 4, 5, 6, 7, 8, 9, (x)]  # <-- here
-        """, '(x)]  # <-- here', [None])
+        """, '(x)]  # <-- here', [])
 
     def test_generator(self):
         # Did have some problems with the usage of generator completions this

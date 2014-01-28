@@ -322,41 +322,32 @@ class Script(object):
         goto_path = self._user_context.get_path_under_cursor()
 
         context = self._user_context.get_context()
-        scopes = set()
-        lower_priority_operators = ('()', '(', ',')
+        definitions = set()
         """Operators that could hide callee."""
         if next(context) in ('class', 'def'):
-            scopes = set([self._parser.user_scope()])
-        elif not goto_path:
-            op = self._user_context.get_operator_under_cursor()
-            if op and op not in lower_priority_operators:
-                scopes = set([keywords.get_operator(op, self._pos)])
+            definitions = set([self._parser.user_scope()])
+        else:
+            # Fetch definition of callee, if there's no path otherwise.
+            if not goto_path:
+                (call, _) = self._func_call_and_param_index()
+                if call is not None:
+                    while call.next is not None:
+                        call = call.next
+                    # reset cursor position:
+                    (row, col) = call.name.end_pos
+                    pos = (row, max(col - 1, 0))
+                    self._user_context = UserContext(self.source, pos)
+                    # then try to find the path again
+                    goto_path = self._user_context.get_path_under_cursor()
 
-        # Fetch definition of callee, if there's no path otherwise.
-        if not goto_path:
-            (call, _) = self._func_call_and_param_index()
-            if call is not None:
-                while call.next is not None:
-                    call = call.next
-                # reset cursor position:
-                (row, col) = call.name.end_pos
-                pos = (row, max(col - 1, 0))
-                self._user_context = UserContext(self.source, pos)
-                # then try to find the path again
-                goto_path = self._user_context.get_path_under_cursor()
-
-        if not scopes:
+        if not definitions:
             if goto_path:
-                scopes = set(self._prepare_goto(goto_path))
-            elif op in lower_priority_operators:
-                scopes = set([keywords.get_operator(op, self._pos)])
+                definitions = set(self._prepare_goto(goto_path))
+            else:
+                definitions = set([])
 
-        scopes = resolve_import_paths(scopes)
-
-        # add keywords
-        scopes |= keywords.keywords(string=goto_path, pos=self._pos)
-
-        d = set([classes.Definition(self._evaluator, s) for s in scopes
+        definitions = resolve_import_paths(definitions)
+        d = set([classes.Definition(self._evaluator, s) for s in definitions
                  if s is not imports.ImportPath.GlobalNamespace])
         return self._sorted_defs(d)
 
