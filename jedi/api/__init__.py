@@ -25,11 +25,12 @@ from jedi.api import keywords
 from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import usages
+from jedi.api import helpers
 from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
-from jedi.evaluate import helpers
+from jedi.evaluate.helpers import FakeName
 from jedi.evaluate.finder import get_names_of_scope
 
 
@@ -320,16 +321,15 @@ class Script(object):
             return scopes
 
         goto_path = self._user_context.get_path_under_cursor()
-
         context = self._user_context.get_context()
         definitions = set()
-        """Operators that could hide callee."""
         if next(context) in ('class', 'def'):
             definitions = set([self._parser.user_scope()])
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                (call, _) = self._func_call_and_param_index()
+                user_stmt = self._parser.user_stmt_with_whitespace()
+                (call, _) = helpers.func_call_and_param_index(user_stmt, self._pos)
                 if call is not None:
                     while call.next is not None:
                         call = call.next
@@ -343,8 +343,6 @@ class Script(object):
         if not definitions:
             if goto_path:
                 definitions = set(self._prepare_goto(goto_path))
-            else:
-                definitions = set([])
 
         definitions = resolve_import_paths(definitions)
         d = set([classes.Definition(self._evaluator, s) for s in definitions
@@ -453,7 +451,7 @@ class Script(object):
             if isinstance(d, pr.Module):
                 names.append(usages.Usage(self._evaluator, d, d))
             elif isinstance(d, er.Instance):
-                # Instances can be ignored, because they are being created by
+                # Instances can be ignored, because they have been created by
                 # ``__getattr__``.
                 pass
             else:
@@ -479,11 +477,11 @@ class Script(object):
         :rtype: list of :class:`classes.CallDef`
         """
 
-        call, index = self._func_call_and_param_index()
+        user_stmt = self._parser.user_stmt_with_whitespace()
+        call, index = helpers.func_call_and_param_index(user_stmt, self._pos)
         if call is None:
             return []
 
-        user_stmt = self._parser.user_stmt_with_whitespace()
         with common.scale_speed_settings(settings.scale_call_signatures):
             _callable = lambda: self._evaluator.eval_call(call)
             origins = cache.cache_call_signatures(_callable, user_stmt)
@@ -492,16 +490,6 @@ class Script(object):
         return [classes.CallDef(o, index, call) for o in origins
                 if o.isinstance(er.Function, er.Instance, er.Class)
                 or isinstance(o, compiled.CompiledObject) and o.type() != 'module']
-
-    def _func_call_and_param_index(self):
-        debug.speed('func_call start')
-        call, index = None, 0
-        if call is None:
-            user_stmt = self._parser.user_stmt_with_whitespace()
-            if user_stmt is not None and isinstance(user_stmt, pr.Statement):
-                call, index, _ = helpers.search_call_signatures(user_stmt, self._pos)
-        debug.speed('func_call parsed')
-        return call, index
 
     def _get_on_import_stmt(self, user_stmt, is_like_search=False):
         """ Resolve the user statement, if it is an import. Only resolve the
@@ -612,7 +600,7 @@ class Interpreter(Script):
                 for name in dir(namespace):
                     if name.lower().startswith(like.lower()):
                         scope = self._parser.module()
-                        n = helpers.FakeName(name, scope)
+                        n = FakeName(name, scope)
                         completions.append((n, scope))
             return completions
 
