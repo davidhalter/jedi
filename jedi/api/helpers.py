@@ -1,7 +1,6 @@
 """
 Helpers for the API
 """
-
 from jedi import debug
 from jedi.evaluate import helpers
 from jedi.parser import representation as pr

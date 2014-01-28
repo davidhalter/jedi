@@ -4,9 +4,8 @@ classes are the much bigger part of the whole API, because they contain the
 interesting information about completion and goto operations.
 """
 import warnings
-import functools
 
-from jedi._compatibility import unicode, next
+from jedi._compatibility import next, unicode
 from jedi import settings
 from jedi import common
 from jedi import cache
@@ -19,24 +18,17 @@ from jedi.api import keywords
 from jedi.evaluate.finder import get_names_of_scope
 
 
-def clear_caches():
+def defined_names(evaluator, scope):
     """
-    Clear all caches of this and related modules. The only cache that will not
-    be deleted is the module cache.
-    """
-    cache.clear_caches()
+    List sub-definitions (e.g., methods in class).
 
-
-def _clear_caches_after_call(func):
+    :type scope: Scope
+    :rtype: list of Definition
     """
-    Clear caches just before returning a value.
-    """
-    @functools.wraps(func)
-    def wrapper(*args, **kwds):
-        result = func(*args, **kwds)
-        clear_caches()
-        return result
-    return wrapper
+    pair = next(get_names_of_scope(evaluator, scope, star_search=False,
+                                   include_builtin=False), None)
+    names = pair[1] if pair else []
+    return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class BaseDefinition(object):
@@ -413,7 +405,7 @@ class Completion(BaseDefinition):
             return [self]
 
         defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
-        clear_caches()
+        cache.clear_caches()
         return defs
 
     def __repr__(self):
@@ -542,19 +534,6 @@ class Definition(BaseDefinition):
         if isinstance(d, pr.Name):
             d = d.parent
         return defined_names(self._evaluator, d)
-
-
-def defined_names(evaluator, scope):
-    """
-    List sub-definitions (e.g., methods in class).
-
-    :type scope: Scope
-    :rtype: list of Definition
-    """
-    pair = next(get_names_of_scope(evaluator, scope, star_search=False,
-                                   include_builtin=False), None)
-    names = pair[1] if pair else []
-    return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class CallDef(object):

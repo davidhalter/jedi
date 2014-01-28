@@ -84,7 +84,7 @@ class Script(object):
             raise ValueError('`column` parameter is not in a valid range.')
         self._pos = line, column
 
-        classes.clear_caches()
+        cache.clear_caches()
         debug.reset_time()
         self.source = common.source_to_unicode(source, encoding)
         self._user_context = UserContext(self.source, self._pos)
