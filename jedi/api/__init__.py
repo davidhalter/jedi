@@ -210,10 +210,7 @@ class Script(object):
         """
         debug.dbg('start: %s in %s', goto_path, self._parser.user_scope())
 
-        if is_completion:
-            user_stmt = self._parser.user_stmt_with_whitespace()
-        else:
-            user_stmt = self._parser.user_stmt()
+        user_stmt = self._parser.user_stmt_with_whitespace()
         if not user_stmt and len(goto_path.split('\n')) > 1:
             # If the user_stmt is not defined and the goto_path is multi line,
             # something's strange. Most probably the backwards tokenizer
@@ -320,6 +317,7 @@ class Script(object):
                     scopes.update(resolve_import_paths(set(s.follow())))
             return scopes
 
+        user_stmt = self._parser.user_stmt_with_whitespace()
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
         definitions = set()
@@ -328,7 +326,6 @@ class Script(object):
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                user_stmt = self._parser.user_stmt_with_whitespace()
                 (call, _) = helpers.func_call_and_param_index(user_stmt, self._pos)
                 if call is not None:
                     while call.next is not None:
