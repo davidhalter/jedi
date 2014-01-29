@@ -84,15 +84,15 @@ Class inheritance diagram:
 
 .. _evaluate:
 
-Evaluation of python code (evaluate.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Evaluation of python code (evaluate/__init__.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: evaluate
 
-Evaluation Representation (evaluate_representation.py)
+Evaluation Representation (evaluate/representation.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: evaluate_representation
+.. automodule:: evaluate.representation
 
 .. inheritance-diagram::
    Executable
@@ -100,9 +100,7 @@ Evaluation Representation (evaluate_representation.py)
    InstanceElement
    Class
    Function
-   Execution
-   Generator
-   Array
+   FunctionExecution
    :parts: 1
 
 .. _dev-api:
@@ -139,7 +137,7 @@ without some features.
 Dynamic Arrays & Function Parameters (dynamic.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: dynamic
+.. automodule:: evaluate.dynamic
 
 
 .. _fast_parser:
@@ -154,7 +152,7 @@ Fast Parser (parser/fast.py)
 Docstrings (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: docstrings
+.. automodule:: evaluate.docstrings
 
 .. _refactoring:
 
@@ -162,7 +160,6 @@ Refactoring (refactoring.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: refactoring
-
 
 
 .. _imports-modules:
@@ -175,26 +172,21 @@ Imports & Modules
 - :ref:`Builtin Modules <builtin>`
 - :ref:`Imports <imports>`
 
-.. _modules:
-
-Modules (modules.py)
-~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: modules
 
 .. _builtin:
 
-Builtin Modules (builtin.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Compiled Modules (compiled.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: builtin
+.. automodule:: evaluate.compiled
 
 .. _imports:
+
 
 Imports (imports.py)
 ~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: imports
+.. automodule:: evaluate.imports
 
 
 
@@ -219,7 +211,7 @@ Caching (cache.py)
 Recursions (recursion.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: recursion
+.. automodule:: evaluate.recursion
 
 
 

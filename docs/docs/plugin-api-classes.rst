@@ -5,6 +5,6 @@
 API Return Classes
 ------------------
 
-.. automodule:: api_classes
+.. automodule:: api.classes
     :members:
     :undoc-members:
