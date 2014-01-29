@@ -33,7 +33,7 @@ def test_dont_break_imports_without_namespaces():
     assert parser.module.has_explicit_absolute_import
 
 
-@helpers.cwd_at("test/absolute_import")
+@helpers.cwd_at("test/test_evaluate/absolute_import")
 def test_can_complete_when_shadowing():
     script = jedi.Script(path="unittest.py")
     assert script.completions()
