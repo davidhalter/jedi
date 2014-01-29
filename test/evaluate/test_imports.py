@@ -12,7 +12,7 @@ def test_find_module_py33():
     assert find_module_py33('_io') == (None, '_io', False)
 
 
-@cwd_at('test/not_in_sys_path/pkg')
+@cwd_at('test/evaluate/not_in_sys_path/pkg')
 def test_import_not_in_sys_path():
     """
     non-direct imports (not in sys.path)
