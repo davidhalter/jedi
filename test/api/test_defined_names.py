@@ -5,7 +5,7 @@ Tests for `api.defined_names`.
 import textwrap
 
 from jedi import api
-from .helpers import TestCase
+from ..helpers import TestCase
 
 
 class TestDefinedNames(TestCase):

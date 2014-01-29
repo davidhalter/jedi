@@ -5,6 +5,7 @@ All character set and unicode related tests.
 from jedi import Script
 from jedi._compatibility import utf8, unicode
 
+
 def test_unicode_script():
     """ normally no unicode objects are being used. (<=2.7) """
     s = unicode("import datetime; datetime.timedelta")
@@ -22,6 +23,7 @@ def test_unicode_script():
     completions = Script(s).completions()
     assert type(completions[0].description) is unicode
 
+
 def test_unicode_attribute():
     """ github jedi-vim issue #94 """
     s1 = utf8('#-*- coding: utf-8 -*-\nclass Person():\n'
@@ -33,6 +35,7 @@ def test_unicode_attribute():
     completions2 = Script(s2).completions()
     assert 'strip' in [c.name for c in completions2]
 
+
 def test_multibyte_script():
     """ `jedi.Script` must accept multi-byte string source. """
     try:
@@ -43,4 +46,3 @@ def test_multibyte_script():
         pass  # python 3 has no unicode method
     else:
         assert len(Script(s, 1, len(code)).completions())
-

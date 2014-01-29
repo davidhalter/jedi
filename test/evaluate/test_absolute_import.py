@@ -4,7 +4,7 @@ Python 2.X)
 """
 import jedi
 from jedi.parser import Parser
-from . import helpers
+from .. import helpers
 
 
 def test_explicit_absolute_imports():

@@ -3,7 +3,7 @@ Testing of docstring related issues and especially ``jedi.docstrings``.
 """
 
 import jedi
-from .helpers import unittest
+from ..helpers import unittest
 
 
 class TestDocstring(unittest.TestCase):

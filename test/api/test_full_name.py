@@ -18,7 +18,7 @@ import textwrap
 import jedi
 from jedi.api import classes
 from jedi.evaluate import Evaluator
-from .helpers import TestCase
+from ..helpers import TestCase
 
 
 class MixinTestFullName(object):

@@ -1,6 +1,6 @@
 import textwrap
 
-from .helpers import TestCase
+from ..helpers import TestCase
 from jedi import Script
 
 

@@ -2,6 +2,7 @@ import jedi
 import sys
 from os.path import dirname, join
 
+
 def test_namespace_package():
     sys.path.insert(0, join(dirname(__file__), 'namespace_package/ns1'))
     sys.path.insert(1, join(dirname(__file__), 'namespace_package/ns2'))
@@ -46,7 +47,6 @@ def test_namespace_package():
                     completion = c
             solution = "statement: foo = '%s'" % solution
             assert completion.description == solution
-
 
     finally:
         sys.path.pop(0)

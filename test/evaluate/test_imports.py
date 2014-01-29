@@ -2,7 +2,7 @@ import pytest
 
 import jedi
 from jedi._compatibility import find_module_py33
-from .helpers import cwd_at
+from ..helpers import cwd_at
 
 
 @pytest.mark.skipif('sys.version_info < (3,3)')
