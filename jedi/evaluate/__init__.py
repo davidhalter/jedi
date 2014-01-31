@@ -82,6 +82,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import stdlib
 from jedi.evaluate import finder
 from jedi.evaluate import compiled
+from jedi.evaluate import precedence
 
 
 class Evaluator(object):
@@ -138,25 +139,11 @@ class Evaluator(object):
         It is used to evaluate a two dimensional object, that has calls, arrays and
         operators in it.
         """
-        def evaluate_list_comprehension(lc, parent=None):
-            input = lc.input
-            nested_lc = lc.input.token_list[0]
-            if isinstance(nested_lc, pr.ListComprehension):
-                # is nested LC
-                input = nested_lc.stmt
-            module = input.get_parent_until()
-            # create a for loop, which does the same as list comprehensions
-            loop = pr.ForFlow(module, [input], lc.stmt.start_pos, lc.middle, True)
-
-            loop.parent = parent or lc.get_parent_until(pr.IsScope)
-
-            if isinstance(nested_lc, pr.ListComprehension):
-                loop = evaluate_list_comprehension(nested_lc, loop)
-            return loop
-
         debug.dbg('eval_expression_list: %s', expression_list)
         result = []
         calls_iterator = iter(expression_list)
+        if len(expression_list) > 1:
+            print expression_list
         for call in calls_iterator:
             if pr.Array.is_type(call, pr.Array.NOARRAY):
                 r = list(itertools.chain.from_iterable(self.eval_statement(s)
@@ -166,7 +153,7 @@ class Evaluator(object):
                 result += self.follow_path(call_path, r, call.parent,
                                            position=call.start_pos)
             elif isinstance(call, pr.ListComprehension):
-                loop = evaluate_list_comprehension(call)
+                loop = _evaluate_list_comprehension(call)
                 # Caveat: parents are being changed, but this doesn't matter,
                 # because nothing else uses it.
                 call.stmt.parent = loop
@@ -374,3 +361,20 @@ def filter_private_variable(scope, call_scope, var_name):
                 if s != scope.base.base:
                     return True
     return False
+
+
+def _evaluate_list_comprehension(lc, parent=None):
+    input = lc.input
+    nested_lc = lc.input.token_list[0]
+    if isinstance(nested_lc, pr.ListComprehension):
+        # is nested LC
+        input = nested_lc.stmt
+    module = input.get_parent_until()
+    # create a for loop, which does the same as list comprehensions
+    loop = pr.ForFlow(module, [input], lc.stmt.start_pos, lc.middle, True)
+
+    loop.parent = parent or lc.get_parent_until(pr.IsScope)
+
+    if isinstance(nested_lc, pr.ListComprehension):
+        loop = _evaluate_list_comprehension(nested_lc, loop)
+    return loop
