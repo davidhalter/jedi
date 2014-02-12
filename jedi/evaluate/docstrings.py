@@ -36,7 +36,12 @@ REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 def follow_param(evaluator, param):
     func = param.parent_function
     # print func, param, param.parent_function
-    param_str = _search_param_in_docstr(func.docstr, str(param.get_name()))
+    if not func.docstr:
+        return []
+    param_str = _search_param_in_docstr(
+        func.docstr.as_string(),
+        str(param.get_name())
+    )
     position = (1, 0)
 
     if param_str is not None:
@@ -112,7 +117,9 @@ def find_return_types(evaluator, func):
             if match:
                 return match.group(1)
 
-    type_str = search_return_in_docstr(func.docstr)
+    if not func.docstr:
+        return []
+    type_str = search_return_in_docstr(func.docstr.as_string())
     if not type_str:
         return []
 
