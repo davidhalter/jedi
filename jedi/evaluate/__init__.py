@@ -142,8 +142,6 @@ class Evaluator(object):
         debug.dbg('eval_expression_list: %s', expression_list)
         result = []
         calls_iterator = iter(expression_list)
-        if len(expression_list) > 1:
-            print expression_list
         for call in calls_iterator:
             if pr.Array.is_type(call, pr.Array.NOARRAY):
                 r = list(itertools.chain.from_iterable(self.eval_statement(s)

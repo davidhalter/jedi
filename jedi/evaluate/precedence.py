@@ -3,6 +3,8 @@ Handles operator precedence.
 """
 
 from jedi.parser import representation as pr
+from jedi import debug
+from jedi.common import PushBackIterator
 
 
 class PythonGrammar(object):
@@ -44,14 +46,49 @@ class PythonGrammar(object):
 
 
 class Precedence(object):
-    def __init__(self, left, operator, right=None):
+    def __init__(self, left, operator, right):
         self.left = left
         self.operator = operator
         self.right = right
 
 
-def create_precedence(expression_list, previous=None):
-    element = next(expression_list, None)
+def create_precedence(expression_list):
+    def get_op(current, expression_list):
+        for element in expression_list:
+            return
+            if not isinstance(obj, str):
+                debug.warning('normal element in place of operator: %s', element)
+                continue
+
+    def is_operator(obj):
+        if isinstance(obj, pr.Call):
+            element = str(obj.name)
+        for term in PythonGrammar.order:
+            pass
+        return element
+
+    def tokenize():
+        pass
+
+    new
+    current = None
+    exp_iterator = PushBackIterator(expression_list)
+    for element in expression_list:
+        op_name = element
+        if isinstance(element, pr.Call):
+            op_name = str(element.name)
+        current = s
+        if isinstance(element, pr.Call):
+            x = str(element.name)
+        new = _process_element(element, expression_list)
+        if current is None:
+            current = new
+        else:
+            current = _process_element(element, expression_list)
+    return current
+
+
+def _process_element(element, expression_list, previous=None):
     if element is None:
         return previous
 
@@ -60,11 +97,11 @@ def create_precedence(expression_list, previous=None):
     elif not isinstance(element, str):
         if previous is None:
             previous = element
-        return create_precedence(expression_list, previous=previous)
+        return _process_element(expression_list, previous=previous)
 
     for term in PythonGrammar.order:
         if element in term:
-            right = create_precedence(expression_list)
+            right = _process_element(expression_list)
             if right is None:
                 return previous
             else:
