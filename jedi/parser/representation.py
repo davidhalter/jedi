@@ -179,6 +179,9 @@ class Scope(Simple, IsScope):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
+    __slots__ = ('subscopes', 'imports', 'statements', 'docstr', 'asserts',
+                 'returns', 'is_generator')
+
     def __init__(self, module, start_pos):
         super(Scope, self).__init__(module, start_pos)
         self.subscopes = []
@@ -362,6 +365,9 @@ class SubModule(Scope, Module):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
+    __slots__ = ('path', 'global_vars', 'used_names', 'temp_used_names',
+                 'line_offset', 'use_as_parent')
+
     def __init__(self, path, start_pos=(1, 0), top_module=None):
         """
         Initialize :class:`SubModule`.
@@ -441,6 +447,8 @@ class Class(Scope):
     :param start_pos: The start position (line, column) of the class.
     :type start_pos: tuple(int, int)
     """
+    __slots__ = ('name', 'supers', 'decorators')
+
     def __init__(self, module, name, supers, start_pos):
         super(Class, self).__init__(module, start_pos)
         self.name = name
@@ -491,6 +499,8 @@ class Function(Scope):
     :param start_pos: The start position (line, column) the Function.
     :type start_pos: tuple(int, int)
     """
+    __slots__ = ('name', 'params', 'decorators', 'listeners', 'annotation')
+
     def __init__(self, module, name, params, start_pos, annotation):
         super(Function, self).__init__(module, start_pos)
         self.name = name
@@ -505,7 +515,7 @@ class Function(Scope):
 
         if annotation is not None:
             annotation.parent = self.use_as_parent
-            self.annotation = annotation
+        self.annotation = annotation
 
     def get_code(self, first_indent=False, indention='    '):
         string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
@@ -602,6 +612,8 @@ class Flow(Scope):
     :param start_pos: Position (line, column) of the Flow statement.
     :type start_pos: tuple(int, int)
     """
+    __slots__ = ('next', 'command', '_parent', 'inputs', 'set_vars')
+
     def __init__(self, module, command, inputs, start_pos):
         self.next = None
         self.command = command
@@ -1212,6 +1224,8 @@ class Param(Statement):
 
 
 class StatementElement(Simple):
+    __slots__ = ('parent', 'next', 'execution')
+
     def __init__(self, module, start_pos, end_pos, parent):
         super(StatementElement, self).__init__(module, start_pos, end_pos)
 
@@ -1266,6 +1280,8 @@ class StatementElement(Simple):
 
 
 class Call(StatementElement):
+    __slots__ = ('name',)
+
     def __init__(self, module, name, start_pos, end_pos, parent=None):
         super(Call, self).__init__(module, start_pos, end_pos, parent)
         self.name = name
@@ -1278,6 +1294,8 @@ class Call(StatementElement):
 
 
 class Literal(StatementElement):
+    __slots__ = ('literal', 'value')
+
     def __init__(self, module, literal, start_pos, end_pos, parent=None):
         super(Literal, self).__init__(module, start_pos, end_pos, parent)
         self.literal = literal
@@ -1305,6 +1323,7 @@ class Array(StatementElement):
         below.
     :type array_type: int
     """
+    __slots__ = ('type', 'end_pos', 'values', 'keys')
     NOARRAY = None  # just brackets, like `1 * (3 + 2)`
     TUPLE = 'tuple'
     LIST = 'list'
