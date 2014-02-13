@@ -49,14 +49,14 @@ from jedi.parser import token as token_pr
 SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
 
 
-
 class GetCodeState(object):
     """A helper class for passing the state of get_code in a thread-safe
     manner"""
-    __slots__ = ("last_pos")
+    __slots__ = ("last_pos",)
 
     def __init__(self):
         self.last_pos = (0, 0)
+
 
 class Base(object):
     """
@@ -1474,3 +1474,19 @@ class ListComprehension(Base):
         statements = self.stmt, self.middle, self.input
         code = [s.get_code().replace('\n', '') for s in statements]
         return "%s for %s in %s" % tuple(code)
+
+
+class Operator():
+    __slots__ = ('operator', '_line', '_column')
+
+    def __init__(self, operator, start_pos):
+        self.operator = operator
+        self._line = start_pos[0]
+        self._column = start_pos[1]
+
+    @property
+    def start_pos(self):
+        return self._column, self._line
+
+    def get_code(self):
+        return self.operator

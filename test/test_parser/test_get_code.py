@@ -1,5 +1,8 @@
-import jedi.parser as parser
 import difflib
+
+import pytest
+
+import jedi.parser as parser
 
 code_basic_features = '''
 """A mod docstring"""
@@ -36,11 +39,19 @@ def diff_code_assert(a, b, n=4):
     pass
 
 
+@pytest.mark.skipif('True', reason='Refactor a few parser things first.')
 def test_basic_parsing():
     """Validate the parsing features"""
 
     prs = parser.Parser(code_basic_features)
-#    diff_code_assert(
-#        code_basic_features,
-#        prs.top_module.get_code2()
-#    )
+    diff_code_assert(
+        code_basic_features,
+        prs.module.get_code2()
+    )
+
+
+@pytest.mark.skipif('True', reason='Not yet working.')
+def test_operators():
+    src = '5  * 3'
+    prs = parser.Parser(src)
+    diff_code_assert(src, prs.module.get_code())

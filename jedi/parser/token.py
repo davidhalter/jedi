@@ -76,7 +76,7 @@ class Token(object):
     # Backward compatibility
     def __getitem__(self, key):
         # Builds the same structure as tuple used to have
-        if key   == 0:
+        if key == 0:
             return self.token_type
         elif key == 1:
             return self.token
