@@ -538,7 +538,7 @@ class Function(Scope):
 
         :rtype: str
         """
-        l = (funcname or self.name.names[-1]) + '('
+        l = str(funcname or self.name.names[-1]) + '('
         lines = []
         for (i, p) in enumerate(self.params):
             code = p.get_code(False)
@@ -1386,31 +1386,45 @@ class Array(StatementElement):
         return "<%s: %s%s>" % (type(self).__name__, typ, self.values)
 
 
-class NamePart(str):
+class NamePart(object):
     """
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
     """
     # Unfortunately there's no way to use slots for str (non-zero __itemsize__)
     # -> http://utcc.utoronto.ca/~cks/space/blog/python/IntSlotsPython3k
-    #__slots__ = ('_start_pos', 'parent')
-    def __new__(cls, s, parent, start_pos):
-        self = super(NamePart, cls).__new__(cls, s)
-        self._start_pos = start_pos
+    # Therefore don't subclass `str`.
+    __slots__ = ('parent', 'string', '_line', '_column')
+
+    def __init__(self, string, parent, start_pos):
+        if isinstance(string, NamePart):
+            # may happen, because this class used to be a `str`.
+            string = string.string
+        self.string = string
         self.parent = parent
-        return self
+        self._line = start_pos[0]
+        self._column = start_pos[1]
+
+    def __str__(self):
+        return self.string
+
+    def __repr__(self):
+        return "<%s: %s>" % (type(self).__name__, self.string)
+
+    def __eq__(self, other):
+        return self.string == other
+
+    def __hash__(self):
+        return hash(self.string)
 
     @property
     def start_pos(self):
         offset = self.parent._sub_module.line_offset
-        return offset + self._start_pos[0], self._start_pos[1]
+        return offset + self._line, self._column
 
     @property
     def end_pos(self):
-        return self.start_pos[0], self.start_pos[1] + len(self)
-
-    def __getnewargs__(self):
-        return str(self), self.parent, self._start_pos
+        return self.start_pos[0], self.start_pos[1] + len(self.string)
 
 
 class Name(Simple):
@@ -1431,7 +1445,7 @@ class Name(Simple):
 
     def get_code(self):
         """ Returns the names in a full string format """
-        return ".".join(self.names)
+        return ".".join(str(n) for n in self.names)
 
     @property
     def docstr(self):

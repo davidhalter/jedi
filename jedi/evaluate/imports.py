@@ -63,6 +63,7 @@ class ImportPath(pr.Base):
                 self.import_path.append(import_stmt.namespace.names[0])
             else:
                 self.import_path += import_stmt.namespace.names
+        self.import_path = [str(name_part) for name_part in self.import_path]
 
         for i in range(kill_count + int(is_like_search)):
             self.import_path.pop()

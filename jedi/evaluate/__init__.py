@@ -348,6 +348,7 @@ class Evaluator(object):
 
 def filter_private_variable(scope, call_scope, var_name):
     """private variables begin with a double underline `__`"""
+    var_name = str(var_name)  # var_name could be a NamePart
     if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
             and var_name.startswith('__') and not var_name.endswith('__'):
         s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.CompiledObject))

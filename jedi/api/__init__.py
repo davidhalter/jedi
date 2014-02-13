@@ -148,7 +148,7 @@ class Script(object):
         comps = []
         comp_dct = {}
         for c, s in set(completions):
-            n = c.names[-1]
+            n = str(c.names[-1])
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):

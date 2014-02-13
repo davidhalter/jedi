@@ -323,7 +323,7 @@ class Completion(BaseDefinition):
         if isinstance(self._base, pr.Param):
             append += '='
 
-        name = self._name.names[-1]
+        name = str(self._name.names[-1])
         if like_name:
             name = name[self._like_name_length:]
         return dot + name + append

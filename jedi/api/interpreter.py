@@ -44,14 +44,14 @@ class LazyName(helpers.FakeName):
         else:
             try:
                 o = obj.__objclass__
-                parser_path.append(pr.NamePart(obj.__name__, None, None))
+                parser_path.append(pr.NamePart(obj.__name__, None, (None, None)))
                 obj = o
             except AttributeError:
                 pass
 
             try:
                 module_name = obj.__module__
-                parser_path.insert(0, pr.NamePart(obj.__name__, None, None))
+                parser_path.insert(0, pr.NamePart(obj.__name__, None, (None, None)))
             except AttributeError:
                 # Unfortunately in some cases like `int` there's no __module__
                 module = builtins
