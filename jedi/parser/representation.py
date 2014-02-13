@@ -759,7 +759,7 @@ class Import(Simple):
             return [self.alias]
         if len(self.namespace) > 1:
             o = self.namespace
-            n = Name(self._sub_module, [(o.names[0], o.start_pos)],
+            n = Name(self._sub_module, [(o.names[0].string, o.start_pos)],
                      o.start_pos, o.end_pos, parent=o.parent)
             return [n]
         else:
@@ -1397,9 +1397,6 @@ class NamePart(object):
     __slots__ = ('parent', 'string', '_line', '_column')
 
     def __init__(self, string, parent, start_pos):
-        if isinstance(string, NamePart):
-            # may happen, because this class used to be a `str`.
-            string = string.string
         self.string = string
         self.parent = parent
         self._line = start_pos[0]
