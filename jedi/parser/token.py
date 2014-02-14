@@ -40,9 +40,7 @@ class Token(object):
     >>> unicode(Token(1, utf8("😷"), 1 ,1)) + "p" == utf8("😷p")
     True
     """
-    __slots__ = [
-        "_token_type", "_token", "_start_pos_line", "_start_pos_col"
-    ]
+    __slots__ = ("_token_type", "_token", "_start_pos_line", "_start_pos_col")
 
     @classmethod
     def from_tuple(cls, tp):
@@ -51,10 +49,10 @@ class Token(object):
     def __init__(
         self, token_type, token, start_pos_line, start_pos_col
     ):
-        self._token_type     = token_type
-        self._token          = token
+        self._token_type = token_type
+        self._token = token
         self._start_pos_line = start_pos_line
-        self._start_pos_col  = start_pos_col
+        self._start_pos_col = start_pos_col
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, tuple(self))
@@ -108,15 +106,15 @@ class Token(object):
     @property
     def end_pos(self):
         """Returns end position respecting multiline tokens."""
-        end_pos_line     = self.start_pos_line
-        lines            = unicode(self).split('\n')
-        end_pos_line    += len(lines) - 1
-        end_pos_col      = self.start_pos_col
+        end_pos_line = self.start_pos_line
+        lines = unicode(self).split('\n')
+        end_pos_line += len(lines) - 1
+        end_pos_col = self.start_pos_col
         # Check for multiline token
         if self.start_pos_line == end_pos_line:
             end_pos_col += len(lines[-1])
         else:
-            end_pos_col  = len(lines[-1])
+            end_pos_col = len(lines[-1])
         return (end_pos_line, end_pos_col)
 
     # Make cache footprint smaller for faster unpickling
@@ -129,13 +127,15 @@ class Token(object):
         )
 
     def __setstate__(self, state):
-        self._token_type     = state[0]
-        self._token          = state[1]
+        self._token_type = state[0]
+        self._token = state[1]
         self._start_pos_line = state[2]
-        self._start_pos_col  = state[3]
+        self._start_pos_col = state[3]
 
 
 class TokenNoCompat(Token):
+    __slots__ = ()
+
     def __unicode__(self):
         raise NotImplementedError("Compatibility only for basic token.")
 
@@ -151,6 +151,8 @@ class TokenDocstring(TokenNoCompat):
 
     as_string() will clean the token representing the docstring.
     """
+    __slots__ = ()
+
     def __init__(self, token=None, state=None):
         if token:
             self.__setstate__(token.__getstate__())

@@ -14,7 +14,10 @@ http://svn.wxwidgets.org/viewvc/wx/wxPython/trunk/src/gtk/_core.py?view=markup
 import resource
 import time
 import sys
-import urllib2
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
 import gc
 from os.path import abspath, dirname
 
