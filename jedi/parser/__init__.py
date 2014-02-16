@@ -58,6 +58,12 @@ class Parser(object):
             # StopIteration needs to be added as well, because python 2 has a
             # strange way of handling StopIterations.
             # sometimes StopIteration isn't catched. Just ignore it.
+
+            # on finish, set end_pos correctly
+            s = self._scope
+            while s is not None:
+                s.end_pos = self.end_pos
+                s = s.parent
             pass
 
         # clean up unused decorators
@@ -403,15 +409,6 @@ class Parser(object):
                 if typ not in (tokenize.INDENT, tokenize.NEWLINE, tokenize.NL):
                     self.start_pos, self.end_pos = start_pos, end_pos
         except (StopIteration, common.MultiLevelStopIteration):
-            # on finish, set end_pos correctly
-            s = self._scope
-            while s is not None:
-                if isinstance(s, pr.Module) \
-                        and not isinstance(s, pr.SubModule):
-                    self.module.end_pos = self.end_pos
-                    break
-                s.end_pos = self.end_pos
-                s = s.parent
             raise
 
         self._current = typ, tok
