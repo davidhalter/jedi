@@ -65,7 +65,7 @@ class UserContext(object):
         force_point = False
         last_type = None
         try:
-            for token_type, tok, start, end, line in gen:
+            for token_type, tok, start, end in gen:
                 # print 'tok', token_type, tok, force_point
                 if last_type == token_type == tokenize.NAME:
                     string += ' '

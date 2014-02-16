@@ -29,7 +29,7 @@ tok_name[ENCODING] = 'ENCODING'
 N_TOKENS += 3
 
 
-class TokenInfo(collections.namedtuple('TokenInfo', 'type string start end line')):
+class TokenInfo(collections.namedtuple('TokenInfo', 'type string start end')):
     def __repr__(self):
         annotated_type = '%d (%s)' % (self.type, tok_name[self.type])
         return ('TokenInfo(type=%s, string=%r, start=%r, end=%r, line=%r)' %
@@ -169,13 +169,12 @@ def generate_tokens(readline):
             endmatch = endprog.match(line)
             if endmatch:
                 pos = end = endmatch.end(0)
-                yield TokenInfo(STRING, contstr + line[:end],
-                                strstart, (lnum, end), contline + line)
+                yield TokenInfo(STRING, contstr + line[:end], strstart, (lnum, end))
                 contstr, needcont = '', 0
                 contline = None
             elif needcont and line[-2:] != '\\\n' and line[-3:] != '\\\r\n':
                 yield TokenInfo(ERRORTOKEN, contstr + line,
-                                strstart, (lnum, len(line)), contline)
+                                strstart, (lnum, len(line)))
                 contstr = ''
                 contline = None
                 continue
@@ -206,21 +205,21 @@ def generate_tokens(readline):
                     comment_token = line[pos:].rstrip('\r\n')
                     nl_pos = pos + len(comment_token)
                     yield TokenInfo(COMMENT, comment_token,
-                                   (lnum, pos), (lnum, pos + len(comment_token)), line)
+                                   (lnum, pos), (lnum, pos + len(comment_token)))
                     yield TokenInfo(NL, line[nl_pos:],
-                                   (lnum, nl_pos), (lnum, len(line)), line)
+                                   (lnum, nl_pos), (lnum, len(line)))
                 else:
                     yield TokenInfo(
                         (NL, COMMENT)[line[pos] == '#'], line[pos:],
-                        (lnum, pos), (lnum, len(line)), line)
+                        (lnum, pos), (lnum, len(line)))
                 continue
 
             if column > indents[-1]:           # count indents or dedents
                 indents.append(column)
-                yield TokenInfo(INDENT, line[:pos], (lnum, 0), (lnum, pos), line)
+                yield TokenInfo(INDENT, line[:pos], (lnum, 0), (lnum, pos))
             while column < indents[-1]:
                 indents = indents[:-1]
-                yield TokenInfo(DEDENT, '', (lnum, pos), (lnum, pos), line)
+                yield TokenInfo(DEDENT, '', (lnum, pos), (lnum, pos))
 
         else:                                  # continued statement
             if not line:
@@ -237,20 +236,20 @@ def generate_tokens(readline):
 
                 if (initial in numchars or                  # ordinary number
                         (initial == '.' and token != '.' and token != '...')):
-                    yield TokenInfo(NUMBER, token, spos, epos, line)
+                    yield TokenInfo(NUMBER, token, spos, epos)
                 elif initial in '\r\n':
                     yield TokenInfo(NL if parenlev > 0 else NEWLINE,
-                                    token, spos, epos, line)
+                                    token, spos, epos)
                 elif initial == '#':
                     assert not token.endswith("\n")
-                    yield TokenInfo(COMMENT, token, spos, epos, line)
+                    yield TokenInfo(COMMENT, token, spos, epos)
                 elif token in triple_quoted:
                     endprog = endprogs[token]
                     endmatch = endprog.match(line, pos)
                     if endmatch:                           # all on one line
                         pos = endmatch.end(0)
                         token = line[start:pos]
-                        yield TokenInfo(STRING, token, spos, (lnum, pos), line)
+                        yield TokenInfo(STRING, token, spos, (lnum, pos))
                     else:
                         strstart = (lnum, start)           # multiple lines
                         contstr = line[start:]
@@ -267,9 +266,9 @@ def generate_tokens(readline):
                         contline = line
                         break
                     else:                                  # ordinary string
-                        yield TokenInfo(STRING, token, spos, epos, line)
+                        yield TokenInfo(STRING, token, spos, epos)
                 elif initial in namechars:                 # ordinary name
-                    yield TokenInfo(NAME, token, spos, epos, line)
+                    yield TokenInfo(NAME, token, spos, epos)
                 elif initial == '\\':                      # continued stmt
                     continued = 1
                 else:
@@ -277,15 +276,15 @@ def generate_tokens(readline):
                         parenlev += 1
                     elif initial in ')]}':
                         parenlev -= 1
-                    yield TokenInfo(OP, token, spos, epos, line)
+                    yield TokenInfo(OP, token, spos, epos)
             else:
                 yield TokenInfo(ERRORTOKEN, line[pos],
-                               (lnum, pos), (lnum, pos + 1), line)
+                               (lnum, pos), (lnum, pos + 1))
                 pos += 1
 
     for indent in indents[1:]:                 # pop remaining indent levels
-        yield TokenInfo(DEDENT, '', (lnum, 0), (lnum, 0), '')
-    yield TokenInfo(ENDMARKER, '', (lnum, 0), (lnum, 0), '')
+        yield TokenInfo(DEDENT, '', (lnum, 0), (lnum, 0))
+    yield TokenInfo(ENDMARKER, '', (lnum, 0), (lnum, 0))
 
 
 # From here on we have custom stuff (everything before was originally Python

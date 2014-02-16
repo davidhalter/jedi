@@ -401,15 +401,12 @@ class Parser(object):
 
     def __next__(self):
         """ Generate the next tokenize pattern. """
-        try:
-            typ, tok, start_pos, end_pos, self.parserline = next(self._gen)
-            # dedents shouldn't change positions
-            if typ != tokenize.DEDENT:
-                self.start_pos = start_pos
-                if typ not in (tokenize.INDENT, tokenize.NEWLINE, tokenize.NL):
-                    self.start_pos, self.end_pos = start_pos, end_pos
-        except (StopIteration, common.MultiLevelStopIteration):
-            raise
+        typ, tok, start_pos, end_pos = next(self._gen)
+        # dedents shouldn't change positions
+        if typ != tokenize.DEDENT:
+            self.start_pos = start_pos
+            if typ not in (tokenize.INDENT, tokenize.NEWLINE, tokenize.NL):
+                self.start_pos, self.end_pos = start_pos, end_pos
 
         self._current = typ, tok
         return self._current
