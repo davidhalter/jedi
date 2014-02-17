@@ -142,15 +142,14 @@ del _compile
 tabsize = 8
 
 
-def generate_tokens(readline, offset=(1, 0)):
-    lnum = offset[0] - 1
+def generate_tokens(readline, line_offset=0):
+    lnum = line_offset
     parenlev = 0
     continued = False
     numchars = '0123456789'
     contstr, needcont = '', 0
     contline = None
     indents = [0]
-    first_pass = True
 
     while True:             # loop over lines in stream
         try:
@@ -159,11 +158,7 @@ def generate_tokens(readline, offset=(1, 0)):
             line = b''
 
         lnum += 1
-        pos = 0
         pos, max = 0, len(line)
-        if first_pass is True:
-            pos = offset[1]
-            first_pass = False
 
         if contstr:                            # continued string
             if not line:
@@ -298,8 +293,7 @@ FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally']
 class NoErrorTokenizer(object):
     def __init__(self, readline, offset=(0, 0), is_fast_parser=False):
         self.readline = readline
-        self.gen = generate_tokens(readline)
-        self.offset = offset
+        self.gen = generate_tokens(readline, offset[0])
         self.closed = False
         self.is_first = True
         self.push_backs = []
@@ -329,7 +323,7 @@ class NoErrorTokenizer(object):
         self.last_previous = self.previous
         self.previous = self.current
         self.current = next(self.gen)
-        c = list(self.current)
+        c = self.current
 
         if c[0] == ENDMARKER:
             self.current = self.previous
@@ -339,15 +333,6 @@ class NoErrorTokenizer(object):
         # this is exactly the same check as in fast_parser, but this time with
         # tokenize and therefore precise.
         breaks = ['def', 'class', '@']
-
-        if self.is_first:
-            c[2] = self.offset[0] + c[2][0], self.offset[1] + c[2][1]
-            c[3] = self.offset[0] + c[3][0], self.offset[1] + c[3][1]
-            self.is_first = False
-        else:
-            c[2] = self.offset[0] + c[2][0], c[2][1]
-            c[3] = self.offset[0] + c[3][0], c[3][1]
-        self.current = c
 
         def close():
             if not self.first_stmt:
