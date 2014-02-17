@@ -142,16 +142,15 @@ del _compile
 tabsize = 8
 
 
-class TokenError(Exception):
-    pass
-
-
-def generate_tokens(readline):
-    lnum = parenlev = continued = 0
+def generate_tokens(readline, offset=(1, 0)):
+    lnum = offset[0] - 1
+    parenlev = 0
+    continued = False
     numchars = '0123456789'
     contstr, needcont = '', 0
     contline = None
     indents = [0]
+    first_pass = True
 
     while True:             # loop over lines in stream
         try:
@@ -160,7 +159,11 @@ def generate_tokens(readline):
             line = b''
 
         lnum += 1
+        pos = 0
         pos, max = 0, len(line)
+        if first_pass is True:
+            pos = offset[1]
+            first_pass = False
 
         if contstr:                            # continued string
             if not line:
@@ -204,10 +207,10 @@ def generate_tokens(readline):
                 if line[pos] == '#':
                     comment_token = line[pos:].rstrip('\r\n')
                     nl_pos = pos + len(comment_token)
-                    yield TokenInfo(COMMENT, comment_token,
-                                   (lnum, pos), (lnum, pos + len(comment_token)))
-                    yield TokenInfo(NL, line[nl_pos:],
-                                   (lnum, nl_pos), (lnum, len(line)))
+                    yield TokenInfo(COMMENT, comment_token, (lnum, pos),
+                                    (lnum, pos + len(comment_token)))
+                    yield TokenInfo(NL, line[nl_pos:], (lnum, nl_pos),
+                                    (lnum, len(line)))
                 else:
                     yield TokenInfo(
                         (NL, COMMENT)[line[pos] == '#'], line[pos:],
@@ -225,7 +228,7 @@ def generate_tokens(readline):
             if not line:
                 # basically a statement has not been finished here.
                 break
-            continued = 0
+            continued = False
 
         while pos < max:
             pseudomatch = pseudoprog.match(line, pos)
@@ -270,7 +273,7 @@ def generate_tokens(readline):
                 elif initial in namechars:                 # ordinary name
                     yield TokenInfo(NAME, token, spos, epos)
                 elif initial == '\\':                      # continued stmt
-                    continued = 1
+                    continued = True
                 else:
                     if initial in '([{':
                         parenlev += 1
