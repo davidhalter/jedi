@@ -1,14 +1,18 @@
 """
 Test completions from *.pyc files:
 
- - generated a dummy python module
+ - generate a dummy python module
  - compile the dummy module to generate a *.pyc
  - delete the pure python dummy module
  - try jedi on the generated *.pyc
 """
-import os
 import compileall
+import os
+import shutil
+import sys
+
 import jedi
+
 
 SRC = """class Foo:
     pass
@@ -23,6 +27,15 @@ def generate_pyc():
         f.write(SRC)
     compileall.compile_file("dummy.py")
     os.remove("dummy.py")
+
+    if sys.version_info[0] == 3:
+        # Python3 specific:
+        # To import pyc modules, we must move them out of the __pycache__
+        # directory and rename them to remove ".cpython-%s%d"
+        # see: http://stackoverflow.com/questions/11648440/python-does-not-detect-pyc-files
+        for f in os.listdir("__pycache__"):
+            dst = f.replace('.cpython-%s%s' % sys.version_info[:2], "")
+            shutil.copy(os.path.join("__pycache__", f), dst)
 
 
 def test_pyc():
