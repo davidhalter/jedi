@@ -362,9 +362,10 @@ class FastParser(use_metaclass(CachedFastParser)):
             if nodes[index].code != code:
                 raise ValueError()
         except ValueError:
-            p = Parser(parser_code, self.module_path, offset=(line_offset, 0),
-                       is_fast_parser=True, top_module=self.module,
-                       no_docstr=no_docstr)
+            tokenizer = tokenize.NoErrorTokenizer(parser_code, line_offset, True)
+            p = Parser(parser_code, self.module_path, tokenizer=tokenizer,
+                       top_module=self.module, no_docstr=no_docstr,
+                       is_fast=True, offset=line_offset)
             p.module.parent = self.module
         else:
             if nodes[index] != self.current_node:

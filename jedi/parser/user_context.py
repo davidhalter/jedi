@@ -1,6 +1,5 @@
 import re
 import os
-import sys
 
 from jedi import cache
 from jedi.parser import tokenize
@@ -64,45 +63,42 @@ class UserContext(object):
         level = 0
         force_point = False
         last_type = None
-        try:
-            for token_type, tok, start, end in gen:
-                # print 'tok', token_type, tok, force_point
-                if last_type == token_type == tokenize.NAME:
-                    string += ' '
+        for token_type, tok, start, end in gen:
+            # print 'tok', token_type, tok, force_point
+            if last_type == token_type == tokenize.NAME:
+                string += ' '
 
-                if level > 0:
-                    if tok in close_brackets:
-                        level += 1
-                    if tok in open_brackets:
-                        level -= 1
-                elif tok == '.':
-                    force_point = False
-                elif force_point:
-                    # it is reversed, therefore a number is getting recognized
-                    # as a floating point number
-                    if token_type == tokenize.NUMBER and tok[0] == '.':
-                        force_point = False
-                    else:
-                        break
-                elif tok in close_brackets:
+            if level > 0:
+                if tok in close_brackets:
                     level += 1
-                elif token_type in [tokenize.NAME, tokenize.STRING]:
-                    force_point = True
-                elif token_type == tokenize.NUMBER:
-                    pass
+                if tok in open_brackets:
+                    level -= 1
+            elif tok == '.':
+                force_point = False
+            elif force_point:
+                # it is reversed, therefore a number is getting recognized
+                # as a floating point number
+                if token_type == tokenize.NUMBER and tok[0] == '.':
+                    force_point = False
                 else:
-                    self._column_temp = self._line_length - end[1]
                     break
-
-                x = start_pos[0] - end[0] + 1
-                l = self.get_line(x)
-                l = self._first_line if x == start_pos[0] else l
-                start_cursor = x, len(l) - end[1]
+            elif tok in close_brackets:
+                level += 1
+            elif token_type in [tokenize.NAME, tokenize.STRING]:
+                force_point = True
+            elif token_type == tokenize.NUMBER:
+                pass
+            else:
                 self._column_temp = self._line_length - end[1]
-                string += tok
-                last_type = token_type
-        except tokenize.TokenError:
-            debug.warning("Tokenize couldn't finish: %s", sys.exc_info)
+                break
+
+            x = start_pos[0] - end[0] + 1
+            l = self.get_line(x)
+            l = self._first_line if x == start_pos[0] else l
+            start_cursor = x, len(l) - end[1]
+            self._column_temp = self._line_length - end[1]
+            string += tok
+            last_type = token_type
 
         # string can still contain spaces at the end
         return string[::-1].strip(), start_cursor
@@ -215,9 +211,9 @@ class UserContextParser(object):
             # or `abs( ` where the cursor is out in the whitespace.
             if self._user_context.get_path_under_cursor():
                 # We really should have a user_stmt, but the parser couldn't
-                # process it - probably a Syntax Error.
-                debug.warning('Something is probably wrong with the syntax under the cursor.')
-                return None
+                # process it - probably a Syntax Error (or in a comment).
+                debug.warning('No statement under the cursor.')
+                return
             pos = next(self._user_context.get_context(yield_positions=True))
             user_stmt = self.module().get_statement_for_position(pos, include_imports=True)
         return user_stmt

@@ -15,6 +15,7 @@ from itertools import chain
 
 from jedi._compatibility import next, unicode, builtins
 from jedi.parser import Parser
+from jedi.parser.tokenize import source_tokens, NoErrorTokenizer
 from jedi.parser import representation as pr
 from jedi.parser.user_context import UserContext, UserContextParser
 from jedi import debug
@@ -227,8 +228,9 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        offset = self._pos[0] - 1, self._pos[1]
-        r = Parser(cursor_txt, no_docstr=True, offset=offset)
+        tokenizer = source_tokens(cursor_txt, self._pos[0] - 1)
+        tokenizer = NoErrorTokenizer(cursor_txt, self._pos[0] - 1)
+        r = Parser(cursor_txt, no_docstr=True, tokenizer=tokenizer)
         try:
             stmt = r.module.statements[0]
         except IndexError:

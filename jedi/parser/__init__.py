@@ -17,7 +17,7 @@ complexity of the ``Parser`` (there's another parser sitting inside
 """
 import keyword
 
-from jedi._compatibility import next, StringIO
+from jedi._compatibility import next
 from jedi import debug
 from jedi import common
 from jedi.parser import representation as pr
@@ -35,23 +35,21 @@ class Parser(object):
     :param module_path: The path of the module in the file system, may be None.
     :type module_path: str
     :param no_docstr: If True, a string at the beginning is not a docstr.
-    :param is_fast_parser: -> for fast_parser
     :param top_module: Use this module as a parent instead of `self.module`.
     """
     def __init__(self, source, module_path=None, no_docstr=False,
-                 offset=(0, 0), is_fast_parser=None, top_module=None):
+                 tokenizer=None, top_module=None, offset=0, is_fast=False):
         self.no_docstr = no_docstr
 
-        self.start_pos = self.end_pos = 1 + offset[0], offset[1]
+        self.start_pos = self.end_pos = 1 + offset, 0
         # initialize global Scope
         self.module = pr.SubModule(module_path, self.start_pos, top_module)
         self._scope = self.module
         self._current = (None, None)
 
-        source = source + '\n'  # end with \n, because the parser needs it
-        buf = StringIO(source)
-        self._gen = tokenize.NoErrorTokenizer(buf.readline, offset, is_fast_parser)
-        self.top_module = top_module or self.module
+        self._gen = tokenizer or tokenize.NoErrorTokenizer(source)
+        self._gen = tokenize.NoErrorTokenizer(source, offset, is_fast)
+        self._top_module = top_module or self.module
         try:
             self._parse()
         except (common.MultiLevelStopIteration, StopIteration):
@@ -386,7 +384,7 @@ class Parser(object):
                           as_names=as_names,
                           names_are_set_vars=names_are_set_vars)
 
-        stmt.parent = self.top_module
+        stmt.parent = self._top_module
         self._check_user_stmt(stmt)
 
         if tok in always_break + not_first_break:
@@ -455,9 +453,10 @@ class Parser(object):
                         and not isinstance(self._scope, pr.SubModule):
                     self._scope = self.module
 
-            use_as_parent_scope = self.top_module if isinstance(
-                self._scope, pr.SubModule
-            ) else self._scope
+            if isinstance(self._scope, pr.SubModule):
+                use_as_parent_scope = self._top_module
+            else:
+                use_as_parent_scope = self._scope
             first_pos = self.start_pos
             if tok == 'def':
                 func = self._parse_function()
@@ -630,7 +629,7 @@ class Parser(object):
             else:
                 if token_type not in [tokenize.COMMENT, tokenize.INDENT,
                                       tokenize.NEWLINE, tokenize.NL]:
-                    debug.warning('token not classified %s %s %s', tok,
-                                  token_type, self.start_pos[0])
+                    debug.warning('Token not used: %s %s %s', tok,
+                                  tokenize.tok_name[token_type], self.start_pos)
                 continue
             self.no_docstr = False

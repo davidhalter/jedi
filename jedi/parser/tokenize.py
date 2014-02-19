@@ -11,6 +11,7 @@ from __future__ import absolute_import
 
 import string
 import re
+from jedi._compatibility import StringIO
 from token import *
 import collections
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
@@ -142,7 +143,14 @@ del _compile
 tabsize = 8
 
 
+def source_tokens(source, line_offset=0):
+    source = source + '\n'  # end with \n, because the parser needs it
+    readline = StringIO(source).readline
+    return generate_tokens(readline, line_offset)
+
+
 def generate_tokens(readline, line_offset=0):
+    """The original stdlib Python version with minor modifications"""
     lnum = line_offset
     parenlev = 0
     continued = False
@@ -291,9 +299,9 @@ FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally']
 
 
 class NoErrorTokenizer(object):
-    def __init__(self, readline, offset=(0, 0), is_fast_parser=False):
-        self.readline = readline
-        self.gen = generate_tokens(readline, offset[0])
+    def __init__(self, source, line_offset=0, is_fast_parser=False):
+        self.source = source
+        self.gen = source_tokens(source, line_offset)
         self.closed = False
         self.is_first = True
         self.push_backs = []
