@@ -9,7 +9,7 @@ import jedi
 from .helpers import cwd_at
 
 
-@cwd_at('extensions')
+@cwd_at('test/extensions')
 def test_compiled():
     if platform.architecture()[0] == '64bit':
         package_name = "compiled%s%s" % sys.version_info[:2]

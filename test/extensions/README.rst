@@ -1,5 +1,5 @@
-This directory contains extensions modules pre-compiled to be tested
-on Travis-CI (Ubuntu 12.04 64bit).
+This directory contains pre-compiled extensions modules used to test completions
+for compiled modules on Travis-CI (Ubuntu 12.04 64bit).
 
 To build the extensions modules, run::
 
