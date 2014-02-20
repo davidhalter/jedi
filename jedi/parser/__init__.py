@@ -71,11 +71,9 @@ class Parser(object):
             # because of `self.module.used_names`.
             d.parent = self.module
 
-        if self._current[0] in (tokenize.NL, tokenize.NEWLINE):
+        if self._current[0] in (tokenize.NEWLINE,):
             # we added a newline before, so we need to "remove" it again.
             self.end_pos = self._gen.previous[2]
-        elif self._current[0] == tokenize.INDENT:
-            self.end_pos = self._gen.last_previous[2]
 
         self.start_pos = self.module.start_pos
         self.module.end_pos = self.end_pos
@@ -403,7 +401,7 @@ class Parser(object):
         typ, tok, start_pos, end_pos = next(self._gen)
         # dedents shouldn't change positions
         self.start_pos = start_pos
-        if typ not in (tokenize.INDENT, tokenize.NEWLINE, tokenize.NL):
+        if typ not in (tokenize.INDENT, tokenize.NEWLINE):
             self.start_pos, self.end_pos = start_pos, end_pos
 
         self._current = typ, tok
@@ -619,7 +617,7 @@ class Parser(object):
                 self.freshscope = False
             else:
                 if token_type not in [tokenize.COMMENT, tokenize.INDENT,
-                                      tokenize.NEWLINE, tokenize.NL]:
+                                      tokenize.NEWLINE]:
                     debug.warning('Token not used: %s %s %s', tok,
                                   tokenize.tok_name[token_type], self.start_pos)
                 continue
@@ -655,7 +653,3 @@ class PushBackTokenizer(object):
     @property
     def previous(self):
         return self._tokenizer.previous
-
-    @property
-    def last_previous(self):
-        return self._tokenizer.last_previous

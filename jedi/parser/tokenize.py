@@ -23,8 +23,6 @@ namechars = string.ascii_letters + '_'
 
 COMMENT = N_TOKENS
 tok_name[COMMENT] = 'COMMENT'
-NL = N_TOKENS + 1
-tok_name[NL] = 'NL'
 ENCODING = N_TOKENS + 2
 tok_name[ENCODING] = 'ENCODING'
 N_TOKENS += 3
@@ -215,11 +213,11 @@ def generate_tokens(readline, line_offset=0):
                     nl_pos = pos + len(comment_token)
                     yield TokenInfo(COMMENT, comment_token, (lnum, pos),
                                     (lnum, pos + len(comment_token)))
-                    yield TokenInfo(NL, line[nl_pos:], (lnum, nl_pos),
+                    yield TokenInfo(NEWLINE, line[nl_pos:], (lnum, nl_pos),
                                     (lnum, len(line)))
                 else:
                     yield TokenInfo(
-                        (NL, COMMENT)[line[pos] == '#'], line[pos:],
+                        (NEWLINE, COMMENT)[line[pos] == '#'], line[pos:],
                         (lnum, pos), (lnum, len(line)))
                 continue
 
@@ -246,7 +244,7 @@ def generate_tokens(readline, line_offset=0):
                         (initial == '.' and token != '.' and token != '...')):
                     yield TokenInfo(NUMBER, token, spos, epos)
                 elif initial in '\r\n':
-                    yield TokenInfo(NL if parenlev > 0 else NEWLINE,
+                    yield TokenInfo(NEWLINE,
                                     token, spos, epos)
                 elif initial == '#':
                     assert not token.endswith("\n")
@@ -341,8 +339,8 @@ class NoErrorTokenizer(object):
                 raise common.MultiLevelStopIteration()
         # ignore indents/comments
         if self.is_fast_parser \
-                and self.previous[0] in (INDENT, NL, None, NEWLINE) \
-                and c[0] not in (COMMENT, INDENT, NL, NEWLINE):
+                and self.previous[0] in (INDENT, None, NEWLINE) \
+                and c[0] not in (COMMENT, INDENT, NEWLINE):
             # print c, tok_name[c[0]]
 
             tok = c[1]
