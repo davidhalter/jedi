@@ -165,17 +165,12 @@ def generate_tokens(readline, line_offset=0):
         except StopIteration:
             if contstr:
                 yield TokenInfo(ERRORTOKEN, contstr, strstart, (lnum, pos))
-                contstr, needcont = '', False
-                contline = None
-            line = b''
+            break
 
         lnum += 1
         pos, max = 0, len(line)
 
         if contstr:                            # continued string
-            if not line:
-                # multiline string has not been finished
-                break
             endmatch = endprog.match(line)
             if endmatch:
                 pos = end = endmatch.end(0)
@@ -195,8 +190,6 @@ def generate_tokens(readline, line_offset=0):
                 continue
 
         elif not continued:  # new statement
-            if not line:
-                break
             column = 0
             while pos < max:                   # measure leading whitespace
                 if line[pos] == ' ':
@@ -230,9 +223,6 @@ def generate_tokens(readline, line_offset=0):
                 indents = indents[:-1]
 
         else:                                  # continued statement
-            if not line:
-                # basically a statement has not been finished here.
-                break
             continued = False
 
         while pos < max:
