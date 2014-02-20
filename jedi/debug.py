@@ -33,22 +33,23 @@ enable_notice = False
 # callback, interface: level, str
 debug_function = None
 ignored_modules = ['jedi.evaluate.builtin', 'jedi.parser']
-debug_indent = -1
+_debug_indent = -1
+_start_time = time.time()
 
 
 def reset_time():
-    global start_time, debug_indent
-    start_time = time.time()
-    debug_indent = -1
+    global _start_time, _debug_indent
+    _start_time = time.time()
+    _debug_indent = -1
 
 
 def increase_indent(func):
     """Decorator for makin """
     def wrapper(*args, **kwargs):
-        global debug_indent
-        debug_indent += 1
+        global _debug_indent
+        _debug_indent += 1
         result = func(*args, **kwargs)
-        debug_indent -= 1
+        _debug_indent -= 1
         return result
     return wrapper
 
@@ -59,21 +60,21 @@ def dbg(message, *args):
         frm = inspect.stack()[1]
         mod = inspect.getmodule(frm[0])
         if not (mod.__name__ in ignored_modules):
-            i = ' ' * debug_indent
+            i = ' ' * _debug_indent
             debug_function(NOTICE, i + 'dbg: ' + message % args)
 
 
 def warning(message, *args):
     if debug_function and enable_warning:
-        i = ' ' * debug_indent
+        i = ' ' * _debug_indent
         debug_function(WARNING, i + 'warning: ' + message % args)
 
 
 def speed(name):
     if debug_function and enable_speed:
         now = time.time()
-        i = ' ' * debug_indent
-        debug_function(SPEED, i + 'speed: ' + '%s %s' % (name, now - start_time))
+        i = ' ' * _debug_indent
+        debug_function(SPEED, i + 'speed: ' + '%s %s' % (name, now - _start_time))
 
 
 def print_to_stdout(level, str_out):
