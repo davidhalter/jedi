@@ -265,3 +265,12 @@ except ImportError, i_b:
     i_b
     #? ImportError()
     i_b
+
+# -----------------
+# continuations
+# -----------------
+
+foo = \
+1
+#? int()
+foo
