@@ -153,7 +153,6 @@ def generate_tokens(readline, line_offset=0):
     Modified to not care about dedents.
     """
     lnum = line_offset
-    parenlev = 0
     continued = False
     numchars = '0123456789'
     contstr, needcont = '', 0
@@ -190,7 +189,7 @@ def generate_tokens(readline, line_offset=0):
                 contline = contline + line
                 continue
 
-        elif parenlev == 0 and not continued:  # new statement
+        elif not continued:  # new statement
             if not line:
                 break
             column = 0
@@ -216,9 +215,7 @@ def generate_tokens(readline, line_offset=0):
                     yield TokenInfo(NEWLINE, line[nl_pos:], (lnum, nl_pos),
                                     (lnum, len(line)))
                 else:
-                    yield TokenInfo(
-                        (NEWLINE, COMMENT)[line[pos] == '#'], line[pos:],
-                        (lnum, pos), (lnum, len(line)))
+                    yield TokenInfo(NEWLINE, line[pos:], (lnum, pos), (lnum, len(line)))
                 continue
 
             if column > indents[-1]:           # count indents or dedents
@@ -244,8 +241,7 @@ def generate_tokens(readline, line_offset=0):
                         (initial == '.' and token != '.' and token != '...')):
                     yield TokenInfo(NUMBER, token, spos, epos)
                 elif initial in '\r\n':
-                    yield TokenInfo(NEWLINE,
-                                    token, spos, epos)
+                    yield TokenInfo(NEWLINE, token, spos, epos)
                 elif initial == '#':
                     assert not token.endswith("\n")
                     yield TokenInfo(COMMENT, token, spos, epos)
@@ -278,10 +274,6 @@ def generate_tokens(readline, line_offset=0):
                 elif initial == '\\':                      # continued stmt
                     continued = True
                 else:
-                    if initial in '([{':
-                        parenlev += 1
-                    elif initial in ')]}':
-                        parenlev -= 1
                     yield TokenInfo(OP, token, spos, epos)
             else:
                 yield TokenInfo(ERRORTOKEN, line[pos],

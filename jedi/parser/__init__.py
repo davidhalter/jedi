@@ -63,7 +63,6 @@ class Parser(object):
             while s is not None:
                 s.end_pos = self.end_pos
                 s = s.parent
-            pass
 
         # clean up unused decorators
         for d in self._decorators:
@@ -157,7 +156,9 @@ class Parser(object):
                 brackets = True
                 token_type, tok = self.next()
             if brackets and tok == '\n':
-                self.next()
+                token_type, tok = self.next()
+            if token_type == tokenize.INDENT:
+                continue  # TODO REMOVE, after removing the indents.
             i, token_type, tok = self._parse_dot_name(self._current)
             if not i:
                 defunct = True
