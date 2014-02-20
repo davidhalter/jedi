@@ -47,8 +47,9 @@ class Parser(object):
         self._scope = self.module
         self._current = (None, None)
 
-        self._gen = tokenizer or tokenize.NoErrorTokenizer(source)
-        self._gen = tokenize.NoErrorTokenizer(source, offset, is_fast)
+        tokenizer = tokenizer or tokenize.NoErrorTokenizer(source)
+        tokenizer = tokenize.NoErrorTokenizer(source, offset, is_fast)
+        self._gen = PushBackTokenizer(tokenizer)
         self._top_module = top_module or self.module
         try:
             self._parse()
@@ -633,3 +634,38 @@ class Parser(object):
                                   tokenize.tok_name[token_type], self.start_pos)
                 continue
             self.no_docstr = False
+
+
+class PushBackTokenizer(object):
+    def __init__(self, tokenizer):
+        self._tokenizer = tokenizer
+        self._push_backs = []
+        self.current = [None, None, (0, 0), (0, 0), '']
+
+    def push_last_back(self):
+        self._push_backs.append(self.current)
+
+    def next(self):
+        """ Python 2 Compatibility """
+        return self.__next__()
+
+    def __next__(self):
+        if self._push_backs:
+            return self._push_backs.pop(0)
+
+        self.current = next(self._tokenizer)
+
+        def close():
+            if not self.first_stmt:
+                self.closed = True
+                raise common.MultiLevelStopIteration()
+        # ignore indents/comments
+        return self.current
+
+    @property
+    def previous(self):
+        return self._tokenizer.previous
+
+    @property
+    def last_previous(self):
+        return self._tokenizer.last_previous

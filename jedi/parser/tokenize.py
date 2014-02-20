@@ -303,8 +303,6 @@ class NoErrorTokenizer(object):
         self.source = source
         self.gen = source_tokens(source, line_offset)
         self.closed = False
-        self.is_first = True
-        self.push_backs = []
 
         # fast parser options
         self.is_fast_parser = is_fast_parser
@@ -315,9 +313,6 @@ class NoErrorTokenizer(object):
         self.is_decorator = False
         self.first_stmt = True
 
-    def push_last_back(self):
-        self.push_backs.append(self.current)
-
     def next(self):
         """ Python 2 Compatibility """
         return self.__next__()
@@ -325,8 +320,6 @@ class NoErrorTokenizer(object):
     def __next__(self):
         if self.closed:
             raise common.MultiLevelStopIteration()
-        if self.push_backs:
-            return self.push_backs.pop(0)
 
         self.last_previous = self.previous
         self.previous = self.current
