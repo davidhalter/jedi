@@ -150,7 +150,10 @@ def source_tokens(source, line_offset=0):
 
 
 def generate_tokens(readline, line_offset=0):
-    """The original stdlib Python version with minor modifications"""
+    """
+    The original stdlib Python version with minor modifications.
+    Modified to not care about dedents.
+    """
     lnum = line_offset
     parenlev = 0
     continued = False
@@ -225,7 +228,6 @@ def generate_tokens(readline, line_offset=0):
                 yield TokenInfo(INDENT, line[:pos], (lnum, 0), (lnum, pos))
             while column < indents[-1]:
                 indents = indents[:-1]
-                yield TokenInfo(DEDENT, '', (lnum, pos), (lnum, pos))
 
         else:                                  # continued statement
             if not line:
@@ -288,8 +290,6 @@ def generate_tokens(readline, line_offset=0):
                                (lnum, pos), (lnum, pos + 1))
                 pos += 1
 
-    for indent in indents[1:]:                 # pop remaining indent levels
-        yield TokenInfo(DEDENT, '', (lnum, 0), (lnum, 0))
     yield TokenInfo(ENDMARKER, '', (lnum, 0), (lnum, 0))
 
 
@@ -341,8 +341,8 @@ class NoErrorTokenizer(object):
                 raise common.MultiLevelStopIteration()
         # ignore indents/comments
         if self.is_fast_parser \
-                and self.previous[0] in (INDENT, NL, None, NEWLINE, DEDENT) \
-                and c[0] not in (COMMENT, INDENT, NL, NEWLINE, DEDENT):
+                and self.previous[0] in (INDENT, NL, None, NEWLINE) \
+                and c[0] not in (COMMENT, INDENT, NL, NEWLINE):
             # print c, tok_name[c[0]]
 
             tok = c[1]

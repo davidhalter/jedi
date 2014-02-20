@@ -402,10 +402,9 @@ class Parser(object):
         """ Generate the next tokenize pattern. """
         typ, tok, start_pos, end_pos = next(self._gen)
         # dedents shouldn't change positions
-        if typ != tokenize.DEDENT:
-            self.start_pos = start_pos
-            if typ not in (tokenize.INDENT, tokenize.NEWLINE, tokenize.NL):
-                self.start_pos, self.end_pos = start_pos, end_pos
+        self.start_pos = start_pos
+        if typ not in (tokenize.INDENT, tokenize.NEWLINE, tokenize.NL):
+            self.start_pos, self.end_pos = start_pos, end_pos
 
         self._current = typ, tok
         return self._current
@@ -432,15 +431,6 @@ class Parser(object):
             self.module.temp_used_names = []
             # debug.dbg('main: tok=[%s] type=[%s] indent=[%s]', \
             #           tok, tokenize.tok_name[token_type], start_position[0])
-
-            while token_type == tokenize.DEDENT and self._scope != self.module:
-                token_type, tok = self.next()
-                if self.start_pos[1] <= self._scope.start_pos[1]:
-                    self._scope.end_pos = self.start_pos
-                    self._scope = self._scope.parent
-                    if isinstance(self._scope, pr.Module) \
-                            and not isinstance(self._scope, pr.SubModule):
-                        self._scope = self.module
 
             # check again for unindented stuff. this is true for syntax
             # errors. only check for names, because thats relevant here. If
