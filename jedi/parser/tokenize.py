@@ -11,7 +11,7 @@ from __future__ import absolute_import
 
 import string
 import re
-from jedi._compatibility import StringIO
+from io import StringIO
 from token import *
 import collections
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")

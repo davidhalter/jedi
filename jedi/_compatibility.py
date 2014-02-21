@@ -118,12 +118,6 @@ Usage::
 
 """
 
-# StringIO (Python 2.5 has no io module), so use io only for py3k
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-
 # hasattr function used because python
 if is_py3:
     hasattr = hasattr

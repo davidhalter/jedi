@@ -99,10 +99,11 @@ Tests look like this::
 import os
 import re
 from ast import literal_eval
+from io import StringIO
+from functools import reduce
 
 import jedi
-from functools import reduce
-from jedi._compatibility import unicode, StringIO, is_py3
+from jedi._compatibility import unicode, is_py3
 
 
 TEST_COMPLETIONS = 0
@@ -215,10 +216,7 @@ def collect_file_tests(lines, lines_to_execute):
     start = None
     correct = None
     test_type = None
-    for line_nr, line in enumerate(lines):
-        line_nr += 1  # py2.5 doesn't know about the additional enumerate param
-        if not is_py3:
-            line = unicode(line, 'UTF-8')
+    for line_nr, line in enumerate(lines, 1):
         if correct:
             r = re.match('^(\d+)\s*(.*)$', correct)
             if r:
@@ -268,6 +266,8 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
 
             path = os.path.join(base_dir, f_name)
             source = open(path).read()
+            if not is_py3:
+                source = unicode(source, 'UTF-8')
             for case in collect_file_tests(StringIO(source),
                                            lines_to_execute):
                 case.path = path
@@ -373,8 +373,4 @@ if __name__ == '__main__':
         print(s)
 
     exit_code = 1 if tests_fail else 0
-    if sys.hexversion < 0x02060000 and tests_fail <= 9:
-        # Python 2.5 has major incompabillities (e.g. no property.setter),
-        # therefore it is not possible to pass all tests.
-        exit_code = 0
     sys.exit(exit_code)
