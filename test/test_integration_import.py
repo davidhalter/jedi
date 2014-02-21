@@ -63,8 +63,8 @@ def test_after_from():
         completions = Script(source, column=column).completions()
         assert [c.name for c in completions] == result
 
-    check('from os ', ['import'])
     check('\nfrom os ', ['import'])
+    check('from os ', ['import'])
     check('\nfrom os import whatever', ['import'], len('from os im'))
 
     check('from os\\\n', ['import'])

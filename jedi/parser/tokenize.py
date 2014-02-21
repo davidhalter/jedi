@@ -211,7 +211,8 @@ def generate_tokens(readline, line_offset=0):
 
             if column > indents[-1]:           # count indents or dedents
                 indents.append(column)
-                yield TokenInfo(INDENT, line[:pos], (lnum, 0), (lnum, pos))
+                #print repr(line), lnum
+                #yield TokenInfo(INDENT, line[:pos], (lnum, 0), (lnum, pos))
             while column < indents[-1]:
                 indents = indents[:-1]
 

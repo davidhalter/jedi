@@ -30,11 +30,14 @@ class UserContext(object):
         return path
 
     def _calc_path_until_cursor(self, start_pos=None):
+        """
+        Something like a reverse tokenizer that tokenizes the reversed strings.
+        """
         def fetch_line():
             if self._is_first:
                 self._is_first = False
                 self._line_length = self._column_temp
-                line = self._first_line
+                line = first_line
             else:
                 line = self.get_line(self._line_temp)
                 self._line_length = len(line)
@@ -53,7 +56,7 @@ class UserContext(object):
 
         self._is_first = True
         self._line_temp, self._column_temp = start_cursor = start_pos
-        self._first_line = self.get_line(self._line_temp)[:self._column_temp]
+        first_line = self.get_line(self._line_temp)[:self._column_temp]
 
         open_brackets = ['(', '[', '{']
         close_brackets = [')', ']', '}']
@@ -63,7 +66,13 @@ class UserContext(object):
         level = 0
         force_point = False
         last_type = None
+        is_first = True
         for token_type, tok, start, end in gen:
+            if is_first:
+                if start != (1, 0):  # whitespace is not a path
+                    return '', start_cursor
+                is_first = False
+
             # print 'tok', token_type, tok, force_point
             if last_type == token_type == tokenize.NAME:
                 string += ' '
@@ -94,7 +103,7 @@ class UserContext(object):
 
             x = start_pos[0] - end[0] + 1
             l = self.get_line(x)
-            l = self._first_line if x == start_pos[0] else l
+            l = first_line if x == start_pos[0] else l
             start_cursor = x, len(l) - end[1]
             self._column_temp = self._line_length - end[1]
             string += tok
