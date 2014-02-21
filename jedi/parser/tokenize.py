@@ -157,8 +157,6 @@ def generate_tokens(readline, line_offset=0):
     numchars = '0123456789'
     contstr = ''
     contline = None
-    indents = [0]
-
     while True:             # loop over lines in stream
         try:
             line = readline()
@@ -208,14 +206,6 @@ def generate_tokens(readline, line_offset=0):
                 else:
                     yield TokenInfo(NEWLINE, line[pos:], (lnum, pos), (lnum, len(line)))
                 continue
-
-            if column > indents[-1]:           # count indents or dedents
-                indents.append(column)
-                #print repr(line), lnum
-                #yield TokenInfo(INDENT, line[:pos], (lnum, 0), (lnum, pos))
-            while column < indents[-1]:
-                indents = indents[:-1]
-
         else:                                  # continued statement
             continued = False
 
@@ -318,10 +308,10 @@ class NoErrorTokenizer(object):
             if not self.first_stmt:
                 self.closed = True
                 raise common.MultiLevelStopIteration()
-        # ignore indents/comments
+        # ignore comments/ newlines
         if self.is_fast_parser \
-                and self.previous[0] in (INDENT, None, NEWLINE) \
-                and c[0] not in (COMMENT, INDENT, NEWLINE):
+                and self.previous[0] in (None, NEWLINE) \
+                and c[0] not in (COMMENT, NEWLINE):
             # print c, tok_name[c[0]]
 
             tok = c[1]

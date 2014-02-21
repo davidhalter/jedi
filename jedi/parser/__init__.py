@@ -157,8 +157,6 @@ class Parser(object):
                 token_type, tok = self.next()
             if brackets and tok == '\n':
                 token_type, tok = self.next()
-            if token_type == tokenize.INDENT:
-                continue  # TODO REMOVE, after removing the indents.
             i, token_type, tok = self._parse_dot_name(self._current)
             if not i:
                 defunct = True
@@ -402,7 +400,7 @@ class Parser(object):
         typ, tok, start_pos, end_pos = next(self._gen)
         # dedents shouldn't change positions
         self.start_pos = start_pos
-        if typ not in (tokenize.INDENT, tokenize.NEWLINE):
+        if typ not in (tokenize.NEWLINE,):
             self.start_pos, self.end_pos = start_pos, end_pos
 
         self._current = typ, tok
@@ -617,8 +615,7 @@ class Parser(object):
                     self._scope.add_statement(stmt)
                 self.freshscope = False
             else:
-                if token_type not in [tokenize.COMMENT, tokenize.INDENT,
-                                      tokenize.NEWLINE]:
+                if token_type not in [tokenize.COMMENT, tokenize.NEWLINE]:
                     debug.warning('Token not used: %s %s %s', tok,
                                   tokenize.tok_name[token_type], self.start_pos)
                 continue
