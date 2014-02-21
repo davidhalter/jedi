@@ -31,12 +31,19 @@ def find_module_py33(string, path=None):
             module_file = None
         else:
             module_path = loader.get_filename(string)
-            module_file = open(module_path)
+            mode = 'rb' if module_path.endswith(".pyc") else 'r'
+            module_file = open(module_path, mode)
     except AttributeError:
-        # is builtin module
-        module_path = string
-        module_file = None
-        is_package = False
+        # ExtensionLoader has not attribute get_filename, instead it has a
+        # path attribute that we can use to retrieve the module path
+        try:
+            module_path = loader.path
+            module_file = open(loader.path, 'rb')
+        except AttributeError:
+            module_path = string
+            module_file = None
+        finally:
+            is_package = False
 
     return module_file, module_path, is_package
 
