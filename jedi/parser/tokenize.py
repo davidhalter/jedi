@@ -179,35 +179,8 @@ def generate_tokens(readline, line_offset=0):
                 contstr = contstr + line
                 contline = contline + line
                 continue
-
-        elif not continued:  # new statement
-            column = 0
-            while pos < max:                   # measure leading whitespace
-                if line[pos] == ' ':
-                    column += 1
-                elif line[pos] == '\t':
-                    column = (column // tabsize + 1) * tabsize
-                elif line[pos] == '\f':
-                    column = 0
-                else:
-                    break
-                pos += 1
-            if pos == max:
-                break
-
-            if line[pos] in '#\r\n':           # skip comments or blank lines
-                if line[pos] == '#':
-                    comment_token = line[pos:].rstrip('\r\n')
-                    nl_pos = pos + len(comment_token)
-                    yield TokenInfo(COMMENT, comment_token, (lnum, pos),
-                                    (lnum, pos + len(comment_token)))
-                    yield TokenInfo(NEWLINE, line[nl_pos:], (lnum, nl_pos),
-                                    (lnum, len(line)))
-                else:
-                    yield TokenInfo(NEWLINE, line[pos:], (lnum, pos), (lnum, len(line)))
-                continue
-        else:                                  # continued statement
-            continued = False
+        elif pos == max:
+            break  # Don't really understand why this must be here.
 
         while pos < max:
             pseudomatch = pseudoprog.match(line, pos)
@@ -250,8 +223,8 @@ def generate_tokens(readline, line_offset=0):
                         yield TokenInfo(STRING, token, spos, epos)
                 elif initial in namechars:                 # ordinary name
                     yield TokenInfo(NAME, token, spos, epos)
-                elif initial == '\\':                      # continued stmt
-                    continued = True
+                elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
+                    continue
                 else:
                     yield TokenInfo(OP, token, spos, epos)
             else:
