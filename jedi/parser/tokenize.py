@@ -158,9 +158,8 @@ def generate_tokens(readline, line_offset=0):
     contstr = ''
     contline = None
     while True:             # loop over lines in stream
-        try:
-            line = readline()
-        except StopIteration:
+        line = readline()  # readline returns empty if it's finished. See StringIO
+        if not line:
             if contstr:
                 yield TokenInfo(ERRORTOKEN, contstr, strstart, (lnum, pos))
             break
@@ -168,7 +167,7 @@ def generate_tokens(readline, line_offset=0):
         lnum += 1
         pos, max = 0, len(line)
 
-        if contstr:                            # continued string
+        if contstr:                                         # continued string
             endmatch = endprog.match(line)
             if endmatch:
                 pos = end = endmatch.end(0)
@@ -179,58 +178,57 @@ def generate_tokens(readline, line_offset=0):
                 contstr = contstr + line
                 contline = contline + line
                 continue
-        elif pos == max:
-            break  # Don't really understand why this must be here.
 
         while pos < max:
             pseudomatch = pseudoprog.match(line, pos)
-            if pseudomatch:                                # scan for tokens
-                start, end = pseudomatch.span(1)
-                spos, epos, pos = (lnum, start), (lnum, end), end
-                token, initial = line[start:end], line[start]
-
-                if (initial in numchars or                  # ordinary number
-                        (initial == '.' and token != '.' and token != '...')):
-                    yield TokenInfo(NUMBER, token, spos, epos)
-                elif initial in '\r\n':
-                    yield TokenInfo(NEWLINE, token, spos, epos)
-                elif initial == '#':
-                    assert not token.endswith("\n")
-                    yield TokenInfo(COMMENT, token, spos, epos)
-                elif token in triple_quoted:
-                    endprog = endprogs[token]
-                    endmatch = endprog.match(line, pos)
-                    if endmatch:                           # all on one line
-                        pos = endmatch.end(0)
-                        token = line[start:pos]
-                        yield TokenInfo(STRING, token, spos, (lnum, pos))
-                    else:
-                        strstart = (lnum, start)           # multiple lines
-                        contstr = line[start:]
-                        contline = line
-                        break
-                elif initial in single_quoted or \
-                        token[:2] in single_quoted or \
-                        token[:3] in single_quoted:
-                    if token[-1] == '\n':                  # continued string
-                        strstart = (lnum, start)
-                        endprog = (endprogs[initial] or endprogs[token[1]] or
-                                   endprogs[token[2]])
-                        contstr = line[start:]
-                        contline = line
-                        break
-                    else:                                  # ordinary string
-                        yield TokenInfo(STRING, token, spos, epos)
-                elif initial in namechars:                 # ordinary name
-                    yield TokenInfo(NAME, token, spos, epos)
-                elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
-                    continue
-                else:
-                    yield TokenInfo(OP, token, spos, epos)
-            else:
+            if not pseudomatch:                             # scan for tokens
                 yield TokenInfo(ERRORTOKEN, line[pos],
                                (lnum, pos), (lnum, pos + 1))
                 pos += 1
+                continue
+
+            start, end = pseudomatch.span(1)
+            spos, epos, pos = (lnum, start), (lnum, end), end
+            token, initial = line[start:end], line[start]
+
+            if (initial in numchars or                      # ordinary number
+                    (initial == '.' and token != '.' and token != '...')):
+                yield TokenInfo(NUMBER, token, spos, epos)
+            elif initial in '\r\n':
+                yield TokenInfo(NEWLINE, token, spos, epos)
+            elif initial == '#':
+                assert not token.endswith("\n")
+                yield TokenInfo(COMMENT, token, spos, epos)
+            elif token in triple_quoted:
+                endprog = endprogs[token]
+                endmatch = endprog.match(line, pos)
+                if endmatch:                                # all on one line
+                    pos = endmatch.end(0)
+                    token = line[start:pos]
+                    yield TokenInfo(STRING, token, spos, (lnum, pos))
+                else:
+                    strstart = (lnum, start)                # multiple lines
+                    contstr = line[start:]
+                    contline = line
+                    break
+            elif initial in single_quoted or \
+                    token[:2] in single_quoted or \
+                    token[:3] in single_quoted:
+                if token[-1] == '\n':                       # continued string
+                    strstart = (lnum, start)
+                    endprog = (endprogs[initial] or endprogs[token[1]] or
+                               endprogs[token[2]])
+                    contstr = line[start:]
+                    contline = line
+                    break
+                else:                                       # ordinary string
+                    yield TokenInfo(STRING, token, spos, epos)
+            elif initial in namechars:                      # ordinary name
+                yield TokenInfo(NAME, token, spos, epos)
+            elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
+                continue
+            else:
+                yield TokenInfo(OP, token, spos, epos)
 
     yield TokenInfo(ENDMARKER, '', (lnum, 0), (lnum, 0))
 
