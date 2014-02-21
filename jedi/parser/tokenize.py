@@ -155,7 +155,7 @@ def generate_tokens(readline, line_offset=0):
     lnum = line_offset
     continued = False
     numchars = '0123456789'
-    contstr, needcont = '', False
+    contstr = ''
     contline = None
     indents = [0]
 
@@ -175,15 +175,8 @@ def generate_tokens(readline, line_offset=0):
             if endmatch:
                 pos = end = endmatch.end(0)
                 yield TokenInfo(STRING, contstr + line[:end], strstart, (lnum, end))
-                contstr, needcont = '', False
+                contstr = ''
                 contline = None
-            elif needcont and line[-2:] != '\\\n' and line[-3:] != '\\\r\n':
-                #yield TokenInfo(ERRORTOKEN, contstr + line,
-                #                strstart, (lnum, len(line)))
-                #contstr = ''
-                #contline = None
-                #continue
-                pass
             else:
                 contstr = contstr + line
                 contline = contline + line
@@ -259,7 +252,7 @@ def generate_tokens(readline, line_offset=0):
                         strstart = (lnum, start)
                         endprog = (endprogs[initial] or endprogs[token[1]] or
                                    endprogs[token[2]])
-                        contstr, needcont = line[start:], True
+                        contstr = line[start:]
                         contline = line
                         break
                     else:                                  # ordinary string
