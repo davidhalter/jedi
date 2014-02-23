@@ -245,7 +245,7 @@ class NoErrorTokenizer(object):
 
         # fast parser options
         self.is_fast_parser = is_fast_parser
-        self.current = self.previous = [None, None, (0, 0), (0, 0), '']
+        self.current = self.previous = TokenInfo(None, None, (0, 0), (0, 0))
         self.in_flow = False
         self.new_indent = False
         self.parser_indent = self.old_parser_indent = 0
@@ -260,15 +260,12 @@ class NoErrorTokenizer(object):
         if self.closed:
             raise common.MultiLevelStopIteration()
 
-        self.last_previous = self.previous
-        self.previous = self.current
-        self.current = next(self.gen)
-        c = self.current
-
-        if c[0] == ENDMARKER:
-            self.current = self.previous
-            self.previous = self.last_previous
+        current = next(self.gen)
+        if current[0] == ENDMARKER:
             raise common.MultiLevelStopIteration()
+
+        self.previous = self.current
+        self.current = current
 
         # this is exactly the same check as in fast_parser, but this time with
         # tokenize and therefore precise.
@@ -281,11 +278,11 @@ class NoErrorTokenizer(object):
         # ignore comments/ newlines
         if self.is_fast_parser \
                 and self.previous[0] in (None, NEWLINE) \
-                and c[0] not in (COMMENT, NEWLINE):
+                and current[0] not in (COMMENT, NEWLINE):
             # print c, tok_name[c[0]]
 
-            tok = c[1]
-            indent = c[2][1]
+            tok = current[1]
+            indent = current[2][1]
             if indent < self.parser_indent:  # -> dedent
                 self.parser_indent = indent
                 self.new_indent = False
@@ -311,4 +308,4 @@ class NoErrorTokenizer(object):
                 if self.first_stmt and not self.new_indent:
                     self.parser_indent = indent
                 self.first_stmt = False
-        return c
+        return current
