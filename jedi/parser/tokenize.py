@@ -12,7 +12,8 @@ from __future__ import absolute_import
 import string
 import re
 from io import StringIO
-from token import *
+from token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, NAME, OP,
+                   ERRORTOKEN, NEWLINE)
 import collections
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
@@ -23,9 +24,8 @@ namechars = string.ascii_letters + '_'
 
 COMMENT = N_TOKENS
 tok_name[COMMENT] = 'COMMENT'
-ENCODING = N_TOKENS + 2
+ENCODING = N_TOKENS + 1
 tok_name[ENCODING] = 'ENCODING'
-N_TOKENS += 3
 
 
 class TokenInfo(collections.namedtuple('TokenInfo', 'type string start end')):
@@ -153,7 +153,6 @@ def generate_tokens(readline, line_offset=0):
     Modified to not care about dedents.
     """
     lnum = line_offset
-    continued = False
     numchars = '0123456789'
     contstr = ''
     contline = None
@@ -161,7 +160,7 @@ def generate_tokens(readline, line_offset=0):
         line = readline()  # readline returns empty if it's finished. See StringIO
         if not line:
             if contstr:
-                yield TokenInfo(ERRORTOKEN, contstr, strstart, (lnum, pos))
+                yield TokenInfo(ERRORTOKEN, contstr, contstr_start, (lnum, pos))
             break
 
         lnum += 1
@@ -171,7 +170,7 @@ def generate_tokens(readline, line_offset=0):
             endmatch = endprog.match(line)
             if endmatch:
                 pos = end = endmatch.end(0)
-                yield TokenInfo(STRING, contstr + line[:end], strstart, (lnum, end))
+                yield TokenInfo(STRING, contstr + line[:end], contstr_start, (lnum, end))
                 contstr = ''
                 contline = None
             else:
@@ -207,7 +206,7 @@ def generate_tokens(readline, line_offset=0):
                     token = line[start:pos]
                     yield TokenInfo(STRING, token, spos, (lnum, pos))
                 else:
-                    strstart = (lnum, start)                # multiple lines
+                    contstr_start = (lnum, start)                # multiple lines
                     contstr = line[start:]
                     contline = line
                     break
@@ -215,7 +214,7 @@ def generate_tokens(readline, line_offset=0):
                     token[:2] in single_quoted or \
                     token[:3] in single_quoted:
                 if token[-1] == '\n':                       # continued string
-                    strstart = (lnum, start)
+                    contstr_start = lnum, start
                     endprog = (endprogs[initial] or endprogs[token[1]] or
                                endprogs[token[2]])
                     contstr = line[start:]

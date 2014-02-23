@@ -3,6 +3,7 @@ import re
 
 from jedi._compatibility import builtins
 from jedi import debug
+from jedi.common import source_to_unicode
 from jedi.cache import underscore_memoization
 from jedi.evaluate import compiled
 from jedi.evaluate.compiled.fake import get_module
@@ -68,7 +69,8 @@ class LazyName(helpers.FakeName):
             if path.endswith('.py'):
                 # cut the `c` from `.pyc`
                 with open(path) as f:
-                    mod = FastParser(f.read(), path[:-1]).module
+                    source = source_to_unicode(f.read())
+                mod = FastParser(source, path[:-1]).module
                 if not parser_path:
                     return mod
                 found = self._evaluator.eval_call_path(iter(parser_path), mod, None)

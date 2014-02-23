@@ -7,7 +7,7 @@ mixing in Python code, the autocompletion should work much better for builtins.
 import os
 import inspect
 
-from jedi._compatibility import is_py3, builtins
+from jedi._compatibility import is_py3, builtins, unicode
 from jedi.parser import Parser
 from jedi.parser import token as token_pr
 from jedi.parser.representation import Class
@@ -31,7 +31,7 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        module = Parser(source, module_name).module
+        module = Parser(unicode(source), module_name).module
         modules[module_name] = module
 
         if module_name == 'builtins' and not is_py3:

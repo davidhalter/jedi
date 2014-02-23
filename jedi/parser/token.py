@@ -8,7 +8,7 @@ found that a flat object with slots is the best.
 from inspect import cleandoc
 from ast import literal_eval
 
-from jedi._compatibility import utf8, unicode
+from jedi._compatibility import u, unicode
 
 
 class Token(object):
@@ -37,7 +37,7 @@ class Token(object):
     4
     >>> Token.from_tuple((6, 5, (4, 3)))
     <Token: (6, 5, (4, 3))>
-    >>> unicode(Token(1, utf8("😷"), 1 ,1)) + "p" == utf8("😷p")
+    >>> unicode(Token(1, u("😷"), 1 ,1)) + "p" == u("😷p")
     True
     """
     __slots__ = ("_token_type", "_token", "_start_pos_line", "_start_pos_col")
@@ -166,4 +166,4 @@ class TokenDocstring(TokenNoCompat):
 
     def as_string(self):
         """Returns a literal cleaned version of the token"""
-        return cleandoc(literal_eval(self.token))
+        return unicode(cleandoc(literal_eval(self.token)))

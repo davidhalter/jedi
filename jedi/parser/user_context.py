@@ -3,6 +3,7 @@ import os
 
 from jedi import cache
 from jedi.parser import tokenize
+from jedi._compatibility import u
 from jedi.parser.fast import FastParser
 from jedi.parser import representation
 from jedi import debug
@@ -70,7 +71,7 @@ class UserContext(object):
         for token_type, tok, start, end in gen:
             if is_first:
                 if start != (1, 0):  # whitespace is not a path
-                    return '', start_cursor
+                    return u(''), start_cursor
                 is_first = False
 
             # print 'tok', token_type, tok, force_point
@@ -167,14 +168,14 @@ class UserContext(object):
             self._line_cache = self.source.splitlines()
             if self.source:
                 if self.source[-1] == '\n':
-                    self._line_cache.append('')
+                    self._line_cache.append(u(''))
             else:  # ''.splitlines() == []
-                self._line_cache = ['']
+                self._line_cache = [u('')]
 
         if line_nr == 0:
             # This is a fix for the zeroth line. We need a newline there, for
             # the backwards parser.
-            return ''
+            return u('')
         if line_nr < 0:
             raise StopIteration()
         try:

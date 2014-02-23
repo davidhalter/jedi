@@ -5,7 +5,7 @@ finished (and still not working as I want), I won't document it any further.
 """
 import re
 
-from jedi._compatibility import use_metaclass
+from jedi._compatibility import use_metaclass, unicode
 from jedi import settings
 from jedi import common
 from jedi.parser import Parser
@@ -275,7 +275,7 @@ class FastParser(use_metaclass(CachedFastParser)):
     def _parse(self, code):
         """ :type code: str """
         def empty_parser():
-            new, temp = self._get_parser('', '', 0, [], False)
+            new, temp = self._get_parser(unicode(''), unicode(''), 0, [], False)
             return new
 
         parts = self._split_parts(code)

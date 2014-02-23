@@ -37,6 +37,7 @@ def process_memory():
 uri = 'http://svn.wxwidgets.org/viewvc/wx/wxPython/trunk/src/gtk/_core.py?revision=74740&content-type=text%2Fplain&view=co'
 
 wx_core = urllib2.urlopen(uri).read()
+wx_core = wx_core[:1]
 
 
 def run():
@@ -44,6 +45,7 @@ def run():
     print('Process Memory before: %skB' % process_memory())
     # After this the module should be cached.
     # Need to invent a path so that it's really cached.
+    print type(wx_core), wx_core
     jedi.Script(wx_core, path='foobar.py').completions()
 
     gc.collect()  # make sure that it's all fair and the gc did its job.

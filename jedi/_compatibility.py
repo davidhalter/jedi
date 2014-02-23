@@ -90,11 +90,11 @@ except NameError:
     unicode = str
 
 if is_py3:
-    utf8 = lambda s: s
+    u = lambda s: s
 else:
-    utf8 = lambda s: s.decode('utf-8')
+    u = lambda s: s.decode('utf-8')
 
-utf8.__doc__ = """
+u.__doc__ = """
 Decode a raw string into unicode object.  Do nothing in Python 3.
 """
 
