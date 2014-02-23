@@ -10,6 +10,7 @@ from .helpers import TestCase, cwd_at
 
 import pytest
 import jedi
+from jedi._compatibility import u
 from jedi import Script
 from jedi import api
 from jedi.evaluate import imports
@@ -113,7 +114,7 @@ class TestRegression(TestCase):
 
     def test_end_pos(self):
         # jedi issue #150
-        s = "x()\nx( )\nx(  )\nx (  )"
+        s = u("x()\nx( )\nx(  )\nx (  )")
         parser = Parser(s)
         for i, s in enumerate(parser.module.statements, 3):
             for c in s.expression_list():
