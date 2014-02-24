@@ -47,8 +47,7 @@ class Parser(object):
         self._scope = self.module
         self._current = (None, None)
 
-        tokenizer = tokenizer or tokenize.NoErrorTokenizer(source)
-        tokenizer = tokenize.NoErrorTokenizer(source, offset, is_fast)
+        tokenizer = tokenizer or tokenize.source_tokens(source)
         self._gen = PushBackTokenizer(tokenizer)
         self._top_module = top_module or self.module
         try:
@@ -59,10 +58,11 @@ class Parser(object):
             # sometimes StopIteration isn't catched. Just ignore it.
 
             # on finish, set end_pos correctly
-            s = self._scope
-            while s is not None:
-                s.end_pos = self.end_pos
-                s = s.parent
+            pass
+        s = self._scope
+        while s is not None:
+            s.end_pos = self.end_pos
+            s = s.parent
 
         # clean up unused decorators
         for d in self._decorators:
@@ -71,6 +71,8 @@ class Parser(object):
             d.parent = self.module
 
         if self._current[0] in (tokenize.NEWLINE,):
+            # This case is only relevant with the FastTokenizer, because
+            # otherwise there's always an EndMarker.
             # we added a newline before, so we need to "remove" it again.
             self.end_pos = self._gen.previous[2]
 
@@ -626,7 +628,7 @@ class PushBackTokenizer(object):
     def __init__(self, tokenizer):
         self._tokenizer = tokenizer
         self._push_backs = []
-        self.current = [None, None, (0, 0), (0, 0), '']
+        self.current = tokenize.TokenInfo(None, None, (0, 0), (0, 0))
 
     def push_last_back(self):
         self._push_backs.append(self.current)

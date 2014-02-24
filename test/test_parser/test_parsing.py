@@ -2,6 +2,7 @@ from jedi._compatibility import u
 from jedi.parser import Parser
 from jedi.parser.user_context import UserContextParser
 from jedi.parser import representation as pr
+from textwrap import dedent
 
 
 def test_user_statement_on_import():
@@ -95,3 +96,15 @@ def test_module():
     assert str(name) == ''
     assert name.start_pos == (0, 0)
     assert name.end_pos == (0, 0)
+
+
+def test_end_pos():
+    s = u(dedent('''
+                 x = ['a', 'b', 'c']
+                 def func():
+                     y = None
+                 '''))
+    parser = Parser(s)
+    scope = parser.module.subscopes[0]
+    assert scope.start_pos == (3, 0)
+    assert scope.end_pos == (5, 0)
