@@ -50,8 +50,8 @@ class Module(pr.Simple, pr.Module):
         return used_names
 
     def __repr__(self):
-        return "<%s: %s@%s-%s>" % (type(self).__name__, self.name,
-                                   self.start_pos[0], self.end_pos[0])
+        return "<fast.%s: %s@%s-%s>" % (type(self).__name__, self.name,
+                                        self.start_pos[0], self.end_pos[0])
 
 
 class CachedFastParser(type):
@@ -166,12 +166,15 @@ class ParserNode(object):
         """Adding a node means adding a node that was already added earlier"""
         self.children.append(node)
         self._set_items(node.parser, set_parent=set_parent)
-        node.old_children = node.children
+        node.old_children = node.children # TODO potential memory leak?
         node.children = []
 
         scope = self.content_scope
         while scope is not None:
-            scope.end_pos = node.content_scope.end_pos
+            #print('x',scope)
+            if not isinstance(scope, pr.SubModule):
+                # TODO This seems like a strange thing. Check again.
+                scope.end_pos = node.content_scope.end_pos
             scope = scope.parent
         return node
 
@@ -290,7 +293,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         for code_part in parts:
             lines = code_part.count('\n') + 1
-            if is_first or line_offset >= p.end_pos[0]:
+            if is_first or line_offset >= p.module.end_pos[0]:
                 indent = len(re.match(r'[ \t]*', code_part).group(0))
                 if is_first and self.current_node is not None:
                     nodes = [self.current_node]
@@ -303,14 +306,14 @@ class FastParser(use_metaclass(CachedFastParser)):
                     nodes += self.current_node.old_children
 
                 # check if code_part has already been parsed
-                # print '#'*45,line_offset, p and p.end_pos, '\n', code_part
+                # print '#'*45,line_offset, p and p.module.end_pos, '\n', code_part
                 p, node = self._get_parser(code_part, code[start:],
                                            line_offset, nodes, not is_first)
 
                 # The actual used code_part is different from the given code
                 # part, because of docstrings for example there's a chance that
                 # splits are wrong.
-                used_lines = self._lines[line_offset:p.end_pos[0]]
+                used_lines = self._lines[line_offset:p.module.end_pos[0]]
                 code_part_actually_used = '\n'.join(used_lines)
 
                 if is_first and p.module.subscopes:
@@ -340,7 +343,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 is_first = False
             #else:
-                #print '#'*45, line_offset, p.end_pos, 'theheck\n', repr(code_part)
+                #print '#'*45, line_offset, p.module.end_pos, 'theheck\n', repr(code_part)
 
             line_offset += lines
             start += len(code_part) + 1  # +1 for newline
@@ -350,7 +353,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         else:
             self.parsers.append(empty_parser())
 
-        self.module.end_pos = self.parsers[-1].end_pos
+        self.module.end_pos = self.parsers[-1].module.end_pos
 
         # print(self.parsers[0].module.get_code())
         del code
