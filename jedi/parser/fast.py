@@ -364,10 +364,10 @@ class FastParser(use_metaclass(CachedFastParser)):
             if nodes[index].code != code:
                 raise ValueError()
         except ValueError:
-            tokenizer = FastTokenizer(parser_code, line_offset, True)
+            tokenizer = FastTokenizer(parser_code, line_offset)
             p = Parser(parser_code, self.module_path, tokenizer=tokenizer,
                        top_module=self.module, no_docstr=no_docstr,
-                       is_fast=True, offset=line_offset)
+                       offset=line_offset)
             p.module.parent = self.module
         else:
             if nodes[index] != self.current_node:
@@ -390,13 +390,12 @@ class FastTokenizer(object):
     """
     Breaks when certain conditions are met, i.e. a new function or class opens.
     """
-    def __init__(self, source, line_offset=0, is_fast_parser=False):
+    def __init__(self, source, line_offset=0):
         self.source = source
         self.gen = source_tokens(source, line_offset)
         self.closed = False
 
         # fast parser options
-        self.is_fast_parser = is_fast_parser
         self.current = self.previous = TokenInfo(None, None, (0, 0), (0, 0))
         self.in_flow = False
         self.new_indent = False
@@ -428,11 +427,8 @@ class FastTokenizer(object):
                 self.closed = True
                 raise common.MultiLevelStopIteration()
         # ignore comments/ newlines
-        if self.is_fast_parser \
-                and self.previous[0] in (None, NEWLINE) \
-                and current[0] not in (COMMENT, NEWLINE):
+        if self.previous[0] in (None, NEWLINE) and current[0] not in (COMMENT, NEWLINE):
             # print c, tok_name[c[0]]
-
             tok = current[1]
             indent = current[2][1]
             if indent < self.parser_indent:  # -> dedent

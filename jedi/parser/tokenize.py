@@ -148,6 +148,7 @@ tabsize = 8
 
 
 def source_tokens(source, line_offset=0):
+    """Generate tokens from a the source code (string)."""
     source = source + '\n'  # end with \n, because the parser needs it
     readline = StringIO(source).readline
     return generate_tokens(readline, line_offset)

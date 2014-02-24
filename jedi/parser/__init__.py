@@ -38,7 +38,7 @@ class Parser(object):
     :param top_module: Use this module as a parent instead of `self.module`.
     """
     def __init__(self, source, module_path=None, no_docstr=False,
-                 tokenizer=None, top_module=None, offset=0, is_fast=False):
+                 tokenizer=None, top_module=None, offset=0):
         self.no_docstr = no_docstr
 
         self.start_pos = self.end_pos = 1 + offset, 0
@@ -642,12 +642,6 @@ class PushBackTokenizer(object):
             return self._push_backs.pop(0)
 
         self.current = next(self._tokenizer)
-
-        def close():
-            if not self.first_stmt:
-                self.closed = True
-                raise common.MultiLevelStopIteration()
-        # ignore indents/comments
         return self.current
 
     @property
