@@ -45,7 +45,6 @@ class Parser(object):
         # initialize global Scope
         self.module = pr.SubModule(module_path, self.start_pos, top_module)
         self._scope = self.module
-        self._current = (None, None)
 
         tokenizer = tokenizer or tokenize.source_tokens(source)
         self._gen = PushBackTokenizer(tokenizer)
@@ -70,7 +69,7 @@ class Parser(object):
             # because of `self.module.used_names`.
             d.parent = self.module
 
-        if self._current[0] in (tokenize.NEWLINE,):
+        if self._gen.current.type in (tokenize.NEWLINE,):
             # This case is only relevant with the FastTokenizer, because
             # otherwise there's always an EndMarker.
             # we added a newline before, so we need to "remove" it again.
@@ -319,16 +318,12 @@ class Parser(object):
             try:
                 # print 'parse_stmt', tok, tokenize.tok_name[token_type]
                 tok_list.append(
-                    token_pr.Token.from_tuple(
-                        self._current + (self.start_pos,)
-                    )
+                    token_pr.Token.from_tuple(self._gen.current)
                 )
                 if tok.string == 'as':
                     tok = self.next()
                     if tok.type == tokenize.NAME:
-                        n, tok = self._parse_dot_name(
-                            self._current
-                        )
+                        n, tok = self._parse_dot_name(self._gen.current)
                         if n:
                             set_vars.append(n)
                             as_names.append(n)
@@ -339,7 +334,7 @@ class Parser(object):
                     if tok.string == 'lambda':
                         breaks.discard(':')
                 elif tok.type == tokenize.NAME:
-                    n, tok = self._parse_dot_name(self._current)
+                    n, tok = self._parse_dot_name(self._gen.current)
                     # removed last entry, because we add Name
                     tok_list.pop()
                     if n:
@@ -399,13 +394,13 @@ class Parser(object):
     def __next__(self):
         """ Generate the next tokenize pattern. """
         #typ, tok, start_pos, end_pos = next(self._gen)
-        self._current = next(self._gen)
+        _current = next(self._gen)
         # dedents shouldn't change positions
-        self.start_pos = self._current.start
-        self.end_pos = self._current.end
+        self.start_pos = _current.start
+        self.end_pos = _current.end
 
         #self._current = typ, tok
-        return self._current
+        return _current
 
     def _parse(self):
         """
@@ -490,7 +485,7 @@ class Parser(object):
                         break
                     relative_count += 1
                 # the from import
-                mod, tok = self._parse_dot_name(self._current)
+                mod, tok = self._parse_dot_name(self._gen.current)
                 tok_str = tok.string
                 if str(mod) == 'import' and relative_count:
                     self._gen.push_last_back()
@@ -587,7 +582,7 @@ class Parser(object):
                     debug.warning('return in non-function')
             # globals
             elif tok_str == 'global':
-                stmt, tok = self._parse_statement(self._current)
+                stmt, tok = self._parse_statement(self._gen.current)
                 if stmt:
                     self._scope.add_statement(stmt)
                     for t in stmt.token_list:
@@ -614,7 +609,7 @@ class Parser(object):
                 # this is the main part - a name can be a function or a
                 # normal var, which can follow anything. but this is done
                 # by the statement parser.
-                stmt, tok = self._parse_statement(self._current)
+                stmt, tok = self._parse_statement(self._gen.current)
                 if stmt:
                     self._scope.add_statement(stmt)
                 self.freshscope = False
