@@ -41,9 +41,9 @@ class Parser(object):
                  tokenizer=None, top_module=None, offset=0):
         self.no_docstr = no_docstr
 
-        self.start_pos = self.end_pos = 1 + offset, 0
+        self._start_pos = self._end_pos = 1 + offset, 0
         # initialize global Scope
-        self.module = pr.SubModule(module_path, self.start_pos, top_module)
+        self.module = pr.SubModule(module_path, self._start_pos, top_module)
         self._scope = self.module
 
         tokenizer = tokenizer or tokenize.source_tokens(source)
@@ -60,7 +60,7 @@ class Parser(object):
             pass
         s = self._scope
         while s is not None:
-            s.end_pos = self.end_pos
+            s.end_pos = self._end_pos
             s = s.parent
 
         # clean up unused decorators
@@ -73,10 +73,10 @@ class Parser(object):
             # This case is only relevant with the FastTokenizer, because
             # otherwise there's always an EndMarker.
             # we added a newline before, so we need to "remove" it again.
-            self.end_pos = self._gen.previous[2]
+            self._end_pos = self._gen.previous[2]
 
-        self.start_pos = self.module.start_pos
-        self.module.end_pos = self.end_pos
+        self._start_pos = self.module.start_pos
+        self.module.end_pos = self._end_pos
         del self._gen
 
     def __repr__(self):
@@ -114,17 +114,17 @@ class Parser(object):
             # token maybe a name or star
             return None, tok
 
-        append((tok.string, self.start_pos))
-        first_pos = self.start_pos
+        append((tok.string, self._start_pos))
+        first_pos = self._start_pos
         while True:
-            end_pos = self.end_pos
+            end_pos = self._end_pos
             tok = self.next()
             if tok.string != '.':
                 break
             tok = self.next()
             if tok.type != tokenize.NAME:
                 break
-            append((tok.string, self.start_pos))
+            append((tok.string, self._start_pos))
 
         n = pr.Name(self.module, names, first_pos, end_pos) if names else None
         return n, tok
@@ -207,13 +207,13 @@ class Parser(object):
         :return: Return a Scope representation of the tokens.
         :rtype: Function
         """
-        first_pos = self.start_pos
+        first_pos = self._start_pos
         tok = self.next()
         if tok.type != tokenize.NAME:
             return None
 
-        fname = pr.Name(self.module, [(tok.string, self.start_pos)], self.start_pos,
-                        self.end_pos)
+        fname = pr.Name(self.module, [(tok.string, self._start_pos)], self._start_pos,
+                        self._end_pos)
 
         tok = self.next()
         if tok.string != '(':
@@ -245,15 +245,15 @@ class Parser(object):
         :return: Return a Scope representation of the tokens.
         :rtype: Class
         """
-        first_pos = self.start_pos
+        first_pos = self._start_pos
         cname = self.next()
         if cname.type != tokenize.NAME:
             debug.warning("class: syntax err, token is not a name@%s (%s: %s)",
-                          self.start_pos[0], tokenize.tok_name[cname.type], cname.string)
+                          self._start_pos[0], tokenize.tok_name[cname.type], cname.string)
             return None
 
-        cname = pr.Name(self.module, [(cname.string, self.start_pos)],
-                        self.start_pos, self.end_pos)
+        cname = pr.Name(self.module, [(cname.string, self._start_pos)],
+                        self._start_pos, self._end_pos)
 
         super = []
         _next = self.next()
@@ -262,7 +262,7 @@ class Parser(object):
             _next = self.next()
 
         if _next.string != ':':
-            debug.warning("class syntax: %s@%s", cname, self.start_pos[0])
+            debug.warning("class syntax: %s@%s", cname, self._start_pos[0])
             return None
 
         return pr.Class(self.module, cname, super, first_pos)
@@ -295,7 +295,7 @@ class Parser(object):
             self.next()
             tok = self.next()
 
-        first_pos = self.start_pos
+        first_pos = self._start_pos
         opening_brackets = ['{', '(', '[']
         closing_brackets = ['}', ')', ']']
 
@@ -374,7 +374,7 @@ class Parser(object):
                     )
                     return None, tok
 
-        stmt = stmt_class(self.module, tok_list, first_pos, self.end_pos,
+        stmt = stmt_class(self.module, tok_list, first_pos, self._end_pos,
                           as_names=as_names,
                           names_are_set_vars=names_are_set_vars)
 
@@ -396,8 +396,8 @@ class Parser(object):
         #typ, tok, start_pos, end_pos = next(self._gen)
         _current = next(self._gen)
         # dedents shouldn't change positions
-        self.start_pos = _current.start
-        self.end_pos = _current.end
+        self._start_pos = _current.start
+        self._end_pos = _current.end
 
         #self._current = typ, tok
         return _current
@@ -430,10 +430,10 @@ class Parser(object):
             # check again for unindented stuff. this is true for syntax
             # errors. only check for names, because thats relevant here. If
             # some docstrings are not indented, I don't care.
-            while self.start_pos[1] <= self._scope.start_pos[1] \
+            while self._start_pos[1] <= self._scope.start_pos[1] \
                     and (token_type == tokenize.NAME or tok_str in ['(', '['])\
                     and self._scope != self.module:
-                self._scope.end_pos = self.start_pos
+                self._scope.end_pos = self._start_pos
                 self._scope = self._scope.parent
                 if isinstance(self._scope, pr.Module) \
                         and not isinstance(self._scope, pr.SubModule):
@@ -443,11 +443,11 @@ class Parser(object):
                 use_as_parent_scope = self._top_module
             else:
                 use_as_parent_scope = self._scope
-            first_pos = self.start_pos
+            first_pos = self._start_pos
             if tok_str == 'def':
                 func = self._parse_function()
                 if func is None:
-                    debug.warning("function: syntax error@%s", self.start_pos[0])
+                    debug.warning("function: syntax error@%s", self._start_pos[0])
                     continue
                 self.freshscope = True
                 self._scope = self._scope.add_scope(func, self._decorators)
@@ -455,7 +455,7 @@ class Parser(object):
             elif tok_str == 'class':
                 cls = self._parse_class()
                 if cls is None:
-                    debug.warning("class: syntax error@%s" % self.start_pos[0])
+                    debug.warning("class: syntax error@%s" % self._start_pos[0])
                     continue
                 self.freshscope = True
                 self._scope = self._scope.add_scope(cls, self._decorators)
@@ -464,14 +464,19 @@ class Parser(object):
             elif tok_str == 'import':
                 imports = self._parse_import_list()
                 for count, (m, alias, defunct) in enumerate(imports):
-                    e = (alias or m or self).end_pos
-                    end_pos = self.end_pos if count + 1 == len(imports) else e
+                    if alias or m:
+#e = (alias or m or self).end_pos
+                        e = (alias or m).end_pos
+                    else:
+                        # TODO cleanup like e = (alias or name or self._gen.current).end_pos
+                        e = self._gen.current.end
+                    end_pos = self._end_pos if count + 1 == len(imports) else e
                     i = pr.Import(self.module, first_pos, end_pos, m,
                                   alias, defunct=defunct)
                     self._check_user_stmt(i)
                     self._scope.add_import(i)
                 if not imports:
-                    i = pr.Import(self.module, first_pos, self.end_pos, None,
+                    i = pr.Import(self.module, first_pos, self._end_pos, None,
                                   defunct=True)
                     self._check_user_stmt(i)
                 self.freshscope = False
@@ -492,7 +497,7 @@ class Parser(object):
                     tok_str = 'import'
                     mod = None
                 if not mod and not relative_count or tok_str != "import":
-                    debug.warning("from: syntax error@%s", self.start_pos[0])
+                    debug.warning("from: syntax error@%s", self._start_pos[0])
                     defunct = True
                     if tok_str != 'import':
                         self._gen.push_last_back()
@@ -501,8 +506,12 @@ class Parser(object):
                     star = name is not None and name.names[0] == '*'
                     if star:
                         name = None
-                    e = (alias or name or self).end_pos
-                    end_pos = self.end_pos if count + 1 == len(names) else e
+                    if alias or name:
+                        e = (alias or name).end_pos
+                    else:
+                        # TODO cleanup like e = (alias or name or self._gen.current).end_pos
+                        e = self._gen.current.end
+                    end_pos = self._end_pos if count + 1 == len(names) else e
                     i = pr.Import(self.module, first_pos, end_pos, name,
                                   alias, mod, star, relative_count,
                                   defunct=defunct or defunct2)
@@ -514,7 +523,7 @@ class Parser(object):
                 set_stmt, tok = self._parse_statement(added_breaks=['in'],
                                                       names_are_set_vars=True)
                 if tok.string != 'in':
-                    debug.warning('syntax err, for flow incomplete @%s', self.start_pos[0])
+                    debug.warning('syntax err, for flow incomplete @%s', self._start_pos[0])
 
                 try:
                     statement, tok = self._parse_statement()
@@ -524,7 +533,7 @@ class Parser(object):
                 f = pr.ForFlow(self.module, s, first_pos, set_stmt)
                 self._scope = self._scope.add_statement(f)
                 if tok is None or tok.string != ':':
-                    debug.warning('syntax err, for flow started @%s', self.start_pos[0])
+                    debug.warning('syntax err, for flow started @%s', self._start_pos[0])
             elif tok_str in ['if', 'while', 'try', 'with'] + extended_flow:
                 added_breaks = []
                 command = tok_str
@@ -561,10 +570,10 @@ class Parser(object):
                     s = self._scope.add_statement(f)
                 self._scope = s
                 if tok.string != ':':
-                    debug.warning('syntax err, flow started @%s', self.start_pos[0])
+                    debug.warning('syntax err, flow started @%s', self._start_pos[0])
             # returns
             elif tok_str in ['return', 'yield']:
-                s = self.start_pos
+                s = self._start_pos
                 self.freshscope = False
                 # add returns to the scope
                 func = self._scope.get_parent_until(pr.Function)
@@ -616,7 +625,7 @@ class Parser(object):
             else:
                 if token_type not in [tokenize.COMMENT, tokenize.NEWLINE]:
                     debug.warning('Token not used: %s %s %s', tok_str,
-                                  tokenize.tok_name[token_type], self.start_pos)
+                                  tokenize.tok_name[token_type], self._start_pos)
                 continue
             self.no_docstr = False
 
