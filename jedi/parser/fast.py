@@ -12,6 +12,8 @@ from jedi.parser import Parser
 from jedi.parser import representation as pr
 from jedi.parser import tokenize
 from jedi import cache
+from jedi.parser.tokenize import (source_tokens, TokenInfo, FLOWS, NEWLINE,
+                                  COMMENT, ENDMARKER)
 
 
 class Module(pr.Simple, pr.Module):
@@ -362,7 +364,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             if nodes[index].code != code:
                 raise ValueError()
         except ValueError:
-            tokenizer = tokenize.NoErrorTokenizer(parser_code, line_offset, True)
+            tokenizer = FastTokenizer(parser_code, line_offset, True)
             p = Parser(parser_code, self.module_path, tokenizer=tokenizer,
                        top_module=self.module, no_docstr=no_docstr,
                        is_fast=True, offset=line_offset)
@@ -382,3 +384,80 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.module.reset_caches()
         if self.current_node is not None:
             self.current_node.reset_contents()
+
+
+class FastTokenizer(object):
+    """
+    Breaks when certain conditions are met, i.e. a new function or class opens.
+    """
+    def __init__(self, source, line_offset=0, is_fast_parser=False):
+        self.source = source
+        self.gen = source_tokens(source, line_offset)
+        self.closed = False
+
+        # fast parser options
+        self.is_fast_parser = is_fast_parser
+        self.current = self.previous = TokenInfo(None, None, (0, 0), (0, 0))
+        self.in_flow = False
+        self.new_indent = False
+        self.parser_indent = self.old_parser_indent = 0
+        self.is_decorator = False
+        self.first_stmt = True
+
+    def next(self):
+        """ Python 2 Compatibility """
+        return self.__next__()
+
+    def __next__(self):
+        if self.closed:
+            raise common.MultiLevelStopIteration()
+
+        current = next(self.gen)
+        if current[0] == ENDMARKER:
+            raise common.MultiLevelStopIteration()
+
+        self.previous = self.current
+        self.current = current
+
+        # this is exactly the same check as in fast_parser, but this time with
+        # tokenize and therefore precise.
+        breaks = ['def', 'class', '@']
+
+        def close():
+            if not self.first_stmt:
+                self.closed = True
+                raise common.MultiLevelStopIteration()
+        # ignore comments/ newlines
+        if self.is_fast_parser \
+                and self.previous[0] in (None, NEWLINE) \
+                and current[0] not in (COMMENT, NEWLINE):
+            # print c, tok_name[c[0]]
+
+            tok = current[1]
+            indent = current[2][1]
+            if indent < self.parser_indent:  # -> dedent
+                self.parser_indent = indent
+                self.new_indent = False
+                if not self.in_flow or indent < self.old_parser_indent:
+                    close()
+                self.in_flow = False
+            elif self.new_indent:
+                self.parser_indent = indent
+                self.new_indent = False
+
+            if not self.in_flow:
+                if tok in FLOWS or tok in breaks:
+                    self.in_flow = tok in FLOWS
+                    if not self.is_decorator and not self.in_flow:
+                        close()
+                    self.is_decorator = '@' == tok
+                    if not self.is_decorator:
+                        self.old_parser_indent = self.parser_indent
+                        self.parser_indent += 1  # new scope: must be higher
+                        self.new_indent = True
+
+            if tok != '@':
+                if self.first_stmt and not self.new_indent:
+                    self.parser_indent = indent
+                self.first_stmt = False
+        return current
