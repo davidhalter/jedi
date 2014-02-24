@@ -402,8 +402,6 @@ class Parser(object):
         typ, tok, start_pos, end_pos = next(self._gen)
         # dedents shouldn't change positions
         self.start_pos = start_pos
-        if typ not in (tokenize.NEWLINE,):
-            self.start_pos, self.end_pos = start_pos, end_pos
 
         self._current = typ, tok
         return self._current
