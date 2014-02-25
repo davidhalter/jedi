@@ -48,7 +48,6 @@ class UserContext(object):
             while True:
                 self._line_temp -= 1
                 last_line = self.get_line(self._line_temp)
-                #print self._line_temp, repr(last_line)
                 if last_line and last_line[-1] == '\\':
                     line = last_line[:-1] + ' ' + line
                     self._line_length = len(last_line)
@@ -64,7 +63,7 @@ class UserContext(object):
         close_brackets = [')', ']', '}']
 
         gen = tokenize.generate_tokens(fetch_line)
-        string = ''
+        string = u('')
         level = 0
         force_point = False
         last_type = None

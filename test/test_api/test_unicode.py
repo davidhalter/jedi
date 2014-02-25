@@ -46,3 +46,21 @@ def test_multibyte_script():
         pass  # python 3 has no unicode method
     else:
         assert len(Script(s, 1, len(code)).completions())
+
+
+def test_goto_definition_at_zero():
+    """At zero usually sometimes raises unicode issues."""
+    assert Script("a", 1, 1).goto_definitions() == []
+    s = Script("str", 1, 1).goto_definitions()
+    assert len(s) == 1
+    assert list(s)[0].description == 'class str'
+    assert Script("", 1, 0).goto_definitions() == []
+
+
+def test_complete_at_zero():
+    s = Script("str", 1, 3).completions()
+    assert len(s) == 1
+    assert list(s)[0].name == 'str'
+
+    s = Script("", 1, 0).completions()
+    assert len(s) > 0

@@ -56,21 +56,6 @@ class TestRegression(TestCase):
 
         self.assertRaises(jedi.NotFoundError, get_def, cls)
 
-    def test_goto_definition_at_zero(self):
-        assert Script("a", 1, 1).goto_definitions() == []
-        s = Script("str", 1, 1).goto_definitions()
-        assert len(s) == 1
-        assert list(s)[0].description == 'class str'
-        assert Script("", 1, 0).goto_definitions() == []
-
-    def test_complete_at_zero(self):
-        s = Script("str", 1, 3).completions()
-        assert len(s) == 1
-        assert list(s)[0].name == 'str'
-
-        s = Script("", 1, 0).completions()
-        assert len(s) > 0
-
     @pytest.mark.skip('Skip for now, test case is not really supported.')
     @cwd_at('jedi')
     def test_add_dynamic_mods(self):
