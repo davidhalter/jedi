@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This tokenizer has been copied from the ``tokenize.py`` standard library
 tokenizer. The reason was simple: The standanrd library  tokenizer fails
@@ -15,9 +16,10 @@ from io import StringIO
 from token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, NAME, OP,
                    ERRORTOKEN, NEWLINE)
 import collections
-cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
-from jedi import common
+from jedi._compatibility import u, unicode
+
+cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
 
 # From here on we have custom stuff (everything before was originally Python
@@ -37,8 +39,121 @@ tok_name[ENCODING] = 'ENCODING'
 class TokenInfo(collections.namedtuple('TokenInfo', 'type string start end')):
     def __repr__(self):
         annotated_type = '%d (%s)' % (self.type, tok_name[self.type])
-        return ('TokenInfo(type=%s, string=%r, start=%r, end=%r, line=%r)' %
+        return ('TokenInfo(type=%s, string=%r, start=%r, end=%r)' %
                 self._replace(type=annotated_type))
+
+
+class TokenInfo(object):
+    """The token object is an efficient representation of the structure
+    (token_type, token, (start_pos_line, start_pos_col)). It has indexer
+    methods that maintain compatibility to existing code that expects the above
+    structure.
+
+    >>> tuple(TokenInfo(1,2,(3,4)))
+    (1, 2, (3, 4), None)
+    >>> str(TokenInfo(1, "test", (1, 1))) == "test"
+    True
+    >>> repr(TokenInfo(1, "test", (1, 1)))
+    "<TokenInfo: (1, 'test', (1, 1))>"
+    >>> TokenInfo(1, 2, (3, 4)).__getstate__()
+    (1, 2, 3, 4)
+    >>> a = TokenInfo(0, 0, (0, 0))
+    >>> a.__setstate__((1, 2, 3, 4))
+    >>> a
+    <TokenInfo: (1, 2, (3, 4))>
+    >>> a.start_pos
+    (3, 4)
+    >>> a.string
+    2
+    >>> a.start_pos_col
+    4
+    >>> unicode(TokenInfo(1, u("😷"), (1 ,1))) + "p" == u("😷p")
+    True
+    """
+    __slots__ = ("type", "string", "_start_pos_line", "_start_pos_col", "end")
+
+    def __init__(self, type, string, start_pos, end_pos=None):
+        self.type = type
+        self.string = string
+        self._start_pos_line = start_pos[0]
+        self._start_pos_col = start_pos[1]
+        self.end = end_pos
+
+    def __repr__(self):
+        return "<%s: %s>" % (type(self).__name__, tuple(self)[:3])
+
+    # Backward compatibility py2
+    def __unicode__(self):
+        return self.as_string()
+
+    # Backward compatibility py3
+    def __str__(self):
+        return self.as_string()
+
+    def as_string(self):
+        """For backward compatibilty str(token) or unicode(token) will work.
+        BUT please use as_string() instead, because it is independent from the
+        python version."""
+        return unicode(self.string)
+
+    # Backward compatibility
+    def __getitem__(self, key):
+        # Builds the same structure as tuple used to have
+        if key == 0:
+            return self.type
+        elif key == 1:
+            return self.string
+        elif key == 2:
+            return (self.start_pos_line, self.start_pos_col)
+        elif key == 3:
+            return self.end
+        else:
+            raise IndexError("list index out of range")
+
+    @property
+    def start_pos_line(self):
+        return self._start_pos_line
+
+    @property
+    def start_pos_col(self):
+        return self._start_pos_col
+
+    @property
+    def start_pos(self):
+        return (self._start_pos_line, self._start_pos_col)
+
+    @property
+    def start(self):
+        return (self._start_pos_line, self._start_pos_col)
+
+    @property
+    def _end_pos(self):
+        """Returns end position respecting multiline tokens."""
+        end_pos_line = self.start_pos_line
+        lines = unicode(self).split('\n')
+        end_pos_line += len(lines) - 1
+        end_pos_col = self.start_pos_col
+        # Check for multiline token
+        if self.start_pos_line == end_pos_line:
+            end_pos_col += len(lines[-1])
+        else:
+            end_pos_col = len(lines[-1])
+        return (end_pos_line, end_pos_col)
+
+    # Make cache footprint smaller for faster unpickling
+    def __getstate__(self):
+        return (
+            self.type,
+            self.string,
+            self.start_pos_line,
+            self.start_pos_col,
+        )
+
+    def __setstate__(self, state):
+        self.type = state[0]
+        self.string = state[1]
+        self._start_pos_line = state[2]
+        self._start_pos_col = state[3]
 
 
 def group(*choices):
