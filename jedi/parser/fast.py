@@ -398,7 +398,7 @@ class FastTokenizer(object):
         self.closed = False
 
         # fast parser options
-        self.current = self.previous = TokenInfo(None, None, (0, 0), (0, 0))
+        self.current = self.previous = TokenInfo(None, '', (0, 0), (0, 0))
         self.in_flow = False
         self.new_indent = False
         self.parser_indent = self.old_parser_indent = 0

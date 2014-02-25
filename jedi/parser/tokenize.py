@@ -49,8 +49,8 @@ class TokenInfo(object):
     methods that maintain compatibility to existing code that expects the above
     structure.
 
-    >>> tuple(TokenInfo(1,2,(3,4)))
-    (1, 2, (3, 4), None)
+    >>> tuple(TokenInfo(1, 'foo' ,(3,4)))
+    (1, 'foo', (3, 4), None)
     >>> str(TokenInfo(1, "test", (1, 1))) == "test"
     True
     >>> repr(TokenInfo(1, "test", (1, 1)))
@@ -65,19 +65,19 @@ class TokenInfo(object):
     (3, 4)
     >>> a.string
     2
-    >>> a.start_pos_col
+    >>> a._start_pos_col
     4
     >>> unicode(TokenInfo(1, u("😷"), (1 ,1))) + "p" == u("😷p")
     True
     """
-    __slots__ = ("type", "string", "_start_pos_line", "_start_pos_col", "end")
+    __slots__ = ("type", "string", "_start_pos_line", "_start_pos_col", "end_pos")
 
     def __init__(self, type, string, start_pos, end_pos=None):
         self.type = type
         self.string = string
         self._start_pos_line = start_pos[0]
         self._start_pos_col = start_pos[1]
-        self.end = end_pos
+        self.end_pos = end_pos
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, tuple(self)[:3])
@@ -104,19 +104,11 @@ class TokenInfo(object):
         elif key == 1:
             return self.string
         elif key == 2:
-            return (self.start_pos_line, self.start_pos_col)
+            return (self._start_pos_line, self._start_pos_col)
         elif key == 3:
             return self.end
         else:
             raise IndexError("list index out of range")
-
-    @property
-    def start_pos_line(self):
-        return self._start_pos_line
-
-    @property
-    def start_pos_col(self):
-        return self._start_pos_col
 
     @property
     def start_pos(self):
@@ -127,14 +119,24 @@ class TokenInfo(object):
         return (self._start_pos_line, self._start_pos_col)
 
     @property
-    def _end_pos(self):
+    def end(self):
+        if self.end_pos is not None and self._end != self.end_pos:
+            print(self.end_pos, self._end, repr(self.string))
+            assert False
+        return self.end_pos
+
+    @property
+    def _end(self):
         """Returns end position respecting multiline tokens."""
-        end_pos_line = self.start_pos_line
-        lines = unicode(self).split('\n')
+        end_pos_line = self._start_pos_line
+        lines = self.string.split('\n')
+        if self.string.endswith('\n'):
+            lines = lines[:-1]
+            lines[-1] += '\n'
         end_pos_line += len(lines) - 1
-        end_pos_col = self.start_pos_col
+        end_pos_col = self._start_pos_col
         # Check for multiline token
-        if self.start_pos_line == end_pos_line:
+        if self._start_pos_line == end_pos_line:
             end_pos_col += len(lines[-1])
         else:
             end_pos_col = len(lines[-1])
@@ -145,8 +147,8 @@ class TokenInfo(object):
         return (
             self.type,
             self.string,
-            self.start_pos_line,
-            self.start_pos_col,
+            self._start_pos_line,
+            self._start_pos_col,
         )
 
     def __setstate__(self, state):

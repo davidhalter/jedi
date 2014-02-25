@@ -42,7 +42,8 @@ class UserContext(object):
             else:
                 line = self.get_line(self._line_temp)
                 self._line_length = len(line)
-                line = line + '\n'
+            line = '\n' + line
+
             # add lines with a backslash at the end
             while True:
                 self._line_temp -= 1
