@@ -15,7 +15,6 @@ import re
 from io import StringIO
 from token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, NAME, OP,
                    ERRORTOKEN, NEWLINE)
-import collections
 
 from jedi._compatibility import u, unicode
 
@@ -36,13 +35,6 @@ ENCODING = N_TOKENS + 1
 tok_name[ENCODING] = 'ENCODING'
 
 
-class TokenInfo(collections.namedtuple('TokenInfo', 'type string start end')):
-    def __repr__(self):
-        annotated_type = '%d (%s)' % (self.type, tok_name[self.type])
-        return ('TokenInfo(type=%s, string=%r, start=%r, end=%r)' %
-                self._replace(type=annotated_type))
-
-
 class TokenInfo(object):
     """The token object is an efficient representation of the structure
     (token_type, token, (start_pos_line, start_pos_col)). It has indexer
@@ -50,34 +42,33 @@ class TokenInfo(object):
     structure.
 
     >>> tuple(TokenInfo(1, 'foo' ,(3,4)))
-    (1, 'foo', (3, 4), None)
+    (1, 'foo', (3, 4), (3, 7))
     >>> str(TokenInfo(1, "test", (1, 1))) == "test"
     True
     >>> repr(TokenInfo(1, "test", (1, 1)))
     "<TokenInfo: (1, 'test', (1, 1))>"
-    >>> TokenInfo(1, 2, (3, 4)).__getstate__()
-    (1, 2, 3, 4)
-    >>> a = TokenInfo(0, 0, (0, 0))
-    >>> a.__setstate__((1, 2, 3, 4))
+    >>> TokenInfo(1, 'bar', (3, 4)).__getstate__()
+    (1, 'bar', 3, 4)
+    >>> a = TokenInfo(0, 'baz', (0, 0))
+    >>> a.__setstate__((1, 'foo', 3, 4))
     >>> a
-    <TokenInfo: (1, 2, (3, 4))>
+    <TokenInfo: (1, 'foo', (3, 4))>
     >>> a.start_pos
     (3, 4)
     >>> a.string
-    2
+    'foo'
     >>> a._start_pos_col
     4
     >>> unicode(TokenInfo(1, u("😷"), (1 ,1))) + "p" == u("😷p")
     True
     """
-    __slots__ = ("type", "string", "_start_pos_line", "_start_pos_col", "end_pos")
+    __slots__ = ("type", "string", "_start_pos_line", "_start_pos_col")
 
-    def __init__(self, type, string, start_pos, end_pos=None):
+    def __init__(self, type, string, start_pos):
         self.type = type
         self.string = string
         self._start_pos_line = start_pos[0]
         self._start_pos_col = start_pos[1]
-        self.end_pos = end_pos
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, tuple(self)[:3])
@@ -120,13 +111,6 @@ class TokenInfo(object):
 
     @property
     def end(self):
-        if self.end_pos is not None and self._end != self.end_pos:
-            print(self.end_pos, self._end, repr(self.string))
-            assert False
-        return self.end_pos
-
-    @property
-    def _end(self):
         """Returns end position respecting multiline tokens."""
         end_pos_line = self._start_pos_line
         lines = self.string.split('\n')
@@ -284,7 +268,7 @@ def generate_tokens(readline, line_offset=0):
         line = readline()  # readline returns empty if it's finished. See StringIO
         if not line:
             if contstr:
-                yield TokenInfo(ERRORTOKEN, contstr, contstr_start, (lnum, pos))
+                yield TokenInfo(ERRORTOKEN, contstr, contstr_start)
             break
 
         lnum += 1
@@ -293,8 +277,8 @@ def generate_tokens(readline, line_offset=0):
         if contstr:                                         # continued string
             endmatch = endprog.match(line)
             if endmatch:
-                pos = end = endmatch.end(0)
-                yield TokenInfo(STRING, contstr + line[:end], contstr_start, (lnum, end))
+                pos = endmatch.end(0)
+                yield TokenInfo(STRING, contstr + line[:pos], contstr_start)
                 contstr = ''
                 contline = None
             else:
@@ -305,30 +289,29 @@ def generate_tokens(readline, line_offset=0):
         while pos < max:
             pseudomatch = pseudoprog.match(line, pos)
             if not pseudomatch:                             # scan for tokens
-                yield TokenInfo(ERRORTOKEN, line[pos],
-                               (lnum, pos), (lnum, pos + 1))
+                yield TokenInfo(ERRORTOKEN, line[pos], (lnum, pos))
                 pos += 1
                 continue
 
-            start, end = pseudomatch.span(1)
-            spos, epos, pos = (lnum, start), (lnum, end), end
-            token, initial = line[start:end], line[start]
+            start, pos = pseudomatch.span(1)
+            spos = (lnum, start)
+            token, initial = line[start:pos], line[start]
 
             if (initial in numchars or                      # ordinary number
                     (initial == '.' and token != '.' and token != '...')):
-                yield TokenInfo(NUMBER, token, spos, epos)
+                yield TokenInfo(NUMBER, token, spos)
             elif initial in '\r\n':
-                yield TokenInfo(NEWLINE, token, spos, epos)
+                yield TokenInfo(NEWLINE, token, spos)
             elif initial == '#':
                 assert not token.endswith("\n")
-                yield TokenInfo(COMMENT, token, spos, epos)
+                yield TokenInfo(COMMENT, token, spos)
             elif token in triple_quoted:
                 endprog = endprogs[token]
                 endmatch = endprog.match(line, pos)
                 if endmatch:                                # all on one line
                     pos = endmatch.end(0)
                     token = line[start:pos]
-                    yield TokenInfo(STRING, token, spos, (lnum, pos))
+                    yield TokenInfo(STRING, token, spos)
                 else:
                     contstr_start = (lnum, start)                # multiple lines
                     contstr = line[start:]
@@ -345,12 +328,12 @@ def generate_tokens(readline, line_offset=0):
                     contline = line
                     break
                 else:                                       # ordinary string
-                    yield TokenInfo(STRING, token, spos, epos)
+                    yield TokenInfo(STRING, token, spos)
             elif initial in namechars:                      # ordinary name
-                yield TokenInfo(NAME, token, spos, epos)
+                yield TokenInfo(NAME, token, spos)
             elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
                 continue
             else:
-                yield TokenInfo(OP, token, spos, epos)
+                yield TokenInfo(OP, token, spos)
 
-    yield TokenInfo(ENDMARKER, '', (lnum, 0), (lnum, 0))
+    yield TokenInfo(ENDMARKER, '', (lnum, 0))
