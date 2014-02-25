@@ -104,7 +104,7 @@ class Parser(object):
 
         names = []
         if pre_used_token is None:
-            tok = self.next()
+            tok = next(self._gen)
             if tok.type != tokenize.NAME and tok.string != '*':
                 return [], tok  # TODO the fuck, why []?
         else:
@@ -118,10 +118,10 @@ class Parser(object):
         append((tok.string, first_pos))
         while True:
             end_pos = tok.end
-            tok = self.next()
+            tok = next(self._gen)
             if tok.string != '.':
                 break
-            tok = self.next()
+            tok = next(self._gen)
             if tok.type != tokenize.NAME:
                 break
             append((tok.string, tok.start))
@@ -151,12 +151,12 @@ class Parser(object):
             + list(set(keyword.kwlist) - set(['as']))
         while True:
             defunct = False
-            tok = self.next()
+            tok = next(self._gen)
             if tok.string == '(':  # python allows only one `(` in the statement.
                 brackets = True
-                tok = self.next()
+                tok = next(self._gen)
             if brackets and tok.string == '\n':
-                tok = self.next()
+                tok = next(self._gen)
             i, tok = self._parse_dot_name(tok)
             if not i:
                 defunct = True
@@ -165,7 +165,7 @@ class Parser(object):
                 name2, tok = self._parse_dot_name()
             imports.append((i, name2, defunct))
             while tok.string not in continue_kw:
-                tok = self.next()
+                tok = next(self._gen)
             if not (tok.string == "," or brackets and tok.string == '\n'):
                 break
         return imports
@@ -208,25 +208,25 @@ class Parser(object):
         :rtype: Function
         """
         first_pos = self._gen.current.start
-        tok = self.next()
+        tok = next(self._gen)
         if tok.type != tokenize.NAME:
             return None
 
         fname = pr.Name(self.module, [(tok.string, tok.start)], tok.start,
                         tok.end)
 
-        tok = self.next()
+        tok = next(self._gen)
         if tok.string != '(':
             return None
         params = self._parse_parentheses()
 
-        colon = self.next()
+        colon = next(self._gen)
         annotation = None
         if colon.string in ['-', '->']:
             # parse annotations
             if colon.string == '-':
                 # The Python 2 tokenizer doesn't understand this
-                colon = self.next()
+                colon = next(self._gen)
                 if colon.string != '>':
                     return None
             annotation, colon = self._parse_statement(added_breaks=[':'])
@@ -246,7 +246,7 @@ class Parser(object):
         :rtype: Class
         """
         first_pos = self._gen.current.start
-        cname = self.next()
+        cname = next(self._gen)
         if cname.type != tokenize.NAME:
             debug.warning("class: syntax err, token is not a name@%s (%s: %s)",
                           cname.start[0], tokenize.tok_name[cname.type], cname.string)
@@ -256,10 +256,10 @@ class Parser(object):
                         cname.start, cname.end)
 
         super = []
-        _next = self.next()
+        _next = next(self._gen)
         if _next.string == '(':
             super = self._parse_parentheses()
-            _next = self.next()
+            _next = next(self._gen)
 
         if _next.string != ':':
             debug.warning("class syntax: %s@%s", cname, _next.start[0])
@@ -288,12 +288,12 @@ class Parser(object):
         if pre_used_token:
             tok = pre_used_token
         else:
-            tok = self.next()
+            tok = next(self._gen)
 
         while tok.type == tokenize.COMMENT:
             # remove newline and comment
-            self.next()
-            tok = self.next()
+            next(self._gen)
+            tok = next(self._gen)
 
         first_pos = tok.start
         opening_brackets = ['{', '(', '[']
@@ -321,7 +321,7 @@ class Parser(object):
                     token_pr.Token.from_tuple(self._gen.current)
                 )
                 if tok.string == 'as':
-                    tok = self.next()
+                    tok = next(self._gen)
                     if tok.type == tokenize.NAME:
                         n, tok = self._parse_dot_name(self._gen.current)
                         if n:
@@ -345,7 +345,7 @@ class Parser(object):
                 elif tok.string in closing_brackets:
                     level -= 1
 
-                tok = self.next()
+                tok = next(self._gen)
             except (StopIteration, common.MultiLevelStopIteration):
                 # comes from tokenizer
                 break
@@ -385,21 +385,6 @@ class Parser(object):
             self._gen.push_last_back()
         return stmt, tok
 
-    def next(self):
-        return self.__next__()
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        """ Generate the next tokenize pattern. """
-        #typ, tok, start_pos, end_pos = next(self._gen)
-        _current = next(self._gen)
-        # dedents shouldn't change positions
-
-        #self._current = typ, tok
-        return _current
-
     def _parse(self):
         """
         The main part of the program. It analyzes the given code-text and
@@ -416,9 +401,7 @@ class Parser(object):
 
         self._decorators = []
         self.freshscope = True
-        # This iterator stuff is not intentional. It grew historically.
-        self.iterator = iter(self)
-        for tok in self.iterator:
+        for tok in self._gen:
             token_type = tok.type
             tok_str = tok.string
             first_pos = tok.start
@@ -483,7 +466,7 @@ class Parser(object):
                 # take care for relative imports
                 relative_count = 0
                 while True:
-                    tok = self.next()
+                    tok = next(self._gen)
                     if tok.string != '.':
                         break
                     relative_count += 1
@@ -647,6 +630,9 @@ class PushBackTokenizer(object):
 
         self.current = next(self._tokenizer)
         return self.current
+
+    def __iter__(self):
+        return self
 
     @property
     def previous(self):
