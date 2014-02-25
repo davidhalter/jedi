@@ -16,7 +16,7 @@ from io import StringIO
 from token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, NAME, OP,
                    ERRORTOKEN, NEWLINE)
 
-from jedi._compatibility import u, unicode
+from jedi._compatibility import u
 
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
@@ -117,58 +117,58 @@ def maybe(*choices):
 
 # Note: we use unicode matching for names ("\w") but ascii matching for
 # number literals.
-Whitespace = r'[ \f\t]*'
-Comment = r'#[^\r\n]*'
-Ignore = Whitespace + any(r'\\\r?\n' + Whitespace) + maybe(Comment)
-Name = r'\w+'
+whitespace = r'[ \f\t]*'
+comment = r'#[^\r\n]*'
+ignore = whitespace + any(r'\\\r?\n' + whitespace) + maybe(comment)
+name = r'\w+'
 
-Hexnumber = r'0[xX][0-9a-fA-F]+'
-Binnumber = r'0[bB][01]+'
-Octnumber = r'0[oO][0-7]+'
-Decnumber = r'(?:0+|[1-9][0-9]*)'
-Intnumber = group(Hexnumber, Binnumber, Octnumber, Decnumber)
-Exponent = r'[eE][-+]?[0-9]+'
-Pointfloat = group(r'[0-9]+\.[0-9]*', r'\.[0-9]+') + maybe(Exponent)
-Expfloat = r'[0-9]+' + Exponent
-Floatnumber = group(Pointfloat, Expfloat)
-Imagnumber = group(r'[0-9]+[jJ]', Floatnumber + r'[jJ]')
-Number = group(Imagnumber, Floatnumber, Intnumber)
+hex_number = r'0[xX][0-9a-fA-F]+'
+bin_number = r'0[bB][01]+'
+oct_number = r'0[oO][0-7]+'
+dec_number = r'(?:0+|[1-9][0-9]*)'
+int_number = group(hex_number, bin_number, oct_number, dec_number)
+exponent = r'[eE][-+]?[0-9]+'
+point_float = group(r'[0-9]+\.[0-9]*', r'\.[0-9]+') + maybe(exponent)
+Expfloat = r'[0-9]+' + exponent
+float_number = group(point_float, Expfloat)
+imag_number = group(r'[0-9]+[jJ]', float_number + r'[jJ]')
+number = group(imag_number, float_number, int_number)
 
 # Tail end of ' string.
-Single = r"[^'\\]*(?:\\.[^'\\]*)*'"
+single = r"[^'\\]*(?:\\.[^'\\]*)*'"
 # Tail end of " string.
-Double = r'[^"\\]*(?:\\.[^"\\]*)*"'
+double = r'[^"\\]*(?:\\.[^"\\]*)*"'
 # Tail end of ''' string.
-Single3 = r"[^'\\]*(?:(?:\\.|'(?!''))[^'\\]*)*'''"
+single3 = r"[^'\\]*(?:(?:\\.|'(?!''))[^'\\]*)*'''"
 # Tail end of """ string.
-Double3 = r'[^"\\]*(?:(?:\\.|"(?!""))[^"\\]*)*"""'
-Triple = group("[bB]?[rR]?'''", '[bB]?[rR]?"""')
+double3 = r'[^"\\]*(?:(?:\\.|"(?!""))[^"\\]*)*"""'
+triple = group("[bB]?[rR]?'''", '[bB]?[rR]?"""')
 # Single-line ' or " string.
-String = group(r"[bB]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*'",
+string = group(r"[bB]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*'",
                r'[bB]?[rR]?"[^\n"\\]*(?:\\.[^\n"\\]*)*"')
 
 # Because of leftmost-then-longest match semantics, be sure to put the
 # longest operators first (e.g., if = came before ==, == would get
 # recognized as two instances of =).
-Operator = group(r"\*\*=?", r">>=?", r"<<=?", r"!=",
+operator = group(r"\*\*=?", r">>=?", r"<<=?", r"!=",
                  r"//=?", r"->",
                  r"[+\-*/%&|^=<>]=?",
                  r"~")
 
-Bracket = '[][(){}]'
-Special = group(r'\r?\n', r'\.\.\.', r'[:;.,@]')
-Funny = group(Operator, Bracket, Special)
+bracket = '[][(){}]'
+special = group(r'\r?\n', r'\.\.\.', r'[:;.,@]')
+funny = group(operator, bracket, special)
 
-PlainToken = group(Number, Funny, String, Name)
-token = Ignore + PlainToken
+plain_token = group(number, funny, string, name)
+token = ignore + plain_token
 
 # First (or only) line of ' or " string.
-ContStr = group(r"[bB]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*" +
-                group("'", r'\\\r?\n'),
-                r'[bB]?[rR]?"[^\n"\\]*(?:\\.[^\n"\\]*)*' +
-                group('"', r'\\\r?\n'))
-PseudoExtras = group(r'\\\r?\n', Comment, Triple)
-PseudoToken = Whitespace + group(PseudoExtras, Number, Funny, ContStr, Name)
+cont_str = group(r"[bB]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*" +
+                 group("'", r'\\\r?\n'),
+                 r'[bB]?[rR]?"[^\n"\\]*(?:\\.[^\n"\\]*)*' +
+                 group('"', r'\\\r?\n'))
+pseudo_extras = group(r'\\\r?\n', comment, triple)
+pseudo_token = whitespace + group(pseudo_extras, number, funny, cont_str, name)
 
 
 def _compile(expr):
@@ -176,8 +176,8 @@ def _compile(expr):
 
 
 tokenprog, pseudoprog, single3prog, double3prog = map(
-    _compile, (token, PseudoToken, Single3, Double3))
-endprogs = {"'": _compile(Single), '"': _compile(Double),
+    _compile, (token, pseudo_token, single3, double3))
+endprogs = {"'": _compile(single), '"': _compile(double),
             "'''": single3prog, '"""': double3prog,
             "r'''": single3prog, 'r"""': double3prog,
             "b'''": single3prog, 'b"""': double3prog,
