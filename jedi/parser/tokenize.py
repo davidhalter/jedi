@@ -42,8 +42,6 @@ class Token(object):
     methods that maintain compatibility to existing code that expects the above
     structure.
 
-    >>> tuple(Token(1, 'foo' ,(3,4)))
-    (1, 'foo', (3, 4), (3, 7))
     >>> repr(Token(1, "test", (1, 1)))
     "<Token: (1, 'test', (1, 1))>"
     >>> Token(1, 'bar', (3, 4)).__getstate__()
@@ -70,21 +68,8 @@ class Token(object):
         self._start_pos_col = start_pos[1]
 
     def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, tuple(self)[:3])
-
-    # Backward compatibility
-    def __getitem__(self, key):
-        # Builds the same structure as tuple used to have
-        if key == 0:
-            return self.type
-        elif key == 1:
-            return self.string
-        elif key == 2:
-            return (self._start_pos_line, self._start_pos_col)
-        elif key == 3:
-            return self.end_pos
-        else:
-            raise IndexError("list index out of range")
+        content = self.type, self.string, (self._start_pos_line, self._start_pos_col)
+        return "<%s: %s>" % (type(self).__name__, content)
 
     @property
     def start_pos(self):
@@ -109,12 +94,7 @@ class Token(object):
 
     # Make cache footprint smaller for faster unpickling
     def __getstate__(self):
-        return (
-            self.type,
-            self.string,
-            self._start_pos_line,
-            self._start_pos_col,
-        )
+        return (self.type, self.string, self._start_pos_line, self._start_pos_col)
 
     def __setstate__(self, state):
         self.type = state[0]

@@ -414,7 +414,9 @@ class FastTokenizer(object):
             raise common.MultiLevelStopIteration()
 
         current = next(self.gen)
-        if current[0] == ENDMARKER:
+        tok_type = current.type
+        tok_str = current.string
+        if tok_type == ENDMARKER:
             raise common.MultiLevelStopIteration()
 
         self.previous = self.current
@@ -428,11 +430,11 @@ class FastTokenizer(object):
             if not self.first_stmt:
                 self.closed = True
                 raise common.MultiLevelStopIteration()
+
         # ignore comments/ newlines
-        if self.previous[0] in (None, NEWLINE) and current[0] not in (COMMENT, NEWLINE):
+        if self.previous.type in (None, NEWLINE) and tok_type not in (COMMENT, NEWLINE):
             # print c, tok_name[c[0]]
-            tok = current[1]
-            indent = current[2][1]
+            indent = current.start_pos[1]
             if indent < self.parser_indent:  # -> dedent
                 self.parser_indent = indent
                 self.new_indent = False
@@ -444,17 +446,17 @@ class FastTokenizer(object):
                 self.new_indent = False
 
             if not self.in_flow:
-                if tok in FLOWS or tok in breaks:
-                    self.in_flow = tok in FLOWS
+                if tok_str in FLOWS or tok_str in breaks:
+                    self.in_flow = tok_str in FLOWS
                     if not self.is_decorator and not self.in_flow:
                         close()
-                    self.is_decorator = '@' == tok
+                    self.is_decorator = '@' == tok_str
                     if not self.is_decorator:
                         self.old_parser_indent = self.parser_indent
                         self.parser_indent += 1  # new scope: must be higher
                         self.new_indent = True
 
-            if tok != '@':
+            if tok_str != '@':
                 if self.first_stmt and not self.new_indent:
                     self.parser_indent = indent
                 self.first_stmt = False

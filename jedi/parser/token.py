@@ -12,14 +12,7 @@ from jedi._compatibility import unicode
 from jedi.parser.tokenize import Token
 
 
-class TokenNoCompat(Token):
-    __slots__ = ()
-
-    def __getitem__(self, key):
-        raise NotImplementedError("Compatibility only for basic token.")
-
-
-class TokenDocstring(TokenNoCompat):
+class TokenDocstring(Token):
     """A string token that is a docstring.
 
     as_string() will clean the token representing the docstring.
