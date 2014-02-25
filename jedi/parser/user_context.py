@@ -68,35 +68,38 @@ class UserContext(object):
         force_point = False
         last_type = None
         is_first = True
-        for token_type, tok, start, end in gen:
+        for tok in gen:
+            tok_type = tok.type
+            tok_str = tok.string
+            end = tok.end_pos
             if is_first:
-                if start != (1, 0):  # whitespace is not a path
+                if tok.start_pos != (1, 0):  # whitespace is not a path
                     return u(''), start_cursor
                 is_first = False
 
-            # print 'tok', token_type, tok, force_point
-            if last_type == token_type == tokenize.NAME:
+            # print 'tok', token_type, tok_str, force_point
+            if last_type == tok_type == tokenize.NAME:
                 string += ' '
 
             if level > 0:
-                if tok in close_brackets:
+                if tok_str in close_brackets:
                     level += 1
-                if tok in open_brackets:
+                if tok_str in open_brackets:
                     level -= 1
-            elif tok == '.':
+            elif tok_str == '.':
                 force_point = False
             elif force_point:
                 # it is reversed, therefore a number is getting recognized
                 # as a floating point number
-                if token_type == tokenize.NUMBER and tok[0] == '.':
+                if tok_type == tokenize.NUMBER and tok_str[0] == '.':
                     force_point = False
                 else:
                     break
-            elif tok in close_brackets:
+            elif tok_str in close_brackets:
                 level += 1
-            elif token_type in [tokenize.NAME, tokenize.STRING]:
+            elif tok_type in [tokenize.NAME, tokenize.STRING]:
                 force_point = True
-            elif token_type == tokenize.NUMBER:
+            elif tok_type == tokenize.NUMBER:
                 pass
             else:
                 self._column_temp = self._line_length - end[1]
@@ -107,8 +110,8 @@ class UserContext(object):
             l = first_line if x == start_pos[0] else l
             start_cursor = x, len(l) - end[1]
             self._column_temp = self._line_length - end[1]
-            string += tok
-            last_type = token_type
+            string += tok_str
+            last_type = tok_type
 
         # string can still contain spaces at the end
         return string[::-1].strip(), start_cursor
