@@ -44,8 +44,6 @@ class TokenInfo(object):
 
     >>> tuple(TokenInfo(1, 'foo' ,(3,4)))
     (1, 'foo', (3, 4), (3, 7))
-    >>> str(TokenInfo(1, "test", (1, 1))) == "test"
-    True
     >>> repr(TokenInfo(1, "test", (1, 1)))
     "<TokenInfo: (1, 'test', (1, 1))>"
     >>> TokenInfo(1, 'bar', (3, 4)).__getstate__()
@@ -60,7 +58,7 @@ class TokenInfo(object):
     'foo'
     >>> a._start_pos_col
     4
-    >>> unicode(TokenInfo(1, u("😷"), (1 ,1))) + "p" == u("😷p")
+    >>> TokenInfo(1, u("😷"), (1 ,1)).string + "p" == u("😷p")
     True
     """
     __slots__ = ("type", "string", "_start_pos_line", "_start_pos_col")
@@ -73,20 +71,6 @@ class TokenInfo(object):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, tuple(self)[:3])
-
-    # Backward compatibility py2
-    def __unicode__(self):
-        return self.as_string()
-
-    # Backward compatibility py3
-    def __str__(self):
-        return self.as_string()
-
-    def as_string(self):
-        """For backward compatibilty str(token) or unicode(token) will work.
-        BUT please use as_string() instead, because it is independent from the
-        python version."""
-        return unicode(self.string)
 
     # Backward compatibility
     def __getitem__(self, key):

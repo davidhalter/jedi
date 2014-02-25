@@ -19,8 +19,6 @@ class Token(object):
 
     >>> tuple(Token(1,2,3,4))
     (1, 2, (3, 4))
-    >>> unicode(Token(1, "test", 1, 1)) == "test"
-    True
     >>> repr(Token(1, "test", 1, 1))
     "<Token: (1, 'test', (1, 1))>"
     >>> Token(1, 2, 3, 4).__getstate__()
@@ -37,10 +35,10 @@ class Token(object):
     4
     >>> Token.from_tuple((6, 5, (4, 3)))
     <Token: (6, 5, (4, 3))>
-    >>> unicode(Token(1, u("😷"), 1 ,1)) + "p" == u("😷p")
+    >>> Token(1, u("😷"), 1 ,1).string + "p" == u("😷p")
     True
     """
-    __slots__ = ("_type", "_token", "_start_pos_line", "_start_pos_col")
+    __slots__ = ("_type", "string", "_start_pos_line", "_start_pos_col")
 
     @classmethod
     def from_tuple(cls, tp):
@@ -50,7 +48,7 @@ class Token(object):
         self, type, token, start_pos_line, start_pos_col
     ):
         self._type = type
-        self._token = token
+        self.string = token
         self._start_pos_line = start_pos_line
         self._start_pos_col = start_pos_col
 
@@ -59,17 +57,11 @@ class Token(object):
 
     # Backward compatibility py2
     def __unicode__(self):
-        return self.as_string()
+        return self.string
 
     # Backward compatibility py3
     def __str__(self):
-        return self.as_string()
-
-    def as_string(self):
-        """For backward compatibilty str(token) or unicode(token) will work.
-        BUT please use as_string() instead, because it is independant from the
-        python version."""
-        return unicode(self.token)
+        return self.string
 
     # Backward compatibility
     def __getitem__(self, key):
@@ -89,7 +81,7 @@ class Token(object):
 
     @property
     def token(self):
-        return self._token
+        return self.string
 
     @property
     def start_pos_line(self):
@@ -128,7 +120,7 @@ class Token(object):
 
     def __setstate__(self, state):
         self._type = state[0]
-        self._token = state[1]
+        self.string = state[1]
         self._start_pos_line = state[2]
         self._start_pos_col = state[3]
 

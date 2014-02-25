@@ -550,7 +550,7 @@ class Function(Scope):
 
         :rtype: str
         """
-        l = str(funcname or self.name.names[-1]) + '('
+        l = unicode(funcname or self.name.names[-1]) + '('
         lines = []
         for (i, p) in enumerate(self.params):
             code = p.get_code(False)
@@ -753,7 +753,7 @@ class Import(Simple):
         if self.alias:
             ns_str = "%s as %s" % (namespace, alias)
         else:
-            ns_str = str(namespace)
+            ns_str = unicode(namespace)
 
         nl = '\n' if new_line else ''
         if self.from_ns or self.relative_count:
@@ -1463,7 +1463,7 @@ class Name(Simple):
 
     def get_code(self):
         """ Returns the names in a full string format """
-        return ".".join(str(n) for n in self.names)
+        return ".".join(unicode(n) for n in self.names)
 
     @property
     def docstr(self):
