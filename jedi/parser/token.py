@@ -55,14 +55,6 @@ class Token(object):
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, tuple(self))
 
-    # Backward compatibility py2
-    def __unicode__(self):
-        return self.string
-
-    # Backward compatibility py3
-    def __str__(self):
-        return self.string
-
     # Backward compatibility
     def __getitem__(self, key):
         # Builds the same structure as tuple used to have
@@ -99,7 +91,7 @@ class Token(object):
     def end_pos(self):
         """Returns end position respecting multiline tokens."""
         end_pos_line = self.start_pos_line
-        lines = unicode(self).split('\n')
+        lines = self.string.split('\n')
         end_pos_line += len(lines) - 1
         end_pos_col = self.start_pos_col
         # Check for multiline token

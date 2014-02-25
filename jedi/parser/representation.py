@@ -839,7 +839,8 @@ class Statement(Simple):
 
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
-            pieces = [c.get_code() if isinstance(c, Simple) else unicode(c)
+            pieces = [c.get_code() if isinstance(c, Simple) else c.string if
+isinstance(c, tokenize.TokenInfo) else unicode(c)
                       for c in command_list]
             if assignment is None:
                 return ''.join(pieces)
@@ -888,7 +889,8 @@ class Statement(Simple):
 
     def is_global(self):
         # first keyword of the first token is global -> must be a global
-        return str(self.token_list[0]) == "global"
+        tok = self.token_list[0]
+        return isinstance(tok, Name) and str(tok) == "global"
 
     @property
     def assignment_details(self):
@@ -976,7 +978,7 @@ class Statement(Simple):
                         # it's not possible to set it earlier
                         tok.parent = self
                 else:
-                    tok = tok_temp.token
+                    tok = tok_temp.string
                     start_tok_pos = tok_temp.start_pos
                     last_end_pos = end_pos
                     end_pos = tok_temp.end_pos
@@ -1111,15 +1113,13 @@ class Statement(Simple):
                 end_pos = tok.end_pos
             else:
                 token_type = tok_temp.type
-                tok = tok_temp.token
+                tok = tok_temp.string
                 start_pos = tok_temp.start_pos
                 end_pos = tok_temp.end_pos
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
-                    self._assignment_details.append(
-                        (result, tok_temp.token)
-                    )
+                    self._assignment_details.append((result, tok_temp.string))
                     result = []
                     is_chain = False
                     continue
