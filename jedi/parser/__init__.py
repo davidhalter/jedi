@@ -38,14 +38,15 @@ class Parser(object):
     :param top_module: Use this module as a parent instead of `self.module`.
     """
     def __init__(self, source, module_path=None, no_docstr=False,
-                 tokenizer=None, top_module=None, offset=0):
+                 tokenizer=None, top_module=None):
         self.no_docstr = no_docstr
 
         tokenizer = tokenizer or tokenize.source_tokens(source)
         self._gen = PushBackTokenizer(tokenizer)
 
-        start_pos = 1 + offset, 0
         # initialize global Scope
+        start_pos = next(self._gen).start
+        self._gen.push_last_back()
         self.module = pr.SubModule(module_path, start_pos, top_module)
         self._scope = self.module
         self._top_module = top_module or self.module

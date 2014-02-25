@@ -369,8 +369,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         except ValueError:
             tokenizer = FastTokenizer(parser_code, line_offset)
             p = Parser(parser_code, self.module_path, tokenizer=tokenizer,
-                       top_module=self.module, no_docstr=no_docstr,
-                       offset=line_offset)
+                       top_module=self.module, no_docstr=no_docstr)
             p.module.parent = self.module
         else:
             if nodes[index] != self.current_node:
