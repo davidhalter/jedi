@@ -41,7 +41,7 @@ class Parser(object):
                  tokenizer=None, top_module=None, offset=0):
         self.no_docstr = no_docstr
 
-        self._start_pos = self._end_pos = 1 + offset, 0
+        self._start_pos = 1 + offset, 0
         # initialize global Scope
         self.module = pr.SubModule(module_path, self._start_pos, top_module)
         self._scope = self.module
@@ -60,7 +60,7 @@ class Parser(object):
             pass
         s = self._scope
         while s is not None:
-            s.end_pos = self._end_pos
+            s.end_pos = self._gen.current.end
             s = s.parent
 
         # clean up unused decorators
@@ -69,14 +69,14 @@ class Parser(object):
             # because of `self.module.used_names`.
             d.parent = self.module
 
+        self._start_pos = self.module.start_pos
+        self.module.end_pos = self._gen.current.end
         if self._gen.current.type in (tokenize.NEWLINE,):
             # This case is only relevant with the FastTokenizer, because
             # otherwise there's always an EndMarker.
             # we added a newline before, so we need to "remove" it again.
-            self._end_pos = self._gen.previous[2]
+            self.module.end_pos = self._gen.previous.end
 
-        self._start_pos = self.module.start_pos
-        self.module.end_pos = self._end_pos
         del self._gen
 
     def __repr__(self):
@@ -117,7 +117,7 @@ class Parser(object):
         append((tok.string, self._start_pos))
         first_pos = self._start_pos
         while True:
-            end_pos = self._end_pos
+            end_pos = tok.end
             tok = self.next()
             if tok.string != '.':
                 break
@@ -213,7 +213,7 @@ class Parser(object):
             return None
 
         fname = pr.Name(self.module, [(tok.string, self._start_pos)], self._start_pos,
-                        self._end_pos)
+                        tok.end)
 
         tok = self.next()
         if tok.string != '(':
@@ -253,7 +253,7 @@ class Parser(object):
             return None
 
         cname = pr.Name(self.module, [(cname.string, self._start_pos)],
-                        self._start_pos, self._end_pos)
+                        self._start_pos, cname.end)
 
         super = []
         _next = self.next()
@@ -374,7 +374,7 @@ class Parser(object):
                     )
                     return None, tok
 
-        stmt = stmt_class(self.module, tok_list, first_pos, self._end_pos,
+        stmt = stmt_class(self.module, tok_list, first_pos, tok.end,
                           as_names=as_names,
                           names_are_set_vars=names_are_set_vars)
 
@@ -397,7 +397,6 @@ class Parser(object):
         _current = next(self._gen)
         # dedents shouldn't change positions
         self._start_pos = _current.start
-        self._end_pos = _current.end
 
         #self._current = typ, tok
         return _current
@@ -470,14 +469,14 @@ class Parser(object):
                     else:
                         # TODO cleanup like e = (alias or name or self._gen.current).end_pos
                         e = self._gen.current.end
-                    end_pos = self._end_pos if count + 1 == len(imports) else e
+                    end_pos = self._gen.current.end if count + 1 == len(imports) else e
                     i = pr.Import(self.module, first_pos, end_pos, m,
                                   alias, defunct=defunct)
                     self._check_user_stmt(i)
                     self._scope.add_import(i)
                 if not imports:
-                    i = pr.Import(self.module, first_pos, self._end_pos, None,
-                                  defunct=True)
+                    i = pr.Import(self.module, first_pos, self._gen.current.end,
+                                  None, defunct=True)
                     self._check_user_stmt(i)
                 self.freshscope = False
             elif tok_str == 'from':
@@ -511,7 +510,7 @@ class Parser(object):
                     else:
                         # TODO cleanup like e = (alias or name or self._gen.current).end_pos
                         e = self._gen.current.end
-                    end_pos = self._end_pos if count + 1 == len(names) else e
+                    end_pos = self._gen.current.end if count + 1 == len(names) else e
                     i = pr.Import(self.module, first_pos, end_pos, name,
                                   alias, mod, star, relative_count,
                                   defunct=defunct or defunct2)
