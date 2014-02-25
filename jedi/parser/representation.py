@@ -840,7 +840,7 @@ class Statement(Simple):
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
             pieces = [c.get_code() if isinstance(c, Simple) else c.string if
-isinstance(c, tokenize.TokenInfo) else unicode(c)
+isinstance(c, tokenize.Token) else unicode(c)
                       for c in command_list]
             if assignment is None:
                 return ''.join(pieces)

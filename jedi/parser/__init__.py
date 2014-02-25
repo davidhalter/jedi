@@ -614,7 +614,7 @@ class PushBackTokenizer(object):
     def __init__(self, tokenizer):
         self._tokenizer = tokenizer
         self._push_backs = []
-        self.current = tokenize.TokenInfo(None, '', (0, 0))
+        self.current = tokenize.Token(None, '', (0, 0))
 
     def push_last_back(self):
         self._push_backs.append(self.current)

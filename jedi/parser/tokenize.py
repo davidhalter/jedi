@@ -35,30 +35,30 @@ ENCODING = N_TOKENS + 1
 tok_name[ENCODING] = 'ENCODING'
 
 
-class TokenInfo(object):
+class Token(object):
     """
     The token object is an efficient representation of the structure
     (type, token, (start_pos_line, start_pos_col)). It has indexer
     methods that maintain compatibility to existing code that expects the above
     structure.
 
-    >>> tuple(TokenInfo(1, 'foo' ,(3,4)))
+    >>> tuple(Token(1, 'foo' ,(3,4)))
     (1, 'foo', (3, 4), (3, 7))
-    >>> repr(TokenInfo(1, "test", (1, 1)))
-    "<TokenInfo: (1, 'test', (1, 1))>"
-    >>> TokenInfo(1, 'bar', (3, 4)).__getstate__()
+    >>> repr(Token(1, "test", (1, 1)))
+    "<Token: (1, 'test', (1, 1))>"
+    >>> Token(1, 'bar', (3, 4)).__getstate__()
     (1, 'bar', 3, 4)
-    >>> a = TokenInfo(0, 'baz', (0, 0))
+    >>> a = Token(0, 'baz', (0, 0))
     >>> a.__setstate__((1, 'foo', 3, 4))
     >>> a
-    <TokenInfo: (1, 'foo', (3, 4))>
+    <Token: (1, 'foo', (3, 4))>
     >>> a.start_pos
     (3, 4)
     >>> a.string
     'foo'
     >>> a._start_pos_col
     4
-    >>> TokenInfo(1, u("😷"), (1 ,1)).string + "p" == u("😷p")
+    >>> Token(1, u("😷"), (1 ,1)).string + "p" == u("😷p")
     True
     """
     __slots__ = ("type", "string", "_start_pos_line", "_start_pos_col")
@@ -180,7 +180,7 @@ Special = group(r'\r?\n', r'\.\.\.', r'[:;.,@]')
 Funny = group(Operator, Bracket, Special)
 
 PlainToken = group(Number, Funny, String, Name)
-Token = Ignore + PlainToken
+token = Ignore + PlainToken
 
 # First (or only) line of ' or " string.
 ContStr = group(r"[bB]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*" +
@@ -196,7 +196,7 @@ def _compile(expr):
 
 
 tokenprog, pseudoprog, single3prog, double3prog = map(
-    _compile, (Token, PseudoToken, Single3, Double3))
+    _compile, (token, PseudoToken, Single3, Double3))
 endprogs = {"'": _compile(Single), '"': _compile(Double),
             "'''": single3prog, '"""': double3prog,
             "r'''": single3prog, 'r"""': double3prog,
@@ -249,7 +249,7 @@ def generate_tokens(readline, line_offset=0):
         line = readline()  # readline returns empty if it's finished. See StringIO
         if not line:
             if contstr:
-                yield TokenInfo(ERRORTOKEN, contstr, contstr_start)
+                yield Token(ERRORTOKEN, contstr, contstr_start)
             break
 
         lnum += 1
@@ -259,7 +259,7 @@ def generate_tokens(readline, line_offset=0):
             endmatch = endprog.match(line)
             if endmatch:
                 pos = endmatch.end(0)
-                yield TokenInfo(STRING, contstr + line[:pos], contstr_start)
+                yield Token(STRING, contstr + line[:pos], contstr_start)
                 contstr = ''
                 contline = None
             else:
@@ -270,7 +270,7 @@ def generate_tokens(readline, line_offset=0):
         while pos < max:
             pseudomatch = pseudoprog.match(line, pos)
             if not pseudomatch:                             # scan for tokens
-                yield TokenInfo(ERRORTOKEN, line[pos], (lnum, pos))
+                yield Token(ERRORTOKEN, line[pos], (lnum, pos))
                 pos += 1
                 continue
 
@@ -280,19 +280,19 @@ def generate_tokens(readline, line_offset=0):
 
             if (initial in numchars or                      # ordinary number
                     (initial == '.' and token != '.' and token != '...')):
-                yield TokenInfo(NUMBER, token, spos)
+                yield Token(NUMBER, token, spos)
             elif initial in '\r\n':
-                yield TokenInfo(NEWLINE, token, spos)
+                yield Token(NEWLINE, token, spos)
             elif initial == '#':
                 assert not token.endswith("\n")
-                yield TokenInfo(COMMENT, token, spos)
+                yield Token(COMMENT, token, spos)
             elif token in triple_quoted:
                 endprog = endprogs[token]
                 endmatch = endprog.match(line, pos)
                 if endmatch:                                # all on one line
                     pos = endmatch.end(0)
                     token = line[start:pos]
-                    yield TokenInfo(STRING, token, spos)
+                    yield Token(STRING, token, spos)
                 else:
                     contstr_start = (lnum, start)                # multiple lines
                     contstr = line[start:]
@@ -309,12 +309,12 @@ def generate_tokens(readline, line_offset=0):
                     contline = line
                     break
                 else:                                       # ordinary string
-                    yield TokenInfo(STRING, token, spos)
+                    yield Token(STRING, token, spos)
             elif initial in namechars:                      # ordinary name
-                yield TokenInfo(NAME, token, spos)
+                yield Token(NAME, token, spos)
             elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
                 continue
             else:
-                yield TokenInfo(OP, token, spos)
+                yield Token(OP, token, spos)
 
-    yield TokenInfo(ENDMARKER, '', (lnum, 0))
+    yield Token(ENDMARKER, '', (lnum, 0))

@@ -9,10 +9,10 @@ from inspect import cleandoc
 from ast import literal_eval
 
 from jedi._compatibility import unicode
-from jedi.parser.tokenize import TokenInfo
+from jedi.parser.tokenize import Token
 
 
-class TokenNoCompat(TokenInfo):
+class TokenNoCompat(Token):
     __slots__ = ()
 
     def __getitem__(self, key):
