@@ -82,7 +82,7 @@ class TokenInfo(object):
         elif key == 2:
             return (self._start_pos_line, self._start_pos_col)
         elif key == 3:
-            return self.end
+            return self.end_pos
         else:
             raise IndexError("list index out of range")
 
@@ -91,11 +91,7 @@ class TokenInfo(object):
         return (self._start_pos_line, self._start_pos_col)
 
     @property
-    def start(self):
-        return (self._start_pos_line, self._start_pos_col)
-
-    @property
-    def end(self):
+    def end_pos(self):
         """Returns end position respecting multiline tokens."""
         end_pos_line = self._start_pos_line
         lines = self.string.split('\n')

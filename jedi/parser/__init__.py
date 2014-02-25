@@ -45,7 +45,7 @@ class Parser(object):
         self._gen = PushBackTokenizer(tokenizer)
 
         # initialize global Scope
-        start_pos = next(self._gen).start
+        start_pos = next(self._gen).start_pos
         self._gen.push_last_back()
         self.module = pr.SubModule(module_path, start_pos, top_module)
         self._scope = self.module
@@ -62,7 +62,7 @@ class Parser(object):
             pass
         s = self._scope
         while s is not None:
-            s.end_pos = self._gen.current.end
+            s.end_pos = self._gen.current.end_pos
             s = s.parent
 
         # clean up unused decorators
@@ -71,12 +71,12 @@ class Parser(object):
             # because of `self.module.used_names`.
             d.parent = self.module
 
-        self.module.end_pos = self._gen.current.end
+        self.module.end_pos = self._gen.current.end_pos
         if self._gen.current.type in (tokenize.NEWLINE,):
             # This case is only relevant with the FastTokenizer, because
             # otherwise there's always an EndMarker.
             # we added a newline before, so we need to "remove" it again.
-            self.module.end_pos = self._gen.previous.end
+            self.module.end_pos = self._gen.previous.end_pos
 
         del self._gen
 
@@ -115,17 +115,17 @@ class Parser(object):
             # token maybe a name or star
             return None, tok
 
-        first_pos = tok.start
+        first_pos = tok.start_pos
         append((tok.string, first_pos))
         while True:
-            end_pos = tok.end
+            end_pos = tok.end_pos
             tok = next(self._gen)
             if tok.string != '.':
                 break
             tok = next(self._gen)
             if tok.type != tokenize.NAME:
                 break
-            append((tok.string, tok.start))
+            append((tok.string, tok.start_pos))
 
         n = pr.Name(self.module, names, first_pos, end_pos) if names else None
         return n, tok
@@ -208,13 +208,13 @@ class Parser(object):
         :return: Return a Scope representation of the tokens.
         :rtype: Function
         """
-        first_pos = self._gen.current.start
+        first_pos = self._gen.current.start_pos
         tok = next(self._gen)
         if tok.type != tokenize.NAME:
             return None
 
-        fname = pr.Name(self.module, [(tok.string, tok.start)], tok.start,
-                        tok.end)
+        fname = pr.Name(self.module, [(tok.string, tok.start_pos)], tok.start_pos,
+                        tok.end_pos)
 
         tok = next(self._gen)
         if tok.string != '(':
@@ -246,15 +246,15 @@ class Parser(object):
         :return: Return a Scope representation of the tokens.
         :rtype: Class
         """
-        first_pos = self._gen.current.start
+        first_pos = self._gen.current.start_pos
         cname = next(self._gen)
         if cname.type != tokenize.NAME:
             debug.warning("class: syntax err, token is not a name@%s (%s: %s)",
-                          cname.start[0], tokenize.tok_name[cname.type], cname.string)
+                          cname.start_pos[0], tokenize.tok_name[cname.type], cname.string)
             return None
 
-        cname = pr.Name(self.module, [(cname.string, cname.start)],
-                        cname.start, cname.end)
+        cname = pr.Name(self.module, [(cname.string, cname.start_pos)],
+                        cname.start_pos, cname.end_pos)
 
         super = []
         _next = next(self._gen)
@@ -263,7 +263,7 @@ class Parser(object):
             _next = next(self._gen)
 
         if _next.string != ':':
-            debug.warning("class syntax: %s@%s", cname, _next.start[0])
+            debug.warning("class syntax: %s@%s", cname, _next.start_pos[0])
             return None
 
         return pr.Class(self.module, cname, super, first_pos)
@@ -296,7 +296,7 @@ class Parser(object):
             next(self._gen)
             tok = next(self._gen)
 
-        first_pos = tok.start
+        first_pos = tok.start_pos
         opening_brackets = ['{', '(', '[']
         closing_brackets = ['}', ')', ']']
 
@@ -375,7 +375,7 @@ class Parser(object):
                     )
                     return None, tok
 
-        stmt = stmt_class(self.module, tok_list, first_pos, tok.end,
+        stmt = stmt_class(self.module, tok_list, first_pos, tok.end_pos,
                           as_names=as_names,
                           names_are_set_vars=names_are_set_vars)
 
@@ -405,7 +405,7 @@ class Parser(object):
         for tok in self._gen:
             token_type = tok.type
             tok_str = tok.string
-            first_pos = tok.start
+            first_pos = tok.start_pos
             self.module.temp_used_names = []
             # debug.dbg('main: tok=[%s] type=[%s] indent=[%s]', \
             #           tok, tokenize.tok_name[token_type], start_position[0])
@@ -451,14 +451,14 @@ class Parser(object):
                         e = (alias or m).end_pos
                     else:
                         # TODO cleanup like e = (alias or name or self._gen.current).end_pos
-                        e = self._gen.current.end
-                    end_pos = self._gen.current.end if count + 1 == len(imports) else e
+                        e = self._gen.current.end_pos
+                    end_pos = self._gen.current.end_pos if count + 1 == len(imports) else e
                     i = pr.Import(self.module, first_pos, end_pos, m,
                                   alias, defunct=defunct)
                     self._check_user_stmt(i)
                     self._scope.add_import(i)
                 if not imports:
-                    i = pr.Import(self.module, first_pos, self._gen.current.end,
+                    i = pr.Import(self.module, first_pos, self._gen.current.end_pos,
                                   None, defunct=True)
                     self._check_user_stmt(i)
                 self.freshscope = False
@@ -479,7 +479,7 @@ class Parser(object):
                     tok_str = 'import'
                     mod = None
                 if not mod and not relative_count or tok_str != "import":
-                    debug.warning("from: syntax error@%s", tok.start[0])
+                    debug.warning("from: syntax error@%s", tok.start_pos[0])
                     defunct = True
                     if tok_str != 'import':
                         self._gen.push_last_back()
@@ -492,8 +492,8 @@ class Parser(object):
                         e = (alias or name).end_pos
                     else:
                         # TODO cleanup like e = (alias or name or self._gen.current).end_pos
-                        e = self._gen.current.end
-                    end_pos = self._gen.current.end if count + 1 == len(names) else e
+                        e = self._gen.current.end_pos
+                    end_pos = self._gen.current.end_pos if count + 1 == len(names) else e
                     i = pr.Import(self.module, first_pos, end_pos, name,
                                   alias, mod, star, relative_count,
                                   defunct=defunct or defunct2)
@@ -505,7 +505,7 @@ class Parser(object):
                 set_stmt, tok = self._parse_statement(added_breaks=['in'],
                                                       names_are_set_vars=True)
                 if tok.string != 'in':
-                    debug.warning('syntax err, for flow incomplete @%s', tok.start[0])
+                    debug.warning('syntax err, for flow incomplete @%s', tok.start_pos[0])
 
                 try:
                     statement, tok = self._parse_statement()
@@ -552,10 +552,10 @@ class Parser(object):
                     s = self._scope.add_statement(f)
                 self._scope = s
                 if tok.string != ':':
-                    debug.warning('syntax err, flow started @%s', tok.start[0])
+                    debug.warning('syntax err, flow started @%s', tok.start_pos[0])
             # returns
             elif tok_str in ['return', 'yield']:
-                s = tok.start
+                s = tok.start_pos
                 self.freshscope = False
                 # add returns to the scope
                 func = self._scope.get_parent_until(pr.Function)
