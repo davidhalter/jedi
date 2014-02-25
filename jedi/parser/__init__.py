@@ -357,7 +357,7 @@ class Parser(object):
         first_tok = tok_list[0]
         # docstrings
         if len(tok_list) == 1 and not isinstance(first_tok, pr.Name) \
-                and first_tok.token_type == tokenize.STRING:
+                and first_tok.type == tokenize.STRING:
             # Normal docstring check
             if self.freshscope and not self.no_docstr:
                 self._scope.add_docstr(
@@ -367,7 +367,7 @@ class Parser(object):
 
             # Attribute docstring (PEP 224) support (sphinx uses it, e.g.)
             # If string literal is being parsed...
-            elif first_tok.token_type == tokenize.STRING:
+            elif first_tok.type == tokenize.STRING:
                 with common.ignored(IndexError, AttributeError):
                     # ...then set it as a docstring
                     self._scope.statements[-1].add_docstr(

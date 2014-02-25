@@ -36,8 +36,9 @@ tok_name[ENCODING] = 'ENCODING'
 
 
 class TokenInfo(object):
-    """The token object is an efficient representation of the structure
-    (token_type, token, (start_pos_line, start_pos_col)). It has indexer
+    """
+    The token object is an efficient representation of the structure
+    (type, token, (start_pos_line, start_pos_col)). It has indexer
     methods that maintain compatibility to existing code that expects the above
     structure.
 

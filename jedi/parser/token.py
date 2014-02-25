@@ -13,7 +13,7 @@ from jedi._compatibility import u, unicode
 
 class Token(object):
     """The token object is an efficient representation of the structure
-    (token_type, token, (start_pos_line, start_pos_col)). It has indexer
+    (type, token, (start_pos_line, start_pos_col)). It has indexer
     methods that maintain compatibility to existing code that expects the above
     structure.
 
@@ -40,16 +40,16 @@ class Token(object):
     >>> unicode(Token(1, u("😷"), 1 ,1)) + "p" == u("😷p")
     True
     """
-    __slots__ = ("_token_type", "_token", "_start_pos_line", "_start_pos_col")
+    __slots__ = ("_type", "_token", "_start_pos_line", "_start_pos_col")
 
     @classmethod
     def from_tuple(cls, tp):
         return Token(tp[0], tp[1], tp[2][0], tp[2][1])
 
     def __init__(
-        self, token_type, token, start_pos_line, start_pos_col
+        self, type, token, start_pos_line, start_pos_col
     ):
-        self._token_type = token_type
+        self._type = type
         self._token = token
         self._start_pos_line = start_pos_line
         self._start_pos_col = start_pos_col
@@ -75,7 +75,7 @@ class Token(object):
     def __getitem__(self, key):
         # Builds the same structure as tuple used to have
         if key == 0:
-            return self.token_type
+            return self.type
         elif key == 1:
             return self.token
         elif key == 2:
@@ -84,8 +84,8 @@ class Token(object):
             raise IndexError("list index out of range")
 
     @property
-    def token_type(self):
-        return self._token_type
+    def type(self):
+        return self._type
 
     @property
     def token(self):
@@ -120,14 +120,14 @@ class Token(object):
     # Make cache footprint smaller for faster unpickling
     def __getstate__(self):
         return (
-            self.token_type,
+            self.type,
             self.token,
             self.start_pos_line,
             self.start_pos_col,
         )
 
     def __setstate__(self, state):
-        self._token_type = state[0]
+        self._type = state[0]
         self._token = state[1]
         self._start_pos_line = state[2]
         self._start_pos_col = state[3]

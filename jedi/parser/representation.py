@@ -1110,7 +1110,7 @@ class Statement(Simple):
                 start_pos = tok.start_pos
                 end_pos = tok.end_pos
             else:
-                token_type = tok_temp.token_type
+                token_type = tok_temp.type
                 tok = tok_temp.token
                 start_pos = tok_temp.start_pos
                 end_pos = tok_temp.end_pos
