@@ -166,6 +166,13 @@ class Evaluator(object):
                 # The string tokens are just operations (+, -, etc.)
                 elif isinstance(call, compiled.CompiledObject):
                     result.append(call)
+                elif isinstance(call, pr.Operator):
+                    if call == '*':
+                        if [r for r in result if isinstance(r, iterable.Array)
+                                or isinstance(r, compiled.CompiledObject)
+                                and isinstance(r.obj, (str, unicode))]:
+                            # if it is an iterable, ignore * operations
+                            next(calls_iterator)
                 elif not isinstance(call, (str, unicode)):
                     if isinstance(call, pr.Call) and str(call.name) == 'if':
                         # Ternary operators.
@@ -179,12 +186,6 @@ class Evaluator(object):
                                     break
                         continue
                     result += self.eval_call(call)
-                elif call == '*':
-                    if [r for r in result if isinstance(r, iterable.Array)
-                            or isinstance(r, compiled.CompiledObject)
-                            and isinstance(r.obj, (str, unicode))]:
-                        # if it is an iterable, ignore * operations
-                        next(calls_iterator)
         return set(result)
 
     def eval_call(self, call):

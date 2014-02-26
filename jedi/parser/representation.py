@@ -924,8 +924,8 @@ isinstance(c, tokenize.Token) else unicode(c)
         it and make it nicer, that would be cool :-)
         """
         def is_assignment(tok):
-            return isinstance(tok, (str, unicode)) and tok.endswith('=') \
-                and not tok in ['>=', '<=', '==', '!=']
+            return isinstance(tok, Operator) and tok.operator.endswith('=') \
+                and not tok.operator in ['>=', '<=', '==', '!=']
 
         def parse_array(token_iterator, array_type, start_pos, add_el=None,
                         added_breaks=()):
@@ -981,6 +981,22 @@ isinstance(c, tokenize.Token) else unicode(c)
                     if isinstance(tok, ListComprehension):
                         # it's not possible to set it earlier
                         tok.parent = self
+
+                    if tok in closing_brackets:
+                        level -= 1
+                    elif tok in brackets.keys():
+                        level += 1
+
+                    if level == 0 and tok in closing_brackets \
+                            or tok in added_breaks \
+                            or level == 1 and (
+                                tok == ','
+                                or maybe_dict and tok == ':'
+                                or is_assignment(tok)
+                                and break_on_assignment
+                            ):
+                        end_pos = end_pos[0], end_pos[1] - 1
+                        break
                 else:
                     tok = tok_temp.string
                     start_tok_pos = tok_temp.start_pos
@@ -1003,22 +1019,6 @@ isinstance(c, tokenize.Token) else unicode(c)
                         )
                         if list_comp is not None:
                             token_list = [list_comp]
-
-                    if tok in closing_brackets:
-                        level -= 1
-                    elif tok in brackets.keys():
-                        level += 1
-
-                    if level == 0 and tok in closing_brackets \
-                            or tok in added_breaks \
-                            or level == 1 and (
-                                tok == ','
-                                or maybe_dict and tok == ':'
-                                or is_assignment(tok)
-                                and break_on_assignment
-                            ):
-                        end_pos = end_pos[0], end_pos[1] - 1
-                        break
                 token_list.append(tok_temp)
 
             if not token_list:
@@ -1108,26 +1108,26 @@ isinstance(c, tokenize.Token) else unicode(c)
         closing_brackets = ')', '}', ']'
 
         token_iterator = common.PushBackIterator(enumerate(self.token_list))
-        for i, tok_temp in token_iterator:
-            if isinstance(tok_temp, Base):
+        for i, tok in token_iterator:
+            if isinstance(tok, Base):
                 # the token is a Name, which has already been parsed
-                tok = tok_temp
                 token_type = None
                 start_pos = tok.start_pos
                 end_pos = tok.end_pos
-            else:
-                token_type = tok_temp.type
-                tok = tok_temp.string
-                start_pos = tok_temp.start_pos
-                end_pos = tok_temp.end_pos
+
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
-                    self._assignment_details.append((result, tok_temp.string))
+                    self._assignment_details.append((result, tok.operator))
                     result = []
                     is_chain = False
                     continue
-                elif tok == 'as':  # just ignore as, because it sets values
+            else:
+                token_type = tok.type
+                start_pos = tok.start_pos
+                end_pos = tok.end_pos
+                tok = tok.string
+                if tok == 'as':  # just ignore as, because it sets values
                     next(token_iterator, None)
                     continue
 
@@ -1150,7 +1150,7 @@ isinstance(c, tokenize.Token) else unicode(c)
                 is_chain = False
             elif tok in brackets.keys():
                 arr, is_ass = parse_array(
-                    token_iterator, brackets[tok], start_pos
+                    token_iterator, brackets[tok.operator], start_pos
                 )
                 if result and isinstance(result[-1], StatementElement):
                     result[-1].set_execution(arr)
@@ -1503,8 +1503,7 @@ class ListComprehension(Base):
         return self.stmt.end_pos
 
     def __repr__(self):
-        return "<%s: %s>" % \
-            (type(self).__name__, self.get_code())
+        return "<%s: %s>" % (type(self).__name__, self.get_code())
 
     def get_code(self):
         statements = self.stmt, self.middle, self.input
@@ -1512,7 +1511,7 @@ class ListComprehension(Base):
         return "%s for %s in %s" % tuple(code)
 
 
-class Operator():
+class Operator(Base):
     __slots__ = ('operator', '_line', '_column')
 
     def __init__(self, operator, start_pos):
@@ -1520,9 +1519,20 @@ class Operator():
         self._line = start_pos[0]
         self._column = start_pos[1]
 
+    def __repr__(self):
+        return "<%s: `%s`>" % (type(self).__name__, self.operator)
+
     @property
     def start_pos(self):
-        return self._column, self._line
+        return self._line, self._column
 
-    def get_code(self):
-        return self.operator
+    @property
+    def end_pos(self):
+        return self._line, self._column + len(self.operator)
+
+    def __eq__(self, other):
+        """Make comparisons easy. Improves the readability of the parser."""
+        return self.operator == other
+
+    def __hash__(self):
+        return hash(self.operator)

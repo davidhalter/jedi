@@ -317,7 +317,10 @@ class Parser(object):
                    or tok.string in breaks and level <= 0):
             try:
                 # print 'parse_stmt', tok, tokenize.tok_name[token_type]
-                tok_list.append(tok)
+                if tok.type == tokenize.OP:
+                    tok_list.append(pr.Operator(tok.string, tok.start_pos))
+                else:
+                    tok_list.append(tok)
                 if tok.string == 'as':
                     tok = next(self._gen)
                     if tok.type == tokenize.NAME:

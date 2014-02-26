@@ -11,7 +11,7 @@ they change classes in Python 3.
 """
 import copy
 
-from jedi._compatibility import use_metaclass, unicode
+from jedi._compatibility import use_metaclass
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi import common
@@ -218,7 +218,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def expression_list(self):
         # Copy and modify the array.
         return [InstanceElement(self.instance._evaluator, self.instance, command, self.is_class_var)
-                if not isinstance(command, unicode) else command
+                if not isinstance(command, pr.Operator) else command
                 for command in self.var.expression_list()]
 
     def __iter__(self):
