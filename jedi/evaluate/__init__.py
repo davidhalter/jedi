@@ -182,8 +182,7 @@ class Evaluator(object):
                             except StopIteration:
                                 break
                         continue
-                elif not isinstance(call, (str, unicode)):
-                    # TODO just else?
+                elif not isinstance(call, unicode):
                     result += self.eval_call(call)
         return set(result)
 
