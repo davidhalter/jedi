@@ -182,7 +182,7 @@ class Simple(Base):
 
 
 class IsScope(Base):
-    pass
+    __slots__ = ()
 
 
 class Scope(Simple, IsScope, DocstringMixin):

@@ -103,10 +103,8 @@ def get_faked(module, obj, name=None):
     if not isinstance(result, Class) and result is not None:
         # Set the docstr which was previously not set (faked modules don't
         # contain it).
-        result.docstr = None
-        if obj.__doc__:
-            doc = '''"""%s"""''' % obj.__doc__  # TODO need escapes.
-            result.docstr = tokenize.Token(tokenize.STRING, doc, (0, 0))
+        doc = '''"""%s"""''' % obj.__doc__  # TODO need escapes.
+        result.add_docstr(tokenize.Token(tokenize.STRING, doc, (0, 0)))
         return result
 
 
