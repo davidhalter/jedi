@@ -439,13 +439,8 @@ class Parser(object):
             elif tok_str == 'import':
                 imports = self._parse_import_list()
                 for count, (m, alias, defunct) in enumerate(imports):
-                    if alias or m:
-#e = (alias or m or self).end_pos
-                        e = (alias or m).end_pos
-                    else:
-                        # TODO cleanup like e = (alias or name or self._gen.current).end_pos
-                        e = self._gen.current.end_pos
-                    end_pos = self._gen.current.end_pos if count + 1 == len(imports) else e
+                    e = (alias or m or self._gen.previous).end_pos
+                    end_pos = self._gen.previous.end_pos if count + 1 == len(imports) else e
                     i = pr.Import(self.module, first_pos, end_pos, m,
                                   alias, defunct=defunct)
                     self._check_user_stmt(i)
@@ -481,12 +476,8 @@ class Parser(object):
                     star = name is not None and name.names[0] == '*'
                     if star:
                         name = None
-                    if alias or name:
-                        e = (alias or name).end_pos
-                    else:
-                        # TODO cleanup like e = (alias or name or self._gen.current).end_pos
-                        e = self._gen.current.end_pos
-                    end_pos = self._gen.current.end_pos if count + 1 == len(names) else e
+                    e = (alias or name or self._gen.previous).end_pos
+                    end_pos = self._gen.previous.end_pos if count + 1 == len(names) else e
                     i = pr.Import(self.module, first_pos, end_pos, name,
                                   alias, mod, star, relative_count,
                                   defunct=defunct or defunct2)
@@ -609,7 +600,7 @@ class PushBackTokenizer(object):
     def __init__(self, tokenizer):
         self._tokenizer = tokenizer
         self._push_backs = []
-        self.current = tokenize.Token(None, '', (0, 0))
+        self.current = self.previous = tokenize.Token(None, '', (0, 0))
 
     def push_last_back(self):
         self._push_backs.append(self.current)
@@ -622,12 +613,9 @@ class PushBackTokenizer(object):
         if self._push_backs:
             return self._push_backs.pop(0)
 
+        self.previous = self.current
         self.current = next(self._tokenizer)
         return self.current
 
     def __iter__(self):
         return self
-
-    @property
-    def previous(self):
-        return self._tokenizer.previous
