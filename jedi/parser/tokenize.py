@@ -31,8 +31,6 @@ namechars = string.ascii_letters + '_'
 
 COMMENT = N_TOKENS
 tok_name[COMMENT] = 'COMMENT'
-ENCODING = N_TOKENS + 1
-tok_name[ENCODING] = 'ENCODING'
 
 
 class Token(object):
