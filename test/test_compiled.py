@@ -20,7 +20,8 @@ def test_completions():
 
 
 @cwd_at('test/extensions')
-def test_call_signatures():
+def test_call_signatures_extension():
+    # with a cython extension
     if platform.architecture()[0] == '64bit':
         package_name = "compiled%s%s" % sys.version_info[:2]
         sys.path.insert(0, os.getcwd())
@@ -31,3 +32,12 @@ def test_call_signatures():
             for call_def in defs:
                 for param in call_def.params:
                     pass
+
+
+def test_call_signatures_stdlib():
+    code = "import math; math.cos("
+    s = jedi.Script(code)
+    defs = s.call_signatures()
+    for call_def in defs:
+        for p in call_def.params:
+            assert str(p) == 'x'
