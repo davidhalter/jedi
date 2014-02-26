@@ -965,17 +965,17 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                        break_on_assignment=False, stmt_class=Statement):
             token_list = []
             level = 1
-            tok = None
             first = True
             end_pos = None, None
-            for i, tok_temp in token_iterator:
-                if isinstance(tok_temp, Base):
+            tok = None
+            for i, tok in token_iterator:
+                end_pos = tok.end_pos
+                if first:
+                    start_pos = tok.start_pos
+                    first = False
+
+                if isinstance(tok, Base):
                     # the token is a Name, which has already been parsed
-                    tok = tok_temp
-                    if first:
-                        start_pos = tok.start_pos
-                        first = False
-                    end_pos = tok.end_pos
                     if isinstance(tok, ListComprehension):
                         # it's not possible to set it earlier
                         tok.parent = self
@@ -1008,16 +1008,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                             ):
                         end_pos = end_pos[0], end_pos[1] - 1
                         break
-                else:
-                    tok = tok_temp.string
-                    start_tok_pos = tok_temp.start_pos
-                    last_end_pos = end_pos
-                    end_pos = tok_temp.end_pos
-                    if first:
-                        first = False
-                        start_pos = start_tok_pos
 
-                token_list.append(tok_temp)
+                token_list.append(tok)
 
             if not token_list:
                 return None, tok
