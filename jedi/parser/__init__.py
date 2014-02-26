@@ -21,7 +21,6 @@ from jedi._compatibility import next
 from jedi import debug
 from jedi import common
 from jedi.parser import representation as pr
-from jedi.parser import token as token_pr
 from jedi.parser import tokenize
 
 
@@ -358,9 +357,7 @@ class Parser(object):
                 and first_tok.type == tokenize.STRING:
             # Normal docstring check
             if self.freshscope and not self.no_docstr:
-                self._scope.add_docstr(
-                    token_pr.TokenDocstring(first_tok)
-                )
+                self._scope.add_docstr(first_tok)
                 return None, tok
 
             # Attribute docstring (PEP 224) support (sphinx uses it, e.g.)
@@ -368,9 +365,7 @@ class Parser(object):
             elif first_tok.type == tokenize.STRING:
                 with common.ignored(IndexError, AttributeError):
                     # ...then set it as a docstring
-                    self._scope.statements[-1].add_docstr(
-                        token_pr.TokenDocstring(first_tok)
-                    )
+                    self._scope.statements[-1].add_docstr(first_tok)
                     return None, tok
 
         stmt = stmt_class(self.module, tok_list, first_pos, tok.end_pos,

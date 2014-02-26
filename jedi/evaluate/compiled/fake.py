@@ -9,7 +9,7 @@ import inspect
 
 from jedi._compatibility import is_py3, builtins, unicode
 from jedi.parser import Parser
-from jedi.parser import token as token_pr
+from jedi.parser import tokenize
 from jedi.parser.representation import Class
 from jedi.evaluate.helpers import FakeName
 
@@ -105,7 +105,8 @@ def get_faked(module, obj, name=None):
         # contain it).
         result.docstr = None
         if obj.__doc__:
-            result.docstr = token_pr.TokenDocstring.fake_docstring(obj.__doc__)
+            doc = '''"""%s"""''' % obj.__doc__  # TODO need escapes.
+            result.docstr = tokenize.Token(tokenize.STRING, doc, (0, 0))
         return result
 
 

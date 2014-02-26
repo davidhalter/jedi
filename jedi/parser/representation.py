@@ -44,10 +44,14 @@ from jedi import common
 from jedi import debug
 from jedi import cache
 from jedi.parser import tokenize
-from jedi.parser import token as token_pr
 
 
 SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
+
+
+def docstring_content(token):
+    """Returns a literal cleaned version of the ``Token``."""
+    return unicode(cleandoc(literal_eval(token.string)))
 
 
 class GetCodeState(object):
@@ -241,7 +245,7 @@ class Scope(Simple, IsScope):
         """
         string = ""
         if self.docstr:
-            string += '"""' + self.docstr.as_string() + '"""\n'
+            string += '"""' + docstring_content(self.docstr) + '"""\n'
 
         objs = self.subscopes + self.imports + self.statements + self.returns
         for obj in sorted(objs, key=lambda x: x.start_pos):
@@ -481,7 +485,7 @@ class Class(Scope):
         """
         docstr = ""
         if self.docstr:
-            docstr = self.docstr.as_string()
+            docstr = docstring_content(self.docstr)
         for sub in self.subscopes:
             if sub.name.names[-1] == '__init__':
                 return '%s\n\n%s' % (
@@ -571,7 +575,7 @@ class Function(Scope):
         """ Return a document string including call signature. """
         docstr = ""
         if self.docstr:
-            docstr = self.docstr.as_string()
+            docstr = docstring_content(self.docstr)
         return '%s\n\n%s' % (
             self.get_call_signature(),
             docstr,
@@ -849,7 +853,7 @@ isinstance(c, tokenize.Token) else unicode(c)
         code = ''.join(assemble(*a) for a in self.assignment_details)
         code += assemble(self.expression_list())
         if self.docstr:
-            code += '\n"""%s"""' % self.docstr.as_string()
+            code += '\n"""%s"""' % docstring_content(self.docstr)
 
         if new_line:
             return code + '\n'

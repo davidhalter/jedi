@@ -10,6 +10,7 @@ from jedi import settings
 from jedi import common
 from jedi import cache
 from jedi.parser import representation as pr
+from jedi.parser.tokenize import Token
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
@@ -241,8 +242,10 @@ class BaseDefinition(object):
 
         See :attr:`doc` for example.
         """
-        if isinstance(self._definition.docstr, pr.token_pr.TokenDocstring):
-            return unicode(self._definition.docstr.as_string())
+        print self._definition.docstr
+        if isinstance(self._definition.docstr, Token):
+# TODO again ugly, we should have direct access.
+            return unicode(self._definition.docstr.string)
         try:
             return unicode(self._definition.docstr)
         except AttributeError:

@@ -18,6 +18,7 @@ import re
 
 from jedi.evaluate.cache import memoize_default
 from jedi.parser import Parser
+from jedi.parser.representation import docstring_content
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
@@ -39,7 +40,8 @@ def follow_param(evaluator, param):
     if not func.docstr:
         return []
     param_str = _search_param_in_docstr(
-        func.docstr.as_string(),
+# TODO  this is ugly, no direct access?
+        docstring_content(func.docstr),
         str(param.get_name())
     )
     position = (1, 0)
@@ -119,7 +121,7 @@ def find_return_types(evaluator, func):
 
     if not func.docstr:
         return []
-    type_str = search_return_in_docstr(func.docstr.as_string())
+    type_str = search_return_in_docstr(docstring_content(func.docstr))
     if not type_str:
         return []
 
