@@ -39,5 +39,4 @@ def test_call_signatures_stdlib():
     s = jedi.Script(code)
     defs = s.call_signatures()
     for call_def in defs:
-        for p in call_def.params:
-            assert str(p) == 'x'
+        assert len(call_def.params) == 1
