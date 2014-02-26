@@ -23,6 +23,11 @@ from jedi import common
 from jedi.parser import representation as pr
 from jedi.parser import tokenize
 
+OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
+# Not used yet. In the future I intend to add something like KeywordStatement
+STATEMENT_KEYWORDS = 'assert', 'del', 'global', 'nonlocal', 'raise', \
+    'return', 'yield', 'pass', 'continue', 'break'
+
 
 class Parser(object):
     """
@@ -317,10 +322,12 @@ class Parser(object):
                    or tok.string in breaks and level <= 0):
             try:
                 # print 'parse_stmt', tok, tokenize.tok_name[token_type]
-                if tok.type == tokenize.OP:
+                is_kw = tok.string in OPERATOR_KEYWORDS
+                if tok.type == tokenize.OP or is_kw:
                     tok_list.append(pr.Operator(tok.string, tok.start_pos))
                 else:
                     tok_list.append(tok)
+
                 if tok.string == 'as':
                     tok = next(self._gen)
                     if tok.type == tokenize.NAME:
@@ -330,11 +337,9 @@ class Parser(object):
                             as_names.append(n)
                         tok_list.append(n)
                     continue
-                elif tok.string in ['lambda', 'for', 'in']:
-                    # don't parse these keywords, parse later in stmt.
-                    if tok.string == 'lambda':
-                        breaks.discard(':')
-                elif tok.type == tokenize.NAME:
+                elif tok.string == 'lambda':
+                    breaks.discard(':')
+                elif tok.type == tokenize.NAME and not is_kw:
                     n, tok = self._parse_dot_name(self._gen.current)
                     # removed last entry, because we add Name
                     tok_list.pop()
@@ -356,7 +361,7 @@ class Parser(object):
 
         first_tok = tok_list[0]
         # docstrings
-        if len(tok_list) == 1 and not isinstance(first_tok, pr.Name) \
+        if len(tok_list) == 1 and isinstance(first_tok, tokenize.Token) \
                 and first_tok.type == tokenize.STRING:
             # Normal docstring check
             if self.freshscope and not self.no_docstr:
@@ -592,7 +597,7 @@ class Parser(object):
                     self._scope.add_statement(stmt)
                 self.freshscope = False
             else:
-                if token_type not in [tokenize.COMMENT, tokenize.NEWLINE]:
+                if token_type not in [tokenize.COMMENT, tokenize.NEWLINE, tokenize.ENDMARKER]:
                     debug.warning('Token not used: %s %s %s', tok_str,
                                   tokenize.tok_name[token_type], first_pos)
                 continue

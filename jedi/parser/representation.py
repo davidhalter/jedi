@@ -958,9 +958,7 @@ isinstance(c, tokenize.Token) else unicode(c)
                 # always dictionaries and not sets.
                 arr.type = Array.DICT
 
-            c = token_iterator.current[1]
-            arr.end_pos = c.end_pos if isinstance(c, Simple) \
-                else c.end_pos
+            arr.end_pos = token_iterator.current[1].end_pos
             return arr, break_tok
 
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
@@ -981,6 +979,19 @@ isinstance(c, tokenize.Token) else unicode(c)
                     if isinstance(tok, ListComprehension):
                         # it's not possible to set it earlier
                         tok.parent = self
+                    elif tok == 'lambda':
+                        lambd, tok = parse_lambda(token_iterator)
+                        if lambd is not None:
+                            token_list.append(lambd)
+                    elif tok == 'for':
+                        list_comp, tok = parse_list_comp(
+                            token_iterator,
+                            token_list,
+                            start_pos,
+                            tok.end_pos
+                        )
+                        if list_comp is not None:
+                            token_list = [list_comp]
 
                     if tok in closing_brackets:
                         level -= 1
@@ -1006,19 +1017,6 @@ isinstance(c, tokenize.Token) else unicode(c)
                         first = False
                         start_pos = start_tok_pos
 
-                    if tok == 'lambda':
-                        lambd, tok = parse_lambda(token_iterator)
-                        if lambd is not None:
-                            token_list.append(lambd)
-                    elif tok == 'for':
-                        list_comp, tok = parse_list_comp(
-                            token_iterator,
-                            token_list,
-                            start_pos,
-                            last_end_pos
-                        )
-                        if list_comp is not None:
-                            token_list = [list_comp]
                 token_list.append(tok_temp)
 
             if not token_list:
@@ -1045,12 +1043,15 @@ isinstance(c, tokenize.Token) else unicode(c)
                 params.append(param)
                 if tok == ':':
                     break
+            # TODO uncomment and run `./run.py func 395 --debug` shouldn't parse all statements.
+            #print tok, tok.start_pos
             if tok != ':':
                 return None, tok
 
             # since lambda is a Function scope, it needs Scope parents
             parent = self.get_parent_until(IsScope)
             lambd = Lambda(self._sub_module, params, start_pos, parent)
+
 
             ret, tok = parse_stmt(token_iterator)
             if ret is not None:
@@ -1060,9 +1061,8 @@ isinstance(c, tokenize.Token) else unicode(c)
             return lambd, tok
 
         def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
-            def parse_stmt_or_arr(
-                token_iterator, added_breaks=(), names_are_set_vars=False
-            ):
+            def parse_stmt_or_arr(token_iterator, added_breaks=(),
+                                  names_are_set_vars=False):
                 stmt, tok = parse_stmt(token_iterator,
                                        added_breaks=added_breaks)
                 if not stmt:
@@ -1091,7 +1091,7 @@ isinstance(c, tokenize.Token) else unicode(c)
 
             middle, tok = parse_stmt_or_arr(token_iterator, ['in'], True)
             if tok != 'in' or middle is None:
-                debug.warning('list comprehension middle @%s', start_pos)
+                debug.warning('list comprehension middle %s@%s', tok, start_pos)
                 return None, tok
 
             in_clause, tok = parse_stmt_or_arr(token_iterator)
@@ -1533,6 +1533,10 @@ class Operator(Base):
     def __eq__(self, other):
         """Make comparisons easy. Improves the readability of the parser."""
         return self.operator == other
+
+    def __ne__(self, other):
+        """Python 2 compatibility."""
+        return self.operator != other
 
     def __hash__(self):
         return hash(self.operator)

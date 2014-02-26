@@ -173,18 +173,17 @@ class Evaluator(object):
                                 and isinstance(r.obj, (str, unicode))]:
                             # if it is an iterable, ignore * operations
                             next(calls_iterator)
-                elif not isinstance(call, (str, unicode)):
-                    if isinstance(call, pr.Call) and str(call.name) == 'if':
+                    elif call == 'if':
                         # Ternary operators.
-                        while True:
+                        for call in calls_iterator:
                             try:
-                                call = next(calls_iterator)
+                                if call == 'else':
+                                    break
                             except StopIteration:
                                 break
-                            with common.ignored(AttributeError):
-                                if str(call.name) == 'else':
-                                    break
                         continue
+                elif not isinstance(call, (str, unicode)):
+                    # TODO just else?
                     result += self.eval_call(call)
         return set(result)
 
