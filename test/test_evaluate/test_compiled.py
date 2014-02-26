@@ -28,7 +28,7 @@ def test_fake_loading():
 
 
 def test_fake_docstr():
-    assert compiled.create(next).docstr.as_string() == next.__doc__
+    assert compiled.create(next).raw_doc == next.__doc__
 
 
 def test_parse_function_doc_illegal_docstr():

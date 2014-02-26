@@ -39,7 +39,7 @@ import re
 from inspect import cleandoc
 from ast import literal_eval
 
-from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3
+from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3, u
 from jedi import common
 from jedi import debug
 from jedi import cache
@@ -49,11 +49,6 @@ from jedi.parser import tokenize
 SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
 
 
-def docstring_content(token):
-    """Returns a literal cleaned version of the ``Token``."""
-    return unicode(cleandoc(literal_eval(token.string)))
-
-
 class GetCodeState(object):
     """A helper class for passing the state of get_code in a thread-safe
     manner"""
@@ -61,6 +56,23 @@ class GetCodeState(object):
 
     def __init__(self):
         self.last_pos = (0, 0)
+
+
+class DocstringMixin(object):
+    __slots__ = ()
+
+    def add_docstr(self, token):
+        """ Clean up a docstring """
+        self._doc_token = token
+
+    @property
+    def raw_doc(self):
+        """ Returns a cleaned version of the docstring token. """
+        try:
+            # Returns a literal cleaned version of the ``Token``.
+            return unicode(cleandoc(literal_eval(self._doc_token.string)))
+        except AttributeError:
+            return u('')
 
 
 class Base(object):
@@ -173,7 +185,7 @@ class IsScope(Base):
     pass
 
 
-class Scope(Simple, IsScope):
+class Scope(Simple, IsScope, DocstringMixin):
     """
     Super class for the parser tree, which represents the state of a python
     text file.
@@ -184,7 +196,7 @@ class Scope(Simple, IsScope):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('subscopes', 'imports', 'statements', 'docstr', 'asserts',
+    __slots__ = ('subscopes', 'imports', 'statements', '_doc_token', 'asserts',
                  'returns', 'is_generator')
 
     def __init__(self, module, start_pos):
@@ -192,7 +204,7 @@ class Scope(Simple, IsScope):
         self.subscopes = []
         self.imports = []
         self.statements = []
-        self.docstr = None
+        self._doc_token = None
         self.asserts = []
         # Needed here for fast_parser, because the fast_parser splits and
         # returns will be in "normal" modules.
@@ -218,10 +230,6 @@ class Scope(Simple, IsScope):
         self.statements.append(stmt)
         return stmt
 
-    def add_docstr(self, token):
-        """ Clean up a docstring """
-        self.docstr = token
-
     def add_import(self, imp):
         self.imports.append(imp)
         imp.parent = self.use_as_parent
@@ -244,8 +252,8 @@ class Scope(Simple, IsScope):
         :rtype: str
         """
         string = ""
-        if self.docstr:
-            string += '"""' + docstring_content(self.docstr) + '"""\n'
+        if self._doc_token is not None:
+            string += '"""' + self.raw_doc + '"""\n'
 
         objs = self.subscopes + self.imports + self.statements + self.returns
         for obj in sorted(objs, key=lambda x: x.start_pos):
@@ -473,7 +481,7 @@ class Class(Scope):
         string += ':\n'
         string += super(Class, self).get_code(True, indention)
         if self.is_empty():
-            if self.docstr:
+            if self._doc_token is not None:
                 string += indention
             string += "pass\n"
         return string
@@ -484,13 +492,12 @@ class Class(Scope):
         Return a document string including call signature of __init__.
         """
         docstr = ""
-        if self.docstr:
-            docstr = docstring_content(self.docstr)
+        if self._doc_token is not None:
+            docstr = self.raw_doc
         for sub in self.subscopes:
             if sub.name.names[-1] == '__init__':
                 return '%s\n\n%s' % (
-                    sub.get_call_signature(funcname=self.name.names[-1]),
-                    docstr)
+                    sub.get_call_signature(funcname=self.name.names[-1]), docstr)
         return docstr
 
 
@@ -529,7 +536,7 @@ class Function(Scope):
         string += "def %s(%s):\n" % (self.name, params)
         string += super(Function, self).get_code(True, indention)
         if self.is_empty():
-            if self.docstr:
+            if self._doc_token is not None:
                 string += indention
             string += 'pass\n'
         return string
@@ -574,12 +581,9 @@ class Function(Scope):
     def doc(self):
         """ Return a document string including call signature. """
         docstr = ""
-        if self.docstr:
-            docstr = docstring_content(self.docstr)
-        return '%s\n\n%s' % (
-            self.get_call_signature(),
-            docstr,
-        )
+        if self._doc_token is not None:
+            docstr = self.raw_doc
+        return '%s\n\n%s' % (self.get_call_signature(), docstr)
 
 
 class Lambda(Function):
@@ -797,7 +801,7 @@ class Import(Simple):
         return n
 
 
-class Statement(Simple):
+class Statement(Simple, DocstringMixin):
     """
     This is the class for all the possible statements. Which means, this class
     stores pretty much all the Python code, except functions, classes, imports,
@@ -813,7 +817,7 @@ class Statement(Simple):
     :param  start_pos: Position (line, column) of the Statement.
     """
     __slots__ = ('token_list', '_set_vars', 'as_names', '_expression_list',
-                 '_assignment_details', 'docstr', '_names_are_set_vars')
+                 '_assignment_details', '_names_are_set_vars', '_doc_token')
 
     def __init__(self, module, token_list, start_pos, end_pos, parent=None,
                  as_names=(), names_are_set_vars=False, set_name_parents=True):
@@ -829,17 +833,13 @@ class Statement(Simple):
             for n in as_names:
                 n.parent = self.use_as_parent
         self.parent = parent
-        self.docstr = None
+        self._doc_token = None
         self._set_vars = None
         self.as_names = list(as_names)
 
         # cache
         self._assignment_details = []
         # this is important for other scripts
-
-    def add_docstr(self, token):
-        """ Clean up a docstring """
-        self.docstr = token
 
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
@@ -852,8 +852,8 @@ isinstance(c, tokenize.Token) else unicode(c)
 
         code = ''.join(assemble(*a) for a in self.assignment_details)
         code += assemble(self.expression_list())
-        if self.docstr:
-            code += '\n"""%s"""' % docstring_content(self.docstr)
+        if self._doc_token:
+            code += '\n"""%s"""' % self.raw_doc
 
         if new_line:
             return code + '\n'

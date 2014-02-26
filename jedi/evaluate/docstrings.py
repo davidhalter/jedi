@@ -18,7 +18,6 @@ import re
 
 from jedi.evaluate.cache import memoize_default
 from jedi.parser import Parser
-from jedi.parser.representation import docstring_content
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
@@ -37,13 +36,7 @@ REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 def follow_param(evaluator, param):
     func = param.parent_function
     # print func, param, param.parent_function
-    if not func.docstr:
-        return []
-    param_str = _search_param_in_docstr(
-# TODO  this is ugly, no direct access?
-        docstring_content(func.docstr),
-        str(param.get_name())
-    )
+    param_str = _search_param_in_docstr(func.raw_doc, str(param.get_name()))
     position = (1, 0)
 
     if param_str is not None:
@@ -119,9 +112,7 @@ def find_return_types(evaluator, func):
             if match:
                 return match.group(1)
 
-    if not func.docstr:
-        return []
-    type_str = search_return_in_docstr(docstring_content(func.docstr))
+    type_str = search_return_in_docstr(func.raw_doc)
     if not type_str:
         return []
 

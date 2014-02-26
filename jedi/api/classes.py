@@ -231,7 +231,7 @@ class BaseDefinition(object):
 
         """
         try:
-            return self._definition.doc or ''  # Always a String, never None.
+            return self._definition.doc
         except AttributeError:
             return self.raw_doc
 
@@ -242,12 +242,8 @@ class BaseDefinition(object):
 
         See :attr:`doc` for example.
         """
-        print self._definition.docstr
-        if isinstance(self._definition.docstr, Token):
-# TODO again ugly, we should have direct access.
-            return unicode(self._definition.docstr.string)
         try:
-            return unicode(self._definition.docstr)
+            return self._definition.raw_doc
         except AttributeError:
             return ''
 
