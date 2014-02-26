@@ -844,7 +844,7 @@ class Statement(Simple, DocstringMixin):
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
             pieces = [c.get_code() if isinstance(c, Simple) else c.string if
-isinstance(c, tokenize.Token) else unicode(c)
+isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                       for c in command_list]
             if assignment is None:
                 return ''.join(pieces)
@@ -924,8 +924,8 @@ isinstance(c, tokenize.Token) else unicode(c)
         it and make it nicer, that would be cool :-)
         """
         def is_assignment(tok):
-            return isinstance(tok, Operator) and tok.operator.endswith('=') \
-                and not tok.operator in ['>=', '<=', '==', '!=']
+            return isinstance(tok, Operator) and tok.string.endswith('=') \
+                and not tok.string in ['>=', '<=', '==', '!=']
 
         def parse_array(token_iterator, array_type, start_pos, add_el=None,
                         added_breaks=()):
@@ -1118,7 +1118,7 @@ isinstance(c, tokenize.Token) else unicode(c)
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
-                    self._assignment_details.append((result, tok.operator))
+                    self._assignment_details.append((result, tok.string))
                     result = []
                     is_chain = False
                     continue
@@ -1150,7 +1150,7 @@ isinstance(c, tokenize.Token) else unicode(c)
                 is_chain = False
             elif tok in brackets.keys():
                 arr, is_ass = parse_array(
-                    token_iterator, brackets[tok.operator], start_pos
+                    token_iterator, brackets[tok.string], start_pos
                 )
                 if result and isinstance(result[-1], StatementElement):
                     result[-1].set_execution(arr)
@@ -1512,15 +1512,15 @@ class ListComprehension(Base):
 
 
 class Operator(Base):
-    __slots__ = ('operator', '_line', '_column')
+    __slots__ = ('string', '_line', '_column')
 
-    def __init__(self, operator, start_pos):
-        self.operator = operator
+    def __init__(self, string, start_pos):
+        self.string = string
         self._line = start_pos[0]
         self._column = start_pos[1]
 
     def __repr__(self):
-        return "<%s: `%s`>" % (type(self).__name__, self.operator)
+        return "<%s: `%s`>" % (type(self).__name__, self.string)
 
     @property
     def start_pos(self):
@@ -1528,15 +1528,15 @@ class Operator(Base):
 
     @property
     def end_pos(self):
-        return self._line, self._column + len(self.operator)
+        return self._line, self._column + len(self.string)
 
     def __eq__(self, other):
         """Make comparisons easy. Improves the readability of the parser."""
-        return self.operator == other
+        return self.string == other
 
     def __ne__(self, other):
         """Python 2 compatibility."""
-        return self.operator != other
+        return self.string != other
 
     def __hash__(self):
-        return hash(self.operator)
+        return hash(self.string)

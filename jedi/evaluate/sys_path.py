@@ -30,7 +30,7 @@ def sys_path_with_modifications(module):
         try:
             exec_function(c % code, variables)
         except Exception:
-            debug.warning('sys path detected, but failed to evaluate')
+            debug.warning('sys.path manipulation detected, but failed to evaluate.')
             return None
         try:
             res = variables['result']

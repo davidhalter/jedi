@@ -322,10 +322,10 @@ class Evaluator(object):
             # Only the first command is important, the rest should basically not
             # happen except in broken code (e.g. docstrings that aren't code).
             call = expression_list[0]
-            if isinstance(call, (str, unicode)):
-                call_path = [call]
-            else:
+            if isinstance(call, pr.Call):
                 call_path = list(call.generate_call_path())
+            else:
+                call_path = [call]
 
         scope = stmt.get_parent_until(pr.IsScope)
         pos = stmt.start_pos
