@@ -1052,7 +1052,6 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             parent = self.get_parent_until(IsScope)
             lambd = Lambda(self._sub_module, params, start_pos, parent)
 
-
             ret, tok = parse_stmt(token_iterator)
             if ret is not None:
                 ret.parent = lambd
@@ -1135,7 +1134,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 lambd, tok = parse_lambda(token_iterator)
                 if lambd is not None:
                     result.append(lambd)
-                else:
+                if tok not in (')', ','):
                     continue
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
