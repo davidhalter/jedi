@@ -1104,7 +1104,6 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 # the token is a Name, which has already been parsed
                 tok_str = tok
                 token_type = None
-                end_pos = tok.end_pos
 
                 if is_assignment(tok):
                     # This means, there is an assignment here.
@@ -1115,7 +1114,6 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     continue
             else:
                 token_type = tok.type
-                end_pos = tok.end_pos
                 tok_str = tok.string
                 if tok_str == 'as':  # just ignore as, because it sets values
                     next(token_iterator, None)
@@ -1132,7 +1130,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             if isinstance(tok_str, Name) or is_literal:
                 cls = Literal if is_literal else Call
 
-                call = cls(self._sub_module, tok_str, tok.start_pos, end_pos, self)
+                call = cls(self._sub_module, tok_str, tok.start_pos, tok.end_pos, self)
                 if is_chain:
                     result[-1].set_next(call)
                 else:
@@ -1182,7 +1180,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     result = []
                     is_chain = False
             else:
-                if tok_str != '\n' and token_type != tokenize.COMMENT:
+                if token_type != tokenize.COMMENT:
                     result.append(tok_str)
         return result
 
