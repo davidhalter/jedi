@@ -1150,24 +1150,11 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     is_chain = True
             elif tok_str == ',':  # implies a tuple
                 # expression is now an array not a statement anymore
-                t = result[0]
-                start_pos = t.start_pos
-
-                # get the correct index
-                i, tok_str = next(token_iterator, (len(self.token_list), None))
-                if tok_str is not None:
-                    token_iterator.push_back((i, tok_str))
-                t = self.token_list[i - 1]
-                try:
-                    e = t.end_pos
-                except AttributeError:
-                    e = t.start_pos
-
                 stmt = Statement(
                     self._sub_module,
                     result,
-                    start_pos,
-                    e,
+                    result[0].start_pos,
+                    tok.end_pos,
                     self.parent,
                     set_name_parents=False
                 )
