@@ -73,6 +73,7 @@ import itertools
 from jedi._compatibility import next, hasattr, unicode
 from jedi import common
 from jedi.parser import representation as pr
+from jedi.parser.tokenize import Token
 from jedi import debug
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
@@ -182,7 +183,7 @@ class Evaluator(object):
                             except StopIteration:
                                 break
                         continue
-                elif not isinstance(call, unicode):
+                elif not isinstance(call, Token):
                     result += self.eval_call(call)
         return set(result)
 

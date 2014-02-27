@@ -1100,7 +1100,13 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
 
         token_iterator = common.PushBackIterator(enumerate(self.token_list))
         for i, tok in token_iterator:
-            if isinstance(tok, Base):
+            if isinstance(tok, tokenize.Token):
+                token_type = tok.type
+                tok_str = tok.string
+                if tok_str == 'as':  # just ignore as, because it sets values
+                    next(token_iterator, None)
+                    continue
+            else:
                 # the token is a Name, which has already been parsed
                 tok_str = tok
                 token_type = None
@@ -1111,12 +1117,6 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     self._assignment_details.append((result, tok.string))
                     result = []
                     is_chain = False
-                    continue
-            else:
-                token_type = tok.type
-                tok_str = tok.string
-                if tok_str == 'as':  # just ignore as, because it sets values
-                    next(token_iterator, None)
                     continue
 
             if tok_str == 'lambda':
@@ -1180,8 +1180,9 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     result = []
                     is_chain = False
             else:
-                if token_type != tokenize.COMMENT:
-                    result.append(tok_str)
+                # comments, strange tokens (like */**), error tokens to
+                # reproduce the string correctly.
+                result.append(tok)
         return result
 
 
