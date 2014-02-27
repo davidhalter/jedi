@@ -932,6 +932,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             arr = Array(self._sub_module, start_pos, array_type, self)
             if add_el is not None:
                 arr.add_statement(add_el)
+                old_stmt = add_el
 
             maybe_dict = array_type == Array.SET
             break_tok = None
@@ -945,12 +946,12 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 else:
                     if break_tok == ',':
                         is_array = True
-                    is_key = maybe_dict and break_tok == ':'
-                    arr.add_statement(stmt, is_key)
+                    arr.add_statement(stmt, is_key=maybe_dict and break_tok == ':')
                     if break_tok in closing_brackets \
                             or break_tok in added_breaks \
                             or is_assignment(break_tok):
                         break
+                old_stmt = stmt
             if arr.type == Array.TUPLE and len(arr) == 1 and not is_array:
                 arr.type = Array.NOARRAY
             if not arr.values and maybe_dict:
@@ -958,7 +959,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 # always dictionaries and not sets.
                 arr.type = Array.DICT
 
-            arr.end_pos = token_iterator.current[1].end_pos
+            arr.end_pos = (break_tok or stmt or old_stmt).end_pos
             return arr, break_tok
 
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
@@ -968,7 +969,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             first = True
             end_pos = None, None
             tok = None
-            for i, tok in token_iterator:
+            for tok in token_iterator:
                 end_pos = tok.end_pos
                 if first:
                     start_pos = tok.start_pos
@@ -1098,8 +1099,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
         brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
         closing_brackets = ')', '}', ']'
 
-        token_iterator = common.PushBackIterator(enumerate(self.token_list))
-        for i, tok in token_iterator:
+        token_iterator = iter(self.token_list)
+        for tok in token_iterator:
             if isinstance(tok, tokenize.Token):
                 token_type = tok.type
                 tok_str = tok.string
