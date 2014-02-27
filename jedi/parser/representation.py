@@ -1102,8 +1102,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
         for i, tok in token_iterator:
             if isinstance(tok, Base):
                 # the token is a Name, which has already been parsed
+                tok_str = tok
                 token_type = None
-                start_pos = tok.start_pos
                 end_pos = tok.end_pos
 
                 if is_assignment(tok):
@@ -1115,57 +1115,55 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     continue
             else:
                 token_type = tok.type
-                start_pos = tok.start_pos
                 end_pos = tok.end_pos
-                tok = tok.string
-                if tok == 'as':  # just ignore as, because it sets values
+                tok_str = tok.string
+                if tok_str == 'as':  # just ignore as, because it sets values
                     next(token_iterator, None)
                     continue
 
-            if tok == 'lambda':
-                lambd, tok = parse_lambda(token_iterator)
+            if tok_str == 'lambda':
+                lambd, tok_str = parse_lambda(token_iterator)
                 if lambd is not None:
                     result.append(lambd)
-                if tok not in (')', ','):
+                if tok_str not in (')', ','):
                     continue
 
             is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
-            if isinstance(tok, Name) or is_literal:
+            if isinstance(tok_str, Name) or is_literal:
                 cls = Literal if is_literal else Call
 
-                call = cls(self._sub_module, tok, start_pos, end_pos, self)
+                call = cls(self._sub_module, tok_str, tok.start_pos, end_pos, self)
                 if is_chain:
                     result[-1].set_next(call)
                 else:
                     result.append(call)
                 is_chain = False
-            elif tok in brackets.keys():
+            elif tok_str in brackets.keys():
                 arr, is_ass = parse_array(
-                    token_iterator, brackets[tok.string], start_pos
+                    token_iterator, brackets[tok.string], tok.start_pos
                 )
                 if result and isinstance(result[-1], StatementElement):
                     result[-1].set_execution(arr)
                 else:
                     arr.parent = self
                     result.append(arr)
-            elif tok == '.':
+            elif tok_str == '.':
                 if result and isinstance(result[-1], StatementElement):
                     is_chain = True
-            elif tok == ',':  # implies a tuple
+            elif tok_str == ',':  # implies a tuple
                 # expression is now an array not a statement anymore
                 t = result[0]
-                start_pos = t[2] if isinstance(t, tuple) else t.start_pos
+                start_pos = t.start_pos
 
                 # get the correct index
-                i, tok = next(token_iterator, (len(self.token_list), None))
-                if tok is not None:
-                    token_iterator.push_back((i, tok))
+                i, tok_str = next(token_iterator, (len(self.token_list), None))
+                if tok_str is not None:
+                    token_iterator.push_back((i, tok_str))
                 t = self.token_list[i - 1]
                 try:
                     e = t.end_pos
                 except AttributeError:
-                    e = (t[2][0], t[2][1] + len(t[1])) \
-                        if isinstance(t, tuple) else t.start_pos
+                    e = t.start_pos
 
                 stmt = Statement(
                     self._sub_module,
@@ -1184,8 +1182,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     result = []
                     is_chain = False
             else:
-                if tok != '\n' and token_type != tokenize.COMMENT:
-                    result.append(tok)
+                if tok_str != '\n' and token_type != tokenize.COMMENT:
+                    result.append(tok_str)
         return result
 
 
