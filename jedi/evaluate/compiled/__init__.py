@@ -11,6 +11,9 @@ from jedi import debug
 from jedi.parser.representation import Base
 from jedi.cache import underscore_memoization
 from jedi.evaluate.sys_path import get_sys_path
+from jedi.parser.representation import Param
+from jedi.parser.representation import SubModule
+from jedi.evaluate.helpers import FakeName
 from . import fake
 
 
@@ -19,6 +22,20 @@ class CompiledObject(Base):
     start_pos = 0, 0
     asserts = []
     path = None  # modules have this attribute - set it to None.
+
+    @property
+    def params(self):
+        params_str, ret = self._parse_function_doc()
+        tokens = params_str.split(',')
+        params = []
+        module = SubModule(self.get_parent_until().name)
+        # it seems like start_pos/end_pos is always (0, 0) for a compiled
+        # object
+        start_pos, end_pos = (0, 0), (0, 0)
+        for p in tokens:
+            params.append(Param(module, [FakeName(p.strip())], start_pos,
+                                end_pos))
+        return params
 
     def __init__(self, obj, parent=None):
         self.obj = obj

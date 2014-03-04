@@ -554,6 +554,8 @@ class CallDef(object):
             if isinstance(self._executable, er.InstanceElement):
                 return self._executable.params[1:]
             return self._executable.params
+        elif self._executable.isinstance(er.compiled.CompiledObject):
+            return self._executable.params
         else:
             try:
                 sub = self._executable.get_subscope_by_name('__init__')
