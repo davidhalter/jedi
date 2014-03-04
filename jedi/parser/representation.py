@@ -101,6 +101,23 @@ class Base(object):
         #TODO: we need tab detection
         return " "
 
+    @Python3Method
+    def get_parent_until(self, classes=(), reverse=False,
+                         include_current=True):
+        """
+        Searches the parent "chain" until the object is an instance of
+        classes. If classes is empty return the last parent in the chain
+        (is without a parent).
+        """
+        if type(classes) not in (tuple, list):
+            classes = (classes,)
+        scope = self if include_current else self.parent
+        while scope.parent is not None:
+            if classes and reverse != scope.isinstance(*classes):
+                break
+            scope = scope.parent
+        return scope
+
     def space(self, from_pos, to_pos):
         """Return the space between two tokens"""
         linecount = to_pos[0] - from_pos[0]
@@ -159,19 +176,6 @@ class Simple(Base):
     @end_pos.setter
     def end_pos(self, value):
         self._end_pos = value
-
-    @Python3Method
-    def get_parent_until(self, classes=(), reverse=False,
-                         include_current=True):
-        """ Takes always the parent, until one class (not a Class) """
-        if type(classes) not in (tuple, list):
-            classes = (classes,)
-        scope = self if include_current else self.parent
-        while scope.parent is not None:
-            if classes and reverse != scope.isinstance(*classes):
-                break
-            scope = scope.parent
-        return scope
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
@@ -801,7 +805,7 @@ class Import(Simple):
         return n
 
 
-class KeywordStatement(object):
+class KeywordStatement(Base):
     """
     For the following statements: `assert`, `del`, `global`, `nonlocal`,
     `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
@@ -819,9 +823,19 @@ class KeywordStatement(object):
 
     def get_code(self):
         if self._stmt is None:
-            return self.name
+            return "%s\n" % self.name
         else:
-            return '%s %s' % (self.name, self._stmt)
+            return '%s %s\n' % (self.name, self._stmt)
+
+    def get_set_vars(self):
+        return []
+
+    @property
+    def end_pos(self):
+        try:
+            return self._stmt.end_pos
+        except AttributeError:
+            return self.start_pos[0], self.start_pos[1] + len(self.name)
 
 
 class Statement(Simple, DocstringMixin):
