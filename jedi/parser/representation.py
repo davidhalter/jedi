@@ -816,7 +816,7 @@ class Statement(Simple, DocstringMixin):
     :type   start_pos: 2-tuple of int
     :param  start_pos: Position (line, column) of the Statement.
     """
-    __slots__ = ('token_list', '_set_vars', 'as_names', '_expression_list',
+    __slots__ = ('_token_list', '_set_vars', 'as_names', '_expression_list',
                  '_assignment_details', '_names_are_set_vars', '_doc_token')
 
     def __init__(self, module, token_list, start_pos, end_pos, parent=None,
@@ -824,7 +824,7 @@ class Statement(Simple, DocstringMixin):
         super(Statement, self).__init__(module, start_pos, end_pos)
         if isinstance(start_pos, list):
             raise NotImplementedError()
-        self.token_list = token_list
+        self._token_list = token_list
         self._names_are_set_vars = names_are_set_vars
         if set_name_parents:
             for t in token_list:
@@ -839,7 +839,6 @@ class Statement(Simple, DocstringMixin):
 
         # cache
         self._assignment_details = []
-        # this is important for other scripts
 
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
@@ -893,7 +892,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
 
     def is_global(self):
         # first keyword of the first token is global -> must be a global
-        tok = self.token_list[0]
+        tok = self._token_list[0]
         return isinstance(tok, Name) and str(tok) == "global"
 
     @property
@@ -985,12 +984,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                         if lambd is not None:
                             token_list.append(lambd)
                     elif tok == 'for':
-                        list_comp, tok = parse_list_comp(
-                            token_iterator,
-                            token_list,
-                            start_pos,
-                            tok.end_pos
-                        )
+                        list_comp, tok = parse_list_comp(token_iterator, token_list,
+                                                         start_pos, tok.end_pos)
                         if list_comp is not None:
                             token_list = [list_comp]
 
@@ -1015,14 +1010,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             if not token_list:
                 return None, tok
 
-            statement = stmt_class(
-                self._sub_module,
-                token_list,
-                start_pos,
-                end_pos,
-                self.parent,
-                set_name_parents=False
-            )
+            statement = stmt_class(self._sub_module, token_list, start_pos,
+                                   end_pos, self.parent, set_name_parents=False)
             return statement, tok
 
         def parse_lambda(token_iterator):
@@ -1038,10 +1027,11 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     break
             # TODO uncomment and run `./run.py func 395 --debug` shouldn't parse all statements.
             #print tok, tok.start_pos
+            #raise NotImplementedError()
             if tok != ':':
                 return None, tok
 
-            # since lambda is a Function scope, it needs Scope parents
+            # Since Lambda is a Function scope, it needs Scope parents.
             parent = self.get_parent_until(IsScope)
             lambd = Lambda(self._sub_module, params, start_pos, parent)
 
@@ -1065,14 +1055,14 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                                            added_breaks=added_breaks)
                     token_list = []
                     for stmt in arr:
-                        token_list += stmt.token_list
+                        token_list += stmt._token_list
                     start_pos = arr.start_pos[0], arr.start_pos[1] - 1
                     stmt = Statement(self._sub_module, token_list,
                                      start_pos, arr.end_pos)
                     arr.parent = stmt
-                    stmt.token_list = stmt._expression_list = [arr]
+                    stmt._token_list = stmt._expression_list = [arr]
                 else:
-                    for t in stmt.token_list:
+                    for t in stmt._token_list:
                         if isinstance(t, Name):
                             t.parent = stmt
                 stmt._names_are_set_vars = names_are_set_vars
@@ -1099,7 +1089,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
         brackets = {'(': Array.TUPLE, '[': Array.LIST, '{': Array.SET}
         closing_brackets = ')', '}', ']'
 
-        token_iterator = iter(self.token_list)
+        token_iterator = iter(self._token_list)
         for tok in token_iterator:
             if isinstance(tok, tokenize.Token):
                 token_type = tok.type
@@ -1151,14 +1141,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     is_chain = True
             elif tok_str == ',':  # implies a tuple
                 # expression is now an array not a statement anymore
-                stmt = Statement(
-                    self._sub_module,
-                    result,
-                    result[0].start_pos,
-                    tok.end_pos,
-                    self.parent,
-                    set_name_parents=False
-                )
+                stmt = Statement(self._sub_module, result, result[0].start_pos,
+                                 tok.end_pos, self.parent, set_name_parents=False)
                 stmt._expression_list = result
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
                                              stmt.start_pos, stmt)

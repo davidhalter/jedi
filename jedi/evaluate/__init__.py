@@ -364,7 +364,7 @@ def filter_private_variable(scope, call_scope, var_name):
 
 def _evaluate_list_comprehension(lc, parent=None):
     input = lc.input
-    nested_lc = lc.input.token_list[0]
+    nested_lc = input.expression_list()[0]
     if isinstance(nested_lc, pr.ListComprehension):
         # is nested LC
         input = nested_lc.stmt

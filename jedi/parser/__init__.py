@@ -568,7 +568,7 @@ class Parser(object):
                 stmt, tok = self._parse_statement(self._gen.current)
                 if stmt:
                     self._scope.add_statement(stmt)
-                    for t in stmt.token_list:
+                    for t in stmt._token_list:
                         if isinstance(t, pr.Name):
                             # add the global to the top, because there it is
                             # important.
