@@ -321,13 +321,6 @@ class Scope(Simple, IsScope, DocstringMixin):
         return [n for n in self.get_set_vars()
                 if isinstance(n, Import) or (len(n) == 1)]
 
-    def is_empty(self):
-        """
-        :return: True if there are no subscopes, imports and statements.
-        :rtype: bool
-        """
-        return not (self.imports or self.subscopes or self.statements or self.returns)
-
     @Python3Method
     def get_statement_for_position(self, pos, include_imports=False):
         checks = self.statements + self.asserts
@@ -484,10 +477,6 @@ class Class(Scope):
             string += '(%s)' % sup
         string += ':\n'
         string += super(Class, self).get_code(True, indention)
-        if self.is_empty():
-            if self._doc_token is not None:
-                string += indention
-            string += "pass\n"
         return string
 
     @property
@@ -539,10 +528,6 @@ class Function(Scope):
         params = ', '.join([stmt.get_code(False) for stmt in self.params])
         string += "def %s(%s):\n" % (self.name, params)
         string += super(Function, self).get_code(True, indention)
-        if self.is_empty():
-            if self._doc_token is not None:
-                string += indention
-            string += 'pass\n'
         return string
 
     def get_set_vars(self):
