@@ -913,9 +913,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
         return self._set_vars + self.as_names
 
     def is_global(self):
-        # first keyword of the first token is global -> must be a global
-        tok = self._token_list[0]
-        return isinstance(tok, Name) and str(tok) == "global"
+        p = self.parent
+        return isinstance(p, KeywordStatement) and p.name == 'global'
 
     @property
     def assignment_details(self):

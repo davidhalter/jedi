@@ -185,9 +185,9 @@ class NameFinder(object):
         types = []
         if stmt.is_global():
             # global keyword handling.
-            for token_name in stmt._token_list[1:]:
+            for token_name in stmt._token_list:
                 if isinstance(token_name, pr.Name):
-                    return evaluator.find_types(stmt.parent, str(token_name))
+                    return evaluator.find_types(stmt.parent.parent, str(token_name))
         else:
             # Remove the statement docstr stuff for now, that has to be
             # implemented with the evaluator class.
