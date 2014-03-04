@@ -573,6 +573,11 @@ class Parser(object):
                             # add the global to the top, because there it is
                             # important.
                             self.module.add_global(t)
+            elif tok_str in STATEMENT_KEYWORDS:
+                stmt, _ = self._parse_statement()
+                k = pr.KeywordStatement(tok_str, tok.start_pos,
+                                        use_as_parent_scope, stmt)
+                self._scope.add_statement(k)
             # decorator
             elif tok_str == '@':
                 stmt, tok = self._parse_statement()

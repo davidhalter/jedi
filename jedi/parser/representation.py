@@ -46,7 +46,7 @@ from jedi import cache
 from jedi.parser import tokenize
 
 
-SCOPE_CONTENTS = ['asserts', 'subscopes', 'imports', 'statements', 'returns']
+SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
 
 
 class GetCodeState(object):
@@ -799,6 +799,29 @@ class Import(Simple):
         if self.alias:
             n.append(self.alias)
         return n
+
+
+class KeywordStatement(object):
+    """
+    For the following statements: `assert`, `del`, `global`, `nonlocal`,
+    `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
+    """
+    __slots__ = ('name', 'start_pos', '_stmt', 'parent')
+
+    def __init__(self, name, start_pos, parent, stmt=None):
+        self.name = name
+        self.start_pos = start_pos
+        self._stmt = stmt
+        self.parent = parent
+
+        if stmt is not None:
+            stmt.parent = self
+
+    def get_code(self):
+        if self._stmt is None:
+            return self.name
+        else:
+            return '%s %s' % (self.name, self._stmt)
 
 
 class Statement(Simple, DocstringMixin):
