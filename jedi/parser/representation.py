@@ -1013,14 +1013,11 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     elif tok in brackets.keys():
                         level += 1
 
-                    if level == -1 and tok in closing_brackets \
-                            or tok in added_breaks \
-                            or level == 0 and (
-                                tok == ','
-                                or maybe_dict and tok == ':'
-                                or is_assignment(tok)
-                                and break_on_assignment
-                            ):
+                    if level == -1 or level == 0 and (
+                            tok == ','
+                            or tok in added_breaks
+                            or maybe_dict and tok == ':'
+                            or is_assignment(tok) and break_on_assignment):
                         end_pos = end_pos[0], end_pos[1] - 1
                         break
 

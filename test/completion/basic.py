@@ -131,7 +131,7 @@ a = [a if 1.0 else '' for a in [1] if [1.0]]
 #? int() str()
 a[0]
 
-# with a dict in between
+# with a dict literal
 #? int()
 [a for a,b in {1:2}.items()][0]
 
