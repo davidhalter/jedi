@@ -844,8 +844,6 @@ class Statement(Simple, DocstringMixin):
     def __init__(self, module, token_list, start_pos, end_pos, parent=None,
                  as_names=(), names_are_set_vars=False, set_name_parents=True):
         super(Statement, self).__init__(module, start_pos, end_pos)
-        if isinstance(start_pos, list):
-            raise NotImplementedError()
         self._token_list = token_list
         self._names_are_set_vars = names_are_set_vars
         if set_name_parents:
@@ -985,7 +983,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
                        break_on_assignment=False, stmt_class=Statement):
             token_list = []
-            level = 1
+            level = 0
             first = True
             end_pos = None, None
             tok = None
@@ -1015,9 +1013,9 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     elif tok in brackets.keys():
                         level += 1
 
-                    if level == 0 and tok in closing_brackets \
+                    if level == -1 and tok in closing_brackets \
                             or tok in added_breaks \
-                            or level == 1 and (
+                            or level == 0 and (
                                 tok == ','
                                 or maybe_dict and tok == ':'
                                 or is_assignment(tok)
@@ -1081,7 +1079,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                     stmt = Statement(self._sub_module, token_list,
                                      start_pos, arr.end_pos)
                     arr.parent = stmt
-                    stmt._token_list = stmt._expression_list = [arr]
+                    stmt._expression_list = [arr]
                 else:
                     for t in stmt._token_list:
                         if isinstance(t, Name):

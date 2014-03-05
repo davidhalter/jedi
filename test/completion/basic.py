@@ -131,6 +131,13 @@ a = [a if 1.0 else '' for a in [1] if [1.0]]
 #? int() str()
 a[0]
 
+# with a dict in between
+#? int()
+[a for a,b in {1:2}.items()][0]
+
+#? str()
+{a:b for a,b in {1:'a', 3:1.0}.items()}[1]
+
 # -----------------
 # nested list comprehensions
 # -----------------
