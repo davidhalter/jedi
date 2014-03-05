@@ -37,6 +37,7 @@ Jedi can be used with the following editors:
 - Emacs (Jedi.el_, company-jedi_)
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
 - SynWrite_
+- TextMate_ (not sure if it actually works)
 
 And it powers the following projects:
 
@@ -145,3 +146,4 @@ For more detailed information visit the `testing documentation
 .. _anaconda: https://github.com/DamnWidget/anaconda
 .. _SynWrite: http://uvviewsoft.com/synjedi/
 .. _wdb: https://github.com/Kozea/wdb
+.. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
