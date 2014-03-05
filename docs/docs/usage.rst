@@ -36,6 +36,10 @@ SynWrite:
 
 - SynJedi_
 
+TextMate:
+
+- Textmate_ (Not sure if it's actually working)
+
 
 .. _other-software:
 
@@ -72,3 +76,4 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _anaconda: https://github.com/DamnWidget/anaconda
 .. _SynJedi: http://uvviewsoft.com/synjedi/
 .. _wdb: https://github.com/Kozea/wdb
+.. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle

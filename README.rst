@@ -37,7 +37,7 @@ Jedi can be used with the following editors:
 - Emacs (Jedi.el_, company-jedi_)
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
 - SynWrite_
-- TextMate_ (not sure if it actually works)
+- TextMate_ (Not sure if it's actually working)
 
 And it powers the following projects:
 
