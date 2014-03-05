@@ -1058,13 +1058,12 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                                   names_are_set_vars=False):
                 stmt, tok = parse_stmt(token_iterator, allow_comma=True,
                                        added_breaks=added_breaks)
-                if not stmt:
-                    return None, tok
 
-                for t in stmt._token_list:
-                    if isinstance(t, Name):
-                        t.parent = stmt
-                stmt._names_are_set_vars = names_are_set_vars
+                if stmt is not None:
+                    for t in stmt._token_list:
+                        if isinstance(t, Name):
+                            t.parent = stmt
+                    stmt._names_are_set_vars = names_are_set_vars
                 return stmt, tok
 
             st = Statement(self._sub_module, token_list, start_pos,

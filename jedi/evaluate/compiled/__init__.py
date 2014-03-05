@@ -43,7 +43,7 @@ class CompiledObject(Base):
         self.doc = inspect.getdoc(obj)
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self.obj)
+        return '<%s: %s>' % (type(self).__name__, repr(self.obj))
 
     def get_parent_until(self, *args, **kwargs):
         # compiled modules only use functions and classes/methods (2 levels)
