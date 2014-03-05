@@ -89,7 +89,7 @@ def test_module():
     name = module.name
     assert str(name) == 'example'
     assert name.start_pos == (0, 0)
-    assert name.end_pos == (0, 0)
+    assert name.end_pos == (0, 7)
 
     module = Parser(u('asdf'), no_docstr=True).module
     name = module.name

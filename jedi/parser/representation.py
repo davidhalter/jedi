@@ -860,6 +860,10 @@ class Statement(Simple, DocstringMixin):
         # cache
         self._assignment_details = []
 
+    @property
+    def end_pos(self):
+        return self._token_list[-1].end_pos
+
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
             pieces = [c.get_code() if isinstance(c, Simple) else c.string if
@@ -1426,6 +1430,10 @@ class Name(Simple):
     def get_code(self):
         """ Returns the names in a full string format """
         return ".".join(unicode(n) for n in self.names)
+
+    @property
+    def end_pos(self):
+        return self.names[-1].end_pos
 
     @property
     def docstr(self):
