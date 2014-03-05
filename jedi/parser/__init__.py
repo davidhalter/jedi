@@ -181,7 +181,7 @@ class Parser(object):
         tok = None
         pos = 0
         breaks = [',', ':']
-        while tok is None or tok.string not in [')', ':']:
+        while tok is None or tok.string not in (')', ':'):
             param, tok = self._parse_statement(added_breaks=breaks,
                                                stmt_class=pr.Param)
             if param and tok.string == ':':
@@ -221,7 +221,7 @@ class Parser(object):
 
         colon = next(self._gen)
         annotation = None
-        if colon.string in ['-', '->']:
+        if colon.string in ('-', '->'):
             # parse annotations
             if colon.string == '-':
                 # The Python 2 tokenizer doesn't understand this
@@ -409,7 +409,7 @@ class Parser(object):
             # errors. only check for names, because thats relevant here. If
             # some docstrings are not indented, I don't care.
             while first_pos[1] <= self._scope.start_pos[1] \
-                    and (token_type == tokenize.NAME or tok_str in ['(', '['])\
+                    and (token_type == tokenize.NAME or tok_str in ('(', '['))\
                     and self._scope != self.module:
                 self._scope.end_pos = first_pos
                 self._scope = self._scope.parent
@@ -505,12 +505,12 @@ class Parser(object):
             elif tok_str in ['if', 'while', 'try', 'with'] + extended_flow:
                 added_breaks = []
                 command = tok_str
-                if command in ['except', 'with']:
+                if command in ('except', 'with'):
                     added_breaks.append(',')
                 # multiple inputs because of with
                 inputs = []
                 first = True
-                while first or command == 'with' and tok.string not in [':', '\n']:
+                while first or command == 'with' and tok.string not in (':', '\n'):
                     statement, tok = \
                         self._parse_statement(added_breaks=added_breaks)
                     if command == 'except' and tok.string == ',':
@@ -540,7 +540,7 @@ class Parser(object):
                 if tok.string != ':':
                     debug.warning('syntax err, flow started @%s', tok.start_pos[0])
             # returns
-            elif tok_str in ['return', 'yield']:
+            elif tok_str in ('return', 'yield'):
                 s = tok.start_pos
                 self.freshscope = False
                 # add returns to the scope
@@ -580,8 +580,8 @@ class Parser(object):
             elif tok_str == 'pass':
                 continue
             # default
-            elif token_type in [tokenize.NAME, tokenize.STRING,
-                                tokenize.NUMBER] \
+            elif token_type in (tokenize.NAME, tokenize.STRING,
+                                tokenize.NUMBER) \
                     or tok_str in statement_toks:
                 # this is the main part - a name can be a function or a
                 # normal var, which can follow anything. but this is done
@@ -591,7 +591,7 @@ class Parser(object):
                     self._scope.add_statement(stmt)
                 self.freshscope = False
             else:
-                if token_type not in [tokenize.COMMENT, tokenize.NEWLINE, tokenize.ENDMARKER]:
+                if token_type not in (tokenize.COMMENT, tokenize.NEWLINE, tokenize.ENDMARKER):
                     debug.warning('Token not used: %s %s %s', tok_str,
                                   tokenize.tok_name[token_type], first_pos)
                 continue

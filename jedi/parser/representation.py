@@ -733,7 +733,7 @@ class Import(Simple):
         self.namespace = namespace
         self.alias = alias
         self.from_ns = from_ns
-        for n in [namespace, alias, from_ns]:
+        for n in namespace, alias, from_ns:
             if n:
                 n.parent = self.use_as_parent
 
@@ -947,7 +947,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
         """
         def is_assignment(tok):
             return isinstance(tok, Operator) and tok.string.endswith('=') \
-                and not tok.string in ['>=', '<=', '==', '!=']
+                and not tok.string in ('>=', '<=', '==', '!=')
 
         def parse_array(token_iterator, array_type, start_pos, add_el=None):
             arr = Array(self._sub_module, start_pos, array_type, self)
@@ -1119,7 +1119,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 if tok_str not in (')', ','):
                     continue
 
-            is_literal = token_type in [tokenize.STRING, tokenize.NUMBER]
+            is_literal = token_type in (tokenize.STRING, tokenize.NUMBER)
             if isinstance(tok_str, Name) or is_literal:
                 cls = Literal if is_literal else Call
 
@@ -1453,7 +1453,7 @@ class ListComprehension(Base):
         self.stmt = stmt
         self.middle = middle
         self.input = input
-        for s in [stmt, middle, input]:
+        for s in stmt, middle, input:
             s.parent = self
         self.parent = parent
 
