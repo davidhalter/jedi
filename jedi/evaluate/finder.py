@@ -148,9 +148,10 @@ class NameFinder(object):
         types = []
         # Add isinstance and other if/assert knowledge.
         flow_scope = self.scope
+        evaluator = self._evaluator
         while flow_scope:
             # TODO check if result is in scope -> no evaluation necessary
-            n = check_flow_information(self._evaluator, flow_scope,
+            n = check_flow_information(evaluator, flow_scope,
                                        self.name_str, self.position)
             if n:
                 return n
@@ -163,12 +164,16 @@ class NameFinder(object):
             elif isinstance(typ, pr.Param):
                 types += self._eval_param(typ)
             elif typ.isinstance(pr.Statement):
-                types += self._remove_statements(typ)
+                if typ.is_global():
+                    # global keyword handling.
+                    types += evaluator.find_types(typ.parent.parent, str(name))
+                else:
+                    types += self._remove_statements(typ)
             else:
                 if isinstance(typ, pr.Class):
-                    typ = er.Class(self._evaluator, typ)
+                    typ = er.Class(evaluator, typ)
                 elif isinstance(typ, pr.Function):
-                    typ = er.Function(self._evaluator, typ)
+                    typ = er.Function(evaluator, typ)
                 if typ.isinstance(er.Function) and resolve_decorator:
                     typ = typ.get_decorated_func()
                 types.append(typ)
@@ -183,29 +188,23 @@ class NameFinder(object):
         """
         evaluator = self._evaluator
         types = []
-        if stmt.is_global():
-            # global keyword handling.
-            for token_name in stmt._token_list:
-                if isinstance(token_name, pr.Name):
-                    return evaluator.find_types(stmt.parent.parent, str(token_name))
-        else:
-            # Remove the statement docstr stuff for now, that has to be
-            # implemented with the evaluator class.
-            #if stmt.docstr:
-                #res_new.append(stmt)
+        # Remove the statement docstr stuff for now, that has to be
+        # implemented with the evaluator class.
+        #if stmt.docstr:
+            #res_new.append(stmt)
 
-            check_instance = None
-            if isinstance(stmt, er.InstanceElement) and stmt.is_class_var:
-                check_instance = stmt.instance
-                stmt = stmt.var
+        check_instance = None
+        if isinstance(stmt, er.InstanceElement) and stmt.is_class_var:
+            check_instance = stmt.instance
+            stmt = stmt.var
 
-            types += evaluator.eval_statement(stmt, seek_name=self.name_str)
+        types += evaluator.eval_statement(stmt, seek_name=self.name_str)
 
-            if check_instance is not None:
-                # class renames
-                types = [er.InstanceElement(evaluator, check_instance, a, True)
-                         if isinstance(a, (er.Function, pr.Function))
-                         else a for a in types]
+        if check_instance is not None:
+            # class renames
+            types = [er.InstanceElement(evaluator, check_instance, a, True)
+                     if isinstance(a, (er.Function, pr.Function))
+                     else a for a in types]
         return types
 
     def _eval_param(self, r):
