@@ -945,8 +945,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             return isinstance(tok, Operator) and tok.string.endswith('=') \
                 and not tok.string in ['>=', '<=', '==', '!=']
 
-        def parse_array(token_iterator, array_type, start_pos, add_el=None,
-                        added_breaks=()):
+        def parse_array(token_iterator, array_type, start_pos, add_el=None):
             arr = Array(self._sub_module, start_pos, array_type, self)
             if add_el is not None:
                 arr.add_statement(add_el)
@@ -957,8 +956,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             is_array = None
             while True:
                 stmt, break_tok = parse_stmt(token_iterator, maybe_dict,
-                                             break_on_assignment=bool(add_el),
-                                             added_breaks=added_breaks)
+                                             break_on_assignment=bool(add_el))
                 if stmt is None:
                     break
                 else:
@@ -966,7 +964,6 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                         is_array = True
                     arr.add_statement(stmt, is_key=maybe_dict and break_tok == ':')
                     if break_tok in closing_brackets \
-                            or break_tok in added_breaks \
                             or is_assignment(break_tok):
                         break
                 old_stmt = stmt
@@ -981,7 +978,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             return arr, break_tok
 
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
-                       break_on_assignment=False, stmt_class=Statement):
+                       break_on_assignment=False, stmt_class=Statement,
+                       allow_comma=False):
             token_list = []
             level = 0
             first = True
@@ -1014,7 +1012,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                         level += 1
 
                     if level == -1 or level == 0 and (
-                            tok == ','
+                            tok == ',' and not allow_comma
                             or tok in added_breaks
                             or maybe_dict and tok == ':'
                             or is_assignment(tok) and break_on_assignment):
@@ -1041,9 +1039,6 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 params.append(param)
                 if tok == ':':
                     break
-            # TODO uncomment and run `./run.py func 395 --debug` shouldn't parse all statements.
-            #print tok, tok.start_pos
-            #raise NotImplementedError()
             if tok != ':':
                 return None, tok
 
@@ -1061,26 +1056,14 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
         def parse_list_comp(token_iterator, token_list, start_pos, end_pos):
             def parse_stmt_or_arr(token_iterator, added_breaks=(),
                                   names_are_set_vars=False):
-                stmt, tok = parse_stmt(token_iterator,
+                stmt, tok = parse_stmt(token_iterator, allow_comma=True,
                                        added_breaks=added_breaks)
                 if not stmt:
                     return None, tok
-                if tok == ',':
-                    arr, tok = parse_array(token_iterator, Array.TUPLE,
-                                           stmt.start_pos, stmt,
-                                           added_breaks=added_breaks)
-                    token_list = []
-                    for stmt in arr:
-                        token_list += stmt._token_list
-                    start_pos = arr.start_pos[0], arr.start_pos[1] - 1
-                    stmt = Statement(self._sub_module, token_list,
-                                     start_pos, arr.end_pos)
-                    arr.parent = stmt
-                    stmt._expression_list = [arr]
-                else:
-                    for t in stmt._token_list:
-                        if isinstance(t, Name):
-                            t.parent = stmt
+
+                for t in stmt._token_list:
+                    if isinstance(t, Name):
+                        t.parent = stmt
                 stmt._names_are_set_vars = names_are_set_vars
                 return stmt, tok
 
