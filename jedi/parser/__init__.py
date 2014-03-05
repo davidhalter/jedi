@@ -108,15 +108,9 @@ class Parser(object):
             self.module.temp_used_names.append(el[0])
 
         names = []
-        if pre_used_token is None:
-            tok = next(self._gen)
-            if tok.type != tokenize.NAME and tok.string != '*':
-                return [], tok  # TODO the fuck, why []?
-        else:
-            tok = pre_used_token
+        tok = next(self._gen) if pre_used_token is None else pre_used_token
 
         if tok.type != tokenize.NAME and tok.string != '*':
-            # token maybe a name or star
             return None, tok
 
         first_pos = tok.start_pos

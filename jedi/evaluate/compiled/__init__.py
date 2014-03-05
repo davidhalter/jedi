@@ -23,6 +23,11 @@ class CompiledObject(Base):
     asserts = []
     path = None  # modules have this attribute - set it to None.
 
+    def __init__(self, obj, parent=None):
+        self.obj = obj
+        self.parent = parent
+        self.doc = inspect.getdoc(obj)
+
     @property
     def params(self):
         params_str, ret = self._parse_function_doc()
@@ -37,17 +42,8 @@ class CompiledObject(Base):
                                 end_pos))
         return params
 
-    def __init__(self, obj, parent=None):
-        self.obj = obj
-        self.parent = parent
-        self.doc = inspect.getdoc(obj)
-
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, repr(self.obj))
-
-    def get_parent_until(self, *args, **kwargs):
-        # compiled modules only use functions and classes/methods (2 levels)
-        return getattr(self.parent, 'parent', self.parent) or self.parent or self
 
     @underscore_memoization
     def _parse_function_doc(self):

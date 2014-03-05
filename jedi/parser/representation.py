@@ -1473,6 +1473,7 @@ class Operator(Base):
     __slots__ = ('string', '_line', '_column')
 
     def __init__(self, string, start_pos):
+        # TODO needs module param
         self.string = string
         self._line = start_pos[0]
         self._column = start_pos[1]
