@@ -38,3 +38,12 @@ def test_parse_function_doc_illegal_docstr():
     doesn't have a closing bracket.
     """
     assert ('', '') == compiled._parse_function_doc(docstr)
+
+
+def test_doc():
+    """
+    Even CompiledObject docs always return empty docstrings - not None, that's
+    just a Jedi API definition.
+    """
+    obj = compiled.CompiledObject(''.__getnewargs__)
+    assert obj.doc == ''

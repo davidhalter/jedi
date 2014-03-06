@@ -26,7 +26,7 @@ class CompiledObject(Base):
     def __init__(self, obj, parent=None):
         self.obj = obj
         self.parent = parent
-        self.doc = inspect.getdoc(obj)
+        self.doc = inspect.getdoc(obj) or ''
 
     @property
     def params(self):
