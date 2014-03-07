@@ -55,6 +55,18 @@ class Precedence(object):
         self.operator = operator
         self.right = right
 
+    def parse_tree(self, strip_literals=False):
+        def process(which):
+            try:
+                which = which.parse_tree
+            except AttributeError:
+                pass
+            if strip_literals and isinstance(which, pr.Literal):
+                which = which.value
+            return which
+
+        return (process(self.left), self.operator, process(self.right))
+
     def __repr__(self):
         return '(%s %s %s)' % (self.left, self.operator, self.right)
 
@@ -98,17 +110,18 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
                 break  # respect priorities.
 
             try:
-                match = check.index(el)
+                match_index = check.index(el)
             except ValueError:
                 continue
 
+            match = check[match_index]
             if isinstance(match, PythonGrammar.MultiPart):
                 next_tok = next(iterator)
                 if next_tok != match.second:
                     iterator.push_back(next_tok)
                 continue
 
-            operator = check
+            operator = match
             break
 
         if operator is None:
