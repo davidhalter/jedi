@@ -16,9 +16,10 @@ class PythonGrammar(object):
         def __new__(cls, first, second):
             self = str.__new__(cls, first)
             self.second = second
+            return self
 
         def __str__(self):
-            return self.__str__() + ' ' + self.second
+            return str.__str__(self) + ' ' + self.second
 
     FACTOR = '+', '-', '~'
     POWER = '**',
@@ -31,7 +32,7 @@ class PythonGrammar(object):
     EXPR = '|',
 
     COMPARISON = ('<', '>', '==', '>=', '<=', '!=', 'in',
-                  MultiPart('not', 'in'), MultiPart('is', 'not')), 'is'
+                  MultiPart('not', 'in'), MultiPart('is', 'not'), 'is')
 
     NOT_TEST = 'not',
     AND_TEST = 'and',
@@ -58,7 +59,7 @@ class Precedence(object):
     def parse_tree(self, strip_literals=False):
         def process(which):
             try:
-                which = which.parse_tree()
+                which = which.parse_tree(strip_literals)
             except AttributeError:
                 pass
             if strip_literals and isinstance(which, pr.Literal):
@@ -124,7 +125,10 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
                 next_tok = next(iterator)
                 if next_tok != match.second:
                     iterator.push_back(next_tok)
-                continue
+                    if el == 'is':  # `is not` special case
+                        match = 'is'
+                    else:
+                        continue
 
             operator = match
             break
@@ -132,7 +136,8 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
         if operator is None:
             _syntax_error(el)
             continue
+
         right = _check_operator(iterator, check_prio)
         if right is not None:
-            left = Precedence(left, operator, right)
+            left = Precedence(left, str(operator), right)
     return left

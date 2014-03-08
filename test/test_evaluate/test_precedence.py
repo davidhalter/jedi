@@ -21,9 +21,25 @@ def test_simple():
     assert parse_tree('+2') == (None, '+', 2)
 
 
+def test_prefixed():
+    assert parse_tree('--2') == (None, '-', (None, '-', 2))
+    assert parse_tree('1 and not - 2') == (1, 'and', (None, '-', 2))
+
+
 def test_invalid():
     """Should just return a simple operation."""
     assert parse_tree('1 +') == 1
     assert parse_tree('+') is None
 
     assert parse_tree('* 1') == 1
+    assert parse_tree('1 * * 1') == (1, '*', 1)
+
+    # invalid operator
+    assert parse_tree('1 not - 1') == (1, '-', 1)
+    assert parse_tree('1 - not ~1') == (1, '-', (None, '~', 1))
+
+
+def test_multi_part():
+    assert parse_tree('1 not in 2') == (1, 'not in', 2)
+    assert parse_tree('1 is not -1') == (1, 'is not', (None, '-', 1))
+    assert parse_tree('1 is 1') == (1, 'is', 1)
