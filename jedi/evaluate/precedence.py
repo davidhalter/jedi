@@ -86,7 +86,8 @@ def _get_number(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
     if isinstance(el, pr.Operator):
         if el in PythonGrammar.FACTOR:
             right = _get_number(iterator, PythonGrammar.FACTOR_PRIORITY)
-        elif el in PythonGrammar.NOT_TEST and priority <= PythonGrammar.FACTOR_PRIORITY:
+        elif el in PythonGrammar.NOT_TEST \
+                and priority >= PythonGrammar.NOT_TEST_PRIORITY:
             right = _get_number(iterator, PythonGrammar.NOT_TEST_PRIORITY)
         else:
             _syntax_error(el)

@@ -24,7 +24,7 @@ def test_simple():
 
 def test_prefixed():
     assert parse_tree('--2') == (None, '-', (None, '-', 2))
-    assert parse_tree('1 and not - 2') == (1, 'and', (None, '-', 2))
+    assert parse_tree('1 and not - 2') == (1, 'and', (None, 'not', (None, '-', 2)))
 
 
 def test_invalid():
