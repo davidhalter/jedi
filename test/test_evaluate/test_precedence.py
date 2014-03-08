@@ -10,7 +10,10 @@ def parse_tree(statement_string):
     if isinstance(pr, precedence.Precedence):
         return pr.parse_tree(strip_literals=True)
     else:
-        return pr
+        try:
+            return pr.value  # Literal
+        except AttributeError:
+            return pr
 
 
 def test_simple():

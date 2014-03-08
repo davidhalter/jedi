@@ -581,7 +581,7 @@ class Parser(object):
                 continue
             # default
             elif token_type in (tokenize.NAME, tokenize.STRING,
-                                tokenize.NUMBER) \
+                                tokenize.NUMBER, tokenize.OP) \
                     or tok_str in statement_toks:
                 # this is the main part - a name can be a function or a
                 # normal var, which can follow anything. but this is done

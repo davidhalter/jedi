@@ -31,7 +31,7 @@ class PythonGrammar(object):
     EXPR = '|',
 
     COMPARISON = ('<', '>', '==', '>=', '<=', '!=', 'in',
-                  MultiPart('not', 'in'),  MultiPart('is', 'not')), 'is'
+                  MultiPart('not', 'in'), MultiPart('is', 'not')), 'is'
 
     NOT_TEST = 'not',
     AND_TEST = 'and',
@@ -58,7 +58,7 @@ class Precedence(object):
     def parse_tree(self, strip_literals=False):
         def process(which):
             try:
-                which = which.parse_tree
+                which = which.parse_tree()
             except AttributeError:
                 pass
             if strip_literals and isinstance(which, pr.Literal):
@@ -98,7 +98,12 @@ def _get_number(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
 def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
     """
     """
-    left = _get_number(iterator, priority)
+    try:
+        left = _get_number(iterator, priority)
+    except StopIteration:
+        _syntax_error(iterator.current, 'SyntaxError operand missing')
+        return None
+
     for el in iterator:
         if not isinstance(el, pr.Operator):
             _syntax_error(el)
@@ -127,5 +132,7 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
         if operator is None:
             _syntax_error(el)
             continue
-        left = Precedence(left, operator, _check_operator(iterator, check_prio))
+        right = _check_operator(iterator, check_prio)
+        if right is not None:
+            left = Precedence(left, operator, right)
     return left
