@@ -134,7 +134,7 @@ class Evaluator(object):
             result = new_result
         return set(result)
 
-    def eval_expression_list(self, expression_list, follow_array=False):
+    def eval_expression_list(self, expression_list):
         """
         `expression_list` can be either `pr.Array` or `list of list`.
         It is used to evaluate a two dimensional object, that has calls, arrays and
@@ -143,49 +143,60 @@ class Evaluator(object):
         debug.dbg('eval_expression_list: %s', expression_list)
         result = []
         calls_iterator = iter(expression_list)
-        for call in calls_iterator:
-            if pr.Array.is_type(call, pr.Array.NOARRAY):
-                r = list(itertools.chain.from_iterable(self.eval_statement(s)
-                                                       for s in call))
-                call_path = call.generate_call_path()
-                next(call_path, None)  # the first one has been used already
-                result += self.follow_path(call_path, r, call.parent,
-                                           position=call.start_pos)
-            elif isinstance(call, pr.ListComprehension):
-                loop = _evaluate_list_comprehension(call)
-                # Caveat: parents are being changed, but this doesn't matter,
-                # because nothing else uses it.
-                call.stmt.parent = loop
-                result += self.eval_statement(call.stmt)
-            else:
-                if isinstance(call, pr.Lambda):
-                    result.append(er.Function(self, call))
-                # With things like params, these can also be functions...
-                elif isinstance(call, pr.Base) and call.isinstance(
-                        er.Function, er.Class, er.Instance, iterable.ArrayInstance):
-                    result.append(call)
-                # The string tokens are just operations (+, -, etc.)
-                elif isinstance(call, compiled.CompiledObject):
-                    result.append(call)
-                elif isinstance(call, pr.Operator):
-                    if call == '*':
-                        if [r for r in result if isinstance(r, iterable.Array)
-                                or isinstance(r, compiled.CompiledObject)
-                                and isinstance(r.obj, (str, unicode))]:
-                            # if it is an iterable, ignore * operations
-                            next(calls_iterator)
-                    elif call == 'if':
-                        # Ternary operators.
-                        for call in calls_iterator:
-                            try:
-                                if call == 'else':
-                                    break
-                            except StopIteration:
-                                break
-                        continue
-                elif not isinstance(call, Token):
-                    result += self.eval_call(call)
+        for each in calls_iterator:
+            result += self.eval_element(each)
         return set(result)
+
+    def _eval_precedence(evaluator, precedence):
+        evaluator
+
+    def eval_element(self, element):
+        if pr.Array.is_type(element, pr.Array.NOARRAY):
+            r = list(itertools.chain.from_iterable(self.eval_statement(s)
+                                                   for s in element))
+            call_path = element.generate_call_path()
+            next(call_path, None)  # the first one has been used already
+            return self.follow_path(call_path, r, element.parent,
+                                    position=element.start_pos)
+        elif isinstance(element, pr.ListComprehension):
+            loop = _evaluate_list_comprehension(element)
+            # Caveat: parents are being changed, but this doesn't matter,
+            # because nothing else uses it.
+            element.stmt.parent = loop
+            return self.eval_statement(element.stmt)
+        else:
+            if isinstance(element, pr.Lambda):
+                return [er.Function(self, element)]
+            # With things like params, these can also be functions...
+            elif isinstance(element, pr.Base) and element.isinstance(
+                    er.Function, er.Class, er.Instance, iterable.ArrayInstance):
+                return [element]
+            # The string tokens are just operations (+, -, etc.)
+            elif isinstance(element, compiled.CompiledObject):
+                return [element]
+                '''
+            elif isinstance(call, pr.Operator):
+                if call == '*':
+                    if [r for r in result if isinstance(r, iterable.Array)
+                            or isinstance(r, compiled.CompiledObject)
+                            and isinstance(r.obj, (str, unicode))]:
+                        # if it is an iterable, ignore * operations
+                        next(calls_iterator)
+                elif call == 'if':
+                    # Ternary operators.
+                    for call in calls_iterator:
+                        try:
+                            if call == 'else':
+                                break
+                        except StopIteration:
+                            break
+                    continue
+            '''
+            elif isinstance(element, pr.Operator):
+                pass
+            elif not isinstance(element, Token):
+                return self.eval_call(element)
+        return []
 
     def eval_call(self, call):
         """Follow a call is following a function, variable, string, etc."""
