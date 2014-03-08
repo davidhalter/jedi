@@ -113,7 +113,9 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
         operator = None
         for check_prio, check in enumerate(PythonGrammar.ORDER):
             if check_prio >= priority:
-                break  # respect priorities.
+                # respect priorities.
+                iterator.push_back(el)
+                return left
 
             try:
                 match_index = check.index(el)
@@ -137,6 +139,8 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
             _syntax_error(el)
             continue
 
+        if operator == '**':
+            check_prio += 1  # to the power of is right-associative
         right = _check_operator(iterator, check_prio)
         if right is not None:
             left = Precedence(left, str(operator), right)
