@@ -73,7 +73,7 @@ class Precedence(object):
 
 
 def create_precedence(expression_list):
-    iterator = PushBackIterator(expression_list)
+    iterator = PushBackIterator(iter(expression_list))
     return _check_operator(iterator)
 
 
@@ -149,3 +149,7 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
         else:
             left = Precedence(left, str(operator), right)
     return left
+
+
+def calculate(left, operator, right):
+    return left + right
