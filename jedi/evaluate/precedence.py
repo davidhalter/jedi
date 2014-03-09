@@ -43,13 +43,15 @@ class PythonGrammar(object):
 
     #TEST = or_test ['if' or_test 'else' test] | lambdef
 
+    TERNARY = 'if',
     SLICE = ':',
+
     ORDER = (POWER, TERM, ARITH_EXPR, SHIFT_EXPR, AND_EXPR, XOR_EXPR,
-             EXPR, COMPARISON, AND_TEST, OR_TEST, SLICE)
+             EXPR, COMPARISON, AND_TEST, OR_TEST, TERNARY, SLICE)
 
     FACTOR_PRIORITY = 0  # highest priority
     LOWEST_PRIORITY = len(ORDER)
-    NOT_TEST_PRIORITY = LOWEST_PRIORITY - 3  # priority only lower for `and`/`or`
+    NOT_TEST_PRIORITY = LOWEST_PRIORITY - 4  # priority only lower for `and`/`or`
     SLICE_PRIORITY = LOWEST_PRIORITY - 1  # priority only lower for `and`/`or`
 
 
@@ -73,6 +75,12 @@ class Precedence(object):
 
     def __repr__(self):
         return '(%s %s %s)' % (self.left, self.operator, self.right)
+
+
+class TernaryPrecedence(Precedence):
+    def __init__(self, left, operator, right, check):
+        super(TernaryPrecedence, self).__init__(left, operator, right)
+        self.check = check
 
 
 def create_precedence(expression_list):
@@ -144,13 +152,26 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
             _syntax_error(el)
             continue
 
-        if operator == '**':
+        if operator in PythonGrammar.POWER:
             check_prio += 1  # to the power of is right-associative
+        elif operator in PythonGrammar.TERNARY:
+            try:
+                middle = []
+                for each in iterator:
+                    if each == 'else':
+                        break
+                    middle.append(each)
+                middle = create_precedence(middle)
+            except StopIteration:
+                _syntax_error(operator, 'SyntaxError ternary incomplete')
         right = _check_operator(iterator, check_prio)
         if right is None and not operator in PythonGrammar.SLICE:
             _syntax_error(iterator.current, 'SyntaxError operand missing')
         else:
-            left = Precedence(left, str(operator), right)
+            if operator in PythonGrammar.TERNARY:
+                left = TernaryPrecedence(left, str(operator), right, middle)
+            else:
+                left = Precedence(left, str(operator), right)
     return left
 
 
