@@ -79,7 +79,8 @@ def recursion(a, b):
     else:
         return recursion(a+".", b+1)
 
-#? int() float()
+# Does not also return int anymore, because we now support operators in simple cases.
+#? float()
 recursion("a", 1.0)
 
 def other(a):
