@@ -2,9 +2,12 @@
 Handles operator precedence.
 """
 
+from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.common import PushBackIterator
+from jedi.evaluate.compiled import CompiledObject
+from jedi.evaluate import iterable
 
 
 class PythonGrammar(object):
@@ -152,4 +155,11 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
 
 
 def calculate(left, operator, right):
+
+    if operator == '*':
+        if [l for l in left if isinstance(l, iterable.Array)
+                or isinstance(l, CompiledObject)
+                and isinstance(l.obj, (str, unicode))]:
+            # if it is an iterable, ignore * operations
+            return left
     return left + right

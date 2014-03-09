@@ -71,7 +71,6 @@ backtracking algorithm.
 import itertools
 
 from jedi._compatibility import next, hasattr, unicode
-from jedi import common
 from jedi.parser import representation as pr
 from jedi.parser.tokenize import Token
 from jedi import debug
@@ -189,13 +188,6 @@ class Evaluator(object):
             elif isinstance(element, compiled.CompiledObject):
                 return [element]
                 '''
-            elif isinstance(call, pr.Operator):
-                if call == '*':
-                    if [r for r in result if isinstance(r, iterable.Array)
-                            or isinstance(r, compiled.CompiledObject)
-                            and isinstance(r.obj, (str, unicode))]:
-                        # if it is an iterable, ignore * operations
-                        next(calls_iterator)
                 elif call == 'if':
                     # Ternary operators.
                     for call in calls_iterator:
@@ -206,8 +198,6 @@ class Evaluator(object):
                             break
                     continue
             '''
-            elif isinstance(element, pr.Operator):
-                pass
             elif not isinstance(element, Token):
                 return self.eval_call(element)
         return []

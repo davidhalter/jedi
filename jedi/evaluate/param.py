@@ -2,7 +2,7 @@ import copy
 
 from jedi.parser import representation as pr
 from jedi.evaluate import iterable
-from jedi.evaluate import common
+from jedi import common
 from jedi.evaluate import helpers
 
 
