@@ -200,6 +200,6 @@ def _element_calculate(left, operator, right):
         if isinstance(left, iterable.Array) or is_string(left):
             return [left]
     elif operator == '+':
-        if is_number(left) and is_number(right):
+        if is_number(left) and is_number(right) or is_string(left) and is_string(right):
             return [create(left.obj + right.obj)]
     return [left, right]
