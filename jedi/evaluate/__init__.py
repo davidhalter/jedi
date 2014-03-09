@@ -145,7 +145,7 @@ class Evaluator(object):
         return self._process_precedence_element(p)
         calls_iterator = iter(expression_list)
         for each in calls_iterator:
-            result += self.eval_element(each)
+            result += self._eval_statement_element(each)
         return set(result)
 
     def _process_precedence_element(self, el):
@@ -156,14 +156,14 @@ class Evaluator(object):
                 return self._eval_precedence(el)
             else:
                 # normal element, no operators
-                return self.eval_element(el)
+                return self._eval_statement_element(el)
 
     def _eval_precedence(self, _precedence):
         left = self._process_precedence_element(_precedence.left)
         right = self._process_precedence_element(_precedence.right)
         return precedence.calculate(left, _precedence.operator, right)
 
-    def eval_element(self, element):
+    def _eval_statement_element(self, element):
         if pr.Array.is_type(element, pr.Array.NOARRAY):
             r = list(itertools.chain.from_iterable(self.eval_statement(s)
                                                    for s in element))
@@ -177,30 +177,19 @@ class Evaluator(object):
             # because nothing else uses it.
             element.stmt.parent = loop
             return self.eval_statement(element.stmt)
+        elif isinstance(element, pr.Lambda):
+            return [er.Function(self, element)]
+        # With things like params, these can also be functions...
+        elif isinstance(element, pr.Base) and element.isinstance(
+                er.Function, er.Class, er.Instance, iterable.ArrayInstance):
+            return [element]
+        # The string tokens are just operations (+, -, etc.)
+        elif isinstance(element, compiled.CompiledObject):
+            return [element]
+        elif not isinstance(element, Token):
+            return self.eval_call(element)
         else:
-            if isinstance(element, pr.Lambda):
-                return [er.Function(self, element)]
-            # With things like params, these can also be functions...
-            elif isinstance(element, pr.Base) and element.isinstance(
-                    er.Function, er.Class, er.Instance, iterable.ArrayInstance):
-                return [element]
-            # The string tokens are just operations (+, -, etc.)
-            elif isinstance(element, compiled.CompiledObject):
-                return [element]
-                '''
-                elif call == 'if':
-                    # Ternary operators.
-                    for call in calls_iterator:
-                        try:
-                            if call == 'else':
-                                break
-                        except StopIteration:
-                            break
-                    continue
-            '''
-            elif not isinstance(element, Token):
-                return self.eval_call(element)
-        return []
+            return []
 
     def eval_call(self, call):
         """Follow a call is following a function, variable, string, etc."""
