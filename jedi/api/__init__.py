@@ -231,7 +231,8 @@ class Script(object):
         tokenizer = source_tokens(cursor_txt, self._pos[0] - 1)
         r = Parser(cursor_txt, no_docstr=True, tokenizer=tokenizer)
         try:
-            stmt = r.module.statements[0]
+            # Take the last statement available.
+            stmt = r.module.statements[-1]
         except IndexError:
             raise NotFoundError()
         # Set the start_pos to a pseudo position, that doesn't exist but works

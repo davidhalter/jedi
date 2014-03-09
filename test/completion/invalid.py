@@ -137,8 +137,8 @@ def break(): pass
 #? int()
 a[0]
 
-#? []
-int()).
+#? ['real']
+int()).real
 
 # -----------------
 # keywords
