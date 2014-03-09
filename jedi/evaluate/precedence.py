@@ -6,7 +6,7 @@ from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.common import PushBackIterator
-from jedi.evaluate.compiled import CompiledObject
+from jedi.evaluate.compiled import CompiledObject, create
 from jedi.evaluate import iterable
 
 
@@ -175,12 +175,31 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
     return left
 
 
-def calculate(left, operator, right):
+def calculate(left_result, operator, right_result):
+    if not left_result or not right_result:
+        return left_result + right_result
+
+    result = []
+    for left in left_result:
+        for right in right_result:
+            result += _element_calculate(left, operator, right)
+    return result
+
+
+def _element_calculate(left, operator, right):
+    def is_string(obj):
+        return isinstance(obj, CompiledObject) \
+            and isinstance(obj.obj, (str, unicode))
+
+    def is_number(obj):
+        return isinstance(obj, CompiledObject) \
+            and isinstance(obj.obj, (int, float))
 
     if operator == '*':
-        if [l for l in left if isinstance(l, iterable.Array)
-                or isinstance(l, CompiledObject)
-                and isinstance(l.obj, (str, unicode))]:
-            # if it is an iterable, ignore * operations
-            return left
-    return left + right
+        # for iterables, ignore * operations
+        if isinstance(left, iterable.Array) or is_string(left):
+            return [left]
+    elif operator == '+':
+        if is_number(left) and is_number(right):
+            return [create(left.obj + right.obj)]
+    return [left, right]

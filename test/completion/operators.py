@@ -7,12 +7,12 @@ x = [1, 'a', 1.0]
 #? int() str() float()
 x[12]
 
-#? str()
+#? float()
 x[1 + 1]
 
-index = 0 + 2
+index = 0 + 1
 
-#? float()
+#? str()
 x[index]
 
 
@@ -22,4 +22,4 @@ def calculate(number):
 constant = 1
 
 #? float()
-x[calculate(2)]
+x[calculate(1)]
