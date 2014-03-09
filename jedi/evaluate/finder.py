@@ -24,7 +24,7 @@ class NameFinder(object):
     def find(self, scopes, resolve_decorator=True):
         names = self.filter_name(scopes)
         types = self._names_to_types(names, resolve_decorator)
-        debug.dbg('_names_to_types: %s, old: %s', names, types)
+        debug.dbg('finder._names_to_types: %s, old: %s', names, types)
         return self._resolve_descriptors(types)
 
     def scopes(self, search_global=False):
@@ -34,7 +34,7 @@ class NameFinder(object):
             if isinstance(self.scope, er.Instance):
                 return self.scope.scope_generator()
             else:
-                if isinstance(self.scope, (er.Class, pr.Module)):
+                if isinstance(self.scope, er.Class):
                     # classes are only available directly via chaining?
                     # strange stuff...
                     names = self.scope.get_defined_names()
@@ -78,7 +78,7 @@ class NameFinder(object):
                     new_name.parent = r
                     result.append(new_name)
 
-        debug.dbg('sfn filter "%s" in (%s-%s): %s@%s', self.name_str,
+        debug.dbg('finder.filter_name "%s" in (%s-%s): %s@%s', self.name_str,
                   self.scope, nscope, u(result), self.position)
         return result
 
@@ -105,12 +105,7 @@ class NameFinder(object):
         """
         par = name.parent
         if par.isinstance(pr.Statement):
-            details = par.assignment_details
-            if details and details[0][1] != '=':
-                return True
-
-            if isinstance(name, er.InstanceElement) \
-                    and not name.is_class_var:
+            if isinstance(name, er.InstanceElement) and not name.is_class_var:
                 return True
         elif isinstance(par, pr.Import) and len(par.namespace) > 1:
             # TODO multi-level import non-breakable
@@ -351,9 +346,9 @@ def _get_defined_names_for_position(scope, position=None, start_scope=None):
     names = scope.get_defined_names()
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    if (not position or isinstance(scope, (iterable.Array, er.Instance))
-       or start_scope != scope
-       and isinstance(start_scope, (pr.Function, er.FunctionExecution))):
+    if not position or isinstance(scope, (iterable.Array, er.Instance, compiled.CompiledObject)) \
+            or start_scope != scope \
+            and isinstance(start_scope, (pr.Function, er.FunctionExecution)):
         return names
     names_new = []
     for n in names:

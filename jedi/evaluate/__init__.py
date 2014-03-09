@@ -124,11 +124,19 @@ class Evaluator(object):
 
         result = self.eval_expression_list(expression_list)
 
-        # Assignment checking is only important if the statement defines multiple
-        # variables.
-        if len(stmt.get_set_vars()) > 1 and seek_name and stmt.assignment_details:
+        ass_details = stmt.assignment_details
+        if ass_details and ass_details[0][1] != '=' and False:
+            expr_list, operator = ass_details[0]
+            name = str(expr_list[0].name)
+            start_pos = stmt.start_pos[0] - 1, stmt.start_pos[1] + 30000
+            left_result = self.find_types(stmt.parent, name, start_pos)
+            # `=` is always the last character in aug assignments
+            result = precedence.calculate(left_result, operator[:-1], result)
+        elif len(stmt.get_set_vars()) > 1 and seek_name and ass_details:
+            # Assignment checking is only important if the statement defines
+            # multiple variables.
             new_result = []
-            for ass_expression_list, op in stmt.assignment_details:
+            for ass_expression_list, op in ass_details:
                 new_result += finder.find_assignments(ass_expression_list[0], result, seek_name)
             result = new_result
         return set(result)
@@ -277,7 +285,7 @@ class Evaluator(object):
                 # This is the typical lookup while chaining things.
                 if filter_private_variable(typ, scope, current):
                     return []
-            types = self.find_types(typ, current, position=position)
+            types = self.find_types(typ, current, position=None)
             result = imports.strip_imports(self, types)
         return self.follow_path(path, set(result), scope, position=position)
 
