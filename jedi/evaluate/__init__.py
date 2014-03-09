@@ -177,8 +177,7 @@ class Evaluator(object):
                                                    for s in element))
             call_path = element.generate_call_path()
             next(call_path, None)  # the first one has been used already
-            return self.follow_path(call_path, r, element.parent,
-                                    position=element.start_pos)
+            return self.follow_path(call_path, r, element.parent)
         elif isinstance(element, pr.ListComprehension):
             loop = _evaluate_list_comprehension(element)
             # Caveat: parents are being changed, but this doesn't matter,
@@ -227,9 +226,9 @@ class Evaluator(object):
                 types = [compiled.create(current.value)]
             types = imports.strip_imports(self, types)
 
-        return self.follow_path(path, types, scope, position=position)
+        return self.follow_path(path, types, scope)
 
-    def follow_path(self, path, types, call_scope, position=None):
+    def follow_path(self, path, types, call_scope):
         """
         Follows a path like::
 
@@ -241,7 +240,7 @@ class Evaluator(object):
         iter_paths = itertools.tee(path, len(types))
 
         for i, typ in enumerate(types):
-            fp = self._follow_path(iter_paths[i], typ, call_scope, position=position)
+            fp = self._follow_path(iter_paths[i], typ, call_scope)
             if fp is not None:
                 results_new += fp
             else:
@@ -249,7 +248,7 @@ class Evaluator(object):
                 return types
         return results_new
 
-    def _follow_path(self, path, typ, scope, position=None):
+    def _follow_path(self, path, typ, scope):
         """
         Uses a generator and tries to complete the path, e.g.::
 
@@ -285,9 +284,9 @@ class Evaluator(object):
                 # This is the typical lookup while chaining things.
                 if filter_private_variable(typ, scope, current):
                     return []
-            types = self.find_types(typ, current, position=None)
+            types = self.find_types(typ, current)
             result = imports.strip_imports(self, types)
-        return self.follow_path(path, set(result), scope, position=position)
+        return self.follow_path(path, set(result), scope)
 
     @debug.increase_indent
     def execute(self, obj, params=(), evaluate_generator=False):
