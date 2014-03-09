@@ -52,3 +52,15 @@ for char in reversed(['f', 'o', 'o', 'b', 'a', 'r']):
 answer = getattr(FooBar, target)
 ##? str()
 answer
+
+# -----------------
+# assignments
+# -----------------
+
+x = [1, 'a', 1.0]
+
+i = 0
+i += 1
+i += 1
+#? float()
+x[i]
