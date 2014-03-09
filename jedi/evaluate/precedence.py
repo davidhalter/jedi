@@ -40,14 +40,14 @@ class PythonGrammar(object):
 
     #TEST = or_test ['if' or_test 'else' test] | lambdef
 
-    #SLICEOP = ':' [test]
-    #SUBSCRIPT = test | [test] ':' [test] [sliceop]
+    SLICE = ':',
     ORDER = (POWER, TERM, ARITH_EXPR, SHIFT_EXPR, AND_EXPR, XOR_EXPR,
-             EXPR, COMPARISON, AND_TEST, OR_TEST)
+             EXPR, COMPARISON, AND_TEST, OR_TEST, SLICE)
 
     FACTOR_PRIORITY = 0  # highest priority
     LOWEST_PRIORITY = len(ORDER)
-    NOT_TEST_PRIORITY = LOWEST_PRIORITY - 2  # priority only lower for `and`/`or`
+    NOT_TEST_PRIORITY = LOWEST_PRIORITY - 3  # priority only lower for `and`/`or`
+    SLICE_PRIORITY = LOWEST_PRIORITY - 1  # priority only lower for `and`/`or`
 
 
 class Precedence(object):
@@ -89,6 +89,10 @@ def _get_number(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
         elif el in PythonGrammar.NOT_TEST \
                 and priority >= PythonGrammar.NOT_TEST_PRIORITY:
             right = _get_number(iterator, PythonGrammar.NOT_TEST_PRIORITY)
+        elif el in PythonGrammar.SLICE \
+                and priority >= PythonGrammar.SLICE_PRIORITY:
+            iterator.push_back(el)
+            return None
         else:
             _syntax_error(el)
             return _get_number(iterator, priority)
@@ -98,12 +102,9 @@ def _get_number(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
 
 
 def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
-    """
-    """
     try:
         left = _get_number(iterator, priority)
     except StopIteration:
-        _syntax_error(iterator.current, 'SyntaxError operand missing')
         return None
 
     for el in iterator:
@@ -143,6 +144,8 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
         if operator == '**':
             check_prio += 1  # to the power of is right-associative
         right = _check_operator(iterator, check_prio)
-        if right is not None:
+        if right is None and not operator in PythonGrammar.SLICE:
+            _syntax_error(iterator.current, 'SyntaxError operand missing')
+        else:
             left = Precedence(left, str(operator), right)
     return left

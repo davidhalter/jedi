@@ -2,9 +2,12 @@ from jedi.parser import Parser
 from jedi.evaluate import precedence
 
 
-def parse_tree(statement_string):
+def parse_tree(statement_string, is_slice=False):
     p = Parser(statement_string, no_docstr=True)
     stmt = p.module.statements[0]
+    if is_slice:
+        # get the part of the execution that is the slice
+        stmt = stmt.expression_list()[0].execution[0]
     iterable = iter(stmt.expression_list())
     pr = precedence.create_precedence(iterable)
     if isinstance(pr, precedence.Precedence):
@@ -51,3 +54,14 @@ def test_multi_part():
 
 def test_power():
     assert parse_tree('2 ** 3 ** 4') == (2, '**', (3, '**', 4))
+
+
+def test_slice():
+    """
+    Should be parsed as normal operators. This is not proper Python syntax,
+    but the warning shouldn't be given in the precedence generation.
+    """
+    assert parse_tree('[0][2+1:3]', is_slice=True) == ((2, '+', 1), ':', 3)
+    assert parse_tree('[0][:]', is_slice=True) == (None, ':', None)
+    assert parse_tree('[0][1:]', is_slice=True) == (1, ':', None)
+    assert parse_tree('[0][:2]', is_slice=True) == (None, ':', 2)
