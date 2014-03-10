@@ -126,8 +126,8 @@ class Evaluator(object):
 
         ass_details = stmt.assignment_details
         if ass_details and ass_details[0][1] != '=' and not isinstance(stmt,
-er.InstanceElement) and False:  # TODO don't check for this.
-            print('LEFT', ass_details, stmt, stmt.parent)
+er.InstanceElement):  # TODO don't check for this.
+            #print('LEFT', ass_details, stmt, stmt.parent)
             expr_list, operator = ass_details[0]
             name = str(expr_list[0].name)
             start_pos = stmt.start_pos[0] - 1, stmt.start_pos[1] + 30000
