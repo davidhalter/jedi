@@ -1,9 +1,10 @@
+from jedi._compatibility import u
 from jedi.parser import Parser
 from jedi.evaluate import precedence
 
 
 def parse_tree(statement_string, is_slice=False):
-    p = Parser(statement_string, no_docstr=True)
+    p = Parser(u(statement_string), no_docstr=True)
     stmt = p.module.statements[0]
     if is_slice:
         # get the part of the execution that is the slice
