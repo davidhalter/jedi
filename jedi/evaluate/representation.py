@@ -499,5 +499,4 @@ class FunctionExecution(Executable):
         return pr.Scope.get_statement_for_position(self, pos)
 
     def __repr__(self):
-        return "<%s of %s>" % \
-            (type(self).__name__, self.base)
+        return "<%s of %s>" % (type(self).__name__, self.base)

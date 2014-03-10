@@ -279,8 +279,6 @@ class Builtin(CompiledObject):
         # access it.
         return [d for d in super(Builtin, self).get_defined_names() if d.name != 'None']
 
-    get_set_vars = get_defined_names
-
 
 def _a_generator(foo):
     """Used to have an object to return for generators."""

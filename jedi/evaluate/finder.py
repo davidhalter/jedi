@@ -52,21 +52,27 @@ class NameFinder(object):
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=lambda n: n.start_pos, reverse=True):
-                p = name.parent.parent if name.parent else None
-                if isinstance(p, er.InstanceElement) \
-                        and isinstance(p.var, pr.Class):
-                    p = p.var
-                if self.name_str == name.get_code() and p not in break_scopes:
+                parpar = name.parent.parent if name.parent else None
+                if isinstance(parpar, er.InstanceElement) \
+                        and isinstance(parpar.var, pr.Class):
+                    parpar = parpar.var
+                if self.name_str == name.get_code() and parpar not in break_scopes:
                     if not self._name_is_array_assignment(name):
                         result.append(name)  # `arr[1] =` is not the definition
                     # for comparison we need the raw class
-                    s = nscope.base if isinstance(nscope, er.Class) else nscope
                     # this means that a definition was found and is not e.g.
                     # in if/else.
-                    if result and not self._name_is_no_break_scope(name):
-                        if not name.parent or p == s:
+                    if result and self._name_is_break_scope(name):
+                        #print result, name.parent, parpar, s
+                        if isinstance(parpar, pr.Flow) \
+                                or isinstance(parpar, pr.KeywordStatement) \
+                                and parpar.name == 'global':
+                            s = nscope.base if isinstance(nscope, er.Class) else nscope
+                            if parpar == s:
+                                break
+                        else:
                             break
-                        break_scopes.append(p)
+                        break_scopes.append(parpar)
             if result:
                 break
 
@@ -98,7 +104,7 @@ class NameFinder(object):
                 result = inst.execute_subscope_by_name('__getattribute__', [name])
         return result
 
-    def _name_is_no_break_scope(self, name):
+    def _name_is_break_scope(self, name):
         """
         Returns the parent of a name, which means the element which stands
         behind a name.
@@ -106,11 +112,11 @@ class NameFinder(object):
         par = name.parent
         if par.isinstance(pr.Statement):
             if isinstance(name, er.InstanceElement) and not name.is_class_var:
-                return True
+                return False
         elif isinstance(par, pr.Import) and len(par.namespace) > 1:
             # TODO multi-level import non-breakable
-            return True
-        return False
+            return False
+        return True
 
     def _name_is_array_assignment(self, name):
         if name.parent.isinstance(pr.Statement):

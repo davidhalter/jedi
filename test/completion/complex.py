@@ -1,4 +1,4 @@
-""" Mainly for stupid error reports of @gwrtheyrn. :-) """
+""" Mostly for stupid error reports of @dbrgn. :-) """
 
 import time
 
