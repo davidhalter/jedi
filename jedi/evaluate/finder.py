@@ -52,10 +52,7 @@ class NameFinder(object):
             break_scopes = []
             # here is the position stuff happening (sorting of variables)
             for name in sorted(name_list, key=lambda n: n.start_pos, reverse=True):
-                parpar = name.parent.parent if name.parent else None
-                if isinstance(parpar, er.InstanceElement) \
-                        and isinstance(parpar.var, pr.Class):
-                    parpar = parpar.var
+                parpar = name.parent.parent
                 if self.name_str == name.get_code() and parpar not in break_scopes:
                     if not self._name_is_array_assignment(name):
                         result.append(name)  # `arr[1] =` is not the definition
