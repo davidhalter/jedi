@@ -125,15 +125,21 @@ class Evaluator(object):
         result = self.eval_expression_list(expression_list)
 
         ass_details = stmt.assignment_details
-        if ass_details and ass_details[0][1] != '=' and not isinstance(stmt,
-er.InstanceElement):  # TODO don't check for this.
-            #print('LEFT', ass_details, stmt, stmt.parent)
+        if ass_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
             expr_list, operator = ass_details[0]
+            # `=` is always the last character in aug assignments -> -1
+            operator = operator[:-1]
             name = str(expr_list[0].name)
-            start_pos = stmt.start_pos[0] - 1, stmt.start_pos[1] + 30000
-            left_result = self.find_types(stmt.parent, name, start_pos)
-            # `=` is always the last character in aug assignments
-            result = precedence.calculate(left_result, operator[:-1], result)
+            left = self.find_types(stmt.parent, name, stmt.start_pos)
+            if isinstance(stmt.parent, pr.ForFlow):
+                # iterate through result and add the values, that's possible
+                # only in for loops without clutter, because they are
+                # predictable.
+                for r in result:
+                    left = precedence.calculate(left, operator, [r])
+                result = left
+            else:
+                result = precedence.calculate(left, operator, result)
         elif len(stmt.get_set_vars()) > 1 and seek_name and ass_details:
             # Assignment checking is only important if the statement defines
             # multiple variables.

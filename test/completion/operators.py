@@ -34,24 +34,10 @@ def calculate(number):
 # strings
 # -----------------
 
-class FooBar(object):
-    muahaha = 3.0
-    raboof = 'fourtytwo'
+x = 'upp' + 'e'
 
-x = 'mua' + 'ha'
-
-#? float()
-getattr(FooBar, x + 'ha')
-
-
-# github #24
-target = u''
-for char in reversed(['f', 'o', 'o', 'b', 'a', 'r']):
-    target += char
-
-answer = getattr(FooBar, target)
-##? str()
-answer
+#? str.upper
+getattr(str, x + 'r')
 
 # -----------------
 # assignments
@@ -71,3 +57,26 @@ i -= 3
 i += 1
 #? int()
 x[i]
+
+# -----------------
+# for flow assignments
+# -----------------
+
+class FooBar(object):
+    fuu = 0.1
+    raboof = 'fourtytwo'
+
+# targets should be working
+target = u''
+for char in ['f', 'u', 'u']:
+    target += char
+#? float()
+getattr(FooBar, target)
+
+# github #24
+target = u''
+for char in reversed(['f', 'o', 'o', 'b', 'a', 'r']):
+    target += char
+
+#? str()
+getattr(FooBar, target)

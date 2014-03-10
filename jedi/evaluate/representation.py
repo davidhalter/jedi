@@ -335,7 +335,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         if not self.is_decorated:
             for dec in reversed(self.base_func.decorators):
                 debug.dbg('decorator: %s %s', dec, f)
-                dec_results = set(self._evaluator.eval_statement(dec))
+                dec_results = self._evaluator.eval_statement(dec)
                 if not len(dec_results):
                     debug.warning('decorator not found: %s on %s', dec, self.base_func)
                     return None

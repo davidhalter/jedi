@@ -94,7 +94,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
 
         result = list(self._follow_values(self._array.values))
         result += check_array_additions(self._evaluator, self)
-        return set(result)
+        return result
 
     def get_exact_index_types(self, mixed_index):
         """ Here the index is an int/str. Raises IndexError/KeyError """
