@@ -57,12 +57,12 @@ because that's where all the magic happens. I need to introduce the :ref:`parser
 Parser (parser/__init__.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: parser
+.. automodule:: jedi.parser
 
 Parser Representation (parser/representation.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: parser.representation
+.. automodule:: jedi.parser.representation
 
 Class inheritance diagram:
 
@@ -87,12 +87,12 @@ Class inheritance diagram:
 Evaluation of python code (evaluate/__init__.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: evaluate
+.. automodule:: jedi.evaluate
 
 Evaluation Representation (evaluate/representation.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: evaluate.representation
+.. automodule:: jedi.evaluate.representation
 
 .. inheritance-diagram::
    Executable
@@ -137,7 +137,7 @@ without some features.
 Dynamic Arrays & Function Parameters (dynamic.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: evaluate.dynamic
+.. automodule:: jedi.evaluate.dynamic
 
 
 .. _fast_parser:
@@ -145,21 +145,21 @@ Dynamic Arrays & Function Parameters (dynamic.py)
 Fast Parser (parser/fast.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: parser.fast
+.. automodule:: jedi.parser.fast
 
 .. _docstrings:
 
 Docstrings (docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: evaluate.docstrings
+.. automodule:: jedi.evaluate.docstrings
 
 .. _refactoring:
 
 Refactoring (refactoring.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: refactoring
+.. automodule:: jedi.refactoring
 
 
 .. _imports-modules:
@@ -178,7 +178,7 @@ Imports & Modules
 Compiled Modules (compiled.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: evaluate.compiled
+.. automodule:: jedi.evaluate.compiled
 
 .. _imports:
 
@@ -186,7 +186,7 @@ Compiled Modules (compiled.py)
 Imports (imports.py)
 ~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: evaluate.imports
+.. automodule:: jedi.evaluate.imports
 
 
 
@@ -204,14 +204,14 @@ Caching & Recursions
 Caching (cache.py)
 ~~~~~~~~~~~~~~~~~~
 
-.. automodule:: cache
+.. automodule:: jedi.cache
 
 .. _recursion:
 
 Recursions (recursion.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: evaluate.recursion
+.. automodule:: jedi.evaluate.recursion
 
 
 
@@ -228,4 +228,4 @@ Jedi works.
 Python 2/3 compatibility (_compatibility.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: _compatibility
+.. automodule:: jedi._compatibility

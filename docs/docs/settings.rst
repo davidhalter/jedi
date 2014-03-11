@@ -3,4 +3,4 @@
 Settings
 ========
 
-.. automodule:: settings
+.. automodule:: jedi.settings

@@ -5,6 +5,6 @@
 API Return Classes
 ------------------
 
-.. automodule:: api.classes
+.. automodule:: jedi.api.classes
     :members:
     :undoc-members:
