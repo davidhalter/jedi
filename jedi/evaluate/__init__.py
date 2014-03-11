@@ -343,8 +343,10 @@ class Evaluator(object):
 
         scope = stmt.get_parent_until(pr.IsScope)
         pos = stmt.start_pos
-        call_path, search = call_path[:-1], call_path[-1]
+        # Need this to return the params if you're actually doing a goto on the
+        # param.
         pos = pos[0], pos[1] + 1
+        call_path, search = call_path[:-1], call_path[-1]
 
         if call_path:
             scopes = self.eval_call_path(iter(call_path), scope, pos)
