@@ -247,7 +247,7 @@ class NameFinder(object):
                 # this means that there are no default params,
                 # so just ignore it.
                 return res_new
-        return set(res_new) | evaluator.eval_statement(r, seek_name=self.name_str)
+        return res_new + evaluator.eval_statement(r, seek_name=self.name_str)
 
     def _handle_for_loops(self, loop):
         # Take the first statement (for has always only

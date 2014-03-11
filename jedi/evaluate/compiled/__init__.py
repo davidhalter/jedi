@@ -8,7 +8,7 @@ import os
 
 from jedi._compatibility import builtins as _builtins
 from jedi import debug
-from jedi.parser.representation import Base
+from jedi.parser.representation import Base, IsScope
 from jedi.cache import underscore_memoization
 from jedi.evaluate.sys_path import get_sys_path
 from jedi.parser.representation import Param
@@ -273,7 +273,7 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-class Builtin(CompiledObject):
+class Builtin(CompiledObject, IsScope):
     def get_defined_names(self):
         # Filter None, because it's really just a keyword, nobody wants to
         # access it.

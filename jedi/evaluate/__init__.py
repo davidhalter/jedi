@@ -147,7 +147,7 @@ class Evaluator(object):
             for ass_expression_list, op in ass_details:
                 new_result += finder.find_assignments(ass_expression_list[0], result, seek_name)
             result = new_result
-        return set(result)
+        return result
 
     def eval_expression_list(self, expression_list):
         """
@@ -158,11 +158,13 @@ class Evaluator(object):
         debug.dbg('eval_expression_list: %s', expression_list)
         result = []
         p = precedence.create_precedence(expression_list)
-        return self._process_precedence_element(p)
+        return self._process_precedence_element(p) or []
+
+        # TODO remove
         calls_iterator = iter(expression_list)
         for each in calls_iterator:
             result += self._eval_statement_element(each)
-        return set(result)
+        return result
 
     def _process_precedence_element(self, el):
         if el is None:
@@ -294,7 +296,7 @@ class Evaluator(object):
                     return []
             types = self.find_types(typ, current)
             result = imports.strip_imports(self, types)
-        return self.follow_path(path, set(result), scope)
+        return self.follow_path(path, result, scope)
 
     @debug.increase_indent
     def execute(self, obj, params=(), evaluate_generator=False):

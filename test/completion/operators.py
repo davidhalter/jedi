@@ -67,7 +67,7 @@ class FooBar(object):
     raboof = 'fourtytwo'
 
 # targets should be working
-target = u''
+target = ''
 for char in ['f', 'u', 'u']:
     target += char
 #? float()

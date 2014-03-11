@@ -162,6 +162,13 @@ class FakeSubModule():
     line_offset = 0
 
 
+class FakeArray(pr.Array):
+    def __init__(self, values, parent, arr_type=pr.Array.LIST):
+        p = (0, 0)
+        super(FakeArray, self).__init__(FakeSubModule, p, arr_type, parent)
+        self.values = values
+
+
 class FakeStatement(pr.Statement):
     def __init__(self, expression_list, start_pos=(0, 0)):
         p = start_pos
