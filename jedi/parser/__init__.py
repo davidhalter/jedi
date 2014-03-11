@@ -311,9 +311,11 @@ class Parser(object):
 
         tok_list = []
         as_names = []
+        in_lambda_param = False
         while not (tok.string in always_break
                    or tok.string in not_first_break and not tok_list
-                   or tok.string in breaks and level <= 0):
+                   or tok.string in breaks and level <= 0
+                   and not (in_lambda_param and tok.string in ',:')):
             try:
                 # print 'parse_stmt', tok, tokenize.tok_name[token_type]
                 is_kw = tok.string in OPERATOR_KEYWORDS
@@ -333,6 +335,9 @@ class Parser(object):
                     continue
                 elif tok.string == 'lambda':
                     breaks.discard(':')
+                    in_lambda_param = True
+                elif in_lambda_param and tok.string == ':':
+                    in_lambda_param = False
                 elif tok.type == tokenize.NAME and not is_kw:
                     n, tok = self._parse_dot_name(self._gen.current)
                     # removed last entry, because we add Name
