@@ -59,3 +59,15 @@ class C():
         self.a = lambda: 1
 #? int()
 C().a()
+
+
+# -----------------
+# lambda param (#379)
+# -----------------
+class Test(object):
+    def __init__(self, pred=lambda x, y: x):
+        self.a = 1
+        #? int()
+        self.a
+        #? float()
+        pred(1.0, 2)
