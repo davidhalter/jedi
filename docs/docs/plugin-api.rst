@@ -20,7 +20,7 @@ API documentation
 API Interface
 ~~~~~~~~~~~~~
 
-.. automodule:: api
+.. automodule:: jedi.api
     :members:
     :undoc-members:
 
@@ -62,10 +62,10 @@ Definitions / Goto:
     ... inception()'''
     >>> script = jedi.Script(source, 8, 1, '')
     >>>
-    >>> script.goto()
+    >>> script.goto_assignments()
     [<Definition inception=my_list[2]>]
     >>>
-    >>> script.get_definition()
+    >>> script.goto_definitions()
     [<Definition def my_func>]
 
 Related names:
