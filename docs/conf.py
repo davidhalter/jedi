@@ -11,7 +11,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os, datetime
+import sys
+import os
+import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -142,10 +144,10 @@ html_sidebars = {
     '**': [
         'sidebarlogo.html',
         'localtoc.html',
-#        'relations.html',
+        #'relations.html',
         'ghbuttons.html',
-#        'sourcelink.html',
-#        'searchbox.html'
+        #'sourcelink.html',
+        #'searchbox.html'
     ]
 }
 
@@ -188,21 +190,21 @@ htmlhelp_basename = 'Jedidoc'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Jedi.tex', u'Jedi Documentation',
-   u'Jedi contributors', 'manual'),
+    ('index', 'Jedi.tex', u'Jedi Documentation',
+     u'Jedi contributors', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -245,9 +247,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Jedi', u'Jedi Documentation',
-   u'Jedi contributors', 'Jedi', 'Awesome Python autocompletion library.',
-   'Miscellaneous'),
+    ('index', 'Jedi', u'Jedi Documentation',
+     u'Jedi contributors', 'Jedi', 'Awesome Python autocompletion library.',
+     'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -276,3 +278,16 @@ autodoc_default_flags = []
 intersphinx_mapping = {
     'http://docs.python.org/': None,
 }
+
+
+def skip_deprecated(app, what, name, obj, skip, options):
+    """
+    All attributes containing a deprecated note shouldn't be documented
+    anymore. This makes it even clearer that they are not supported anymore.
+    """
+    doc = obj.__doc__
+    return skip or doc and '.. deprecated::' in doc
+
+
+def setup(app):
+    app.connect('autodoc-skip-member', skip_deprecated)
