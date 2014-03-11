@@ -149,15 +149,15 @@ Fast Parser (parser/fast.py)
 
 .. _docstrings:
 
-Docstrings (docstrings.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Docstrings (evaluate/docstrings.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.evaluate.docstrings
 
 .. _refactoring:
 
-Refactoring (refactoring.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Refactoring (evaluate/refactoring.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.refactoring
 
@@ -175,25 +175,24 @@ Imports & Modules
 
 .. _builtin:
 
-Compiled Modules (compiled.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Compiled Modules (evaluate/compiled.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.evaluate.compiled
 
+
 .. _imports:
 
-
-Imports (imports.py)
-~~~~~~~~~~~~~~~~~~~~
+Imports (evaluate/imports.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.evaluate.imports
-
 
 
 .. _caching-recursions:
 
 Caching & Recursions
-----------------------
+--------------------
 
 
 - :ref:`Caching <cache>`
@@ -214,16 +213,14 @@ Recursions (recursion.py)
 .. automodule:: jedi.evaluate.recursion
 
 
-
 .. _dev-helpers:
 
 Helper Modules
 ---------------
 
-There are some helper modules: `common.py`, `helpers.py`, `debug.py`,
-`keywords.py`, which I won't describe further. Some functions are inheritely
-important and central for Jedi to work, but not important to understand how
-Jedi works.
+Most other modules are not really central to how Jedi works. They all contain
+relevant code, but you if you understand the modules above, you pretty much
+understand Jedi.
 
 Python 2/3 compatibility (_compatibility.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

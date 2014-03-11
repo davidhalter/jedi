@@ -1,6 +1,7 @@
 """
-Like described in the :mod:`parsing_representation` module, there's a need for
-an ast like module to represent the states of parsed modules.
+Like described in the :mod:`jedi.evaluate.parsing_representation` module,
+there's a need for an ast like module to represent the states of parsed
+modules.
 
 But now there are also structures in Python that need a little bit more than
 that. An ``Instance`` for example is only a ``Class`` before it is

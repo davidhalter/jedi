@@ -1,8 +1,8 @@
 """
 Evaluation of Python code in |jedi| is based on three assumptions:
 
-* Code is recursive (to weaken this assumption, the :mod:`dynamic` module
-  exists).
+* Code is recursive (to weaken this assumption, the
+  :mod:`jedi.evaluate.dynamic` module exists).
 * No magic is being used:
 
   - metaclasses
@@ -37,7 +37,7 @@ This is exactly where it starts to get complicated. Now recursions start to
 kick in. The statement has not been resolved fully, but now we need to resolve
 the datetime import. So it continues
 
-- follow import, which happens in the :mod:`imports` module.
+- follow import, which happens in the :mod:`jedi.evaluate.imports` module.
 - now the same ``eval_call`` as above calls ``follow_path`` to follow the
   second part of the statement ``date``.
 - After ``follow_path`` returns with the desired ``datetime.date`` class, the
