@@ -6,10 +6,10 @@ import platform
 import sys
 import jedi
 
-from .helpers import cwd_at
+from ..helpers import cwd_at
 
 
-@cwd_at('test/extensions')
+@cwd_at('test/test_evaluate/extensions')
 def test_completions():
     if platform.architecture()[0] == '64bit':
         package_name = "compiled%s%s" % sys.version_info[:2]
@@ -19,7 +19,7 @@ def test_completions():
             assert len(s.completions()) >= 2
 
 
-@cwd_at('test/extensions')
+@cwd_at('test/test_evaluate/extensions')
 def test_call_signatures_extension():
     # with a cython extension
     if platform.architecture()[0] == '64bit':
