@@ -156,7 +156,6 @@ class Evaluator(object):
         operators in it.
         """
         debug.dbg('eval_expression_list: %s', expression_list)
-        result = []
         p = precedence.create_precedence(expression_list)
         return self._process_precedence_element(p) or []
 
