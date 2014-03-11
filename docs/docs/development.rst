@@ -103,6 +103,15 @@ Evaluation Representation (evaluate/representation.py)
    FunctionExecution
    :parts: 1
 
+
+.. _name_resolution:
+
+Name resolution (evaluate/finder.py)
+++++++++++++++++++++++++++++++++++++
+
+.. automodule:: jedi.evaluate.finder
+
+
 .. _dev-api:
 
 API (api.py and api_classes.py)
@@ -115,7 +124,6 @@ conservative with the API.  I'd rather not add new API features if they are not
 necessary, because it's much harder to deprecate stuff than to add it later.
 
 
-
 .. _core-extensions:
 
 Core Extensions
@@ -123,7 +131,8 @@ Core Extensions
 
 Core Extensions is a summary of the following topics:
 
-- :ref:`Dynamic Arrays & Function Parameters <dynamic>`
+- :ref:`Iterables & Dynamic Arrays <iterables>`
+- :ref:`Dynamic Parameters <dynamic>`
 - :ref:`Fast Parser <fast_parser>`
 - :ref:`Docstrings <docstrings>`
 - :ref:`Refactoring <refactoring>`
@@ -132,10 +141,21 @@ These topics are very important to understand what Jedi additionally does, but
 they could be removed from Jedi and Jedi would still work. But slower and
 without some features.
 
+.. _iterables:
+
+Iterables & Dynamic Arrays (evaluate/iterable.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To understand Python on a deeper level, |jedi| needs to understand some of the
+dynamic features of Python, however this probably the most complicated part:
+
+.. automodule:: jedi.evaluate.iterable
+
+
 .. _dynamic:
 
-Dynamic Arrays & Function Parameters (dynamic.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Parameter completion (evaluate/dynamic.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.evaluate.dynamic
 

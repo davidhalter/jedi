@@ -1,3 +1,25 @@
+"""
+Contains all classes and functions to deal with lists, dicts, generators and
+iterators in general.
+
+Array modifications
+*******************
+
+If the content of an array (``set``/``list``) is requested somewhere, the
+current module will be checked for appearances of ``arr.append``,
+``arr.insert``, etc.  If the ``arr`` name points to an actual array, the
+content will be added
+
+This can be really cpu intensive, as you can imagine. Because |jedi| has to
+follow **every** ``append`` and check wheter it's the right array. However this
+works pretty good, because in *slow* cases, the recursion detector and other
+settings will stop this process.
+
+It is important to note that:
+
+1. Array modfications work only in the current module.
+2. Jedi only checks Array additions; ``list.pop``, etc are ignored.
+"""
 import itertools
 
 from jedi import common

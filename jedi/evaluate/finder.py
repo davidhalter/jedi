@@ -1,3 +1,16 @@
+"""
+Searcjing for names with given scope and name. This is very central in Jedi and
+Python. The name resolution is quite complicated with descripter,
+``__getattribute__``, ``__getattr__``, ``global``, etc.
+
+Flow checks
++++++++++++
+
+Flow checks are not really mature. There's only a check for ``isinstance``.  It
+would check whether a flow has the form of ``if isinstance(a, type_or_tuple)``.
+Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
+check for -> a is a string). There's big potential in these checks.
+"""
 import copy
 import sys
 
