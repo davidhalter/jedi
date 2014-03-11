@@ -180,6 +180,18 @@ SubClass.var
 SubClass.class_
 
 # -----------------
+# inheritance of builtins
+# -----------------
+
+class Base(str):
+    pass
+
+#? ['upper']
+Base.upper
+#? ['upper']
+Base().upper
+
+# -----------------
 # __call__
 # -----------------
 
