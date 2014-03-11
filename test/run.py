@@ -46,7 +46,20 @@ Run test at line 4, 6, and 8 in ``basic.py``::
 
 See ``py.test --help`` for more information.
 
-If you want to debug a test, just use the --pdb option.
+If you want to debug a test, just use the ``--pdb`` option.
+
+Alternate Test Runner
++++++++++++++++++++++
+
+If you don't like the output of ``py.test``, there's an alternate test runner
+that you can start by running ``./run.py``. The above example could be run by::
+
+    ./run.py basic 4 6 8
+
+The advantage of this runner is simplicity and more customized error reports.
+Using both runners will help you to have a quicker overview of what's
+happening.
+
 
 Auto-Completion
 +++++++++++++++

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 """
 Refactoring tests work a little bit similar to Black Box tests. But the idea is
-here to compare two versions of code.
+here to compare two versions of code. **Note: Refactoring is currently not in
+active development (and was never stable), the tests are therefore not really
+valuable - just ignore them.**
 """
 from __future__ import with_statement
 import os
