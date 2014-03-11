@@ -1,7 +1,7 @@
 """
-:mod:`imports` is here to resolve import statements and return the
-modules/classes/functions/whatever, which they stand for. However there's not
-any actual importing done. This module is about finding modules in the
+:mod:`jedi.evaluate.imports` is here to resolve import statements and return
+the modules/classes/functions/whatever, which they stand for. However there's
+not any actual importing done. This module is about finding modules in the
 filesystem. This can be quite tricky sometimes, because Python imports are not
 always that simple.
 

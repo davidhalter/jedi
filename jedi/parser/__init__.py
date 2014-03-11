@@ -1,7 +1,7 @@
 """
 The ``Parser`` tries to convert the available Python code in an easy to read
 format, something like an abstract syntax tree. The classes who represent this
-tree, are sitting in the :mod:`parsing_representation` module.
+tree, are sitting in the :mod:`jedi.parser.representation` module.
 
 The Python module ``tokenize`` is a very important part in the ``Parser``,
 because it splits the code into different words (tokens).  Sometimes it looks a

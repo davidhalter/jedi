@@ -50,7 +50,7 @@ The core of Jedi consists of three parts:
 
 Most people are probably interested in :ref:`code evaluation <evaluate>`,
 because that's where all the magic happens. I need to introduce the :ref:`parser
-<parser>` first, because :mod:`evaluate` uses it extensively.
+<parser>` first, because :mod:`jedi.evaluate` uses it extensively.
 
 .. _parser:
 

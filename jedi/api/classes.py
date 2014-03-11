@@ -1,7 +1,7 @@
 """
-The :mod:`api_classes` module contains the return classes of the API. These
-classes are the much bigger part of the whole API, because they contain the
-interesting information about completion and goto operations.
+The :mod:`jedi.api.classes` module contains the return classes of the API.
+These classes are the much bigger part of the whole API, because they contain
+the interesting information about completion and goto operations.
 """
 import warnings
 
@@ -10,7 +10,6 @@ from jedi import settings
 from jedi import common
 from jedi import cache
 from jedi.parser import representation as pr
-from jedi.parser.tokenize import Token
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
