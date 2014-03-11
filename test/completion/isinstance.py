@@ -18,12 +18,12 @@ while not isinstance(k, (str, int)):
     #? 
     k
 
-assert isinstance(ass, int):
+assert isinstance(ass, int)
 #? int()
 ass
 
-assert isinstance(ass, str):
-assert not isinstance(ass, int):
+assert isinstance(ass, str)
+assert not isinstance(ass, int)
 
 if 2:
     #? str()

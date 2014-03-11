@@ -160,12 +160,6 @@ class Evaluator(object):
         p = precedence.create_precedence(expression_list)
         return self._process_precedence_element(p) or []
 
-        # TODO remove
-        calls_iterator = iter(expression_list)
-        for each in calls_iterator:
-            result += self._eval_statement_element(each)
-        return result
-
     def _process_precedence_element(self, el):
         if el is None:
             return None
