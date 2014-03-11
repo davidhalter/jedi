@@ -252,8 +252,8 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         for s in self.base.supers:
             # Super classes are statements.
             for cls in self._evaluator.eval_statement(s):
-                if not isinstance(cls, Class):
-                    debug.warning('Received non class, as a super class')
+                if not isinstance(cls, (Class, compiled.CompiledObject)):
+                    debug.warning('Received non class as a super class.')
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
         if not supers and self.base.parent != compiled.builtin:
