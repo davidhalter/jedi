@@ -3,9 +3,9 @@
 End User Usage
 ==============
 
-If you are a not an IDE Developer, than chances are pretty high, that you just
-want to use |jedi| as a browser plugin or in the shell. Yes that's :ref:`also
-possible <repl-completion>`!
+If you are a not an IDE Developer, the odds are that you just want to use
+|jedi| as a browser plugin or in the shell. Yes that's :ref:`also possible
+<repl-completion>`!
 
 |jedi| is relatively young and can be used in a variety of Plugins and
 Software. If your Editor/IDE is not among them, recommend |jedi| to your IDE
