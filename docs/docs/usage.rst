@@ -40,13 +40,18 @@ TextMate:
 
 - Textmate_ (Not sure if it's actually working)
 
+Kate:
+
+- Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
+  <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
+
 
 .. _other-software:
 
 Other Software Using Jedi
 -------------------------
 
-- `wdb <https://github.com/Kozea/wdb>`_
+- wdb_ - Web Debugger
 
 
 .. _repl-completion:

@@ -38,10 +38,12 @@ Jedi can be used with the following editors:
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
 - SynWrite_
 - TextMate_ (Not sure if it's actually working)
+- Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
+  <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
 
 And it powers the following projects:
 
-- wdb_
+- wdb_ - Web Debugger
 
 
 Here are some pictures:
@@ -147,3 +149,4 @@ For more detailed information visit the `testing documentation
 .. _SynWrite: http://uvviewsoft.com/synjedi/
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
+.. _Kate: http://kate-editor.org
