@@ -3,14 +3,17 @@
 Changelog
 ---------
 
-+0.8.0 (2013-03-01)
++0.8.0 (2013-04-01)
 +++++++++++++++++++
 
 * Memory Consumption for compiled modules (e.g. builtins, sys) has been reduced
     drastically. Loading times are down as well (it takes basically as long as
     an import).
 * REPL completion is starting to become usable.
-* Various small API changes. Generally this released focused on stability, though.
+* Various small API changes. Generally this released focuses on stability and
+    refactoring of internal APIs.
+* Introducing operator precedence, which makes calculating correct Array
+    indices and ``__getattr__`` strings possible.
 
 0.7.0 (2013-08-09)
 ++++++++++++++++++
