@@ -135,3 +135,26 @@ class TestCallSignatures(TestCase):
             pass
         """)
         self._run(s, 'abs', 0, line=1, column=5)
+
+    def test_decorator_in_class(self):
+        """
+        There's still an implicit param, with a decorator.
+        Github issue #319.
+        """
+        s = textwrap.dedent("""\
+        def static(func):
+            def wrapped(obj, *args):
+                return f(type(obj), *args)
+            return wrapped
+
+        class C(object):
+            @static
+            def test(cls):
+                return 10
+
+        C().test(""")
+
+        signatures = Script(s).call_signatures()
+        assert len(signatures) == 1
+        x = [p.get_code() for p in signatures[0].params]
+        assert x == ['*args']
