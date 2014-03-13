@@ -543,9 +543,9 @@ class Definition(BaseDefinition):
         return defined_names(self._evaluator, d)
 
 
-class CallDef(object):
+class CallSignature(object):
     """
-    `CallDef` objects is the return value of `Script.function_definition`.
+    `CallSignature` objects is the return value of `Script.function_definition`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """

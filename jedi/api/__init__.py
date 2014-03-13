@@ -135,9 +135,9 @@ class Script(object):
 
         if not dot:
             # add named params
-            for call_def in self.call_signatures():
-                if not isinstance(call_def.module, compiled.CompiledObject):
-                    for p in call_def.params:
+            for call_sig in self.call_signatures():
+                if not isinstance(call_sig.module, compiled.CompiledObject):
+                    for p in call_sig.params:
                         # Allow access on _definition here, because it's a
                         # public API and we don't want to make the internal
                         # Name object public.
@@ -481,7 +481,7 @@ class Script(object):
 
         This would return ``None``.
 
-        :rtype: list of :class:`classes.CallDef`
+        :rtype: list of :class:`classes.CallSignature`
         """
 
         user_stmt = self._parser.user_stmt_with_whitespace()
@@ -494,7 +494,7 @@ class Script(object):
             origins = cache.cache_call_signatures(_callable, user_stmt)
         debug.speed('func_call followed')
 
-        return [classes.CallDef(self._evaluator, o, index, call) for o in origins
+        return [classes.CallSignature(self._evaluator, o, index, call) for o in origins
                 if o.isinstance(er.Function, er.Instance, er.Class)
                 or isinstance(o, compiled.CompiledObject) and o.type() != 'module']
 
