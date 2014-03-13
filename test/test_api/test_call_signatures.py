@@ -157,4 +157,4 @@ class TestCallSignatures(TestCase):
         signatures = Script(s).call_signatures()
         assert len(signatures) == 1
         x = [p.get_code() for p in signatures[0].params]
-        assert x == ['*args']
+        assert x == ['*args\n']

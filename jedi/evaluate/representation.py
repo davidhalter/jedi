@@ -212,7 +212,8 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
-        func = self.var.get_decorated_func(self.instance)
+        func = self.var.get_decorated_func()
+        func = InstanceElement(self._evaluator, self.instance, func)
         if func == self.var:
             return self
         return func
