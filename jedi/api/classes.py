@@ -547,7 +547,7 @@ class CallSignature(object):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, executable, index, call):
+    def __init__(self, evaluator, executable, call, index):
         self._evaluator = evaluator
         self._executable = executable
         self.index = index
@@ -572,8 +572,10 @@ class CallSignature(object):
 
     @property
     def bracket_start(self):
-        """ The indent of the bracket that is responsible for the last function
-        call. """
+        """
+        The indent of the bracket that is responsible for the last function
+        call.
+        """
         c = self._call
         while c.next is not None:
             c = c.next

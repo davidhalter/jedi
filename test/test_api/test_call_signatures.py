@@ -2,6 +2,7 @@ import textwrap
 
 from ..helpers import TestCase
 from jedi import Script
+from jedi._compatibility import is_py33
 
 
 class TestCallSignatures(TestCase):
@@ -167,7 +168,12 @@ class TestParams(TestCase):
         return signatures[0].params
 
     def test_param_name(self):
-        p = self.params('''int(''')
-        # int is defined as: `int(x[, base])`
-        assert p[0].name == 'x'
-        assert p[1].name == 'base'
+        if not is_py33:
+            p = self.params('''int(''')
+            # int is defined as: `int(x[, base])`
+            assert p[0].name == 'x'
+            assert p[1].name == 'base'
+
+        p = self.params('''open(something,''')
+        assert p[0].name in ['file', 'name']
+        assert p[1].name == 'mode'
