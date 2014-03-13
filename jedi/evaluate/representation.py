@@ -370,10 +370,8 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         We just ignore the decorator here, because sometimes decorators are
         just really complicated and Jedi cannot understand them.
         """
-        decorated_func = self._decorated_func()
-        if decorated_func is None:
-            return Function(self._evaluator, self.base_func, True)
-        return decorated_func
+        return self._decorated_func() \
+            or Function(self._evaluator, self.base_func, True)
 
     def get_magic_function_names(self):
         return compiled.magic_function_class.get_defined_names()
