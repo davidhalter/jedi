@@ -138,7 +138,10 @@ class Script(object):
             for call_def in self.call_signatures():
                 if not isinstance(call_def.module, compiled.CompiledObject):
                     for p in call_def.params:
-                        completions.append((p.get_name(), p))
+                        # Allow access on _definition here, because it's a
+                        # public API and we don't want to make the internal
+                        # Name object public.
+                        completions.append((p._definition.get_name(), p))
 
             if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords

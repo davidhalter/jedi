@@ -8,11 +8,9 @@ import os
 
 from jedi._compatibility import builtins as _builtins
 from jedi import debug
-from jedi.parser.representation import Base, IsScope
 from jedi.cache import underscore_memoization
 from jedi.evaluate.sys_path import get_sys_path
-from jedi.parser.representation import Param
-from jedi.parser.representation import SubModule
+from jedi.parser.representation import Param, SubModule, Base, IsScope, Operator
 from jedi.evaluate.helpers import FakeName
 from . import fake
 
@@ -38,7 +36,10 @@ class CompiledObject(Base):
         # object
         start_pos, end_pos = (0, 0), (0, 0)
         for p in tokens:
-            params.append(Param(module, [FakeName(p.strip())], start_pos,
+            parts = [FakeName(part) for part in p.strip().split('=')]
+            if len(parts) >= 2:
+                parts.insert(1, Operator('=', (0, 0)))
+            params.append(Param(module, parts, start_pos,
                                 end_pos, builtin))
         return params
 

@@ -451,11 +451,12 @@ class Definition(BaseDefinition):
                 return None
         elif isinstance(d, pr.Statement):
             try:
-                name = d.assignment_details[0][1].values[0][0].name.names[-1]
+                expression_list = d.assignment_details[0][0]
+                name = expression_list[0].name.names[-1]
             except IndexError:
                 if isinstance(d, pr.Param):
                     try:
-                        name = d.expression_list()[0].name.names[-1]
+                        return unicode(d.expression_list()[0].name)
                     except IndexError:
                         pass
                 return None
