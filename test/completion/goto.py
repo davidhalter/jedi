@@ -180,7 +180,7 @@ for i in range(1):
     i
 
 for key, value in [(1,2)]:
-    #! ['for key,value in [(1...']
+    #! ['for key,value in [(1, 2)]:    key']
     key
 
 for i in []:

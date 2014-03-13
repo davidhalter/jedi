@@ -510,9 +510,7 @@ class Definition(BaseDefinition):
         elif self.is_keyword:
             d = 'keyword %s' % d.name
         else:
-            code = d.get_code().replace('\n', '')
-            max_len = 20
-            d = (code[:max_len] + '...') if len(code) > max_len + 3 else code
+            d = d.get_code().replace('\n', '')
         return d
 
     @property
@@ -604,4 +602,4 @@ class Param(Definition):
         A function to get the whole code of the param. We might deprecate this
         function in the future, use :attr:`.description` instead.
         """
-        return self._definition.get_code()
+        return self.description
