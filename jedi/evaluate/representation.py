@@ -214,8 +214,6 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         """ Needed because the InstanceElement should not be stripped """
         func = self.var.get_decorated_func()
         func = InstanceElement(self._evaluator, self.instance, func)
-        if func == self.var:
-            return self
         return func
 
     def expression_list(self):
@@ -326,7 +324,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         self.is_decorated = is_decorated
 
     @memoize_default(None)
-    def _decorated_func(self, instance=None):
+    def _decorated_func(self):
         """
         Returns the function, that is to be executed in the end.
         This is also the places where the decorators are processed.
@@ -347,9 +345,6 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
                                   self.base_func, dec_results)
                 # Create param array.
                 old_func = Function(self._evaluator, f, is_decorated=True)
-                if instance is not None and decorator.isinstance(Function):
-                    old_func = InstanceElement(self._evaluator, instance, old_func)
-                    instance = None
 
                 wrappers = self._evaluator.execute(decorator, (old_func,))
                 if not len(wrappers):
@@ -362,18 +357,21 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
                 f = wrappers[0]
 
                 debug.dbg('decorator end %s', f)
-        if f != self.base_func and isinstance(f, pr.Function):
+
+        if isinstance(f, pr.Function):
             f = Function(self._evaluator, f)
         return f
 
-    def get_decorated_func(self, instance=None):
-        decorated_func = self._decorated_func(instance)
-        if decorated_func == self.base_func:
-            return self
+    def get_decorated_func(self):
+        """
+        This function exists for the sole purpose of returning itself if the
+        decorator doesn't turn out to "work".
+
+        We just ignore the decorator here, because sometimes decorators are
+        just really complicated and Jedi cannot understand them.
+        """
+        decorated_func = self._decorated_func()
         if decorated_func is None:
-            # If the decorator func is not found, just ignore the decorator
-            # function, because sometimes decorators are just really
-            # complicated.
             return Function(self._evaluator, self.base_func, True)
         return decorated_func
 
@@ -387,8 +385,9 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         return getattr(self.base_func, name)
 
     def __repr__(self):
+        decorated_func = self._decorated_func()
         dec = ''
-        if self._decorated_func() != self.base_func:
+        if decorated_func is not None and decorated_func != self:
             dec = " is " + repr(self._decorated_func())
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
