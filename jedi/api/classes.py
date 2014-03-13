@@ -596,5 +596,12 @@ class CallDef(object):
 
 
 class Param(Definition):
+    """
+    Params are basically a definition for call signatures.
+    """
     def get_code(self):
+        """
+        A function to get the whole code of the param. We might deprecate this
+        function in the future, use :attr:`.description` instead.
+        """
         return self._definition.get_code()
