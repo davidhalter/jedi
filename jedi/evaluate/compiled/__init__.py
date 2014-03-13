@@ -39,7 +39,7 @@ class CompiledObject(Base):
         start_pos, end_pos = (0, 0), (0, 0)
         for p in tokens:
             params.append(Param(module, [FakeName(p.strip())], start_pos,
-                                end_pos))
+                                end_pos, builtin))
         return params
 
     def __repr__(self):
