@@ -158,3 +158,16 @@ class TestCallSignatures(TestCase):
         assert len(signatures) == 1
         x = [p.get_code() for p in signatures[0].params]
         assert x == ['*args\n']
+
+
+class TestParams(TestCase):
+    def params(self, source, line=None, column=None):
+        signatures = Script(source, line, column).call_signatures()
+        assert len(signatures) == 1
+        return signatures[0].params
+
+    def test_param_name(self):
+        p = self.params('''int(''')
+        # int is defined as: `int(x[, base])`
+        assert p[0].name == 'x'
+        assert p[1].name == 'base'
