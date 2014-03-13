@@ -599,7 +599,10 @@ class Param(Definition):
     """
     def get_code(self):
         """
-        A function to get the whole code of the param. We might deprecate this
-        function in the future, use :attr:`.description` instead.
+        .. deprecated:: 0.8.0
+           Use :attr:`.description` and :attr:`.name` instead.
+        .. todo:: Remove!
+
+        A function to get the whole code of the param.
         """
         return self.description
