@@ -548,7 +548,8 @@ class CallDef(object):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, executable, index, call):
+    def __init__(self, evaluator, executable, index, call):
+        self._evaluator = evaluator
         self._executable = executable
         self.index = index
         self._call = call
@@ -558,7 +559,8 @@ class CallDef(object):
         if self._executable.isinstance(er.Function):
             if isinstance(self._executable, er.InstanceElement):
                 params = self._executable.params[1:]
-            return self._executable.params
+            else:
+                params = self._executable.params
         elif self._executable.isinstance(er.compiled.CompiledObject):
             params = self._executable.params
         else:
@@ -567,7 +569,7 @@ class CallDef(object):
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
-        return [Param(p) for p in params]
+        return [Param(self._evaluator, p) for p in params]
 
     @property
     def bracket_start(self):
