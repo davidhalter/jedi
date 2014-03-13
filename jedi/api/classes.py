@@ -436,24 +436,30 @@ class Definition(BaseDefinition):
         if isinstance(d, compiled.CompiledObject):
             return d.name
         elif isinstance(d, pr.Name):
-            return d.names[-1] if d.names else None
+            return unicode(d.names[-1]) if d.names else None
         elif isinstance(d, iterable.Array):
-            return unicode(d.type)
+            name = d.type
         elif isinstance(d, (pr.Class, er.Class, er.Instance,
                             er.Function, pr.Function)):
-            return unicode(d.name)
+            name = d.name
         elif isinstance(d, pr.Module):
-            return self.module_name
+            name = self.module_name
         elif isinstance(d, pr.Import):
             try:
-                return d.get_defined_names()[0].names[-1]
+                name = d.get_defined_names()[0].names[-1]
             except (AttributeError, IndexError):
                 return None
         elif isinstance(d, pr.Statement):
             try:
-                return d.assignment_details[0][1].values[0][0].name.names[-1]
+                name = d.assignment_details[0][1].values[0][0].name.names[-1]
             except IndexError:
+                if isinstance(d, pr.Param):
+                    try:
+                        name = d.expression_list()[0].name.names[-1]
+                    except IndexError:
+                        pass
                 return None
+        return unicode(name)
 
     @property
     def description(self):
@@ -551,16 +557,17 @@ class CallDef(object):
     def params(self):
         if self._executable.isinstance(er.Function):
             if isinstance(self._executable, er.InstanceElement):
-                return self._executable.params[1:]
+                params = self._executable.params[1:]
             return self._executable.params
         elif self._executable.isinstance(er.compiled.CompiledObject):
-            return self._executable.params
+            params = self._executable.params
         else:
             try:
                 sub = self._executable.get_subscope_by_name('__init__')
-                return sub.params[1:]  # ignore self
+                params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
+        return [Param(p) for p in params]
 
     @property
     def bracket_start(self):
@@ -583,3 +590,8 @@ class CallDef(object):
     def __repr__(self):
         return '<%s: %s index %s>' % (type(self).__name__, self._executable,
                                       self.index)
+
+
+class Param(Definition):
+    def get_code(self):
+        return self._definition.get_code()
