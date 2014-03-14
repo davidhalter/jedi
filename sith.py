@@ -143,9 +143,10 @@ class TestCase(object):
     def show_location(self, lineno, column, show=3):
         # Three lines ought to be enough
         lower = lineno - show if lineno - show > 0 else 0
+        prefix = '  |'
         for i, line in enumerate(self.script.source.split('\n')[lower:lineno]):
-            print(lower + i + 1, line)
-        print(' ' * (column + len(str(lineno))), '^')
+            print(prefix, lower + i + 1, line)
+        print(prefix, '   ', ' ' * (column + len(str(lineno))), '^')
 
     def show_operation(self):
         print("%s:\n" % self.operation.capitalize())
@@ -174,6 +175,8 @@ class TestCase(object):
     def show_goto_definitions(self):
         for completion in self.objects:
             print(completion.desc_with_module)
+            if completion.module_path is None:
+                continue
             if os.path.abspath(completion.module_path) == os.path.abspath(self.path):
                 self.show_location(completion.line, completion.column)
 
