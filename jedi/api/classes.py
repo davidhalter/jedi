@@ -586,10 +586,6 @@ class CallSignature(object):
         """ The name (e.g. 'isinstance') as a string. """
         return unicode(self._executable.name)
 
-    @property
-    def module(self):
-        return self._executable.get_parent_until()
-
     def __repr__(self):
         return '<%s: %s index %s>' % (type(self).__name__, self._executable,
                                       self.index)

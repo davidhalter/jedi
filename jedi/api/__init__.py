@@ -136,7 +136,10 @@ class Script(object):
         if not dot:
             # add named params
             for call_sig in self.call_signatures():
-                if not isinstance(call_sig.module, compiled.CompiledObject):
+                # allow protected access, because it's a public API.
+                module = call_sig._executable.get_parent_until()
+                # Compiled modules typically don't allow keyword arguments.
+                if not isinstance(module, compiled.CompiledObject):
                     for p in call_sig.params:
                         # Allow access on _definition here, because it's a
                         # public API and we don't want to make the internal
