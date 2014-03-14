@@ -1,4 +1,5 @@
 import textwrap
+import inspect
 
 from ..helpers import TestCase
 from jedi import Script
@@ -177,3 +178,24 @@ class TestParams(TestCase):
         p = self.params('''open(something,''')
         assert p[0].name in ['file', 'name']
         assert p[1].name == 'mode'
+
+
+def test_signature_is_definition(TestCase):
+    """
+    Through inheritance, a call signature is a sub class of Definition.
+    Check if the attributes match.
+    """
+    s = """class Spam(): pass\nSpam"""
+    signature = Script(s + '(').call_signatures()[0]
+    definition = Script(s + '(').goto_definitions()[0]
+    signature.line == 1
+    signature.column == 6
+
+    # Now compare all the attributes that a CallSignature must also have.
+    for attr_name in dir(definition):
+        attribute = getattr(definition, attr_name)
+        signature_attribute = getattr(signature, attr_name)
+        if inspect.isfunction(attribute):
+            assert attribute() == signature_attribute()
+        else:
+            assert attribute == signature_attribute
