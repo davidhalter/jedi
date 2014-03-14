@@ -180,7 +180,7 @@ class TestParams(TestCase):
         assert p[1].name == 'mode'
 
 
-def test_signature_is_definition(TestCase):
+def test_signature_is_definition():
     """
     Through inheritance, a call signature is a sub class of Definition.
     Check if the attributes match.
@@ -193,9 +193,11 @@ def test_signature_is_definition(TestCase):
 
     # Now compare all the attributes that a CallSignature must also have.
     for attr_name in dir(definition):
+        if attr_name.startswith('_') or attr_name == 'defined_names':
+            continue
         attribute = getattr(definition, attr_name)
         signature_attribute = getattr(signature, attr_name)
-        if inspect.isfunction(attribute):
+        if inspect.ismethod(attribute):
             assert attribute() == signature_attribute()
         else:
             assert attribute == signature_attribute

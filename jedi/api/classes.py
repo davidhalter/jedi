@@ -541,30 +541,30 @@ class Definition(BaseDefinition):
         return defined_names(self._evaluator, d)
 
 
-class CallSignature(object):
+class CallSignature(Definition):
     """
     `CallSignature` objects is the return value of `Script.function_definition`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
     def __init__(self, evaluator, executable, call, index):
-        self._evaluator = evaluator
-        self._executable = executable
+        super(CallSignature, self).__init__(evaluator, executable)
         self.index = index
+        """ The param index of the current call. """
         self._call = call
 
     @property
     def params(self):
-        if self._executable.isinstance(er.Function):
-            if isinstance(self._executable, er.InstanceElement):
-                params = self._executable.params[1:]
+        if self._definition.isinstance(er.Function):
+            if isinstance(self._definition, er.InstanceElement):
+                params = self._definition.params[1:]
             else:
-                params = self._executable.params
-        elif self._executable.isinstance(er.compiled.CompiledObject):
-            params = self._executable.params
+                params = self._definition.params
+        elif self._definition.isinstance(er.compiled.CompiledObject):
+            params = self._definition.params
         else:
             try:
-                sub = self._executable.get_subscope_by_name('__init__')
+                sub = self._definition.get_subscope_by_name('__init__')
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
@@ -584,10 +584,10 @@ class CallSignature(object):
     @property
     def call_name(self):
         """ The name (e.g. 'isinstance') as a string. """
-        return unicode(self._executable.name)
+        return unicode(self._definition.name)
 
     def __repr__(self):
-        return '<%s: %s index %s>' % (type(self).__name__, self._executable,
+        return '<%s: %s index %s>' % (type(self).__name__, self._definition,
                                       self.index)
 
 

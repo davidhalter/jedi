@@ -137,7 +137,7 @@ class Script(object):
             # add named params
             for call_sig in self.call_signatures():
                 # allow protected access, because it's a public API.
-                module = call_sig._executable.get_parent_until()
+                module = call_sig._definition.get_parent_until()
                 # Compiled modules typically don't allow keyword arguments.
                 if not isinstance(module, compiled.CompiledObject):
                     for p in call_sig.params:
