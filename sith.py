@@ -117,7 +117,7 @@ class TestCase(object):
         try:
             with open(self.path) as f:
                 self.script = jedi.Script(f.read(), self.line, self.column, self.path)
-            self.completions = getattr(self.script, self.operation)()
+            self.objects = getattr(self.script, self.operation)()
             if print_result:
                 print("{path}: Line {line} column {column}".format(**self.__dict__))
                 self.show_location(self.line, self.column)
@@ -152,27 +152,27 @@ class TestCase(object):
         getattr(self, 'show_' + self.operation)()
 
     def show_completions(self):
-        for completion in self.completions:
+        for completion in self.objects:
             print(completion.name)
 
     # TODO: Support showing the location in other files
 
     # TODO: Move this printing to the completion objects themselves
     def show_usages(self):
-        for completion in self.completions:
+        for completion in self.objects:
             print(completion.description)
             if os.path.abspath(completion.module_path) == os.path.abspath(self.path):
                 self.show_location(completion.line, completion.column)
 
     def show_call_signatures(self):
-        for completion in self.completions:
+        for completion in self.objects:
             # This is too complicated to print. It really should be
             # implemented in str() anyway.
             print(completion)
             # Can't print the location here because we don't have the module path
 
     def show_goto_definitions(self):
-        for completion in self.completions:
+        for completion in self.objects:
             print(completion.desc_with_module)
             if os.path.abspath(completion.module_path) == os.path.abspath(self.path):
                 self.show_location(completion.line, completion.column)
