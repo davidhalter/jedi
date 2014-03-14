@@ -583,7 +583,14 @@ class CallSignature(Definition):
 
     @property
     def call_name(self):
-        """ The name (e.g. 'isinstance') as a string. """
+        """
+        .. deprecated:: 0.8.0
+           Use :attr:`.name` instead.
+        .. todo:: Remove!
+
+        The name (e.g. 'isinstance') as a string.
+        """
+        warnings.warn("Use name instead.", DeprecationWarning)
         return unicode(self._definition.name)
 
     def __repr__(self):
@@ -603,4 +610,5 @@ class Param(Definition):
 
         A function to get the whole code of the param.
         """
+        warnings.warn("Use description instead.", DeprecationWarning)
         return self.description

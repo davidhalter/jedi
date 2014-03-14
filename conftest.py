@@ -27,6 +27,9 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
+    import warnings
+    warnings.simplefilter("error")
+
     global jedi_cache_directory_orig, jedi_cache_directory_temp
     jedi_cache_directory_orig = jedi.settings.cache_directory
     jedi_cache_directory_temp = tempfile.mkdtemp(prefix='jedi-test-')
