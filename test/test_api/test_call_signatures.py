@@ -15,7 +15,7 @@ class TestCallSignatures(TestCase):
         if not signatures:
             assert expected_name is None
         else:
-            assert signatures[0].call_name == expected_name
+            assert signatures[0].name == expected_name
             assert signatures[0].index == expected_index
 
     def _run_simple(self, source, name, index=0, column=None, line=1):
@@ -158,7 +158,7 @@ class TestCallSignatures(TestCase):
 
         signatures = Script(s).call_signatures()
         assert len(signatures) == 1
-        x = [p.get_code() for p in signatures[0].params]
+        x = [p.description for p in signatures[0].params]
         assert x == ['*args']
 
 
