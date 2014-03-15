@@ -46,10 +46,12 @@ def test_pyc():
     """
     The list of completion must be greater than 2.
     """
-    generate_pyc()
-    s = jedi.Script("from dummy_package import dummy; dummy.")
-    assert len(s.completions()) >= 2
-    shutil.rmtree("dummy_package")
+    try:
+        generate_pyc()
+        s = jedi.Script("from dummy_package import dummy; dummy.")
+        assert len(s.completions()) >= 2
+    finally:
+        shutil.rmtree("dummy_package")
 
 
 if __name__ == "__main__":
