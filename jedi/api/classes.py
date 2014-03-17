@@ -434,9 +434,9 @@ class Definition(BaseDefinition):
             d = d.var
 
         if isinstance(d, compiled.CompiledObject):
-            return d.name
+            name = d.name
         elif isinstance(d, pr.Name):
-            return unicode(d.names[-1]) if d.names else None
+            name = d.names[-1]
         elif isinstance(d, iterable.Array):
             name = d.type
         elif isinstance(d, (pr.Class, er.Class, er.Instance,
