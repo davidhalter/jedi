@@ -527,6 +527,7 @@ class Definition(BaseDefinition):
         position = '' if self.in_builtin_module else '@%s' % (self.line)
         return "%s:%s%s" % (self.module_name, self.description, position)
 
+    @cache.underscore_memoization
     def defined_names(self):
         """
         List sub-definitions (e.g., methods in class).

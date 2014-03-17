@@ -8,7 +8,6 @@ from ..helpers import cwd_at
 @pytest.mark.skipif('sys.version_info < (3,3)')
 def test_find_module_py33():
     """Needs to work like the old find_module."""
-    print(find_module_py33('_io'))
     assert find_module_py33('_io') == (None, '_io', False)
 
 
@@ -24,3 +23,21 @@ def test_import_not_in_sys_path():
     assert a[0].name == 'str'
     a = jedi.Script(path='module.py', line=7).goto_definitions()
     assert a[0].name == 'str'
+
+
+def test_import_empty():
+    """ github #340, imports have """
+    completion = jedi.Script("import ").completions()[0]
+    definition = completion.follow_definition()[0]
+    print(definition)
+    assert definition
+
+
+def test_follow_import_incomplete():
+    """
+    Completion on incomplete imports should always take the full completion
+    to do any evaluation.
+    """
+    datetime = jedi.Script("import datetim").completions()[0]
+    definition = datetime.follow_definition()[0]
+    assert definition
