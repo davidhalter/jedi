@@ -12,7 +12,7 @@ import shutil
 import sys
 
 import jedi
-from .helpers import cwd_at
+from ..helpers import cwd_at
 
 
 SRC = """class Foo:
@@ -43,7 +43,7 @@ def generate_pyc():
             shutil.copy(os.path.join("dummy_package/__pycache__", f), dst)
 
 
-@cwd_at('test')
+@cwd_at('test/test_evaluate')
 def test_pyc():
     """
     The list of completion must be greater than 2.
