@@ -65,7 +65,7 @@ class Script(object):
         if source_path is not None:
             warnings.warn("Use path instead of source_path.", DeprecationWarning)
             path = source_path
-        self._source_path = path
+        self._orig_path = path
         self.path = None if path is None else os.path.abspath(path)
 
         if source is None:
@@ -104,7 +104,7 @@ class Script(object):
         return self.path
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, repr(self._source_path))
+        return '<%s: %s>' % (self.__class__.__name__, repr(self._orig_path))
 
     def completions(self):
         """
