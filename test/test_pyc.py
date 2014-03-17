@@ -12,6 +12,7 @@ import shutil
 import sys
 
 import jedi
+from .helpers import cwd_at
 
 
 SRC = """class Foo:
@@ -42,13 +43,14 @@ def generate_pyc():
             shutil.copy(os.path.join("dummy_package/__pycache__", f), dst)
 
 
+@cwd_at('test')
 def test_pyc():
     """
     The list of completion must be greater than 2.
     """
     try:
         generate_pyc()
-        s = jedi.Script("from dummy_package import dummy; dummy.")
+        s = jedi.Script("from dummy_package import dummy; dummy.", path='blub.py')
         assert len(s.completions()) >= 2
     finally:
         shutil.rmtree("dummy_package")
