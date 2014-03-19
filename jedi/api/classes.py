@@ -400,6 +400,7 @@ class Completion(BaseDefinition):
         if self._definition.isinstance(pr.Statement):
             defs = self._evaluator.eval_statement(self._definition)
         elif self._definition.isinstance(pr.Import):
+            print(self._definition)
             defs = imports.strip_imports(self._evaluator, [self._definition])
         else:
             return [self]

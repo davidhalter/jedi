@@ -51,7 +51,7 @@ SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
 
 class GetCodeState(object):
     """A helper class for passing the state of get_code in a thread-safe
-    manner"""
+    manner."""
     __slots__ = ("last_pos",)
 
     def __init__(self):

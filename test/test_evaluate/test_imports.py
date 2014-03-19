@@ -26,7 +26,7 @@ def test_import_not_in_sys_path():
 
 
 def test_import_empty():
-    """ github #340, imports have """
+    """ github #340, return the full word. """
     completion = jedi.Script("import ").completions()[0]
     definition = completion.follow_definition()[0]
     print(definition)

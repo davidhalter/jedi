@@ -401,7 +401,7 @@ class Script(object):
             search_name = unicode(user_scope.name)
         elif isinstance(user_stmt, pr.Import):
             s, name_part = helpers.get_on_import_stmt(self._evaluator,
-                                                   self._user_context, user_stmt)
+                                                      self._user_context, user_stmt)
             try:
                 definitions = [s.follow(is_goto=True)[0]]
             except IndexError:

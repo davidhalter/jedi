@@ -51,25 +51,115 @@ class ImportPath(pr.Base):
         self.is_just_from = is_just_from
 
         self.is_partial_import = bool(max(0, kill_count))
-        path = import_stmt.get_parent_until().path
-        self.file_path = os.path.dirname(path) if path is not None else None
 
         # rest is import_path resolution
-        self.import_path = []
+        import_path = []
         if import_stmt.from_ns:
-            self.import_path += import_stmt.from_ns.names
+            import_path += import_stmt.from_ns.names
         if import_stmt.namespace:
             if self._is_nested_import() and not direct_resolve:
-                self.import_path.append(import_stmt.namespace.names[0])
+                import_path.append(import_stmt.namespace.names[0])
             else:
-                self.import_path += import_stmt.namespace.names
-        self.import_path = [str(name_part) for name_part in self.import_path]
+                import_path += import_stmt.namespace.names
+        import_path = [str(name_part) for name_part in import_path]
 
         for i in range(kill_count + int(is_like_search)):
-            self.import_path.pop()
+            import_path.pop()
+
+        module = import_stmt.get_parent_until()
+        self._importer = Importer(evaluator, import_path, module)
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.import_stmt)
+
+    def get_defined_names(self, on_import_stmt=False):
+        names = []
+        for scope in self.follow():
+            if scope is ImportPath.GlobalNamespace:
+                if not self._is_relative_import():
+                    names += self._get_module_names()
+
+                if self._importer.file_path is not None:
+                    path = os.path.abspath(self._importer.file_path)
+                    for i in range(self.import_stmt.relative_count - 1):
+                        path = os.path.dirname(path)
+                    names += self._get_module_names([path])
+
+                    if self._is_relative_import():
+                        rel_path = self._importer.get_relative_path() + '/__init__.py'
+                        if os.path.exists(rel_path):
+                            m = load_module(rel_path)
+                            names += m.get_defined_names()
+            else:
+                if on_import_stmt and isinstance(scope, pr.Module) \
+                        and scope.path.endswith('__init__.py'):
+                    pkg_path = os.path.dirname(scope.path)
+                    paths = self._namespace_packages(pkg_path, self._importer.import_path)
+                    names += self._get_module_names([pkg_path] + paths)
+                if self.is_just_from:
+                    # In the case of an import like `from x.` we don't need to
+                    # add all the variables.
+                    if ['os'] == self._importer.import_path and not self._is_relative_import():
+                        # os.path is a hardcoded exception, because it's a
+                        # ``sys.modules`` modification.
+                        names.append(self._generate_name('path'))
+                    continue
+                from jedi.evaluate import finder
+                for s, scope_names in finder.get_names_of_scope(self._evaluator,
+                                                                scope, include_builtin=False):
+                    for n in scope_names:
+                        if self.import_stmt.from_ns is None \
+                                or self.is_partial_import:
+                                # from_ns must be defined to access module
+                                # values plus a partial import means that there
+                                # is something after the import, which
+                                # automatically implies that there must not be
+                                # any non-module scope.
+                                continue
+                        names.append(n)
+        return names
+
+    def _generate_name(self, name):
+        parent = self.import_stmt
+        inf_pos = float('inf'), float('inf')
+        # Generate a statement that reflects autocompletion names.
+#if is_like_search:
+#        parent = pr.Import(self.GlobalNamespace, inf_pos, inf_pos, n
+        return pr.Name(self.GlobalNamespace, [(name, inf_pos)],
+                       inf_pos, inf_pos, parent)
+
+    def _get_module_names(self, search_path=None):
+        """
+        Get the names of all modules in the search_path. This means file names
+        and not names defined in the files.
+        """
+
+        print(self.import_stmt)
+        names = []
+        # add builtin module names
+        if search_path is None:
+            names += [self._generate_name(name) for name in sys.builtin_module_names]
+
+        if search_path is None:
+            search_path = self._sys_path_with_modifications()
+        for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
+            names.append(self._generate_name(name))
+        return names
+
+    def _sys_path_with_modifications(self):
+        # If you edit e.g. gunicorn, there will be imports like this:
+        # `from gunicorn import something`. But gunicorn is not in the
+        # sys.path. Therefore look if gunicorn is a parent directory, #56.
+        in_path = []
+        if self._importer.import_path:
+            parts = self._importer.file_path.split(os.path.sep)
+            for i, p in enumerate(parts):
+                if p == self._importer.import_path[0]:
+                    new = os.path.sep.join(parts[:i])
+                    in_path.append(new)
+
+        module = self.import_stmt.get_parent_until()
+        return in_path + sys_path.sys_path_with_modifications(module)
 
     def _is_nested_import(self):
         """
@@ -98,105 +188,53 @@ class ImportPath(pr.Base):
         debug.dbg('Generated a nested import: %s', new)
         return new
 
-    def get_defined_names(self, on_import_stmt=False):
-        names = []
-        for scope in self.follow():
-            if scope is ImportPath.GlobalNamespace:
-                if self._is_relative_import() == 0:
-                    names += self._get_module_names()
+    def _is_relative_import(self):
+        return bool(self.import_stmt.relative_count)
 
-                if self.file_path is not None:
-                    path = os.path.abspath(self.file_path)
-                    for i in range(self.import_stmt.relative_count - 1):
-                        path = os.path.dirname(path)
-                    names += self._get_module_names([path])
+    def follow(self, is_goto=False):
+        if self._evaluator.recursion_detector.push_stmt(self.import_stmt):
+            # check recursion
+            return []
+        try:
+            return self._importer.follow(is_goto)
+        finally:
+            self._evaluator.recursion_detector.pop_stmt()
 
-                    if self._is_relative_import():
-                        rel_path = self._get_relative_path() + '/__init__.py'
-                        if os.path.exists(rel_path):
-                            m = load_module(rel_path)
-                            names += m.get_defined_names()
-            else:
-                if on_import_stmt and isinstance(scope, pr.Module) \
-                        and scope.path.endswith('__init__.py'):
-                    pkg_path = os.path.dirname(scope.path)
-                    paths = self._namespace_packages(pkg_path, self.import_path)
-                    names += self._get_module_names([pkg_path] + paths)
-                if self.is_just_from:
-                    # In the case of an import like `from x.` we don't need to
-                    # add all the variables.
-                    if ['os'] == self.import_path and not self._is_relative_import():
-                        # os.path is a hardcoded exception, because it's a
-                        # ``sys.modules`` modification.
-                        p = (0, 0)
-                        names.append(pr.Name(self.GlobalNamespace, [('path', p)],
-                                     p, p, self.import_stmt))
-                    continue
-                from jedi.evaluate import finder
-                for s, scope_names in finder.get_names_of_scope(self._evaluator,
-                                                                scope, include_builtin=False):
-                    for n in scope_names:
-                        if self.import_stmt.from_ns is None \
-                                or self.is_partial_import:
-                                # from_ns must be defined to access module
-                                # values plus a partial import means that there
-                                # is something after the import, which
-                                # automatically implies that there must not be
-                                # any non-module scope.
-                                continue
-                        names.append(n)
-        return names
 
-    def _get_module_names(self, search_path=None):
+class Importer(object):
+    def __init__(self, evaluator, import_path, module, level=0):
         """
-        Get the names of all modules in the search_path. This means file names
-        and not names defined in the files.
+        An implementation similar to ``__import__``.
+
+        *level* specifies whether to use absolute or relative imports. 0 (the
+        default) means only perform absolute imports. Positive values for level
+        indicate the number of parent directories to search relative to the
+        directory of the module calling ``__import__()`` (see PEP 328 for the
+        details).
+
+        :param import_path: List of namespaces (strings).
         """
-        def generate_name(name):
-            return pr.Name(self.GlobalNamespace, [(name, inf_pos)],
-                           inf_pos, inf_pos, self.import_stmt)
+        self.import_path = import_path
+        self._module = module
+        path = module.path
+        # TODO abspath
+        self.file_path = os.path.dirname(path) if path is not None else None
 
-        names = []
-        inf_pos = float('inf'), float('inf')
-        # add builtin module names
-        if search_path is None:
-            names += [generate_name(name) for name in sys.builtin_module_names]
-
-        if search_path is None:
-            search_path = self._sys_path_with_modifications()
-        for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
-            names.append(generate_name(name))
-        return names
-
-    def _sys_path_with_modifications(self):
-        # If you edit e.g. gunicorn, there will be imports like this:
-        # `from gunicorn import something`. But gunicorn is not in the
-        # sys.path. Therefore look if gunicorn is a parent directory, #56.
-        in_path = []
-        if self.import_path:
-            parts = self.file_path.split(os.path.sep)
-            for i, p in enumerate(parts):
-                if p == self.import_path[0]:
-                    new = os.path.sep.join(parts[:i])
-                    in_path.append(new)
-
-        module = self.import_stmt.get_parent_until()
-        return in_path + sys_path.sys_path_with_modifications(module)
+    def get_relative_path(self):
+        path = self.file_path
+        for i in range(self.import_stmt.relative_count - 1):
+            path = os.path.dirname(path)
+        return path
 
     def follow(self, is_goto=False):
         """
         Returns the imported modules.
         """
-        if self._evaluator.recursion_detector.push_stmt(self.import_stmt):
-            # check recursion
-            return []
-
         if self.import_path:
             try:
                 scope, rest = self._follow_file_system()
             except ModuleNotFound:
-                debug.warning('Module not found: %s', self.import_stmt)
-                self._evaluator.recursion_detector.pop_stmt()
+                debug.warning('Module not found: %s', self.import_path)
                 return []
 
             scopes = [scope]
@@ -229,17 +267,28 @@ class ImportPath(pr.Base):
             scopes = [ImportPath.GlobalNamespace]
         debug.dbg('after import: %s', scopes)
 
-        self._evaluator.recursion_detector.pop_stmt()
         return scopes
 
-    def _is_relative_import(self):
-        return bool(self.import_stmt.relative_count)
+    def _follow_file_system(self):
+        if self.file_path:
+            sys_path_mod = list(self._sys_path_with_modifications())
+            if not self._module.has_explicit_absolute_import:
+                # If the module explicitly asks for absolute imports,
+                # there's probably a bogus local one.
+                sys_path_mod.insert(0, self.file_path)
 
-    def _get_relative_path(self):
-        path = self.file_path
-        for i in range(self.import_stmt.relative_count - 1):
-            path = os.path.dirname(path)
-        return path
+            # First the sys path is searched normally and if that doesn't
+            # succeed, try to search the parent directories, because sometimes
+            # Jedi doesn't recognize sys.path modifications (like py.test
+            # stuff).
+            old_path, temp_path = self.file_path, os.path.dirname(self.file_path)
+            while old_path != temp_path:
+                sys_path_mod.append(temp_path)
+                old_path, temp_path = temp_path, os.path.dirname(temp_path)
+        else:
+            sys_path_mod = list(sys_path.get_sys_path())
+
+        return self._follow_sys_path(sys_path_mod)
 
     def _namespace_packages(self, found_path, import_path):
         """
@@ -270,28 +319,6 @@ class ImportPath(pr.Base):
                 return follow_path(iter(import_path), sys.path)
         return []
 
-    def _follow_file_system(self):
-        if self.file_path:
-            sys_path_mod = list(self._sys_path_with_modifications())
-            module = self.import_stmt.get_parent_until()
-            if not module.has_explicit_absolute_import:
-                # If the module explicitly asks for absolute imports,
-                # there's probably a bogus local one.
-                sys_path_mod.insert(0, self.file_path)
-
-            # First the sys path is searched normally and if that doesn't
-            # succeed, try to search the parent directories, because sometimes
-            # Jedi doesn't recognize sys.path modifications (like py.test
-            # stuff).
-            old_path, temp_path = self.file_path, os.path.dirname(self.file_path)
-            while old_path != temp_path:
-                sys_path_mod.append(temp_path)
-                old_path, temp_path = temp_path, os.path.dirname(temp_path)
-        else:
-            sys_path_mod = list(sys_path.get_sys_path())
-
-        return self._follow_sys_path(sys_path_mod)
-
     def _follow_sys_path(self, sys_path):
         """
         Find a module with a path (of the module, like usb.backend.libusb10).
@@ -302,7 +329,7 @@ class ImportPath(pr.Base):
             if ns_path:
                 path = ns_path
             elif self._is_relative_import():
-                path = self._get_relative_path()
+                path = self.get_relative_path()
 
             if path is not None:
                 importing = find_module(string, [path])
@@ -328,7 +355,7 @@ class ImportPath(pr.Base):
                 _continue = False
                 if self._is_relative_import() and len(self.import_path) == 1:
                     # follow `from . import some_variable`
-                    rel_path = self._get_relative_path()
+                    rel_path = self.get_relative_path()
                     with common.ignored(ImportError):
                         current_namespace = follow_str(rel_path, '__init__')
                 elif current_namespace[2]:  # is a package
