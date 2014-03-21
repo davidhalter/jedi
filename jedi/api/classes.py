@@ -400,15 +400,18 @@ class Completion(BaseDefinition):
         if self._definition.isinstance(pr.Statement):
             defs = self._evaluator.eval_statement(self._definition)
         elif self._definition.isinstance(pr.Import):
-            print('ha', self._definition, repr(self._name))
-            i = imports.ImportPath(self._evaluator, self._definition, True)
-            print('h', i.import_path + [unicode(self._name)])
-            defs = imports.Importer(i.import_path + [unicode(self._name)],
-                                    i._importer.module).follow_file_system()[0]
-            defs = [defs]
-            print(defs)
-            #defs = imports.strip_imports(self._evaluator, [self._definition])
+            if self._definition.alias is None:
+                print('ha', self._definition, repr(self._name))
+                i = imports.ImportPath(self._evaluator, self._definition, True)
+                print('h', i.import_path + [unicode(self._name)])
+                defs = imports.Importer(i.import_path + [unicode(self._name)],
+                                        i._importer.module).follow_file_system()[0]
+                defs = [defs]
+                print(defs)
+            else:
+                defs = imports.strip_imports(self._evaluator, [self._definition])
         else:
+            print('else', self._definition)
             return [self]
 
         defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
