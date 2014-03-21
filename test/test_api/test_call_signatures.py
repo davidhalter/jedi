@@ -103,8 +103,8 @@ class TestCallSignatures(TestCase):
         assert Script(s).call_signatures() == []
 
         # jedi-vim #116
-        s = """import functools; test = getattr(functools, 'partial'); test("""
-        self._run(s, 'partial', 0)
+        s = """import itertools; test = getattr(itertools, 'chain'); test("""
+        self._run(s, 'chain', 0)
 
     def test_call_signature_on_module(self):
         """github issue #240"""
