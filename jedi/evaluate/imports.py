@@ -267,29 +267,11 @@ class Importer(object):
         return in_path + sys_path.sys_path_with_modifications(self.module)
 
     def follow(self, evaluator):
-        try:
-            scope, rest = self._importer.follow_file_system()
-        except ModuleNotFound:
-            debug.warning('Module not found: %s', self.import_stmt)
-            return []
-
-        scopes = [scope]
-        scopes += remove_star_imports(self._evaluator, scope)
-
-        # follow the rest of the import (not FS -> classes, functions)
-        if len(rest) > 1 or rest and self.is_like_search:
-            scopes = []
-            if ['os', 'path'] == self.import_path[:2] \
-                    and not self._is_relative_import():
-                # This is a huge exception, we follow a nested import
-                # ``os.path``, because it's a very important one in Python
-                # that is being achieved by messing with ``sys.modules`` in
-                # ``os``.
-                scopes = self._evaluator.follow_path(iter(rest), [scope], scope)
-        elif rest:
-            scopes = itertools.chain.from_iterable(
-                self._evaluator.follow_path(iter(rest), [s], s)
-                for s in scopes)
+        scope, rest = self.follow_file_system()
+        if rest:
+            # follow the rest of the import (not FS -> classes, functions)
+            return evaluator.follow_path(iter(rest), [scope], scope)
+        return [scope]
 
     def follow_file_system(self):
         if self.file_path:
@@ -382,7 +364,7 @@ class Importer(object):
                         current_namespace = follow_str(rel_path, '__init__')
                 elif current_namespace[2]:  # is a package
                     for n in self.namespace_packages(current_namespace[1],
-                                                      self.import_path[:i]):
+                                                     self.import_path[:i]):
                         try:
                             current_namespace = follow_str(n, s)
                             if current_namespace[1]:
