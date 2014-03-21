@@ -23,6 +23,7 @@ from jedi import cache
 from jedi.parser import fast
 from jedi.parser import representation as pr
 from jedi.evaluate import sys_path
+from jedi.evaluate import helpers
 from jedi import settings
 from jedi.common import source_to_unicode
 from jedi.evaluate import compiled
@@ -125,14 +126,7 @@ class ImportPath(pr.Base):
         return names
 
     def _generate_name(self, name):
-        parent = self.import_stmt
-        # Generate a statement that reflects autocompletion names.
-        #if self.is_like_search:
-
-            #parent = Importer(self.import_path + [name], self._importer.module)
-        inf_pos = float('inf'), float('inf')
-        return pr.Name(self.GlobalNamespace, [(name, inf_pos)],
-                       inf_pos, inf_pos, parent)
+        return helpers.FakeName(name, parent=self.import_stmt)
 
     def _get_module_names(self, search_path=None):
         """
@@ -140,7 +134,6 @@ class ImportPath(pr.Base):
         and not names defined in the files.
         """
 
-        print(self.import_stmt)
         names = []
         # add builtin module names
         if search_path is None:
@@ -186,6 +179,7 @@ class ImportPath(pr.Base):
         if self._evaluator.recursion_detector.push_stmt(self.import_stmt):
             # check recursion
             return []
+
         if self.import_path:
             try:
                 scope, rest = self._importer.follow_file_system()
