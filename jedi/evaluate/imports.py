@@ -64,14 +64,18 @@ class ImportPath(pr.Base):
         import_path = [str(name_part) for name_part in import_path]
 
         for i in range(kill_count + int(is_like_search)):
-            import_path.pop()
+            if import_path:
+                import_path.pop()
 
         module = import_stmt.get_parent_until()
-        self._importer = Importer(evaluator, import_path, module,
-                                  import_stmt.relative_count)
+        self._importer = Importer(import_path, module, import_stmt.relative_count)
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.import_stmt)
+
+    @property
+    def import_path(self):
+        return self._importer.import_path
 
     def get_defined_names(self, on_import_stmt=False):
         names = []
@@ -95,12 +99,12 @@ class ImportPath(pr.Base):
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
-                    paths = self._importer.namespace_packages(pkg_path, self._importer.import_path)
+                    paths = self._importer.namespace_packages(pkg_path, self.import_path)
                     names += self._get_module_names([pkg_path] + paths)
                 if self.is_just_from:
                     # In the case of an import like `from x.` we don't need to
                     # add all the variables.
-                    if ['os'] == self._importer.import_path and not self._is_relative_import():
+                    if ['os'] == self.import_path and not self._is_relative_import():
                         # os.path is a hardcoded exception, because it's a
                         # ``sys.modules`` modification.
                         names.append(self._generate_name('path'))
@@ -122,10 +126,11 @@ class ImportPath(pr.Base):
 
     def _generate_name(self, name):
         parent = self.import_stmt
-        inf_pos = float('inf'), float('inf')
         # Generate a statement that reflects autocompletion names.
-#if is_like_search:
-#        parent = pr.Import(self.GlobalNamespace, inf_pos, inf_pos, n
+        #if self.is_like_search:
+
+            #parent = Importer(self.import_path + [name], self._importer.module)
+        inf_pos = float('inf'), float('inf')
         return pr.Name(self.GlobalNamespace, [(name, inf_pos)],
                        inf_pos, inf_pos, parent)
 
@@ -181,9 +186,9 @@ class ImportPath(pr.Base):
         if self._evaluator.recursion_detector.push_stmt(self.import_stmt):
             # check recursion
             return []
-        if self._importer.import_path:
+        if self.import_path:
             try:
-                scope, rest = self._importer._follow_file_system()
+                scope, rest = self._importer.follow_file_system()
             except ModuleNotFound:
                 debug.warning('Module not found: %s', self.import_stmt)
                 return []
@@ -194,7 +199,7 @@ class ImportPath(pr.Base):
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []
-                if ['os', 'path'] == self._importer.import_path[:2] \
+                if ['os', 'path'] == self.import_path[:2] \
                         and not self._is_relative_import():
                     # This is a huge exception, we follow a nested import
                     # ``os.path``, because it's a very important one in Python
@@ -221,9 +226,10 @@ class ImportPath(pr.Base):
 
 
 class Importer(object):
-    def __init__(self, evaluator, import_path, module, level=0):
+    def __init__(self, import_path, module, level=0):
         """
-        An implementation similar to ``__import__``.
+        An implementation similar to ``__import__``. Use `follow_file_system`
+        to actually follow the imports.
 
         *level* specifies whether to use absolute or relative imports. 0 (the
         default) means only perform absolute imports. Positive values for level
@@ -233,10 +239,9 @@ class Importer(object):
 
         :param import_path: List of namespaces (strings).
         """
-        self._evaluator = evaluator
         self.import_path = import_path
         self.level = level
-        self._module = module
+        self.module = module
         path = module.path
         # TODO abspath
         self.file_path = os.path.dirname(path) if path is not None else None
@@ -259,45 +264,12 @@ class Importer(object):
                     new = os.path.sep.join(parts[:i])
                     in_path.append(new)
 
-        return in_path + sys_path.sys_path_with_modifications(self._module)
+        return in_path + sys_path.sys_path_with_modifications(self.module)
 
-    def follow(self, is_goto=False):
-        """
-        Returns the imported modules.
-        """
-        try:
-            scope, rest = self._follow_file_system()
-        except ModuleNotFound:
-            debug.warning('Module not found: %s', self.import_path)
-            return [], None
-
-        scopes = [scope]
-        scopes += remove_star_imports(self._evaluator, scope)
-
-        # follow the rest of the import (not FS -> classes, functions)
-        if len(rest) > 1 or rest and self.is_like_search:
-            scopes = []
-            if ['os', 'path'] == self.import_path[:2] and self.level == 0:
-                # This is a huge exception, we follow a nested import
-                # ``os.path``, because it's a very important one in Python
-                # that is being achieved by messing with ``sys.modules`` in
-                # ``os``.
-                scopes = self._evaluator.follow_path(iter(rest), [scope], scope)
-        elif rest:
-            if is_goto:
-                scopes = itertools.chain.from_iterable(
-                    self._evaluator.find_types(s, rest[0], is_goto=True)
-                    for s in scopes)
-            else:
-                scopes = itertools.chain.from_iterable(
-                    self._evaluator.follow_path(iter(rest), [s], s)
-                    for s in scopes)
-        return list(scopes)
-
-    def _follow_file_system(self):
+    def follow_file_system(self):
         if self.file_path:
             sys_path_mod = list(self.sys_path_with_modifications())
-            if not self._module.has_explicit_absolute_import:
+            if not self.module.has_explicit_absolute_import:
                 # If the module explicitly asks for absolute imports,
                 # there's probably a bogus local one.
                 sys_path_mod.insert(0, self.file_path)
