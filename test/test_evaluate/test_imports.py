@@ -41,3 +41,20 @@ def test_follow_import_incomplete():
     datetime = jedi.Script("import datetim").completions()[0]
     definition = datetime.follow_definition()[0]
     assert definition
+
+    # empty `from * import` parts
+    datetime = jedi.Script("from datetime import ").completions()[0]
+    definitions = datetime.follow_definition()
+    assert [d.type for d in definitions if d.name == 'date'] == ['class']
+
+    # incomplete `from * import` part
+    datetime = jedi.Script("from datetime import datetim").completions()[0]
+    definition = datetime.follow_definition()
+    assert [d.type for d in definitions] == ['class']
+
+
+def test_follow_definition_land_on_import():
+    datetime = jedi.Script("import datetime; datetim").completions()[0]
+    definition = datetime.follow_definition()[0]
+    print(datetime._definition, definition)
+    assert definition.type == 'module'
