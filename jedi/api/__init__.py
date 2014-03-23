@@ -59,12 +59,19 @@ class Script(object):
     :param encoding: The encoding of ``source``, if it is not a
         ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
+    :param source_encoding: The encoding of ``source``, if it is not a
+        ``unicode`` object (default ``'utf-8'``).
+    :type encoding: str
     """
     def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', source_path=None):
+                 encoding='utf-8', source_path=None, source_encoding=None):
         if source_path is not None:
             warnings.warn("Use path instead of source_path.", DeprecationWarning)
             path = source_path
+        if source_encoding is not None:
+            warnings.warn("Use encoding instead of source_encoding.", DeprecationWarning)
+            encoding = source_encoding
+
         self._orig_path = path
         self.path = None if path is None else os.path.abspath(path)
 
