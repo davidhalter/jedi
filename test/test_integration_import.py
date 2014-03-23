@@ -2,9 +2,6 @@
 Tests of various import related things that could not be tested with "Black Box
 Tests".
 """
-
-import itertools
-
 from jedi import Script
 from .helpers import cwd_at
 from jedi._compatibility import is_py26
@@ -34,7 +31,7 @@ def test_imports_on_global_namespace_without_path():
     """If the path is None, there shouldn't be any import problem"""
     completions = Script("import operator").completions()
     assert [c.name for c in completions] == ['operator']
-    completions = Script("import operator", path= 'example.py').completions()
+    completions = Script("import operator", path='example.py').completions()
     assert [c.name for c in completions] == ['operator']
 
     # the first one has a path the second doesn't
@@ -69,13 +66,3 @@ def test_after_from():
 
     check('from os\\\n', ['import'])
     check('from os \\\n', ['import'])
-
-
-def test_follow_definition():
-    """ github issue #45 """
-    c = Script("from datetime import timedelta; timedelta").completions()
-    # type can also point to import, but there will be additional
-    # attributes
-    objs = itertools.chain.from_iterable(r.follow_definition() for r in c)
-    types = [o.type for o in objs]
-    assert 'import' not in types and 'class' in types
