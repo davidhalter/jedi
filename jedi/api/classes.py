@@ -87,7 +87,7 @@ class BaseDefinition(object):
 
         Here is an example of the value of this attribute.  Let's consider
         the following source.  As what is in ``variable`` is unambiguous
-        to Jedi, :meth:`api.Script.goto_definitions` should return a list of
+        to Jedi, :meth:`jedi.Script.goto_definitions` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
         >>> from jedi import Script
@@ -136,7 +136,7 @@ class BaseDefinition(object):
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
         if isinstance(stripped, pr.Name):
-            stripped = stripped.parent
+            stripped = stripped.parent  # remove, this shouldn't be here.
         return type(stripped).__name__.lower()
 
     def _path(self):
@@ -387,6 +387,28 @@ class Completion(BaseDefinition):
         line = '' if self.in_builtin_module else '@%s' % self.line
         return '%s: %s%s' % (t, desc, line)
 
+    def __repr__(self):
+        return '<%s: %s>' % (type(self).__name__, self._name)
+
+    @property
+    def type(self):
+        """
+        The type of the completion objects. Follows imports. For a further
+        description, look at :meth:`jedi.api.classes.BaseDefinition.type`.
+        """
+        if isinstance(self._definition, pr.Import):
+            i = imports.ImportPath(self._evaluator, self._definition)
+            if len(i.import_path) <= 1:
+                return 'module'
+
+            followed = self.follow_definition()
+            if followed:
+                # Caveat: Only follows the first one, ignore the other ones.
+                # This is ok, since people are almost never interested in
+                # variations.
+                return followed[0].type
+        return super(Completion, self).type
+
     @cache.underscore_memoization
     def follow_definition(self):
         """
@@ -412,9 +434,6 @@ class Completion(BaseDefinition):
         defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
         cache.clear_caches()
         return defs
-
-    def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self._name)
 
 
 class Definition(BaseDefinition):
