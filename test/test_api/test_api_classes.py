@@ -64,6 +64,20 @@ def test_basedefinition_type(definition):
                                'generator', 'statement', 'import', 'param')
 
 
+def test_basedefinition_type_import():
+    def get_types(source):
+        return set([t.type for t in Script(source).completions()])
+
+    assert get_types('import t') == set(['module'])
+    assert get_types('import ') == set(['module'])
+    assert get_types('import datetime; datetime') == set(['module'])
+
+    assert get_types('from datetime import timedelta') == set(['class'])
+    assert get_types('from datetime import timedelta; timedelta') == set(['class'])
+    assert get_types('from json import tool') == set(['module'])
+    assert get_types('from json import tool; tool') == set(['module'])
+
+
 def test_function_call_signature_in_doc():
     defs = Script("""
     def f(x, y=1, z='a'):
