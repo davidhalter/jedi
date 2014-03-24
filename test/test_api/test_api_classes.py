@@ -65,17 +65,26 @@ def test_basedefinition_type(definition):
 
 
 def test_basedefinition_type_import():
-    def get_types(source):
-        return set([t.type for t in Script(source).completions()])
+    def get_types(source, **kwargs):
+        return set([t.type for t in Script(source, **kwargs).completions()])
 
+    # import one level
     assert get_types('import t') == set(['module'])
     assert get_types('import ') == set(['module'])
     assert get_types('import datetime; datetime') == set(['module'])
 
+    # from
     assert get_types('from datetime import timedelta') == set(['class'])
     assert get_types('from datetime import timedelta; timedelta') == set(['class'])
     assert get_types('from json import tool') == set(['module'])
     assert get_types('from json import tool; tool') == set(['module'])
+
+    # import two levels
+    assert get_types('import json.tool; json') == set(['module'])
+    assert get_types('import json.tool; json.tool') == set(['module'])
+    assert get_types('import json.tool; json.tool.main') == set(['function'])
+    assert get_types('import json.tool') == set(['module'])
+    assert get_types('import json.tool', column=9) == set(['module'])
 
 
 def test_function_call_signature_in_doc():
