@@ -93,7 +93,7 @@ def test_function_call_signature_in_doc():
         pass
     f""").goto_definitions()
     doc = defs[0].doc
-    assert "f(x, y = 1, z = 'a')" in doc
+    assert "f(x, y = 1, z = 'a')" in str(doc)
 
 
 def test_class_call_signature():
@@ -103,7 +103,7 @@ def test_class_call_signature():
             pass
     Foo""").goto_definitions()
     doc = defs[0].doc
-    assert "Foo(self, x, y = 1, z = 'a')" in doc
+    assert "Foo(self, x, y = 1, z = 'a')" in str(doc)
 
 
 def test_position_none_if_builtin():

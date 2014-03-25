@@ -202,8 +202,7 @@ class BaseDefinition(object):
             return None
         return self._start_pos[1]
 
-    @property
-    def doc(self):
+    def documentation(self):
         r"""
         Return a document string for this completion object.
 
@@ -215,31 +214,38 @@ class BaseDefinition(object):
         ...     "Document for function f."
         ... '''
         >>> script = Script(source, 1, len('def f'), 'example.py')
-        >>> d = script.goto_definitions()[0]
-        >>> print(d.doc)
+        >>> doc = script.goto_definitions()[0].documentation()
+        >>> print(doc)
         f(a, b = 1)
         <BLANKLINE>
         Document for function f.
 
         Notice that useful extra information is added to the actual
         docstring.  For function, it is call signature.  If you need
-        actual docstring, use :attr:`raw_doc` instead.
+        actual docstring, use :attr:`raw` instead.
 
-        >>> print(d.raw_doc)
+        >>> print(doc.raw())
         Document for function f.
 
         """
-        try:
-            return self._definition.doc
-        except AttributeError:
-            return self.raw_doc
+        return Documentation(self._definition)
+
+    @property
+    def doc(self):
+        """
+        .. deprecated:: 0.8.0
+           Use :meth:`.documentation` instead.
+        .. todo:: Remove!
+        """
+        warnings.warn("Use documentation() instead.", DeprecationWarning)
+        return self.documentation()
 
     @property
     def raw_doc(self):
         """
-        The raw docstring ``__doc__`` for any object.
-
-        See :attr:`doc` for example.
+        .. deprecated:: 0.8.0
+           Use :meth:`.documentation` instead.
+        .. todo:: Remove!
         """
         try:
             return self._definition.raw_doc
@@ -637,3 +643,25 @@ class _Param(Definition):
         """
         warnings.warn("Use description instead.", DeprecationWarning)
         return self.description
+
+
+class Documentation(object):
+    def __init__(self, definition):
+        self._definition = definition
+
+    def __str__(self):
+        try:
+            return self._definition.doc
+        except AttributeError:
+            return self.raw_doc
+
+    def raw(self):
+        """
+        The raw docstring ``__doc__`` for any object.
+
+        See :attr:`doc` for example.
+        """
+        try:
+            return self._definition.raw_doc
+        except AttributeError:
+            return ''
