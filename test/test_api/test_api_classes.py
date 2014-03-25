@@ -2,6 +2,7 @@
 """
 
 import textwrap
+from inspect import cleandoc
 
 import pytest
 
@@ -118,7 +119,7 @@ def test_completion_documentation():
     Jedi should follow imports in certain conditions
     """
     c = Script('import jedi\njed').completions()[0]
-    assert str(c.documentation(fast=False)) == jedi_doc
+    assert str(c.documentation(fast=False)) == cleandoc(jedi_doc)
 
     c = Script('import jedi\njedi.Scr').completions()[0]
-    assert str(c.documentation(fast=False)) == Script.__doc__
+    assert c.documentation(fast=False).raw() == cleandoc(Script.__doc__)

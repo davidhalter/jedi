@@ -347,7 +347,7 @@ class Completion(BaseDefinition):
     @property
     def name(self):
         """
-        Similar to :meth:`Completion.complete`, but return the whole word, for
+        Similar to :attr:`complete`, but return the whole word, for
         example::
 
             isinstan
@@ -359,7 +359,7 @@ class Completion(BaseDefinition):
     @property
     def name_with_symbols(self):
         """
-        Similar to :meth:`Completion.name`, but like :meth:`Completion.name`
+        Similar to :attr:`name`, but like :attr:`name`
         returns also the symbols, for example::
 
             list()
@@ -395,6 +395,24 @@ class Completion(BaseDefinition):
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name)
+
+    def documentation(self, fast=True):
+        """
+        :param fast: Don't follow imports that are only one level deep like
+            ``import foo``, but follow ``from foo import bar``. This makes
+            sense for speed reasons. Completing `import a` is slow if you use
+            the ``foo.documentation(fast=False)`` on every object, because it
+            parses all libraries starting with ``a``.
+        """
+        definition = self._definition
+        if isinstance(self._definition, pr.Import):
+            i = imports.ImportPath(self._evaluator, self._definition)
+            if len(i.import_path) > 1 or not fast:
+                followed = self.follow_definition()
+                if followed:
+                    # TODO: Use all of the followed objects as input to Documentation.
+                    definition = followed[0]._definition
+        return Documentation(definition)
 
     @property
     def type(self):
@@ -653,7 +671,7 @@ class Documentation(object):
         try:
             return self._definition.doc
         except AttributeError:
-            return self.raw_doc
+            return self.raw()
 
     def raw(self):
         """
