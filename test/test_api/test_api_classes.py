@@ -5,8 +5,8 @@ import textwrap
 
 import pytest
 
-from jedi import Script
-import jedi
+from jedi import Script, defined_names, __doc__ as jedi_doc
+from ..helpers import cwd_at
 
 
 def test_is_keyword():
@@ -40,7 +40,7 @@ def make_definitions():
     """)
 
     definitions = []
-    definitions += jedi.defined_names(source)
+    definitions += defined_names(source)
 
     source += textwrap.dedent("""
     variable = sys or C or x or f or g or g() or h""")
@@ -110,3 +110,15 @@ def test_position_none_if_builtin():
     gotos = Script('import sys; sys.path').goto_assignments()
     assert gotos[0].line is None
     assert gotos[0].column is None
+
+
+@cwd_at('.')
+def test_completion_documentation():
+    """
+    Jedi should follow imports in certain conditions
+    """
+    c = Script('import jedi\njed').completions()[0]
+    assert str(c.documentation(fast=False)) == jedi_doc
+
+    c = Script('import jedi\njedi.Scr').completions()[0]
+    assert str(c.documentation(fast=False)) == Script.__doc__
