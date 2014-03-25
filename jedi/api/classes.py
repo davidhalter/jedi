@@ -136,7 +136,7 @@ class BaseDefinition(object):
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
         if isinstance(stripped, pr.Name):
-            stripped = stripped.parent  # remove, this shouldn't be here.
+            stripped = stripped.parent
         return type(stripped).__name__.lower()
 
     def _path(self):
@@ -394,7 +394,7 @@ class Completion(BaseDefinition):
     def type(self):
         """
         The type of the completion objects. Follows imports. For a further
-        description, look at :meth:`jedi.api.classes.BaseDefinition.type`.
+        description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
         """
         if isinstance(self._definition, pr.Import):
             i = imports.ImportPath(self._evaluator, self._definition)
@@ -593,7 +593,7 @@ class CallSignature(Definition):
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
-        return [Param(self._evaluator, p) for p in params]
+        return [_Param(self._evaluator, p) for p in params]
 
     @property
     def bracket_start(self):
@@ -623,9 +623,9 @@ class CallSignature(Definition):
                                       self.index)
 
 
-class Param(Definition):
+class _Param(Definition):
     """
-    Params are basically a definition for call signatures.
+    Just here for backwards compatibility.
     """
     def get_code(self):
         """
