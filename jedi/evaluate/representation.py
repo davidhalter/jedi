@@ -359,7 +359,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
                 debug.dbg('decorator end %s', f)
 
         if isinstance(f, pr.Function):
-            f = Function(self._evaluator, f)
+            f = Function(self._evaluator, f, True)
         return f
 
     def get_decorated_func(self):
@@ -386,7 +386,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         decorated_func = self._decorated_func()
         dec = ''
         if decorated_func is not None and decorated_func != self:
-            dec = " is " + repr(self._decorated_func())
+            dec = " is " + repr(decorated_func)
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
