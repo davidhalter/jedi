@@ -43,6 +43,20 @@ def f(a, b):
 #? 
 f()
 
+# local classes -> github #370
+class ProgramNode(object):
+    def add_child(self, child):
+        pass
+
+def func(node):
+    """
+    Do something with a ``node``.
+
+    :type node: ProgramNode
+    """
+    #? ProgramNode
+    node
+
 # -----------------
 # epydoc style
 # -----------------
