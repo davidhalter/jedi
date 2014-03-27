@@ -19,6 +19,7 @@ from textwrap import dedent
 
 from jedi.evaluate.cache import memoize_default
 from jedi.parser import Parser
+from jedi.parser import representation as pr
 from jedi.common import indent_block
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -40,8 +41,8 @@ def follow_param(evaluator, param):
     param_str = _search_param_in_docstr(func.raw_doc, str(param.get_name()))
 
     code = dedent("""
-    class PseudoDocstring():
-        '''Create a pseudo class for docstring statements.'''
+    def PseudoDocstring():
+        '''Create a pseudo function for docstring statements.'''
     %s
     """)
     if param_str is not None:
@@ -59,7 +60,10 @@ def follow_param(evaluator, param):
         except IndexError:
             return []
 
-        stmt.start_pos = param.start_pos
+        # Use the module of the param.
+        # TODO this module is not the module of the param in case of a function
+        # call. In that case it's the module of the function call.
+        # stuffed with content from a function call.
         pseudo_cls.parent = param.get_parent_until()
         return evaluator.eval_statement(stmt)
     return []

@@ -44,18 +44,23 @@ def f(a, b):
 f()
 
 # local classes -> github #370
-class ProgramNode(object):
-    def add_child(self, child):
-        pass
+class ProgramNode():
+    pass
 
-def func(node):
+def func(node, node2):
     """
-    Do something with a ``node``.
-
     :type node: ProgramNode
+    ... and the class definition after this func definition:
+    :type node2: ProgramNode2
     """
     #? ProgramNode
     node
+    #? ProgramNode2
+    node2
+
+class ProgramNode2():
+    pass
+
 
 # -----------------
 # epydoc style
