@@ -173,7 +173,7 @@ class FakeStatement(pr.Statement):
     def __init__(self, expression_list, start_pos=(0, 0)):
         p = start_pos
         super(FakeStatement, self).__init__(FakeSubModule, expression_list, p, p)
-        self._expression_list = expression_list
+        self.set_expression_list(expression_list)
 
 
 class FakeName(pr.Name):

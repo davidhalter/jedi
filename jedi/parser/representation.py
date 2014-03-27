@@ -1159,6 +1159,10 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 result.append(tok)
         return result
 
+    def set_expression_list(self, lst):
+        """It's necessary for some "hacks" to change the expression_list."""
+        self._expression_list = lst
+
 
 class Param(Statement):
     """

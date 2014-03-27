@@ -32,7 +32,7 @@ def get_params(evaluator, func, var_args):
         arr.keys = key_stmts
         arr.type = array_type
 
-        new_param._expression_list = [arr]
+        new_param.set_expression_list([arr])
 
         name = copy.copy(param.get_name())
         name.parent = new_param

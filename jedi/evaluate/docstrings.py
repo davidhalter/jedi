@@ -15,9 +15,11 @@ annotations.
 """
 
 import re
+from textwrap import dedent
 
 from jedi.evaluate.cache import memoize_default
 from jedi.parser import Parser
+from jedi.common import indent_block
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
@@ -35,24 +37,30 @@ REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 @memoize_default(None, evaluator_is_first_arg=True)
 def follow_param(evaluator, param):
     func = param.parent_function
-    # print func, param, param.parent_function
     param_str = _search_param_in_docstr(func.raw_doc, str(param.get_name()))
-    position = (1, 0)
 
+    code = dedent("""
+    class PseudoDocstring():
+        '''Create a pseudo class for docstring statements.'''
+    %s
+    """)
     if param_str is not None:
-
         # Try to import module part in dotted name.
         # (e.g., 'threading' in 'threading.Thread').
         if '.' in param_str:
             param_str = 'import %s\n%s' % (
                 param_str.rsplit('.', 1)[0],
                 param_str)
-            position = (2, 0)
 
-        p = Parser(param_str, no_docstr=True)
-        stmt = p.module.get_statement_for_position(position)
-        if stmt is None:
+        p = Parser(code % indent_block(param_str), no_docstr=True)
+        pseudo_cls = p.module.subscopes[0]
+        try:
+            stmt = pseudo_cls.statements[-1]
+        except IndexError:
             return []
+
+        stmt.start_pos = param.start_pos
+        pseudo_cls.parent = param.get_parent_until()
         return evaluator.eval_statement(stmt)
     return []
 
@@ -105,6 +113,7 @@ def _strip_rest_role(type_str):
         return type_str
 
 
+@memoize_default(None, evaluator_is_first_arg=True)
 def find_return_types(evaluator, func):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
