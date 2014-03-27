@@ -47,7 +47,7 @@ f()
 class ProgramNode():
     pass
 
-def func(node, node2):
+def local_classes(node, node2):
     """
     :type node: ProgramNode
     ... and the class definition after this func definition:
@@ -60,6 +60,21 @@ def func(node, node2):
 
 class ProgramNode2():
     pass
+
+
+def list_with_non_imports(lst):
+    """
+    Should be able to work with tuples and lists and still import stuff.
+
+    :type lst: (threading.Thread, [collections.OrderedDict, ...])
+    """
+    #? ['start']
+    lst[0].start
+
+    import collections as col
+    # use some weird index
+    #? col.OrderedDict()
+    lst[1][10]
 
 
 # -----------------
