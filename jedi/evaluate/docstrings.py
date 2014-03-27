@@ -19,7 +19,6 @@ from textwrap import dedent
 
 from jedi.evaluate.cache import memoize_default
 from jedi.parser import Parser
-from jedi.parser import representation as pr
 from jedi.common import indent_block
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -41,17 +40,15 @@ def follow_param(evaluator, param):
     param_str = _search_param_in_docstr(func.raw_doc, str(param.get_name()))
 
     code = dedent("""
-    def PseudoDocstring():
+    def pseudo_docstring_stuff():
         '''Create a pseudo function for docstring statements.'''
     %s
     """)
     if param_str is not None:
-        # Try to import module part in dotted name.
-        # (e.g., 'threading' in 'threading.Thread').
-        if '.' in param_str:
-            param_str = 'import %s\n%s' % (
-                param_str.rsplit('.', 1)[0],
-                param_str)
+        for element in re.findall('((?:\w+\.)*\w+)\.', param_str):
+            # Try to import module part in dotted name.
+            # (e.g., 'threading' in 'threading.Thread').
+            param_str = 'import %s\n' % element + param_str
 
         p = Parser(code % indent_block(param_str), no_docstr=True)
         pseudo_cls = p.module.subscopes[0]
