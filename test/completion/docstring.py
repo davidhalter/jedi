@@ -77,6 +77,15 @@ def list_with_non_imports(lst):
     lst[1][10]
 
 
+# sphinx returns
+def return_module_object():
+    """
+    :rtype: :class:`threading.Thread`
+    """
+
+#? ['join']
+return_module_object().join
+
 # -----------------
 # epydoc style
 # -----------------
