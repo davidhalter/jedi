@@ -248,9 +248,13 @@ class Script(object):
             stmt = r.module.statements[-1]
         except IndexError:
             raise NotFoundError()
-        # Set the start_pos to a pseudo position, that doesn't exist but works
-        # perfectly well (for both completions in docstrings and statements).
-        stmt.start_pos = self._pos
+        user_stmt = self._parser.user_stmt()
+        if user_stmt is None or isinstance(user_stmt, pr.Param):
+            # Set the start_pos to a pseudo position, that doesn't exist but works
+            # perfectly well (for both completions in docstrings and statements).
+            stmt.start_pos = self._pos
+        else:
+            stmt.start_pos = user_stmt.start_pos[0], user_stmt.start_pos[1] - 1
         stmt.parent = self._parser.user_scope()
         return stmt
 
