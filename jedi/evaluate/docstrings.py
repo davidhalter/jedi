@@ -38,32 +38,7 @@ REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 def follow_param(evaluator, param):
     func = param.parent_function
     param_str = _search_param_in_docstr(func.raw_doc, str(param.get_name()))
-
-    code = dedent("""
-    def pseudo_docstring_stuff():
-        '''Create a pseudo function for docstring statements.'''
-    %s
-    """)
-    if param_str is not None:
-        for element in re.findall('((?:\w+\.)*\w+)\.', param_str):
-            # Try to import module part in dotted name.
-            # (e.g., 'threading' in 'threading.Thread').
-            param_str = 'import %s\n' % element + param_str
-
-        p = Parser(code % indent_block(param_str), no_docstr=True)
-        pseudo_cls = p.module.subscopes[0]
-        try:
-            stmt = pseudo_cls.statements[-1]
-        except IndexError:
-            return []
-
-        # Use the module of the param.
-        # TODO this module is not the module of the param in case of a function
-        # call. In that case it's the module of the function call.
-        # stuffed with content from a function call.
-        pseudo_cls.parent = param.get_parent_until()
-        return evaluator.eval_statement(stmt)
-    return []
+    return _evaluate_for_statement_string(evaluator, param_str, param.get_parent_until())
 
 
 def _search_param_in_docstr(docstr, param_str):
@@ -87,20 +62,20 @@ def _search_param_in_docstr(docstr, param_str):
     for pattern in patterns:
         match = pattern.search(docstr)
         if match:
-            return _strip_rest_role(match.group(1))
+            return _strip_rst_role(match.group(1))
 
     return None
 
 
-def _strip_rest_role(type_str):
+def _strip_rst_role(type_str):
     """
     Strip off the part looks like a ReST role in `type_str`.
 
-    >>> _strip_rest_role(':class:`ClassName`')  # strip off :class:
+    >>> _strip_rst_role(':class:`ClassName`')  # strip off :class:
     'ClassName'
-    >>> _strip_rest_role(':py:obj:`module.Object`')  # works with domain
+    >>> _strip_rst_role(':py:obj:`module.Object`')  # works with domain
     'module.Object'
-    >>> _strip_rest_role('ClassName')  # do nothing when not ReST role
+    >>> _strip_rst_role('ClassName')  # do nothing when not ReST role
     'ClassName'
 
     See also:
@@ -114,21 +89,42 @@ def _strip_rest_role(type_str):
         return type_str
 
 
+def _evaluate_for_statement_string(evaluator, string, module):
+    code = dedent("""
+    def pseudo_docstring_stuff():
+        '''Create a pseudo function for docstring statements.'''
+    %s
+    """)
+    if string is None:
+        return []
+
+    for element in re.findall('((?:\w+\.)*\w+)\.', string):
+        # Try to import module part in dotted name.
+        # (e.g., 'threading' in 'threading.Thread').
+        string = 'import %s\n' % element + string
+
+    p = Parser(code % indent_block(string), no_docstr=True)
+    pseudo_cls = p.module.subscopes[0]
+    try:
+        stmt = pseudo_cls.statements[-1]
+    except IndexError:
+        return []
+
+    # Use the module of the param.
+    # TODO this module is not the module of the param in case of a function
+    # call. In that case it's the module of the function call.
+    # stuffed with content from a function call.
+    pseudo_cls.parent = module
+    return evaluator.eval_statement(stmt)
+
+
 @memoize_default(None, evaluator_is_first_arg=True)
 def find_return_types(evaluator, func):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(code)
             if match:
-                return match.group(1)
+                return _strip_rst_role(match.group(1))
 
     type_str = search_return_in_docstr(func.raw_doc)
-    if not type_str:
-        return []
-
-    p = Parser(type_str, None, no_docstr=True)
-    stmt = p.module.get_statement_for_position((1, 0))
-    if stmt is None:
-        return []
-    stmt.parent = func
-    return list(evaluator.eval_statement(stmt))
+    return _evaluate_for_statement_string(evaluator, type_str, func.get_parent_until())
