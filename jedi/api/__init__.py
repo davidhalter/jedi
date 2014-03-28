@@ -241,7 +241,7 @@ class Script(object):
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
-        tokenizer = source_tokens(cursor_txt, self._pos[0] - 1)
+        tokenizer = source_tokens(cursor_txt, line_offset=self._pos[0] - 1)
         r = Parser(cursor_txt, no_docstr=True, tokenizer=tokenizer)
         try:
             # Take the last statement available.
@@ -249,12 +249,12 @@ class Script(object):
         except IndexError:
             raise NotFoundError()
         user_stmt = self._parser.user_stmt()
-        if user_stmt is None or isinstance(user_stmt, pr.Param):
+        if type(user_stmt) is pr.Statement:
+            stmt.start_pos = user_stmt.start_pos
+        else:
             # Set the start_pos to a pseudo position, that doesn't exist but works
             # perfectly well (for both completions in docstrings and statements).
             stmt.start_pos = self._pos
-        else:
-            stmt.start_pos = user_stmt.start_pos[0], user_stmt.start_pos[1] - 1
         stmt.parent = self._parser.user_scope()
         return stmt
 
@@ -427,8 +427,36 @@ class Script(object):
                     definitions.append(import_name[0])
         else:
             stmt = self._get_under_cursor_stmt(goto_path)
-            defs, search_name = self._evaluator.goto(stmt)
-            definitions = follow_inexistent_imports(defs)
+
+            def test_lhs():
+                """
+                Special rule for goto, left hand side of the statement returns
+                itself, if the name is ``foo``, but not ``foo.bar``.
+                """
+                if isinstance(user_stmt, pr.Statement):
+                    for name in user_stmt.get_set_vars():
+                        if name.start_pos <= self._pos <= name.end_pos \
+                                and len(name.names) == 1:
+                            return user_stmt, name.names[-1]
+                return None, None
+
+            lhs, search_name = test_lhs()
+            if lhs is None:
+                expression_list = stmt.expression_list()
+                if len(expression_list) == 0:
+                    return [], ''
+                # Only the first command is important, the rest should basically not
+                # happen except in broken code (e.g. docstrings that aren't code).
+                call = expression_list[0]
+                if isinstance(call, pr.Call):
+                    call_path = list(call.generate_call_path())
+                else:
+                    call_path = [call]
+
+                defs, search_name = self._evaluator.goto(stmt, call_path)
+                definitions = follow_inexistent_imports(defs)
+            else:
+                definitions = [lhs]
             if isinstance(user_stmt, pr.Statement):
                 c = user_stmt.expression_list()
                 if c and not isinstance(c[0], (str, unicode)) \

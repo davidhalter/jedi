@@ -328,24 +328,9 @@ class Evaluator(object):
             debug.dbg('execute result: %s in %s', stmts, obj)
             return imports.strip_imports(self, stmts)
 
-    def goto(self, stmt, call_path=None):
-        if call_path is None:
-            expression_list = stmt.expression_list()
-            if len(expression_list) == 0:
-                return [], ''
-            # Only the first command is important, the rest should basically not
-            # happen except in broken code (e.g. docstrings that aren't code).
-            call = expression_list[0]
-            if isinstance(call, pr.Call):
-                call_path = list(call.generate_call_path())
-            else:
-                call_path = [call]
-
+    def goto(self, stmt, call_path):
         scope = stmt.get_parent_until(pr.IsScope)
         pos = stmt.start_pos
-        # Need this to return the params if you're actually doing a goto on the
-        # param.
-        pos = pos[0], pos[1] + 1
         call_path, search = call_path[:-1], call_path[-1]
 
         if call_path:
@@ -353,6 +338,7 @@ class Evaluator(object):
             search_global = False
             pos = None
         else:
+            # TODO does this exist? i don't think so
             scopes = [scope]
             search_global = True
         follow_res = []
