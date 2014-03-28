@@ -91,6 +91,11 @@ ClassVar.x = ''
 #! 12 ['x = 3']
 ClassVar().x = ''
 
+# Recurring use of the same var name, github #315
+def f(t=None):
+    #! 9 ['t=None']
+    t = t or 1
+
 # -----------------
 # imports
 # -----------------
