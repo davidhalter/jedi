@@ -11,6 +11,11 @@ abc.d.a.bsaasd.abc.d
 
 abc
 
+if 1:
+    abc = 
+else:
+    (abc) = 
+
 abc = 
 
 #< (-3,0), (0,0)

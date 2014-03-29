@@ -36,8 +36,18 @@ def usages(evaluator, definitions, search_name, mods):
             result.append((module, d.start_pos))
         return result
 
-    def check_call(call):
-        result = []
+    def check_call_for_usage(call):
+        stmt = call.parent
+        while not isinstance(stmt.parent, pr.IsScope):
+            stmt = stmt.parent
+        # New definition, call cannot be a part of stmt
+        if len(call.name) == 1 and call.execution is None \
+                and call.name in stmt.get_set_vars():
+            # Class params are not definitions (like function params). They
+            # are super classes, that need to be resolved.
+            if not (isinstance(stmt, pr.Param) and isinstance(stmt.parent, pr.Class)):
+                return
+
         follow = []  # There might be multiple search_name's in one call_path
         call_path = list(call.generate_call_path())
         for i, name in enumerate(call_path):
@@ -45,10 +55,10 @@ def usages(evaluator, definitions, search_name, mods):
             if name == search_name:
                 follow.append(call_path[:i + 1])
 
-        for f in follow:
-            follow_res, search = evaluator.goto(call.parent, f)
+        for call_path in follow:
+            follow_res, search = evaluator.goto(call.parent, call_path)
             # names can change (getattr stuff), therefore filter names that
-            # don't match `search_name`.
+            # don't match `search`.
 
             # TODO add something like that in the future - for now usages are
             # completely broken anyway.
@@ -61,9 +71,7 @@ def usages(evaluator, definitions, search_name, mods):
             # compare to see if they match
             if any(r in compare_definitions for r in compare_follow_res):
                 scope = call.parent
-                result.append(Usage(evaluator, search, scope))
-
-        return result
+                yield Usage(evaluator, search, scope)
 
     if not definitions:
         return set()
@@ -94,7 +102,7 @@ def usages(evaluator, definitions, search_name, mods):
                         names.append(Usage(evaluator, name_part, stmt))
             else:
                 for call in helpers.scan_statement_for_calls(stmt, search_name, assignment_details=True):
-                    names += check_call(call)
+                    names += check_call_for_usage(call)
     return names
 
 
