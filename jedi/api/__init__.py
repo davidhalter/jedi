@@ -236,8 +236,15 @@ class Script(object):
                                                  user_stmt, is_completion)[0]]
         else:
             # just parse one statement, take it and evaluate it
-            stmt = self._get_under_cursor_stmt(goto_path)
-            scopes = self._evaluator.eval_statement(stmt)
+            eval_stmt = self._get_under_cursor_stmt(goto_path)
+
+            if not is_completion:
+                # goto_definition returns definitions of its statements if the
+                # cursor is on the assignee. By changing the start_pos of our
+                # "pseud" statement, the Jedi evaluator can find the assignees.
+                if user_stmt is not None:
+                    eval_stmt.start_pos = user_stmt.end_pos
+            scopes = self._evaluator.eval_statement(eval_stmt)
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
