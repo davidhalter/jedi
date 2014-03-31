@@ -66,14 +66,14 @@ def list_with_non_imports(lst):
     """
     Should be able to work with tuples and lists and still import stuff.
 
-    :type lst: (threading.Thread, [collections.OrderedDict, ...])
+    :type lst: (threading.Thread, [collections.defaultdict, ...])
     """
     #? ['start']
     lst[0].start
 
     import collections as col
     # use some weird index
-    #? col.OrderedDict()
+    #? col.defaultdict()
     lst[1][10]
 
 
