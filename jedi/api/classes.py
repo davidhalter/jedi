@@ -668,6 +668,12 @@ class Documentation(object):
         self._definition = definition
 
     def __str__(self):
+        return self.full()
+
+    def __unicode__(self):
+        return self.full()
+
+    def full(self):
         try:
             return self._definition.doc
         except AttributeError:
