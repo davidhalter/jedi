@@ -1,4 +1,4 @@
-import textwrap
+from textwrap import dedent
 import inspect
 
 from ..helpers import TestCase
@@ -113,14 +113,14 @@ class TestCallSignatures(TestCase):
         assert Script(s).call_signatures() == []
 
     def test_call_signatures_empty_parentheses_pre_space(self):
-        s = textwrap.dedent("""\
+        s = dedent("""\
         def f(a, b):
             pass
         f( )""")
         self._run(s, 'f', 0, line=3, column=3)
 
     def test_multiple_signatures(self):
-        s = textwrap.dedent("""\
+        s = dedent("""\
         if x:
             def f(a, b):
                 pass
@@ -131,7 +131,7 @@ class TestCallSignatures(TestCase):
         assert len(Script(s).call_signatures()) == 2
 
     def test_call_signatures_whitespace(self):
-        s = textwrap.dedent("""\
+        s = dedent("""\
         abs( 
         def x():
             pass
@@ -143,7 +143,7 @@ class TestCallSignatures(TestCase):
         There's still an implicit param, with a decorator.
         Github issue #319.
         """
-        s = textwrap.dedent("""\
+        s = dedent("""\
         def static(func):
             def wrapped(obj, *args):
                 return f(type(obj), *args)
@@ -202,3 +202,16 @@ def test_signature_is_definition():
             assert attribute() == signature_attribute()
         else:
             assert attribute == signature_attribute
+
+
+def test_no_signature():
+    # str doesn't have a __call__ method
+    assert Script('str()(').call_signatures == []
+
+    s = dedent("""\
+    class X():
+        pass
+    X()(
+    """)
+    assert Script(s).call_signatures == []
+    assert len(Script(s, column=2).call_signatures) == 1
