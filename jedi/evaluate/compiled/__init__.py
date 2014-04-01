@@ -61,7 +61,7 @@ class CompiledObject(Base):
             return 'module'
         elif inspect.isbuiltin(cls) or inspect.ismethod(cls) \
                 or inspect.ismethoddescriptor(cls):
-            return 'def'
+            return 'function'
 
     def is_executable_class(self):
         return inspect.isclass(self.obj)
@@ -99,7 +99,7 @@ class CompiledObject(Base):
         return self._cls().obj.__name__
 
     def execute_function(self, evaluator, params):
-        if self.type() != 'def':
+        if self.type() != 'function':
             return
 
         for name in self._parse_function_doc()[1].split():
