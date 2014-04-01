@@ -293,6 +293,39 @@ class BaseDefinition(object):
 
         return '.'.join(path if path[0] else path[1:])
 
+    def _is_callable(self):
+        stripped = self._definition
+        if isinstance(stripped, pr.Name):
+            stripped = stripped.parent
+
+        return (stripped.isinstance(er.Function, er.Class)
+                or stripped.isinstance(compiled.CompiledObject)
+                and stripped.type() in ('function', 'class'))
+
+    @property
+    def params(self):
+        """
+        Raises an ``AttributeError``if the definition is not callable.
+        Otherwise returns a list of `Definition` that represents the params.
+        """
+        if not self._is_callable():
+            raise AttributeError()
+
+        if self._definition.isinstance(er.Function):
+            if isinstance(self._definition, er.InstanceElement):
+                params = self._definition.params[1:]
+            else:
+                params = self._definition.params
+        elif self._definition.isinstance(er.compiled.CompiledObject):
+            params = self._definition.params
+        else:
+            try:
+                sub = self._definition.get_subscope_by_name('__init__')
+                params = sub.params[1:]  # ignore self
+            except KeyError:
+                return []
+        return [_Param(self._evaluator, p) for p in params]
+
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
 
@@ -601,23 +634,6 @@ class CallSignature(Definition):
         self.index = index
         """ The param index of the current call. """
         self._call = call
-
-    @property
-    def params(self):
-        if self._definition.isinstance(er.Function):
-            if isinstance(self._definition, er.InstanceElement):
-                params = self._definition.params[1:]
-            else:
-                params = self._definition.params
-        elif self._definition.isinstance(er.compiled.CompiledObject):
-            params = self._definition.params
-        else:
-            try:
-                sub = self._definition.get_subscope_by_name('__init__')
-                params = sub.params[1:]  # ignore self
-            except KeyError:
-                return []
-        return [_Param(self._evaluator, p) for p in params]
 
     @property
     def bracket_start(self):

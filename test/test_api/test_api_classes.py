@@ -1,7 +1,7 @@
 """ Test all things related to the ``jedi.api_classes`` module.
 """
 
-import textwrap
+from textwrap import dedent
 from inspect import cleandoc
 
 import pytest
@@ -23,7 +23,7 @@ def make_definitions():
 
     :rtype: [jedi.api_classes.BaseDefinition]
     """
-    source = textwrap.dedent("""
+    source = dedent("""
     import sys
 
     class C:
@@ -43,7 +43,7 @@ def make_definitions():
     definitions = []
     definitions += defined_names(source)
 
-    source += textwrap.dedent("""
+    source += dedent("""
     variable = sys or C or x or f or g or g() or h""")
     lines = source.splitlines()
     script = Script(source, len(lines), len('variable'), None)
@@ -123,3 +123,19 @@ def test_completion_documentation():
 
     c = Script('import jedi\njedi.Scr').completions()[0]
     assert c.documentation(fast=False).raw() == cleandoc(Script.__doc__)
+
+
+def test_signature_params():
+    s = dedent('''
+    def foo(bar):
+        pass
+    foo''')
+
+    defs = Script(s).goto_definitions()
+    params = defs[0].params
+    assert len(params) == 1
+    assert params[0].name == 'bar'
+
+    defs = Script(s).goto_assignments()
+    with pytest.raises(AttributeError):
+        params = defs[0].params
