@@ -632,6 +632,11 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         iterable = list(iterable)
         return list(chain.from_iterable(iterable))
 
+    def parent(self):
+        scope = self._definition.get_parent_until(pr.IsScope, include_current=False)
+        non_flow = scope.get_parent_until(pr.Flow, reverse=True)
+        return Definition(self._evaluator, non_flow)
+
 
 class CallSignature(Definition):
     """

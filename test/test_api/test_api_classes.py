@@ -146,17 +146,19 @@ def test_signature_params():
 
 class TestParent(TestCase):
     def _parent(self, source):
-        defs = Script(dedent(source)).goto_definitions()
+        defs = Script(dedent(source)).goto_assignments()
         assert len(defs) == 1
         return defs[0].parent()
 
     def test_parent(self):
-        parent = self._parent('foo')
-        assert isinstance(parent, pr.SubModule)
+        parent = self._parent('foo=1\nfoo')
+        assert parent.type == 'module'
 
         parent = self._parent('''
             def spam():
                 if 1:
-        ''')
-        assert isinstance(parent, pr.SubModule)
-        assert isinstance(parent.parent(), pr.SubModule)
+                    y=1
+                    y''')
+        assert parent.name == 'spam'
+        print(parent, parent.parent())
+        assert parent.parent().type == 'module'
