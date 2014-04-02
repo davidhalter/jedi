@@ -143,17 +143,12 @@ class CompiledObject(Base):
         return hasattr(self.obj, '__call__')
 
 
-class CompiledName(object):
+class CompiledName(FakeName):
     def __init__(self, obj, name):
+        super(CompiledName, self).__init__(name)
         self._obj = obj
         self.name = name
         self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
-
-    def get_parent_until(self):
-        return self.parent.get_parent_until()
-
-    def __str__(self):
-        return self.name
 
     def __repr__(self):
         return '<%s: (%s).%s>' % (type(self).__name__, self._obj.name, self.name)
@@ -164,12 +159,9 @@ class CompiledName(object):
         module = self._obj.get_parent_until()
         return _create_from_name(module, self._obj, self.name)
 
-    @property
-    def names(self):
-        return [self.name]  # compatibility with parser.representation.Name
-
-    def get_code(self):
-        return self.name
+    @parent.setter
+    def parent(self, value):
+        pass  # Just ignore this, FakeName tries to overwrite the parent attribute.
 
 
 def load_module(path, name):

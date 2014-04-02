@@ -4,6 +4,7 @@ These classes are the much bigger part of the whole API, because they contain
 the interesting information about completion and goto operations.
 """
 import warnings
+from itertools import chain
 
 from jedi._compatibility import next, unicode, use_metaclass
 from jedi import settings
@@ -523,7 +524,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         if isinstance(d, er.InstanceElement):
             d = d.var
 
-        if isinstance(d, compiled.CompiledObject):
+        if isinstance(d, (compiled.CompiledObject, compiled.CompiledName)):
             name = d.name
         elif isinstance(d, pr.Name):
             name = d.names[-1]
@@ -624,12 +625,12 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
 
         :rtype: list of Definition
         """
-        d = self._definition
-        if isinstance(d, er.InstanceElement):
-            d = d.var
-        if isinstance(d, pr.Name):
-            d = d.parent
-        return defined_names(self._evaluator, d)
+        defs = self._follow_statements_imports()
+        # For now we don't want base classes or evaluate decorators.
+        defs = [d.base if isinstance(d, (er.Class, er.Function)) else d for d in defs]
+        iterable = (defined_names(self._evaluator, d) for d in defs)
+        iterable = list(iterable)
+        return list(chain.from_iterable(iterable))
 
 
 class CallSignature(Definition):
