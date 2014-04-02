@@ -7,7 +7,9 @@ from inspect import cleandoc
 import pytest
 
 from jedi import Script, defined_names, __doc__ as jedi_doc
+from jedi.parser import representation as pr
 from ..helpers import cwd_at
+from ..helpers import TestCase
 
 
 def test_is_keyword():
@@ -140,3 +142,21 @@ def test_signature_params():
 
     check(Script(s).goto_assignments())
     check(Script(s + '\nbar=foo\nbar').goto_assignments())
+
+
+class TestParent(TestCase):
+    def _parent(self, source):
+        defs = Script(dedent(source)).goto_definitions()
+        assert len(defs) == 1
+        return defs[0].parent()
+
+    def test_parent(self):
+        parent = self._parent('foo')
+        assert isinstance(parent, pr.SubModule)
+
+        parent = self._parent('''
+            def spam():
+                if 1:
+        ''')
+        assert isinstance(parent, pr.SubModule)
+        assert isinstance(parent.parent(), pr.SubModule)
