@@ -139,3 +139,4 @@ def test_signature_params():
     check(Script(s).goto_definitions())
 
     check(Script(s).goto_assignments())
+    check(Script(s + '\nbar=foo\nbar').goto_assignments())
