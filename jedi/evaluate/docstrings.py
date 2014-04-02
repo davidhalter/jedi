@@ -116,8 +116,14 @@ def _evaluate_for_statement_string(evaluator, string, module):
     # call. In that case it's the module of the function call.
     # stuffed with content from a function call.
     pseudo_cls.parent = module
-    return chain.from_iterable(evaluator.execute(defn)
-                               for defn in evaluator.eval_statement(stmt))
+    definitions = evaluator.eval_statement(stmt)
+    it = (evaluator.execute(d) for d in definitions)
+    # TODO Executing tuples does not make sense, people tend to say
+    # `(str, int)` in a type annotation, which means that it returns a tuple
+    # with both types.
+    # At this point we just return the classes if executing wasn't possible,
+    # i.e. is a tuple.
+    return list(chain.from_iterable(it)) or definitions
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
