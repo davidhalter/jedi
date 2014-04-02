@@ -5,11 +5,11 @@ the interesting information about completion and goto operations.
 """
 import warnings
 
-from jedi._compatibility import next, unicode
+from jedi._compatibility import next, unicode, use_metaclass
 from jedi import settings
 from jedi import common
 from jedi.parser import representation as pr
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
@@ -502,7 +502,7 @@ class Completion(BaseDefinition):
         return [Definition(self._evaluator, d) for d in defs]
 
 
-class Definition(BaseDefinition):
+class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
     """
     *Definition* objects are returned from :meth:`api.Script.goto_assignments`
     or :meth:`api.Script.goto_definitions`.
