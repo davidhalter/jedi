@@ -15,6 +15,7 @@ annotations.
 """
 
 import re
+from itertools import chain
 from textwrap import dedent
 
 from jedi.evaluate.cache import memoize_default
@@ -115,7 +116,8 @@ def _evaluate_for_statement_string(evaluator, string, module):
     # call. In that case it's the module of the function call.
     # stuffed with content from a function call.
     pseudo_cls.parent = module
-    return evaluator.eval_statement(stmt)
+    return chain.from_iterable(evaluator.execute(defn)
+                               for defn in evaluator.eval_statement(stmt))
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
