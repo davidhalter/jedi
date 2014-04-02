@@ -2,6 +2,7 @@
 Testing of docstring related issues and especially ``jedi.docstrings``.
 """
 
+from textwrap import dedent
 import jedi
 from ..helpers import unittest
 
@@ -59,3 +60,30 @@ class TestDocstring(unittest.TestCase):
 
         names = [c.name for c in jedi.Script(s).completions()]
         assert 'join' in names
+
+    def test_docstring_instance(self):
+        # The types hint that it's a certain kind
+        s = dedent("""
+            class A:
+                def __init__(self,a):
+                    '''
+                    :type a: threading.Thread
+                    '''
+
+                    if a is not None:
+                        a.start()
+
+                    self.a = a
+
+
+            def method_b(c):
+                '''
+                :type c: A
+                '''
+
+                c.""")
+
+        names = [c.name for c in jedi.Script(s).completions()]
+        assert 'a' in names
+        assert '__init__' in names
+        assert 'mro' not in names  # Exists only for types.
