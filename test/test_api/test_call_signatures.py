@@ -206,12 +206,11 @@ def test_signature_is_definition():
 
 def test_no_signature():
     # str doesn't have a __call__ method
-    assert Script('str()(').call_signatures == []
+    assert Script('str()(').call_signatures() == []
 
     s = dedent("""\
     class X():
         pass
-    X()(
-    """)
-    assert Script(s).call_signatures == []
-    assert len(Script(s, column=2).call_signatures) == 1
+    X()(""")
+    assert Script(s).call_signatures() == []
+    assert len(Script(s, column=2).call_signatures()) == 1

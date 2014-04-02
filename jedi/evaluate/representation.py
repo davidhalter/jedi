@@ -160,6 +160,13 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             names.append(InstanceElement(self._evaluator, self, var, True))
         yield self, names
 
+    def is_callable(self):
+        try:
+            self.get_subscope_by_name('__call__')
+            return True
+        except KeyError:
+            return False
+
     def get_index_types(self, index=None):
         args = [] if index is None else [index]
         try:
@@ -232,6 +239,9 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def isinstance(self, *cls):
         return isinstance(self.var, cls)
 
+    def is_callable(self):
+        return self.var.is_callable()
+
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
@@ -297,6 +307,9 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
             if sub.name.get_code() == name:
                 return sub
         raise KeyError("Couldn't find subscope.")
+
+    def is_callable(self):
+        return True
 
     @common.safe_property
     def name(self):
@@ -378,6 +391,9 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
 
     def get_magic_function_scope(self):
         return compiled.magic_function_class
+
+    def is_callable(self):
+        return True
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)

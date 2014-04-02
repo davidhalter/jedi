@@ -532,7 +532,6 @@ class Script(object):
 
         :rtype: list of :class:`classes.CallSignature`
         """
-
         user_stmt = self._parser.user_stmt_with_whitespace()
         call, index = helpers.func_call_and_param_index(user_stmt, self._pos)
         if call is None:
@@ -543,9 +542,10 @@ class Script(object):
             origins = cache.cache_call_signatures(_callable, user_stmt)
         debug.speed('func_call followed')
 
-        return [classes.CallSignature(self._evaluator, o, call, index) for o in origins
-                if o.isinstance(er.Function, er.Instance, er.Class)
-                or isinstance(o, compiled.CompiledObject) and o.type() != 'module']
+        print([classes.CallSignature(self._evaluator, o, call, index)
+                for o in origins])
+        return [classes.CallSignature(self._evaluator, o, call, index)
+                for o in origins if o.is_callable()]
 
 
 class Interpreter(Script):

@@ -138,6 +138,10 @@ class CompiledObject(Base):
     def get_imports(self):
         return []  # Builtins don't have imports
 
+    def is_callable(self):
+        """Check if the object has a ``__call__`` method."""
+        return hasattr(self.obj, '__call__')
+
 
 class CompiledName(object):
     def __init__(self, obj, name):
