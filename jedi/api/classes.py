@@ -8,8 +8,8 @@ import warnings
 from jedi._compatibility import next, unicode
 from jedi import settings
 from jedi import common
-from jedi import cache
 from jedi.parser import representation as pr
+from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
@@ -300,8 +300,25 @@ class BaseDefinition(object):
 
         return stripped.is_callable()
 
+    @memoize_default()
+    def _follow_statements_imports(self):
+        if self._definition.isinstance(pr.Statement):
+            defs = self._evaluator.eval_statement(self._definition)
+        elif self._definition.isinstance(pr.Import):
+            if self._definition.alias is None:
+                i = imports.ImportPath(self._evaluator, self._definition, True)
+                defs = imports.Importer(i.import_path + [unicode(self._name)],
+                                        i._importer.module).follow(self._evaluator)
+            else:
+                defs = imports.strip_imports(self._evaluator, [self._definition])
+        else:
+            return [self]
+
+        defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
+        return defs
+
     @property
-    @cache.underscore_memoization
+    @memoize_default()
     def params(self):
         """
         Raises an ``AttributeError``if the definition is not callable.
@@ -465,7 +482,7 @@ class Completion(BaseDefinition):
                 return followed[0].type
         return super(Completion, self).type
 
-    @cache.underscore_memoization
+    @memoize_default()
     def follow_definition(self):
         """
         Return the original definitions. I strongly recommend not using it for
@@ -488,7 +505,6 @@ class Completion(BaseDefinition):
             return [self]
 
         defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
-        cache.clear_caches()
         return defs
 
 
@@ -607,7 +623,7 @@ class Definition(BaseDefinition):
         position = '' if self.in_builtin_module else '@%s' % (self.line)
         return "%s:%s%s" % (self.module_name, self.description, position)
 
-    @cache.underscore_memoization
+    @memoize_default()
     def defined_names(self):
         """
         List sub-definitions (e.g., methods in class).

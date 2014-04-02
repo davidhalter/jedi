@@ -126,16 +126,16 @@ def test_completion_documentation():
 
 
 def test_signature_params():
+    def check(defs):
+        params = defs[0].params
+        assert len(params) == 1
+        assert params[0].name == 'bar'
+
     s = dedent('''
     def foo(bar):
         pass
     foo''')
 
-    defs = Script(s).goto_definitions()
-    params = defs[0].params
-    assert len(params) == 1
-    assert params[0].name == 'bar'
+    check(Script(s).goto_definitions())
 
-    defs = Script(s).goto_assignments()
-    with pytest.raises(AttributeError):
-        params = defs[0].params
+    check(Script(s).goto_assignments())

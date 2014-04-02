@@ -63,7 +63,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         # (No var_args) used.
         self.is_generated = False
 
-    @memoize_default(None)
+    @memoize_default()
     def _get_method_execution(self, func):
         func = InstanceElement(self._evaluator, self, func, True)
         return FunctionExecution(self._evaluator, func, self.var_args)
@@ -203,7 +203,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         self.is_class_var = is_class_var
 
     @common.safe_property
-    @memoize_default(None)
+    @memoize_default()
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
@@ -336,7 +336,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         self.base_func = func
         self.is_decorated = is_decorated
 
-    @memoize_default(None)
+    @memoize_default()
     def _decorated_func(self):
         """
         Returns the function, that is to be executed in the end.
@@ -476,7 +476,7 @@ class FunctionExecution(Executable):
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
-    @memoize_default(None)
+    @memoize_default()
     def _scope_copy(self, scope):
         """ Copies a scope (e.g. if) in an execution """
         # TODO method uses different scopes than the subscopes property.

@@ -5,7 +5,7 @@
 """
 
 
-def memoize_default(default, evaluator_is_first_arg=False, second_arg_is_evaluator=False):
+def memoize_default(default=None, evaluator_is_first_arg=False, second_arg_is_evaluator=False):
     """ This is a typical memoization decorator, BUT there is one difference:
     To prevent recursion it sets defaults.
 
