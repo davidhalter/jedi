@@ -298,11 +298,10 @@ class BaseDefinition(object):
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
 
-        return (stripped.isinstance(er.Function, er.Class)
-                or stripped.isinstance(compiled.CompiledObject)
-                and stripped.type() in ('function', 'class'))
+        return stripped.is_callable()
 
     @property
+    @cache.underscore_memoization
     def params(self):
         """
         Raises an ``AttributeError``if the definition is not callable.

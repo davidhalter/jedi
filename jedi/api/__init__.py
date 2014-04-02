@@ -542,8 +542,6 @@ class Script(object):
             origins = cache.cache_call_signatures(_callable, user_stmt)
         debug.speed('func_call followed')
 
-        print([classes.CallSignature(self._evaluator, o, call, index)
-                for o in origins])
         return [classes.CallSignature(self._evaluator, o, call, index)
                 for o in origins if o.is_callable()]
 
