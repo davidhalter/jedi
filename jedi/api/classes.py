@@ -668,6 +668,15 @@ class CallSignature(Definition):
         warnings.warn("Use name instead.", DeprecationWarning)
         return unicode(self._definition.name)
 
+    @property
+    def module(self):
+        """
+        .. deprecated:: 0.8.0
+           Use :attr:`.module_name` for the module name.
+        .. todo:: Remove!
+        """
+        return self._executable.get_parent_until()
+
     def __repr__(self):
         return '<%s: %s index %s>' % (type(self).__name__, self._definition,
                                       self.index)
