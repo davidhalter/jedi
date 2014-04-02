@@ -72,3 +72,11 @@ class TestDefinedNames(TestCase):
         self.assert_definition_names(subdefs, ['L2', 'f'])
         self.assert_definition_names(subsubdefs, ['L3', 'f'])
         self.assert_definition_names(subsubdefs[0].defined_names(), ['f'])
+
+
+def test_follow_imports():
+    # github issue #344
+    imp = api.defined_names('import datetime')[0]
+    assert imp.name == 'datetime'
+    datetime_names = [str(d.name) for d in imp.defined_names()]
+    assert 'timedelta' in datetime_names
