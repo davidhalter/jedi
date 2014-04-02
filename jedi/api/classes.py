@@ -293,21 +293,18 @@ class BaseDefinition(object):
 
         return '.'.join(path if path[0] else path[1:])
 
-    def _is_callable(self):
+    @memoize_default()
+    def _follow_statements_imports(self):
         stripped = self._definition
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
 
-        return stripped.is_callable()
-
-    @memoize_default()
-    def _follow_statements_imports(self):
-        if self._definition.isinstance(pr.Statement):
-            return self._evaluator.eval_statement(self._definition)
-        elif self._definition.isinstance(pr.Import):
-            return imports.strip_imports(self._evaluator, [self._definition])
+        if stripped.isinstance(pr.Statement):
+            return self._evaluator.eval_statement(stripped)
+        elif stripped.isinstance(pr.Import):
+            return imports.strip_imports(self._evaluator, [stripped])
         else:
-            return [self._definition]
+            return [stripped]
 
     @property
     @memoize_default()
@@ -316,19 +313,21 @@ class BaseDefinition(object):
         Raises an ``AttributeError``if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
-        if not self._is_callable():
+        followed = self._follow_statements_imports()
+        if not followed or not followed[0].is_callable():
             raise AttributeError()
+        followed = followed[0]  # only check the first one.
 
-        if self._definition.isinstance(er.Function):
-            if isinstance(self._definition, er.InstanceElement):
-                params = self._definition.params[1:]
+        if followed.isinstance(er.Function):
+            if isinstance(followed, er.InstanceElement):
+                params = followed.params[1:]
             else:
-                params = self._definition.params
-        elif self._definition.isinstance(er.compiled.CompiledObject):
-            params = self._definition.params
+                params = followed.params
+        elif followed.isinstance(er.compiled.CompiledObject):
+            params = followed.params
         else:
             try:
-                sub = self._definition.get_subscope_by_name('__init__')
+                sub = followed.get_subscope_by_name('__init__')
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
