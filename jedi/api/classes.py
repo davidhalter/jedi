@@ -303,19 +303,11 @@ class BaseDefinition(object):
     @memoize_default()
     def _follow_statements_imports(self):
         if self._definition.isinstance(pr.Statement):
-            defs = self._evaluator.eval_statement(self._definition)
+            return self._evaluator.eval_statement(self._definition)
         elif self._definition.isinstance(pr.Import):
-            if self._definition.alias is None:
-                i = imports.ImportPath(self._evaluator, self._definition, True)
-                defs = imports.Importer(i.import_path + [unicode(self._name)],
-                                        i._importer.module).follow(self._evaluator)
-            else:
-                defs = imports.strip_imports(self._evaluator, [self._definition])
+            return imports.strip_imports(self._evaluator, [self._definition])
         else:
-            return [self]
-
-        defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
-        return defs
+            return [self._definition]
 
     @property
     @memoize_default()
@@ -483,6 +475,16 @@ class Completion(BaseDefinition):
         return super(Completion, self).type
 
     @memoize_default()
+    def _follow_statements_imports(self):
+        # imports completion is very complicated and needs to be treated
+        # separately in Completion.
+        if self._definition.isinstance(pr.Import) and self._definition.alias is None:
+            i = imports.ImportPath(self._evaluator, self._definition, True)
+            return imports.Importer(i.import_path + [unicode(self._name)],
+                                    i._importer.module).follow(self._evaluator)
+        return super(Completion, self)._follow_statements_imports()
+
+    @memoize_default()
     def follow_definition(self):
         """
         Return the original definitions. I strongly recommend not using it for
@@ -492,20 +494,8 @@ class Completion(BaseDefinition):
         follows all results. This means with 1000 completions (e.g.  numpy),
         it's just PITA-slow.
         """
-        if self._definition.isinstance(pr.Statement):
-            defs = self._evaluator.eval_statement(self._definition)
-        elif self._definition.isinstance(pr.Import):
-            if self._definition.alias is None:
-                i = imports.ImportPath(self._evaluator, self._definition, True)
-                defs = imports.Importer(i.import_path + [unicode(self._name)],
-                                        i._importer.module).follow(self._evaluator)
-            else:
-                defs = imports.strip_imports(self._evaluator, [self._definition])
-        else:
-            return [self]
-
-        defs = [BaseDefinition(self._evaluator, d, d.start_pos) for d in defs]
-        return defs
+        defs = self._follow_statements_imports()
+        return [Definition(self._evaluator, d) for d in defs]
 
 
 class Definition(BaseDefinition):
