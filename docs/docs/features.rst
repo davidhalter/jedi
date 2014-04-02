@@ -136,7 +136,7 @@ http://epydoc.sourceforge.net/manual-fields.html
     def myfunction(node):
         """Do something with a ``node``.
 
-        @param node: ProgramNode
+        @type node: ProgramNode
 
         """
         node.| # complete here
