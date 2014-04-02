@@ -449,10 +449,10 @@ class Completion(BaseDefinition):
         if isinstance(self._definition, pr.Import):
             i = imports.ImportPath(self._evaluator, self._definition)
             if len(i.import_path) > 1 or not fast:
-                followed = self.follow_definition()
+                followed = self._follow_statements_imports()
                 if followed:
                     # TODO: Use all of the followed objects as input to Documentation.
-                    definition = followed[0]._definition
+                    definition = followed[0]
         return Documentation(definition)
 
     @property
