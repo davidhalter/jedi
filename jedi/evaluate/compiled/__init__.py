@@ -93,6 +93,16 @@ class CompiledObject(Base):
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
+    def get_index_types(self, mixed_obj):
+        # If the object doesn't have `__getitem__`, just raise the
+        # AttributeError.
+        self.obj.__getitem__
+
+        try:
+            self.obj[mixed_obj]
+        except (KeyError, IndexError):
+            raise AttributeError()
+
     @property
     def name(self):
         # might not exist sometimes (raises AttributeError)

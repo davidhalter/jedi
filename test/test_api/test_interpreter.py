@@ -44,7 +44,10 @@ class TestInterpreterAPI(TestCase):
                                         completions)
 
     def test_list(self):
-        array = ['haha']
+        array = ['haha', 1]
         self.check_interpreter_complete('array[0].uppe',
                                         locals(),
                                         ['upper'])
+        self.check_interpreter_complete('array[0].real',
+                                        locals(),
+                                        [])
