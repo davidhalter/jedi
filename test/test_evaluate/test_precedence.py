@@ -66,3 +66,6 @@ def test_slice():
     assert parse_tree('[0][:]', is_slice=True) == (None, ':', None)
     assert parse_tree('[0][1:]', is_slice=True) == (1, ':', None)
     assert parse_tree('[0][:2]', is_slice=True) == (None, ':', 2)
+
+    # 3 part slice
+    assert parse_tree('[0][:2:1]', is_slice=True) == ((None, ':', 2), ':', 1)
