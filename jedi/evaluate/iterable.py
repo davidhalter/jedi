@@ -20,7 +20,7 @@ It is important to note that:
 1. Array modfications work only in the current module.
 2. Jedi only checks Array additions; ``list.pop``, etc are ignored.
 """
-import itertools
+from itertools import chain
 
 from jedi import common
 from jedi import debug
@@ -29,6 +29,7 @@ from jedi._compatibility import use_metaclass, is_py3, unicode
 from jedi.parser import representation as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
+from jedi.evaluate import precedence
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.cache import underscore_memoization
 
@@ -104,7 +105,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
                 # array slicing
                 return [self]
 
-            index_possibilities = self._follow_values(index_arr)
+            index_possibilities = _follow_values(self._evaluator, index_arr)
             if len(index_possibilities) == 1:
                 # This is indexing only one element, with a fixed index number,
                 # otherwise it just ignores the index (e.g. [1+1]).
@@ -114,7 +115,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
                     with common.ignored(KeyError, IndexError, TypeError):
                         return self.get_exact_index_types(index.obj)
 
-        result = list(self._follow_values(self._array.values))
+        result = list(_follow_values(self._evaluator, self._array.values))
         result += check_array_additions(self._evaluator, self)
         return result
 
@@ -144,12 +145,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
 
         # Can raise an IndexError
         values = [self._array.values[index]]
-        return self._follow_values(values)
-
-    def _follow_values(self, values):
-        """ helper function for the index getters """
-        return list(itertools.chain.from_iterable(self._evaluator.eval_statement(v)
-                                                  for v in values))
+        return _follow_values(self._evaluator, values)
 
     def get_defined_names(self):
         """
@@ -412,3 +408,53 @@ class ArrayInstance(pr.Base):
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self._evaluator, self.instance, module, is_list)
         return items
+
+
+def _follow_values(evaluator, values):
+    """ helper function for the index getters """
+    return list(chain.from_iterable(evaluator.eval_statement(v) for v in values))
+
+
+class Slice(object):
+    def __init__(self, evaluator, start, stop, step):
+        self._evaluator = evaluator
+        self._start = start
+        self._stop = stop
+        self._step = step
+
+    def start(self):
+        return self._result(self._start)
+
+    def stop(self):
+        return self._result(self._stop)
+
+    def step(self):
+        return self._result(self._step)
+
+    def _result(self, element):
+        return self._evaluator.process_precedence_element()
+
+
+def create_index_or_slice(evaluator, index_array):
+    if not index_array:
+        return []
+
+    # Just take the first part of the "array", because this is Python stdlib
+    # behavior. Numpy et al. perform differently, but we won't understand that
+    # anyway.
+    expression_list = index_array[0].expression_list()
+    prec = precedence.create_precedence(expression_list)
+
+    # check for slices
+    if isinstance(prec, precedence.Precedence) and prec.operator == ':':
+        start = prec.left
+        if isinstance(start, precedence.Precedence) and start.operator == ':':
+            start = start.left
+            stop = start.right
+            step = stop.right
+        else:
+            stop = stop.right
+            step = None
+        return Slice(evaluator, start, stop, step)
+    else:
+        return _follow_values(evaluator, index_array)

@@ -157,9 +157,9 @@ class Evaluator(object):
         """
         debug.dbg('eval_expression_list: %s', expression_list)
         p = precedence.create_precedence(expression_list)
-        return self._process_precedence_element(p) or []
+        return self.process_precedence_element(p) or []
 
-    def _process_precedence_element(self, el):
+    def process_precedence_element(self, el):
         if el is None:
             return None
         else:
@@ -170,8 +170,8 @@ class Evaluator(object):
                 return self._eval_statement_element(el)
 
     def _eval_precedence(self, _precedence):
-        left = self._process_precedence_element(_precedence.left)
-        right = self._process_precedence_element(_precedence.right)
+        left = self.process_precedence_element(_precedence.left)
+        right = self.process_precedence_element(_precedence.right)
         return precedence.calculate(left, _precedence.operator, right)
 
     def _eval_statement_element(self, element):
