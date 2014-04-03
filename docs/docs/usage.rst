@@ -25,6 +25,7 @@ Vim:
 Emacs:
 
 - Jedi.el_
+- elpy_
 - company-jedi_
 
 Sublime Text 2/3:
@@ -76,6 +77,7 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
+.. _elpy: https://github.com/jorgenschaefer/elpy
 .. _company-jedi: https://github.com/proofit404/company-jedi
 .. _sublimejedi: https://github.com/srusskih/SublimeJEDI
 .. _anaconda: https://github.com/DamnWidget/anaconda
