@@ -425,17 +425,30 @@ class Slice(object):
         self._stop = stop
         self._step = step
 
-    def start(self):
-        return self._result(self._start)
+    @property
+    def obj(self):
+        """
+        Imitate CompiledObject.obj behavior and return a ``builtin.slice()``
+        object.
+        """
+        def get(element):
+            if element is None:
+                return None
 
-    def stop(self):
-        return self._result(self._stop)
+            result = self._evaluator.process_precedence_element(element)
+            if len(result) != 1:
+                # We want slices to be clear defined with just one type.
+                # Otherwise we will return an empty slice object.
+                raise IndexError
+            try:
+                return result[0].obj
+            except AttributeError:
+                return None
 
-    def step(self):
-        return self._result(self._step)
-
-    def _result(self, element):
-        return self._evaluator.process_precedence_element(element)
+        try:
+            return slice(get(self._start), get(self._stop), get(self._step))
+        except IndexError:
+            return slice(None, None, None)
 
 
 def create_indexes_or_slices(evaluator, index_array):

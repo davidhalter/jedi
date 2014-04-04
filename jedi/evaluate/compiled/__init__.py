@@ -99,17 +99,17 @@ class CompiledObject(Base):
         self.obj.__getitem__
 
         result = []
-        from jedi.evaluate import iterable
         for typ in index_types:
-            if isinstance(typ, iterable.Slice):
-                result.append(self)
+            index = None
+            try:
+                index = typ.obj
+                new = self.obj[index]
+            except (KeyError, IndexError, TypeError, AttributeError):
+                # Just try, we don't care if it fails, except for slices.
+                if isinstance(index, slice):
+                    result.append(self)
             else:
-                try:
-                    new = self.obj[typ.obj]
-                except (KeyError, IndexError, TypeError, AttributeError):
-                    pass  # just try, we don't care if it fails.
-                else:
-                    result.append(CompiledObject(new))
+                result.append(CompiledObject(new))
         if not result:
             try:
                 for obj in self.obj:

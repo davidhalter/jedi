@@ -63,3 +63,11 @@ class TestInterpreterAPI(TestCase):
         self.check_interpreter_complete('array[2].upper',
                                         locals(),
                                         ['upper'])
+
+    def test_slice(self):
+        class Foo():
+            bar = []
+        baz = 'xbarx'
+        self.check_interpreter_complete('getattr(Foo, baz[1:-1]).append',
+                                        locals(),
+                                        ['append'])
