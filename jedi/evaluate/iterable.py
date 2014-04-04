@@ -99,7 +99,11 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         self._array = array
 
     def get_index_types(self, indexes=[]):
-        """ Get the types of a specific index or all, if not given """
+        """
+        Get the types of a specific index or all, if not given.
+
+        :param indexes: The index input types.
+        """
         result = []
         if [index for index in indexes if isinstance(index, Slice)]:
             return [self]

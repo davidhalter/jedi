@@ -93,15 +93,26 @@ class CompiledObject(Base):
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
-    def get_index_types(self, mixed_obj):
+    def get_index_types(self, index_types):
         # If the object doesn't have `__getitem__`, just raise the
         # AttributeError.
         self.obj.__getitem__
 
-        try:
-            self.obj[mixed_obj]
-        except (KeyError, IndexError):
-            raise AttributeError()
+        result = []
+        from jedi.evaluate import iterable
+        for typ in index_types:
+            if isinstance(typ, iterable.Slice):
+                result.append(self)
+            else:
+                try:
+                    new = self.obj[typ.obj]
+                except (KeyError, IndexError):
+                    pass
+                else:
+                    result.append(CompiledObject(new))
+        if not result:
+            pass
+        return result
 
     @property
     def name(self):
