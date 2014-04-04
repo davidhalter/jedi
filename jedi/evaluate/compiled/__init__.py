@@ -106,12 +106,16 @@ class CompiledObject(Base):
             else:
                 try:
                     new = self.obj[typ.obj]
-                except (KeyError, IndexError):
-                    pass
+                except (KeyError, IndexError, TypeError, AttributeError):
+                    pass  # just try, we don't care if it fails.
                 else:
                     result.append(CompiledObject(new))
         if not result:
-            pass
+            try:
+                for obj in self.obj:
+                    result.append(CompiledObject(obj))
+            except TypeError:
+                pass  # self.obj maynot have an __iter__ method.
         return result
 
     @property

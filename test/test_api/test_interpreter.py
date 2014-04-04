@@ -51,3 +51,15 @@ class TestInterpreterAPI(TestCase):
         self.check_interpreter_complete('array[0].real',
                                         locals(),
                                         [])
+
+        # something different, no index given, still just return the right
+        self.check_interpreter_complete('array[int].real',
+                                        locals(),
+                                        ['real'])
+        self.check_interpreter_complete('array[int()].real',
+                                        locals(),
+                                        ['real'])
+        # inexistent index
+        self.check_interpreter_complete('array[2].upper',
+                                        locals(),
+                                        ['upper'])
