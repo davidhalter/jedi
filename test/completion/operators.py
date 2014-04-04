@@ -18,6 +18,8 @@ index = 0 + 1
 #? str()
 x[index]
 
+#? int()
+x[1 + (-1)]
 
 def calculate(number):
     return number + constant

@@ -175,14 +175,32 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
 
 
 def calculate(left_result, operator, right_result):
-    if not left_result or not right_result:
-        return left_result + right_result
-
     result = []
-    for left in left_result:
+    if left_result is None and right_result:
+        # cases like `-1` or `1 + ~1`
         for right in right_result:
-            result += _element_calculate(left, operator, right)
+            result.append(_factor_calculate(operator, right))
+        return result
+    else:
+        if not left_result or not right_result:
+            return left_result + right_result
+
+        for left in left_result:
+            for right in right_result:
+                result += _element_calculate(left, operator, right)
     return result
+
+
+def _factor_calculate(operator, right):
+    if _is_number(right):
+        if operator == '-':
+            return create(-right.obj)
+    return right
+
+
+def _is_number(obj):
+    return isinstance(obj, CompiledObject) \
+        and isinstance(obj.obj, (int, float))
 
 
 def _element_calculate(left, operator, right):
@@ -190,19 +208,15 @@ def _element_calculate(left, operator, right):
         return isinstance(obj, CompiledObject) \
             and isinstance(obj.obj, (str, unicode))
 
-    def is_number(obj):
-        return isinstance(obj, CompiledObject) \
-            and isinstance(obj.obj, (int, float))
-
     if operator == '*':
         # for iterables, ignore * operations
         from jedi.evaluate import iterable
         if isinstance(left, iterable.Array) or is_string(left):
             return [left]
     elif operator == '+':
-        if is_number(left) and is_number(right) or is_string(left) and is_string(right):
+        if _is_number(left) and _is_number(right) or is_string(left) and is_string(right):
             return [create(left.obj + right.obj)]
     elif operator == '-':
-        if is_number(left) and is_number(right):
+        if _is_number(left) and _is_number(right):
             return [create(left.obj - right.obj)]
     return [left, right]
