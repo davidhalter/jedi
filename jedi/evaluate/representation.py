@@ -167,10 +167,9 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         except KeyError:
             return False
 
-    def get_index_types(self, index=None):
-        args = [] if index is None else [index]
+    def get_index_types(self, indexes=[]):
         try:
-            return self.execute_subscope_by_name('__getitem__', args)
+            return self.execute_subscope_by_name('__getitem__', indexes)
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
             return []

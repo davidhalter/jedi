@@ -98,22 +98,20 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         self._evaluator = evaluator
         self._array = array
 
-    def get_index_types(self, index_arr=None):
+    def get_index_types(self, indexes=[]):
         """ Get the types of a specific index or all, if not given """
-        if index_arr is not None:
-            if index_arr and [x for x in index_arr if ':' in x.expression_list()]:
-                # array slicing
-                return [self]
+        result = []
+        if [index for index in indexes if isinstance(index, Slice)]:
+            return [self]
 
-            index_possibilities = _follow_values(self._evaluator, index_arr)
-            if len(index_possibilities) == 1:
-                # This is indexing only one element, with a fixed index number,
-                # otherwise it just ignores the index (e.g. [1+1]).
-                index = index_possibilities[0]
-                if isinstance(index, compiled.CompiledObject) \
-                        and isinstance(index.obj, (int, str, unicode)):
-                    with common.ignored(KeyError, IndexError, TypeError):
-                        return self.get_exact_index_types(index.obj)
+        if len(indexes) == 1:
+            # This is indexing only one element, with a fixed index number,
+            # otherwise it just ignores the index (e.g. [1+1]).
+            index = indexes[0]
+            if isinstance(index, compiled.CompiledObject) \
+                    and isinstance(index.obj, (int, str, unicode)):
+                with common.ignored(KeyError, IndexError, TypeError):
+                    return self.get_exact_index_types(index.obj)
 
         result = list(_follow_values(self._evaluator, self._array.values))
         result += check_array_additions(self._evaluator, self)
@@ -418,6 +416,7 @@ def _follow_values(evaluator, values):
 class Slice(object):
     def __init__(self, evaluator, start, stop, step):
         self._evaluator = evaluator
+        # all of them are either a Precedence or None.
         self._start = start
         self._stop = stop
         self._step = step
@@ -432,16 +431,16 @@ class Slice(object):
         return self._result(self._step)
 
     def _result(self, element):
-        return self._evaluator.process_precedence_element()
+        return self._evaluator.process_precedence_element(element)
 
 
-def create_index_or_slice(evaluator, index_array):
+def create_indexes_or_slices(evaluator, index_array):
     if not index_array:
         return []
 
     # Just take the first part of the "array", because this is Python stdlib
-    # behavior. Numpy et al. perform differently, but we won't understand that
-    # anyway.
+    # behavior. Numpy et al. perform differently, but Jedi won't understand
+    # that anyway.
     expression_list = index_array[0].expression_list()
     prec = precedence.create_precedence(expression_list)
 
@@ -449,12 +448,12 @@ def create_index_or_slice(evaluator, index_array):
     if isinstance(prec, precedence.Precedence) and prec.operator == ':':
         start = prec.left
         if isinstance(start, precedence.Precedence) and start.operator == ':':
-            start = start.left
             stop = start.right
-            step = stop.right
+            start = start.left
+            step = prec.right
         else:
-            stop = stop.right
+            stop = prec.right
             step = None
-        return Slice(evaluator, start, stop, step)
+        return [Slice(evaluator, start, stop, step)]
     else:
-        return _follow_values(evaluator, index_array)
+        return evaluator.process_precedence_element(prec) or []

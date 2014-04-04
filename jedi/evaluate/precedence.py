@@ -7,7 +7,6 @@ from jedi.parser import representation as pr
 from jedi import debug
 from jedi.common import PushBackIterator
 from jedi.evaluate.compiled import CompiledObject, create
-from jedi.evaluate import iterable
 
 
 class PythonGrammar(object):
@@ -197,6 +196,7 @@ def _element_calculate(left, operator, right):
 
     if operator == '*':
         # for iterables, ignore * operations
+        from jedi.evaluate import iterable
         if isinstance(left, iterable.Array) or is_string(left):
             return [left]
     elif operator == '+':
