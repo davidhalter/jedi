@@ -339,6 +339,11 @@ class BaseDefinition(object):
                 return []
         return [_Param(self._evaluator, p) for p in params]
 
+    def parent(self):
+        scope = self._definition.get_parent_until(pr.IsScope, include_current=False)
+        non_flow = scope.get_parent_until(pr.Flow, reverse=True)
+        return Definition(self._evaluator, non_flow)
+
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
 
@@ -631,11 +636,6 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         iterable = (defined_names(self._evaluator, d) for d in defs)
         iterable = list(iterable)
         return list(chain.from_iterable(iterable))
-
-    def parent(self):
-        scope = self._definition.get_parent_until(pr.IsScope, include_current=False)
-        non_flow = scope.get_parent_until(pr.Flow, reverse=True)
-        return Definition(self._evaluator, non_flow)
 
 
 class CallSignature(Definition):
