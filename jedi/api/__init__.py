@@ -136,11 +136,10 @@ class Script(object):
             last word part. To ignore certain strange patterns with dots, just
             use regex.
             """
-            dots = re.search('^\.|([\d.]+)\.$', path)
+            dots = re.search('^\.|((?:0[xbo])?[\d.]+)\.$', path)
             if dots:
                 literal = dots.group(1)
-                print(literal)
-                if re.search('\d\.|\.{3}', literal or ''):
+                if re.match('0[xbo][\da-fA-F]+$|\d\.$|\.{3}$', literal or ''):
                     return True
                 return False
             return True
