@@ -52,12 +52,32 @@ def test_line_number_errors():
     api.Script(s, 1, len(s))
 
 
-def test_completion_on_int_literals():
+def _check_number(source, result='float'):
+    completions = api.Script(source).completions()
+    #assert completions[0].parent().name == 'float'
+    assert completions[0]._definition.parent.name == result
+
+
+def test_completion_on_number_literals():
     # No completions on an int literal (is a float).
     assert api.Script('1.').completions() == []
 
     # Multiple points after an int literal basically mean that there's a float
     # and a call after that.
-    #assert api.Script('1..').completions()[0].parent().name == 'float'
-    assert api.Script('1..').completions()[0]._definition.parent.name == 'float'
-    assert api.Script('1.0.').completions()[0]._definition.parent.name == 'float'
+    _check_number('1..')
+    _check_number('1.0.')
+
+    # power notation
+    _check_number('1.e14.')
+    _check_number('1.e-3.')
+    assert api.Script('1.e3..').completions() == []
+    assert api.Script('1.e-13..').completions() == []
+
+
+def test_completion_on_complex_literals():
+    assert api.Script('1j..').completions() == []
+    _check_number('1j.', 'complex')
+    _check_number('44.j.', 'complex')
+    _check_number('4.0j.', 'complex')
+    # No dot no completion
+    assert api.Script('4j').completions() == []
