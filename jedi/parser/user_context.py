@@ -72,6 +72,7 @@ class UserContext(object):
             tok_type = tok.type
             tok_str = tok.string
             end = tok.end_pos
+            self._column_temp = self._line_length - end[1]
             if is_first:
                 if tok.start_pos != (1, 0):  # whitespace is not a path
                     return u(''), start_cursor
@@ -102,14 +103,12 @@ class UserContext(object):
             elif tok_type == tokenize.NUMBER:
                 pass
             else:
-                self._column_temp = self._line_length - end[1]
                 break
 
             x = start_pos[0] - end[0] + 1
             l = self.get_line(x)
             l = first_line if x == start_pos[0] else l
             start_cursor = x, len(l) - end[1]
-            self._column_temp = self._line_length - end[1]
             string += tok_str
             last_type = tok_type
 
