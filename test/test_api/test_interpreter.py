@@ -71,3 +71,12 @@ class TestInterpreterAPI(TestCase):
         self.check_interpreter_complete('getattr(Foo, baz[1:-1]).append',
                                         locals(),
                                         ['append'])
+
+    def test_getitem_side_effects(self):
+        class Foo():
+            def __getitem__(self, index):
+                # possible side effects here, should therefore not call this.
+                return index
+
+        foo = Foo()
+        self.check_interpreter_complete('foo[0].', locals(), [])
