@@ -6,7 +6,7 @@ import re
 import sys
 import os
 
-from jedi._compatibility import builtins as _builtins
+from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization
 from jedi.evaluate.sys_path import get_sys_path
@@ -99,7 +99,7 @@ class CompiledObject(Base):
         if not hasattr(self.obj, '__getitem__'):
             debug.warning('Tried to call __getitem__ on non-iterable.')
             return []
-        if type(self.obj) not in (str, list, tuple):
+        if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return []
 
