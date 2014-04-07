@@ -168,3 +168,15 @@ class TestParent(TestCase):
                 pass''', 1, len('def spam'))
         assert parent.name == 'spam'
         assert parent.parent().type == 'module'
+
+    def test_parent_on_completion(self):
+        parent = Script(dedent('''\
+            class Foo():
+                def bar(): pass
+            Foo().bar''')).completions()[0].parent()
+        assert parent.name == 'Foo'
+        assert parent.type == 'class'
+
+        parent = Script('str.join').completions()[0].parent()
+        assert parent.name == 'str'
+        assert parent.type == 'class'
