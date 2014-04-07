@@ -136,13 +136,10 @@ class Script(object):
             last word part. To ignore certain strange patterns with dots, just
             use regex.
             """
-            dots = re.search('^\.|((?:0[xbo])?[\d.]+)\.$', path)
-            if dots:
-                literal = dots.group(1)
-                if re.match('0[xbo][\da-fA-F]+$|\d\.$|\.{3}$', literal or ''):
-                    return True
-                return False
-            return True
+            if re.match('\d+\.\.$|\.{4}$', path):
+                return True  # check Ellipsis and float literal `1.`
+
+            return not re.search(r'^\.|^\d\.$|\.\.$', path)
 
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
