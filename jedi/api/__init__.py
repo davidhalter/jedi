@@ -130,9 +130,24 @@ class Script(object):
                     return ((k, bs) for k in keywords.keyword_names('import'))
             return self._simple_complete(path, like)
 
+        def completion_possible(path):
+            """
+            The completion logic is kind of complicated, because we strip the
+            last word part. To ignore certain strange patterns with dots, just
+            use regex.
+            """
+            dots = re.search('^\.|([\d.]+)\.$', path)
+            if dots:
+                literal = dots.group(1)
+                print(literal)
+                if re.search('\d\.|\.{3}', literal or ''):
+                    return True
+                return False
+            return True
+
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
-        if re.search('^\.|\.\.$', path):
+        if not completion_possible(path):
             return []
         path, dot, like = helpers.completion_parts(path)
 

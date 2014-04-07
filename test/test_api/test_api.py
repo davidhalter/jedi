@@ -50,3 +50,14 @@ def test_line_number_errors():
     # ok
     api.Script(s, 1, 0)
     api.Script(s, 1, len(s))
+
+
+def test_completion_on_int_literals():
+    # No completions on an int literal (is a float).
+    assert api.Script('1.').completions() == []
+
+    # Multiple points after an int literal basically mean that there's a float
+    # and a call after that.
+    #assert api.Script('1..').completions()[0].parent().name == 'float'
+    assert api.Script('1..').completions()[0]._definition.parent.name == 'float'
+    assert api.Script('1.0.').completions()[0]._definition.parent.name == 'float'
