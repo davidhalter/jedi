@@ -340,8 +340,11 @@ class BaseDefinition(object):
         return [_Param(self._evaluator, p) for p in params]
 
     def parent(self):
-        scope = self._definition.get_parent_until(pr.IsScope, include_current=False)
-        non_flow = scope.get_parent_until(pr.Flow, reverse=True)
+        if isinstance(self._definition, compiled.CompiledObject):
+            non_flow = self._definition.parent
+        else:
+            scope = self._definition.get_parent_until(pr.IsScope, include_current=False)
+            non_flow = scope.get_parent_until(pr.Flow, reverse=True)
         return Definition(self._evaluator, non_flow)
 
     def __repr__(self):

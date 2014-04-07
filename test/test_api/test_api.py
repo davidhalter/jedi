@@ -54,8 +54,7 @@ def test_line_number_errors():
 
 def _check_number(source, result='float'):
     completions = api.Script(source).completions()
-    #assert completions[0].parent().name == result
-    assert completions[0]._definition.parent.name == result
+    assert completions[0].parent().name == result
 
 
 def test_completion_on_number_literals():
