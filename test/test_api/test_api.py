@@ -68,10 +68,10 @@ def test_completion_on_number_literals():
 
     # power notation
     _check_number('1.e14.')
-    #_check_number('1.e-3.')
+    _check_number('1.e-3.')
     _check_number('9e3.')
     assert api.Script('1.e3..').completions() == []
-    #assert api.Script('1.e-13..').completions() == []
+    assert api.Script('1.e-13..').completions() == []
 
 
 def test_completion_on_hex_literals():

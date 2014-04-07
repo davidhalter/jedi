@@ -7,6 +7,7 @@ from jedi._compatibility import u
 from jedi.parser.fast import FastParser
 from jedi.parser import representation
 from jedi import debug
+from jedi.common import PushBackIterator
 
 
 class UserContext(object):
@@ -62,7 +63,7 @@ class UserContext(object):
         open_brackets = ['(', '[', '{']
         close_brackets = [')', ']', '}']
 
-        gen = tokenize.generate_tokens(fetch_line)
+        gen = PushBackIterator(tokenize.generate_tokens(fetch_line))
         string = u('')
         level = 0
         force_point = False
@@ -103,7 +104,14 @@ class UserContext(object):
             elif tok_type == tokenize.NUMBER:
                 pass
             else:
-                break
+                if tok_str == '-':
+                    next_tok = next(gen)
+                    if next_tok.string == 'e':
+                        gen.push_back(next_tok)
+                    else:
+                        break
+                else:
+                    break
 
             x = start_pos[0] - end[0] + 1
             l = self.get_line(x)
