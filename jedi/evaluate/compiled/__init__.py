@@ -96,7 +96,12 @@ class CompiledObject(Base):
     def get_index_types(self, index_types):
         # If the object doesn't have `__getitem__`, just raise the
         # AttributeError.
-        self.obj.__getitem__
+        if not hasattr(self.obj, '__getitem__'):
+            debug.warning('Tried to call __getitem__ on non-iterable.')
+            return []
+        if type(self.obj) not in (str, list, tuple):
+            # Get rid of side effects, we won't call custom `__getitem__`s.
+            return []
 
         result = []
         for typ in index_types:
