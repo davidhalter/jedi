@@ -85,5 +85,13 @@ def test_completion_on_hex_literals():
     _check_number('0xE7.', 'int')
     _check_number('0xEa.', 'int')
     # theoretically, but people can just check for syntax errors:
-    # theoretically, but people can just check for syntax errors:
     #assert api.Script('0x.').completions() == []
+
+
+def test_completion_on_complex_literals():
+    assert api.Script('1j..').completions() == []
+    _check_number('1j.', 'complex')
+    _check_number('44.j.', 'complex')
+    _check_number('4.0j.', 'complex')
+    # No dot no completion
+    assert api.Script('4j').completions() == []
