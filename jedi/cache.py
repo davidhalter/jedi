@@ -21,6 +21,7 @@ import hashlib
 import gc
 import inspect
 import shutil
+import re
 try:
     import cPickle as pickle
 except ImportError:
@@ -96,9 +97,17 @@ def time_cache(time_add_setting):
 
 
 @time_cache("call_signatures_validity")
-def cache_call_signatures(stmt):
+def cache_call_signatures(source, user_pos, stmt):
+    """This function calculates the cache key."""
+    index = user_pos[0] - 1
+    lines = source.splitlines() or ['']
+    before_cursor = lines[index][:user_pos[1]]
+    other_lines = lines[stmt.start_pos[0]:index]
+    whole = '\n'.join(other_lines + [before_cursor])
+    before_bracket = re.match(r'.*\(', whole, re.DOTALL)
+
     module_path = stmt.get_parent_until().path
-    return None if module_path is None else (module_path, stmt.start_pos)
+    return None if module_path is None else (module_path, before_bracket, stmt.start_pos)
 
 
 def underscore_memoization(func):

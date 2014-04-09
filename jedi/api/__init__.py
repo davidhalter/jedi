@@ -550,7 +550,9 @@ class Script(object):
 
         with common.scale_speed_settings(settings.scale_call_signatures):
             _callable = lambda: self._evaluator.eval_call(call)
-            origins = cache.cache_call_signatures(_callable, user_stmt)
+            origins = cache.cache_call_signatures(_callable, self.source,
+                                                  self._pos, user_stmt)
+            origins = self._evaluator.eval_call(call)
         debug.speed('func_call followed')
 
         return [classes.CallSignature(self._evaluator, o, call, index)
