@@ -331,6 +331,7 @@ def _check_isinstance_type(evaluator, stmt, search_name):
         assert len(obj) == 1
         assert len(classes) == 1
         assert isinstance(obj[0], pr.Call)
+
         # names fit?
         assert str(obj[0].name) == search_name
         assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple

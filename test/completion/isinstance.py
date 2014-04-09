@@ -34,10 +34,13 @@ if 2:
 # -----------------
 
 import datetime
+
+
 def fooooo(obj):
     if isinstance(obj, datetime.datetime):
         #? datetime.datetime
         obj
+
 
 def fooooo2(obj):
     if isinstance(obj, datetime.datetime):
@@ -47,3 +50,20 @@ def fooooo2(obj):
 
 #? int() datetime.datetime
 fooooo2('')
+
+
+# -----------------
+# Names with multiple indices.
+# -----------------
+
+class Test():
+    def __init__(self, testing):
+        if isinstance(testing, str):
+            self.testing = testing
+        else:
+            self.testing = 10
+
+    def boo(self):
+        if isinstance(self.testing, str):
+            ##? str()
+            self.testing
