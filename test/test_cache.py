@@ -99,3 +99,8 @@ def test_cache_call_signatures():
     for i in range(3):
         check(8, 'int', 'boo')
         check(4, 'str', 'boo')
+
+
+def test_cache_line_split_issues():
+    """Should still work even if there's a newline."""
+    assert jedi.Script('int(\n').call_signatures()[0].name == 'int'
