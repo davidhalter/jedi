@@ -16,7 +16,7 @@ import pkgutil
 import sys
 from itertools import chain
 
-from jedi._compatibility import find_module
+from jedi._compatibility import find_module, use_metaclass
 from jedi import common
 from jedi import debug
 from jedi import cache
@@ -27,6 +27,7 @@ from jedi.evaluate import helpers
 from jedi import settings
 from jedi.common import source_to_unicode
 from jedi.evaluate import compiled
+from jedi.evaluate.cache import CachedMetaClass, memoize_default
 
 
 class ModuleNotFound(Exception):
@@ -69,7 +70,8 @@ class ImportPath(pr.Base):
                 import_path.pop()
 
         module = import_stmt.get_parent_until()
-        self._importer = Importer(import_path, module, import_stmt.relative_count)
+        self._importer = Importer(self._evaluator, tuple(import_path), module,
+                                  import_stmt.relative_count)
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.import_stmt)
@@ -219,8 +221,8 @@ class ImportPath(pr.Base):
         return scopes
 
 
-class Importer(object):
-    def __init__(self, import_path, module, level=0):
+class Importer(use_metaclass(CachedMetaClass)):
+    def __init__(self, evaluator, import_path, module, level=0):
         """
         An implementation similar to ``__import__``. Use `follow_file_system`
         to actually follow the imports.
@@ -233,10 +235,13 @@ class Importer(object):
 
         :param import_path: List of namespaces (strings).
         """
+        debug.speed('imp')
+        self._evaluator = evaluator
         self.import_path = import_path
         self.level = level
         self.module = module
         path = module.path
+        print(self.import_path)
         # TODO abspath
         self.file_path = os.path.dirname(path) if path is not None else None
 
@@ -246,6 +251,7 @@ class Importer(object):
             path = os.path.dirname(path)
         return path
 
+    @memoize_default()
     def sys_path_with_modifications(self):
         # If you edit e.g. gunicorn, there will be imports like this:
         # `from gunicorn import something`. But gunicorn is not in the
@@ -267,6 +273,7 @@ class Importer(object):
             return evaluator.follow_path(iter(rest), [scope], scope)
         return [scope]
 
+    @memoize_default()
     def follow_file_system(self):
         if self.file_path:
             sys_path_mod = list(self.sys_path_with_modifications())
