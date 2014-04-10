@@ -14,7 +14,7 @@ statements like ``from datetim`` (curser at the end would return ``datetime``).
 import os
 import pkgutil
 import sys
-import itertools
+from itertools import chain
 
 from jedi._compatibility import find_module
 from jedi import common
@@ -202,13 +202,13 @@ class ImportPath(pr.Base):
                     scopes = self._evaluator.follow_path(iter(rest), [scope], scope)
             elif rest:
                 if is_goto:
-                    scopes = itertools.chain.from_iterable(
+                    scopes = list(chain.from_iterable(
                         self._evaluator.find_types(s, rest[0], is_goto=True)
-                        for s in scopes)
+                        for s in scopes))
                 else:
-                    scopes = itertools.chain.from_iterable(
+                    scopes = list(chain.from_iterable(
                         self._evaluator.follow_path(iter(rest), [s], s)
-                        for s in scopes)
+                        for s in scopes))
 
             if self._is_nested_import():
                 scopes.append(self._get_nested_import(scope))
@@ -216,7 +216,7 @@ class ImportPath(pr.Base):
             scopes = [ImportPath.GlobalNamespace]
         debug.dbg('after import: %s', scopes)
         self._evaluator.recursion_detector.pop_stmt()
-        return list(scopes)
+        return scopes
 
 
 class Importer(object):
