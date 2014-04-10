@@ -494,8 +494,8 @@ class Completion(BaseDefinition):
         if self._definition.isinstance(pr.Import) and self._definition.alias is None:
             i = imports.ImportPath(self._evaluator, self._definition, True)
             import_path = tuple(i.import_path + [unicode(self._name)])
-            return imports.Importer(self._evaluator, import_path,
-                                    i._importer.module).follow(self._evaluator)
+            return imports.get_importer(self._evaluator, import_path,
+                                        i._importer.module).follow(self._evaluator)
         return super(Completion, self)._follow_statements_imports()
 
     @memoize_default()

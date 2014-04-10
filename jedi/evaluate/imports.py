@@ -70,8 +70,8 @@ class ImportPath(pr.Base):
                 import_path.pop()
 
         module = import_stmt.get_parent_until()
-        self._importer = Importer(self._evaluator, tuple(import_path), module,
-                                  import_stmt.relative_count)
+        self._importer = get_importer(self._evaluator, tuple(import_path), module,
+                                      import_stmt.relative_count)
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.import_stmt)
@@ -221,7 +221,20 @@ class ImportPath(pr.Base):
         return scopes
 
 
-class Importer(use_metaclass(CachedMetaClass)):
+def get_importer(evaluator, import_path, module, level=0):
+    """
+    Checks the evaluator caches first, which resembles the ``sys.modules``
+    cache and speeds up libraries like ``numpy``.
+    """
+    try:
+        return evaluator.import_cache[import_path]
+    except KeyError:
+        importer = _Importer(evaluator, import_path, module, level)
+        evaluator.import_cache[import_path] = importer
+        return importer
+
+
+class _Importer(object):
     def __init__(self, evaluator, import_path, module, level=0):
         """
         An implementation similar to ``__import__``. Use `follow_file_system`
@@ -235,13 +248,12 @@ class Importer(use_metaclass(CachedMetaClass)):
 
         :param import_path: List of namespaces (strings).
         """
-        debug.speed('imp')
+        debug.speed('import %s' % (import_path,))
         self._evaluator = evaluator
         self.import_path = import_path
         self.level = level
         self.module = module
         path = module.path
-        print(self.import_path)
         # TODO abspath
         self.file_path = os.path.dirname(path) if path is not None else None
 

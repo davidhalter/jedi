@@ -88,6 +88,7 @@ from jedi.evaluate import precedence
 class Evaluator(object):
     def __init__(self):
         self.memoize_cache = {}  # for memoize decorators
+        self.import_cache = {}  # like `sys.modules`.
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
 
