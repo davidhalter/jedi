@@ -18,7 +18,7 @@ import jedi
 
 def used_memory():
     """Return the total MB of System Memory in use."""
-    return psutil.virtual_memory().used / 2**20
+    return psutil.virtual_memory().used / 2 ** 20
 
 
 def profile_preload(mod):
