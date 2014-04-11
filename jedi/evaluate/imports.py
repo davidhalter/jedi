@@ -107,7 +107,7 @@ class ImportPath(pr.Base):
                 if self.is_just_from:
                     # In the case of an import like `from x.` we don't need to
                     # add all the variables.
-                    if ['os'] == self.import_path and not self._is_relative_import():
+                    if ('os',) == self.import_path and not self._is_relative_import():
                         # os.path is a hardcoded exception, because it's a
                         # ``sys.modules`` modification.
                         names.append(self._generate_name('path'))
@@ -195,7 +195,7 @@ class ImportPath(pr.Base):
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []
-                if ['os', 'path'] == self.import_path[:2] \
+                if ('os', 'path') == self.import_path[:2] \
                         and not self._is_relative_import():
                     # This is a huge exception, we follow a nested import
                     # ``os.path``, because it's a very important one in Python
@@ -226,6 +226,10 @@ def get_importer(evaluator, import_path, module, level=0):
     Checks the evaluator caches first, which resembles the ``sys.modules``
     cache and speeds up libraries like ``numpy``.
     """
+    if level != 0:
+        # Only absolute imports should be cached. Otherwise we have a mess.
+        # TODO Maybe calculate the absolute import and save it here?
+        return _Importer(evaluator, import_path, module, level)
     try:
         return evaluator.import_cache[import_path]
     except KeyError:
