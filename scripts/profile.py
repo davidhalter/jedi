@@ -36,7 +36,10 @@ def main(args):
         run(code, i)
 
     jedi.set_debug_function(notices=args['--debug'])
-    cProfile.runctx('run(code, n)', globals(), locals(), sort=args['-s'])
+    if args['--omit']:
+        run(code, n)
+    else:
+        cProfile.runctx('run(code, n)', globals(), locals(), sort=args['-s'])
 
 
 if __name__ == '__main__':

@@ -1429,18 +1429,22 @@ class Name(Simple):
     So a name like "module.class.function"
     would result in an array of [module, class, function]
     """
-    __slots__ = ('names',)
+    __slots__ = ('names', '_get_code')
 
     def __init__(self, module, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(module, start_pos, end_pos)
-        self.names = tuple(n if isinstance(n, NamePart) else
-                           NamePart(n[0], self, n[1]) for n in names)
+        names = tuple(n if isinstance(n, NamePart) else
+                      NamePart(n[0], self, n[1]) for n in names)
+        # Cache get_code, because it's used quite often for comparisons
+        # (seen by using the profiler).
+        self._get_code = ".".join(unicode(n) for n in names)
+        self.names = names
         if parent is not None:
             self.parent = parent
 
     def get_code(self):
         """ Returns the names in a full string format """
-        return ".".join(unicode(n) for n in self.names)
+        return self._get_code
 
     @property
     def end_pos(self):
