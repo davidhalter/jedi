@@ -86,6 +86,7 @@ class GeneratorMethod(object):
         return self._generator.iter_content()
 
     def __getattr__(self, name):
+        print(self, name)
         return getattr(self._builtin_func, name)
 
 

@@ -83,9 +83,11 @@ class CompiledObject(Base):
         return self
 
     def get_defined_names(self):
+        names = []
         cls = self._cls()
         for name in dir(cls.obj):
-            yield CompiledName(cls, name)
+            names.append(CompiledName(cls, name))
+        return names
 
     def instance_names(self):
         return self.get_defined_names()
@@ -337,17 +339,26 @@ def _create_from_name(module, parent, name):
     return CompiledObject(obj, parent)
 
 
+def compiled_objects_cache(func):
+    def wrapper(evaluator, obj, parent=builtin, module=None):
+        # Do a very cheap form of caching here.
+        key = id(obj), id(parent), id(module)
+        try:
+            return evaluator.compiled_cache[key][0]
+        except KeyError:
+            result = func(evaluator, obj, parent, module)
+            # Need to cache all of them, otherwise the id could be overwritten.
+            evaluator.compiled_cache[key] = result, obj, parent, module
+            return result
+    return wrapper
+
+
+@compiled_objects_cache
 def create(evaluator, obj, parent=builtin, module=None):
     """
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
-    # Do a very cheap form of caching here.
-    key = id(obj), id(parent), id(module)
-    try:
-        return evaluator.compiled_cache[key]
-    except KeyError:
-        pass
 
     if not inspect.ismodule(obj):
         faked = fake.get_faked(module and module.obj, obj)
