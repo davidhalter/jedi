@@ -12,7 +12,7 @@ they change classes in Python 3.
 """
 import copy
 
-from jedi._compatibility import use_metaclass
+from jedi._compatibility import use_metaclass, unicode
 from jedi.parser import representation as pr
 from jedi.parser.tokenize import Token
 from jedi import debug
@@ -87,6 +87,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             """
             n = copy.copy(name)
             n.names = n.names[1:]
+            n._get_code = unicode(n.names[-1])
             names.append(InstanceElement(self._evaluator, self, n))
 
         names = []
