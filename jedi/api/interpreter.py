@@ -80,7 +80,7 @@ class LazyName(helpers.FakeName):
                               mod)
 
         module = compiled.CompiledObject(raw_module)
-        return compiled.create(self._value, module, module)
+        return compiled.create(self._evaluator, self._value, module, module)
 
     @parent.setter
     def parent(self, value):

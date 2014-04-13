@@ -16,7 +16,7 @@ def test_simple():
 
 
 def test_fake_loading():
-    assert isinstance(compiled.create(next), Function)
+    assert isinstance(compiled.create(Evaluator(), next), Function)
 
     string = compiled.builtin.get_subscope_by_name('str')
     from_name = compiled._create_from_name(
@@ -28,7 +28,7 @@ def test_fake_loading():
 
 
 def test_fake_docstr():
-    assert compiled.create(next).raw_doc == next.__doc__
+    assert compiled.create(Evaluator(), next).raw_doc == next.__doc__
 
 
 def test_parse_function_doc_illegal_docstr():

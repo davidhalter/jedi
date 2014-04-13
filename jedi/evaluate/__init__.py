@@ -89,6 +89,7 @@ class Evaluator(object):
     def __init__(self):
         self.memoize_cache = {}  # for memoize decorators
         self.import_cache = {}  # like `sys.modules`.
+        self.compiled_cache = {}  # see `compiled.create()`
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
 
@@ -137,10 +138,10 @@ class Evaluator(object):
                 # only in for loops without clutter, because they are
                 # predictable.
                 for r in result:
-                    left = precedence.calculate(left, operator, [r])
+                    left = precedence.calculate(self, left, operator, [r])
                 result = left
             else:
-                result = precedence.calculate(left, operator, result)
+                result = precedence.calculate(self, left, operator, result)
         elif len(stmt.get_set_vars()) > 1 and seek_name and ass_details:
             # Assignment checking is only important if the statement defines
             # multiple variables.
@@ -173,7 +174,7 @@ class Evaluator(object):
     def _eval_precedence(self, _precedence):
         left = self.process_precedence_element(_precedence.left)
         right = self.process_precedence_element(_precedence.right)
-        return precedence.calculate(left, _precedence.operator, right)
+        return precedence.calculate(self, left, _precedence.operator, right)
 
     def _eval_statement_element(self, element):
         if pr.Array.is_type(element, pr.Array.NOARRAY):
@@ -227,7 +228,7 @@ class Evaluator(object):
                                         search_global=True)
             else:
                 # for pr.Literal
-                types = [compiled.create(current.value)]
+                types = [compiled.create(self, current.value)]
             types = imports.strip_imports(self, types)
 
         return self.follow_path(path, types, scope)

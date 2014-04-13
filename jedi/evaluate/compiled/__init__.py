@@ -337,11 +337,18 @@ def _create_from_name(module, parent, name):
     return CompiledObject(obj, parent)
 
 
-def create(obj, parent=builtin, module=None):
+def create(evaluator, obj, parent=builtin, module=None):
     """
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
+    # Do a very cheap form of caching here.
+    key = id(obj), id(parent), id(module)
+    try:
+        return evaluator.compiled_cache[key]
+    except KeyError:
+        pass
+
     if not inspect.ismodule(obj):
         faked = fake.get_faked(module and module.obj, obj)
         if faked is not None:

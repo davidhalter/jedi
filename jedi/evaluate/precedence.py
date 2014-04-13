@@ -174,12 +174,12 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
     return left
 
 
-def calculate(left_result, operator, right_result):
+def calculate(evaluator, left_result, operator, right_result):
     result = []
     if left_result is None and right_result:
         # cases like `-1` or `1 + ~1`
         for right in right_result:
-            result.append(_factor_calculate(operator, right))
+            result.append(_factor_calculate(evaluator, operator, right))
         return result
     else:
         if not left_result or not right_result:
@@ -187,14 +187,14 @@ def calculate(left_result, operator, right_result):
 
         for left in left_result:
             for right in right_result:
-                result += _element_calculate(left, operator, right)
+                result += _element_calculate(evaluator, left, operator, right)
     return result
 
 
-def _factor_calculate(operator, right):
+def _factor_calculate(evaluator, operator, right):
     if _is_number(right):
         if operator == '-':
-            return create(-right.obj)
+            return create(evaluator, -right.obj)
     return right
 
 
@@ -203,7 +203,7 @@ def _is_number(obj):
         and isinstance(obj.obj, (int, float))
 
 
-def _element_calculate(left, operator, right):
+def _element_calculate(evaluator, left, operator, right):
     def is_string(obj):
         return isinstance(obj, CompiledObject) \
             and isinstance(obj.obj, (str, unicode))
@@ -215,8 +215,8 @@ def _element_calculate(left, operator, right):
             return [left]
     elif operator == '+':
         if _is_number(left) and _is_number(right) or is_string(left) and is_string(right):
-            return [create(left.obj + right.obj)]
+            return [create(evaluator, left.obj + right.obj)]
     elif operator == '-':
         if _is_number(left) and _is_number(right):
-            return [create(left.obj - right.obj)]
+            return [create(evaluator, left.obj - right.obj)]
     return [left, right]
