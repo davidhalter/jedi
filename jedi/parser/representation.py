@@ -1433,8 +1433,7 @@ class Name(Simple):
 
     def __init__(self, module, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(module, start_pos, end_pos)
-        names = tuple(n if isinstance(n, NamePart) else
-                      NamePart(n[0], self, n[1]) for n in names)
+        names = tuple(NamePart(n[0], self, n[1]) for n in names)
         # Cache get_code, because it's used quite often for comparisons
         # (seen by using the profiler).
         self._get_code = ".".join(unicode(n) for n in names)
