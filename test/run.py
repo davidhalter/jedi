@@ -139,12 +139,16 @@ class IntegrationTestCase(object):
 
     @property
     def module_name(self):
-        return re.sub('.*/|\.py', '', self.path)
+        return re.sub('.*/|\.py$', '', self.path)
+
+    @property
+    def line_nr_test(self):
+        """The test is always defined on the line before."""
+        return self.line_nr - 1
 
     def __repr__(self):
-        name = os.path.basename(self.path) if self.path else None
-        return '<%s: %s:%s:%s>' % (self.__class__.__name__,
-                                   name, self.line_nr - 1, self.line.rstrip())
+        return '<%s: %s:%s:%s>' % (self.__class__.__name__, self.module_name,
+                                   self.line_nr_test, self.line.rstrip())
 
     def script(self):
         return jedi.Script(self.source, self.line_nr, self.column, self.path)

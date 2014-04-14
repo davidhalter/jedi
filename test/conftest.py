@@ -57,7 +57,8 @@ def pytest_generate_tests(metafunc):
         if thirdparty:
             cases.extend(run.collect_dir_tests(
                 os.path.join(base_dir, 'thirdparty'), test_files, True))
-        metafunc.parametrize('case', cases)
+        ids = ["%s:%s" % (c.module_name, c.line_nr_test) for c in cases]
+        metafunc.parametrize('case', cases, ids=ids)
     if 'refactor_case' in metafunc.fixturenames:
         base_dir = metafunc.config.option.refactor_case_dir
         metafunc.parametrize(
