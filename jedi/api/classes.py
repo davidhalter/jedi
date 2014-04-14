@@ -29,6 +29,7 @@ def defined_names(evaluator, scope):
     pair = next(get_names_of_scope(evaluator, scope, star_search=False,
                                    include_builtin=False), None)
     names = pair[1] if pair else []
+    names = [n for n in names if isinstance(n, pr.Import) or (len(n) == 1)]
     return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 

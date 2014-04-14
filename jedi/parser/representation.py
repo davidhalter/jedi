@@ -315,18 +315,9 @@ class Scope(Simple, IsScope, DocstringMixin):
         ... b.c = z
         ... '''))
         >>> parser.module.get_defined_names()
-        [<Name: a@2,0>, <Name: b@3,0>]
-
-        Note that unlike :meth:`get_set_vars`, assignment to object
-        attribute does not change the result because it does not change
-        the defined names in this scope.
-
-        >>> parser.module.get_set_vars()
         [<Name: a@2,0>, <Name: b@3,0>, <Name: b.c@4,0>]
-
         """
-        return [n for n in self.get_set_vars()
-                if isinstance(n, Import) or (len(n) == 1)]
+        return self.get_set_vars()
 
     @Python3Method
     def get_statement_for_position(self, pos, include_imports=False):
@@ -1433,10 +1424,11 @@ class Name(Simple):
 
     def __init__(self, module, names, start_pos, end_pos, parent=None):
         super(Name, self).__init__(module, start_pos, end_pos)
-        names = tuple(NamePart(n[0], self, n[1]) for n in names)
         # Cache get_code, because it's used quite often for comparisons
         # (seen by using the profiler).
-        self._get_code = ".".join(unicode(n) for n in names)
+        self._get_code = ".".join(n[0] for n in names)
+
+        names = tuple(NamePart(n[0], self, n[1]) for n in names)
         self.names = names
         if parent is not None:
             self.parent = parent

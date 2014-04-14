@@ -167,8 +167,8 @@ class ImportPath(pr.Base):
         # This is not an existing Import statement. Therefore, set position to
         # 0 (0 is not a valid line number).
         zero = (0, 0)
-        names = ((name_part.string, name_part.start_pos)
-                 for name_part in i.namespace.names[1:])
+        names = [(name_part.string, name_part.start_pos)
+                 for name_part in i.namespace.names[1:]]
         n = pr.Name(i._sub_module, names, zero, zero, self.import_stmt)
         new = pr.Import(i._sub_module, zero, zero, n)
         new.parent = parent
