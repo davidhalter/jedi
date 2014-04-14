@@ -80,6 +80,9 @@ class LazyName(helpers.FakeName):
                               mod)
 
         module = compiled.CompiledObject(raw_module)
+        if raw_module == builtins:
+            # The builtins module is special and always cached.
+            module = compiled.builtin
         return compiled.create(self._evaluator, self._value, module, module)
 
     @parent.setter

@@ -82,6 +82,7 @@ class CompiledObject(Base):
             return CompiledObject(c, self.parent)
         return self
 
+    @underscore_memoization
     def get_defined_names(self):
         names = []
         cls = self._cls()
