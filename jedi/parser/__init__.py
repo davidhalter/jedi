@@ -191,7 +191,7 @@ class Parser(object):
                     param.add_annotation(annotation)
 
             # params without vars are usually syntax errors.
-            if param and (param.get_set_vars()):
+            if param and (param.get_defined_names()):
                 param.position_nr = pos
                 names.append(param)
                 pos += 1

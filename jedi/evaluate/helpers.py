@@ -14,7 +14,7 @@ def fast_parent_copy(obj):
         if isinstance(obj, pr.Statement):
             # Need to set _set_vars, otherwise the cache is not working
             # correctly, don't know why.
-            obj.get_set_vars()
+            obj.get_defined_names()
 
         new_obj = copy.copy(obj)
         new_elements[obj] = new_obj

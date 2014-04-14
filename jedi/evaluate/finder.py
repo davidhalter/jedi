@@ -447,7 +447,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
                 reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
         if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
             # is a list comprehension
-            yield scope, scope.get_set_vars(is_internal_call=True)
+            yield scope, scope.get_defined_names(is_internal_call=True)
 
         scope = scope.parent
         # This is used, because subscopes (Flow scopes) would distort the

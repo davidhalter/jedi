@@ -109,7 +109,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
                     # because to follow them and their self variables is too
                     # complicated.
                     sub = self._get_method_execution(sub)
-            for n in sub.get_set_vars():
+            for n in sub.get_defined_names():
                 # Only names with the selfname are being added.
                 # It is also important, that they have a len() of 2,
                 # because otherwise, they are just something else
@@ -446,9 +446,7 @@ class FunctionExecution(Executable):
         Call the default method with the own instance (self implements all
         the necessary functions). Add also the params.
         """
-        return self._get_params() + pr.Scope.get_set_vars(self)
-
-    get_set_vars = get_defined_names
+        return self._get_params() + pr.Scope.get_defined_names(self)
 
     def _copy_properties(self, prop):
         """

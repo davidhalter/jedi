@@ -42,7 +42,7 @@ def usages(evaluator, definitions, search_name, mods):
             stmt = stmt.parent
         # New definition, call cannot be a part of stmt
         if len(call.name) == 1 and call.execution is None \
-                and call.name in stmt.get_set_vars():
+                and call.name in stmt.get_defined_names():
             # Class params are not definitions (like function params). They
             # are super classes, that need to be resolved.
             if not (isinstance(stmt, pr.Param) and isinstance(stmt.parent, pr.Class)):

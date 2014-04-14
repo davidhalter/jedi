@@ -142,7 +142,7 @@ class Evaluator(object):
                 result = left
             else:
                 result = precedence.calculate(self, left, operator, result)
-        elif len(stmt.get_set_vars()) > 1 and seek_name and ass_details:
+        elif len(stmt.get_defined_names()) > 1 and seek_name and ass_details:
             # Assignment checking is only important if the statement defines
             # multiple variables.
             new_result = []

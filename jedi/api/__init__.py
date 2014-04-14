@@ -452,7 +452,7 @@ class Script(object):
                 itself, if the name is ``foo``, but not ``foo.bar``.
                 """
                 if isinstance(user_stmt, pr.Statement):
-                    for name in user_stmt.get_set_vars():
+                    for name in user_stmt.get_defined_names():
                         if name.start_pos <= self._pos <= name.end_pos \
                                 and len(name.names) == 1:
                             return name, name.names[-1]
@@ -504,7 +504,7 @@ class Script(object):
             c = user_stmt.expression_list()[0]
             if not isinstance(c, unicode) and self._pos < c.start_pos:
                 # the search_name might be before `=`
-                definitions = [v for v in user_stmt.get_set_vars()
+                definitions = [v for v in user_stmt.get_defined_names()
                                if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option

@@ -280,29 +280,6 @@ class Scope(Simple, IsScope, DocstringMixin):
         return string
 
     @Python3Method
-    def get_set_vars(self):
-        """
-        Get all the names, that are active and accessible in the current
-        scope.  See :meth:`get_defined_names` for examples.
-
-        :return: list of Name
-        :rtype: list
-        """
-        n = []
-        for stmt in self.statements:
-            try:
-                n += stmt.get_set_vars(True)
-            except TypeError:
-                n += stmt.get_set_vars()
-
-        # function and class names
-        n += [s.name for s in self.subscopes]
-
-        for i in self.imports:
-            if not i.star:
-                n += i.get_defined_names()
-        return n
-
     def get_defined_names(self):
         """
         Get all defined names in this scope.
@@ -317,7 +294,20 @@ class Scope(Simple, IsScope, DocstringMixin):
         >>> parser.module.get_defined_names()
         [<Name: a@2,0>, <Name: b@3,0>, <Name: b.c@4,0>]
         """
-        return self.get_set_vars()
+        n = []
+        for stmt in self.statements:
+            try:
+                n += stmt.get_defined_names(True)
+            except TypeError:
+                n += stmt.get_defined_names()
+
+        # function and class names
+        n += [s.name for s in self.subscopes]
+
+        for i in self.imports:
+            if not i.star:
+                n += i.get_defined_names()
+        return n
 
     @Python3Method
     def get_statement_for_position(self, pos, include_imports=False):
@@ -408,8 +398,8 @@ class SubModule(Scope, Module):
         # set no parent here, because globals are not defined in this scope.
         self.global_vars.append(name)
 
-    def get_set_vars(self):
-        n = super(SubModule, self).get_set_vars()
+    def get_defined_names(self):
+        n = super(SubModule, self).get_defined_names()
         n += self.global_vars
         return n
 
@@ -528,8 +518,8 @@ class Function(Scope):
         string += super(Function, self).get_code(True, indention)
         return string
 
-    def get_set_vars(self):
-        n = super(Function, self).get_set_vars()
+    def get_defined_names(self):
+        n = super(Function, self).get_defined_names()
         for p in self.params:
             try:
                 n.append(p.get_name())
@@ -645,7 +635,7 @@ class Flow(Scope):
             string += self.next.get_code()
         return string
 
-    def get_set_vars(self, is_internal_call=False):
+    def get_defined_names(self, is_internal_call=False):
         """
         Get the names for the flow. This includes also a call to the super
         class.
@@ -657,13 +647,13 @@ class Flow(Scope):
         if is_internal_call:
             n = list(self.set_vars)
             for s in self.inputs:
-                n += s.get_set_vars()
+                n += s.get_defined_names()
             if self.next:
-                n += self.next.get_set_vars(is_internal_call)
-            n += super(Flow, self).get_set_vars()
+                n += self.next.get_defined_names(is_internal_call)
+            n += super(Flow, self).get_defined_names()
             return n
         else:
-            return self.get_parent_until((Class, Function)).get_set_vars()
+            return self.get_parent_until((Class, Function)).get_defined_names()
 
     def get_imports(self):
         i = super(Flow, self).get_imports()
@@ -692,7 +682,7 @@ class ForFlow(Flow):
         set_stmt.parent = self.use_as_parent
         self.is_list_comp = is_list_comp
 
-        self.set_vars = set_stmt.get_set_vars()
+        self.set_vars = set_stmt.get_defined_names()
         for s in self.set_vars:
             s.parent.parent = self.use_as_parent
             s.parent = self.use_as_parent
@@ -774,9 +764,6 @@ class Import(Simple):
         else:
             return [self.namespace]
 
-    def get_set_vars(self):
-        return self.get_defined_names()
-
     def get_all_import_names(self):
         n = []
         if self.from_ns:
@@ -810,7 +797,7 @@ class KeywordStatement(Base):
         else:
             return '%s %s\n' % (self.name, self._stmt)
 
-    def get_set_vars(self):
+    def get_defined_names(self):
         return []
 
     @property
@@ -881,7 +868,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
         else:
             return code
 
-    def get_set_vars(self):
+    def get_defined_names(self):
         """ Get the names for the statement. """
         if self._set_vars is None:
 
@@ -1187,7 +1174,7 @@ class Param(Statement):
 
     def get_name(self):
         """ get the name of the param """
-        n = self.get_set_vars()
+        n = self.get_defined_names()
         if len(n) > 1:
             debug.warning("Multiple param names (%s).", n)
         return n[0]
