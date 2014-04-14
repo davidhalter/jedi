@@ -69,24 +69,29 @@ class NameFinder(object):
                 # reference.
                 name_list = sorted(name_list, key=lambda n: n.start_pos, reverse=True)
             for name in name_list:
+                if self.name_str != name.get_code():
+                    continue
+
                 parpar = name.parent.parent
-                if self.name_str == name.get_code() and parpar not in break_scopes:
-                    if not self._name_is_array_assignment(name):
-                        result.append(name)  # `arr[1] =` is not the definition
-                    # for comparison we need the raw class
-                    # this means that a definition was found and is not e.g.
-                    # in if/else.
-                    if result and self._name_is_break_scope(name):
-                        #print result, name.parent, parpar, s
-                        if isinstance(parpar, pr.Flow) \
-                                or isinstance(parpar, pr.KeywordStatement) \
-                                and parpar.name == 'global':
-                            s = nscope.base if isinstance(nscope, er.Class) else nscope
-                            if parpar == s:
-                                break
-                        else:
+                if name.parent.parent in break_scopes:
+                    continue
+
+                if not self._name_is_array_assignment(name):
+                    result.append(name)  # `arr[1] =` is not the definition
+                # for comparison we need the raw class
+                # this means that a definition was found and is not e.g.
+                # in if/else.
+                if result and self._name_is_break_scope(name):
+                    #print result, name.parent, parpar, s
+                    if isinstance(parpar, pr.Flow) \
+                            or isinstance(parpar, pr.KeywordStatement) \
+                            and parpar.name == 'global':
+                        s = nscope.base if isinstance(nscope, er.Class) else nscope
+                        if parpar == s:
                             break
-                        break_scopes.append(parpar)
+                    else:
+                        break
+                    break_scopes.append(parpar)
             if result:
                 break
 
