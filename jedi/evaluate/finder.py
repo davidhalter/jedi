@@ -63,8 +63,12 @@ class NameFinder(object):
         result = []
         for nscope, name_list in scope_generator:
             break_scopes = []
-            # here is the position stuff happening (sorting of variables)
-            for name in sorted(name_list, key=lambda n: n.start_pos, reverse=True):
+            if not isinstance(nscope, compiled.CompiledObject):
+                # Here is the position stuff happening (sorting of variables).
+                # Compiled objects don't need that, because there's only one
+                # reference.
+                name_list = sorted(name_list, key=lambda n: n.start_pos, reverse=True)
+            for name in name_list:
                 parpar = name.parent.parent
                 if self.name_str == name.get_code() and parpar not in break_scopes:
                     if not self._name_is_array_assignment(name):
