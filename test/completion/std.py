@@ -13,6 +13,13 @@ sorted(arr)[0]
 #? str()
 next(reversed(arr))
 
+# should not fail if there's no return value.
+def yielder():
+    yield None
+
+#? 
+next(reversed(yielder()))
+
 #? str()
 next(open(''))
 

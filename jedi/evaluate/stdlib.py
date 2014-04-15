@@ -86,14 +86,15 @@ def builtins_reversed(evaluator, obj, params):
     objects = _follow_param(evaluator, params, 0)
     if objects:
         # unpack the iterator values
-        objects = iterable.get_iterator_types(objects)
-        rev = reversed(objects)
-        # Repack iterator values and then run it the normal way. This is necessary,
-        # because `reversed` is a function and autocompletion would fail in certain
-        # cases like `reversed(x).__iter__` if we just returned the result
-        # directly.
-        stmts = [FakeStatement([r]) for r in rev]
-        objects = (FakeArray(stmts, objects[0].parent),)
+        objects = tuple(iterable.get_iterator_types(objects))
+        if objects:
+            rev = reversed(objects)
+            # Repack iterator values and then run it the normal way. This is
+            # necessary, because `reversed` is a function and autocompletion
+            # would fail in certain cases like `reversed(x).__iter__` if we
+            # just returned the result directly.
+            stmts = [FakeStatement([r]) for r in rev]
+            objects = (FakeArray(stmts, objects[0].parent),)
     return [er.Instance(evaluator, obj, objects)]
 
 
