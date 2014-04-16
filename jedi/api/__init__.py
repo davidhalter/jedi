@@ -266,6 +266,9 @@ class Script(object):
             stmt = r.module.statements[-1]
         except IndexError:
             raise NotFoundError()
+        if isinstance(stmt, pr.Flow):
+            raise NotFoundError()
+
         user_stmt = self._parser.user_stmt()
         if user_stmt is None:
             # Set the start_pos to a pseudo position, that doesn't exist but works

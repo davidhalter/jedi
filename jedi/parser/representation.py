@@ -679,13 +679,15 @@ class ForFlow(Flow):
         super(ForFlow, self).__init__(module, 'for', inputs, start_pos)
 
         self.set_stmt = set_stmt
-        set_stmt.parent = self.use_as_parent
         self.is_list_comp = is_list_comp
 
-        self.set_vars = set_stmt.get_defined_names()
-        for s in self.set_vars:
-            s.parent.parent = self.use_as_parent
-            s.parent = self.use_as_parent
+        if set_stmt is not None:
+            set_stmt.parent = self.use_as_parent
+            self.set_vars = set_stmt.get_defined_names()
+
+            for s in self.set_vars:
+                s.parent.parent = self.use_as_parent
+                s.parent = self.use_as_parent
 
     def get_code(self, first_indent=False, indention=" " * 4):
         vars = ",".join(x.get_code() for x in self.set_vars)

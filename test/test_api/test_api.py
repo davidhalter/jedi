@@ -94,3 +94,8 @@ def test_completion_on_complex_literals():
     _check_number('4.0j.', 'complex')
     # No dot no completion
     assert api.Script('4j').completions() == []
+
+
+def test_goto_assignments_on_for():
+    with raises(api.NotFoundError):
+        api.Script('for').goto_assignments()
