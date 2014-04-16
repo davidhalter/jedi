@@ -230,7 +230,7 @@ class BaseDefinition(object):
         Document for function f.
 
         """
-        return Documentation(self._definition)
+        return Help(self._definition)
 
     @property
     def doc(self):
@@ -467,7 +467,7 @@ class Completion(BaseDefinition):
                 if followed:
                     # TODO: Use all of the followed objects as input to Documentation.
                     definition = followed[0]
-        return Documentation(definition)
+        return Help(definition)
 
     @property
     def type(self):
@@ -708,7 +708,7 @@ class _Param(Definition):
         return self.description
 
 
-class Documentation(object):
+class Help(object):
     def __init__(self, definition):
         self._definition = definition
 
