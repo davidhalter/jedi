@@ -96,6 +96,9 @@ def test_completion_on_complex_literals():
     assert api.Script('4j').completions() == []
 
 
-def test_goto_assignments_on_for():
+def test_goto_assignments_on_non_statement():
     with raises(api.NotFoundError):
         api.Script('for').goto_assignments()
+
+    with raises(api.NotFoundError):
+        api.Script('assert').goto_assignments()

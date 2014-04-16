@@ -266,7 +266,7 @@ class Script(object):
             stmt = r.module.statements[-1]
         except IndexError:
             raise NotFoundError()
-        if isinstance(stmt, pr.Flow):
+        if not isinstance(stmt, pr.Statement):
             raise NotFoundError()
 
         user_stmt = self._parser.user_stmt()
