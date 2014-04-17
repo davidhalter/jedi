@@ -714,6 +714,10 @@ class _Param(Definition):
 
 
 class _Help(object):
+    """
+    Temporary implementation, will be used as `Script.help() or something in
+    the future.
+    """
     def __init__(self, definition):
         self._definition = definition
 
