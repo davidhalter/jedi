@@ -231,9 +231,9 @@ class BaseDefinition(object):
 
         """
         if raw:
-            return Help(self._definition).raw()
+            return _Help(self._definition).raw()
         else:
-            return Help(self._definition).full()
+            return _Help(self._definition).full()
 
     @property
     def doc(self):
@@ -470,9 +470,9 @@ class Completion(BaseDefinition):
                     definition = followed[0]
 
         if raw:
-            return Help(definition).raw()
+            return _Help(definition).raw()
         else:
-            return Help(definition).full()
+            return _Help(definition).full()
 
     @property
     def type(self):
@@ -713,7 +713,7 @@ class _Param(Definition):
         return self.description
 
 
-class Help(object):
+class _Help(object):
     def __init__(self, definition):
         self._definition = definition
 
