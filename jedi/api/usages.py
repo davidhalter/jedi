@@ -1,4 +1,3 @@
-from jedi._compatibility import unicode
 from jedi import common
 from jedi.api import classes
 from jedi.parser import representation as pr
@@ -11,12 +10,7 @@ class Usage(classes.Definition):
     def __init__(self, evaluator, name_part, scope):
         super(Usage, self).__init__(evaluator, name_part)
         self._start_pos = name_part.start_pos
-        self.text = unicode(name_part)
         #self.end_pos = name_part.end_pos
-
-    @property
-    def description(self):
-        return "%s@%s,%s" % (self.text, self.line, self.column)
 
     def __eq__(self, other):
         return self._start_pos == other._start_pos \

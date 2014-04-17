@@ -89,7 +89,7 @@ def _rename(names, replace_str):
         nr, indent = name.line, name.column
         line = new_lines[nr - 1]
         new_lines[nr - 1] = line[:indent] + replace_str + \
-            line[indent + len(name.text):]
+            line[indent + len(name.name):]
     process(current_path, old_lines, new_lines)
     return dct
 

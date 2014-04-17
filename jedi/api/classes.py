@@ -10,6 +10,7 @@ from jedi._compatibility import next, unicode, use_metaclass
 from jedi import settings
 from jedi import common
 from jedi.parser import representation as pr
+from jedi.cache import underscore_memoization
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
@@ -529,6 +530,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         super(Definition, self).__init__(evaluator, definition, definition.start_pos)
 
     @property
+    @underscore_memoization
     def name(self):
         """
         Name of variable/function/class/module.
@@ -568,6 +570,10 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
                     except IndexError:
                         pass
                 return None
+        elif isinstance(d, iterable.Generator):
+            return None
+        elif isinstance(d, pr.NamePart):
+            name = d
         return unicode(name)
 
     @property
@@ -648,6 +654,14 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         iterable = (defined_names(self._evaluator, d) for d in defs)
         iterable = list(iterable)
         return list(chain.from_iterable(iterable))
+
+    def __eq__(self, other):
+        return self._start_pos == other._start_pos \
+            and self.module_path == other.module_path \
+            and self.name == other.name
+
+    def __hash__(self):
+        return hash((self._start_pos, self.module_path, self.name))
 
 
 class CallSignature(Definition):
