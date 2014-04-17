@@ -250,3 +250,12 @@ def check(instance):
     instance.foo()
 
 check(DynamicParam())
+
+# -----------------
+# Compiled Objects
+# -----------------
+
+import sys
+
+#< 0 (-3,7), (0,0)
+sys
