@@ -204,7 +204,7 @@ class BaseDefinition(object):
             return None
         return self._start_pos[1]
 
-    def documentation(self):
+    def docstring(self, raw=False):
         r"""
         Return a document string for this completion object.
 
@@ -216,7 +216,7 @@ class BaseDefinition(object):
         ...     "Document for function f."
         ... '''
         >>> script = Script(source, 1, len('def f'), 'example.py')
-        >>> doc = script.goto_definitions()[0].documentation()
+        >>> doc = script.goto_definitions()[0].docstring()
         >>> print(doc)
         f(a, b = 1)
         <BLANKLINE>
@@ -224,35 +224,36 @@ class BaseDefinition(object):
 
         Notice that useful extra information is added to the actual
         docstring.  For function, it is call signature.  If you need
-        actual docstring, use :attr:`raw` instead.
+        actual docstring, use ``raw=True`` instead.
 
-        >>> print(doc.raw())
+        >>> print(script.goto_definitions()[0].docstring(raw=True))
         Document for function f.
 
         """
-        return Help(self._definition)
+        if raw:
+            return Help(self._definition).raw()
+        else:
+            return Help(self._definition).full()
 
     @property
     def doc(self):
         """
         .. deprecated:: 0.8.0
-           Use :meth:`.documentation` instead.
+           Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
         warnings.warn("Use documentation() instead.", DeprecationWarning)
-        return self.documentation()
+        return self.docstring()
 
     @property
     def raw_doc(self):
         """
         .. deprecated:: 0.8.0
-           Use :meth:`.documentation` instead.
+           Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        try:
-            return self._definition.raw_doc
-        except AttributeError:
-            return ''
+        warnings.warn("Use documentation() instead.", DeprecationWarning)
+        return self.docstring(raw=True)
 
     @property
     def description(self):
@@ -451,7 +452,7 @@ class Completion(BaseDefinition):
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name)
 
-    def documentation(self, fast=True):
+    def docstring(self, raw=False, fast=True):
         """
         :param fast: Don't follow imports that are only one level deep like
             ``import foo``, but follow ``from foo import bar``. This makes
@@ -467,7 +468,11 @@ class Completion(BaseDefinition):
                 if followed:
                     # TODO: Use all of the followed objects as input to Documentation.
                     definition = followed[0]
-        return Help(definition)
+
+        if raw:
+            return Help(definition).raw()
+        else:
+            return Help(definition).full()
 
     @property
     def type(self):
@@ -711,12 +716,6 @@ class _Param(Definition):
 class Help(object):
     def __init__(self, definition):
         self._definition = definition
-
-    def __str__(self):
-        return self.full()
-
-    def __unicode__(self):
-        return self.full()
 
     def full(self):
         try:

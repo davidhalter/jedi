@@ -116,15 +116,15 @@ def test_position_none_if_builtin():
 
 
 @cwd_at('.')
-def test_completion_documentation():
+def test_completion_docstring():
     """
     Jedi should follow imports in certain conditions
     """
     c = Script('import jedi\njed').completions()[0]
-    assert str(c.documentation(fast=False)) == cleandoc(jedi_doc)
+    assert c.docstring(fast=False) == cleandoc(jedi_doc)
 
     c = Script('import jedi\njedi.Scr').completions()[0]
-    assert c.documentation(fast=False).raw() == cleandoc(Script.__doc__)
+    assert c.docstring(raw=True, fast=False) == cleandoc(Script.__doc__)
 
 
 def test_signature_params():
