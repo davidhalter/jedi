@@ -255,7 +255,7 @@ check(DynamicParam())
 # Compiled Objects
 # -----------------
 
-import sys
+import _sre
 
-#< 0 (-3,7), (0,0)
-sys
+#< 0 (-3,7), (0,0), ('_sre', None, None)
+_sre

@@ -221,8 +221,10 @@ class IntegrationTestCase(object):
                 # this means that there is a module specified
                 wanted.append(pos_tup)
             else:
-                wanted.append((self.module_name, self.line_nr + pos_tup[0],
-                                pos_tup[1]))
+                line = pos_tup[0]
+                if pos_tup[0] is not None:
+                    line += self.line_nr
+                wanted.append((self.module_name, line, pos_tup[1]))
 
         return compare_cb(self, compare, sorted(wanted))
 

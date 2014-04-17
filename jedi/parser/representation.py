@@ -1395,6 +1395,9 @@ class NamePart(object):
     def __hash__(self):
         return hash(self.string)
 
+    def get_parent_until(self, *args, **kwargs):
+        return self.parent.get_parent_until(*args, **kwargs)
+
     @property
     def start_pos(self):
         offset = self.parent._sub_module.line_offset

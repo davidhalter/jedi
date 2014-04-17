@@ -137,6 +137,8 @@ class BaseDefinition(object):
             return stripped.type()
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
+        if isinstance(stripped, pr.NamePart):
+            stripped = stripped.parent
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
         return type(stripped).__name__.lower()

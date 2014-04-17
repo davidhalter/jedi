@@ -518,7 +518,7 @@ class Script(object):
         names = usages.usages(self._evaluator, definitions, search_name, module)
 
         for d in set(definitions):
-            if isinstance(d, pr.Module):
+            if isinstance(d, (pr.Module, compiled.CompiledObject)):
                 names.append(usages.Usage(self._evaluator, d, d))
             elif isinstance(d, er.Instance):
                 # Instances can be ignored, because they have been created by

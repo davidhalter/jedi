@@ -9,10 +9,10 @@ from jedi.evaluate import helpers
 class Usage(classes.Definition):
     """TODO: document this"""
     def __init__(self, evaluator, name_part, scope):
-        super(Usage, self).__init__(evaluator, scope)
+        super(Usage, self).__init__(evaluator, name_part)
         self._start_pos = name_part.start_pos
         self.text = unicode(name_part)
-        self.end_pos = name_part.end_pos
+        #self.end_pos = name_part.end_pos
 
     @property
     def description(self):
