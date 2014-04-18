@@ -2,6 +2,8 @@
 Test all things related to the ``jedi.api`` module.
 """
 
+from textwrap import dedent
+
 from jedi import api
 from pytest import raises
 
@@ -102,3 +104,26 @@ def test_goto_assignments_on_non_statement():
 
     with raises(api.NotFoundError):
         api.Script('assert').goto_assignments()
+
+
+def test_goto_definition_not_multiple():
+    """
+    There should be only one Definition result if it leads back to the same
+    origin (e.g. instance method)
+    """
+
+    s = dedent('''\
+            import random
+            class A():
+                def __init__(self, a):
+                    self.a = 3
+
+                def foo(self):
+                    pass
+
+            if random.randint(0, 1):
+                a = A(2)
+            else:
+                a = A(1)
+            a''')
+    assert len(api.Script(s).goto_definitions()) == 1
