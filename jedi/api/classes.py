@@ -658,10 +658,14 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
     def __eq__(self, other):
         return self._start_pos == other._start_pos \
             and self.module_path == other.module_path \
-            and self.name == other.name
+            and self.name == other.name \
+            and self._evaluator == other._evaluator
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self._start_pos, self.module_path, self.name))
+        return hash((self._start_pos, self.module_path, self.name, self._evaluator))
 
 
 class CallSignature(Definition):
