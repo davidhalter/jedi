@@ -429,7 +429,7 @@ class SubModule(Scope, Module):
                 continue
 
             namespace, feature = imp.from_ns.names[0], imp.namespace.names[0]
-            if namespace == "__future__" and feature == "absolute_import":
+            if unicode(namespace) == "__future__" and unicode(feature) == "absolute_import":
                 return True
 
         return False
@@ -476,7 +476,7 @@ class Class(Scope):
         if self._doc_token is not None:
             docstr = self.raw_doc
         for sub in self.subscopes:
-            if sub.name.names[-1] == '__init__':
+            if unicode(sub.name.names[-1]) == '__init__':
                 return '%s\n\n%s' % (
                     sub.get_call_signature(funcname=self.name.names[-1]), docstr)
         return docstr
@@ -760,7 +760,7 @@ class Import(Simple):
             return [self.alias]
         if len(self.namespace) > 1:
             o = self.namespace
-            n = Name(self._sub_module, [(o.names[0].string, o.start_pos)],
+            n = Name(self._sub_module, [(unicode(o.names[0]), o.start_pos)],
                      o.start_pos, o.end_pos, parent=o.parent)
             return [n]
         else:
@@ -1383,17 +1383,11 @@ class NamePart(object):
     def __str__(self):
         return self.string
 
+    def __unicode__(self):
+        return self.string
+
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.string)
-
-    def __eq__(self, other):
-        return self.string == other
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        return hash(self.string)
 
     def get_parent_until(self, *args, **kwargs):
         return self.parent.get_parent_until(*args, **kwargs)

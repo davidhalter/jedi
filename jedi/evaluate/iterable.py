@@ -276,8 +276,10 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
         result = []
         for c in calls:
             call_path = list(c.generate_call_path())
-            separate_index = call_path.index(add_name)
-            if add_name == call_path[-1] or separate_index == 0:
+            call_path_simple = [unicode(n) if isinstance(n, pr.NamePart) else n
+                                for n in call_path]
+            separate_index = call_path_simple.index(add_name)
+            if add_name == call_path_simple[-1] or separate_index == 0:
                 # this means that there is no execution -> [].append
                 # or the keyword is at the start -> append()
                 continue

@@ -1,3 +1,4 @@
+from jedi._compatibility import unicode
 from jedi import common
 from jedi.api import classes
 from jedi.parser import representation as pr
@@ -7,17 +8,9 @@ from jedi.evaluate import helpers
 
 class Usage(classes.Definition):
     """TODO: document this"""
-    def __init__(self, evaluator, name_part, scope):
+    def __init__(self, evaluator, name_part, scope=None):
         super(Usage, self).__init__(evaluator, name_part)
         self._start_pos = name_part.start_pos
-        #self.end_pos = name_part.end_pos
-
-    def __eq__(self, other):
-        return self._start_pos == other._start_pos \
-            and self.module_path == other.module_path
-
-    def __hash__(self):
-        return hash((self._start_pos, self.module_path))
 
 
 def usages(evaluator, definitions, search_name, mods):
@@ -47,7 +40,7 @@ def usages(evaluator, definitions, search_name, mods):
         call_path = list(call.generate_call_path())
         for i, name in enumerate(call_path):
             # name is `pr.NamePart`.
-            if name == search_name:
+            if unicode(name) == search_name:
                 follow.append(call_path[:i + 1])
 
         for call_path in follow:
@@ -74,7 +67,7 @@ def usages(evaluator, definitions, search_name, mods):
     compare_definitions = compare_array(definitions)
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
-    for m in imports.get_modules_containing_name(mods, str(search_name)):
+    for m in imports.get_modules_containing_name(mods, search_name):
         try:
             stmts = m.used_names[search_name]
         except KeyError:
@@ -86,7 +79,7 @@ def usages(evaluator, definitions, search_name, mods):
                 for i in stmt.get_all_import_names():
                     for name_part in i.names:
                         count += 1
-                        if name_part == search_name:
+                        if unicode(name_part) == search_name:
                             imps.append((count, name_part))
 
                 for used_count, name_part in imps:

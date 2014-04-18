@@ -1,7 +1,7 @@
 import os
 import sys
 
-from jedi._compatibility import exec_function
+from jedi._compatibility import exec_function, unicode
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi import common
@@ -59,9 +59,9 @@ def sys_path_with_modifications(module):
             n = call.name
             if not isinstance(n, pr.Name) or len(n.names) != 3:
                 continue
-            if n.names[:2] != ('sys', 'path'):
+            if [unicode(x) for x in n.names[:2]] != ['sys', 'path']:
                 continue
-            array_cmd = n.names[2]
+            array_cmd = unicode(n.names[2])
             if call.execution is None:
                 continue
             exe = call.execution

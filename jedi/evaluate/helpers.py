@@ -148,7 +148,8 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
             s_new = c
             while s_new is not None:
                 n = s_new.name
-                if isinstance(n, pr.Name) and search_name in n.names:
+                if isinstance(n, pr.Name) \
+                        and search_name in [str(x) for x in n.names]:
                     result.append(c)
 
                 if s_new.execution is not None:

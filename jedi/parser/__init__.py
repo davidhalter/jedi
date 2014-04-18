@@ -17,7 +17,7 @@ complexity of the ``Parser`` (there's another parser sitting inside
 """
 import keyword
 
-from jedi._compatibility import next
+from jedi._compatibility import next, unicode
 from jedi import debug
 from jedi import common
 from jedi.parser import representation as pr
@@ -480,7 +480,7 @@ class Parser(object):
                         self._gen.push_last_back()
                 names = self._parse_import_list()
                 for count, (name, alias, defunct2) in enumerate(names):
-                    star = name is not None and name.names[0] == '*'
+                    star = name is not None and unicode(name.names[0]) == '*'
                     if star:
                         name = None
                     e = (alias or name or self._gen.previous).end_pos

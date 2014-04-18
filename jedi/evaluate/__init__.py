@@ -334,7 +334,7 @@ class Evaluator(object):
     def goto(self, stmt, call_path):
         scope = stmt.get_parent_until(pr.IsScope)
         pos = stmt.start_pos
-        call_path, search = call_path[:-1], call_path[-1]
+        call_path, search_name_part = call_path[:-1], call_path[-1]
 
         if call_path:
             scopes = self.eval_call_path(iter(call_path), scope, pos)
@@ -346,9 +346,9 @@ class Evaluator(object):
             search_global = True
         follow_res = []
         for s in scopes:
-            follow_res += self.find_types(s, search, pos,
+            follow_res += self.find_types(s, search_name_part, pos,
                                           search_global=search_global, is_goto=True)
-        return follow_res, search
+        return follow_res, search_name_part
 
 
 def filter_private_variable(scope, call_scope, var_name):

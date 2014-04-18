@@ -444,7 +444,7 @@ class Script(object):
                 import_name = user_stmt.get_defined_names()
                 # imports have only one name
                 if not user_stmt.star \
-                        and name_part == import_name[0].names[-1]:
+                        and unicode(name_part) == unicode(import_name[0].names[-1]):
                     definitions.append(import_name[0])
         else:
             stmt = self._get_under_cursor_stmt(goto_path)
@@ -458,7 +458,7 @@ class Script(object):
                     for name in user_stmt.get_defined_names():
                         if name.start_pos <= self._pos <= name.end_pos \
                                 and len(name.names) == 1:
-                            return name, name.names[-1]
+                            return name, unicode(name.names[-1])
                 return None, None
 
             lhs, search_name = test_lhs()
@@ -474,7 +474,8 @@ class Script(object):
                 else:
                     call_path = [call]
 
-                defs, search_name = self._evaluator.goto(stmt, call_path)
+                defs, search_name_part = self._evaluator.goto(stmt, call_path)
+                search_name = unicode(search_name_part)
                 definitions = follow_inexistent_imports(defs)
             else:
                 definitions = [lhs]
@@ -519,7 +520,7 @@ class Script(object):
 
         for d in set(definitions):
             if isinstance(d, (pr.Module, compiled.CompiledObject)):
-                names.append(usages.Usage(self._evaluator, d, d))
+                names.append(usages.Usage(self._evaluator, d))
             elif isinstance(d, er.Instance):
                 # Instances can be ignored, because they have been created by
                 # ``__getattr__``.

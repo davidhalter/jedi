@@ -69,7 +69,7 @@ class NameFinder(object):
                 # reference.
                 name_list = sorted(name_list, key=lambda n: n.start_pos, reverse=True)
             for name in name_list:
-                if self.name_str != name.get_code():
+                if unicode(self.name_str) != name.get_code():
                     continue
 
                 parpar = name.parent.parent
@@ -297,7 +297,7 @@ class NameFinder(object):
         return result
 
 
-def check_flow_information(evaluator, flow, search_name, pos):
+def check_flow_information(evaluator, flow, search_name_part, pos):
     """ Try to find out the type of a variable just with the information that
     is given by the flows: e.g. It is also responsible for assert checks.::
 
@@ -314,17 +314,17 @@ def check_flow_information(evaluator, flow, search_name, pos):
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
-            result = _check_isinstance_type(evaluator, ass, search_name)
+            result = _check_isinstance_type(evaluator, ass, search_name_part)
             if result:
                 break
 
     if isinstance(flow, pr.Flow) and not result:
         if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
-            result = _check_isinstance_type(evaluator, flow.inputs[0], search_name)
+            result = _check_isinstance_type(evaluator, flow.inputs[0], search_name_part)
     return result
 
 
-def _check_isinstance_type(evaluator, stmt, search_name):
+def _check_isinstance_type(evaluator, stmt, search_name_part):
     try:
         expression_list = stmt.expression_list()
         # this might be removed if we analyze and, etc
@@ -342,7 +342,7 @@ def _check_isinstance_type(evaluator, stmt, search_name):
         assert isinstance(obj[0], pr.Call)
 
         # names fit?
-        assert str(obj[0].name) == search_name
+        assert unicode(obj[0].name) == unicode(search_name_part)
         assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
     except AssertionError:
         return []
@@ -530,7 +530,7 @@ def find_assignments(lhs, results, seek_name):
     """
     if isinstance(lhs, pr.Array):
         return _assign_tuples(lhs, results, seek_name)
-    elif lhs.name.names[-1] == seek_name:
+    elif unicode(lhs.name.names[-1]) == unicode(seek_name):
         return results
     else:
         return []

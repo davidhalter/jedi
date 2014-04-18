@@ -113,7 +113,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
                 # Only names with the selfname are being added.
                 # It is also important, that they have a len() of 2,
                 # because otherwise, they are just something else
-                if n.names[0] == self_name and len(n.names) == 2:
+                if unicode(n.names[0]) == self_name and len(n.names) == 2:
                     add_self_dot_name(n)
 
         if not isinstance(self.base, compiled.CompiledObject):
@@ -278,7 +278,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
             for i in iterable:
                 # Only the last name is important, because these names have a
                 # maximal length of 2, with the first one being `self`.
-                if i.names[-1] == name.names[-1]:
+                if unicode(i.names[-1]) == unicode(name.names[-1]):
                     return True
             return False
 
