@@ -491,14 +491,14 @@ class Script(object):
 
     def usages(self, additional_module_paths=()):
         """
-        Return :class:`classes.Usage` objects, which contain all
+        Return :class:`classes.Definition` objects, which contain all
         names that point to the definition of the name under the cursor. This
         is very useful for refactoring (renaming), or to show all usages of a
         variable.
 
         .. todo:: Implement additional_module_paths
 
-        :rtype: list of :class:`classes.Usage`
+        :rtype: list of :class:`classes.Definition`
         """
         temp, settings.dynamic_flow_information = \
             settings.dynamic_flow_information, False
@@ -520,13 +520,13 @@ class Script(object):
 
         for d in set(definitions):
             if isinstance(d, (pr.Module, compiled.CompiledObject)):
-                names.append(usages.Usage(self._evaluator, d))
+                names.append(classes.Definition(self._evaluator, d))
             elif isinstance(d, er.Instance):
                 # Instances can be ignored, because they have been created by
                 # ``__getattr__``.
                 pass
             else:
-                names.append(usages.Usage(self._evaluator, d.names[-1], d))
+                names.append(classes.Definition(self._evaluator, d.names[-1]))
 
         settings.dynamic_flow_information = temp
         return helpers.sorted_definitions(set(names))

@@ -6,13 +6,6 @@ from jedi.evaluate import imports
 from jedi.evaluate import helpers
 
 
-class Usage(classes.Definition):
-    """TODO: document this"""
-    def __init__(self, evaluator, name_part, scope=None):
-        super(Usage, self).__init__(evaluator, name_part)
-        self._start_pos = name_part.start_pos
-
-
 def usages(evaluator, definitions, search_name, mods):
     def compare_array(definitions):
         """ `definitions` are being compared by module/start_pos, because
@@ -58,8 +51,7 @@ def usages(evaluator, definitions, search_name, mods):
             compare_follow_res = compare_array(follow_res)
             # compare to see if they match
             if any(r in compare_definitions for r in compare_follow_res):
-                scope = call.parent
-                yield Usage(evaluator, search, scope)
+                yield classes.Definition(evaluator, search)
 
     if not definitions:
         return set()
@@ -87,7 +79,7 @@ def usages(evaluator, definitions, search_name, mods):
                                            direct_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
-                        names.append(Usage(evaluator, name_part, stmt))
+                        names.append(classes.Definition(evaluator, name_part))
             else:
                 for call in helpers.scan_statement_for_calls(stmt, search_name, assignment_details=True):
                     names += check_call_for_usage(call)
