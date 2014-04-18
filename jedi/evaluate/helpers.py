@@ -60,24 +60,30 @@ def fast_parent_copy(obj):
     return recursion(obj)
 
 
-def array_for_pos(stmt, pos, array_types=None):
-    """Searches for the array and position of a tuple"""
+def array_for_pos(stmt, pos):
+    """
+    Searches for the array and position of a tuple.
+    """
+
+            #isinstance(arr.parent, pr.StatementElement)
     def search_array(arr, pos):
+        accepted_types = pr.Array.TUPLE, pr.Array.NOARRAY
         if arr.type == 'dict':
             for stmt in arr.values + arr.keys:
-                new_arr, index = array_for_pos(stmt, pos, array_types)
+                new_arr, index = array_for_pos(stmt, pos)
                 if new_arr is not None:
                     return new_arr, index
         else:
             for i, stmt in enumerate(arr):
-                new_arr, index = array_for_pos(stmt, pos, array_types)
+                new_arr, index = array_for_pos(stmt, pos)
                 if new_arr is not None:
                     return new_arr, index
+
                 if arr.start_pos < pos <= stmt.end_pos:
-                    if not array_types or arr.type in array_types:
+                    if arr.type in accepted_types and isinstance(arr.parent, pr.Call):
                         return arr, i
         if len(arr) == 0 and arr.start_pos < pos < arr.end_pos:
-            if not array_types or arr.type in array_types:
+            if arr.type in accepted_types and isinstance(arr.parent, pr.Call):
                 return arr, 0
         return None, 0
 
@@ -112,10 +118,12 @@ def search_call_signatures(stmt, pos):
     """
     # some parts will of the statement will be removed
     stmt = fast_parent_copy(stmt)
-    arr, index = array_for_pos(stmt, pos, [pr.Array.TUPLE, pr.Array.NOARRAY])
-    if arr is not None and isinstance(arr.parent, pr.StatementElement):
+    arr, index = array_for_pos(stmt, pos)
+    if arr is not None:
         call = arr.parent
         while isinstance(call.parent, pr.StatementElement):
+            # Go to parent literal/variable until not possible anymore. This
+            # makes it possible to return the whole expression.
             call = call.parent
         arr.parent.execution = None
         return call if isinstance(call, pr.Call) else None, index, False

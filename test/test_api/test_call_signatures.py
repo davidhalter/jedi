@@ -161,6 +161,10 @@ class TestCallSignatures(TestCase):
         x = [p.description for p in signatures[0].params]
         assert x == ['*args']
 
+    def test_additional_brackets(self):
+        s = 'str(('
+        self._run(s, 'str', 0)
+
 
 class TestParams(TestCase):
     def params(self, source, line=None, column=None):
