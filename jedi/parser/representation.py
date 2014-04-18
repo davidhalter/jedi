@@ -1372,22 +1372,22 @@ class NamePart(object):
     # Unfortunately there's no way to use slots for str (non-zero __itemsize__)
     # -> http://utcc.utoronto.ca/~cks/space/blog/python/IntSlotsPython3k
     # Therefore don't subclass `str`.
-    __slots__ = ('parent', 'string', '_line', '_column')
+    __slots__ = ('parent', '_string', '_line', '_column')
 
     def __init__(self, string, parent, start_pos):
-        self.string = string
+        self._string = string
         self.parent = parent
         self._line = start_pos[0]
         self._column = start_pos[1]
 
     def __str__(self):
-        return self.string
+        return self._string
 
     def __unicode__(self):
-        return self.string
+        return self._string
 
     def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self.string)
+        return "<%s: %s>" % (type(self).__name__, self._string)
 
     def get_parent_until(self, *args, **kwargs):
         return self.parent.get_parent_until(*args, **kwargs)
@@ -1399,7 +1399,7 @@ class NamePart(object):
 
     @property
     def end_pos(self):
-        return self.start_pos[0], self.start_pos[1] + len(self.string)
+        return self.start_pos[0], self.start_pos[1] + len(self._string)
 
 
 class Name(Simple):

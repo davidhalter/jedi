@@ -16,7 +16,7 @@ import pkgutil
 import sys
 from itertools import chain
 
-from jedi._compatibility import find_module, use_metaclass
+from jedi._compatibility import find_module, unicode
 from jedi import common
 from jedi import debug
 from jedi import cache
@@ -27,7 +27,7 @@ from jedi.evaluate import helpers
 from jedi import settings
 from jedi.common import source_to_unicode
 from jedi.evaluate import compiled
-from jedi.evaluate.cache import CachedMetaClass, memoize_default
+from jedi.evaluate.cache import memoize_default
 
 
 class ModuleNotFound(Exception):
@@ -167,7 +167,7 @@ class ImportPath(pr.Base):
         # This is not an existing Import statement. Therefore, set position to
         # 0 (0 is not a valid line number).
         zero = (0, 0)
-        names = [(name_part.string, name_part.start_pos)
+        names = [(unicode(name_part), name_part.start_pos)
                  for name_part in i.namespace.names[1:]]
         n = pr.Name(i._sub_module, names, zero, zero, self.import_stmt)
         new = pr.Import(i._sub_module, zero, zero, n)
