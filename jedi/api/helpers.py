@@ -3,10 +3,7 @@ Helpers for the API
 """
 import re
 
-from jedi import debug
-from jedi.evaluate import helpers
 from jedi.evaluate import imports
-from jedi.parser import representation as pr
 
 
 def completion_parts(path_until_cursor):
