@@ -61,22 +61,20 @@ def fast_parent_copy(obj):
     return recursion(obj)
 
 
-def array_for_pos(stmt, pos):
+def call_signature_array_for_pos(stmt, pos):
     """
     Searches for the array and position of a tuple.
     """
-
-            #isinstance(arr.parent, pr.StatementElement)
     def search_array(arr, pos):
         accepted_types = pr.Array.TUPLE, pr.Array.NOARRAY
         if arr.type == 'dict':
             for stmt in arr.values + arr.keys:
-                new_arr, index = array_for_pos(stmt, pos)
+                new_arr, index = call_signature_array_for_pos(stmt, pos)
                 if new_arr is not None:
                     return new_arr, index
         else:
             for i, stmt in enumerate(arr):
-                new_arr, index = array_for_pos(stmt, pos)
+                new_arr, index = call_signature_array_for_pos(stmt, pos)
                 if new_arr is not None:
                     return new_arr, index
 
@@ -122,7 +120,7 @@ def search_call_signatures(user_stmt, position):
     if user_stmt is not None and isinstance(user_stmt, pr.Statement):
         # some parts will of the statement will be removed
         user_stmt = fast_parent_copy(user_stmt)
-        arr, index = array_for_pos(user_stmt, position)
+        arr, index = call_signature_array_for_pos(user_stmt, position)
         if arr is not None:
             call = arr.parent
             while isinstance(call.parent, pr.StatementElement):
