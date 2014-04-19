@@ -567,7 +567,9 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
                 if isinstance(d, pr.Param):
                     try:
                         return unicode(d.expression_list()[0].name)
-                    except IndexError:
+                    except (IndexError, AttributeError):
+                        # IndexError for syntax error params
+                        # AttributeError for *args/**kwargs
                         pass
                 return None
         elif isinstance(d, iterable.Generator):

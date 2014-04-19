@@ -1181,6 +1181,13 @@ class Param(Statement):
             debug.warning("Multiple param names (%s).", n)
         return n[0]
 
+    @property
+    def stars(self):
+        exp = self.expression_list()
+        if exp and isinstance(exp[0], Operator):
+            return exp[0].string.count('*')
+        return 0
+
 
 class StatementElement(Simple):
     __slots__ = ('parent', 'next', 'execution')
