@@ -150,37 +150,22 @@ class TestCase(object):
 
     def show_operation(self):
         print("%s:\n" % self.operation.capitalize())
-        getattr(self, 'show_' + self.operation)()
+        if self.operation == 'completions':
+            self.show_completions()
+        else:
+            self.show_definitions()
 
     def show_completions(self):
         for completion in self.objects:
             print(completion.name)
 
-    # TODO: Support showing the location in other files
-
-    # TODO: Move this printing to the completion objects themselves
-    def show_usages(self):
-        for completion in self.objects:
-            print(completion.description)
-            if os.path.abspath(completion.module_path) == os.path.abspath(self.path):
-                self.show_location(completion.line, completion.column)
-
-    def show_call_signatures(self):
-        for completion in self.objects:
-            # This is too complicated to print. It really should be
-            # implemented in str() anyway.
-            print(completion)
-            # Can't print the location here because we don't have the module path
-
-    def show_goto_definitions(self):
+    def show_definitions(self):
         for completion in self.objects:
             print(completion.desc_with_module)
             if completion.module_path is None:
                 continue
             if os.path.abspath(completion.module_path) == os.path.abspath(self.path):
                 self.show_location(completion.line, completion.column)
-
-    show_goto_assignments = show_goto_definitions
 
     def show_errors(self):
         print(self.traceback)
