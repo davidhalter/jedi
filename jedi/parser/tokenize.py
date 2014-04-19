@@ -42,13 +42,13 @@ class Token(object):
     structure.
 
     >>> repr(Token(1, "test", (1, 1)))
-    "<Token: (1, 'test', (1, 1))>"
+    "<Token: ('NAME', 'test', (1, 1))>"
     >>> Token(1, 'bar', (3, 4)).__getstate__()
     (1, 'bar', 3, 4)
     >>> a = Token(0, 'baz', (0, 0))
     >>> a.__setstate__((1, 'foo', 3, 4))
     >>> a
-    <Token: (1, 'foo', (3, 4))>
+    <Token: ('NAME', 'foo', (3, 4))>
     >>> a.start_pos
     (3, 4)
     >>> a.string
@@ -67,7 +67,8 @@ class Token(object):
         self._start_pos_col = start_pos[1]
 
     def __repr__(self):
-        content = self.type, self.string, (self._start_pos_line, self._start_pos_col)
+        typ = tok_name[self.type]
+        content = typ, self.string, (self._start_pos_line, self._start_pos_col)
         return "<%s: %s>" % (type(self).__name__, content)
 
     @property
@@ -249,7 +250,12 @@ def generate_tokens(readline, line_offset=0):
         while pos < max:
             pseudomatch = pseudoprog.match(line, pos)
             if not pseudomatch:                             # scan for tokens
-                yield Token(ERRORTOKEN, line[pos], (lnum, pos))
+                txt = line[pos]
+                if line[pos] in '"\'':
+                    # If a literal starts but doesn't end the whole rest of the
+                    # line is an error token.
+                    txt = txt = line[pos:]
+                yield Token(ERRORTOKEN, txt, (lnum, pos))
                 pos += 1
                 continue
 

@@ -162,8 +162,10 @@ class TestCallSignatures(TestCase):
         assert x == ['*args']
 
     def test_additional_brackets(self):
-        s = 'str(('
-        self._run(s, 'str', 0)
+        self._run('str((', 'str', 0)
+
+    def test_unterminated_strings(self):
+        self._run('str(";', 'str', 0)
 
 
 class TestParams(TestCase):
