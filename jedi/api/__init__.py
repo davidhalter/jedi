@@ -33,6 +33,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate.helpers import FakeName
 from jedi.evaluate.finder import get_names_of_scope
+from jedi.evaluate.helpers import search_call_signatures
 
 
 class NotFoundError(Exception):
@@ -370,7 +371,7 @@ class Script(object):
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                (call, _) = helpers.func_call_and_param_index(user_stmt, self._pos)
+                (call, _) = search_call_signatures(user_stmt, self._pos)
                 if call is not None:
                     while call.next is not None:
                         call = call.next
@@ -548,7 +549,7 @@ class Script(object):
         :rtype: list of :class:`classes.CallSignature`
         """
         user_stmt = self._parser.user_stmt_with_whitespace()
-        call, index = helpers.func_call_and_param_index(user_stmt, self._pos)
+        call, index = search_call_signatures(user_stmt, self._pos)
         if call is None:
             return []
 

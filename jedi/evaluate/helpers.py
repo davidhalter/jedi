@@ -2,6 +2,7 @@ import copy
 
 from jedi import common
 from jedi.parser import representation as pr
+from jedi import debug
 
 
 def fast_parent_copy(obj):
@@ -112,22 +113,28 @@ def array_for_pos(stmt, pos):
     return None, 0
 
 
-def search_call_signatures(stmt, pos):
+def search_call_signatures(user_stmt, position):
     """
     Returns the function Call that matches the position before.
     """
-    # some parts will of the statement will be removed
-    stmt = fast_parent_copy(stmt)
-    arr, index = array_for_pos(stmt, pos)
-    if arr is not None:
-        call = arr.parent
-        while isinstance(call.parent, pr.StatementElement):
-            # Go to parent literal/variable until not possible anymore. This
-            # makes it possible to return the whole expression.
-            call = call.parent
-        arr.parent.execution = None
-        return call if isinstance(call, pr.Call) else None, index, False
-    return None, 0, False
+    debug.speed('func_call start')
+    call, index = None, 0
+    if user_stmt is not None and isinstance(user_stmt, pr.Statement):
+        # some parts will of the statement will be removed
+        user_stmt = fast_parent_copy(user_stmt)
+        arr, index = array_for_pos(user_stmt, position)
+        if arr is not None:
+            call = arr.parent
+            while isinstance(call.parent, pr.StatementElement):
+                # Go to parent literal/variable until not possible anymore. This
+                # makes it possible to return the whole expression.
+                call = call.parent
+            arr.parent.execution = None
+            if not isinstance(call, pr.Call):
+                call = None
+
+    debug.speed('func_call parsed')
+    return call, index
 
 
 def scan_statement_for_calls(stmt, search_name, assignment_details=False):
