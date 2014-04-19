@@ -79,7 +79,7 @@ def get_params(evaluator, func, var_args):
         values = []
         array_type = None
         ignore_creation = False
-        if expression_list[0] == '*':
+        if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
             if value:
@@ -90,7 +90,7 @@ def get_params(evaluator, func, var_args):
                     var_arg_iterator.push_back((key, value))
                     break
                 values.append(value)
-        elif expression_list[0] == '**':
+        elif param.stars == 2:
             # **kwargs param
             array_type = pr.Array.DICT
             if non_matching_keys:
