@@ -27,7 +27,7 @@ Note: Line numbers start at 1; columns start at 0 (this is consistent with
 many text editors, including Emacs).
 
 Usage:
-  sith.py [--pdb|--ipdb|--pudb] [-d] [-n=<nr>] [-f] [--record=<file>] random [<path>]
+  sith.py [--pdb|--ipdb|--pudb] [-d] [-n=<nr>] [-f] [--record=<file>] random [-s] [<path>]
   sith.py [--pdb|--ipdb|--pudb] [-d] [-f] [--record=<file>] redo
   sith.py [--pdb|--ipdb|--pudb] [-d] [-f] run <operation> <path> <line> <column>
   sith.py show [--record=<file>]
@@ -39,6 +39,7 @@ Options:
   -f, --fs-cache        By default, file system cache is off for reproducibility.
   -n, --maxtries=<nr>   Maximum of random tries [default: 100]
   -d, --debug           Jedi print debugging when an error is raised.
+  -s                    Shows the path/line numbers of every completion before it starts.
   --pdb                 Launch pdb when error is raised.
   --ipdb                Launch ipdb when error is raised.
   --pudb                Launch pudb when error is raised.
@@ -199,8 +200,13 @@ def main(arguments):
     else:
         for _ in range(int(arguments['--maxtries'])):
             t = TestCase.generate(arguments['<path>'] or '.')
+            if arguments['-s']:
+                print('%s %s %s %s ' % (t.operation, t.path, t.line, t.column))
+                sys.stdout.flush()
+            else:
+                print('.', end='')
             t.run(debugger, record)
-            print('.', end='')
+
             sys.stdout.flush()
         print()
 
