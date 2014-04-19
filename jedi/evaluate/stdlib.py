@@ -16,8 +16,11 @@ class NotInStdLib(LookupError):
 
 
 def execute(evaluator, obj, params):
-    if not isinstance(obj, (iterable.Generator, iterable.Array)):
+    try:
         obj_name = str(obj.name)
+    except AttributeError:
+        pass
+    else:
         if obj.parent == compiled.builtin:
             # for now we just support builtin functions.
             try:
