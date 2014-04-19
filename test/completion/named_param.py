@@ -9,3 +9,13 @@ def a(abc):
 
 #? 5 ['abc']
 a(abc)
+
+
+def a(*some_args, **some_kwargs):
+    pass
+
+#? 11 []
+a(some_args)
+
+#? 13 []
+a(some_kwargs
