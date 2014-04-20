@@ -68,6 +68,9 @@ def test_empty_decorator():
 #? int()
 test_empty_decorator()
 
+def invalid_param(param=):
+    #? 
+    param
 # -----------------
 # flows
 # -----------------

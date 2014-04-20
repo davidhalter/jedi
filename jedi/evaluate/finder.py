@@ -227,14 +227,14 @@ class NameFinder(object):
                      else a for a in types]
         return types
 
-    def _eval_param(self, r):
+    def _eval_param(self, param):
         evaluator = self._evaluator
         res_new = []
-        func = r.parent
+        func = param.parent
 
         cls = func.parent.get_parent_until((pr.Class, pr.Function))
 
-        if isinstance(cls, pr.Class) and r.position_nr == 0:
+        if isinstance(cls, pr.Class) and param.position_nr == 0:
             # This is where we add self - if it has never been
             # instantiated.
             if isinstance(self.scope, er.InstanceElement):
@@ -249,27 +249,26 @@ class NameFinder(object):
         # outside. Here we check it for __init__ functions and return.
         if isinstance(func, er.InstanceElement) \
                 and func.instance.is_generated and str(func.name) == '__init__':
-            r = func.var.params[r.position_nr]
+            param = func.var.params[param.position_nr]
 
         # Add docstring knowledge.
-        doc_params = docstrings.follow_param(evaluator, r)
+        doc_params = docstrings.follow_param(evaluator, param)
         if doc_params:
             return doc_params
 
-        if not r.is_generated:
+        if not param.is_generated:
             # Param owns no information itself.
-            res_new += dynamic.search_params(evaluator, r)
+            res_new += dynamic.search_params(evaluator, param)
             if not res_new:
-                c = r.expression_list()[0]
-                if c in ('*', '**'):
-                    t = 'tuple' if c == '*' else 'dict'
+                if param.stars:
+                    t = 'tuple' if param.stars == 1 else 'dict'
                     typ = evaluator.find_types(compiled.builtin, t)[0]
                     res_new = evaluator.execute(typ)
-            if not r.assignment_details:
+            if not param.assignment_details:
                 # this means that there are no default params,
                 # so just ignore it.
                 return res_new
-        return res_new + evaluator.eval_statement(r, seek_name=self.name_str)
+        return res_new + evaluator.eval_statement(param, seek_name=self.name_str)
 
     def _handle_for_loops(self, loop):
         # Take the first statement (for has always only
