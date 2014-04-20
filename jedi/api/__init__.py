@@ -11,6 +11,7 @@ possible.
 import re
 import os
 import warnings
+import sys
 from itertools import chain
 
 from jedi._compatibility import next, unicode, builtins
@@ -34,6 +35,10 @@ from jedi.evaluate import imports
 from jedi.evaluate.helpers import FakeName
 from jedi.evaluate.finder import get_names_of_scope
 from jedi.evaluate.helpers import search_call_signatures
+
+# Jedi uses lots and lots of recursion. By setting this a little bit higher, we
+# can remove some "maximum recursion depth" errors.
+sys.setrecursionlimit(2000)
 
 
 class NotFoundError(Exception):
