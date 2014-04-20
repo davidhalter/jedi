@@ -82,3 +82,19 @@ for char in reversed(['f', 'o', 'o', 'b', 'a', 'r']):
 
 #? str()
 getattr(FooBar, target)
+
+
+# -----------------
+# repetition problems -> could be very slow and memory expensive - shouldn't
+# be.
+# -----------------
+
+b = [str(1)]
+l = list
+for x in [l(0), l(1), l(2), l(3), l(4), l(5), l(6), l(7), l(8), l(9), l(10),
+          l(11), l(12), l(13), l(14), l(15), l(16), l(17), l(18), l(19), l(20),
+          l(21), l(22), l(23), l(24), l(25), l(26), l(27), l(28), l(29)]:
+    b += x
+
+#? str()
+b[1]

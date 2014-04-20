@@ -188,7 +188,7 @@ def calculate(evaluator, left_result, operator, right_result):
         for left in left_result:
             for right in right_result:
                 result += _element_calculate(evaluator, left, operator, right)
-    return result
+    return list(set(result))
 
 
 def _factor_calculate(evaluator, operator, right):
