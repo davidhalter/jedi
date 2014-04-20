@@ -303,3 +303,17 @@ recurse_class1.C.a
 # github #239 RecursionError
 #? ['a']
 recurse_class1.C().a
+
+# -----------------
+# Jedi debugging
+# -----------------
+
+# memoizing issues (check git history for the fix)
+import not_existing_import
+
+if not_existing_import:
+    a = not_existing_import
+else:
+    a = not_existing_import
+#? 
+a

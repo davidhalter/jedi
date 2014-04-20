@@ -27,7 +27,7 @@ from jedi.evaluate import helpers
 from jedi import settings
 from jedi.common import source_to_unicode
 from jedi.evaluate import compiled
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import memoize_default, NO_DEFAULT
 
 
 class ModuleNotFound(Exception):
@@ -290,7 +290,7 @@ class _Importer(object):
             return evaluator.follow_path(iter(rest), [scope], scope)
         return [scope]
 
-    @memoize_default()
+    @memoize_default(NO_DEFAULT)
     def follow_file_system(self):
         if self.file_path:
             sys_path_mod = list(self.sys_path_with_modifications())
