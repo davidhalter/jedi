@@ -27,6 +27,7 @@ from jedi.evaluate import imports
 # This is something like the sys.path, but only for searching params. It means
 # that this is the order in which Jedi searches params.
 search_param_modules = ['.']
+import sys
 
 
 class ParamListener(object):
