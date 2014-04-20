@@ -1396,6 +1396,9 @@ class NamePart(object):
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self._string)
 
+    def get_code(self):
+        return self._string
+
     def get_parent_until(self, *args, **kwargs):
         return self.parent.get_parent_until(*args, **kwargs)
 

@@ -127,3 +127,8 @@ def test_goto_definition_not_multiple():
                 a = A(1)
             a''')
     assert len(api.Script(s).goto_definitions()) == 1
+
+
+def test_usage_description():
+    for u in api.Script('foo = ''; foo').usages():
+        assert u.description == 'foo'
