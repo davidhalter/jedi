@@ -183,7 +183,8 @@ def calculate(evaluator, left_result, operator, right_result):
         return result
     else:
         if not left_result or not right_result:
-            return left_result + right_result
+            # illegal slices e.g. cause left/right_result to be None
+            return (left_result or []) + (right_result or [])
 
         for left in left_result:
             for right in right_result:

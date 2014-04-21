@@ -475,4 +475,4 @@ def create_indexes_or_slices(evaluator, index_array):
             step = None
         return [Slice(evaluator, start, stop, step)]
     else:
-        return evaluator.process_precedence_element(prec) or []
+        return evaluator.process_precedence_element(prec)

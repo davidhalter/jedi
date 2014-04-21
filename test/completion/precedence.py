@@ -98,3 +98,13 @@ for x in [l(0), l(1), l(2), l(3), l(4), l(5), l(6), l(7), l(8), l(9), l(10),
 
 #? str()
 b[1]
+
+
+# -----------------
+# syntax errors
+# -----------------
+
+# strange slice
+z = sorted([1], key = lambda x : x):
+#? int()
+z
