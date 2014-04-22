@@ -98,7 +98,8 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         self._evaluator = evaluator
         self._array = array
 
-    def get_index_types(self, indexes=[]):
+    @memoize_default()
+    def get_index_types(self, indexes=()):
         """
         Get the types of a specific index or all, if not given.
 
@@ -455,7 +456,7 @@ class Slice(object):
 
 def create_indexes_or_slices(evaluator, index_array):
     if not index_array:
-        return []
+        return ()
 
     # Just take the first part of the "array", because this is Python stdlib
     # behavior. Numpy et al. perform differently, but Jedi won't understand
@@ -473,6 +474,6 @@ def create_indexes_or_slices(evaluator, index_array):
         else:
             stop = prec.right
             step = None
-        return [Slice(evaluator, start, stop, step)]
+        return (Slice(evaluator, start, stop, step),)
     else:
-        return evaluator.process_precedence_element(prec)
+        return tuple(evaluator.process_precedence_element(prec))
