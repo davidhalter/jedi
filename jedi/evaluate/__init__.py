@@ -174,8 +174,6 @@ class Evaluator(object):
     def _eval_precedence(self, _precedence):
         left = self.process_precedence_element(_precedence.left)
         right = self.process_precedence_element(_precedence.right)
-        if _precedence.operator == ':':
-            return []
         return precedence.calculate(self, left, _precedence.operator, right)
 
     def _eval_statement_element(self, element):

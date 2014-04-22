@@ -107,4 +107,4 @@ b[1]
 # strange slice
 z = sorted([1], key = lambda x : x):
 #? int()
-z
+z[0]
