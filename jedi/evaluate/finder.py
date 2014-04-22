@@ -218,7 +218,7 @@ class NameFinder(object):
             check_instance = stmt.instance
             stmt = stmt.var
 
-        types += evaluator.eval_statement(stmt, seek_name=self.name_str)
+        types += evaluator.eval_statement(stmt, seek_name=unicode(self.name_str))
 
         if check_instance is not None:
             # class renames
@@ -268,7 +268,7 @@ class NameFinder(object):
                 # this means that there are no default params,
                 # so just ignore it.
                 return res_new
-        return res_new + evaluator.eval_statement(param, seek_name=self.name_str)
+        return res_new + evaluator.eval_statement(param, seek_name=unicode(self.name_str))
 
     def _handle_for_loops(self, loop):
         # Take the first statement (for has always only
@@ -279,7 +279,7 @@ class NameFinder(object):
         if len(loop.set_vars) > 1:
             expression_list = loop.set_stmt.expression_list()
             # loops with loop.set_vars > 0 only have one command
-            result = _assign_tuples(expression_list[0], result, self.name_str)
+            result = _assign_tuples(expression_list[0], result, unicode(self.name_str))
         return result
 
     def _resolve_descriptors(self, types):
@@ -529,7 +529,7 @@ def find_assignments(lhs, results, seek_name):
     """
     if isinstance(lhs, pr.Array):
         return _assign_tuples(lhs, results, seek_name)
-    elif unicode(lhs.name.names[-1]) == unicode(seek_name):
+    elif unicode(lhs.name.names[-1]) == seek_name:
         return results
     else:
         return []
