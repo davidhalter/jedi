@@ -163,9 +163,9 @@ plain_token = group(number, funny, string, name)
 token = ignore + plain_token
 
 # First (or only) line of ' or " string.
-cont_str = group(r"[bB]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*" +
+cont_str = group(r"[bBuU]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*" +
                  group("'", r'\\\r?\n'),
-                 r'[bB]?[rR]?"[^\n"\\]*(?:\\.[^\n"\\]*)*' +
+                 r'[bBuU]?[rR]?"[^\n"\\]*(?:\\.[^\n"\\]*)*' +
                  group('"', r'\\\r?\n'))
 pseudo_extras = group(r'\\\r?\n', comment, triple)
 pseudo_token = whitespace + group(pseudo_extras, number, funny, cont_str, name)
@@ -181,9 +181,11 @@ endprogs = {"'": _compile(single), '"': _compile(double),
             "'''": single3prog, '"""': double3prog,
             "r'''": single3prog, 'r"""': double3prog,
             "b'''": single3prog, 'b"""': double3prog,
+            "u'''": single3prog, 'u"""': double3prog,
             "br'''": single3prog, 'br"""': double3prog,
             "R'''": single3prog, 'R"""': double3prog,
             "B'''": single3prog, 'B"""': double3prog,
+            "U'''": single3prog, 'U"""': double3prog,
             "bR'''": single3prog, 'bR"""': double3prog,
             "Br'''": single3prog, 'Br"""': double3prog,
             "BR'''": single3prog, 'BR"""': double3prog,
@@ -193,6 +195,7 @@ triple_quoted = {}
 for t in ("'''", '"""',
           "r'''", 'r"""', "R'''", 'R"""',
           "b'''", 'b"""', "B'''", 'B"""',
+          "u'''", 'u"""', "U'''", 'U"""',
           "br'''", 'br"""', "Br'''", 'Br"""',
           "bR'''", 'bR"""', "BR'''", 'BR"""'):
     triple_quoted[t] = t
@@ -200,6 +203,7 @@ single_quoted = {}
 for t in ("'", '"',
           "r'", 'r"', "R'", 'R"',
           "b'", 'b"', "B'", 'B"',
+          "u'", 'u""', "U'", 'U"',
           "br'", 'br"', "Br'", 'Br"',
           "bR'", 'bR"', "BR'", 'BR"'):
     single_quoted[t] = t
