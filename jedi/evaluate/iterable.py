@@ -30,7 +30,7 @@ from jedi.parser import representation as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import precedence
-from jedi.evaluate.cache import CachedMetaClass, memoize_default
+from jedi.evaluate.cache import CachedMetaClass, memoize_default, NO_DEFAULT
 from jedi.cache import underscore_memoization
 
 
@@ -98,7 +98,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         self._evaluator = evaluator
         self._array = array
 
-    @memoize_default()
+    @memoize_default(NO_DEFAULT)
     def get_index_types(self, indexes=()):
         """
         Get the types of a specific index or all, if not given.
