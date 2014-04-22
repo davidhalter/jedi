@@ -187,7 +187,6 @@ def calculate(evaluator, left_result, operator, right_result):
             result = (left_result or []) + (right_result or [])
             for i, r in enumerate(result):
                 if _is_number(r) or _is_string(r):
-                    print r, left_result, right_result
                     # Literals are only valid as long as the operations are
                     # correct. Otherwise add a value-free instance.
                     cls = CompiledObject(type(r.obj), builtin)

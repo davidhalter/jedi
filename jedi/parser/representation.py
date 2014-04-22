@@ -37,9 +37,9 @@ See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 import os
 import re
 from inspect import cleandoc
-from ast import literal_eval
 
-from jedi._compatibility import next, Python3Method, encoding, unicode, is_py3, u
+from jedi._compatibility import (next, Python3Method, encoding, unicode,
+                                 is_py3, u, literal_eval)
 from jedi import common
 from jedi import debug
 from jedi import cache

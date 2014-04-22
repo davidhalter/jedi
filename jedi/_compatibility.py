@@ -5,6 +5,7 @@ created. Clearly there is huge need to use conforming syntax.
 import sys
 import imp
 import os
+import re
 try:
     import importlib
 except ImportError:
@@ -180,3 +181,15 @@ try:
     import builtins  # module name in python 3
 except ImportError:
     import __builtin__ as builtins
+
+
+import ast
+
+
+def literal_eval(string):
+    # py3.0, py3.1 and py32 don't support unicode literals. Support those, I
+    # don't want to write two versions of the tokenizer.
+    if is_py3 and sys.version_info.minor < 3:
+        if re.match('[uU][\'"]', string):
+            string = string[1:]
+    return ast.literal_eval(string)
