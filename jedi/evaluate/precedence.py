@@ -6,7 +6,7 @@ from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.common import PushBackIterator
-from jedi.evaluate.compiled import CompiledObject, create
+from jedi.evaluate.compiled import CompiledObject, create, builtin
 
 
 class PythonGrammar(object):
@@ -184,11 +184,19 @@ def calculate(evaluator, left_result, operator, right_result):
     else:
         if not left_result or not right_result:
             # illegal slices e.g. cause left/right_result to be None
-            return (left_result or []) + (right_result or [])
-
-        for left in left_result:
-            for right in right_result:
-                result += _element_calculate(evaluator, left, operator, right)
+            result = (left_result or []) + (right_result or [])
+            for i, r in enumerate(result):
+                if _is_number(r) or _is_string(r):
+                    print r, left_result, right_result
+                    # Literals are only valid as long as the operations are
+                    # correct. Otherwise add a value-free instance.
+                    cls = CompiledObject(type(r.obj), builtin)
+                    from jedi.evaluate import representation as er
+                    result[i] = er.Instance(evaluator, cls)
+        else:
+            for left in left_result:
+                for right in right_result:
+                    result += _element_calculate(evaluator, left, operator, right)
     return list(set(result))
 
 
@@ -204,18 +212,19 @@ def _is_number(obj):
         and isinstance(obj.obj, (int, float))
 
 
-def _element_calculate(evaluator, left, operator, right):
-    def is_string(obj):
-        return isinstance(obj, CompiledObject) \
-            and isinstance(obj.obj, (str, unicode))
+def _is_string(obj):
+    return isinstance(obj, CompiledObject) \
+        and isinstance(obj.obj, (str, unicode))
 
+
+def _element_calculate(evaluator, left, operator, right):
     if operator == '*':
         # for iterables, ignore * operations
         from jedi.evaluate import iterable
-        if isinstance(left, iterable.Array) or is_string(left):
+        if isinstance(left, iterable.Array) or _is_string(left):
             return [left]
     elif operator == '+':
-        if _is_number(left) and _is_number(right) or is_string(left) and is_string(right):
+        if _is_number(left) and _is_number(right) or _is_string(left) and _is_string(right):
             return [create(evaluator, left.obj + right.obj)]
     elif operator == '-':
         if _is_number(left) and _is_number(right):
