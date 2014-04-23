@@ -22,5 +22,6 @@ Akinori Hattori (@hattya)
 srusskih (@srusskih)
 Steven Silvester (@blink1073)
 Colin Duquesnoy (@ColinDuquesnoy) <colin.duquesnoy@gmail.com>
+Jorgen Schaefer (@jorgenschaefer) <contact@jorgenschaefer.de>
 
 Note: (@user) means a github user name.
