@@ -4,6 +4,7 @@ found a good place in any other testing module.
 """
 
 import os
+import sys
 import textwrap
 
 from .helpers import TestCase, cwd_at
@@ -154,3 +155,19 @@ class TestRegression(TestCase):
             "    yield 1\n" \
             "abc()."
         assert Script(s).completions()
+
+
+def test_loading_unicode_files_with_bad_global_charset(monkeypatch, tmpdir):
+    dirname = str(tmpdir.mkdir('jedi-test'))
+    filename1 = os.path.join(dirname, 'test1.py')
+    filename2 = os.path.join(dirname, 'test2.py')
+    if sys.version_info < (3, 0):
+        data = "# coding: latin-1\nfoo = 'm\xf6p'\n"
+    else:
+        data = "# coding: latin-1\nfoo = 'm\xf6p'\n".encode("latin-1")
+
+    with open(filename1, "wb") as f:
+        f.write(data)
+    s = Script("from test1 import foo\nfoo.",
+               line=2, column=4, path=filename2)
+    s.complete()
