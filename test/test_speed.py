@@ -6,7 +6,7 @@ should.
 import time
 import functools
 
-from .helpers import TestCase
+from .helpers import TestCase, cwd_at
 import jedi
 
 class TestSpeed(TestCase):
@@ -25,7 +25,7 @@ class TestSpeed(TestCase):
                     func(self)
                 single_time = (time.time() - first) / number
                 print('\nspeed', func, single_time)
-                assert single_time < time_per_run
+                assert single_time < time_per_run, 'Too slow.'
             return wrapper
         return decorated
 
@@ -40,3 +40,14 @@ class TestSpeed(TestCase):
         script = jedi.Script(s, 1, len(s), '')
         script.call_signatures()
         #print(jedi.imports.imports_processed)
+
+    @_check_speed(0.1)
+    @cwd_at('test')
+    def test_precedence_slowdown(self):
+        """
+        Precedence calculation can slow down things significantly in edge
+        cases. Having strange recursion structures increases the problem.
+        """
+        with open('speed/precedence.py') as f:
+            line = len(f.read().splitlines())
+        assert jedi.Script(line=line, path='speed/precedence.py').goto_definitions()
