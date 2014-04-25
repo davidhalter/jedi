@@ -41,7 +41,7 @@ class TestSpeed(TestCase):
         script.call_signatures()
         #print(jedi.imports.imports_processed)
 
-    @_check_speed(0.1)
+    @_check_speed(0.5)
     @cwd_at('test')
     def test_precedence_slowdown(self):
         """

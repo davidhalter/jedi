@@ -1,37 +1,37 @@
-def whatever(code):
+def marks(code):
     if '.' in code:
-        another(code[:code.index('.') - 1] + '!')
+        another(code[:code.index(',') - 1] + '!')
     else:
         another(code + '.')
 
 
 def another(code2):
-    call(ret(code2 + 'haha'))
+    call(numbers(code2 + 'haha'))
 
-whatever('1.23')
-whatever('1,23')
+marks('start1 ')
+marks('start2 ')
 
 
-def ret2(code4):
+def alphabet(code4):
     if 1:
         if 2:
-            return code4 + 'i'
+            return code4 + 'a'
         else:
-            return code4 + 'k'
+            return code4 + 'b'
     else:
         if 2:
-            return code4 + 'l'
+            return code4 + 'c'
         else:
-            return code4 + 'h'
+            return code4 + 'd'
 
 
-def ret(code5):
+def numbers(code5):
     if 2:
-        return ret2(code5 + 'r')
+        return alphabet(code5 + '1')
     else:
-        return ret2(code5 + 'k')
+        return alphabet(code5 + '2')
 
 
 def call(code3):
-    code3 = ret(ret('1')) + ret(code3)
+    code3 = numbers(numbers('end')) + numbers(code3)
     code3.partition
