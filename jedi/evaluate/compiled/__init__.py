@@ -312,6 +312,10 @@ class Builtin(CompiledObject, IsScope):
         # access it.
         return [d for d in super(Builtin, self).get_defined_names() if d.name != 'None']
 
+    def get_by_name(self, name):
+        item = [n for n in self.get_defined_names() if n.get_code() == name][0]
+        return item.parent
+
 
 def _a_generator(foo):
     """Used to have an object to return for generators."""

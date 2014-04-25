@@ -174,6 +174,19 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
     return left
 
 
+def _literals_to_types(evaluator, result):
+    # Changes literals ('a', 1, 1.0, etc) to its type instances (str(),
+    # int(), float(), etc).
+    for i, r in enumerate(result):
+        if is_literal(r):
+            # Literals are only valid as long as the operations are
+            # correct. Otherwise add a value-free instance.
+            cls = builtin.get_by_name(r.name)
+            from jedi.evaluate import representation as er
+            result[i] = er.Instance(evaluator, cls)
+    return list(set(result))
+
+
 def calculate(evaluator, left_result, operator, right_result):
     result = []
     if left_result is None and right_result:
@@ -185,18 +198,18 @@ def calculate(evaluator, left_result, operator, right_result):
         if not left_result or not right_result:
             # illegal slices e.g. cause left/right_result to be None
             result = (left_result or []) + (right_result or [])
-            for i, r in enumerate(result):
-                if _is_number(r) or _is_string(r):
-                    # Literals are only valid as long as the operations are
-                    # correct. Otherwise add a value-free instance.
-                    cls = CompiledObject(type(r.obj), builtin)
-                    from jedi.evaluate import representation as er
-                    result[i] = er.Instance(evaluator, cls)
+            result = _literals_to_types(evaluator, result)
         else:
-            for left in left_result:
-                for right in right_result:
-                    result += _element_calculate(evaluator, left, operator, right)
-    return list(set(result))
+            # I don't think there's a reasonable chance that a string
+            # operation is still correct, once we pass something like six
+            # objects.
+            if len(left_result) * len(right_result) > 6:
+                result = _literals_to_types(evaluator, left_result + right_result)
+            else:
+                for left in left_result:
+                    for right in right_result:
+                        result += _element_calculate(evaluator, left, operator, right)
+    return result
 
 
 def _factor_calculate(evaluator, operator, right):
@@ -214,6 +227,10 @@ def _is_number(obj):
 def _is_string(obj):
     return isinstance(obj, CompiledObject) \
         and isinstance(obj.obj, (str, unicode))
+
+
+def is_literal(obj):
+    return _is_number(obj) or _is_string(obj)
 
 
 def _element_calculate(evaluator, left, operator, right):

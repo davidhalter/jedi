@@ -33,5 +33,5 @@ def ret(code5):
 
 
 def call(code3):
-    code3 = '1' + ret(code3)
+    code3 = ret(ret('1')) + ret(code3)
     code3.partition
