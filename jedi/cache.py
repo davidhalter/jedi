@@ -147,6 +147,21 @@ def underscore_memoization(func):
     return wrapper
 
 
+def memoize(func):
+    """A normal memoize function."""
+    dct = {}
+
+    def wrapper(*args, **kwargs):
+        key = (args, frozenset(kwargs.items()))
+        try:
+            return dct[key]
+        except KeyError:
+            result = func(*args, **kwargs)
+            dct[key] = result
+            return result
+    return wrapper
+
+
 def cache_star_import(func):
     def wrapper(evaluator, scope, *args, **kwargs):
         with common.ignored(KeyError):

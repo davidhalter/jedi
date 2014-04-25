@@ -8,7 +8,7 @@ import os
 
 from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
-from jedi.cache import underscore_memoization
+from jedi.cache import underscore_memoization, memoize
 from jedi.evaluate.sys_path import get_sys_path
 from jedi.parser.representation import Param, SubModule, Base, IsScope, Operator
 from jedi.evaluate.helpers import FakeName
@@ -307,11 +307,13 @@ def _parse_function_doc(doc):
 
 
 class Builtin(CompiledObject, IsScope):
+    @memoize
     def get_defined_names(self):
         # Filter None, because it's really just a keyword, nobody wants to
         # access it.
         return [d for d in super(Builtin, self).get_defined_names() if d.name != 'None']
 
+    @memoize
     def get_by_name(self, name):
         item = [n for n in self.get_defined_names() if n.get_code() == name][0]
         return item.parent
