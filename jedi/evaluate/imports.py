@@ -331,8 +331,8 @@ class _Importer(object):
                         deeper_paths.append(new)
                 return follow_path(directories, deeper_paths)
 
-        with open(os.path.join(found_path, '__init__.py')) as f:
-            content = f.read()
+        with open(os.path.join(found_path, '__init__.py'), 'rb') as f:
+            content = common.source_to_unicode(f.read())
             # these are strings that need to be used for namespace packages,
             # the first one is ``pkgutil``, the second ``pkg_resources``.
             options = 'declare_namespace(__name__)', 'extend_path(__path__'
@@ -406,7 +406,7 @@ class _Importer(object):
             # is a directory module
             if is_package_directory:
                 path += '/__init__.py'
-                with open(path) as f:
+                with open(path, 'rb') as f:
                     source = f.read()
             else:
                 source = current_namespace[0].read()
@@ -454,7 +454,7 @@ def load_module(path=None, source=None, name=None):
     def load(source):
         if path is not None and path.endswith('.py'):
             if source is None:
-                with open(path) as f:
+                with open(path, 'rb') as f:
                     source = f.read()
         else:
             return compiled.load_module(path, name)
@@ -481,7 +481,7 @@ def get_modules_containing_name(mods, name):
                 return None
 
     def check_fs(path):
-        with open(path) as f:
+        with open(path, 'rb') as f:
             source = source_to_unicode(f.read())
             if name in source:
                 return load_module(path, source)
