@@ -95,14 +95,6 @@ class NameFinder(object):
             if result:
                 break
 
-        if not result and isinstance(self.scope, er.Instance):
-            # handling __getattr__ / __getattribute__
-            for r in self._check_getattr(self.scope):
-                if not isinstance(r, compiled.CompiledObject):
-                    new_name = copy.copy(r.name)
-                    new_name.parent = r
-                    result.append(new_name)
-
         debug.dbg('finder.filter_name "%s" in (%s-%s): %s@%s', self.name_str,
                   self.scope, nscope, u(result), self.position)
         return result
@@ -197,6 +189,11 @@ class NameFinder(object):
                 if typ.isinstance(er.Function) and resolve_decorator:
                     typ = typ.get_decorated_func()
                 types.append(typ)
+
+        if not names and isinstance(self.scope, er.Instance):
+            # handling __getattr__ / __getattribute__
+            types = self._check_getattr(self.scope)
+
         return types
 
     def _remove_statements(self, stmt):

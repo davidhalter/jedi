@@ -528,10 +528,6 @@ class Script(object):
         for d in set(definitions):
             if isinstance(d, (pr.Module, compiled.CompiledObject)):
                 names.append(classes.Definition(self._evaluator, d))
-            elif isinstance(d, er.Instance):
-                # Instances can be ignored, because they have been created by
-                # ``__getattr__``.
-                pass
             else:
                 names.append(classes.Definition(self._evaluator, d.names[-1]))
 

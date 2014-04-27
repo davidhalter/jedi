@@ -356,6 +356,14 @@ Wrapper(Base()).ret(3)
 #? int()
 Wrapper2(Base()).ret(3)
 
+class GetattrArray():
+    def __getattr__(self, name):
+        return [1]
+
+#? int()
+GetattrArray().something[0]
+
+
 # -----------------
 # private vars
 # -----------------
