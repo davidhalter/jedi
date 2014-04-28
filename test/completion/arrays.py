@@ -44,6 +44,7 @@ class _StrangeSlice():
     def __getitem__(self, slice):
         return slice
 
+# Should not result in an error, just because the slice itself is returned.
 #? []
 _StrangeSlice()[1:2]
 

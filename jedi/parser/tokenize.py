@@ -107,10 +107,6 @@ def group(*choices):
     return '(' + '|'.join(choices) + ')'
 
 
-def any(*choices):
-    return group(*choices) + '*'
-
-
 def maybe(*choices):
     return group(*choices) + '?'
 
