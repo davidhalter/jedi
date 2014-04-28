@@ -119,7 +119,6 @@ def maybe(*choices):
 # number literals.
 whitespace = r'[ \f\t]*'
 comment = r'#[^\r\n]*'
-ignore = whitespace + any(r'\\\r?\n' + whitespace) + maybe(comment)
 name = r'\w+'
 
 hex_number = r'0[xX][0-9a-fA-F]+'
@@ -144,8 +143,6 @@ single3 = r"[^'\\]*(?:(?:\\.|'(?!''))[^'\\]*)*'''"
 double3 = r'[^"\\]*(?:(?:\\.|"(?!""))[^"\\]*)*"""'
 triple = group("[bB]?[rR]?'''", '[bB]?[rR]?"""')
 # Single-line ' or " string.
-string = group(r"[bB]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*'",
-               r'[bB]?[rR]?"[^\n"\\]*(?:\\.[^\n"\\]*)*"')
 
 # Because of leftmost-then-longest match semantics, be sure to put the
 # longest operators first (e.g., if = came before ==, == would get
@@ -158,9 +155,6 @@ operator = group(r"\*\*=?", r">>=?", r"<<=?", r"!=",
 bracket = '[][(){}]'
 special = group(r'\r?\n', r'\.\.\.', r'[:;.,@]')
 funny = group(operator, bracket, special)
-
-plain_token = group(number, funny, string, name)
-token = ignore + plain_token
 
 # First (or only) line of ' or " string.
 cont_str = group(r"[bBuU]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*" +
@@ -175,8 +169,8 @@ def _compile(expr):
     return re.compile(expr, re.UNICODE)
 
 
-tokenprog, pseudoprog, single3prog, double3prog = map(
-    _compile, (token, pseudo_token, single3, double3))
+pseudoprog, single3prog, double3prog = map(
+    _compile, (pseudo_token, single3, double3))
 endprogs = {"'": _compile(single), '"': _compile(double),
             "'''": single3prog, '"""': double3prog,
             "r'''": single3prog, 'r"""': double3prog,
