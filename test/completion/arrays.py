@@ -30,11 +30,22 @@ b = [6,7]
 #? int()
 b[8-7]
 
+# -----------------
+# Slices
+# -----------------
 #? list()
 b[8:]
 
 #? list()
 b[int():]
+
+
+class _StrangeSlice():
+    def __getitem__(self, slice):
+        return slice
+
+#? []
+_StrangeSlice()[1:2]
 
 
 # -----------------

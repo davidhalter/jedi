@@ -11,7 +11,6 @@ would check whether a flow has the form of ``if isinstance(a, type_or_tuple)``.
 Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
 check for -> a is a string). There's big potential in these checks.
 """
-import copy
 import sys
 
 from jedi._compatibility import hasattr, unicode, u, reraise

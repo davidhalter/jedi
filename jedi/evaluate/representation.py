@@ -169,6 +169,12 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             return False
 
     def get_index_types(self, indexes=[]):
+        if any([isinstance(i, iterable.Slice) for i in indexes]):
+            # Slice support in Jedi is very marginal, at the moment, so just
+            # ignore them in case of __getitem__.
+            # TODO support slices in a more general way.
+            indexes = []
+
         try:
             return self.execute_subscope_by_name('__getitem__', indexes)
         except KeyError:

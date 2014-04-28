@@ -109,7 +109,7 @@ class Evaluator(object):
             return f.filter_name(scopes)
         return f.find(scopes, resolve_decorator)
 
-    @memoize_default(default=(), evaluator_is_first_arg=True)
+    @memoize_default(default=[], evaluator_is_first_arg=True)
     @recursion.recursion_decorator
     @debug.increase_indent
     def eval_statement(self, stmt, seek_name=None):
