@@ -1,4 +1,4 @@
-from jedi._compatibility import u
+from jedi._compatibility import u, unicode
 from jedi import common
 from jedi.api import classes
 from jedi.parser import representation as pr

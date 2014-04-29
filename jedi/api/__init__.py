@@ -526,10 +526,12 @@ class Script(object):
         names = usages.usages(self._evaluator, definitions, search_name, module)
 
         for d in set(definitions):
-            if isinstance(d, (pr.Module, compiled.CompiledObject)):
+            try:
+                name_part = d.names[-1]
+            except AttributeError:
                 names.append(classes.Definition(self._evaluator, d))
             else:
-                names.append(classes.Definition(self._evaluator, d.names[-1]))
+                names.append(classes.Definition(self._evaluator, name_part))
 
         settings.dynamic_flow_information = temp
         return helpers.sorted_definitions(set(names))
