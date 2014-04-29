@@ -1,4 +1,4 @@
-from jedi._compatibility import unicode
+from jedi._compatibility import u
 from jedi import common
 from jedi.api import classes
 from jedi.parser import representation as pr
@@ -33,7 +33,7 @@ def usages(evaluator, definitions, search_name, mods):
         call_path = list(call.generate_call_path())
         for i, name in enumerate(call_path):
             # name is `pr.NamePart`.
-            if unicode(name) == search_name:
+            if u(name) == search_name:
                 follow.append(call_path[:i + 1])
 
         for call_path in follow:

@@ -10,6 +10,8 @@ def abc(): pass
 abc.d.a.bsaasd.abc.d
 
 abc
+# unicode chars shouldn't be a problem.
+x['smörbröd'].abc
 
 if 1:
     abc = 

@@ -182,8 +182,7 @@ def _literals_to_types(evaluator, result):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
             cls = builtin.get_by_name(r.name)
-            from jedi.evaluate import representation as er
-            result[i] = er.Instance(evaluator, cls)
+            result[i] = evaluator.execute(cls)[0]
     return list(set(result))
 
 
