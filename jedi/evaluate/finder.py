@@ -14,7 +14,7 @@ check for -> a is a string). There's big potential in these checks.
 import sys
 
 from jedi._compatibility import hasattr, unicode, u, reraise
-from jedi.parser import representation as pr
+from jedi.parser import representation as pr, tokenize
 from jedi import debug
 from jedi import common
 from jedi import settings
@@ -132,7 +132,7 @@ class NameFinder(object):
         if name.parent.isinstance(pr.Statement):
             def is_execution(calls):
                 for c in calls:
-                    if isinstance(c, (unicode, str)):
+                    if isinstance(c, (unicode, str, tokenize.Token)):
                         continue
                     if c.isinstance(pr.Array):
                         if is_execution(c):
