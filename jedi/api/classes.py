@@ -301,6 +301,9 @@ class BaseDefinition(object):
 
     @memoize_default()
     def _follow_statements_imports(self):
+        """
+        Follow both statements and imports, as far as possible.
+        """
         stripped = self._definition
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
@@ -503,8 +506,11 @@ class Completion(BaseDefinition):
         if self._definition.isinstance(pr.Import) and self._definition.alias is None:
             i = imports.ImportPath(self._evaluator, self._definition, True)
             import_path = i.import_path + (unicode(self._name),)
-            return imports.get_importer(self._evaluator, import_path,
-                                        i._importer.module).follow(self._evaluator)
+            try:
+                return imports.get_importer(self._evaluator, import_path,
+                                            i._importer.module).follow(self._evaluator)
+            except imports.ModuleNotFound:
+                pass
         return super(Completion, self)._follow_statements_imports()
 
     @memoize_default()
