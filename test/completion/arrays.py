@@ -334,3 +334,18 @@ tuple((1,))[0]
 # implementation detail for lists, should not be visible
 #? []
 list().__iterable
+
+
+# -----------------
+# Recursions
+# -----------------
+
+def to_list(iterable):
+    return list(set(iterable))
+
+
+def recursion1(foo):
+    return to_list(to_list(foo)) + recursion1(foo)
+
+#? int()
+recursion1([1,2])[0]
