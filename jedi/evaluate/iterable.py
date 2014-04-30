@@ -396,13 +396,10 @@ class ArrayInstance(pr.Base):
                 if isinstance(typ, Instance) and len(typ.var_args):
                     array = typ.var_args[0]
                     if isinstance(array, ArrayInstance):
-                        # prevent recursions
-                        # TODO compare Modules
-                        if self.var_args.start_pos != array.var_args.start_pos:
+                        # Certain combinations can cause recursions, see tests.
+                        if not self._evaluator.recursion_detector.push_stmt(self.var_args):
                             items += array.iter_content()
-                        else:
-                            debug.warning('ArrayInstance recursion %s', self.var_args)
-                        continue
+                            self._evaluator.recursion_detector.pop_stmt()
                 items += get_iterator_types([typ])
 
         # TODO check if exclusion of tuple is a problem here.
