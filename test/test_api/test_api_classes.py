@@ -180,3 +180,11 @@ class TestParent(TestCase):
         parent = Script('str.join').completions()[0].parent()
         assert parent.name == 'str'
         assert parent.type == 'class'
+
+
+def test_type():
+    """
+    Github issue #397, type should never raise an error.
+    """
+    for c in Script('import os; os.path.').completions():
+        assert c.type
