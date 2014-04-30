@@ -40,7 +40,7 @@ def get_on_import_stmt(evaluator, user_context, user_stmt, is_like_search=False)
     context = user_context.get_context()
     just_from = next(context) == 'from'
 
-    i = imports.ImportPath(evaluator, user_stmt, is_like_search,
-                           kill_count=kill_count, direct_resolve=True,
-                           is_just_from=just_from)
+    i = imports.ImportWrapper(evaluator, user_stmt, is_like_search,
+                              kill_count=kill_count, direct_resolve=True,
+                              is_just_from=just_from)
     return i, cur_name_part

@@ -218,7 +218,7 @@ class Script(object):
                 if s.isinstance(er.Function):
                     names = s.get_magic_function_names()
                 else:
-                    if isinstance(s, imports.ImportPath):
+                    if isinstance(s, imports.ImportWrapper):
                         under = like + self._user_context.get_path_after_cursor()
                         if under == 'import':
                             current_line = self._user_context.get_position_line()
@@ -363,7 +363,7 @@ class Script(object):
         """
         def resolve_import_paths(scopes):
             for s in scopes.copy():
-                if isinstance(s, imports.ImportPath):
+                if isinstance(s, imports.ImportWrapper):
                     scopes.remove(s)
                     scopes.update(resolve_import_paths(set(s.follow())))
             return scopes
@@ -394,7 +394,7 @@ class Script(object):
 
         definitions = resolve_import_paths(definitions)
         d = set([classes.Definition(self._evaluator, s) for s in definitions
-                 if s is not imports.ImportPath.GlobalNamespace])
+                 if s is not imports.ImportWrapper.GlobalNamespace])
         return helpers.sorted_definitions(d)
 
     def goto_assignments(self):
@@ -408,7 +408,7 @@ class Script(object):
         """
         results, _ = self._goto()
         d = [classes.Definition(self._evaluator, d) for d in set(results)
-             if d is not imports.ImportPath.GlobalNamespace]
+             if d is not imports.ImportWrapper.GlobalNamespace]
         return helpers.sorted_definitions(d)
 
     def _goto(self, add_import_name=False):
@@ -426,7 +426,7 @@ class Script(object):
             for d in defs:
                 if isinstance(d.parent, pr.Import) \
                         and d.start_pos == (0, 0):
-                    i = imports.ImportPath(self._evaluator, d.parent).follow(is_goto=True)
+                    i = imports.ImportWrapper(self._evaluator, d.parent).follow(is_goto=True)
                     definitions.remove(d)
                     definitions |= follow_inexistent_imports(i)
             return definitions

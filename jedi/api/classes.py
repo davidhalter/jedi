@@ -468,7 +468,7 @@ class Completion(BaseDefinition):
         """
         definition = self._definition
         if isinstance(self._definition, pr.Import):
-            i = imports.ImportPath(self._evaluator, self._definition)
+            i = imports.ImportWrapper(self._evaluator, self._definition)
             if len(i.import_path) > 1 or not fast:
                 followed = self._follow_statements_imports()
                 if followed:
@@ -487,7 +487,7 @@ class Completion(BaseDefinition):
         description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
         """
         if isinstance(self._definition, pr.Import):
-            i = imports.ImportPath(self._evaluator, self._definition)
+            i = imports.ImportWrapper(self._evaluator, self._definition)
             if len(i.import_path) <= 1:
                 return 'module'
 
@@ -504,7 +504,7 @@ class Completion(BaseDefinition):
         # imports completion is very complicated and needs to be treated
         # separately in Completion.
         if self._definition.isinstance(pr.Import) and self._definition.alias is None:
-            i = imports.ImportPath(self._evaluator, self._definition, True)
+            i = imports.ImportWrapper(self._evaluator, self._definition, True)
             import_path = i.import_path + (unicode(self._name),)
             try:
                 return imports.get_importer(self._evaluator, import_path,

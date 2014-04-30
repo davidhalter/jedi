@@ -34,9 +34,9 @@ class ModuleNotFound(Exception):
     pass
 
 
-class ImportPath(pr.Base):
+class ImportWrapper(pr.Base):
     """
-    An ImportPath is the path of a `pr.Import` object.
+    An ImportWrapper is the path of a `pr.Import` object.
     """
     class GlobalNamespace(object):
         def __init__(self):
@@ -83,7 +83,7 @@ class ImportPath(pr.Base):
     def get_defined_names(self, on_import_stmt=False):
         names = []
         for scope in self.follow():
-            if scope is ImportPath.GlobalNamespace:
+            if scope is ImportWrapper.GlobalNamespace:
                 if not self._is_relative_import():
                     names += self._get_module_names()
 
@@ -216,7 +216,7 @@ class ImportPath(pr.Base):
             if self._is_nested_import():
                 scopes.append(self._get_nested_import(scope))
         else:
-            scopes = [ImportPath.GlobalNamespace]
+            scopes = [ImportWrapper.GlobalNamespace]
         debug.dbg('after import: %s', scopes)
         self._evaluator.recursion_detector.pop_stmt()
         return scopes
@@ -424,7 +424,7 @@ def strip_imports(evaluator, scopes):
     result = []
     for s in scopes:
         if isinstance(s, pr.Import):
-            result += ImportPath(evaluator, s).follow()
+            result += ImportWrapper(evaluator, s).follow()
         else:
             result.append(s)
     return result
