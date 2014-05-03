@@ -1,4 +1,8 @@
+from textwrap import dedent
+
 import jedi
+from jedi.parser.fast import FastParser
+
 
 def test_add_to_end():
     """
@@ -35,3 +39,18 @@ def test_class_in_docstr():
 
     b = a + '\nimport os'
     assert jedi.Script(b, 4, 8).goto_assignments()
+
+
+def test_carriage_return_splitting():
+    source = dedent('''
+
+
+
+        "string"
+
+        class Foo():
+            pass
+        ''')
+    source = source.replace('\n', '\r\n')
+    p = FastParser(source)
+    assert [str(n) for n in p.module.get_defined_names()] == ['Foo']
