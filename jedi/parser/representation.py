@@ -1143,6 +1143,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             else:
                 # comments, strange tokens (like */**), error tokens to
                 # reproduce the string correctly.
+                is_chain = False
                 result.append(tok)
         return result
 

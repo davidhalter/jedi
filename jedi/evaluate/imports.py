@@ -335,7 +335,7 @@ class _Importer(object):
             content = common.source_to_unicode(f.read())
             # these are strings that need to be used for namespace packages,
             # the first one is ``pkgutil``, the second ``pkg_resources``.
-            options = 'declare_namespace(__name__)', 'extend_path(__path__'
+            options = ('declare_namespace(__name__)', 'extend_path(__path__')
             if options[0] in content or options[1] in content:
                 # It is a namespace, now try to find the rest of the modules.
                 return follow_path(iter(import_path), sys.path)

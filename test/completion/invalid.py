@@ -157,3 +157,18 @@ def empty_assert():
     x
 
 import datetime as 
+
+
+# -----------------
+# statements
+# -----------------
+
+call = ''
+invalid = .call
+#? str()
+invalid
+
+call = ''
+invalid = call?.call
+#? str()
+invalid
