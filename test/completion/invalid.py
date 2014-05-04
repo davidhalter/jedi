@@ -168,7 +168,11 @@ invalid = .call
 #? str()
 invalid
 
-call = ''
 invalid = call?.call
+#? str()
+invalid
+
+# comma
+invalid = ,call
 #? str()
 invalid

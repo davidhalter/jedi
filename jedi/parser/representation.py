@@ -1128,7 +1128,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
             elif tok_str == '.':
                 if result and isinstance(result[-1], StatementElement):
                     is_chain = True
-            elif tok_str == ',':  # implies a tuple
+            elif tok_str == ',' and result:  # implies a tuple
                 # expression is now an array not a statement anymore
                 stmt = Statement(self._sub_module, result, result[0].start_pos,
                                  tok.end_pos, self.parent, set_name_parents=False)
