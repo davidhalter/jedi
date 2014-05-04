@@ -408,7 +408,6 @@ class _Importer(object):
                 path += '/__init__.py'
                 with open(path, 'rb') as f:
                     source = f.read()
-                    source = source.replace(b'\n', b'\r\n')
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()

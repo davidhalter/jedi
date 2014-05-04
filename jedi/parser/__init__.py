@@ -146,7 +146,7 @@ class Parser(object):
         """
         imports = []
         brackets = False
-        continue_kw = [",", ";", "\n", ')'] \
+        continue_kw = [",", ";", "\n", '\r\n', ')'] \
             + list(set(keyword.kwlist) - set(['as']))
         while True:
             defunct = False
@@ -154,7 +154,7 @@ class Parser(object):
             if tok.string == '(':  # python allows only one `(` in the statement.
                 brackets = True
                 tok = next(self._gen)
-            if brackets and tok.string == '\n':
+            if brackets and tok.type == tokenize.NEWLINE:
                 tok = next(self._gen)
             i, tok = self._parse_dot_name(tok)
             if not i:
@@ -165,7 +165,7 @@ class Parser(object):
             imports.append((i, name2, defunct))
             while tok.string not in continue_kw:
                 tok = next(self._gen)
-            if not (tok.string == "," or brackets and tok.string == '\n'):
+            if not (tok.string == "," or brackets and tok.type == tokenize.NEWLINE):
                 break
         return imports
 
@@ -302,7 +302,7 @@ class Parser(object):
         # will even break in parentheses. This is true for typical flow
         # commands like def and class and the imports, which will never be used
         # in a statement.
-        breaks = set(['\n', ':', ')'])
+        breaks = set(['\n', '\r\n', ':', ')'])
         always_break = [';', 'import', 'from', 'class', 'def', 'try', 'except',
                         'finally', 'while', 'return', 'yield']
         not_first_break = ['del', 'raise']
@@ -515,7 +515,7 @@ class Parser(object):
                 # multiple inputs because of with
                 inputs = []
                 first = True
-                while first or command == 'with' and tok.string not in (':', '\n'):
+                while first or command == 'with' and tok.string not in (':', '\n', '\r\n'):
                     statement, tok = \
                         self._parse_statement(added_breaks=added_breaks)
                     if command == 'except' and tok.string == ',':
