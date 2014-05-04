@@ -108,3 +108,14 @@ def test_end_pos():
     scope = parser.module.subscopes[0]
     assert scope.start_pos == (3, 0)
     assert scope.end_pos == (5, 0)
+
+
+def test_carriage_return_statements():
+    source = u(dedent('''
+        foo = 'ns1!'
+
+        # this is a namespace package
+    '''))
+    source = source.replace('\n', '\r\n')
+    stmt = Parser(source).module.statements[0]
+    assert '#' not in stmt.get_code()
