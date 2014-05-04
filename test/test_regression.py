@@ -171,3 +171,8 @@ def test_loading_unicode_files_with_bad_global_charset(monkeypatch, tmpdir):
     s = Script("from test1 import foo\nfoo.",
                line=2, column=4, path=filename2)
     s.complete()
+
+
+def test_bug_402():
+    script = Script('import jedi; s = jedi.Script(''); s.')
+    assert len(script.completions())
