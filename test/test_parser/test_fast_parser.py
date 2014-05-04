@@ -1,6 +1,7 @@
 from textwrap import dedent
 
 import jedi
+from jedi._compatibility import u
 from jedi.parser.fast import FastParser
 
 
@@ -23,11 +24,11 @@ class Two(Abc):
     b = "    def g(self):\n" \
         "        self."
     assert jedi.Script(a, 8, 12, 'example.py').completions()
-    assert  jedi.Script(a + b, path='example.py').completions()
+    assert jedi.Script(a + b, path='example.py').completions()
 
     a = a[:-1] + '.\n'
     assert jedi.Script(a, 8, 13, 'example.py').completions()
-    assert  jedi.Script(a + b, path='example.py').completions()
+    assert jedi.Script(a + b, path='example.py').completions()
 
 
 def test_class_in_docstr():
@@ -42,7 +43,7 @@ def test_class_in_docstr():
 
 
 def test_carriage_return_splitting():
-    source = dedent('''
+    source = u(dedent('''
 
 
 
@@ -50,7 +51,7 @@ def test_carriage_return_splitting():
 
         class Foo():
             pass
-        ''')
+        '''))
     source = source.replace('\n', '\r\n')
     p = FastParser(source)
     assert [str(n) for n in p.module.get_defined_names()] == ['Foo']

@@ -6,10 +6,11 @@ Test completions from *.pyc files:
  - delete the pure python dummy module
  - try jedi on the generated *.pyc
 """
-import compileall
 import os
 import shutil
 import sys
+
+import pytest
 
 import jedi
 from ..helpers import cwd_at
@@ -29,6 +30,7 @@ def generate_pyc():
         pass
     with open("dummy_package/dummy.py", 'w') as f:
         f.write(SRC)
+    import compileall
     compileall.compile_file("dummy_package/dummy.py")
     os.remove("dummy_package/dummy.py")
 
@@ -43,6 +45,8 @@ def generate_pyc():
             shutil.copy(os.path.join("dummy_package/__pycache__", f), dst)
 
 
+# Python 2.6 does not necessarily come with `compileall.compile_file`.
+@pytest.mark.skipif("sys.version_info > (2,6)")
 @cwd_at('test/test_evaluate')
 def test_pyc():
     """
