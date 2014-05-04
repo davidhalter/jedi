@@ -166,7 +166,7 @@ class ParserNode(object):
         """Adding a node means adding a node that was already added earlier"""
         self.children.append(node)
         self._set_items(node.parser, set_parent=set_parent)
-        node.old_children = node.children # TODO potential memory leak?
+        node.old_children = node.children  # TODO potential memory leak?
         node.children = []
 
         scope = self.content_scope
@@ -226,7 +226,9 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS)
 
-        self._lines = code.splitlines()
+        # Split only new lines. Distinction between \r\n is the tokenizer's
+        # job.
+        self._lines = code.split('\n')
         current_lines = []
         parts = []
         is_decorator = False
