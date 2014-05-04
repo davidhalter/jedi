@@ -243,3 +243,17 @@ def test_signature_index():
         return Script(source).call_signatures()[0]
 
     assert get('sorted([], key=a').index == 2
+    assert get('sorted([], no_key=a').index is None
+
+    args_func = 'def foo(*kwargs): pass\n'
+    assert get(args_func + 'foo(a').index == 0
+    assert get(args_func + 'foo(a, b').index == 0
+
+    kwargs_func = 'def foo(**kwargs): pass\n'
+    assert get(kwargs_func + 'foo(a=2').index == 0
+    assert get(kwargs_func + 'foo(a=2, b=2').index == 0
+
+    both = 'def foo(*args, **kwargs): pass\n'
+    assert get(both + 'foo(a=2').index == 1
+    assert get(both + 'foo(a=2, b=2').index == 1
+    assert get(both + 'foo(a, b, c').index == 0

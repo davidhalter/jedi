@@ -698,9 +698,17 @@ class CallSignature(Definition):
             for i, param in enumerate(self.params):
                 if self._key_name == param.name:
                     return i
-            return None
+            if self.params and self.params[-1]._definition.stars == 2:
+                return i
+            else:
+                return None
 
         if self._index >= len(self.params):
+
+            for i, param in enumerate(self.params):
+                # *args case
+                if param._definition.stars == 1:
+                    return i
             return None
         return self._index
 
