@@ -72,14 +72,14 @@ class CachedFastParser(type):
 class ParserNode(object):
     def __init__(self, parser, code, parent=None):
         self.parent = parent
-        self.code = code
-        self.hash = hash(code)
 
         self.children = []
         # must be created before new things are added to it.
-        self.save_contents(parser)
+        self.save_contents(parser, code)
 
-    def save_contents(self, parser):
+    def save_contents(self, parser, code):
+        self.code = code
+        self.hash = hash(code)
         self.parser = parser
 
         try:
@@ -325,7 +325,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     if self.current_node is None:
                         self.current_node = ParserNode(new, '')
                     else:
-                        self.current_node.save_contents(new)
+                        self.current_node.save_contents(new, '')
                     self.parsers.append(new)
                     is_first = False
 
@@ -333,7 +333,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     if self.current_node is None:
                         self.current_node = ParserNode(p, code_part_actually_used)
                     else:
-                        self.current_node.save_contents(p)
+                        self.current_node.save_contents(p, code_part_actually_used)
                 else:
                     if node is None:
                         self.current_node = \

@@ -59,18 +59,22 @@ def test_carriage_return_splitting():
 
 
 def test_change_and_undo():
-    cache.parser_cache.pop(None, None)
 
     def fp(src):
         p = FastParser(u(src))
         cache.save_parser(None, None, p, pickling=False)
 
-        # TODO Don't just take the first line, the whole thing should be the same.
-        # Need to refactor the parser first, though.
-        print(repr(p.module.get_code()))
-        first_line = p.module.get_code().splitlines()[0]
-        assert first_line == src
+        # TODO Don't change get_code, the whole thing should be the same.
+        # -> Need to refactor the parser first, though.
+        assert src == p.module.get_code()[:-1]
 
+    cache.parser_cache.pop(None, None)
+    func_before = 'def func():\n    pass\n'
+    fp(func_before + 'a')
+    fp(func_before + 'b')
+    fp(func_before + 'a')
+
+    cache.parser_cache.pop(None, None)
     fp('a')
     fp('b')
     fp('a')
