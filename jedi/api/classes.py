@@ -682,11 +682,27 @@ class CallSignature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, executable, call, index):
+    def __init__(self, evaluator, executable, call, index, key_name):
         super(CallSignature, self).__init__(evaluator, executable)
-        self.index = index
-        """ The param index of the current call. """
+        self._index = index
+        self._key_name = key_name
         self._call = call
+
+    @property
+    def index(self):
+        """
+        The Param index of the current call.
+        Returns None if the index doesn't is not defined.
+        """
+        if self._key_name is not None:
+            for i, param in enumerate(self.params):
+                if self._key_name == param.name:
+                    return i
+            return None
+
+        if self._index >= len(self.params):
+            return None
+        return self._index
 
     @property
     def bracket_start(self):

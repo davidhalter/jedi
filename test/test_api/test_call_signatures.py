@@ -26,12 +26,12 @@ class TestCallSignatures(TestCase):
         run = self._run_simple
 
         # simple
-        s1 = "abs(a, str("
-        run(s1, 'abs', 0, 4)
-        run(s1, 'abs', 1, 6)
-        run(s1, 'abs', 1, 7)
-        run(s1, 'abs', 1, 8)
-        run(s1, 'str', 0, 11)
+        s1 = "sorted(a, str("
+        run(s1, 'sorted', 0, 7)
+        run(s1, 'sorted', 1, 9)
+        run(s1, 'sorted', 1, 10)
+        run(s1, 'sorted', 1, 11)
+        run(s1, 'str', 0, 14)
 
         s2 = "abs(), "
         run(s2, 'abs', 0, 4)
@@ -50,9 +50,9 @@ class TestCallSignatures(TestCase):
         run(s4, 'abs', 0, 9)
         #run(s4, 'abs', 1, 10)
 
-        s5 = "abs(1,\nif 2:\n def a():"
-        run(s5, 'abs', 0, 4)
-        run(s5, 'abs', 1, 6)
+        s5 = "sorted(1,\nif 2:\n def a():"
+        run(s5, 'sorted', 0, 7)
+        run(s5, 'sorted', 1, 9)
 
         s6 = "str().center("
         run(s6, 'center', 0)
@@ -236,3 +236,10 @@ def test_completion_interference():
     assert Script('from datetime import ').completions()
 
     assert Script('open(').call_signatures()
+
+
+def test_signature_index():
+    def get(source):
+        return Script(source).call_signatures()[0]
+
+    assert get('sorted([], key=a').index == 2

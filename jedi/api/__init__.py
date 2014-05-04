@@ -557,14 +557,33 @@ class Script(object):
         if call is None:
             return []
 
+        stmt_el = call
+        while isinstance(stmt_el.parent, pr.StatementElement):
+            # Go to parent literal/variable until not possible anymore. This
+            # makes it possible to return the whole expression.
+            stmt_el = stmt_el.parent
+        # We can reset the execution since it's a new object
+        # (fast_parent_copy).
+        execution_arr, call.execution = call.execution, None
+
         with common.scale_speed_settings(settings.scale_call_signatures):
-            _callable = lambda: self._evaluator.eval_call(call)
+            _callable = lambda: self._evaluator.eval_call(stmt_el)
             origins = cache.cache_call_signatures(_callable, self.source,
                                                   self._pos, user_stmt)
-            origins = self._evaluator.eval_call(call)
+            origins = self._evaluator.eval_call(stmt_el)
         debug.speed('func_call followed')
 
-        return [classes.CallSignature(self._evaluator, o, call, index)
+        key_name = None
+        try:
+            detail = execution_arr[index].assignment_details[0]
+        except IndexError:
+            pass
+        else:
+            try:
+                key_name = unicode(detail[0][0].name)
+            except (IndexError, AttributeError):
+                pass
+        return [classes.CallSignature(self._evaluator, o, call, index, key_name)
                 for o in origins if o.is_callable()]
 
 

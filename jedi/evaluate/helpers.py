@@ -123,13 +123,6 @@ def search_call_signatures(user_stmt, position):
         arr, index = call_signature_array_for_pos(user_stmt, position)
         if arr is not None:
             call = arr.parent
-            while isinstance(call.parent, pr.StatementElement):
-                # Go to parent literal/variable until not possible anymore. This
-                # makes it possible to return the whole expression.
-                call = call.parent
-            arr.parent.execution = None
-            if not isinstance(call, pr.Call):
-                call = None
 
     debug.speed('func_call parsed')
     return call, index
