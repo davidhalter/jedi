@@ -632,7 +632,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         elif self.is_keyword:
             d = 'keyword %s' % d.name
         else:
-            d = d.get_code().replace('\n', '')
+            d = d.get_code().replace('\n', '').replace('\r', '')
         return d
 
     @property
