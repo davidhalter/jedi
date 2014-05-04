@@ -2,6 +2,7 @@ from textwrap import dedent
 
 import jedi
 from jedi._compatibility import u
+from jedi import cache
 from jedi.parser.fast import FastParser
 
 
@@ -55,3 +56,21 @@ def test_carriage_return_splitting():
     source = source.replace('\n', '\r\n')
     p = FastParser(source)
     assert [str(n) for n in p.module.get_defined_names()] == ['Foo']
+
+
+def test_change_and_undo():
+    cache.parser_cache.pop(None, None)
+
+    def fp(src):
+        p = FastParser(u(src))
+        cache.save_parser(None, None, p, pickling=False)
+
+        # TODO Don't just take the first line, the whole thing should be the same.
+        # Need to refactor the parser first, though.
+        print(repr(p.module.get_code()))
+        first_line = p.module.get_code().splitlines()[0]
+        assert first_line == src
+
+    fp('a')
+    fp('b')
+    fp('a')

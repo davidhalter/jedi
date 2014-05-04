@@ -231,9 +231,8 @@ def test_completion_interference():
     """Seems to cause problems, see also #396."""
     cache.parser_cache.pop(None, None)
     assert Script('open(').call_signatures()
-    assert Script('open(').call_signatures()
 
     # complete something usual, before doing the same call_signatures again.
-    assert Script('from os import ').completions()
+    assert Script('from datetime import ').completions()
 
     assert Script('open(').call_signatures()
