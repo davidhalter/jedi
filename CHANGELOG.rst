@@ -3,7 +3,7 @@
 Changelog
 ---------
 
-+0.8.0 (2013-04-01)
+0.8.0 (2013-05-05)
 +++++++++++++++++++
 
 * Memory Consumption for compiled modules (e.g. builtins, sys) has been reduced
