@@ -570,7 +570,6 @@ class Script(object):
             _callable = lambda: self._evaluator.eval_call(stmt_el)
             origins = cache.cache_call_signatures(_callable, self.source,
                                                   self._pos, user_stmt)
-            origins = self._evaluator.eval_call(stmt_el)
         debug.speed('func_call followed')
 
         key_name = None
