@@ -15,9 +15,13 @@ Then you will be able to use Jedi completer in your Python interpreter::
     os.path.join().split().index   os.path.join().split().insert
 
 """
-
 import jedi.utils
+from jedi import __version__ as __jedi_version__
+
+print('REPL completion using Jedi %s' % __jedi_version__)
 jedi.utils.setup_readline()
+
 del jedi
+
 # Note: try not to do many things here, as it will contaminate global
 # namespace of the interpreter.
