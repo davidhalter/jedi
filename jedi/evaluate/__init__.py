@@ -92,6 +92,7 @@ class Evaluator(object):
         self.compiled_cache = {}  # see `compiled.create()`
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
+        self.analysis = []
 
     def find_types(self, scope, name_str, position=None, search_global=False,
                    is_goto=False, resolve_decorator=True):
