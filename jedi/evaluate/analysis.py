@@ -6,12 +6,13 @@ from jedi import debug
 
 
 CODES = {
-    'inaccesible': (1, 'Attribute is not accessible.'),
+    'attribute-error': (1, 'Potential AttributeError.'),
 }
 
 
 class Error(object):
-    def __init__(self, name, start_pos):
+    def __init__(self, name, module_path, start_pos):
+        self._module_path = module_path
         self._start_pos = start_pos
         self.name = name
 
@@ -32,12 +33,18 @@ class Error(object):
     def __str__(self):
         return '%s: %s' % (self.code, self.line)
 
+    def __repr__(self):
+        return '<%s %s: %s@%s,%s' % (self.__class__.__name__,
+                                     self.name, self._module_path,
+                                     self._start_pos[0], self._start_pos[1])
+
 
 class Warning(Error):
     pass
 
 
-def add(evaluator, code, typ=Error):
-    instance = typ()
-    debug.warning(str(Error))
+def add(evaluator, name, jedi_obj, typ=Error):
+    module_path = jedi_obj.get_parent_until().path
+    instance = typ(name, module_path, jedi_obj.start_pos)
+    debug.warning(str(instance))
     evaluator.analysis.append(instance)

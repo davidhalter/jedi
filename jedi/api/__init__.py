@@ -585,6 +585,19 @@ class Script(object):
         return [classes.CallSignature(self._evaluator, o, call, index, key_name)
                 for o in origins if o.is_callable()]
 
+    def analysis(self):
+        statements = set(chain(*self._parser.module().used_names.values()))
+        for stmt in statements:
+            if isinstance(stmt, pr.Import):
+                imports.strip_imports(self._evaluator, [stmt])
+            else:
+                self._evaluator.eval_statement(stmt)
+
+        for error in self._evaluator.analysis:
+            print(repr(error))
+        raise AssertionError
+        return self._evaluator.analysis
+
 
 class Interpreter(Script):
     """
@@ -626,7 +639,7 @@ class Interpreter(Script):
         user_stmt = self._parser.user_stmt_with_whitespace()
         is_simple_path = not path or re.search('^[\w][\w\d.]*$', path)
         if isinstance(user_stmt, pr.Import) or not is_simple_path:
-            return super(type(self), self)._simple_complete(path, like)
+            return super(Interpreter, self)._simple_complete(path, like)
         else:
             class NamespaceModule(object):
                 def __getattr__(_, name):
@@ -638,8 +651,8 @@ class Interpreter(Script):
                     raise AttributeError()
 
                 def __dir__(_):
-                    return list(set(chain.from_iterable(n.keys()
-                                    for n in self.namespaces)))
+                    gen = (n.keys() for n in self.namespaces)
+                    return list(set(chain.from_iterable(gen)))
 
             paths = path.split('.') if path else []
 
