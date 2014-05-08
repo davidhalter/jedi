@@ -588,6 +588,8 @@ class Script(object):
     def analysis(self):
         statements = set(chain(*self._parser.module().used_names.values()))
         for stmt in statements:
+            if stmt.start_pos[0] != 32:
+                continue
             if isinstance(stmt, pr.Import):
                 imports.strip_imports(self._evaluator, [stmt])
             else:

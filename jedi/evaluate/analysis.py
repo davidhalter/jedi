@@ -30,8 +30,11 @@ class Error(object):
         first = self.__class__.__name__[0]
         return first + str(CODES[self.name][0])
 
+    def description(self):
+        return CODES[self.name][1]
+
     def __str__(self):
-        return '%s: %s' % (self.code, self.line)
+        return '%s: %s:%s' % (self.code, self.line, self.description())
 
     def __repr__(self):
         return '<%s %s: %s@%s,%s' % (self.__class__.__name__,
