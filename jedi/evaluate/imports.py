@@ -190,7 +190,11 @@ class ImportWrapper(pr.Base):
                 debug.warning('Module not found: %s', self.import_stmt)
                 return []
 
-            scopes = [scope]
+            if self._is_nested_import():
+                scopes = [NestedImportModule(scope, self._get_nested_import(scope))]
+            else:
+                scopes = [scope]
+
             scopes += remove_star_imports(self._evaluator, scope)
 
             # follow the rest of the import (not FS -> classes, functions)
@@ -212,14 +216,29 @@ class ImportWrapper(pr.Base):
                     scopes = list(chain.from_iterable(
                         self._evaluator.follow_path(iter(rest), [s], s)
                         for s in scopes))
-
-            if self._is_nested_import():
-                scopes.append(self._get_nested_import(scope))
         else:
             scopes = [ImportWrapper.GlobalNamespace]
         debug.dbg('after import: %s', scopes)
         self._evaluator.recursion_detector.pop_stmt()
         return scopes
+
+
+class NestedImportModule(pr.Module):
+    def __init__(self, module, nested_import):
+        self._module = module
+        self._nested_import = nested_import
+
+    def get_defined_names(self):
+        nested = self._nested_import.namespace
+        print(nested)
+        return self._module.get_defined_names() + [nested]
+
+    def __getattr__(self, name):
+        return getattr(self._module, name)
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__,
+                             self._module)
 
 
 def get_importer(evaluator, import_path, module, level=0):
