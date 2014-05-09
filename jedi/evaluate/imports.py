@@ -158,23 +158,6 @@ class ImportWrapper(pr.Base):
             and len(self.import_stmt.namespace.names) > 1 \
             and not self.direct_resolve
 
-    def _get_nested_import(self, parent):
-        """
-        See documentation of `self._is_nested_import`.
-        Generates an Import statement, that can be used to fake nested imports.
-        """
-        i = self.import_stmt
-        # This is not an existing Import statement. Therefore, set position to
-        # 0 (0 is not a valid line number).
-        zero = (0, 0)
-        names = [(unicode(name_part), name_part.start_pos)
-                 for name_part in i.namespace.names[1:]]
-        n = pr.Name(i._sub_module, names, zero, zero, self.import_stmt)
-        new = pr.Import(i._sub_module, zero, zero, n)
-        new.parent = parent
-        debug.dbg('Generated a nested import: %s', new)
-        return new
-
     def _is_relative_import(self):
         return bool(self.import_stmt.relative_count)
 
@@ -190,7 +173,11 @@ class ImportWrapper(pr.Base):
                 debug.warning('Module not found: %s', self.import_stmt)
                 return []
 
-            scopes = [scope]
+            if self._is_nested_import():
+                scopes = [NestedImportModule(scope, self.import_stmt)]
+            else:
+                scopes = [scope]
+
             scopes += remove_star_imports(self._evaluator, scope)
 
             # follow the rest of the import (not FS -> classes, functions)
@@ -212,14 +199,44 @@ class ImportWrapper(pr.Base):
                     scopes = list(chain.from_iterable(
                         self._evaluator.follow_path(iter(rest), [s], s)
                         for s in scopes))
-
-            if self._is_nested_import():
-                scopes.append(self._get_nested_import(scope))
         else:
             scopes = [ImportWrapper.GlobalNamespace]
         debug.dbg('after import: %s', scopes)
         self._evaluator.recursion_detector.pop_stmt()
         return scopes
+
+
+class NestedImportModule(pr.Module):
+    def __init__(self, module, nested_import):
+        self._module = module
+        self._nested_import = nested_import
+
+    def _get_nested_import_name(self):
+        """
+        See documentation of `self._is_nested_import`.
+        Generates an Import statement, that can be used to fake nested imports.
+        """
+        i = self._nested_import
+        # This is not an existing Import statement. Therefore, set position to
+        # 0 (0 is not a valid line number).
+        zero = (0, 0)
+        names = [unicode(name_part) for name_part in i.namespace.names[1:]]
+        name = helpers.FakeName(names, self._nested_import)
+        new = pr.Import(i._sub_module, zero, zero, name)
+        new.parent = self._module
+        debug.dbg('Generated a nested import: %s', new)
+        return helpers.FakeName(str(i.namespace.names[1]), new)
+
+    def get_defined_names(self):
+        nested = self._get_nested_import_name()
+        return self._module.get_defined_names() + [nested]
+
+    def __getattr__(self, name):
+        return getattr(self._module, name)
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__,
+                             self._module)
 
 
 def get_importer(evaluator, import_path, module, level=0):

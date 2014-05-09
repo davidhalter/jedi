@@ -184,6 +184,10 @@ class FakeStatement(pr.Statement):
 
 
 class FakeName(pr.Name):
-    def __init__(self, name, parent=None):
+    def __init__(self, name_or_names, parent=None):
         p = 0, 0
-        super(FakeName, self).__init__(FakeSubModule, [(name, p)], p, p, parent)
+        if isinstance(name_or_names, list):
+            names = [(n, p) for n in name_or_names]
+        else:
+            names = [(name_or_names, p)]
+        super(FakeName, self).__init__(FakeSubModule, names, p, p, parent)
