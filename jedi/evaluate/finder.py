@@ -37,6 +37,13 @@ class NameFinder(object):
     def find(self, scopes, resolve_decorator=True):
         names = self.filter_name(scopes)
         types = self._names_to_types(names, resolve_decorator)
+
+        if not names and not types \
+                and not (isinstance(self.name_str, pr.NamePart)
+                         and isinstance(self.name_str.parent.parent, pr.Param)):
+            if not isinstance(self.name_str, (str, unicode)):  # TODO Remove
+                analysis.add(self._evaluator, 'attribute-error', self.name_str)
+
         debug.dbg('finder._names_to_types: %s, old: %s', names, types)
         return self._resolve_descriptors(types)
 
@@ -197,14 +204,6 @@ class NameFinder(object):
         if not names and isinstance(self.scope, er.Instance):
             # handling __getattr__ / __getattribute__
             types = self._check_getattr(self.scope)
-
-        if not names and not types \
-                and not (isinstance(self.name_str, pr.NamePart)
-                         and isinstance(self.name_str.parent.parent, pr.Param)):
-            if not isinstance(self.name_str, (str, unicode)):  # TODO Remove
-                analysis.add(self._evaluator, 'attribute-error', self.name_str)
-                print(self.scope, self.name_str.parent.parent, self.name_str, self.position,
-                self.name_str.start_pos)
 
         return types
 
