@@ -588,14 +588,14 @@ class Script(object):
     def analysis(self):
         statements = set(chain(*self._parser.module().used_names.values()))
         for stmt in statements:
-            if stmt.start_pos[0] != 32:
+            if stmt.start_pos[0] != 254:
                 continue
             if isinstance(stmt, pr.Import):
                 imports.strip_imports(self._evaluator, [stmt])
             else:
                 self._evaluator.eval_statement(stmt)
 
-        for error in self._evaluator.analysis:
+        for error in sorted(self._evaluator.analysis, key=lambda x: x.line):
             print(repr(error))
         raise AssertionError
         return self._evaluator.analysis

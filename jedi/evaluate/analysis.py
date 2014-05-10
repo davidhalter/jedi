@@ -7,6 +7,7 @@ from jedi import debug
 
 CODES = {
     'attribute-error': (1, 'Potential AttributeError.'),
+    'import-error': (2, 'Potential ImportError.'),
 }
 
 

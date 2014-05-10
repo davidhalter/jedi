@@ -27,6 +27,7 @@ from jedi.evaluate import helpers
 from jedi import settings
 from jedi.common import source_to_unicode
 from jedi.evaluate import compiled
+from jedi.evaluate import analysis
 from jedi.evaluate.cache import memoize_default, NO_DEFAULT
 
 
@@ -170,7 +171,7 @@ class ImportWrapper(pr.Base):
             try:
                 scope, rest = self._importer.follow_file_system()
             except ModuleNotFound:
-                debug.warning('Module not found: %s', self.import_stmt)
+                analysis.add(self._evaluator, 'import-error', self.import_stmt)
                 return []
 
             if self._is_nested_import():
@@ -204,6 +205,8 @@ class ImportWrapper(pr.Base):
         else:
             scopes = [ImportWrapper.GlobalNamespace]
         debug.dbg('after import: %s', scopes)
+        if not scopes:
+            analysis.add(self._evaluator, 'import-error', self.import_stmt)
         self._evaluator.recursion_detector.pop_stmt()
         return scopes
 
