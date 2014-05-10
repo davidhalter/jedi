@@ -178,7 +178,9 @@ class ImportWrapper(pr.Base):
             else:
                 scopes = [scope]
 
-            scopes += remove_star_imports(self._evaluator, scope)
+            star_imports = remove_star_imports(self._evaluator, scope)
+            if star_imports:
+                scopes = [StarImportModule(scopes[0], star_imports)]
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
@@ -235,8 +237,33 @@ class NestedImportModule(pr.Module):
         return getattr(self._module, name)
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__,
-                             self._module)
+        return "<%s: %s>" % (self.__class__.__name__, self._module)
+
+
+class StarImportModule(pr.Module):
+    """
+    Used if a module contains star imports.
+    """
+    def __init__(self, module, star_import_modules):
+        self._module = module
+        self.star_import_modules = star_import_modules
+
+    def scope_names_generator(self):
+        yield self._module, self._module.get_defined_names()
+        for s in self.star_import_modules:
+            yield s, s.get_defined_names()
+
+    def get_defined_names(self):
+        result = self._module.get_defined_names()
+        for m in self.star_import_modules:
+            result += m.get_defined_names()
+        return result
+
+    def __getattr__(self, name):
+        return getattr(self._module, name)
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, self._module)
 
 
 def get_importer(evaluator, import_path, module, level=0):
@@ -456,6 +483,8 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
 
     and follow these modules.
     """
+    if isinstance(scope, StarImportModule):
+        return scope.star_import_modules
     modules = strip_imports(evaluator, (i for i in scope.get_imports() if i.star))
     new = []
     for m in modules:
