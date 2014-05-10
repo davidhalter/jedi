@@ -149,7 +149,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             names.append(InstanceElement(self._evaluator, self, var, True))
         return names
 
-    def scope_generator(self):
+    def scope_names_generator(self):
         """
         An Instance has two scopes: The scope with self names and the class
         scope. Instance variables have priority over the class scope.

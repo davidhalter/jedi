@@ -46,7 +46,7 @@ class NameFinder(object):
             try:
                 # Use scope generators if parts of it (e.g. sub classes or star
                 # imports).
-                gen = self.scope.scope_generator
+                gen = self.scope.scope_names_generator
             except AttributeError:
                 if isinstance(self.scope, er.Class):
                     # classes are only available directly via chaining?
@@ -58,13 +58,13 @@ class NameFinder(object):
             else:
                 return gen()
 
-    def filter_name(self, scope_generator):
+    def filter_name(self, scope_names_generator):
         """
         Filters all variables of a scope (which are defined in the
-        `scope_generator`), until the name fits.
+        `scope_names_generator`), until the name fits.
         """
         result = []
-        for nscope, name_list in scope_generator:
+        for nscope, name_list in scope_names_generator:
             break_scopes = []
             if not isinstance(nscope, compiled.CompiledObject):
                 # Here is the position stuff happening (sorting of variables).
@@ -443,7 +443,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
                 and scope.type() == 'class' and in_func_scope != scope):
             try:
                 if isinstance(scope, er.Instance):
-                    for g in scope.scope_generator():
+                    for g in scope.scope_names_generator():
                         yield g
                 else:
                     yield scope, _get_defined_names_for_position(scope, position, in_func_scope)

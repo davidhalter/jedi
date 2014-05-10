@@ -204,11 +204,11 @@ class Script(object):
             scopes = list(self._prepare_goto(path, True))
         except NotFoundError:
             scopes = []
-            scope_generator = get_names_of_scope(self._evaluator,
-                                                 self._parser.user_scope(),
-                                                 self._pos)
+            scope_names_generator = get_names_of_scope(self._evaluator,
+                                                       self._parser.user_scope(),
+                                                       self._pos)
             completions = []
-            for scope, name_list in scope_generator:
+            for scope, name_list in scope_names_generator:
                 for c in name_list:
                     completions.append((c, scope))
         else:
