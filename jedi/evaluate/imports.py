@@ -239,6 +239,23 @@ class NestedImportModule(pr.Module):
                              self._module)
 
 
+class StarImportModule(pr.Module):
+    """
+    Used if a module contains star imports.
+    """
+    def __init__(self, module, star_import_modules):
+        self._module = module
+        self._star_import_modules = star_import_modules
+
+    def scope_generator(self):
+        yield self.module
+        for s in self._star_import_modules:
+            yield s
+
+    def __getattr__(self, name):
+        return getattr(self._module, name)
+
+
 def get_importer(evaluator, import_path, module, level=0):
     """
     Checks the evaluator caches first, which resembles the ``sys.modules``

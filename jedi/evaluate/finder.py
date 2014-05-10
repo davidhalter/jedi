@@ -43,9 +43,11 @@ class NameFinder(object):
         if search_global:
             return get_names_of_scope(self._evaluator, self.scope, self.position)
         else:
-            if isinstance(self.scope, er.Instance):
-                return self.scope.scope_generator()
-            else:
+            try:
+                # Use scope generators if parts of it (e.g. sub classes or star
+                # imports).
+                gen = self.scope.scope_generator
+            except AttributeError:
                 if isinstance(self.scope, er.Class):
                     # classes are only available directly via chaining?
                     # strange stuff...
@@ -53,6 +55,8 @@ class NameFinder(object):
                 else:
                     names = _get_defined_names_for_position(self.scope, self.position)
                 return iter([(self.scope, names)])
+            else:
+                return gen()
 
     def filter_name(self, scope_generator):
         """
