@@ -1,5 +1,6 @@
 import os
 import shutil
+import re
 import tempfile
 
 import pytest
@@ -96,9 +97,9 @@ class StaticAnalysisCase(object):
     def collect_comparison(self):
         cases = []
         for line_nr, line in enumerate(self._source.splitlines(), 1):
-            if line.startswith('#! '):
-                rest = line[3:]
-                cases.append((line_nr + 1, rest))
+            match = re.match(r'\s*#! (.*)$', line)
+            if match is not None:
+                cases.append((line_nr + 1, match.group(1)))
         return cases
 
     def run(self, compare_cb):
