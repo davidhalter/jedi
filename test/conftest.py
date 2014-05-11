@@ -7,6 +7,7 @@ import pytest
 from . import helpers
 from . import run
 from . import refactor
+import jedi
 
 
 def pytest_addoption(parser):
@@ -59,11 +60,50 @@ def pytest_generate_tests(metafunc):
                 os.path.join(base_dir, 'thirdparty'), test_files, True))
         ids = ["%s:%s" % (c.module_name, c.line_nr_test) for c in cases]
         metafunc.parametrize('case', cases, ids=ids)
+
     if 'refactor_case' in metafunc.fixturenames:
         base_dir = metafunc.config.option.refactor_case_dir
         metafunc.parametrize(
             'refactor_case',
             refactor.collect_dir_tests(base_dir, test_files))
+
+    if 'static_analysis_case' in metafunc.fixturenames:
+        base_dir = os.path.dirname(__file__) + 'static_analysis'
+        metafunc.parametrize(
+            'static_analysis_case',
+            refactor.collect_dir_tests(base_dir, test_files))
+
+
+def collect_static_analysis_tests(base_dir, test_files):
+    for f_name in os.listdir(base_dir):
+        files_to_execute = [a for a in test_files.items() if a[0] in f_name]
+        if f_name.endswith(".py") and (not test_files or files_to_execute):
+            path = os.path.join(base_dir, f_name)
+            yield StaticAnalysisCase(path)
+
+
+class StaticAnalysisCase(object):
+    """
+    Static Analysis cases lie in the static_analysis folder.
+    The tests also start with `#!`, like the goto_definition tests.
+    """
+    def __init__(self, path):
+        self._path = path
+        with open(path) as f:
+            self._source = f.read()
+
+    def collect_comparison(self):
+        cases = []
+        for line_nr, line in enumerate(self._source.splitlines(), 1):
+            if line.startswith('#! '):
+                rest = line[3:]
+                cases.append((line_nr, rest))
+        return cases
+
+    def run(self, compare_cb):
+        analysis = jedi.Script(self._source).analysis()
+        analysis = [(r.line, r.name) for r in analysis]
+        assert compare_cb(self, self.collect_comparison(), analysis)
 
 
 @pytest.fixture()

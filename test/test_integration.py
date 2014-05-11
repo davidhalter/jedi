@@ -28,6 +28,12 @@ def test_integration(case, monkeypatch, pytestconfig):
     case.run(assert_case_equal)
 
 
+def test_static_analysis(static_analysis_case, monkeypatch, pytestconfig):
+    if static_analysis_case.skip is not None:
+        pytest.skip(static_analysis_case.skip)
+    static_analysis_case.run(assert_case_equal)
+
+
 def test_refactor(refactor_case):
     """
     Run refactoring test case.
