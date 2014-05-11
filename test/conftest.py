@@ -98,13 +98,13 @@ class StaticAnalysisCase(object):
         for line_nr, line in enumerate(self._source.splitlines(), 1):
             if line.startswith('#! '):
                 rest = line[3:]
-                cases.append((line_nr, rest))
+                cases.append((line_nr + 1, rest))
         return cases
 
     def run(self, compare_cb):
-        analysis = jedi.Script(self._source)._analysis()
+        analysis = jedi.Script(self._source, path=self._path)._analysis()
         analysis = [(r.line, r.name) for r in analysis]
-        assert compare_cb(self, analysis, self.collect_comparison())
+        compare_cb(self, analysis, self.collect_comparison())
 
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__, os.path.basename(self._path))

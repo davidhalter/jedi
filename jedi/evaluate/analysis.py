@@ -13,7 +13,7 @@ CODES = {
 
 class Error(object):
     def __init__(self, name, module_path, start_pos):
-        self._module_path = module_path
+        self.path = module_path
         self._start_pos = start_pos
         self.name = name
 
@@ -39,7 +39,7 @@ class Error(object):
 
     def __repr__(self):
         return '<%s %s: %s@%s,%s' % (self.__class__.__name__,
-                                     self.name, self._module_path,
+                                     self.name, self.path,
                                      self._start_pos[0], self._start_pos[1])
 
 

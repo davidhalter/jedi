@@ -588,14 +588,12 @@ class Script(object):
     def _analysis(self):
         statements = set(chain(*self._parser.module().used_names.values()))
         for stmt in statements:
-            if stmt.start_pos[0] != 254:
-                continue
             if isinstance(stmt, pr.Import):
                 imports.strip_imports(self._evaluator, [stmt])
             else:
                 self._evaluator.eval_statement(stmt)
 
-        analysis = self._evaluator.analysis
+        analysis = [a for a in self._evaluator.analysis if self.path == a.path]
         return sorted(analysis, key=lambda x: x.line)
 
 
