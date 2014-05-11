@@ -594,7 +594,7 @@ class Script(object):
                 self._evaluator.eval_statement(stmt)
 
         analysis = [a for a in self._evaluator.analysis if self.path == a.path]
-        return sorted(analysis, key=lambda x: x.line)
+        return sorted(set(analysis), key=lambda x: x.line)
 
 
 class Interpreter(Script):
