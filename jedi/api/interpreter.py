@@ -38,26 +38,33 @@ class LazyName(helpers.FakeName):
     @property
     @underscore_memoization
     def parent(self):
-        parser_path = []
         obj = self._value
+        parser_path = []
         if inspect.ismodule(obj):
             module = obj
         else:
+            class FakeParent(pr.Base):
+                parent = None  # To avoid having no parent for NamePart.
+                path = None
+
+            names = []
             try:
                 o = obj.__objclass__
-                parser_path.append(pr.NamePart(obj.__name__, None, (None, None)))
+                names.append(obj.__name__)
                 obj = o
             except AttributeError:
                 pass
 
             try:
                 module_name = obj.__module__
-                parser_path.insert(0, pr.NamePart(obj.__name__, None, (None, None)))
+                names.insert(0, obj.__name__)
             except AttributeError:
                 # Unfortunately in some cases like `int` there's no __module__
                 module = builtins
             else:
                 module = __import__(module_name)
+            fake_name = helpers.FakeName(names, FakeParent)
+            parser_path = fake_name.names
         raw_module = get_module(self._value)
 
         try:
