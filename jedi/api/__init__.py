@@ -585,7 +585,7 @@ class Script(object):
         return [classes.CallSignature(self._evaluator, o, call, index, key_name)
                 for o in origins if o.is_callable()]
 
-    def analysis(self):
+    def _analysis(self):
         statements = set(chain(*self._parser.module().used_names.values()))
         for stmt in statements:
             if stmt.start_pos[0] != 254:
@@ -595,10 +595,8 @@ class Script(object):
             else:
                 self._evaluator.eval_statement(stmt)
 
-        for error in sorted(self._evaluator.analysis, key=lambda x: x.line):
-            print(repr(error))
-        raise AssertionError
-        return self._evaluator.analysis
+        analysis = self._evaluator.analysis
+        return sorted(analysis, key=lambda x: x.line)
 
 
 class Interpreter(Script):

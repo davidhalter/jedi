@@ -20,7 +20,7 @@ desired = %s
 """ % (case, actual, desired)
 
 
-def test_integration(case, monkeypatch, pytestconfig):
+def test_integration(case, monkeypatch):
     if case.skip is not None:
         pytest.skip(case.skip)
     repo_root = helpers.root_dir
@@ -28,9 +28,7 @@ def test_integration(case, monkeypatch, pytestconfig):
     case.run(assert_case_equal)
 
 
-def test_static_analysis(static_analysis_case, monkeypatch, pytestconfig):
-    if static_analysis_case.skip is not None:
-        pytest.skip(static_analysis_case.skip)
+def test_static_analysis(static_analysis_case):
     static_analysis_case.run(assert_case_equal)
 
 

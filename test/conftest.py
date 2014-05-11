@@ -68,10 +68,10 @@ def pytest_generate_tests(metafunc):
             refactor.collect_dir_tests(base_dir, test_files))
 
     if 'static_analysis_case' in metafunc.fixturenames:
-        base_dir = os.path.dirname(__file__) + 'static_analysis'
+        base_dir = os.path.join(os.path.dirname(__file__), 'static_analysis')
         metafunc.parametrize(
             'static_analysis_case',
-            refactor.collect_dir_tests(base_dir, test_files))
+            collect_static_analysis_tests(base_dir, test_files))
 
 
 def collect_static_analysis_tests(base_dir, test_files):
@@ -88,6 +88,7 @@ class StaticAnalysisCase(object):
     The tests also start with `#!`, like the goto_definition tests.
     """
     def __init__(self, path):
+        self.skip = False
         self._path = path
         with open(path) as f:
             self._source = f.read()
@@ -101,9 +102,12 @@ class StaticAnalysisCase(object):
         return cases
 
     def run(self, compare_cb):
-        analysis = jedi.Script(self._source).analysis()
+        analysis = jedi.Script(self._source)._analysis()
         analysis = [(r.line, r.name) for r in analysis]
-        assert compare_cb(self, self.collect_comparison(), analysis)
+        assert compare_cb(self, analysis, self.collect_comparison())
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, os.path.basename(self._path))
 
 
 @pytest.fixture()
