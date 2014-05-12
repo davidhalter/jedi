@@ -35,6 +35,7 @@ from jedi.evaluate import imports
 from jedi.evaluate.helpers import FakeName
 from jedi.evaluate.finder import get_names_of_scope
 from jedi.evaluate.helpers import search_call_signatures
+from jedi.evaluate import analysis
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -589,12 +590,15 @@ class Script(object):
         statements = set(chain(*self._parser.module().used_names.values()))
         for stmt in statements:
             if isinstance(stmt, pr.Import):
-                imports.strip_imports(self._evaluator, [stmt])
+                imps = imports.ImportWrapper(self._evaluator, stmt,
+                                             direct_resolve=True).follow()
+                if stmt.is_nested() and any(not isinstance(i, pr.Module) for i in imps):
+                    analysis.add(self._evaluator, 'import-error', stmt)
             else:
                 self._evaluator.eval_statement(stmt)
 
-        analysis = [a for a in self._evaluator.analysis if self.path == a.path]
-        return sorted(set(analysis), key=lambda x: x.line)
+        ana = [a for a in self._evaluator.analysis if self.path == a.path]
+        return sorted(set(ana), key=lambda x: x.line)
 
 
 class Interpreter(Script):

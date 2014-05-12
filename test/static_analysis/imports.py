@@ -16,3 +16,8 @@ date.not_existing_attribute
 
 #! import-error
 from datetime.date import today
+
+#! import-error
+import datetime.date
+
+import os.path
