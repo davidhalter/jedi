@@ -3,12 +3,15 @@ Module for statical analysis.
 """
 
 from jedi import debug
+from jedi.parser import representation as pr
+from jedi.evaluate.compiled import CompiledObject
+
 
 
 CODES = {
-    'attribute-error': (1, 'Potential AttributeError.'),
-    'import-error': (2, 'Potential ImportError.'),
-    'type-error-generator': (3, "TypeError: 'generator' object is not subscriptable."),
+    'attribute-error': (1, AttributeError, 'Potential AttributeError.'),
+    'import-error': (2, ImportError, 'Potential ImportError.'),
+    'type-error-generator': (3, TypeError, "TypeError: 'generator' object is not subscriptable."),
 }
 
 
@@ -59,7 +62,30 @@ class Warning(Error):
 
 
 def add(evaluator, name, jedi_obj, typ=Error):
+    exception = CODES[name][1]
+    if _check_for_exception_catch(evaluator, jedi_obj, exception):
+        return
+
     module_path = jedi_obj.get_parent_until().path
     instance = typ(name, module_path, jedi_obj.start_pos)
     debug.warning(str(instance))
     evaluator.analysis.append(instance)
+
+
+def _check_for_exception_catch(evaluator, jedi_obj, exception):
+    def check_try_for_except(obj):
+        while obj.next is not None:
+            obj = obj.next
+            for i in obj.inputs:
+                except_classes = evaluator.eval_statement(i)
+                for cls in except_classes:
+                    if isinstance(cls, CompiledObject) and cls.obj == exception:
+                        return True
+        return False
+
+    while jedi_obj is not None and not jedi_obj.isinstance(pr.Function, pr.Class):
+        if jedi_obj.isinstance(pr.Flow) and jedi_obj.command == 'try':
+            if check_try_for_except(jedi_obj):
+                return True
+        jedi_obj = jedi_obj.parent
+    return False

@@ -1413,6 +1413,9 @@ class NamePart(object):
     def get_parent_until(self, *args, **kwargs):
         return self.parent.get_parent_until(*args, **kwargs)
 
+    def isinstance(self, *cls):
+        return isinstance(self, cls)
+
     @property
     def start_pos(self):
         offset = self.parent._sub_module.line_offset
