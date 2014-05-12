@@ -63,7 +63,7 @@ class LazyName(helpers.FakeName):
                 module = builtins
             else:
                 module = __import__(module_name)
-            fake_name = helpers.FakeName(names, FakeParent)
+            fake_name = helpers.FakeName(names, FakeParent())
             parser_path = fake_name.names
         raw_module = get_module(self._value)
 
