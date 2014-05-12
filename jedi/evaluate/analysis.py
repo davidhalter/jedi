@@ -73,14 +73,24 @@ def add(evaluator, name, jedi_obj, typ=Error):
 
 
 def _check_for_exception_catch(evaluator, jedi_obj, exception):
+    def check_match(cls):
+        return isinstance(cls, CompiledObject) and cls.obj == exception
+
     def check_try_for_except(obj):
         while obj.next is not None:
             obj = obj.next
             for i in obj.inputs:
                 except_classes = evaluator.eval_statement(i)
                 for cls in except_classes:
-                    if isinstance(cls, CompiledObject) and cls.obj == exception:
-                        return True
+                    from jedi.evaluate import iterable
+                    if isinstance(cls, iterable.Array) and cls.type == 'tuple':
+                        # multiple exceptions
+                        for c in cls.values():
+                            if check_match(c):
+                                return True
+                    else:
+                        if check_match(cls):
+                            return True
         return False
 
     while jedi_obj is not None and not jedi_obj.isinstance(pr.Function, pr.Class):

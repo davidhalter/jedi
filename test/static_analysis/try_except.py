@@ -22,6 +22,19 @@ except AttributeError:
     pass
 
 # -----------------
+# multi except
+# -----------------
+try:
+    str.not_existing
+except (TypeError, AttributeError): pass
+
+try:
+    str.not_existing
+except ImportError:
+    pass
+except (NotImplementedError, AttributeError): pass
+
+# -----------------
 # detailed except
 # -----------------
 try:
