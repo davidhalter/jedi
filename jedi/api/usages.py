@@ -76,7 +76,7 @@ def usages(evaluator, definitions, search_name, mods):
 
                 for used_count, name_part in imps:
                     i = imports.ImportWrapper(evaluator, stmt, kill_count=count - used_count,
-                                              direct_resolve=True)
+                                              nested_resolve=True)
                     f = i.follow(is_goto=True)
                     if set(f) & set(definitions):
                         names.append(classes.Definition(evaluator, name_part))
@@ -91,7 +91,7 @@ def usages_add_import_modules(evaluator, definitions, search_name):
     new = set()
     for d in definitions:
         if isinstance(d.parent, pr.Import):
-            s = imports.ImportWrapper(evaluator, d.parent, direct_resolve=True)
+            s = imports.ImportWrapper(evaluator, d.parent, nested_resolve=True)
             with common.ignored(IndexError):
                 new.add(s.follow(is_goto=True)[0])
     return set(definitions) | new

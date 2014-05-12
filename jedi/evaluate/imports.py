@@ -46,11 +46,18 @@ class ImportWrapper(pr.Base):
     GlobalNamespace = GlobalNamespace()
 
     def __init__(self, evaluator, import_stmt, is_like_search=False, kill_count=0,
-                 direct_resolve=False, is_just_from=False):
+                 nested_resolve=False, is_just_from=False):
+        """
+        :param is_like_search: If the wrapper is used for autocompletion.
+        :param kill_count: Placement of the import, sometimes we only want to
+            resole a part of the import.
+        :param nested_resolve: Resolves nested imports fully.
+        :param is_just_from: Bool if the second part is missing.
+        """
         self._evaluator = evaluator
         self.import_stmt = import_stmt
         self.is_like_search = is_like_search
-        self.direct_resolve = direct_resolve
+        self.nested_resolve = nested_resolve
         self.is_just_from = is_just_from
 
         self.is_partial_import = bool(max(0, kill_count))
@@ -60,7 +67,7 @@ class ImportWrapper(pr.Base):
         if import_stmt.from_ns:
             import_path += import_stmt.from_ns.names
         if import_stmt.namespace:
-            if self.import_stmt.is_nested() and not direct_resolve:
+            if self.import_stmt.is_nested() and not nested_resolve:
                 import_path.append(import_stmt.namespace.names[0])
             else:
                 import_path += import_stmt.namespace.names
@@ -163,7 +170,7 @@ class ImportWrapper(pr.Base):
                 analysis.add(self._evaluator, 'import-error', self.import_stmt)
                 return []
 
-            if self.import_stmt.is_nested() and not self.direct_resolve:
+            if self.import_stmt.is_nested() and not self.nested_resolve:
                 scopes = [NestedImportModule(scope, self.import_stmt)]
             else:
                 scopes = [scope]

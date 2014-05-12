@@ -591,7 +591,7 @@ class Script(object):
         for stmt in statements:
             if isinstance(stmt, pr.Import):
                 imps = imports.ImportWrapper(self._evaluator, stmt,
-                                             direct_resolve=True).follow()
+                                             nested_resolve=True).follow()
                 if stmt.is_nested() and any(not isinstance(i, pr.Module) for i in imps):
                     analysis.add(self._evaluator, 'import-error', stmt)
             else:
