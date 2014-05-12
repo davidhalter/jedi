@@ -36,3 +36,6 @@ Cls.class_attr_error
 c.instance_attr
 #! attribute-error
 c.instance_attr_error
+
+
+c.something = None

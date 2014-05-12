@@ -34,6 +34,11 @@ except ImportError:
     pass
 except (NotImplementedError, AttributeError): pass
 
+try:
+    #! attribute-error
+    str.not_existing
+except (TypeError, NotImplementedError): pass
+
 # -----------------
 # detailed except
 # -----------------

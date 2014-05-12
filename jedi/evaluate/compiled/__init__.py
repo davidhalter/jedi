@@ -309,12 +309,6 @@ def _parse_function_doc(doc):
 
 class Builtin(CompiledObject, IsScope):
     @memoize
-    def get_defined_names(self):
-        # Filter None, because it's really just a keyword, nobody wants to
-        # access it.
-        return [d for d in super(Builtin, self).get_defined_names() if d.name != 'None']
-
-    @memoize
     def get_by_name(self, name):
         item = [n for n in self.get_defined_names() if n.get_code() == name][0]
         return item.parent

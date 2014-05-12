@@ -35,6 +35,11 @@ class NameFinder(object):
         self.position = position
 
     def find(self, scopes, resolve_decorator=True):
+        if unicode(self.name_str) == 'None':
+            # Filter None, because it's really just a keyword, nobody wants to
+            # access it.
+            return []
+
         names = self.filter_name(scopes)
         types = self._names_to_types(names, resolve_decorator)
 

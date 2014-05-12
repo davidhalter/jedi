@@ -7,7 +7,6 @@ from jedi.parser import representation as pr
 from jedi.evaluate.compiled import CompiledObject
 
 
-
 CODES = {
     'attribute-error': (1, AttributeError, 'Potential AttributeError.'),
     'import-error': (2, ImportError, 'Potential ImportError.'),
@@ -36,7 +35,7 @@ class Error(object):
         return first + str(CODES[self.name][0])
 
     def description(self):
-        return CODES[self.name][1]
+        return CODES[self.name][2]
 
     def __str__(self):
         return '%s: %s:%s' % (self.code, self.line, self.description())
