@@ -784,7 +784,7 @@ class Import(Simple):
             import foo.bar
         """
         return not self.alias and not self.from_ns \
-            and len(self.namespace.names) > 1 \
+            and len(self.namespace.names) > 1
 
 
 class KeywordStatement(Base):

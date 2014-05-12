@@ -316,7 +316,7 @@ class BaseDefinition(object):
         if stripped.isinstance(pr.Statement):
             return self._evaluator.eval_statement(stripped)
         elif stripped.isinstance(pr.Import):
-            return imports.strip_imports(self._evaluator, [stripped])
+            return imports.follow_imports(self._evaluator, [stripped])
         else:
             return [stripped]
 

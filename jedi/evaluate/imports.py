@@ -458,7 +458,7 @@ class _Importer(object):
             return load_module(name=path), rest
 
 
-def strip_imports(evaluator, scopes):
+def follow_imports(evaluator, scopes):
     """
     Here we strip the imports - they don't get resolved necessarily.
     Really used anymore? Merge with remove_star_imports?
@@ -483,7 +483,7 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
     """
     if isinstance(scope, StarImportModule):
         return scope.star_import_modules
-    modules = strip_imports(evaluator, (i for i in scope.get_imports() if i.star))
+    modules = follow_imports(evaluator, (i for i in scope.get_imports() if i.star))
     new = []
     for m in modules:
         if m not in ignored_modules:

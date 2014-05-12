@@ -230,7 +230,7 @@ class Evaluator(object):
             else:
                 # for pr.Literal
                 types = [compiled.create(self, current.value)]
-            types = imports.strip_imports(self, types)
+            types = imports.follow_imports(self, types)
 
         return self.follow_path(path, types, scope)
 
@@ -292,7 +292,7 @@ class Evaluator(object):
                 if filter_private_variable(typ, scope, current):
                     return []
             types = self.find_types(typ, current)
-            result = imports.strip_imports(self, types)
+            result = imports.follow_imports(self, types)
         return self.follow_path(path, result, scope)
 
     @debug.increase_indent
@@ -330,7 +330,7 @@ class Evaluator(object):
                     debug.warning("no execution possible %s", obj)
 
             debug.dbg('execute result: %s in %s', stmts, obj)
-            return imports.strip_imports(self, stmts)
+            return imports.follow_imports(self, stmts)
 
     def goto(self, stmt, call_path):
         scope = stmt.get_parent_until(pr.IsScope)
