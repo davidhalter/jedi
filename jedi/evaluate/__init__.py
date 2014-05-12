@@ -275,8 +275,11 @@ class Evaluator(object):
             # This must be an execution, either () or [].
             if current.type == pr.Array.LIST:
                 if hasattr(typ, 'get_index_types'):
-                    slc = iterable.create_indexes_or_slices(self, current)
-                    result = typ.get_index_types(slc)
+                    if isinstance(typ, compiled.CompiledObject):
+                        # CompiledObject doesn't contain an evaluator instance.
+                        result = typ.get_index_types(self, current)
+                    else:
+                        result = typ.get_index_types(current)
             elif current.type not in [pr.Array.DICT]:
                 # Scope must be a class or func - make an instance or execution.
                 result = self.execute(typ, current)

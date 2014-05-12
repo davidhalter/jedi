@@ -60,7 +60,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         """ returns the content of __iter__ """
         return self._evaluator.execute(self.func, self.var_args, True)
 
-    def get_index_types(self, index=None):
+    def get_index_types(self, index_array):
         debug.warning('Tried to get array access on a generator: %s', self)
         return []
 
@@ -99,13 +99,13 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         self._array = array
 
     @memoize_default(NO_DEFAULT)
-    def get_index_types(self, indexes=()):
+    def get_index_types(self, index_array=()):
         """
         Get the types of a specific index or all, if not given.
 
         :param indexes: The index input types.
         """
-        result = []
+        indexes = create_indexes_or_slices(self._evaluator, index_array)
         if [index for index in indexes if isinstance(index, Slice)]:
             return [self]
 
@@ -118,6 +118,10 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
                 with common.ignored(KeyError, IndexError, TypeError):
                     return self.get_exact_index_types(index.obj)
 
+        return self.values()
+
+    @memoize_default(NO_DEFAULT)
+    def values(self):
         result = list(_follow_values(self._evaluator, self._array.values))
         result += check_array_additions(self._evaluator, self)
         return result
@@ -228,22 +232,22 @@ def get_iterator_types(inputs):
 
     result = []
     from jedi.evaluate.representation import Instance
-    for gen in iterators:
-        if isinstance(gen, Array):
+    for it in iterators:
+        if isinstance(it, Array):
             # Array is a little bit special, since this is an internal
             # array, but there's also the list builtin, which is
             # another thing.
-            result += gen.get_index_types()
-        elif isinstance(gen, Instance):
+            result += it.values()
+        elif isinstance(it, Instance):
             # __iter__ returned an instance.
             name = '__next__' if is_py3 else 'next'
             try:
-                result += gen.execute_subscope_by_name(name)
+                result += it.execute_subscope_by_name(name)
             except KeyError:
-                debug.warning('Instance has no __next__ function in %s.', gen)
+                debug.warning('Instance has no __next__ function in %s.', it)
         else:
-            # is a generator
-            result += gen.iter_content()
+            # Is a generator.
+            result += it.iter_content()
     return result
 
 

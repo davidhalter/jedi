@@ -168,7 +168,9 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         except KeyError:
             return False
 
-    def get_index_types(self, indexes=[]):
+    def get_index_types(self, index_array):
+
+        indexes = iterable.create_indexes_or_slices(self._evaluator, index_array)
         if any([isinstance(i, iterable.Slice) for i in indexes]):
             # Slice support in Jedi is very marginal, at the moment, so just
             # ignore them in case of __getitem__.

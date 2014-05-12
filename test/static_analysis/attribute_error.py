@@ -17,8 +17,7 @@ class Cls():
 
     def defined_lookup(self, obj):
         """
-        Uses an arbitrary object and performs an operation on it, shouldn't
-        be a problem.
+        `obj` is defined by a call into this function.
         """
         obj.upper
         #! attribute-error

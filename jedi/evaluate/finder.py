@@ -356,7 +356,7 @@ def _check_isinstance_type(evaluator, stmt, search_name_part):
 
     result = []
     for c in evaluator.eval_call(classes[0]):
-        for typ in (c.get_index_types() if isinstance(c, iterable.Array) else [c]):
+        for typ in (c.values() if isinstance(c, iterable.Array) else [c]):
             result += evaluator.execute(typ)
     return result
 
