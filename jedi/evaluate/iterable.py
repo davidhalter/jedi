@@ -32,6 +32,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate import precedence
 from jedi.evaluate.cache import CachedMetaClass, memoize_default, NO_DEFAULT
 from jedi.cache import underscore_memoization
+from jedi.evaluate import analysis
 
 
 class Generator(use_metaclass(CachedMetaClass, pr.Base)):
@@ -61,7 +62,8 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         return self._evaluator.execute(self.func, self.var_args, True)
 
     def get_index_types(self, index_array):
-        debug.warning('Tried to get array access on a generator: %s', self)
+        #debug.warning('Tried to get array access on a generator: %s', self)
+        analysis.add(self._evaluator, 'type-error-generator', index_array)
         return []
 
     def __getattr__(self, name):
