@@ -776,6 +776,16 @@ class Import(Simple):
             n.append(self.alias)
         return n
 
+    def is_nested(self):
+        """
+        This checks for the special case of nested imports, without aliases and
+        from statement::
+
+            import foo.bar
+        """
+        return not self.alias and not self.from_ns \
+            and len(self.namespace.names) > 1 \
+
 
 class KeywordStatement(Base):
     """

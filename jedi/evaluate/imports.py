@@ -60,7 +60,7 @@ class ImportWrapper(pr.Base):
         if import_stmt.from_ns:
             import_path += import_stmt.from_ns.names
         if import_stmt.namespace:
-            if self._is_nested_import() and not direct_resolve:
+            if self.import_stmt.is_nested() and not direct_resolve:
                 import_path.append(import_stmt.namespace.names[0])
             else:
                 import_path += import_stmt.namespace.names
@@ -148,17 +148,6 @@ class ImportWrapper(pr.Base):
             names.append(self._generate_name(name))
         return names
 
-    def _is_nested_import(self):
-        """
-        This checks for the special case of nested imports, without aliases and
-        from statement::
-
-            import foo.bar
-        """
-        return not self.import_stmt.alias and not self.import_stmt.from_ns \
-            and len(self.import_stmt.namespace.names) > 1 \
-            and not self.direct_resolve
-
     def _is_relative_import(self):
         return bool(self.import_stmt.relative_count)
 
@@ -174,7 +163,7 @@ class ImportWrapper(pr.Base):
                 analysis.add(self._evaluator, 'import-error', self.import_stmt)
                 return []
 
-            if self._is_nested_import():
+            if self.import_stmt.is_nested() and not self.direct_resolve:
                 scopes = [NestedImportModule(scope, self.import_stmt)]
             else:
                 scopes = [scope]
@@ -218,7 +207,6 @@ class NestedImportModule(pr.Module):
 
     def _get_nested_import_name(self):
         """
-        See documentation of `self._is_nested_import`.
         Generates an Import statement, that can be used to fake nested imports.
         """
         i = self._nested_import
