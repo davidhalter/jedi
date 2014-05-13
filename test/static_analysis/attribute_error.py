@@ -23,7 +23,7 @@ class Cls():
         #! attribute-error
         obj.arbitrary_lookup
 
-    #! attribute-error
+    #! name-error
     class_attr = a
 
 Cls().defined_lookup('')
@@ -39,3 +39,7 @@ c.instance_attr_error
 
 
 c.something = None
+
+#! name-error
+something = a
+something
