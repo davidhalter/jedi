@@ -588,7 +588,8 @@ class Script(object):
 
     def _analysis(self):
         statements = set(chain(*self._parser.module().used_names.values()))
-        for stmt in statements:
+        # Sort the statements so that the results are reproducible.
+        for stmt in sorted(statements, key=lambda obj: obj.start_pos):
             if isinstance(stmt, pr.Import):
                 imps = imports.ImportWrapper(self._evaluator, stmt,
                                              nested_resolve=True).follow()
