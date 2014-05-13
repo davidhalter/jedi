@@ -34,7 +34,7 @@ class NameFinder(object):
         self.name_str = name_str
         self.position = position
 
-    def find(self, scopes, resolve_decorator=True):
+    def find(self, scopes, resolve_decorator=True, search_global=False):
         if unicode(self.name_str) == 'None':
             # Filter None, because it's really just a keyword, nobody wants to
             # access it.
@@ -47,7 +47,8 @@ class NameFinder(object):
                 and not (isinstance(self.name_str, pr.NamePart)
                          and isinstance(self.name_str.parent.parent, pr.Param)):
             if not isinstance(self.name_str, (str, unicode)):  # TODO Remove
-                analysis.add(self._evaluator, 'attribute-error', self.name_str)
+                err_type = 'name-error' if search_global else 'attribute-error'
+                analysis.add(self._evaluator, err_type, self.name_str)
 
         debug.dbg('finder._names_to_types: %s, old: %s', names, types)
         return self._resolve_descriptors(types)

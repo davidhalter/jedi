@@ -9,8 +9,9 @@ from jedi.evaluate.compiled import CompiledObject
 
 CODES = {
     'attribute-error': (1, AttributeError, 'Potential AttributeError.'),
-    'import-error': (2, ImportError, 'Potential ImportError.'),
-    'type-error-generator': (3, TypeError, "TypeError: 'generator' object is not subscriptable."),
+    'name-error': (2, NameError, 'Potential NameError.'),
+    'import-error': (3, ImportError, 'Potential ImportError.'),
+    'type-error-generator': (4, TypeError, "TypeError: 'generator' object is not subscriptable."),
 }
 
 
