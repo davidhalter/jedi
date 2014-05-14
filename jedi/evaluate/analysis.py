@@ -38,8 +38,12 @@ class Error(object):
     def description(self):
         return CODES[self.name][2]
 
+    def __unicode__(self):
+        return '%s:%s:%s: %s %s' % (self.path, self.line, self.column,
+                                    self.code, self.description())
+
     def __str__(self):
-        return '%s: %s:%s' % (self.code, self.line, self.description())
+        return self.__unicode__()
 
     def __eq__(self, other):
         return (self.path == other.path and self.name == other.name
