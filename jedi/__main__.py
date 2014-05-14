@@ -1,5 +1,5 @@
 from sys import argv
-from os.path import join, dirname, abspath
+from os.path import join, dirname, abspath, isdir
 
 
 if len(argv) == 2 and argv[1] == 'repl':
@@ -13,5 +13,17 @@ elif len(argv) > 1 and argv[1] == 'force':
     if '--debug' in sys.argv:
         jedi.set_debug_function()
 
-    for error in jedi.Script(path=sys.argv[2])._analysis():
-        print(error)
+    path = sys.argv[2]
+    if isdir(path):
+        import fnmatch
+        import os
+
+        paths = []
+        for root, dirnames, filenames in os.walk(path):
+            for filename in fnmatch.filter(filenames, '*.py'):
+                paths.append(os.path.join(root, filename))
+    else:
+        paths = [path]
+    for path in paths:
+        for error in jedi.Script(path=path)._analysis():
+            print(error)
