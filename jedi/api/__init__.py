@@ -595,7 +595,8 @@ class Script(object):
                                              nested_resolve=True).follow()
                 if stmt.is_nested() and any(not isinstance(i, pr.Module) for i in imps):
                     analysis.add(self._evaluator, 'import-error', stmt)
-            else:
+            elif not (isinstance(stmt.parent, pr.ForFlow)
+                      and stmt.parent.set_stmt == stmt):
                 self._evaluator.eval_statement(stmt)
 
         ana = [a for a in self._evaluator.analysis if self.path == a.path]

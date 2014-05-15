@@ -43,3 +43,10 @@ c.something = None
 #! name-error
 something = a
 something
+
+
+# should not raise anything.
+for loop_variable in [1, 2]:
+    #! name-error
+    x = undefined
+    loop_variable
