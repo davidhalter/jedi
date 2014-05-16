@@ -138,4 +138,11 @@ def get_module_statements(module):
         imports |= set(scope.imports)
         stmts |= add_stmts(scope.statements)
         stmts |= add_stmts(r for r in scope.returns if r is not None)
+
+        try:
+            decorators = scope.decorators
+        except AttributeError:
+            pass
+        else:
+            stmts |= add_stmts(decorators)
     return stmts, imports

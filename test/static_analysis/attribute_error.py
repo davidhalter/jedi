@@ -75,3 +75,12 @@ return_one(''.undefined_attribute)
 [undefined for r in [1, 2]]
 
 [r for r in [1, 2]]
+
+# -----------------
+# decorators
+# -----------------
+
+#! 1 name-error
+@undefined_decorator
+def func():
+    return 1
