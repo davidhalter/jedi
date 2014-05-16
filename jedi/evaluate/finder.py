@@ -48,7 +48,9 @@ class NameFinder(object):
                          and isinstance(self.name_str.parent.parent, pr.Param)):
             if not isinstance(self.name_str, (str, unicode)):  # TODO Remove
                 err_type = 'name-error' if search_global else 'attribute-error'
-                analysis.add(self._evaluator, err_type, self.name_str)
+                message = ('AttributeError: %s has no attribute %s'
+                           % (self._last_filter_name_scope, self.name_str))
+                analysis.add(self._evaluator, err_type, self.name_str, message)
 
         debug.dbg('finder._names_to_types: %s, old: %s', names, types)
         return self._resolve_descriptors(types)
@@ -112,6 +114,7 @@ class NameFinder(object):
             if result:
                 break
 
+        self._last_filter_name_scope = nscope
         debug.dbg('finder.filter_name "%s" in (%s-%s): %s@%s', self.name_str,
                   self.scope, nscope, u(result), self.position)
         return result

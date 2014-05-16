@@ -21,7 +21,7 @@ class Error(object):
         self._start_pos = start_pos
         self.name = name
         if message is None:
-            message = CODES[self.name][0]
+            message = CODES[self.name][2]
         self.message = message
 
     @property
