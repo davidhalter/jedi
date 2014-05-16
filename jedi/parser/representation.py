@@ -795,7 +795,7 @@ class Import(Simple):
 
             import foo.bar
         """
-        return not self.alias and not self.from_ns \
+        return not self.alias and not self.from_ns and self.namespace is not None \
             and len(self.namespace.names) > 1
 
 

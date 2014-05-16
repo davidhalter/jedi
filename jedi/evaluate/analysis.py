@@ -137,5 +137,5 @@ def get_module_statements(module):
     for scope in module.walk():
         imports |= set(scope.imports)
         stmts |= add_stmts(scope.statements)
-        stmts |= add_stmts(scope.returns)
+        stmts |= add_stmts(r for r in scope.returns if r is not None)
     return stmts, imports

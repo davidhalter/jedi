@@ -188,7 +188,11 @@ class CompiledName(FakeName):
         self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
 
     def __repr__(self):
-        return '<%s: (%s).%s>' % (type(self).__name__, self._obj.name, self.name)
+        try:
+            name = self._obj.name  # __name__ is not defined all the time
+        except AttributeError:
+            name = None
+        return '<%s: (%s).%s>' % (type(self).__name__, name, self.name)
 
     @property
     @underscore_memoization
