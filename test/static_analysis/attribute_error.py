@@ -67,3 +67,11 @@ def return_one(something):
 
 #! attribute-error
 return_one(''.undefined_attribute)
+
+#! name-error
+[r for r in undefined]
+
+#! name-error
+[undefined for r in [1, 2]]
+
+[r for r in [1, 2]]
