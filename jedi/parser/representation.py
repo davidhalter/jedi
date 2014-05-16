@@ -351,6 +351,18 @@ class Scope(Simple, IsScope, DocstringMixin):
         return "<%s: %s@%s-%s>" % (type(self).__name__, name,
                                    self.start_pos[0], self.end_pos[0])
 
+    def walk(self):
+        yield self
+        for s in self.subscopes:
+            for scope in s.walk():
+                yield scope
+
+        for r in self.statements:
+            while isinstance(r, Flow):
+                for scope in r.walk():
+                    yield scope
+                r = r.next
+
 
 class Module(IsScope):
     """
@@ -792,22 +804,25 @@ class KeywordStatement(Base):
     For the following statements: `assert`, `del`, `global`, `nonlocal`,
     `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
     """
-    __slots__ = ('name', 'start_pos', '_stmt', 'parent')
+    __slots__ = ('name', 'start_pos', 'stmt', 'parent')
 
     def __init__(self, name, start_pos, parent, stmt=None):
         self.name = name
         self.start_pos = start_pos
-        self._stmt = stmt
+        self.stmt = stmt
         self.parent = parent
 
         if stmt is not None:
             stmt.parent = self
 
+    def __repr__(self):
+        return "<%s(%s): %s>" % (type(self).__name__, self.name, self.stmt)
+
     def get_code(self):
-        if self._stmt is None:
+        if self.stmt is None:
             return "%s\n" % self.name
         else:
-            return '%s %s\n' % (self.name, self._stmt)
+            return '%s %s\n' % (self.name, self.stmt)
 
     def get_defined_names(self):
         return []
@@ -815,7 +830,7 @@ class KeywordStatement(Base):
     @property
     def end_pos(self):
         try:
-            return self._stmt.end_pos
+            return self.stmt.end_pos
         except AttributeError:
             return self.start_pos[0], self.start_pos[1] + len(self.name)
 

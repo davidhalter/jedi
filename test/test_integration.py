@@ -15,7 +15,7 @@ def assert_case_equal(case, actual, desired):
     """
     assert actual == desired, """
 Test %r failed.
-actual = %s
+actual  = %s
 desired = %s
 """ % (case, actual, desired)
 

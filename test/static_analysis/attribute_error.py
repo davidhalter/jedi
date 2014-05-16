@@ -44,9 +44,26 @@ c.something = None
 something = a
 something
 
+# -----------------
+# Unused array variables should still raise attribute errors.
+# -----------------
 
 # should not raise anything.
 for loop_variable in [1, 2]:
     #! name-error
     x = undefined
     loop_variable
+
+#! name-error
+for loop_variable in [1, 2, undefined]:
+    pass
+
+#! attribute-error
+[1, ''.undefined_attr]
+
+
+def return_one(something):
+    return 1
+
+#! attribute-error
+return_one(''.undefined_attribute)

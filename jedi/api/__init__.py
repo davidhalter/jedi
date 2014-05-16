@@ -587,16 +587,17 @@ class Script(object):
                 for o in origins if o.is_callable()]
 
     def _analysis(self):
-        statements = set(chain(*self._parser.module().used_names.values()))
+        #statements = set(chain(*self._parser.module().used_names.values()))
+        stmts, imps = analysis.get_module_statements(self._parser.module())
         # Sort the statements so that the results are reproducible.
-        for stmt in sorted(statements, key=lambda obj: obj.start_pos):
-            if isinstance(stmt, pr.Import):
-                imps = imports.ImportWrapper(self._evaluator, stmt,
-                                             nested_resolve=True).follow()
-                if stmt.is_nested() and any(not isinstance(i, pr.Module) for i in imps):
-                    analysis.add(self._evaluator, 'import-error', stmt)
-            elif not (isinstance(stmt.parent, pr.ForFlow)
-                      and stmt.parent.set_stmt == stmt):
+        for i in imps:
+            iw = imports.ImportWrapper(self._evaluator, i,
+                                       nested_resolve=True).follow()
+            if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
+                analysis.add(self._evaluator, 'import-error', i)
+        for stmt in sorted(stmts, key=lambda obj: obj.start_pos):
+            if not (isinstance(stmt.parent, pr.ForFlow)
+                    and stmt.parent.set_stmt == stmt):
                 self._evaluator.eval_statement(stmt)
 
         ana = [a for a in self._evaluator.analysis if self.path == a.path]

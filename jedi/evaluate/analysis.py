@@ -103,3 +103,37 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception):
                 return True
         jedi_obj = jedi_obj.parent
     return False
+
+
+def get_module_statements(module):
+    """
+    Returns the statements used in a module. All these statements should be
+    evaluated to check for potential exceptions.
+    """
+    def add_stmts(stmts):
+        new = set()
+        for stmt in stmts:
+            if isinstance(stmt, pr.Scope):
+                continue
+            if isinstance(stmt, pr.KeywordStatement):
+                stmt = stmt.stmt
+                if stmt is None:
+                    continue
+
+            for expression in stmt.expression_list():
+                if isinstance(expression, pr.Array):
+                    new |= add_stmts(expression.values)
+
+                if isinstance(expression, pr.StatementElement):
+                    for element in expression.generate_call_path():
+                        if isinstance(element, pr.Array):
+                            new |= add_stmts(element.values)
+            new.add(stmt)
+        return new
+
+    stmts = set()
+    imports = set()
+    for scope in module.walk():
+        imports |= set(scope.imports)
+        stmts |= add_stmts(scope.statements)
+    return stmts, imports
