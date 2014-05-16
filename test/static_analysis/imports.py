@@ -1,11 +1,11 @@
 
-#! import-error
+#! 7 import-error
 import not_existing
 
 import os
 
 from os.path import abspath
-#! import-error
+#! 20 import-error
 from os.path import not_existing
 
 from datetime import date
@@ -14,10 +14,12 @@ date.today
 #! 5 attribute-error
 date.not_existing_attribute
 
-#! import-error
+#! 26 import-error
 from datetime.date import today
 
-#! import-error
+#! 16 import-error
 import datetime.date
+#! 7 import-error
+import not_existing_nested.date
 
 import os.path

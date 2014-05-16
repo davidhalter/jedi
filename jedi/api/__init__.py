@@ -594,7 +594,7 @@ class Script(object):
             iw = imports.ImportWrapper(self._evaluator, i,
                                        nested_resolve=True).follow()
             if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
-                analysis.add(self._evaluator, 'import-error', i)
+                analysis.add(self._evaluator, 'import-error', i.namespace.names[-1])
         for stmt in sorted(stmts, key=lambda obj: obj.start_pos):
             if not (isinstance(stmt.parent, pr.ForFlow)
                     and stmt.parent.set_stmt == stmt):

@@ -32,7 +32,9 @@ from jedi.evaluate.cache import memoize_default, NO_DEFAULT
 
 
 class ModuleNotFound(Exception):
-    pass
+    def __init__(self, name_part):
+        super(ModuleNotFound, self).__init__()
+        self.name_part = name_part
 
 
 class ImportWrapper(pr.Base):
@@ -166,8 +168,8 @@ class ImportWrapper(pr.Base):
         if self.import_path:
             try:
                 scope, rest = self._importer.follow_file_system()
-            except ModuleNotFound:
-                analysis.add(self._evaluator, 'import-error', self.import_stmt)
+            except ModuleNotFound as e:
+                analysis.add(self._evaluator, 'import-error', e.name_part)
                 return []
 
             if self.import_stmt.is_nested() and not self.nested_resolve:
@@ -202,7 +204,8 @@ class ImportWrapper(pr.Base):
             scopes = [ImportWrapper.GlobalNamespace]
         debug.dbg('after import: %s', scopes)
         if not scopes:
-            analysis.add(self._evaluator, 'import-error', self.import_stmt)
+            analysis.add(self._evaluator, 'import-error',
+                         self._importer.import_path[-1])
         self._evaluator.recursion_detector.pop_stmt()
         return scopes
 
@@ -442,7 +445,7 @@ class _Importer(object):
                         rest = self.str_import_path()[i:]
                         break
                     else:
-                        raise ModuleNotFound('The module you searched has not been found')
+                        raise ModuleNotFound(s)
 
         path = current_namespace[1]
         is_package_directory = current_namespace[2]
