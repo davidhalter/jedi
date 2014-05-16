@@ -114,6 +114,7 @@ def get_module_statements(module):
         new = set()
         for stmt in stmts:
             if isinstance(stmt, pr.Scope):
+                new |= add_stmts(stmt.inputs)
                 continue
             if isinstance(stmt, pr.KeywordStatement):
                 stmt = stmt.stmt
@@ -136,4 +137,5 @@ def get_module_statements(module):
     for scope in module.walk():
         imports |= set(scope.imports)
         stmts |= add_stmts(scope.statements)
+        stmts |= add_stmts(scope.returns)
     return stmts, imports
