@@ -1,5 +1,5 @@
 try:
-    #! attribute-error
+    #! 4 attribute-error
     str.not_existing
 except TypeError:
     pass
@@ -7,7 +7,7 @@ except TypeError:
 try:
     str.not_existing
 except AttributeError:
-    #! attribute-error
+    #! 4 attribute-error
     str.not_existing
     pass
 
@@ -35,7 +35,7 @@ except ImportError:
 except (NotImplementedError, AttributeError): pass
 
 try:
-    #! attribute-error
+    #! 4 attribute-error
     str.not_existing
 except (TypeError, NotImplementedError): pass
 
@@ -46,6 +46,6 @@ try:
     str.not_existing
 except ((AttributeError)): pass
 try:
-    #! attribute-error
+    #! 4 attribute-error
     str.not_existing
 except [AttributeError]: pass

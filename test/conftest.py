@@ -97,14 +97,15 @@ class StaticAnalysisCase(object):
     def collect_comparison(self):
         cases = []
         for line_nr, line in enumerate(self._source.splitlines(), 1):
-            match = re.match(r'\s*#! (.*)$', line)
+            match = re.match(r'(\s*)#! (\d+ )?(.*)$', line)
             if match is not None:
-                cases.append((line_nr + 1, match.group(1)))
+                column = int(match.group(2) or 0) + len(match.group(1))
+                cases.append((line_nr + 1, column, match.group(3)))
         return cases
 
     def run(self, compare_cb):
         analysis = jedi.Script(self._source, path=self._path)._analysis()
-        analysis = [(r.line, r.name) for r in analysis]
+        analysis = [(r.line, r.column, r.name) for r in analysis]
         compare_cb(self, analysis, self.collect_comparison())
 
     def __repr__(self):

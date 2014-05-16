@@ -11,7 +11,7 @@ from os.path import not_existing
 from datetime import date
 date.today
 
-#! attribute-error
+#! 5 attribute-error
 date.not_existing_attribute
 
 #! import-error

@@ -5,7 +5,7 @@ class Cls():
         self.input = input
 
     def f(self):
-        #! attribute-error
+        #! 12 attribute-error
         return self.not_existing
 
     def undefined_object(self, obj):
@@ -20,10 +20,10 @@ class Cls():
         `obj` is defined by a call into this function.
         """
         obj.upper
-        #! attribute-error
+        #! 4 attribute-error
         obj.arbitrary_lookup
 
-    #! name-error
+    #! 13 name-error
     class_attr = a
 
 Cls().defined_lookup('')
@@ -31,16 +31,16 @@ Cls().defined_lookup('')
 c = Cls()
 c.class_attr
 Cls.class_attr
-#! attribute-error
+#! 4 attribute-error
 Cls.class_attr_error
 c.instance_attr
-#! attribute-error
+#! 2 attribute-error
 c.instance_attr_error
 
 
 c.something = None
 
-#! name-error
+#! 12 name-error
 something = a
 something
 
@@ -50,28 +50,28 @@ something
 
 # should not raise anything.
 for loop_variable in [1, 2]:
-    #! name-error
+    #! 4 name-error
     x = undefined
     loop_variable
 
-#! name-error
+#! 28 name-error
 for loop_variable in [1, 2, undefined]:
     pass
 
-#! attribute-error
+#! 7 attribute-error
 [1, ''.undefined_attr]
 
 
 def return_one(something):
     return 1
 
-#! attribute-error
+#! 14 attribute-error
 return_one(''.undefined_attribute)
 
-#! name-error
+#! 12 name-error
 [r for r in undefined]
 
-#! name-error
+#! 1 name-error
 [undefined for r in [1, 2]]
 
 [r for r in [1, 2]]
