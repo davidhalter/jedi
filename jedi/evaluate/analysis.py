@@ -16,10 +16,13 @@ CODES = {
 
 
 class Error(object):
-    def __init__(self, name, module_path, start_pos):
+    def __init__(self, name, module_path, start_pos, message=None):
         self.path = module_path
         self._start_pos = start_pos
         self.name = name
+        if message is None:
+            message = CODES[self.name][0]
+        self.message = message
 
     @property
     def line(self):
@@ -35,12 +38,9 @@ class Error(object):
         first = self.__class__.__name__[0]
         return first + str(CODES[self.name][0])
 
-    def description(self):
-        return CODES[self.name][2]
-
     def __unicode__(self):
         return '%s:%s:%s: %s %s' % (self.path, self.line, self.column,
-                                    self.code, self.description())
+                                    self.code, self.message)
 
     def __str__(self):
         return self.__unicode__()
@@ -65,13 +65,13 @@ class Warning(Error):
     pass
 
 
-def add(evaluator, name, jedi_obj, typ=Error):
+def add(evaluator, name, jedi_obj, message=None, typ=Error):
     exception = CODES[name][1]
     if _check_for_exception_catch(evaluator, jedi_obj, exception):
         return
 
     module_path = jedi_obj.get_parent_until().path
-    instance = typ(name, module_path, jedi_obj.start_pos)
+    instance = typ(name, module_path, jedi_obj.start_pos, message)
     debug.warning(str(instance))
     evaluator.analysis.append(instance)
 
