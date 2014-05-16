@@ -71,7 +71,6 @@ class ImportWrapper(pr.Base):
                 import_path.append(import_stmt.namespace.names[0])
             else:
                 import_path += import_stmt.namespace.names
-        import_path = [str(name_part) for name_part in import_path]
 
         for i in range(kill_count + int(is_like_search)):
             if import_path:
@@ -86,7 +85,7 @@ class ImportWrapper(pr.Base):
 
     @property
     def import_path(self):
-        return self._importer.import_path
+        return self._importer.str_import_path()
 
     def get_defined_names(self, on_import_stmt=False):
         names = []
@@ -110,7 +109,8 @@ class ImportWrapper(pr.Base):
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
-                    paths = self._importer.namespace_packages(pkg_path, self.import_path)
+                    paths = self._importer.namespace_packages(pkg_path,
+                                                              self.import_path)
                     names += self._get_module_names([pkg_path] + paths)
                 if self.is_just_from:
                     # In the case of an import like `from x.` we don't need to
@@ -304,6 +304,10 @@ class _Importer(object):
         # TODO abspath
         self.file_path = os.path.dirname(path) if path is not None else None
 
+    def str_import_path(self):
+        """Returns the import path as pure strings instead of NameParts."""
+        return tuple(str(name_part) for name_part in self.import_path)
+
     def get_relative_path(self):
         path = self.file_path
         for i in range(self.level - 1):
@@ -319,7 +323,7 @@ class _Importer(object):
         if self.import_path:
             parts = self.file_path.split(os.path.sep)
             for i, p in enumerate(parts):
-                if p == self.import_path[0]:
+                if p == unicode(self.import_path[0]):
                     new = os.path.sep.join(parts[:i])
                     in_path.append(new)
 
@@ -414,7 +418,7 @@ class _Importer(object):
         rest = []
         for i, s in enumerate(self.import_path):
             try:
-                current_namespace = follow_str(current_namespace[1], s)
+                current_namespace = follow_str(current_namespace[1], unicode(s))
             except ImportError:
                 _continue = False
                 if self.level >= 1 and len(self.import_path) == 1:
@@ -423,10 +427,10 @@ class _Importer(object):
                     with common.ignored(ImportError):
                         current_namespace = follow_str(rel_path, '__init__')
                 elif current_namespace[2]:  # is a package
-                    for n in self.namespace_packages(current_namespace[1],
-                                                     self.import_path[:i]):
+                    path = self.str_import_path()[:i]
+                    for n in self.namespace_packages(current_namespace[1], path):
                         try:
-                            current_namespace = follow_str(n, s)
+                            current_namespace = follow_str(n, unicode(s))
                             if current_namespace[1]:
                                 _continue = True
                                 break
@@ -435,7 +439,7 @@ class _Importer(object):
 
                 if not _continue:
                     if current_namespace[1]:
-                        rest = self.import_path[i:]
+                        rest = self.str_import_path()[i:]
                         break
                     else:
                         raise ModuleNotFound('The module you searched has not been found')
