@@ -245,7 +245,7 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use documentation() instead.", DeprecationWarning)
+        warnings.warn("Use docstring() instead.", DeprecationWarning)
         return self.docstring()
 
     @property
@@ -255,7 +255,7 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use documentation() instead.", DeprecationWarning)
+        warnings.warn("Use docstring() instead.", DeprecationWarning)
         return self.docstring(raw=True)
 
     @property
@@ -463,7 +463,7 @@ class Completion(BaseDefinition):
         :param fast: Don't follow imports that are only one level deep like
             ``import foo``, but follow ``from foo import bar``. This makes
             sense for speed reasons. Completing `import a` is slow if you use
-            the ``foo.documentation(fast=False)`` on every object, because it
+            the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
         definition = self._definition
