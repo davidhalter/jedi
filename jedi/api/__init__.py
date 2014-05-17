@@ -345,7 +345,7 @@ class Script(object):
            Use :attr:`.call_signatures` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use line instead.", DeprecationWarning)
+        warnings.warn("Use call_signatures instead.", DeprecationWarning)
         sig = self.call_signatures()
         return sig[0] if sig else None
 
