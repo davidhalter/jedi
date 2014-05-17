@@ -86,7 +86,7 @@ def builtins_super(evaluator, obj, params):
 
 
 def builtins_reversed(evaluator, obj, params):
-    objects = _follow_param(evaluator, params, 0)
+    objects = tuple(_follow_param(evaluator, params, 0))
     if objects:
         # unpack the iterator values
         objects = tuple(iterable.get_iterator_types(objects))

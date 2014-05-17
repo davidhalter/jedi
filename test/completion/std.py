@@ -20,6 +20,10 @@ def yielder():
 #? 
 next(reversed(yielder()))
 
+# empty reversed should not raise an error
+#? 
+next(reversed())
+
 #? str()
 next(open(''))
 
