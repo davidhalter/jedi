@@ -521,3 +521,23 @@ class FunctionExecution(Executable):
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.base)
+
+
+class ModuleWrapper(pr.Module):
+    def __init__(self, evaluator, module):
+        self._evaluator = evaluator
+        self._module = module
+
+    @memoize_default()
+    def get_defined_names(self):
+        names = ['__file__', '__package__', '__doc__', '__name__', '__version__']
+        # All the additional module attributes are strings.
+        parent = Instance(self._evaluator, compiled.create(self._evaluator, str))
+        module_attributes = [helpers.FakeName(n, parent) for n in names]
+        return self._module.get_defined_names() + module_attributes
+
+    def __getattr__(self, name):
+        return getattr(self._module, name)
+
+    def __repr__(self):
+        return "<%s: %s>" % (type(self).__name__, self._module)

@@ -46,8 +46,8 @@ def scope_nested():
     #? ['sqrt']
     import_tree.pkg.sqrt
 
-    #? ['a', 'pkg']
-    import_tree.
+    #? ['pkg']
+    import_tree.p
 
     #? float()
     import_tree.pkg.mod1.a
@@ -317,3 +317,12 @@ else:
     a = not_existing_import
 #? 
 a
+
+# -----------------
+# magic methods
+# -----------------
+
+def magic_method():
+    import keyword
+    #? ['__file__']
+    keyword.__file__

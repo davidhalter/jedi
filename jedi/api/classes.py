@@ -142,7 +142,7 @@ class BaseDefinition(object):
             stripped = stripped.parent
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
-        return type(stripped).__name__.lower()
+        return type(stripped).__name__.lower().replace('wrapper', '')
 
     def _path(self):
         """The module path."""

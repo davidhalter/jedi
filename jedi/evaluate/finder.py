@@ -206,6 +206,8 @@ class NameFinder(object):
                     typ = er.Class(evaluator, typ)
                 elif isinstance(typ, pr.Function):
                     typ = er.Function(evaluator, typ)
+                elif isinstance(typ, pr.Module):
+                    typ = er.ModuleWrapper(evaluator, typ)
                 if typ.isinstance(er.Function) and resolve_decorator:
                     typ = typ.get_decorated_func()
                 types.append(typ)

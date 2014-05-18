@@ -473,7 +473,13 @@ def follow_imports(evaluator, scopes):
     result = []
     for s in scopes:
         if isinstance(s, pr.Import):
-            result += ImportWrapper(evaluator, s).follow()
+            for r in ImportWrapper(evaluator, s).follow():
+                if isinstance(r, pr.Module) and not isinstance(r,
+                    StarImportModule):
+                    # TODO This check is strange and feels wrong somehow. Change it.
+                    from jedi.evaluate import representation as er
+                    r = er.ModuleWrapper(evaluator, r)
+                result.append(r)
         else:
             result.append(s)
     return result
