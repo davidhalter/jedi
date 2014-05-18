@@ -319,10 +319,18 @@ else:
 a
 
 # -----------------
-# magic methods
+# module underscore descriptors
 # -----------------
 
-def magic_method():
+def underscore():
     import keyword
     #? ['__file__']
     keyword.__file__
+    #? str()
+    keyword.__file__
+
+    # Does that also work for the our own module?
+    #? ['__file__']
+    __file__
+    #? str()
+    __file__
