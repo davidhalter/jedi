@@ -84,3 +84,13 @@ return_one(''.undefined_attribute)
 @undefined_decorator
 def func():
     return 1
+
+# -----------------
+# operators
+# -----------------
+
+string = '%s %s' % (1, 2)
+
+# Shouldn't raise an error, because `string` is really just a string, not an
+# array or something.
+string.upper

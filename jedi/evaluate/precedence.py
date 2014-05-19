@@ -244,4 +244,8 @@ def _element_calculate(evaluator, left, operator, right):
     elif operator == '-':
         if _is_number(left) and _is_number(right):
             return [create(evaluator, left.obj - right.obj)]
+    elif operator == '%':
+        # With strings and numbers the left type typically remains. Except for
+        # `int() % float()`.
+        return [left]
     return [left, right]
