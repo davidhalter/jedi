@@ -87,12 +87,13 @@ class NameFinder(object):
                 # Compiled objects don't need that, because there's only one
                 # reference.
                 name_list = sorted(name_list, key=lambda n: n.start_pos, reverse=True)
+
             for name in name_list:
                 if unicode(self.name_str) != name.get_code():
                     continue
 
-                parpar = name.parent.parent
-                if name.parent.parent in break_scopes:
+                scope = name.parent.parent
+                if scope in break_scopes:
                     continue
 
                 if not self._name_is_array_assignment(name):
@@ -101,16 +102,15 @@ class NameFinder(object):
                 # this means that a definition was found and is not e.g.
                 # in if/else.
                 if result and self._name_is_break_scope(name):
-                    #print result, name.parent, parpar, s
-                    if isinstance(parpar, pr.Flow) \
-                            or isinstance(parpar, pr.KeywordStatement) \
-                            and parpar.name == 'global':
+                    if isinstance(scope, pr.Flow) \
+                            or isinstance(scope, pr.KeywordStatement) \
+                            and scope.name == 'global':
                         s = nscope.base if isinstance(nscope, er.Class) else nscope
-                        if parpar == s:
+                        if scope == s:
                             break
                     else:
                         break
-                    break_scopes.append(parpar)
+                    break_scopes.append(scope)
             if result:
                 break
 
@@ -147,6 +147,7 @@ class NameFinder(object):
         elif isinstance(par, pr.Import) and len(par.namespace) > 1:
             # TODO multi-level import non-breakable
             return False
+
         return True
 
     def _name_is_array_assignment(self, name):
