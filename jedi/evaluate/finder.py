@@ -80,9 +80,9 @@ class NameFinder(object):
         `scope_names_generator`), until the name fits.
         """
         result = []
-        for nscope, name_list in scope_names_generator:
+        for name_list_scope, name_list in scope_names_generator:
             break_scopes = []
-            if not isinstance(nscope, compiled.CompiledObject):
+            if not isinstance(name_list_scope, compiled.CompiledObject):
                 # Here is the position stuff happening (sorting of variables).
                 # Compiled objects don't need that, because there's only one
                 # reference.
@@ -96,27 +96,21 @@ class NameFinder(object):
                 if scope in break_scopes:
                     continue
 
+                # Exclude `arr[1] =` from the result set.
                 if not self._name_is_array_assignment(name):
-                    result.append(name)  # `arr[1] =` is not the definition
-                # for comparison we need the raw class
-                # this means that a definition was found and is not e.g.
-                # in if/else.
-                if result and self._name_is_break_scope(name):
-                    if isinstance(scope, pr.Flow) \
-                            or isinstance(scope, pr.KeywordStatement) \
-                            and scope.name == 'global':
-                        s = nscope.base if isinstance(nscope, er.Class) else nscope
-                        if scope == s:
-                            break
-                    else:
+                    result.append(name)
+
+                if result and self._is_name_break_scope(name):
+                    if self._does_scope_break_immediately(scope, name_list_scope):
                         break
-                    break_scopes.append(scope)
+                    else:
+                        break_scopes.append(scope)
             if result:
                 break
 
-        self._last_filter_name_scope = nscope
+        self._last_filter_name_scope = name_list_scope
         debug.dbg('finder.filter_name "%s" in (%s-%s): %s@%s', self.name_str,
-                  self.scope, nscope, u(result), self.position)
+                  self.scope, name_list_scope, u(result), self.position)
         return result
 
     def _check_getattr(self, inst):
@@ -135,20 +129,31 @@ class NameFinder(object):
                 result = inst.execute_subscope_by_name('__getattribute__', [name])
         return result
 
-    def _name_is_break_scope(self, name):
+    def _is_name_break_scope(self, name):
         """
-        Returns the parent of a name, which means the element which stands
-        behind a name.
+        Returns True except for nested imports and instance variables.
         """
         par = name.parent
         if par.isinstance(pr.Statement):
             if isinstance(name, er.InstanceElement) and not name.is_class_var:
                 return False
-        elif isinstance(par, pr.Import) and len(par.namespace) > 1:
-            # TODO multi-level import non-breakable
+        elif isinstance(par, pr.Import) and par.is_nested():
             return False
-
         return True
+
+    def _does_scope_break_immediately(self, scope, name_list_scope):
+        """
+        In comparison to everthing else, if/while/etc doesn't break directly,
+        because there are multiple different places in which a variable can be
+        defined.
+        """
+        if isinstance(scope, pr.Flow) \
+                or isinstance(scope, pr.KeywordStatement) and scope.name == 'global':
+            if isinstance(name_list_scope, er.Class):
+                name_list_scope = name_list_scope.base
+            return scope == name_list_scope
+        else:
+            return True
 
     def _name_is_array_assignment(self, name):
         if name.parent.isinstance(pr.Statement):
