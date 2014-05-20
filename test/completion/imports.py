@@ -332,5 +332,3 @@ def underscore():
     # Does that also work for the our own module?
     #? ['__file__']
     __file__
-    #? str()
-    __file__
