@@ -281,3 +281,13 @@ foo = \
 1
 #? int()
 foo
+
+# -----------------
+# if `is not` checks
+# -----------------
+
+foo = ['a']
+if foo is not None:
+    foo = ''.join(foo)
+#? str()
+foo

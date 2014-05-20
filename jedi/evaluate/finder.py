@@ -25,6 +25,7 @@ from jedi.evaluate import docstrings
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import analysis
+from jedi.evaluate import precedence
 
 
 class NameFinder(object):
@@ -149,6 +150,24 @@ class NameFinder(object):
         """
         if isinstance(scope, pr.Flow) \
                 or isinstance(scope, pr.KeywordStatement) and scope.name == 'global':
+
+            # Check for `if foo is not None`, because Jedi is not interested in
+            # None values, so this is the only branch we actually care about.
+            # ATM it carries the same issue as the isinstance checks. It
+            # doesn't work with instance variables (self.foo).
+            if isinstance(scope, pr.Flow) and scope.command in ('if', 'while'):
+                try:
+                    expression_list = scope.inputs[0].expression_list()
+                except IndexError:
+                    pass
+                else:
+                    p = precedence.create_precedence(expression_list)
+                    if (isinstance(p, precedence.Precedence)
+                            and p.operator == 'is not'
+                            and p.right.get_code() == 'None'
+                            and p.left.get_code() == unicode(self.name_str)):
+                        return True
+
             if isinstance(name_list_scope, er.Class):
                 name_list_scope = name_list_scope.base
             return scope == name_list_scope
