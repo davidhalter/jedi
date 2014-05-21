@@ -55,6 +55,7 @@ def get_params(evaluator, func, var_args):
     # There may be calls, which don't fit all the params, this just ignores it.
     var_arg_iterator = common.PushBackIterator(_var_args_iterator(evaluator, var_args))
 
+
     non_matching_keys = []
     keys_used = set()
     keys_only = False
@@ -112,7 +113,9 @@ def get_params(evaluator, func, var_args):
                     # returned.
                     values = []
                     if isinstance(var_args, pr.Array):
-                        print var_args, var_args.start_pos
+                        m = get_error_message(func, len(var_args))
+                        analysis.add(evaluator, 'type-error-too-few-arguments',
+                                     var_args, message=m)
 
         # Just ignore all the params that are without a key, after one keyword
         # argument was set.
@@ -129,11 +132,9 @@ def get_params(evaluator, func, var_args):
 
     remaining_params = list(var_arg_iterator)
     if remaining_params:
-        param_count = len(func.params)
-        message = 'TypeError: %s() takes exactly %s arguments (%s given).' \
-                  % (func.name, param_count, param_count + len(remaining_params))
-        analysis.add(evaluator, 'type-error-too-many-params',
-                     remaining_params[0][1], message=message)
+        m = get_error_message(func, len(func.params) + len(remaining_params))
+        analysis.add(evaluator, 'type-error-too-many-arguments',
+                     remaining_params[0][1], message=m)
     return result
 
 
@@ -184,3 +185,8 @@ def _var_args_iterator(evaluator, var_args):
                     yield key_arr[0].name, stmt
             else:
                 yield None, stmt
+
+
+def get_error_message(func, actual_count):
+    return ('TypeError: %s() takes exactly %s arguments (%%s given).'
+            % (func.name, len(func.params)))

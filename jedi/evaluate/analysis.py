@@ -12,7 +12,8 @@ CODES = {
     'name-error': (2, NameError, 'Potential NameError.'),
     'import-error': (3, ImportError, 'Potential ImportError.'),
     'type-error-generator': (4, TypeError, "TypeError: 'generator' object is not subscriptable."),
-    'type-error-too-many-params': (4, TypeError, "TypeError: 'generator' object is not subscriptable."),
+    'type-error-too-many-arguments': (5, TypeError, None),
+    'type-error-too-few-arguments': (6, TypeError, None),
 }
 
 
