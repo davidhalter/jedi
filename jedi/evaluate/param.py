@@ -4,6 +4,7 @@ from jedi.parser import representation as pr
 from jedi.evaluate import iterable
 from jedi import common
 from jedi.evaluate import helpers
+from jedi.evaluate import analysis
 
 
 def get_params(evaluator, func, var_args):
@@ -110,6 +111,8 @@ def get_params(evaluator, func, var_args):
                     # assignment, just the result. Therefore nothing has to be
                     # returned.
                     values = []
+                    if isinstance(var_args, pr.Array):
+                        print var_args, var_args.start_pos
 
         # Just ignore all the params that are without a key, after one keyword
         # argument was set.
@@ -123,6 +126,14 @@ def get_params(evaluator, func, var_args):
         # create an Exception, but we have to handle that).
         for k in set(param_dict) - keys_used:
             result.append(gen_param_name_copy(param_dict[k]))
+
+    remaining_params = list(var_arg_iterator)
+    if remaining_params:
+        param_count = len(func.params)
+        message = 'TypeError: %s() takes exactly %s arguments (%s given).' \
+                  % (func.name, param_count, param_count + len(remaining_params))
+        analysis.add(evaluator, 'type-error-too-many-params',
+                     remaining_params[0][1], message=message)
     return result
 
 
