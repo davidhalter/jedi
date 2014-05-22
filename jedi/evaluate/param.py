@@ -8,37 +8,6 @@ from jedi.evaluate import analysis
 
 
 def get_params(evaluator, func, var_args):
-    def gen_param_name_copy(param, keys=(), values=(), array_type=None):
-        """
-        Create a param with the original scope (of varargs) as parent.
-        """
-        if isinstance(var_args, pr.Array):
-            parent = var_args.parent
-            start_pos = var_args.start_pos
-        else:
-            parent = func
-            start_pos = 0, 0
-
-        new_param = copy.copy(param)
-        new_param.is_generated = True
-        if parent is not None:
-            new_param.parent = parent
-
-        # create an Array (-> needed for *args/**kwargs tuples/dicts)
-        arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
-        arr.values = values
-        key_stmts = []
-        for key in keys:
-            key_stmts.append(helpers.FakeStatement([key], start_pos))
-        arr.keys = key_stmts
-        arr.type = array_type
-
-        new_param.set_expression_list([arr])
-
-        name = copy.copy(param.get_name())
-        name.parent = new_param
-        return name
-
     result = []
     start_offset = 0
     from jedi.evaluate.representation import InstanceElement
@@ -55,15 +24,16 @@ def get_params(evaluator, func, var_args):
     # There may be calls, which don't fit all the params, this just ignores it.
     var_arg_iterator = common.PushBackIterator(_var_args_iterator(evaluator, var_args))
 
-
     non_matching_keys = []
     keys_used = set()
     keys_only = False
+    value = None
     for param in func.params[start_offset:]:
         # The value and key can both be null. There, the defaults apply.
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
+        previous_value = value
         key, value = next(var_arg_iterator, (None, None))
         while key:
             keys_only = True
@@ -73,7 +43,8 @@ def get_params(evaluator, func, var_args):
                 non_matching_keys.append((key, value))
             else:
                 keys_used.add(str(key))
-                result.append(gen_param_name_copy(key_param, values=[value]))
+                result.append(_gen_param_name_copy(func, var_args, key_param,
+                                                   values=[value]))
             key, value = next(var_arg_iterator, (None, None))
 
         expression_list = param.expression_list()
@@ -113,7 +84,9 @@ def get_params(evaluator, func, var_args):
                     # returned.
                     values = []
                     if isinstance(var_args, pr.Array):
-                        m = get_error_message(func, len(var_args))
+                        print(var_args, var_args.start_pos, id(var_args))
+                        print('last', previous_value)
+                        m = _get_error_message(func, len(var_args))
                         analysis.add(evaluator, 'type-error-too-few-arguments',
                                      var_args, message=m)
 
@@ -121,18 +94,19 @@ def get_params(evaluator, func, var_args):
         # argument was set.
         if not ignore_creation and (not keys_only or expression_list[0] == '**'):
             keys_used.add(str(key))
-            result.append(gen_param_name_copy(param, keys=keys, values=values,
-                                              array_type=array_type))
+            result.append(_gen_param_name_copy(func, var_args, param,
+                                               keys=keys, values=values,
+                                               array_type=array_type))
 
     if keys_only:
         # sometimes param arguments are not completely written (which would
         # create an Exception, but we have to handle that).
         for k in set(param_dict) - keys_used:
-            result.append(gen_param_name_copy(param_dict[k]))
+            result.append(_gen_param_name_copy(func, var_args, param_dict[k]))
 
     remaining_params = list(var_arg_iterator)
     if remaining_params:
-        m = get_error_message(func, len(func.params) + len(remaining_params))
+        m = _get_error_message(func, len(func.params) + len(remaining_params))
         analysis.add(evaluator, 'type-error-too-many-arguments',
                      remaining_params[0][1], message=m)
     return result
@@ -187,6 +161,38 @@ def _var_args_iterator(evaluator, var_args):
                 yield None, stmt
 
 
-def get_error_message(func, actual_count):
+def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=None):
+    """
+    Create a param with the original scope (of varargs) as parent.
+    """
+    if isinstance(var_args, pr.Array):
+        parent = var_args.parent
+        start_pos = var_args.start_pos
+    else:
+        parent = func
+        start_pos = 0, 0
+
+    new_param = copy.copy(param)
+    new_param.is_generated = True
+    if parent is not None:
+        new_param.parent = parent
+
+    # create an Array (-> needed for *args/**kwargs tuples/dicts)
+    arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
+    arr.values = values
+    key_stmts = []
+    for key in keys:
+        key_stmts.append(helpers.FakeStatement([key], start_pos))
+    arr.keys = key_stmts
+    arr.type = array_type
+
+    new_param.set_expression_list([arr])
+
+    name = copy.copy(param.get_name())
+    name.parent = new_param
+    return name
+
+
+def _get_error_message(func, actual_count):
     return ('TypeError: %s() takes exactly %s arguments (%%s given).'
             % (func.name, len(func.params)))
