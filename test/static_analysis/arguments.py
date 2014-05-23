@@ -1,3 +1,7 @@
+# -----------------
+# normal arguments (no keywords)
+# -----------------
+
 def simple(a):
     return a
 
@@ -17,3 +21,22 @@ nested(1)
 nested()
 #! 10 type-error-too-many-arguments
 simple(1, 2, 3)
+
+# -----------------
+# keyword arguments
+# -----------------
+
+simple(a=1)
+#! 7 type-error
+simple(b=1)
+#! 10 type-error-too-many-arguments
+simple(1, a=1)
+
+
+def two_params(a, b):
+    return b
+
+two_params(b=2, a=1)
+two_params(1, b=2)
+#! 10 type-error
+two_params(1, a=2)
