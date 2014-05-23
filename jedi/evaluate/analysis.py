@@ -14,6 +14,7 @@ CODES = {
     'type-error-generator': (4, TypeError, "TypeError: 'generator' object is not subscriptable."),
     'type-error-too-many-arguments': (5, TypeError, None),
     'type-error-too-few-arguments': (6, TypeError, None),
+    'type-error-keyword-argument': (7, TypeError, None),
 }
 
 

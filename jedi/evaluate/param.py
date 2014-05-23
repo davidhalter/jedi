@@ -33,7 +33,6 @@ def get_params(evaluator, func, var_args):
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
-        previous_value = value
         key, value = next(var_arg_iterator, (None, None))
         while key:
             keys_only = True
@@ -68,6 +67,7 @@ def get_params(evaluator, func, var_args):
             array_type = pr.Array.DICT
             if non_matching_keys:
                 keys, values = zip(*non_matching_keys)
+            non_matching_keys = []
         elif not keys_only:
             # normal param
             if value is not None:
@@ -84,9 +84,11 @@ def get_params(evaluator, func, var_args):
                     # returned.
                     values = []
                     if isinstance(var_args, pr.Array):
-                        print(var_args, var_args.start_pos, id(var_args))
-                        print('last', previous_value)
-                        m = _get_error_message(func, len(var_args))
+                        #print(var_args, var_args.start_pos, id(var_args))
+                        #original_var_ars = var_args
+                        #if len(var_args) == 0:
+                        #    print(original_var_ars)
+                        m = _error_argument_count(func, len(var_args))
                         analysis.add(evaluator, 'type-error-too-few-arguments',
                                      var_args, message=m)
 
@@ -104,9 +106,14 @@ def get_params(evaluator, func, var_args):
         for k in set(param_dict) - keys_used:
             result.append(_gen_param_name_copy(func, var_args, param_dict[k]))
 
+    for key, value in non_matching_keys:
+        m = "TypeError: %s() got an unexpected keyword argument '%s'." \
+            % (func.name, key)
+        analysis.add(evaluator, 'type-error-keyword-argument', value, message=m)
+
     remaining_params = list(var_arg_iterator)
     if remaining_params:
-        m = _get_error_message(func, len(func.params) + len(remaining_params))
+        m = _error_argument_count(func, len(func.params) + len(remaining_params))
         analysis.add(evaluator, 'type-error-too-many-arguments',
                      remaining_params[0][1], message=m)
     return result
@@ -134,6 +141,7 @@ def _var_args_iterator(evaluator, var_args):
             # *args must be some sort of an array, otherwise -> ignore
             for array in evaluator.eval_expression_list(expression_list[1:]):
                 if isinstance(array, iterable.Array):
+                    #print('star', array, id(array))
                     for field_stmt in array:  # yield from plz!
                         yield None, field_stmt
                 elif isinstance(array, iterable.Generator):
@@ -179,6 +187,7 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
 
     # create an Array (-> needed for *args/**kwargs tuples/dicts)
     arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
+    #print('create', id(arr))
     arr.values = values
     key_stmts = []
     for key in keys:
@@ -193,6 +202,6 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
     return name
 
 
-def _get_error_message(func, actual_count):
-    return ('TypeError: %s() takes exactly %s arguments (%%s given).'
-            % (func.name, len(func.params)))
+def _error_argument_count(func, actual_count):
+    return ('TypeError: %s() takes exactly %s arguments (%s given).'
+            % (func.name, len(func.params), actual_count))

@@ -27,7 +27,7 @@ simple(1, 2, 3)
 # -----------------
 
 simple(a=1)
-#! 7 type-error
+#! 7 type-error-keyword-argument
 simple(b=1)
 #! 10 type-error-too-many-arguments
 simple(1, a=1)
