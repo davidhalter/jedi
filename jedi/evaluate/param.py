@@ -46,11 +46,10 @@ def get_params(evaluator, func, var_args):
                                                    values=[value]))
             key, value = next(var_arg_iterator, (None, None))
 
-        expression_list = param.expression_list()
         keys = []
         values = []
         array_type = None
-        ignore_creation = False
+        has_default_value = False
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
@@ -75,7 +74,7 @@ def get_params(evaluator, func, var_args):
             else:
                 if param.assignment_details:
                     # No value: return the default values.
-                    ignore_creation = True
+                    has_default_value = True
                     result.append(param.get_name())
                     param.is_generated = True
                 else:
@@ -94,14 +93,14 @@ def get_params(evaluator, func, var_args):
 
         # Just ignore all the params that are without a key, after one keyword
         # argument was set.
-        if not ignore_creation and (not keys_only or expression_list[0] == '**'):
+        if not has_default_value and (not keys_only or param.stars == 2):
             keys_used.add(str(key))
             result.append(_gen_param_name_copy(func, var_args, param,
                                                keys=keys, values=values,
                                                array_type=array_type))
 
     if keys_only:
-        # sometimes param arguments are not completely written (which would
+        # Sometimes param arguments are not completely written (which would
         # create an Exception, but we have to handle that).
         for k in set(param_dict) - keys_used:
             result.append(_gen_param_name_copy(func, var_args, param_dict[k]))

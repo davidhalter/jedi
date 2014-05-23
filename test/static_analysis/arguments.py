@@ -33,10 +33,10 @@ simple(b=1)
 simple(1, a=1)
 
 
-def two_params(a, b):
-    return b
+def two_params(x, y):
+    return y
 
-two_params(b=2, a=1)
-two_params(1, b=2)
+two_params(y=2, x=1)
+two_params(1, y=2)
 #! 10 type-error
-two_params(1, a=2)
+two_params(1, x=2)
