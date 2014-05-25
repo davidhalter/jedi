@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 This tokenizer has been copied from the ``tokenize.py`` standard library
-tokenizer. The reason was simple: The standanrd library  tokenizer fails
+tokenizer. The reason was simple: The standard library tokenizer fails
 if the indentation is not right. The fast parser of jedi however requires
 "wrong" indentation.
 
 Basically this is a stripped down version of the standard library module, so
 you can read the documentation there. Additionally we included some speed and
-memory optimizations, here.
+memory optimizations here.
 """
 from __future__ import absolute_import
 
