@@ -15,6 +15,7 @@ CODES = {
     'type-error-too-many-arguments': (5, TypeError, None),
     'type-error-too-few-arguments': (6, TypeError, None),
     'type-error-keyword-argument': (7, TypeError, None),
+    'type-error-multiple-values': (8, TypeError, None),
 }
 
 

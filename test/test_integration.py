@@ -26,8 +26,8 @@ def assert_static_analysis(case, actual, desired):
     d = set(desired)
     assert actual == desired, """
 Test %r failed.
-too much = %s
-missing  = %s
+specified, not raised = %s
+missing = %s
 """ % (case, sorted(d - a), sorted(a - d))
 
 

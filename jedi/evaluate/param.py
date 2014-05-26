@@ -1,5 +1,6 @@
 import copy
 
+from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi.evaluate import iterable
 from jedi import common
@@ -37,13 +38,21 @@ def get_params(evaluator, func, var_args):
         while key:
             keys_only = True
             try:
-                key_param = param_dict[str(key)]
+                key_param = param_dict[unicode(key)]
             except KeyError:
                 non_matching_keys.append((key, value))
             else:
-                keys_used.add(str(key))
-                result.append(_gen_param_name_copy(func, var_args, key_param,
-                                                   values=[value]))
+                k = unicode(key)
+                if k in keys_used:
+                    print(keys_used, unicode(key), value)
+                    m = ("TypeError: %s() got multiple values for keyword argument '%s'."
+                         % (func.name, k))
+                    analysis.add(evaluator, 'type-error-multiple-values',
+                                 var_args, message=m)
+                else:
+                    keys_used.add(k)
+                    result.append(_gen_param_name_copy(func, var_args, key_param,
+                                                       values=[value]))
             key, value = next(var_arg_iterator, (None, None))
 
         keys = []
@@ -93,7 +102,7 @@ def get_params(evaluator, func, var_args):
 
         # Now add to result if it's not one of the previously covered cases.
         if not has_default_value and (not keys_only or param.stars == 2):
-            keys_used.add(str(key))
+            keys_used.add(unicode(param.get_name()))
             result.append(_gen_param_name_copy(func, var_args, param,
                                                keys=keys, values=values,
                                                array_type=array_type))
