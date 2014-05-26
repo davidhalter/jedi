@@ -49,7 +49,6 @@ def get_params(evaluator, func, var_args):
         keys = []
         values = []
         array_type = None
-        has_default_value = False
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
@@ -74,7 +73,6 @@ def get_params(evaluator, func, var_args):
             else:
                 if param.assignment_details:
                     # No value: return the default values.
-                    has_default_value = True
                     result.append(param.get_name())
                     param.is_generated = True
                 else:
@@ -93,13 +91,17 @@ def get_params(evaluator, func, var_args):
 
         # Just ignore all the params that are without a key, after one keyword
         # argument was set.
-        if not has_default_value and (not keys_only or param.stars == 2):
+        if (not keys_only or param.stars == 2):
             keys_used.add(str(key))
             result.append(_gen_param_name_copy(func, var_args, param,
                                                keys=keys, values=values,
                                                array_type=array_type))
 
     if keys_only:
+        # All arguments should be handed over to the next function. It's not
+        # about the values inside, it's about the names. Jedi needs to now that
+        # there's nothing to find for certain names. In this case,
+        # just
         # Sometimes param arguments are not completely written (which would
         # create an Exception, but we have to handle that).
         for k in set(param_dict) - keys_used:
