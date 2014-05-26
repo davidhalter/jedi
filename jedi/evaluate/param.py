@@ -80,7 +80,7 @@ def get_params(evaluator, func, var_args):
                     # assignment, just the result. Therefore nothing has to be
                     # returned.
                     values = []
-                    if isinstance(var_args, pr.Array):
+                    if not keys_only and isinstance(var_args, pr.Array):
                         #print(var_args, var_args.start_pos, id(var_args))
                         #original_var_ars = var_args
                         #if len(var_args) == 0:
