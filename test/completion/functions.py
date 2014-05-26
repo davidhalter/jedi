@@ -138,6 +138,36 @@ func(1.0)[0]
 #? str()
 func(1.0)[1]
 
+
+#? float()
+func(a=1.0)[0]
+#? str()
+func(a=1.0)[1]
+#? int()
+func(b=1.0)[0]
+#? float()
+func(b=1.0)[1]
+#? list
+func(a=list, b=set)[0]
+#? set
+func(a=list, b=set)[1]
+
+
+def func_default(a, b=1):
+    return a, b
+
+
+def nested_default(**kwargs):
+    return func_default(**kwargs)
+
+#? float()
+nested_default(a=1.0)[0]
+#? int()
+nested_default(a=1.0)[1]
+#? str()
+nested_default(a=1.0, b='')[1]
+
+
 # -----------------
 # closures
 # -----------------
