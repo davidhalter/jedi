@@ -49,6 +49,7 @@ def get_params(evaluator, func, var_args):
         keys = []
         values = []
         array_type = None
+        has_default_value = False
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
@@ -66,13 +67,12 @@ def get_params(evaluator, func, var_args):
             if non_matching_keys:
                 keys, values = zip(*non_matching_keys)
             non_matching_keys = []
-        elif not keys_only:
+        else:
             # normal param
-            if value is not None:
-                values = [value]
-            else:
+            if value is None:
                 if param.assignment_details:
                     # No value: return the default values.
+                    has_default_value = True
                     result.append(param.get_name())
                     param.is_generated = True
                 else:
@@ -88,10 +88,11 @@ def get_params(evaluator, func, var_args):
                         m = _error_argument_count(func, len(var_args))
                         analysis.add(evaluator, 'type-error-too-few-arguments',
                                      var_args, message=m)
+            else:
+                values = [value]
 
-        # Just ignore all the params that are without a key, after one keyword
-        # argument was set.
-        if (not keys_only or param.stars == 2):
+        # Now add to result if it's not one of the previously covered cases.
+        if not has_default_value and (not keys_only or param.stars == 2):
             keys_used.add(str(key))
             result.append(_gen_param_name_copy(func, var_args, param,
                                                keys=keys, values=values,
@@ -100,10 +101,7 @@ def get_params(evaluator, func, var_args):
     if keys_only:
         # All arguments should be handed over to the next function. It's not
         # about the values inside, it's about the names. Jedi needs to now that
-        # there's nothing to find for certain names. In this case,
-        # just
-        # Sometimes param arguments are not completely written (which would
-        # create an Exception, but we have to handle that).
+        # there's nothing to find for certain names.
         for k in set(param_dict) - keys_used:
             result.append(_gen_param_name_copy(func, var_args, param_dict[k]))
 
