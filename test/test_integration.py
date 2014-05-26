@@ -20,6 +20,17 @@ desired = %s
 """ % (case, actual, desired)
 
 
+def assert_static_analysis(case, actual, desired):
+    """A nicer formatting for static analysis tests."""
+    a = set(actual)
+    d = set(desired)
+    assert actual == desired, """
+Test %r failed.
+too much = %s
+missing  = %s
+""" % (case, sorted(d - a), sorted(a - d))
+
+
 def test_integration(case, monkeypatch):
     if case.skip is not None:
         pytest.skip(case.skip)
@@ -29,7 +40,7 @@ def test_integration(case, monkeypatch):
 
 
 def test_static_analysis(static_analysis_case):
-    static_analysis_case.run(assert_case_equal)
+    static_analysis_case.run(assert_static_analysis)
 
 
 def test_refactor(refactor_case):
