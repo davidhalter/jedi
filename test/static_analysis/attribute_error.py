@@ -26,9 +26,9 @@ class Cls():
     #! 13 name-error
     class_attr = a
 
-Cls().defined_lookup('')
+Cls(1).defined_lookup('')
 
-c = Cls()
+c = Cls(1)
 c.class_attr
 Cls.class_attr
 #! 4 attribute-error
