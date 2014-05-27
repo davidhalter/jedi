@@ -8,6 +8,33 @@ from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 
 
+class ExecutedParam(pr.Param):
+    def __init__(self):
+        """Don't use this method, it's just here to overwrite the old one."""
+        pass
+
+    @classmethod
+    def from_param(cls, param, parent):
+        instance = cls()
+        before = ()
+        for cls in param.__class__.__mro__:
+            with common.ignored(AttributeError):
+                if before == cls.__slots__:
+                    continue
+                before = cls.__slots__
+                for name in before:
+                    setattr(instance, name, getattr(param, name))
+
+        instance.original_param = param
+        instance.is_generated = True
+        if parent is not None:
+            instance.parent = parent
+        return instance
+
+    def __getattr__(self, name):
+        return getattr(self._param, name)
+
+
 def get_params(evaluator, func, var_args):
     result = []
     start_offset = 0
@@ -44,7 +71,6 @@ def get_params(evaluator, func, var_args):
             else:
                 k = unicode(key)
                 if k in keys_used:
-                    print(keys_used, unicode(key), value)
                     m = ("TypeError: %s() got multiple values for keyword argument '%s'."
                          % (func.name, k))
                     analysis.add(evaluator, 'type-error-multiple-values',
@@ -83,6 +109,7 @@ def get_params(evaluator, func, var_args):
                     # No value: return the default values.
                     has_default_value = True
                     result.append(param.get_name())
+                    # TODO is this allowed? it changes it long time.
                     param.is_generated = True
                 else:
                     # If there is no assignment detail, that means there is no
@@ -90,10 +117,17 @@ def get_params(evaluator, func, var_args):
                     # returned.
                     values = []
                     if not keys_only and isinstance(var_args, pr.Array):
-                        #print(var_args, var_args.start_pos, id(var_args))
-                        #original_var_ars = var_args
-                        #if len(var_args) == 0:
-                        #    print(original_var_ars)
+                        """
+                        print(var_args, var_args.start_pos, id(var_args),
+                        var_args.parent.parent.parent, func)
+                        print(var_args.parent.parent.parent._get_params()[0].parent.stars)
+                        fn = helpers.FakeName('args')
+                        old, _ = evaluator.goto(var_args[1], ['args'])
+                        old = old[0]
+                        print(old.parent, old.parent.origin, id(old.parent), old.parent.parent.parent.parent,)
+                        print(old.parent.expression_list())
+                        raise NotImplementedError()
+                        """
                         m = _error_argument_count(func, len(var_args))
                         analysis.add(evaluator, 'type-error-too-few-arguments',
                                      var_args, message=m)
@@ -188,14 +222,11 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
         parent = func
         start_pos = 0, 0
 
-    new_param = copy.copy(param)
-    new_param.is_generated = True
-    if parent is not None:
-        new_param.parent = parent
+    new_param = ExecutedParam.from_param(param, parent)
+    #print('create', id(new_param), id(param), param)
 
     # create an Array (-> needed for *args/**kwargs tuples/dicts)
     arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
-    #print('create', id(arr))
     arr.values = values
     key_stmts = []
     for key in keys:
