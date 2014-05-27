@@ -565,18 +565,13 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
                 name = d.get_defined_names()[0].names[-1]
             except (AttributeError, IndexError):
                 return None
+        elif isinstance(d, pr.Param):
+            name = d.get_name()
         elif isinstance(d, pr.Statement):
             try:
                 expression_list = d.assignment_details[0][0]
                 name = expression_list[0].name.names[-1]
             except IndexError:
-                if isinstance(d, pr.Param):
-                    try:
-                        return unicode(d.expression_list()[0].name)
-                    except (IndexError, AttributeError):
-                        # IndexError for syntax error params
-                        # AttributeError for *args/**kwargs
-                        pass
                 return None
         elif isinstance(d, iterable.Generator):
             return None
