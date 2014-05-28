@@ -48,6 +48,10 @@ def _get_calling_var_args(evaluator, var_args):
                 break
             param = names[0].parent
             if not isinstance(param, ExecutedParam):
+                if isinstance(param, pr.Param):
+                    # There is no calling var_args in this case - there's just
+                    # a param without any input.
+                    return None
                 break
             # We never want var_args to be a tuple. This should be enough for
             # now, we can change it later, if we need to.
@@ -139,9 +143,10 @@ def get_params(evaluator, func, var_args):
                     values = []
                     if not keys_only and isinstance(var_args, pr.Array):
                         calling_va = _get_calling_var_args(evaluator, var_args)
-                        m = _error_argument_count(func, len(var_args))
-                        analysis.add(evaluator, 'type-error-too-few-arguments',
-                                     calling_va, message=m)
+                        if calling_va is not None:
+                            m = _error_argument_count(func, len(var_args))
+                            analysis.add(evaluator, 'type-error-too-few-arguments',
+                                         calling_va, message=m)
             else:
                 values = [value]
 
@@ -194,7 +199,6 @@ def _var_args_iterator(evaluator, var_args):
             # *args must be some sort of an array, otherwise -> ignore
             for array in evaluator.eval_expression_list(expression_list[1:]):
                 if isinstance(array, iterable.Array):
-                    #print('star', array, id(array))
                     for field_stmt in array:  # yield from plz!
                         yield None, field_stmt
                 elif isinstance(array, iterable.Generator):
