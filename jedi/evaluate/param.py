@@ -49,6 +49,8 @@ def _get_calling_var_args(evaluator, var_args):
             param = names[0].parent
             if not isinstance(param, ExecutedParam):
                 break
+            # We never want var_args to be a tuple. This should be enough for
+            # now, we can change it later, if we need to.
             if isinstance(param.var_args, pr.Array):
                 var_args = param.var_args
     return var_args

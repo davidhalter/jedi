@@ -13,12 +13,6 @@ simple()
 simple(1, 2)
 
 
-def nested(*args):
-    return simple(*args)
-
-nested(1)
-#! 6 type-error-too-few-arguments
-nested()
 #! 10 type-error-too-many-arguments
 simple(1, 2, 3)
 
