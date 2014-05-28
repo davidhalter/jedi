@@ -32,7 +32,7 @@ class ExecutedParam(pr.Param):
         return instance
 
 
-def get_calling_var_args(evaluator, var_args):
+def _get_calling_var_args(evaluator, var_args):
     old_var_args = None
     while var_args != old_var_args:
         old_var_args = var_args
@@ -49,7 +49,8 @@ def get_calling_var_args(evaluator, var_args):
             param = names[0].parent
             if not isinstance(param, ExecutedParam):
                 break
-            var_args = param.var_args
+            if isinstance(param.var_args, pr.Array):
+                var_args = param.var_args
     return var_args
 
 
@@ -135,7 +136,7 @@ def get_params(evaluator, func, var_args):
                     # returned.
                     values = []
                     if not keys_only and isinstance(var_args, pr.Array):
-                        calling_va = get_calling_var_args(evaluator, var_args)
+                        calling_va = _get_calling_var_args(evaluator, var_args)
                         m = _error_argument_count(func, len(var_args))
                         analysis.add(evaluator, 'type-error-too-few-arguments',
                                      calling_va, message=m)
