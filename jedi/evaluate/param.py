@@ -14,7 +14,7 @@ class ExecutedParam(pr.Param):
         pass
 
     @classmethod
-    def from_param(cls, param, parent):
+    def from_param(cls, param, parent, var_args):
         instance = cls()
         before = ()
         for cls in param.__class__.__mro__:
@@ -27,12 +27,30 @@ class ExecutedParam(pr.Param):
 
         instance.original_param = param
         instance.is_generated = True
-        if parent is not None:
-            instance.parent = parent
+        instance.parent = parent
+        instance.var_args = var_args
         return instance
 
-    def __getattr__(self, name):
-        return getattr(self._param, name)
+
+def get_calling_var_args(evaluator, var_args):
+    old_var_args = None
+    while var_args != old_var_args:
+        old_var_args = var_args
+        for argument in reversed(var_args):
+            if not isinstance(argument, pr.Statement):
+                continue
+            exp_list = argument.expression_list()
+            if len(exp_list) != 2 or exp_list[0] not in ('*', '**'):
+                continue
+
+            names, _ = evaluator.goto(argument, [exp_list[1].get_code()])
+            if len(names) != 1:
+                break
+            param = names[0].parent
+            if not isinstance(param, ExecutedParam):
+                break
+            var_args = param.var_args
+    return var_args
 
 
 def get_params(evaluator, func, var_args):
@@ -117,20 +135,10 @@ def get_params(evaluator, func, var_args):
                     # returned.
                     values = []
                     if not keys_only and isinstance(var_args, pr.Array):
-                        """
-                        print(var_args, var_args.start_pos, id(var_args),
-                        var_args.parent.parent.parent, func)
-                        print(var_args.parent.parent.parent._get_params()[0].parent.stars)
-                        fn = helpers.FakeName('args')
-                        old, _ = evaluator.goto(var_args[1], ['args'])
-                        old = old[0]
-                        print(old.parent, old.parent.origin, id(old.parent), old.parent.parent.parent.parent,)
-                        print(old.parent.expression_list())
-                        raise NotImplementedError()
-                        """
+                        calling_va = get_calling_var_args(evaluator, var_args)
                         m = _error_argument_count(func, len(var_args))
                         analysis.add(evaluator, 'type-error-too-few-arguments',
-                                     var_args, message=m)
+                                     calling_va, message=m)
             else:
                 values = [value]
 
@@ -222,8 +230,7 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
         parent = func
         start_pos = 0, 0
 
-    new_param = ExecutedParam.from_param(param, parent)
-    #print('create', id(new_param), id(param), param)
+    new_param = ExecutedParam.from_param(param, parent, var_args)
 
     # create an Array (-> needed for *args/**kwargs tuples/dicts)
     arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
