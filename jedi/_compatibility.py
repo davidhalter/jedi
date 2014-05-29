@@ -191,3 +191,9 @@ def literal_eval(string):
         if re.match('[uU][\'"]', string):
             string = string[1:]
     return ast.literal_eval(string)
+
+
+try:
+    from itertools import zip_longest
+except ImportError:
+    from itertools import izip_longest as zip_longest  # Python 2

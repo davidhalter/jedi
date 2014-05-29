@@ -1,7 +1,7 @@
 import copy
 from itertools import chain
 
-from jedi._compatibility import unicode
+from jedi._compatibility import unicode, zip_longest
 from jedi.parser import representation as pr
 from jedi.evaluate import iterable
 from jedi import common
@@ -194,22 +194,16 @@ def _var_args_iterator(evaluator, var_args):
             # generate a statement if it's not already one.
             stmt = helpers.FakeStatement([old])
 
-        # *args
         expression_list = stmt.expression_list()
         if not len(expression_list):
             continue
+        # *args
         if expression_list[0] == '*':
             # *args must be some sort of an array, otherwise -> ignore
             arrays = evaluator.eval_expression_list(expression_list[1:])
-            #for array in array[:]:
-            if arrays:
-                array = arrays[0]
-                if isinstance(array, iterable.Array):
-                    for field_stmt in array:  # yield from plz!
-                        yield None, [field_stmt]
-                elif isinstance(array, iterable.Generator):
-                    for field_stmt in array.iter_content():
-                        yield None, [helpers.FakeStatement([field_stmt])]
+            iterators = [_iterate_star_args(a) for a in arrays]
+            for values in zip_longest(*iterators):
+                yield None, [v for v in values if v is not None]
         # **kwargs
         elif expression_list[0] == '**':
             for array in evaluator.eval_expression_list(expression_list[1:]):
@@ -230,6 +224,17 @@ def _var_args_iterator(evaluator, var_args):
                     yield key_arr[0].name, [stmt]
             else:
                 yield None, [stmt]
+
+
+def _iterate_star_args(array):
+    if isinstance(array, iterable.Array):
+        for field_stmt in array:  # yield from plz!
+            yield field_stmt
+    elif isinstance(array, iterable.Generator):
+        for field_stmt in array.iter_content():
+            yield helpers.FakeStatement([field_stmt])
+    else:
+        pass  # TODO need a warning here.
 
 
 def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=None):
