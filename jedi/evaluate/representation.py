@@ -430,6 +430,12 @@ class FunctionExecution(Executable):
         # Feed the listeners, with the params.
         for listener in func.listeners:
             listener.execute(self._get_params())
+        if func.listeners:
+            # If we do have listeners, that means that there's not a regular
+            # execution ongoing. In this case Jedi is interested in the
+            # inserted params, not in the actual execution of the function.
+            return []
+
         if func.is_generator and not evaluate_generator:
             return [iterable.Generator(self._evaluator, func, self.var_args)]
         else:
