@@ -27,3 +27,17 @@ def nested_twice(*args1):
     return nested(*args1)
 
 nested_twice(2, 3)
+#! 12 type-error-too-few-arguments
+nested_twice(2)
+
+# -----------------
+# **kwargs
+# -----------------
+
+
+def kwargs_test(**kwargs):
+    return simple2(1, **kwargs)
+
+kwargs_test(c=3, b=2)
+kwargs_test(c=3)
+kwargs_test(b=2)

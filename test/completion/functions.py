@@ -231,6 +231,17 @@ exe[1]
 #? list()
 exe[1][1]
 
+
+# In a dynamic search, both inputs should be given.
+def simple(a):
+    #? int() str()
+    return a
+def xargs(*args):
+    return simple(*args)
+
+xargs(1)
+xargs('')
+
 # -----------------
 # ** kwargs
 # -----------------

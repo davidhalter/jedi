@@ -1,4 +1,5 @@
 import copy
+from itertools import chain
 
 from jedi._compatibility import unicode
 from jedi.parser import representation as pr
@@ -80,19 +81,19 @@ def get_params(evaluator, func, var_args):
     non_matching_keys = []
     keys_used = set()
     keys_only = False
-    value = None
+    va_values = None
     for param in func.params[start_offset:]:
         # The value and key can both be null. There, the defaults apply.
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
-        key, value = next(var_arg_iterator, (None, None))
+        key, va_values = next(var_arg_iterator, (None, []))
         while key:
             keys_only = True
             try:
                 key_param = param_dict[unicode(key)]
             except KeyError:
-                non_matching_keys.append((key, value))
+                non_matching_keys.append((key, va_values))
             else:
                 k = unicode(key)
                 if k in keys_used:
@@ -103,8 +104,8 @@ def get_params(evaluator, func, var_args):
                 else:
                     keys_used.add(k)
                     result.append(_gen_param_name_copy(func, var_args, key_param,
-                                                       values=[value]))
-            key, value = next(var_arg_iterator, (None, None))
+                                                       values=va_values))
+            key, va_values = next(var_arg_iterator, (None, []))
 
         keys = []
         values = []
@@ -113,23 +114,25 @@ def get_params(evaluator, func, var_args):
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
-            if value:
-                values.append(value)
-            for key, value in var_arg_iterator:
+            values += va_values
+            for key, va_values in var_arg_iterator:
                 # Iterate until a key argument is found.
                 if key:
-                    var_arg_iterator.push_back((key, value))
+                    var_arg_iterator.push_back((key, va_values))
                     break
-                values.append(value)
+                values += va_values
         elif param.stars == 2:
             # **kwargs param
             array_type = pr.Array.DICT
             if non_matching_keys:
                 keys, values = zip(*non_matching_keys)
+                values = list(chain(*values))
             non_matching_keys = []
         else:
             # normal param
-            if value is None:
+            if va_values:
+                values = va_values
+            else:
                 if param.assignment_details:
                     # No value: return the default values.
                     has_default_value = True
@@ -147,8 +150,6 @@ def get_params(evaluator, func, var_args):
                             m = _error_argument_count(func, len(var_args))
                             analysis.add(evaluator, 'type-error-too-few-arguments',
                                          calling_va, message=m)
-            else:
-                values = [value]
 
         # Now add to result if it's not one of the previously covered cases.
         if not has_default_value and (not keys_only or param.stars == 2):
@@ -164,16 +165,18 @@ def get_params(evaluator, func, var_args):
         for k in set(param_dict) - keys_used:
             result.append(_gen_param_name_copy(func, var_args, param_dict[k]))
 
-    for key, value in non_matching_keys:
+    for key, va_values in non_matching_keys:
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
             % (func.name, key)
-        analysis.add(evaluator, 'type-error-keyword-argument', value, message=m)
+        for value in va_values:
+            analysis.add(evaluator, 'type-error-keyword-argument', value, message=m)
 
     remaining_params = list(var_arg_iterator)
     if remaining_params:
         m = _error_argument_count(func, len(func.params) + len(remaining_params))
-        analysis.add(evaluator, 'type-error-too-many-arguments',
-                     remaining_params[0][1], message=m)
+        for p in remaining_params[0][1]:
+            analysis.add(evaluator, 'type-error-too-many-arguments',
+                         p, message=m)
     return result
 
 
@@ -185,7 +188,7 @@ def _var_args_iterator(evaluator, var_args):
     for stmt in var_args:
         if not isinstance(stmt, pr.Statement):
             if stmt is None:
-                yield None, None
+                yield None, []
                 continue
             old = stmt
             # generate a statement if it's not already one.
@@ -197,13 +200,16 @@ def _var_args_iterator(evaluator, var_args):
             continue
         if expression_list[0] == '*':
             # *args must be some sort of an array, otherwise -> ignore
-            for array in evaluator.eval_expression_list(expression_list[1:]):
+            arrays = evaluator.eval_expression_list(expression_list[1:])
+            #for array in array[:]:
+            if arrays:
+                array = arrays[0]
                 if isinstance(array, iterable.Array):
                     for field_stmt in array:  # yield from plz!
-                        yield None, field_stmt
+                        yield None, [field_stmt]
                 elif isinstance(array, iterable.Generator):
                     for field_stmt in array.iter_content():
-                        yield None, helpers.FakeStatement([field_stmt])
+                        yield None, [helpers.FakeStatement([field_stmt])]
         # **kwargs
         elif expression_list[0] == '**':
             for array in evaluator.eval_expression_list(expression_list[1:]):
@@ -212,18 +218,18 @@ def _var_args_iterator(evaluator, var_args):
                         # first index, is the key if syntactically correct
                         call = key_stmt.expression_list()[0]
                         if isinstance(call, pr.Name):
-                            yield call, value_stmt
+                            yield call, [value_stmt]
                         elif isinstance(call, pr.Call):
-                            yield call.name, value_stmt
+                            yield call.name, [value_stmt]
         # Normal arguments (including key arguments).
         else:
             if stmt.assignment_details:
                 key_arr, op = stmt.assignment_details[0]
                 # named parameter
                 if key_arr and isinstance(key_arr[0], pr.Call):
-                    yield key_arr[0].name, stmt
+                    yield key_arr[0].name, [stmt]
             else:
-                yield None, stmt
+                yield None, [stmt]
 
 
 def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=None):
