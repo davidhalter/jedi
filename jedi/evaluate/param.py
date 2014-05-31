@@ -114,13 +114,15 @@ def get_params(evaluator, func, var_args):
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
-            values += va_values
+            lst_values = [va_values]
             for key, va_values in var_arg_iterator:
                 # Iterate until a key argument is found.
                 if key:
                     var_arg_iterator.push_back((key, va_values))
                     break
-                values += va_values
+                lst_values.append(va_values)
+            if lst_values[0]:
+                values = [helpers.stmts_to_stmt(v) for v in lst_values]
         elif param.stars == 2:
             # **kwargs param
             array_type = pr.Array.DICT
@@ -202,7 +204,7 @@ def _var_args_iterator(evaluator, var_args):
             # *args must be some sort of an array, otherwise -> ignore
             arrays = evaluator.eval_expression_list(expression_list[1:])
             iterators = [_iterate_star_args(a) for a in arrays]
-            for values in zip_longest(*iterators):
+            for values in list(zip_longest(*iterators)):
                 yield None, [v for v in values if v is not None]
         # **kwargs
         elif expression_list[0] == '**':

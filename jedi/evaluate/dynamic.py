@@ -110,7 +110,6 @@ def search_params(evaluator, param):
                             # only if we have the correct function we execute
                             # it, otherwise just ignore it.
                             evaluator.follow_path(iter(last), s, scope)
-
             return listener.param_possibilities
 
         result = []

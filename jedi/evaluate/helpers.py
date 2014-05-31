@@ -170,7 +170,7 @@ class FakeSubModule():
 
 
 class FakeArray(pr.Array):
-    def __init__(self, values, parent, arr_type=pr.Array.LIST):
+    def __init__(self, values, parent=None, arr_type=pr.Array.LIST):
         p = (0, 0)
         super(FakeArray, self).__init__(FakeSubModule, p, arr_type, parent)
         self.values = values
@@ -191,3 +191,14 @@ class FakeName(pr.Name):
         else:
             names = [(name_or_names, p)]
         super(FakeName, self).__init__(FakeSubModule, names, p, p, parent)
+
+
+def stmts_to_stmt(statements):
+    """
+    Sometimes we want to have something like a result_set and unite some
+    statements in one.
+    """
+    if len(statements) == 1:
+        return statements[0]
+    array = FakeArray(statements, arr_type=pr.Array.NOARRAY)
+    return FakeStatement([array])

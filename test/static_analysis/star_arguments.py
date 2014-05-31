@@ -29,6 +29,8 @@ def nested_twice(*args1):
 nested_twice(2, 3)
 #! 12 type-error-too-few-arguments
 nested_twice(2)
+#! 19 type-error-too-many-arguments
+nested_twice(2, 3, 4)
 
 # -----------------
 # **kwargs
@@ -36,6 +38,8 @@ nested_twice(2)
 
 
 def kwargs_test(**kwargs):
+    # TODO should not be here, but somewhere down there.
+    #! 14 type-error-multiple-values
     return simple2(1, **kwargs)
 
 kwargs_test(c=3, b=2)
