@@ -45,3 +45,7 @@ kwargs_test(c=3, b=2)
 kwargs_test(c=3)
 #! 11 type-error-too-few-arguments
 kwargs_test(b=2)
+#! 22 type-error-keyword-argument
+kwargs_test(b=2, c=3, d=4)
+#! 22 type-error-multiple-values
+kwargs_test(b=2, c=3, a=4)

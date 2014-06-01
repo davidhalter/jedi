@@ -101,8 +101,10 @@ def get_params(evaluator, func, var_args):
                     had_multiple_value_error = True
                     m = ("TypeError: %s() got multiple values for keyword argument '%s'."
                          % (func.name, k))
-                    analysis.add(evaluator, 'type-error-multiple-values',
-                                 var_args, message=m)
+                    calling_va = _get_calling_var_args(evaluator, var_args)
+                    if calling_va is not None:
+                        analysis.add(evaluator, 'type-error-multiple-values',
+                                     calling_va, message=m)
                 else:
                     keys_used.add(k)
                     result.append(_gen_param_name_copy(func, var_args, key_param,
