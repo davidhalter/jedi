@@ -82,6 +82,7 @@ def get_params(evaluator, func, var_args):
     keys_used = set()
     keys_only = False
     va_values = None
+    had_multiple_value_error = False
     for param in func.params[start_offset:]:
         # The value and key can both be null. There, the defaults apply.
         # args / kwargs will just be empty arrays / dicts, respectively.
@@ -97,6 +98,7 @@ def get_params(evaluator, func, var_args):
             else:
                 k = unicode(key)
                 if k in keys_used:
+                    had_multiple_value_error = True
                     m = ("TypeError: %s() got multiple values for keyword argument '%s'."
                          % (func.name, k))
                     analysis.add(evaluator, 'type-error-multiple-values',
@@ -136,15 +138,13 @@ def get_params(evaluator, func, var_args):
                 values = va_values
             else:
                 if param.assignment_details:
-                    # No value: return the default values.
+                    # No value: Return the default values.
                     has_default_value = True
                     result.append(param.get_name())
                     # TODO is this allowed? it changes it long time.
                     param.is_generated = True
                 else:
-                    # If there is no assignment detail, that means there is no
-                    # assignment, just the result. Therefore nothing has to be
-                    # returned.
+                    # No value: Return an empty container
                     values = []
                     if not keys_only and isinstance(var_args, pr.Array):
                         calling_va = _get_calling_var_args(evaluator, var_args)
@@ -166,6 +166,14 @@ def get_params(evaluator, func, var_args):
         # there's nothing to find for certain names.
         for k in set(param_dict) - keys_used:
             result.append(_gen_param_name_copy(func, var_args, param_dict[k]))
+
+            if not non_matching_keys and not had_multiple_value_error:
+                # add a warning only if there's not another one.
+                calling_va = _get_calling_var_args(evaluator, var_args)
+                if calling_va is not None:
+                    m = _error_argument_count(func, len(var_args))
+                    analysis.add(evaluator, 'type-error-too-few-arguments',
+                                 calling_va, message=m)
 
     for key, va_values in non_matching_keys:
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
@@ -201,22 +209,21 @@ def _var_args_iterator(evaluator, var_args):
             continue
         # *args
         if expression_list[0] == '*':
-            # *args must be some sort of an array, otherwise -> ignore
             arrays = evaluator.eval_expression_list(expression_list[1:])
             iterators = [_iterate_star_args(a) for a in arrays]
             for values in list(zip_longest(*iterators)):
                 yield None, [v for v in values if v is not None]
         # **kwargs
         elif expression_list[0] == '**':
+            dct = {}
             for array in evaluator.eval_expression_list(expression_list[1:]):
-                if isinstance(array, iterable.Array):
-                    for key_stmt, value_stmt in array.items():
-                        # first index, is the key if syntactically correct
-                        call = key_stmt.expression_list()[0]
-                        if isinstance(call, pr.Name):
-                            yield call, [value_stmt]
-                        elif isinstance(call, pr.Call):
-                            yield call.name, [value_stmt]
+                for name, (key, value) in _star_star_dict(array).items():
+                    try:
+                        dct[name][1].add(value)
+                    except KeyError:
+                        dct[name] = key, set([value])
+            for key, values in dct.values():
+                yield key, values
         # Normal arguments (including key arguments).
         else:
             if stmt.assignment_details:
@@ -236,7 +243,32 @@ def _iterate_star_args(array):
         for field_stmt in array.iter_content():
             yield helpers.FakeStatement([field_stmt])
     else:
+        # *args must be some sort of an array, otherwise -> ignore
         pass  # TODO need a warning here.
+
+
+def _star_star_dict(array):
+    dct = {}
+    if isinstance(array, iterable.Array):
+        for key_stmt, value_stmt in array.items():
+            # first index, is the key if syntactically correct
+            call = key_stmt.expression_list()[0]
+            if isinstance(call, pr.Name):
+                key = call
+            elif isinstance(call, pr.Call):
+                key = call.name
+            else:
+                continue
+                # raise warning
+            if str(key) not in dct:
+                dct[str(key)] = key, value_stmt
+            else:
+                pass
+                # raise warning
+    else:
+        pass
+        # raise warning
+    return dct
 
 
 def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=None):
