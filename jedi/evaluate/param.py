@@ -1,5 +1,4 @@
 import copy
-from itertools import chain
 
 from jedi._compatibility import unicode, zip_longest
 from jedi.parser import representation as pr
@@ -132,7 +131,7 @@ def get_params(evaluator, func, var_args):
             array_type = pr.Array.DICT
             if non_matching_keys:
                 keys, values = zip(*non_matching_keys)
-                values = list(chain(*values))
+                values = [helpers.stmts_to_stmt(list(v)) for v in values]
             non_matching_keys = []
         else:
             # normal param

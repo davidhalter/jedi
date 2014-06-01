@@ -47,5 +47,17 @@ kwargs_test(c=3)
 kwargs_test(b=2)
 #! 22 type-error-keyword-argument
 kwargs_test(b=2, c=3, d=4)
-#! 22 type-error-multiple-values
+#! 11 type-error-multiple-values
 kwargs_test(b=2, c=3, a=4)
+
+
+def kwargs_nested(**kwargs):
+    return kwargs_test(b=2, **kwargs)
+
+kwargs_nested(c=3)
+#! 13 type-error-too-few-arguments
+kwargs_nested()
+#! 19 type-error-keyword-argument
+kwargs_nested(c=2, d=4)
+#! 13 type-error-multiple-values
+kwargs_nested(c=2, a=4)
