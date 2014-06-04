@@ -75,7 +75,8 @@ def get_params(evaluator, func, var_args):
     for param in func.params:
         param_dict[str(param.get_name())] = param
     # There may be calls, which don't fit all the params, this just ignores it.
-    var_arg_iterator = common.PushBackIterator(_var_args_iterator(evaluator, var_args))
+    va = _unpack_var_args(evaluator, var_args, func.params)
+    var_arg_iterator = common.PushBackIterator(iter(va))
 
     non_matching_keys = []
     keys_used = set()
@@ -125,12 +126,14 @@ def get_params(evaluator, func, var_args):
                     break
                 lst_values.append(va_values)
             if lst_values[0]:
+#print('args', lst_values[0][0].parent.start_pos)
                 values = [helpers.stmts_to_stmt(v) for v in lst_values]
         elif param.stars == 2:
             # **kwargs param
             array_type = pr.Array.DICT
             if non_matching_keys:
                 keys, values = zip(*non_matching_keys)
+# print('kw', values[0][0].parent.start_pos)
                 values = [helpers.stmts_to_stmt(list(v)) for v in values]
             non_matching_keys = []
         else:
@@ -168,7 +171,8 @@ def get_params(evaluator, func, var_args):
         for k in set(param_dict) - keys_used:
             result.append(_gen_param_name_copy(func, var_args, param_dict[k]))
 
-            if not non_matching_keys and not had_multiple_value_error:
+            if not (non_matching_keys or had_multiple_value_error
+                    or param_dict[k].stars):
                 # add a warning only if there's not another one.
                 calling_va = _get_calling_var_args(evaluator, var_args)
                 if calling_va is not None:
@@ -191,15 +195,17 @@ def get_params(evaluator, func, var_args):
     return result
 
 
-def _var_args_iterator(evaluator, var_args):
+def _unpack_var_args(evaluator, var_args, params):
     """
     Yields a key/value pair, the key is None, if its not a named arg.
     """
+    argument_list = []
     # `var_args` is typically an Array, and not a list.
     for stmt in var_args:
         if not isinstance(stmt, pr.Statement):
             if stmt is None:
-                yield None, []
+                argument_list.append((None, []))
+                # TODO generate warning?
                 continue
             old = stmt
             # generate a statement if it's not already one.
@@ -213,7 +219,7 @@ def _var_args_iterator(evaluator, var_args):
             arrays = evaluator.eval_expression_list(expression_list[1:])
             iterators = [_iterate_star_args(a) for a in arrays]
             for values in list(zip_longest(*iterators)):
-                yield None, [v for v in values if v is not None]
+                argument_list.append((None, [v for v in values if v is not None]))
         # **kwargs
         elif expression_list[0] == '**':
             dct = {}
@@ -223,17 +229,28 @@ def _var_args_iterator(evaluator, var_args):
                         dct[name][1].add(value)
                     except KeyError:
                         dct[name] = key, set([value])
+
             for key, values in dct.values():
-                yield key, values
+                for i, p in enumerate(params):
+                    if str(p.get_name()) == str(key) and not p.stars:
+                        try:
+                            if argument_list[i][0] is None:
+                                argument_list[i][1].extend(values)
+                                break
+                        except IndexError:
+                            pass
+                else:
+                    argument_list.append((key, values))
         # Normal arguments (including key arguments).
         else:
             if stmt.assignment_details:
                 key_arr, op = stmt.assignment_details[0]
                 # named parameter
                 if key_arr and isinstance(key_arr[0], pr.Call):
-                    yield key_arr[0].name, [stmt]
+                    argument_list.append((key_arr[0].name, [stmt]))
             else:
-                yield None, [stmt]
+                argument_list.append((None, [stmt]))
+    return argument_list
 
 
 def _iterate_star_args(array):

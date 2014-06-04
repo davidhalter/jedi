@@ -61,3 +61,35 @@ kwargs_nested()
 kwargs_nested(c=2, d=4)
 #! 13 type-error-multiple-values
 kwargs_nested(c=2, a=4)
+
+# -----------------
+# mixed *args/**kwargs
+# -----------------
+
+def simple_mixed(a, b, c):
+    return b
+
+
+def mixed(*args, **kwargs):
+    return simple_mixed(1, *args, **kwargs)
+
+mixed(1, 2)
+mixed(1, c=2)
+mixed(b=2, c=3)
+mixed(c=4, b='')
+
+# need separate functions, otherwise these might swallow the errors
+def mixed2(*args, **kwargs):
+    return simple_mixed(1, *args, **kwargs)
+
+
+#! 6 type-error-too-few-arguments
+mixed2(c=2)
+#! 6 type-error-too-few-arguments
+mixed2(3)
+#! 13 type-error-too-many-arguments
+mixed2(3, 4, 5)
+#! 13 type-error-too-many-arguments
+mixed2(3, 4, c=5)
+#! 6 type-error-multiple-values
+mixed2(3, b=5)

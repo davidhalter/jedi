@@ -26,12 +26,12 @@ def assert_static_analysis(case, actual, desired):
     d = set(desired)
     assert actual == desired, """
 Test %r failed.
-specified, not raised = %s
-missing = %s
+not raised  = %s
+unspecified = %s
 """ % (case, sorted(d - a), sorted(a - d))
 
 
-def test_integration(case, monkeypatch):
+def test_completion(case, monkeypatch):
     if case.skip is not None:
         pytest.skip(case.skip)
     repo_root = helpers.root_dir

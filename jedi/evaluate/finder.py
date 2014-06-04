@@ -54,7 +54,7 @@ class NameFinder(object):
                            % (self._last_filter_name_scope, self.name_str))
                 analysis.add(self._evaluator, err_type, self.name_str, message)
 
-        debug.dbg('finder._names_to_types: %s, old: %s', names, types)
+        debug.dbg('finder._names_to_types: %s -> %s', names, types)
         return self._resolve_descriptors(types)
 
     def scopes(self, search_global=False):
