@@ -34,7 +34,7 @@ class TestSpeed(TestCase):
         s = "from posixpath import join; join('', '')."
         assert len(jedi.Script(s).completions()) > 10  # is a str completion
 
-    @_check_speed(0.1)
+    @_check_speed(0.15)
     def test_scipy_speed(self):
         s = 'import scipy.weave; scipy.weave.inline('
         script = jedi.Script(s, 1, len(s), '')

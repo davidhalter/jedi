@@ -225,6 +225,8 @@ def _unpack_var_args(evaluator, var_args, params):
         elif expression_list[0] == '**':
             dct = {}
             for array in evaluator.eval_expression_list(expression_list[1:]):
+                # Merge multiple kwargs dictionaries, if used with dynamic
+                # parameters.
                 for name, (key, value) in _star_star_dict(array).items():
                     try:
                         dct[name][1].add(value)
@@ -232,6 +234,7 @@ def _unpack_var_args(evaluator, var_args, params):
                         dct[name] = key, set([value])
 
             for key, values in dct.values():
+                # merge **kwargs/*args also for dynamic parameters
                 for i, p in enumerate(params):
                     if str(p.get_name()) == str(key) and not p.stars:
                         try:
@@ -239,11 +242,14 @@ def _unpack_var_args(evaluator, var_args, params):
                         except IndexError:
                             pass
                         else:
-                            if k is None:
+                            if k is None:  # k would imply a named argument
+                                # Don't merge if they orginate at the same
+                                # place. -> type-error-multiple-values
                                 if [v.parent for v in values] != [v.parent for v in vs]:
                                     vs.extend(values)
                                     break
                 else:
+                    # default is to merge
                     argument_list.append((key, values))
         # Normal arguments (including key arguments).
         else:
