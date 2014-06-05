@@ -61,6 +61,8 @@ kwargs_nested()
 kwargs_nested(c=2, d=4)
 #! 13 type-error-multiple-values
 kwargs_nested(c=2, a=4)
+#! 13 type-error-multiple-values
+kwargs_nested(b=3, c=2)
 
 # -----------------
 # mixed *args/**kwargs

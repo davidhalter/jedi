@@ -91,24 +91,25 @@ def get_params(evaluator, func, var_args):
         key, va_values = next(var_arg_iterator, (None, []))
         while key:
             keys_only = True
+            k = unicode(key)
             try:
                 key_param = param_dict[unicode(key)]
             except KeyError:
                 non_matching_keys.append((key, va_values))
             else:
-                k = unicode(key)
-                if k in keys_used:
-                    had_multiple_value_error = True
-                    m = ("TypeError: %s() got multiple values for keyword argument '%s'."
-                         % (func.name, k))
-                    calling_va = _get_calling_var_args(evaluator, var_args)
-                    if calling_va is not None:
-                        analysis.add(evaluator, 'type-error-multiple-values',
-                                     calling_va, message=m)
-                else:
-                    keys_used.add(k)
-                    result.append(_gen_param_name_copy(func, var_args, key_param,
-                                                       values=va_values))
+                result.append(_gen_param_name_copy(func, var_args, key_param,
+                                                   values=va_values))
+
+            if k in keys_used:
+                had_multiple_value_error = True
+                m = ("TypeError: %s() got multiple values for keyword argument '%s'."
+                     % (func.name, k))
+                calling_va = _get_calling_var_args(evaluator, var_args)
+                if calling_va is not None:
+                    analysis.add(evaluator, 'type-error-multiple-values',
+                                 calling_va, message=m)
+            else:
+                keys_used.add(k)
             key, va_values = next(var_arg_iterator, (None, []))
 
         keys = []
@@ -234,11 +235,14 @@ def _unpack_var_args(evaluator, var_args, params):
                 for i, p in enumerate(params):
                     if str(p.get_name()) == str(key) and not p.stars:
                         try:
-                            if argument_list[i][0] is None:
-                                argument_list[i][1].extend(values)
-                                break
+                            k, vs = argument_list[i]
                         except IndexError:
                             pass
+                        else:
+                            if k is None:
+                                if [v.parent for v in values] != [v.parent for v in vs]:
+                                    vs.extend(values)
+                                    break
                 else:
                     argument_list.append((key, values))
         # Normal arguments (including key arguments).
