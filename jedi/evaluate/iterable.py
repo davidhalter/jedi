@@ -180,14 +180,11 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
 
-    def __getitem__(self):
-        return self._array.__getitem__()
-
     def __iter__(self):
-        return self._array.__iter__()
+        return iter(self._array)
 
     def __len__(self):
-        return self._array.__len__()
+        return len(self._array)
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self._array)
@@ -213,6 +210,26 @@ class ArrayMethod(object):
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.name)
+
+
+class MergedArray(Array):
+    def __init__(self, evaluator, arrays):
+        super(MergedArray, self).__init__(evaluator, arrays[-1]._array)
+        self._arrays = arrays
+
+    def get_index_types(self, mixed_index):
+        return list(chain(*(a.values() for a in self._arrays)))
+
+    def get_exact_index_types(self, mixed_index):
+        raise IndexError
+
+    def __iter__(self):
+        for array in self._arrays:
+            for a in array:
+                yield a
+
+    def __len__(self):
+        return sum(len(a) for a in self._arrays)
 
 
 def get_iterator_types(inputs):

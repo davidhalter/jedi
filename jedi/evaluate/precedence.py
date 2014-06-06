@@ -232,15 +232,27 @@ def is_literal(obj):
     return _is_number(obj) or _is_string(obj)
 
 
+def _is_tuple(obj):
+    from jedi.evaluate import iterable
+    return isinstance(obj, iterable.Array) and obj.type == pr.Array.TUPLE
+
+
+def _is_list(obj):
+    from jedi.evaluate import iterable
+    return isinstance(obj, iterable.Array) and obj.type == pr.Array.LIST
+
+
 def _element_calculate(evaluator, left, operator, right):
+    from jedi.evaluate import iterable
     if operator == '*':
         # for iterables, ignore * operations
-        from jedi.evaluate import iterable
         if isinstance(left, iterable.Array) or _is_string(left):
             return [left]
     elif operator == '+':
         if _is_number(left) and _is_number(right) or _is_string(left) and _is_string(right):
             return [create(evaluator, left.obj + right.obj)]
+        elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
+            return [iterable.MergedArray(evaluator, (left, right))]
     elif operator == '-':
         if _is_number(left) and _is_number(right):
             return [create(evaluator, left.obj - right.obj)]
