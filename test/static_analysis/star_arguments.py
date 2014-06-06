@@ -95,3 +95,10 @@ mixed2(3, 4, 5)
 mixed2(3, 4, c=5)
 #! 6 type-error-multiple-values
 mixed2(3, b=5)
+
+# -----------------
+# plain wrong arguments
+# -----------------
+
+#! 12 type-error-star-star-mapping
+simple(1, **[])

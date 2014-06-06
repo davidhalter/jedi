@@ -227,7 +227,8 @@ def _unpack_var_args(evaluator, var_args, params):
             for array in evaluator.eval_expression_list(expression_list[1:]):
                 # Merge multiple kwargs dictionaries, if used with dynamic
                 # parameters.
-                for name, (key, value) in _star_star_dict(array).items():
+                s = _star_star_dict(evaluator, array, expression_list[1:])
+                for name, (key, value) in s.items():
                     try:
                         dct[name][1].add(value)
                     except KeyError:
@@ -275,9 +276,9 @@ def _iterate_star_args(array):
         pass  # TODO need a warning here.
 
 
-def _star_star_dict(array):
+def _star_star_dict(evaluator, array, expression_list):
     dct = {}
-    if isinstance(array, iterable.Array):
+    if isinstance(array, iterable.Array) and array.type == pr.Array.DICT:
         for key_stmt, value_stmt in array.items():
             # first index, is the key if syntactically correct
             call = key_stmt.expression_list()[0]
@@ -294,8 +295,11 @@ def _star_star_dict(array):
                 pass
                 # raise warning
     else:
-        pass
-        # raise warning
+        if expression_list:
+            m = "TypeError: type object argument after ** must be a mapping, not %s" \
+                % (array)
+            analysis.add(evaluator, 'type-error-star-star-mapping',
+                         expression_list[0], message=m)
     return dct
 
 
