@@ -287,13 +287,11 @@ def _star_star_dict(evaluator, array, expression_list):
             elif isinstance(call, pr.Call):
                 key = call.name
             else:
-                continue
-                # raise warning
-            if str(key) not in dct:
-                dct[str(key)] = key, value_stmt
-            else:
-                pass
-                # raise warning
+                continue  # We ignore complicated statements here, for now.
+
+            # If the string is a duplicate, we don't care it's illegal Python
+            # anyway.
+            dct[str(key)] = key, value_stmt
     else:
         if expression_list:
             m = "TypeError: type object argument after ** must be a mapping, not %s" \
