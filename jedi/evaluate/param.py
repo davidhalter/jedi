@@ -75,7 +75,7 @@ def get_params(evaluator, func, var_args):
     for param in func.params:
         param_dict[str(param.get_name())] = param
     # There may be calls, which don't fit all the params, this just ignores it.
-    va = _unpack_var_args(evaluator, var_args, func.params)
+    va = _unpack_var_args(evaluator, var_args, func)
     var_arg_iterator = common.PushBackIterator(iter(va))
 
     non_matching_keys = []
@@ -196,7 +196,7 @@ def get_params(evaluator, func, var_args):
     return result
 
 
-def _unpack_var_args(evaluator, var_args, params):
+def _unpack_var_args(evaluator, var_args, func):
     """
     Yields a key/value pair, the key is None, if its not a named arg.
     """
@@ -218,7 +218,8 @@ def _unpack_var_args(evaluator, var_args, params):
         # *args
         if expression_list[0] == '*':
             arrays = evaluator.eval_expression_list(expression_list[1:])
-            iterators = [_iterate_star_args(a) for a in arrays]
+            iterators = [_iterate_star_args(evaluator, a, expression_list[1:], func)
+                         for a in arrays]
             for values in list(zip_longest(*iterators)):
                 argument_list.append((None, [v for v in values if v is not None]))
         # **kwargs
@@ -227,7 +228,7 @@ def _unpack_var_args(evaluator, var_args, params):
             for array in evaluator.eval_expression_list(expression_list[1:]):
                 # Merge multiple kwargs dictionaries, if used with dynamic
                 # parameters.
-                s = _star_star_dict(evaluator, array, expression_list[1:])
+                s = _star_star_dict(evaluator, array, expression_list[1:], func)
                 for name, (key, value) in s.items():
                     try:
                         dct[name][1].add(value)
@@ -236,7 +237,7 @@ def _unpack_var_args(evaluator, var_args, params):
 
             for key, values in dct.values():
                 # merge **kwargs/*args also for dynamic parameters
-                for i, p in enumerate(params):
+                for i, p in enumerate(func.params):
                     if str(p.get_name()) == str(key) and not p.stars:
                         try:
                             k, vs = argument_list[i]
@@ -264,19 +265,25 @@ def _unpack_var_args(evaluator, var_args, params):
     return argument_list
 
 
-def _iterate_star_args(array):
+def _iterate_star_args(evaluator, array, expression_list, func):
+    from jedi.evaluate.representation import Instance
     if isinstance(array, iterable.Array):
         for field_stmt in array:  # yield from plz!
             yield field_stmt
     elif isinstance(array, iterable.Generator):
         for field_stmt in array.iter_content():
             yield helpers.FakeStatement([field_stmt])
+    elif isinstance(array, Instance) and array.name == 'tuple':
+        pass
     else:
-        # *args must be some sort of an array, otherwise -> ignore
-        pass  # TODO need a warning here.
+        if expression_list:
+            m = "TypeError: %s() argument after * must be a sequence, not %s" \
+                % (func.name, array)
+            analysis.add(evaluator, 'type-error-star',
+                         expression_list[0], message=m)
 
 
-def _star_star_dict(evaluator, array, expression_list):
+def _star_star_dict(evaluator, array, expression_list, func):
     dct = {}
     if isinstance(array, iterable.Array) and array.type == pr.Array.DICT:
         for key_stmt, value_stmt in array.items():
@@ -294,9 +301,9 @@ def _star_star_dict(evaluator, array, expression_list):
             dct[str(key)] = key, value_stmt
     else:
         if expression_list:
-            m = "TypeError: type object argument after ** must be a mapping, not %s" \
-                % (array)
-            analysis.add(evaluator, 'type-error-star-star-mapping',
+            m = "TypeError: %s argument after ** must be a mapping, not %s" \
+                % (func.name, array)
+            analysis.add(evaluator, 'type-error-star-star',
                          expression_list[0], message=m)
     return dct
 

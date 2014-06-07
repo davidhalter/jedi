@@ -100,5 +100,8 @@ mixed2(3, b=5)
 # plain wrong arguments
 # -----------------
 
-#! 12 type-error-star-star-mapping
+#! 12 type-error-star-star
 simple(1, **[])
+
+#! 11 type-error-star
+simple(1, *1)

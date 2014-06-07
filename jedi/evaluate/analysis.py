@@ -16,7 +16,8 @@ CODES = {
     'type-error-too-few-arguments': (6, TypeError, None),
     'type-error-keyword-argument': (7, TypeError, None),
     'type-error-multiple-values': (8, TypeError, None),
-    'type-error-star-star-mapping': (9, TypeError, None),
+    'type-error-star-star': (9, TypeError, None),
+    'type-error-star': (9, TypeError, None),
 }
 
 
