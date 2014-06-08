@@ -55,3 +55,19 @@ default(1, 2, 3)
 default(1, 2, 3, 4)
 
 default(x=1)
+
+# -----------------
+# class arguments
+# -----------------
+
+class Instance():
+    def __init__(self, foo):
+        self.foo = foo
+
+Instance(1).foo
+Instance(foo=1).foo
+
+#! 12 type-error-too-many-arguments
+Instance(1, 2).foo
+#! 8 type-error-too-few-arguments
+Instance().foo

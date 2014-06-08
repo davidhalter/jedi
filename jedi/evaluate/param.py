@@ -72,7 +72,7 @@ def get_params(evaluator, func, var_args):
         result.append(self_name)
 
     param_dict = {}
-    for param in func.params:
+    for param in func.params[start_offset:]:
         param_dict[str(param.get_name())] = param
     # There may be calls, which don't fit all the params, this just ignores it.
     va = _unpack_var_args(evaluator, var_args, func)
@@ -127,14 +127,12 @@ def get_params(evaluator, func, var_args):
                     break
                 lst_values.append(va_values)
             if lst_values[0]:
-#print('args', lst_values[0][0].parent.start_pos)
                 values = [helpers.stmts_to_stmt(v) for v in lst_values]
         elif param.stars == 2:
             # **kwargs param
             array_type = pr.Array.DICT
             if non_matching_keys:
                 keys, values = zip(*non_matching_keys)
-# print('kw', values[0][0].parent.start_pos)
                 values = [helpers.stmts_to_stmt(list(v)) for v in values]
             non_matching_keys = []
         else:
