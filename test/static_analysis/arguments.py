@@ -38,3 +38,20 @@ two_params(1, y=2)
 two_params(1, x=2)
 #! 17 type-error-too-many-arguments
 two_params(1, 2, y=3)
+
+# -----------------
+# default arguments
+# -----------------
+
+def default(x, y=1, z=2):
+    return x
+
+#! 7 type-error-too-few-arguments
+default()
+default(1)
+default(1, 2)
+default(1, 2, 3)
+#! 17 type-error-too-many-arguments
+default(1, 2, 3, 4)
+
+default(x=1)

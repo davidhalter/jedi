@@ -170,10 +170,11 @@ def get_params(evaluator, func, var_args):
         # about the values inside, it's about the names. Jedi needs to now that
         # there's nothing to find for certain names.
         for k in set(param_dict) - keys_used:
-            result.append(_gen_param_name_copy(func, var_args, param_dict[k]))
+            param = param_dict[k]
+            result.append(_gen_param_name_copy(func, var_args, param))
 
             if not (non_matching_keys or had_multiple_value_error
-                    or param_dict[k].stars):
+                    or param.stars or param.assignment_details):
                 # add a warning only if there's not another one.
                 calling_va = _get_calling_var_args(evaluator, var_args)
                 if calling_va is not None:
