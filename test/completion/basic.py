@@ -131,6 +131,12 @@ a = [a if 1.0 else '' for a in [1] if [1.0]]
 #? int() str()
 a[0]
 
+# name resolve should be correct
+left, right = 'a', 'b'
+left, right = [x for x in (left, right)]
+#? str()
+left
+
 # with a dict literal
 #? str()
 [a for a in {1:'x'}][0]
