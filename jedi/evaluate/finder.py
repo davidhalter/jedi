@@ -316,8 +316,7 @@ class NameFinder(object):
         return res_new + evaluator.eval_statement(param, seek_name=unicode(self.name_str))
 
     def _handle_for_loops(self, loop):
-        # Take the first statement (for has always only
-        # one, remember `in`). And follow it.
+        # Take the first statement (for has always only one`in`).
         if not loop.inputs:
             return []
         result = iterable.get_iterator_types(self._evaluator.eval_statement(loop.inputs[0]))
@@ -494,7 +493,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
                     yield scope, _get_defined_names_for_position(scope, position, in_func_scope)
             except StopIteration:
                 reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
-        if scope.isinstance(pr.ForFlow) and scope.is_list_comp:
+        if scope.isinstance(iterable.ListComprehensionFlow):
             # is a list comprehension
             yield scope, scope.get_defined_names(is_internal_call=True)
 

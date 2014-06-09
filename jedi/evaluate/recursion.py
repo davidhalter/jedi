@@ -88,7 +88,7 @@ class _RecursionNode(object):
         if not other:
             return None
 
-        is_list_comp = lambda x: isinstance(x, pr.ForFlow) and x.is_list_comp
+        is_list_comp = lambda x: isinstance(x, iterable.ListComprehensionFlow)
         return self.script == other.script \
             and self.position == other.position \
             and not is_list_comp(self.stmt.parent) \

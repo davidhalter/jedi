@@ -687,11 +687,10 @@ class ForFlow(Flow):
     """
     Used for the for loop, because there are two statement parts.
     """
-    def __init__(self, module, inputs, start_pos, set_stmt, is_list_comp=False):
+    def __init__(self, module, inputs, start_pos, set_stmt):
         super(ForFlow, self).__init__(module, 'for', inputs, start_pos)
 
         self.set_stmt = set_stmt
-        self.is_list_comp = is_list_comp
 
         if set_stmt is not None:
             set_stmt.parent = self.use_as_parent

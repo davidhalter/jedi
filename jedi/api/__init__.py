@@ -260,7 +260,7 @@ class Script(object):
             if not is_completion:
                 # goto_definition returns definitions of its statements if the
                 # cursor is on the assignee. By changing the start_pos of our
-                # "pseud" statement, the Jedi evaluator can find the assignees.
+                # "pseudo" statement, the Jedi evaluator can find the assignees.
                 if user_stmt is not None:
                     eval_stmt.start_pos = user_stmt.end_pos
             scopes = self._evaluator.eval_statement(eval_stmt)
