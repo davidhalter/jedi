@@ -177,6 +177,13 @@ left, right = (i for i in (1, ''))
 #? int()
 left
 
+gen = (i for i in (1,))
+
+#? int()
+next(gen)
+#? 
+gen[0]
+
 # -----------------
 # ternary operator
 # -----------------

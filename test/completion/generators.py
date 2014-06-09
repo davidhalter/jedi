@@ -110,6 +110,18 @@ a
 #? str() float()
 b
 
+
+def simple():
+    yield 1
+    yield ''
+
+a, b = simple()
+#? int()
+a
+#? str()
+b
+
+
 # -----------------
 # More complicated access
 # -----------------
