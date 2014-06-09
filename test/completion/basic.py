@@ -184,6 +184,14 @@ next(gen)
 #? 
 gen[0]
 
+gen = (a for arr in [[1.0]] for a in arr)
+#? float()
+next(gen)
+
+#? int()
+(i for i in (1,)).send()
+
+
 # -----------------
 # ternary operator
 # -----------------

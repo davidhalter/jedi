@@ -181,13 +181,13 @@ class Evaluator(object):
         if pr.Array.is_type(element, pr.Array.NOARRAY):
             try:
                 lst_cmp = element[0].expression_list()[0]
+                if not isinstance(lst_cmp, pr.ListComprehension):
+                    raise IndexError
             except IndexError:
-                pass
+                r = list(itertools.chain.from_iterable(self.eval_statement(s)
+                                                       for s in element))
             else:
-                if isinstance(lst_cmp, pr.ListComprehension):
-                    return [iterable.GeneratorComprehension(self, lst_cmp)]
-            r = list(itertools.chain.from_iterable(self.eval_statement(s)
-                                                   for s in element))
+                r = [iterable.GeneratorComprehension(self, lst_cmp)]
             call_path = element.generate_call_path()
             next(call_path, None)  # the first one has been used already
             return self.follow_path(call_path, r, element.parent)
