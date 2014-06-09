@@ -83,6 +83,7 @@ from jedi.evaluate import stdlib
 from jedi.evaluate import finder
 from jedi.evaluate import compiled
 from jedi.evaluate import precedence
+from jedi.evaluate import helpers
 
 
 class Evaluator(object):
@@ -372,17 +373,25 @@ def filter_private_variable(scope, call_scope, var_name):
 
 
 def _evaluate_list_comprehension(lc, parent=None):
+    # create a for loop, which does the same as list comprehensions
     input = lc.input
     nested_lc = input.expression_list()[0]
     if isinstance(nested_lc, pr.ListComprehension):
         # is nested LC
         input = nested_lc.stmt
-    module = input.get_parent_until()
-    # create a for loop, which does the same as list comprehensions
-    loop = pr.ForFlow(module, [input], lc.stmt.start_pos, lc.middle, True)
-
-    loop.parent = parent or lc.get_parent_until(pr.IsScope)
+    loop = ListComprehensionFlow(lc, input, parent)
 
     if isinstance(nested_lc, pr.ListComprehension):
         loop = _evaluate_list_comprehension(nested_lc, loop)
     return loop
+
+
+class ListComprehensionFlow(pr.ForFlow):
+    """Fake implementation to pretend being a ForFlow."""
+    def __init__(self, list_comprehension, input, parent):
+        lc = list_comprehension
+        sup = super(ListComprehensionFlow, self)
+        sup.__init__(helpers.FakeSubModule, [input], lc.parent.start_pos,
+                     lc.middle, True)
+        self.parent = parent or lc.get_parent_until(pr.IsScope)
+        self.list_comprehension = list_comprehension
