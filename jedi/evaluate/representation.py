@@ -233,13 +233,18 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
 
     def expression_list(self):
         # Copy and modify the array.
-        return [InstanceElement(self.instance._evaluator, self.instance, command, self.is_class_var)
+        return [InstanceElement(self._evaluator, self.instance, command, self.is_class_var)
                 if not isinstance(command, (pr.Operator, Token)) else command
                 for command in self.var.expression_list()]
 
     def __iter__(self):
         for el in self.var.__iter__():
-            yield InstanceElement(self.instance._evaluator, self.instance, el, self.is_class_var)
+            yield InstanceElement(self.instance._evaluator, self.instance, el,
+                                  self.is_class_var)
+
+    def __getitem__(self, index):
+        return InstanceElement(self._evaluator, self.instance, self.var[index],
+                               self.is_class_var)
 
     def __getattr__(self, name):
         return getattr(self.var, name)

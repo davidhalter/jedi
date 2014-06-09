@@ -322,7 +322,7 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
 
     # create an Array (-> needed for *args/**kwargs tuples/dicts)
     arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
-    arr.values = values
+    arr.values = list(values)  # Arrays only work with list.
     key_stmts = []
     for key in keys:
         key_stmts.append(helpers.FakeStatement([key], start_pos))
