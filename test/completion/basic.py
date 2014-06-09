@@ -169,6 +169,15 @@ a[0]
 a[0][0]
 
 # -----------------
+# generator comprehensions
+# -----------------
+
+left, right = (i for i in (1, ''))
+
+#? int()
+left
+
+# -----------------
 # ternary operator
 # -----------------
 

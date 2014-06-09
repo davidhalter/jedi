@@ -170,15 +170,22 @@ class Evaluator(object):
                 return self._eval_precedence(el)
             else:
                 # normal element, no operators
-                return self._eval_statement_element(el)
+                return self.eval_statement_element(el)
 
     def _eval_precedence(self, _precedence):
         left = self.process_precedence_element(_precedence.left)
         right = self.process_precedence_element(_precedence.right)
         return precedence.calculate(self, left, _precedence.operator, right)
 
-    def _eval_statement_element(self, element):
+    def eval_statement_element(self, element):
         if pr.Array.is_type(element, pr.Array.NOARRAY):
+            try:
+                lst_cmp = element[0].expression_list()[0]
+            except IndexError:
+                pass
+            else:
+                if isinstance(lst_cmp, pr.ListComprehension):
+                    return [iterable.GeneratorComprehension(self, lst_cmp)]
             r = list(itertools.chain.from_iterable(self.eval_statement(s)
                                                    for s in element))
             call_path = element.generate_call_path()

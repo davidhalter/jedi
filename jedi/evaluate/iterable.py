@@ -66,6 +66,13 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         analysis.add(self._evaluator, 'type-error-generator', index_array)
         return []
 
+    def get_exact_index_types(self, index):
+        """
+        Exact lookups are used for tuple lookups, which are perfectly fine if
+        used with generators.
+        """
+        return [self.iter_content()[index]]
+
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
                         'asserts', 'doc', 'docstr', 'get_parent_until',
@@ -89,6 +96,15 @@ class GeneratorMethod(object):
 
     def __getattr__(self, name):
         return getattr(self._builtin_func, name)
+
+
+class GeneratorComprehension(Generator):
+    def __init__(self, evaluator, comprehension):
+        super(GeneratorComprehension, self).__init__(evaluator, comprehension, None)
+        self.comprehension = comprehension
+
+    def iter_content(self):
+        return self._evaluator.eval_statement_element(self.comprehension)
 
 
 class Array(use_metaclass(CachedMetaClass, pr.Base)):

@@ -471,6 +471,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     """
     if isinstance(scope, iterable.ListComprehensionFlow):
         position = scope.list_comprehension.parent.start_pos
+
     in_func_scope = scope
     non_flow = scope.get_parent_until(pr.Flow, reverse=True)
     while scope:
