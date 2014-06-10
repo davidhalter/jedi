@@ -191,6 +191,12 @@ next(gen)
 #? int()
 (i for i in (1,)).send()
 
+# issues with different formats
+left, right = (i for i in
+                       ('1', '2'))
+#? str()
+left
+
 
 # -----------------
 # ternary operator

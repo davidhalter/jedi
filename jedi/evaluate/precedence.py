@@ -107,6 +107,8 @@ def _get_number(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
             _syntax_error(el)
             return _get_number(iterator, priority)
         return Precedence(None, el, right)
+    elif isinstance(el, pr.tokenize.Token):
+        return _get_number(iterator, priority)
     else:
         return el
 
