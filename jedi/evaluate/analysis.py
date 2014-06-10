@@ -71,9 +71,9 @@ class Warning(Error):
     pass
 
 
-def add(evaluator, name, jedi_obj, message=None, typ=Error):
+def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
     exception = CODES[name][1]
-    if _check_for_exception_catch(evaluator, jedi_obj, exception):
+    if _check_for_exception_catch(evaluator, jedi_obj, exception, payload):
         return
 
     module_path = jedi_obj.get_parent_until().path
@@ -82,7 +82,8 @@ def add(evaluator, name, jedi_obj, message=None, typ=Error):
     evaluator.analysis.append(instance)
 
 
-def _check_for_exception_catch(evaluator, jedi_obj, exception):
+def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
+    """Returns True if the exception was catched."""
     def check_match(cls):
         return isinstance(cls, CompiledObject) and cls.obj == exception
 
@@ -103,11 +104,38 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception):
                             return True
         return False
 
-    while jedi_obj is not None and not jedi_obj.isinstance(pr.Function, pr.Class):
-        if jedi_obj.isinstance(pr.Flow) and jedi_obj.command == 'try':
-            if check_try_for_except(jedi_obj):
+    def check_hasattr(stmt):
+        expression_list = stmt.expression_list()
+        try:
+            assert len(expression_list) == 1
+            call = expression_list[0]
+            assert isinstance(call, pr.Call) and str(call.name) == 'hasattr'
+            execution = call.execution
+            assert execution and len(execution) == 2
+
+            # check if the names match
+            names = evaluator.eval_statement(execution[1])
+            assert len(names) == 1 and isinstance(names[0], CompiledObject)
+            assert names[0].obj == str(payload[1])
+
+            objects = evaluator.eval_statement(execution[0])
+            return payload[0] in objects
+        except AssertionError:
+            pass
+        return False
+
+    obj = jedi_obj
+    while obj is not None and not obj.isinstance(pr.Function, pr.Class):
+        if obj.isinstance(pr.Flow):
+            # try/except catch check
+            if obj.command == 'try' and check_try_for_except(obj):
                 return True
-        jedi_obj = jedi_obj.parent
+            # hasattr check
+            if exception == AttributeError and obj.command in ('if', 'while'):
+                if obj.inputs and check_hasattr(obj.inputs[0]):
+                    return True
+        obj = obj.parent
+
     return False
 
 

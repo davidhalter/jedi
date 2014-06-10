@@ -55,11 +55,13 @@ except [AttributeError]: pass
 # kind of similar: hasattr
 # -----------------
 
-if hasattr(object, 'undefined'):
+if hasattr(str, 'undefined'):
     str.undefined
     str.upper
     #! 4 attribute-error
     str.undefined2
+    #! 4 attribute-error
+    int.undefined
 else:
     str.upper
     #! 4 attribute-error
