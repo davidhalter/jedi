@@ -49,3 +49,18 @@ try:
     #! 4 attribute-error
     str.not_existing
 except [AttributeError]: pass
+
+
+# -----------------
+# kind of similar: hasattr
+# -----------------
+
+if hasattr(object, 'undefined'):
+    str.undefined
+    str.upper
+    #! 4 attribute-error
+    str.undefined2
+else:
+    str.upper
+    #! 4 attribute-error
+    str.undefined
