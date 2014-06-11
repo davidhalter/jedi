@@ -161,6 +161,9 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
                 if s_new.execution is not None:
                     result += scan_array(s_new.execution, search_name)
                 s_new = s_new.next
+        elif isinstance(c, pr.ListComprehension):
+            for s in c.stmt, c.middle, c.input:
+                result += scan_statement_for_calls(s, search_name)
 
     return result
 

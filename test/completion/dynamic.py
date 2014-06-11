@@ -394,3 +394,13 @@ def third():
     return list(b)
 #? 
 third()[0]
+
+# -----------------
+# list comprehensions
+# -----------------
+
+def from_comprehension(foo):
+    #? float()
+    return foo
+
+[from_comprehension(1.0) for n in (1,)]

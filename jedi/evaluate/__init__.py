@@ -206,10 +206,10 @@ class Evaluator(object):
         # The string tokens are just operations (+, -, etc.)
         elif isinstance(element, compiled.CompiledObject):
             return [element]
-        elif not isinstance(element, Token):
-            return self.eval_call(element)
-        else:
+        elif isinstance(element, Token):
             return []
+        else:
+            return self.eval_call(element)
 
     def eval_call(self, call):
         """Follow a call is following a function, variable, string, etc."""
@@ -219,7 +219,8 @@ class Evaluator(object):
         s = call
         while not s.parent.isinstance(pr.IsScope):
             s = s.parent
-        return self.eval_call_path(path, s.parent, s.start_pos)
+        par = s.parent
+        return self.eval_call_path(path, par, s.start_pos)
 
     def eval_call_path(self, path, scope, position):
         """
