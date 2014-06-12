@@ -307,11 +307,12 @@ class BaseDefinition(object):
         stripped = self._definition
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
-            # We should probably work in `Finder._names_to_types` here.
-            if isinstance(stripped, pr.Function):
-                stripped = er.Function(self._evaluator, stripped)
-            elif isinstance(stripped, pr.Class):
-                stripped = er.Class(self._evaluator, stripped)
+
+        # We should probably work in `Finder._names_to_types` here.
+        if isinstance(stripped, pr.Function):
+            stripped = er.Function(self._evaluator, stripped)
+        elif isinstance(stripped, pr.Class):
+            stripped = er.Class(self._evaluator, stripped)
 
         if stripped.isinstance(pr.Statement):
             return self._evaluator.eval_statement(stripped)
