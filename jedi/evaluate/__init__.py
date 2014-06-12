@@ -192,10 +192,10 @@ class Evaluator(object):
             next(call_path, None)  # the first one has been used already
             return self.follow_path(call_path, r, element.parent)
         elif isinstance(element, pr.ListComprehension):
-            loop = _evaluate_list_comprehension(element)
+            #lc = element.get_most_inner_lc()
             # Caveat: parents are being changed, but this doesn't matter,
             # because nothing else uses it.
-            element.stmt.parent = loop
+            #element.stmt.parent = loop
             return self.eval_statement(element.stmt)
         elif isinstance(element, pr.Lambda):
             return [er.Function(self, element)]
@@ -377,17 +377,3 @@ def filter_private_variable(scope, call_scope, var_name):
                 if s != scope.base.base:
                     return True
     return False
-
-
-def _evaluate_list_comprehension(lc, parent=None):
-    # create a for loop, which does the same as list comprehensions
-    input = lc.input
-    nested_lc = input.expression_list()[0]
-    if isinstance(nested_lc, pr.ListComprehension):
-        # is nested LC
-        input = nested_lc.stmt
-    loop = iterable.ListComprehensionFlow(lc, input, parent)
-
-    if isinstance(nested_lc, pr.ListComprehension):
-        loop = _evaluate_list_comprehension(nested_lc, loop)
-    return loop

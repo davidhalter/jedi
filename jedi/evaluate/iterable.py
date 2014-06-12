@@ -513,13 +513,3 @@ def create_indexes_or_slices(evaluator, index_array):
         return (Slice(evaluator, start, stop, step),)
     else:
         return tuple(evaluator.process_precedence_element(prec))
-
-
-class ListComprehensionFlow(pr.ForFlow):
-    """Fake implementation to pretend being a ForFlow."""
-    def __init__(self, list_comprehension, input, parent):
-        lc = list_comprehension
-        sup = super(ListComprehensionFlow, self)
-        sup.__init__(helpers.FakeSubModule, [input], lc.parent.start_pos, lc.middle)
-        self.parent = parent or lc.get_parent_until(pr.IsScope)
-        self.list_comprehension = list_comprehension

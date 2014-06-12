@@ -1094,7 +1094,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 debug.warning('list comprehension in @%s', start_pos)
                 return None, tok
 
-            return ListComprehension(st, middle, in_clause, self), tok
+            return ListComprehension(self._sub_module, st, middle, in_clause, self), tok
 
         # initializations
         result = []
@@ -1480,22 +1480,29 @@ class Name(Simple):
         return len(self.names)
 
 
-class ListComprehension(Base):
+class ListComprehension(ForFlow):
     """ Helper class for list comprehensions """
-    def __init__(self, stmt, middle, input, parent):
+    def __init__(self, module, stmt, middle, input, parent):
         self.stmt = stmt
         self.middle = middle
         self.input = input
-        for s in stmt, middle, input:
+        for s in middle, input:
             s.parent = self
+        stmt.parent = self._get_most_inner_lc()
         self.parent = parent
 
-    def get_parent_until(self, *args, **kwargs):
-        return Simple.get_parent_until(self, *args, **kwargs)
+        nested_lc = input.expression_list()[0]
+        if isinstance(nested_lc, ListComprehension):
+            # is nested LC
+            input = nested_lc.stmt
+        super(ListComprehension, self).__init__(module, [input],
+                                                stmt.start_pos, middle)
 
-    @property
-    def start_pos(self):
-        return self.stmt.start_pos
+    def _get_most_inner_lc(self):
+        nested_lc = self.input.expression_list()[0]
+        if isinstance(nested_lc, ListComprehension):
+            return nested_lc._get_most_inner_lc()
+        return self
 
     @property
     def end_pos(self):
@@ -1508,6 +1515,31 @@ class ListComprehension(Base):
         statements = self.stmt, self.middle, self.input
         code = [s.get_code().replace('\n', '') for s in statements]
         return "%s for %s in %s" % tuple(code)
+
+
+def _evaluate_list_comprehension(lc, parent=None):
+    # create a for loop, which does the same as list comprehensions
+    input = lc.input
+    nested_lc = input.expression_list()[0]
+    if isinstance(nested_lc, ListComprehension):
+        # is nested LC
+        input = nested_lc.stmt
+    loop = ListComprehensionFlow(lc, input, parent)
+
+    if isinstance(nested_lc, ListComprehension):
+        loop = _evaluate_list_comprehension(nested_lc, loop)
+    return loop
+
+
+class ListComprehensionFlow(ForFlow):
+    """Fake implementation to pretend being a ForFlow."""
+    def __init__(self, list_comprehension, input, parent):
+        lc = list_comprehension
+        sup = super(ListComprehensionFlow, self)
+        module = list_comprehension.get_parent_until()
+        sup.__init__(module, [input], lc.parent.start_pos, lc.middle)
+        self.parent = parent or lc.get_parent_until(IsScope)
+        self.list_comprehension = list_comprehension
 
 
 class Operator(Base):
