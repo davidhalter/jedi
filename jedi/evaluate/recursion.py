@@ -88,6 +88,9 @@ class _RecursionNode(object):
         if not other:
             return None
 
+        # List Comprehensions start on the same line as its statement.
+        # Therefore we have the unfortunate situation of the same start_pos for
+        # two statements.
         is_list_comp = lambda x: isinstance(x, pr.ListComprehension)
         return self.script == other.script \
             and self.position == other.position \

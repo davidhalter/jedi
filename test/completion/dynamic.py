@@ -400,7 +400,8 @@ third()[0]
 # -----------------
 
 def from_comprehension(foo):
-    #? float()
+    #? int() float()
     return foo
 
 [from_comprehension(1.0) for n in (1,)]
+[from_comprehension(n) for n in (1,)]
