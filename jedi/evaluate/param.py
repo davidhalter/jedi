@@ -62,17 +62,8 @@ def _get_calling_var_args(evaluator, var_args):
 
 def get_params(evaluator, func, var_args):
     result = []
-    start_offset = 0
-    from jedi.evaluate.representation import InstanceElement
-    if isinstance(func, InstanceElement):
-        # Care for self -> just exclude it and add the instance
-        start_offset = 1
-        self_name = copy.copy(func.params[0].get_name())
-        self_name.parent = func.instance
-        result.append(self_name)
-
     param_dict = {}
-    for param in func.params[start_offset:]:
+    for param in func.params:
         param_dict[str(param.get_name())] = param
     # There may be calls, which don't fit all the params, this just ignores it.
     va = _unpack_var_args(evaluator, var_args, func)
@@ -83,7 +74,7 @@ def get_params(evaluator, func, var_args):
     keys_only = False
     va_values = None
     had_multiple_value_error = False
-    for param in func.params[start_offset:]:
+    for param in func.params:
         # The value and key can both be null. There, the defaults apply.
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
@@ -200,6 +191,11 @@ def _unpack_var_args(evaluator, var_args, func):
     Yields a key/value pair, the key is None, if its not a named arg.
     """
     argument_list = []
+    from jedi.evaluate.representation import InstanceElement
+    if isinstance(func, InstanceElement):
+        # Include self at this place.
+        argument_list.append((None, [helpers.FakeStatement([func.instance])]))
+
     # `var_args` is typically an Array, and not a list.
     for stmt in var_args:
         if not isinstance(stmt, pr.Statement):

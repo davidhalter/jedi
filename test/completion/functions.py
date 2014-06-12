@@ -242,6 +242,22 @@ def xargs(*args):
 xargs(1)
 xargs('')
 
+
+# *args without a self symbol
+def memoize(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+
+class Something():
+    @memoize
+    def x(self, a, b=1):
+        return a
+
+Something().x(1)
+
+
 # -----------------
 # ** kwargs
 # -----------------
