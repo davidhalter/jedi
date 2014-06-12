@@ -1483,20 +1483,22 @@ class Name(Simple):
 class ListComprehension(ForFlow):
     """ Helper class for list comprehensions """
     def __init__(self, module, stmt, middle, input, parent):
-        self.stmt = stmt
-        self.middle = middle
         self.input = input
-        for s in middle, input:
-            s.parent = self
-        stmt.parent = self._get_most_inner_lc()
-        self.parent = parent
-
         nested_lc = input.expression_list()[0]
         if isinstance(nested_lc, ListComprehension):
             # is nested LC
             input = nested_lc.stmt
+            nested_lc.parent = self
+
         super(ListComprehension, self).__init__(module, [input],
                                                 stmt.start_pos, middle)
+        self.parent = parent
+        self.stmt = stmt
+        self.middle = middle
+        for s in middle, input:
+            s.parent = self
+        # The stmt always refers to the most inner list comprehension.
+        stmt.parent = self._get_most_inner_lc()
 
     def _get_most_inner_lc(self):
         nested_lc = self.input.expression_list()[0]
@@ -1515,31 +1517,6 @@ class ListComprehension(ForFlow):
         statements = self.stmt, self.middle, self.input
         code = [s.get_code().replace('\n', '') for s in statements]
         return "%s for %s in %s" % tuple(code)
-
-
-def _evaluate_list_comprehension(lc, parent=None):
-    # create a for loop, which does the same as list comprehensions
-    input = lc.input
-    nested_lc = input.expression_list()[0]
-    if isinstance(nested_lc, ListComprehension):
-        # is nested LC
-        input = nested_lc.stmt
-    loop = ListComprehensionFlow(lc, input, parent)
-
-    if isinstance(nested_lc, ListComprehension):
-        loop = _evaluate_list_comprehension(nested_lc, loop)
-    return loop
-
-
-class ListComprehensionFlow(ForFlow):
-    """Fake implementation to pretend being a ForFlow."""
-    def __init__(self, list_comprehension, input, parent):
-        lc = list_comprehension
-        sup = super(ListComprehensionFlow, self)
-        module = list_comprehension.get_parent_until()
-        sup.__init__(module, [input], lc.parent.start_pos, lc.middle)
-        self.parent = parent or lc.get_parent_until(IsScope)
-        self.list_comprehension = list_comprehension
 
 
 class Operator(Base):

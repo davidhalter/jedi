@@ -470,8 +470,8 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     :rtype: [(pr.Scope, [pr.Name])]
     :return: Return an generator that yields a pair of scope and names.
     """
-    if isinstance(scope, iterable.ListComprehensionFlow):
-        position = scope.list_comprehension.parent.start_pos
+    if isinstance(scope, pr.ListComprehension):
+        position = scope.parent.start_pos
 
     in_func_scope = scope
     non_flow = scope.get_parent_until(pr.Flow, reverse=True)
@@ -497,7 +497,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
                     yield scope, _get_defined_names_for_position(scope, position, in_func_scope)
             except StopIteration:
                 reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
-        if scope.isinstance(iterable.ListComprehensionFlow):
+        if scope.isinstance(pr.ListComprehension):
             # is a list comprehension
             yield scope, scope.get_defined_names(is_internal_call=True)
 

@@ -192,10 +192,6 @@ class Evaluator(object):
             next(call_path, None)  # the first one has been used already
             return self.follow_path(call_path, r, element.parent)
         elif isinstance(element, pr.ListComprehension):
-            #lc = element.get_most_inner_lc()
-            # Caveat: parents are being changed, but this doesn't matter,
-            # because nothing else uses it.
-            #element.stmt.parent = loop
             return self.eval_statement(element.stmt)
         elif isinstance(element, pr.Lambda):
             return [er.Function(self, element)]
