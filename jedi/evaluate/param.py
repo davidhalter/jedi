@@ -66,8 +66,8 @@ def get_params(evaluator, func, var_args):
     for param in func.params:
         param_dict[str(param.get_name())] = param
     # There may be calls, which don't fit all the params, this just ignores it.
-    va = _unpack_var_args(evaluator, var_args, func)
-    var_arg_iterator = common.PushBackIterator(iter(va))
+    unpacked_va = _unpack_var_args(evaluator, var_args, func)
+    var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = []
     keys_used = set()
@@ -143,7 +143,7 @@ def get_params(evaluator, func, var_args):
                     if not keys_only and isinstance(var_args, pr.Array):
                         calling_va = _get_calling_var_args(evaluator, var_args)
                         if calling_va is not None:
-                            m = _error_argument_count(func, len(var_args))
+                            m = _error_argument_count(func, len(unpacked_va))
                             analysis.add(evaluator, 'type-error-too-few-arguments',
                                          calling_va, message=m)
 
@@ -167,7 +167,7 @@ def get_params(evaluator, func, var_args):
                 # add a warning only if there's not another one.
                 calling_va = _get_calling_var_args(evaluator, var_args)
                 if calling_va is not None:
-                    m = _error_argument_count(func, len(var_args))
+                    m = _error_argument_count(func, len(unpacked_va))
                     analysis.add(evaluator, 'type-error-too-few-arguments',
                                  calling_va, message=m)
 
@@ -179,7 +179,7 @@ def get_params(evaluator, func, var_args):
 
     remaining_params = list(var_arg_iterator)
     if remaining_params:
-        m = _error_argument_count(func, len(func.params) + len(remaining_params))
+        m = _error_argument_count(func, len(unpacked_va))
         for p in remaining_params[0][1]:
             analysis.add(evaluator, 'type-error-too-many-arguments',
                          p, message=m)
@@ -333,5 +333,11 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
 
 
 def _error_argument_count(func, actual_count):
-    return ('TypeError: %s() takes exactly %s arguments (%s given).'
-            % (func.name, len(func.params), actual_count))
+    default_arguments = sum(1 for p in func.params if p.assignment_details)
+
+    if default_arguments == 0:
+        before = 'exactly '
+    else:
+        before = 'from %s to ' % (len(func.params) - default_arguments)
+    return ('TypeError: %s() takes %s%s arguments (%s given).'
+            % (func.name, before, len(func.params), actual_count))
