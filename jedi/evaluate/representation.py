@@ -412,10 +412,10 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         return getattr(self.base_func, name)
 
     def __repr__(self):
-        decorated_func = self._decorated_func()
+        dec_func = self._decorated_func()
         dec = ''
-        if decorated_func is not None and decorated_func != self:
-            dec = " is " + repr(decorated_func)
+        if not self.is_decorated and self.base_func.decorators:
+            dec = " is " + repr(dec_func)
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
