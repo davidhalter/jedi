@@ -5,5 +5,5 @@ class partial():
         self.__keywords = keywords
 
     def __call__(self, *args, **kwargs):
-        # I know this doesn't work in Python, but Jedi can this ;-)
+        # I know this doesn't work in Python, but in Jedi it does ;-)
         return self.__func(*self.__args, *args, **self.keywords, **kwargs)

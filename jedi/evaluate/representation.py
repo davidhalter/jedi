@@ -444,7 +444,7 @@ class FunctionExecution(Executable):
         if func.is_generator and not evaluate_generator:
             return [iterable.Generator(self._evaluator, func, self.var_args)]
         else:
-            stmts = docstrings.find_return_types(self._evaluator, func)
+            stmts = list(docstrings.find_return_types(self._evaluator, func))
             for r in self.returns:
                 if r is not None:
                     stmts += self._evaluator.eval_statement(r)
