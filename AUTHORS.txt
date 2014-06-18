@@ -24,5 +24,6 @@ Steven Silvester (@blink1073)
 Colin Duquesnoy (@ColinDuquesnoy) <colin.duquesnoy@gmail.com>
 Jorgen Schaefer (@jorgenschaefer) <contact@jorgenschaefer.de>
 Fredrik Bergroth (@fbergroth)
+Mathias Fußenegger (@mfussenegger)
 
 Note: (@user) means a github user name.
