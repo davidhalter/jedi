@@ -25,5 +25,6 @@ Colin Duquesnoy (@ColinDuquesnoy) <colin.duquesnoy@gmail.com>
 Jorgen Schaefer (@jorgenschaefer) <contact@jorgenschaefer.de>
 Fredrik Bergroth (@fbergroth)
 Mathias Fußenegger (@mfussenegger)
+Syohei Yoshida (@syohex) <syohex@gmail.com>
 
 Note: (@user) means a github user name.
