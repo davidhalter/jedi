@@ -197,7 +197,7 @@ def _unpack_var_args(evaluator, var_args, func):
         argument_list.append((None, [helpers.FakeStatement([func.instance])]))
 
     # `var_args` is typically an Array, and not a list.
-    for stmt in var_args:
+    for stmt in _reorder_var_args(var_args):
         if not isinstance(stmt, pr.Statement):
             if stmt is None:
                 argument_list.append((None, []))
@@ -258,6 +258,28 @@ def _unpack_var_args(evaluator, var_args, func):
             else:
                 argument_list.append((None, [stmt]))
     return argument_list
+
+
+def _reorder_var_args(var_args):
+    """
+    Reordering var_args is necessary, because star args sometimes appear after
+    named argument, but in the actual order it's prepended.
+    """
+    named_index = None
+    new_args = []
+    for i, stmt in enumerate(var_args):
+        if named_index is None and stmt.assignment_details:
+            named_index = i
+
+        if named_index is not None:
+            expression_list = stmt.expression_list()
+            if expression_list and expression_list[0] == '*':
+                new_args.insert(named_index, stmt)
+                named_index += 1
+                continue
+
+        new_args.append(stmt)
+    return new_args
 
 
 def _iterate_star_args(evaluator, array, expression_list, func):

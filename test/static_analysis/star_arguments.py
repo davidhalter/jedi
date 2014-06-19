@@ -32,6 +32,12 @@ nested_twice(2)
 #! 19 type-error-too-many-arguments
 nested_twice(2, 3, 4)
 
+
+# A named argument can be located before *args.
+def star_args_with_named(*args):
+    return simple2(c='', *args)
+
+star_args_with_named(1, 2)
 # -----------------
 # **kwargs
 # -----------------
