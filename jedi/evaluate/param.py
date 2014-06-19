@@ -268,15 +268,16 @@ def _reorder_var_args(var_args):
     named_index = None
     new_args = []
     for i, stmt in enumerate(var_args):
-        if named_index is None and stmt.assignment_details:
-            named_index = i
+        if isinstance(stmt, pr.Statement):
+            if named_index is None and stmt.assignment_details:
+                named_index = i
 
-        if named_index is not None:
-            expression_list = stmt.expression_list()
-            if expression_list and expression_list[0] == '*':
-                new_args.insert(named_index, stmt)
-                named_index += 1
-                continue
+            if named_index is not None:
+                expression_list = stmt.expression_list()
+                if expression_list and expression_list[0] == '*':
+                    new_args.insert(named_index, stmt)
+                    named_index += 1
+                    continue
 
         new_args.append(stmt)
     return new_args
