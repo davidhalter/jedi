@@ -26,7 +26,7 @@ setup(name='jedi',
       keywords='python completion refactoring vim',
       long_description=readme,
       packages=['jedi', 'jedi.parser', 'jedi.evaluate', 'jedi.evaluate.compiled', 'jedi.api'],
-      package_data={'jedi': ['evlaluate/evaluate/compiled/fake/*.pym']},
+      package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
       platforms=['any'],
       classifiers=[
           'Development Status :: 4 - Beta',
