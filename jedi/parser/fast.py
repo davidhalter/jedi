@@ -16,7 +16,7 @@ from jedi.parser.tokenize import (source_tokens, Token, FLOWS, NEWLINE,
                                   COMMENT, ENDMARKER)
 
 
-class Module(pr.Simple, pr.Module):
+class Module(pr.Module, pr.Simple):
     def __init__(self, parsers):
         super(Module, self).__init__(self, (1, 0))
         self.parsers = parsers

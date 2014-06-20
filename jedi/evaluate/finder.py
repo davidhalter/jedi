@@ -478,8 +478,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     while scope:
         # We don't want submodules to report if we have modules.
         # As well as some non-scopes, which are parents of list comprehensions.
-        if isinstance(scope, pr.SubModule) and scope.parent \
-                or not isinstance(scope, pr.IsScope):
+        if isinstance(scope, pr.SubModule) and scope.parent or not scope.is_scope():
             scope = scope.parent
             continue
         # `pr.Class` is used, because the parent is never `Class`.

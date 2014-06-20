@@ -191,12 +191,18 @@ class Simple(Base):
         return "<%s: %s@%s,%s>" % \
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
 
+    def is_scope(self):
+        return False
+
 
 class IsScope(Base):
     __slots__ = ()
 
+    def is_scope(self):
+        return True
 
-class Scope(Simple, IsScope, DocstringMixin):
+
+class Scope(IsScope, Simple, DocstringMixin):
     """
     Super class for the parser tree, which represents the state of a python
     text file.

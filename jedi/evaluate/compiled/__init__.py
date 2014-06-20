@@ -169,6 +169,9 @@ class CompiledObject(Base):
                 faked_subscopes.append(f)
         return faked_subscopes
 
+    def is_scope(self):
+        return True
+
     def get_self_attributes(self):
         return []  # Instance compatibility
 
