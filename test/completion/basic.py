@@ -151,6 +151,10 @@ def listen(arg):
         x
 
 listen(['' for x in [1]])
+#? str()
+([str for x in []])[0]
+
+
 # -----------------
 # nested list comprehensions
 # -----------------

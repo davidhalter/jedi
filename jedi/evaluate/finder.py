@@ -476,8 +476,10 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     in_func_scope = scope
     non_flow = scope.get_parent_until(pr.Flow, reverse=True)
     while scope:
-        if isinstance(scope, pr.SubModule) and scope.parent:
-            # we don't want submodules to report if we have modules.
+        # We don't want submodules to report if we have modules.
+        # As well as some non-scopes, which are parents of list comprehensions.
+        if isinstance(scope, pr.SubModule) and scope.parent \
+                or not isinstance(scope, pr.IsScope):
             scope = scope.parent
             continue
         # `pr.Class` is used, because the parent is never `Class`.
