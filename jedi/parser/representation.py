@@ -1008,18 +1008,19 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
 
                 if isinstance(tok, Base):
                     # the token is a Name, which has already been parsed
-                    if isinstance(tok, ListComprehension):
-                        # it's not possible to set it earlier
-                        tok.parent = self
-                    elif tok == 'lambda':
-                        lambd, tok = parse_lambda(token_iterator)
-                        if lambd is not None:
-                            token_list.append(lambd)
-                    elif tok == 'for':
-                        list_comp, tok = parse_list_comp(token_iterator, token_list,
-                                                         start_pos, tok.end_pos)
-                        if list_comp is not None:
-                            token_list = [list_comp]
+                    if not level:
+                        if isinstance(tok, ListComprehension):
+                            # it's not possible to set it earlier
+                            tok.parent = self
+                        elif tok == 'lambda':
+                            lambd, tok = parse_lambda(token_iterator)
+                            if lambd is not None:
+                                token_list.append(lambd)
+                        elif tok == 'for':
+                            list_comp, tok = parse_list_comp(token_iterator, token_list,
+                                                             start_pos, tok.end_pos)
+                            if list_comp is not None:
+                                token_list = [list_comp]
 
                     if tok in closing_brackets:
                         level -= 1

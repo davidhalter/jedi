@@ -144,6 +144,13 @@ left
 ##? str()
 {a-1:b for a,b in {1:'a', 3:1.0}.items()}[0]
 
+# list comprehensions should also work in combination with functions
+def listen(arg):
+    for x in arg:
+        #? str()
+        x
+
+listen(['' for x in [1]])
 # -----------------
 # nested list comprehensions
 # -----------------
