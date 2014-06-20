@@ -7,7 +7,7 @@ include sith.py
 include conftest.py
 include pytest.ini
 include tox.ini
-include jedi/mixin/*.pym
+include jedi/evaluate/compiled/fake/*.pym
 recursive-include test *
 recursive-include docs *
 recursive-exclude * *.pyc
