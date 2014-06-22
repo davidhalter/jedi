@@ -12,6 +12,7 @@ Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
 check for -> a is a string). There's big potential in these checks.
 """
 import sys
+from itertools import chain
 
 from jedi._compatibility import hasattr, unicode, u, reraise
 from jedi.parser import representation as pr, tokenize
@@ -231,7 +232,7 @@ class NameFinder(object):
                     # global keyword handling.
                     types += evaluator.find_types(typ.parent.parent, str(name))
                 else:
-                    types += self._remove_statements(typ)
+                    types += self._remove_statements(typ, name)
             else:
                 if isinstance(typ, pr.Class):
                     typ = er.Class(evaluator, typ)
@@ -239,6 +240,7 @@ class NameFinder(object):
                     typ = er.Function(evaluator, typ)
                 elif isinstance(typ, pr.Module):
                     typ = er.ModuleWrapper(evaluator, typ)
+
                 if typ.isinstance(er.Function) and resolve_decorator:
                     typ = typ.get_decorated_func()
                 types.append(typ)
@@ -249,7 +251,7 @@ class NameFinder(object):
 
         return types
 
-    def _remove_statements(self, stmt):
+    def _remove_statements(self, stmt, name):
         """
         This is the part where statements are being stripped.
 
@@ -269,6 +271,15 @@ class NameFinder(object):
             stmt = stmt.var
 
         types += evaluator.eval_statement(stmt, seek_name=unicode(self.name_str))
+
+        # check for `except X as y` usages, because y needs to be instantiated.
+        p = stmt.parent
+        if isinstance(p, pr.Flow) and p.command == 'except' \
+                and p.get_defined_names(is_internal_call=True) == [name]:
+            # TODO check for types that are not classes and add it to the
+            # static analysis report.
+            types = list(chain.from_iterable(
+                         evaluator.execute(t) for t in types))
 
         if check_instance is not None:
             # class renames

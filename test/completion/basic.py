@@ -332,6 +332,17 @@ except ImportError, i_b:
     #? ImportError()
     i_b
 
+
+class MyException(Exception):
+    def __init__(self, my_attr):
+        self.my_attr = my_attr
+
+try:
+    raise MyException(1)
+except MyException as e:
+    #? ['my_attr']
+    e.my_attr
+
 # -----------------
 # continuations
 # -----------------
