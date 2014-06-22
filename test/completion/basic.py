@@ -342,6 +342,10 @@ try:
 except MyException as e:
     #? ['my_attr']
     e.my_attr
+    #? 22 ['my_attr']
+    for x in e.my_attr:
+        pass
+
 
 # -----------------
 # continuations
