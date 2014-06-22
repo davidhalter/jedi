@@ -76,6 +76,12 @@ return_one(''.undefined_attribute)
 
 [r for r in [1, 2]]
 
+# some random error throw
+class NotCalled():
+    def match_something(self, param):
+        seems_to_need_an_assignment = param
+        return [value.match_something() for value in []]
+
 # -----------------
 # decorators
 # -----------------
