@@ -274,6 +274,8 @@ class Script(object):
             stmt = r.module.statements[-1]
         except IndexError:
             raise NotFoundError()
+        if isinstance(stmt, pr.KeywordStatement):
+            stmt = stmt.stmt
         if not isinstance(stmt, pr.Statement):
             raise NotFoundError()
 

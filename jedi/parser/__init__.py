@@ -557,6 +557,8 @@ class Parser(object):
                 if stmt is not None:
                     stmt.parent = use_as_parent_scope
                 try:
+                    func.statements.append(pr.KeywordStatement(tok_str, s,
+                                           use_as_parent_scope, stmt))
                     func.returns.append(stmt)
                     # start_pos is the one of the return statement
                     stmt.start_pos = s

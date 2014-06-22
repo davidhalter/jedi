@@ -50,6 +50,10 @@ func()
 #? list()
 assert []
 
+def focus_return():
+    #? list
+    return []
+
 
 # -----------------
 # for loops
