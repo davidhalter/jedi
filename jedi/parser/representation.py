@@ -820,6 +820,9 @@ class KeywordStatement(Base):
         if stmt is not None:
             stmt.parent = self
 
+    def is_scope(self):
+        return False
+
     def __repr__(self):
         return "<%s(%s): %s>" % (type(self).__name__, self.name, self.stmt)
 

@@ -566,6 +566,7 @@ class Parser(object):
                 stmt, tok = self._parse_statement()
                 if stmt is not None:
                     stmt.parent = use_as_parent_scope
+                    self._scope.statements.append(stmt)
                     self._scope.asserts.append(stmt)
             elif tok_str in STATEMENT_KEYWORDS:
                 stmt, _ = self._parse_statement()
