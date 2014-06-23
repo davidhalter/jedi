@@ -85,7 +85,10 @@ def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
 def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
     """Returns True if the exception was catched."""
     def check_match(cls):
-        return isinstance(cls, CompiledObject) and cls.obj == exception
+        try:
+            return isinstance(cls, CompiledObject) and issubclass(exception, cls.obj)
+        except TypeError:
+            return False
 
     def check_try_for_except(obj):
         while obj.next is not None:
@@ -94,6 +97,7 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
                 # No import implies a `except:` catch, which catches
                 # everything.
                 return True
+
             for i in obj.inputs:
                 except_classes = evaluator.eval_statement(i)
                 for cls in except_classes:

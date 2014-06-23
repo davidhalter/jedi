@@ -61,6 +61,11 @@ except Undefined:
 # inheritance
 # -----------------
 
+try:
+    undefined
+except Exception:
+    pass
+
 # should catch everything
 try:
     undefined
