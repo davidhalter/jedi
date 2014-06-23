@@ -147,8 +147,10 @@ def get_module_statements(module):
     def add_stmts(stmts):
         new = set()
         for stmt in stmts:
-            if isinstance(stmt, pr.Scope):
-                new |= add_stmts(stmt.inputs)
+            if isinstance(stmt, pr.Flow):
+                while stmt is not None:
+                    new |= add_stmts(stmt.inputs)
+                    stmt = stmt.next
                 continue
             if isinstance(stmt, pr.KeywordStatement):
                 stmt = stmt.stmt

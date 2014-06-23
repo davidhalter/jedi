@@ -50,6 +50,13 @@ try:
     str.not_existing
 except [AttributeError]: pass
 
+# Should be able to detect errors in except statement as well.
+try:
+    pass
+#! 7 name-error
+except Undefined:
+    pass
+
 
 # -----------------
 # kind of similar: hasattr
