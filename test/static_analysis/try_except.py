@@ -57,6 +57,15 @@ try:
 except Undefined:
     pass
 
+# -----------------
+# inheritance
+# -----------------
+
+# should catch everything
+try:
+    undefined
+except:
+    pass
 
 # -----------------
 # kind of similar: hasattr

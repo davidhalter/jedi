@@ -90,6 +90,10 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
     def check_try_for_except(obj):
         while obj.next is not None:
             obj = obj.next
+            if not obj.inputs:
+                # No import implies a `except:` catch, which catches
+                # everything.
+                return True
             for i in obj.inputs:
                 except_classes = evaluator.eval_statement(i)
                 for cls in except_classes:
