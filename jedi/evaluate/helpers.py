@@ -186,6 +186,13 @@ class FakeStatement(pr.Statement):
         self.set_expression_list(expression_list)
 
 
+class FakeImport(pr.Import):
+    def __init__(self, name, parent):
+        p = 0, 0
+        super(FakeImport, self).__init__(FakeSubModule, p, p, name)
+        self.parent = parent
+
+
 class FakeName(pr.Name):
     def __init__(self, name_or_names, parent=None):
         p = 0, 0

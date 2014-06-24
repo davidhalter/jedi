@@ -11,6 +11,8 @@ So, why is there also a ``Class`` class here? Well, there are decorators and
 they change classes in Python 3.
 """
 import copy
+import os
+import pkgutil
 
 from jedi._compatibility import use_metaclass, unicode
 from jedi.parser import representation as pr
@@ -539,6 +541,10 @@ class ModuleWrapper(pr.Module):
         self._evaluator = evaluator
         self._module = module
 
+    def scope_names_generator(self):
+        yield self, self.get_defined_names()
+        yield self, self._sub_modules()
+
     @memoize_default()
     def get_defined_names(self):
         names = ['__file__', '__package__', '__doc__', '__name__', '__version__']
@@ -546,6 +552,19 @@ class ModuleWrapper(pr.Module):
         parent = Instance(self._evaluator, compiled.create(self._evaluator, str))
         module_attributes = [helpers.FakeName(n, parent) for n in names]
         return self._module.get_defined_names() + module_attributes
+
+    @memoize_default()
+    def _sub_modules(self):
+        path = self._module.path
+        names = []
+        if path.endswith(os.path.sep + '__init__.py'):
+            mods = pkgutil.iter_modules([os.path.dirname(path)])
+            for module_loader, name, is_pkg in mods:
+                name = helpers.FakeName(name)
+                imp = helpers.FakeImport(name, self)
+                name.parent = imp
+                names.append(name)
+        return names
 
     def __getattr__(self, name):
         return getattr(self._module, name)

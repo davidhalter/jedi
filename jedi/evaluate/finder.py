@@ -73,8 +73,8 @@ class NameFinder(object):
                 gen = self.scope.scope_names_generator
             except AttributeError:
                 if isinstance(self.scope, er.Class):
-                    # classes are only available directly via chaining?
-                    # strange stuff...
+                    # Classes don't have a positional limitation of their
+                    # state. It's the whole class.
                     names = self.scope.get_defined_names()
                 else:
                     names = _get_defined_names_for_position(self.scope, self.position)
@@ -118,7 +118,7 @@ class NameFinder(object):
 
         self._last_filter_name_scope = name_list_scope
         scope_txt = (self.scope if self.scope == name_list_scope
-                     else ('%s-%s' % self.scope, name_list_scope))
+                     else '%s-%s' % (self.scope, name_list_scope))
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
                   scope_txt, u(result), self.position)
         return result
