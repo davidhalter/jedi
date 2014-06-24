@@ -117,8 +117,10 @@ class NameFinder(object):
                 break
 
         self._last_filter_name_scope = name_list_scope
-        debug.dbg('finder.filter_name "%s" in (%s-%s): %s@%s', self.name_str,
-                  self.scope, name_list_scope, u(result), self.position)
+        scope_txt = (self.scope if self.scope == name_list_scope
+                     else ('%s-%s' % self.scope, name_list_scope))
+        debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
+                  scope_txt, u(result), self.position)
         return result
 
     def _check_getattr(self, inst):

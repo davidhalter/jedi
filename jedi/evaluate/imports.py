@@ -238,7 +238,8 @@ class NestedImportModule(pr.Module):
         return getattr(self._module, name)
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self._module)
+        return "<%s: %s of %s>" % (self.__class__.__name__, self._module,
+                                   self._nested_import)
 
 
 class StarImportModule(pr.Module):
