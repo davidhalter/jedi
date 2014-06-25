@@ -331,7 +331,7 @@ class _Importer(object):
                     new = os.path.sep.join(parts[:i])
                     in_path.append(new)
 
-        return in_path + sys_path.sys_path_with_modifications(self.module)
+        return in_path + sys_path.sys_path_with_modifications(self._evaluator, self.module)
 
     def follow(self, evaluator):
         scope, rest = self.follow_file_system()

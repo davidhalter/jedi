@@ -3,6 +3,7 @@ import sys
 
 from jedi._compatibility import exec_function, unicode
 from jedi.parser import representation as pr
+from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
 
@@ -22,8 +23,8 @@ def get_sys_path():
     return [p for p in sys.path if p != ""]
 
 
-#@cache.memoize_default([]) TODO add some sort of cache again.
-def sys_path_with_modifications(module):
+@memoize_default(evaluator_is_first_arg=True)
+def sys_path_with_modifications(evaluator, module):
     def execute_code(code):
         c = "import os; from os.path import *; result=%s"
         variables = {'__file__': module.path}
