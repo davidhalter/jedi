@@ -41,6 +41,14 @@ x = 'upp' + 'e'
 #? str.upper
 getattr(str, x + 'r')
 
+a = "a"*3
+#? str()
+a
+a = 3 * "a"
+#? str()
+a
+
+
 # -----------------
 # assignments
 # -----------------
