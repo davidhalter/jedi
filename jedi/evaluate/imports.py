@@ -12,7 +12,6 @@ This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
 import os
-import re
 import pkgutil
 import sys
 from itertools import chain
@@ -511,7 +510,7 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
 
 def _load_module(path=None, source=None, name=None, sys_path=None):
     def load(source):
-        dotted_path = path and _reverse_fs_path(path, sys_path)
+        dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
         if path is not None and path.endswith('.py') \
                 and not dotted_path in settings.auto_import_modules:
             if source is None:
@@ -527,26 +526,6 @@ def _load_module(path=None, source=None, name=None, sys_path=None):
     cached = cache.load_parser(path, name)
     return load(source) if cached is None else cached.module
 
-
-def _reverse_fs_path(fs_path, sys_path=None):
-    """
-    Changes `/usr/lib/python3.4/email/utils.py` to `email.utils`.  I.e.
-    compares the path with sys.path and then returns the dotted_path. If the
-    path is not in the sys.path, just returns None.
-    """
-    sep = os.path.sep
-    shortest = None
-    sys_path = get_sys_path()
-    for s in sys_path:
-        if fs_path.startswith(s):
-            path = fs_path[len(s):].strip(sep)
-            path = re.sub('\.[^%s]*|%s__init__.py$' % (sep, sep), '', path)
-            dotted = '.'.join(path.split(sep))
-            # At this point dotted could be both `lib-dynload.datetime` and
-            # `datetime`. The shorter one is typically the module we want.
-            if shortest is None or len(shortest) > len(dotted):
-                shortest = dotted
-    return shortest
 
 def get_modules_containing_name(mods, name):
     """

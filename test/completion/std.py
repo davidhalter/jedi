@@ -114,3 +114,12 @@ def huhu(db):
     """
     #? sqlite3.Connection()
     db
+
+# -----------------
+# hashlib
+# -----------------
+
+import hashlib
+
+#? ['md5']
+hashlib.md5

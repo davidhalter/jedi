@@ -208,7 +208,31 @@ class CompiledName(FakeName):
         pass  # Just ignore this, FakeName tries to overwrite the parent attribute.
 
 
+def dotted_from_fs_path(fs_path, sys_path=None):
+    """
+    Changes `/usr/lib/python3.4/email/utils.py` to `email.utils`.  I.e.
+    compares the path with sys.path and then returns the dotted_path. If the
+    path is not in the sys.path, just returns None.
+    """
+    sep = os.path.sep
+    shortest = None
+    if sys_path is None:
+        sys_path = get_sys_path()
+    for s in sys_path:
+        if fs_path.startswith(s):
+            path = fs_path[len(s):].strip(sep)
+            path = re.sub('\.[^%s]*|%s__init__.py$' % (sep, sep), '', path)
+            dotted = path.split(sep)
+            dotted = '.'.join(dotted)
+            # At this point dotted could be both `lib-dynload.datetime` and
+            # `datetime`. The shorter one is typically the module we want.
+            if shortest is None or len(shortest) > len(dotted):
+                shortest = dotted
+    return shortest
+
+
 def load_module(path, name):
+    """
     if not name:
         name = os.path.basename(path)
         name = name.rpartition('.')[0]  # cut file type (normally .so)
@@ -230,17 +254,22 @@ def load_module(path, name):
         else:
             path = os.path.dirname(path)
 
+    """
+    if path is not None:
+        dotted_path = dotted_from_fs_path(path)
+    else:
+        dotted_path = name
+
     sys_path = get_sys_path()
-    if path:
-        sys_path.insert(0, path)
+    if dotted_path is None:
+        p, _, dotted_path = path.partition(os.path.sep)
+        sys_path.insert(0, p)
 
     temp, sys.path = sys.path, sys_path
-    try:
-        module = __import__(name, {}, {}, dot_path[:-1])
-    except AttributeError:
-        # use sys.modules, because you cannot access some modules
-        # directly. -> github issue #59
-        module = sys.modules[name]
+    __import__(dotted_path)
+    # Just access the cache after import, because of #59 as well as the very
+    # complicated import structure of Python.
+    module = sys.modules[dotted_path]
     sys.path = temp
     return CompiledObject(module)
 

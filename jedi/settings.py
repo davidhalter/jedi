@@ -180,7 +180,9 @@ dynamic_flow_information = True
 Check for `isinstance` and other information to infer a type.
 """
 
-auto_import_modules = ['hashlib']
+auto_import_modules = [
+    'hashlib',  # setattr
+]
 """
 Modules that are not analyzed but imported, although they contain Python code.
 This improves autocompletion for libraries that use ``setattr`` or
