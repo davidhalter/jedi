@@ -187,9 +187,10 @@ class FakeStatement(pr.Statement):
 
 
 class FakeImport(pr.Import):
-    def __init__(self, name, parent):
+    def __init__(self, name, parent, level=0):
         p = 0, 0
-        super(FakeImport, self).__init__(FakeSubModule, p, p, name)
+        super(FakeImport, self).__init__(FakeSubModule, p, p, name,
+                                         relative_count=level)
         self.parent = parent
 
 

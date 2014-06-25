@@ -76,7 +76,7 @@ return_one(''.undefined_attribute)
 
 [r for r in [1, 2]]
 
-# some random error throw
+# some random error that showed up
 class NotCalled():
     def match_something(self, param):
         seems_to_need_an_assignment = param

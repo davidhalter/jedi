@@ -561,7 +561,8 @@ class ModuleWrapper(pr.Module):
             mods = pkgutil.iter_modules([os.path.dirname(path)])
             for module_loader, name, is_pkg in mods:
                 name = helpers.FakeName(name)
-                imp = helpers.FakeImport(name, self)
+                # It's obviously a relative import to the current module.
+                imp = helpers.FakeImport(name, self, level=1)
                 name.parent = imp
                 names.append(name)
         return names
