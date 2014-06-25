@@ -42,6 +42,7 @@ Dynamic stuff
 .. autodata:: dynamic_params
 .. autodata:: dynamic_params_for_other_modules
 .. autodata:: additional_dynamic_modules
+.. autodata:: auto_import_modules
 
 
 .. _settings-recursion:
@@ -177,6 +178,13 @@ is practical for IDEs, that want to administrate their modules themselves.
 dynamic_flow_information = True
 """
 Check for `isinstance` and other information to infer a type.
+"""
+
+auto_import_modules = ['hashlib']
+"""
+Modules that are not analyzed but imported, although they contain Python code.
+This improves autocompletion for libraries that use ``setattr`` or
+``globals()`` modifications a lot.
 """
 
 # ----------------

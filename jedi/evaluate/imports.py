@@ -511,7 +511,9 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
 
 def _load_module(path=None, source=None, name=None, sys_path=None):
     def load(source):
-        if path is not None and path.endswith('.py'):
+        dotted_path = path and _reverse_fs_path(path, sys_path)
+        if path is not None and path.endswith('.py') \
+                and not dotted_path in settings.auto_import_modules:
             if source is None:
                 with open(path, 'rb') as f:
                     source = f.read()
