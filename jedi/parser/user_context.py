@@ -144,20 +144,22 @@ class UserContext(object):
     def get_context(self, yield_positions=False):
         self.get_path_until_cursor()  # In case _start_cursor_pos is undefined.
         pos = self._start_cursor_pos
+        start_cursor = pos[1]
         while True:
             # remove non important white space
             line = self.get_line(pos[0])
             while True:
-                if pos[1] == 0:
+                if start_cursor == 0:
                     line = self.get_line(pos[0] - 1)
                     if line and line[-1] == '\\':
                         pos = pos[0] - 1, len(line) - 1
                         continue
                     else:
                         break
-
-                if line[pos[1] - 1].isspace():
-                    pos = pos[0], pos[1] - 1
+                if len(line) <= start_cursor:
+                    break
+                if line[start_cursor - 1].isspace():
+                    pos = pos[0], start_cursor - 1
                 else:
                     break
 
