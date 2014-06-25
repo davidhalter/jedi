@@ -12,6 +12,7 @@ This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
 import os
+import re
 import pkgutil
 import sys
 from itertools import chain
@@ -22,7 +23,7 @@ from jedi import debug
 from jedi import cache
 from jedi.parser import fast
 from jedi.parser import representation as pr
-from jedi.evaluate import sys_path
+from jedi.evaluate.sys_path import get_sys_path, sys_path_with_modifications
 from jedi.evaluate import helpers
 from jedi import settings
 from jedi.common import source_to_unicode
@@ -105,7 +106,7 @@ class ImportWrapper(pr.Base):
                     if self._is_relative_import():
                         rel_path = self._importer.get_relative_path() + '/__init__.py'
                         if os.path.exists(rel_path):
-                            m = load_module(rel_path)
+                            m = _load_module(rel_path)
                             names += m.get_defined_names()
             else:
                 if on_import_stmt and isinstance(scope, pr.Module) \
@@ -331,7 +332,7 @@ class _Importer(object):
                     new = os.path.sep.join(parts[:i])
                     in_path.append(new)
 
-        return in_path + sys_path.sys_path_with_modifications(self._evaluator, self.module)
+        return in_path + sys_path_with_modifications(self._evaluator, self.module)
 
     def follow(self, evaluator):
         scope, rest = self.follow_file_system()
@@ -358,7 +359,7 @@ class _Importer(object):
                 sys_path_mod.append(temp_path)
                 old_path, temp_path = temp_path, os.path.dirname(temp_path)
         else:
-            sys_path_mod = list(sys_path.get_sys_path())
+            sys_path_mod = list(get_sys_path())
 
         return self._follow_sys_path(sys_path_mod)
 
@@ -461,9 +462,9 @@ class _Importer(object):
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
-            return load_module(path, source), rest
+            return _load_module(path, source, sys_path=sys_path), rest
         else:
-            return load_module(name=path), rest
+            return _load_module(name=path, sys_path=sys_path), rest
 
 
 def follow_imports(evaluator, scopes):
@@ -508,7 +509,7 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
     return set(modules)
 
 
-def load_module(path=None, source=None, name=None):
+def _load_module(path=None, source=None, name=None, sys_path=None):
     def load(source):
         if path is not None and path.endswith('.py'):
             if source is None:
@@ -524,6 +525,26 @@ def load_module(path=None, source=None, name=None):
     cached = cache.load_parser(path, name)
     return load(source) if cached is None else cached.module
 
+
+def _reverse_fs_path(fs_path, sys_path=None):
+    """
+    Changes `/usr/lib/python3.4/email/utils.py` to `email.utils`.  I.e.
+    compares the path with sys.path and then returns the dotted_path. If the
+    path is not in the sys.path, just returns None.
+    """
+    sep = os.path.sep
+    shortest = None
+    sys_path = get_sys_path()
+    for s in sys_path:
+        if fs_path.startswith(s):
+            path = fs_path[len(s):].strip(sep)
+            path = re.sub('\.[^%s]*|%s__init__.py$' % (sep, sep), '', path)
+            dotted = '.'.join(path.split(sep))
+            # At this point dotted could be both `lib-dynload.datetime` and
+            # `datetime`. The shorter one is typically the module we want.
+            if shortest is None or len(shortest) > len(dotted):
+                shortest = dotted
+    return shortest
 
 def get_modules_containing_name(mods, name):
     """
@@ -542,7 +563,7 @@ def get_modules_containing_name(mods, name):
         with open(path, 'rb') as f:
             source = source_to_unicode(f.read())
             if name in source:
-                return load_module(path, source)
+                return _load_module(path, source)
 
     # skip non python modules
     mods = set(m for m in mods if not isinstance(m, compiled.CompiledObject))
