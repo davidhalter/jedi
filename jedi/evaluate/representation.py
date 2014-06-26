@@ -318,9 +318,10 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         return result + list(type_cls.get_defined_names())
 
     def get_subscope_by_name(self, name):
-        for sub in reversed(self.subscopes):
-            if sub.name.get_code() == name:
-                return sub
+        for s in [self] + self.get_super_classes():
+            for sub in reversed(s.subscopes):
+                if sub.name.get_code() == name:
+                    return sub
         raise KeyError("Couldn't find subscope.")
 
     def is_callable(self):
