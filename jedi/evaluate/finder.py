@@ -50,17 +50,14 @@ class NameFinder(object):
                 and not (isinstance(self.name_str, pr.NamePart)
                          and isinstance(self.name_str.parent.parent, pr.Param)):
             if not isinstance(self.name_str, (str, unicode)):  # TODO Remove?
-                err_type = 'name-error' if search_global else 'attribute-error'
-                if err_type == 'name-error':
+                if search_global:
                     message = ("NameError: name '%s' is not defined."
                                % self.name_str)
+                    analysis.add(self._evaluator, 'name-error', self.name_str,
+                                 message)
                 else:
-                    message = ('AttributeError: %s has no attribute %s.'
-                               % (self._last_filter_name_scope, self.name_str))
-                    payload = self.name_str
                     analysis.add_attribute_error(self._evaluator,
-                                                 self.name_str, message,
-                                                 self.scope)
+                                                 self.scope, self.name_str)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, types)
         return self._resolve_descriptors(types)

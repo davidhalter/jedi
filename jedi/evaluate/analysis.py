@@ -82,10 +82,25 @@ def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
     evaluator.analysis.append(instance)
 
 
-def add_attribute_error(evaluator, jedi_obj, message, scope):
-    typ = Error
-    payload = scope, jedi_obj  # jedi_obj is a name_part.
-    add(evaluator, 'attribute-error', jedi_obj, message, typ, payload)
+def add_attribute_error(evaluator, scope, name_part):
+    message = ('AttributeError: %s has no attribute %s.' % (scope, name_part))
+    from jedi.evaluate.representation import Instance
+    # Check for __getattr__/__getattribute__ existance and issue a warning
+    # instead of an error, if that happens.
+    if isinstance(scope, Instance):
+        typ = Warning
+        try:
+            scope.get_subscope_by_name('__getattr__')
+        except KeyError:
+            try:
+                scope.get_subscope_by_name('__getattribute__')
+            except KeyError:
+                typ = Error
+    else:
+        typ = Error
+
+    payload = scope, name_part
+    add(evaluator, 'attribute-error', name_part, message, typ, payload)
 
 
 def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
