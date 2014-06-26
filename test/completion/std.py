@@ -27,6 +27,9 @@ next(reversed())
 #? str()
 next(open(''))
 
+#? int()
+{'a':2}.setdefault('a', 3)
+
 # -----------------
 # re
 # -----------------

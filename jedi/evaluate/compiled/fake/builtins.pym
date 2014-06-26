@@ -199,6 +199,10 @@ class dict():
         except KeyError:
             return d
 
+    def setdefault(self, k, d):
+        # TODO maybe also return the content
+        return d
+
 
 class reversed():
     def __init__(self, sequence):
