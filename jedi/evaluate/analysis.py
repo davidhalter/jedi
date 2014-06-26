@@ -82,6 +82,20 @@ def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
     evaluator.analysis.append(instance)
 
 
+def _check_for_setattr(instance):
+    """
+    Check if there's any setattr method inside an instance. If so, return True.
+    """
+    module = instance.get_parent_until()
+    try:
+        stmts = module.used_names['setattr']
+    except KeyError:
+        return False
+
+    return any(instance.start_pos < stmt.start_pos < instance.end_pos
+               for stmt in stmts)
+
+
 def add_attribute_error(evaluator, scope, name_part):
     message = ('AttributeError: %s has no attribute %s.' % (scope, name_part))
     from jedi.evaluate.representation import Instance
@@ -95,7 +109,8 @@ def add_attribute_error(evaluator, scope, name_part):
             try:
                 scope.get_subscope_by_name('__getattribute__')
             except KeyError:
-                typ = Error
+                if not _check_for_setattr(scope):
+                    typ = Error
     else:
         typ = Error
 

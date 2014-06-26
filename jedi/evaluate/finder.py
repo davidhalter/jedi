@@ -115,7 +115,6 @@ class NameFinder(object):
             if result:
                 break
 
-        self._last_filter_name_scope = name_list_scope
         scope_txt = (self.scope if self.scope == name_list_scope
                      else '%s-%s' % (self.scope, name_list_scope))
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
