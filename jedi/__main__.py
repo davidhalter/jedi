@@ -24,6 +24,12 @@ elif len(argv) > 1 and argv[1] == 'force':
                 paths.append(os.path.join(root, filename))
     else:
         paths = [path]
-    for path in paths:
-        for error in jedi.Script(path=path)._analysis():
-            print(error)
+
+    try:
+        for path in paths:
+            for error in jedi.Script(path=path)._analysis():
+                print(error)
+    except Exception:
+        if '--pdb' in sys.argv:
+            import pdb
+            pdb.post_mortem()
