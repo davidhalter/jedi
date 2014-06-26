@@ -9,6 +9,7 @@ from . import helpers
 from . import run
 from . import refactor
 import jedi
+from jedi.evaluate.analysis import Warning
 
 
 def pytest_addoption(parser):
@@ -105,7 +106,9 @@ class StaticAnalysisCase(object):
 
     def run(self, compare_cb):
         analysis = jedi.Script(self._source, path=self._path)._analysis()
-        analysis = [(r.line, r.column, r.name) for r in analysis]
+        typ_str = lambda inst: 'warning ' if isinstance(inst, Warning) else ''
+        analysis = [(r.line, r.column, typ_str(r) + r.name)
+                    for r in analysis]
         compare_cb(self, analysis, self.collect_comparison())
 
     def __repr__(self):

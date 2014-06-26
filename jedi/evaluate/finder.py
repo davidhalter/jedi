@@ -57,8 +57,10 @@ class NameFinder(object):
                 else:
                     message = ('AttributeError: %s has no attribute %s.'
                                % (self._last_filter_name_scope, self.name_str))
-                analysis.add(self._evaluator, err_type, self.name_str, message,
-                             payload=(self.scope, self.name_str))
+                    payload = self.name_str
+                    analysis.add_attribute_error(self._evaluator,
+                                                 self.name_str, message,
+                                                 self.scope)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, types)
         return self._resolve_descriptors(types)

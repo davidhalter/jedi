@@ -82,8 +82,20 @@ def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
     evaluator.analysis.append(instance)
 
 
+def add_attribute_error(evaluator, jedi_obj, message, scope):
+    typ = Error
+    payload = scope, jedi_obj  # jedi_obj is a name_part.
+    add(evaluator, 'attribute-error', jedi_obj, message, typ, payload)
+
+
 def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
-    """Returns True if the exception was catched."""
+    """
+    Checks if a jedi object (e.g. `Statement`) sits inside a try/catch and
+    doesn't count as an error (if equal to `exception`).
+    Also checks `hasattr` for AttributeErrors and uses the `payload` to compare
+    it.
+    Returns True if the exception was catched.
+    """
     def check_match(cls):
         try:
             return isinstance(cls, CompiledObject) and issubclass(exception, cls.obj)
