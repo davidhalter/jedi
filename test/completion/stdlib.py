@@ -127,3 +127,16 @@ import hashlib
 
 #? ['md5']
 hashlib.md5
+
+# -----------------
+# copy
+# -----------------
+
+import copy
+a = copy.deepcopy(1)
+#? int()
+a
+
+a = copy.copy()
+#? 
+a
