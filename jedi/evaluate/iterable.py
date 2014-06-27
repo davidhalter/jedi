@@ -127,16 +127,16 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         if [index for index in indexes if isinstance(index, Slice)]:
             return [self]
 
-        if len(indexes) == 1:
-            # This is indexing only one element, with a fixed index number,
-            # otherwise it just ignores the index (e.g. [1+1]).
-            index = indexes[0]
+        lookup_done = False
+        types = []
+        for index in indexes:
             if isinstance(index, compiled.CompiledObject) \
                     and isinstance(index.obj, (int, str, unicode)):
                 with common.ignored(KeyError, IndexError, TypeError):
-                    return self.get_exact_index_types(index.obj)
+                    types += self.get_exact_index_types(index.obj)
+                    lookup_done = True
 
-        return self.values()
+        return types if lookup_done else self.values()
 
     @memoize_default(NO_DEFAULT)
     def values(self):

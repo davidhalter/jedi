@@ -179,8 +179,9 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             # TODO support slices in a more general way.
             indexes = []
 
+        index = helpers.FakeStatement(indexes, parent=compiled.builtin)
         try:
-            return self.execute_subscope_by_name('__getitem__', indexes)
+            return self.execute_subscope_by_name('__getitem__', [index])
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
             return []

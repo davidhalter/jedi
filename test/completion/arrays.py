@@ -276,6 +276,17 @@ class GetItem():
 #? str()
 GetItem("")[1]
 
+class GetItemWithList():
+    def __getitem__(self, index):
+        return [1, 1.0, 's'][index]
+
+#? float()
+GetItemWithList()[1]
+
+for i in 0, 2:
+    #? int() str()
+    GetItemWithList()[i]
+
 # -----------------
 # conversions
 # -----------------

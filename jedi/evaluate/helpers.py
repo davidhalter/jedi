@@ -180,10 +180,11 @@ class FakeArray(pr.Array):
 
 
 class FakeStatement(pr.Statement):
-    def __init__(self, expression_list, start_pos=(0, 0)):
+    def __init__(self, expression_list, start_pos=(0, 0), parent=None):
         p = start_pos
         super(FakeStatement, self).__init__(FakeSubModule, expression_list, p, p)
         self.set_expression_list(expression_list)
+        self.parent = parent
 
 
 class FakeImport(pr.Import):

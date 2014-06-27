@@ -97,7 +97,7 @@ def builtins_reversed(evaluator, obj, params):
             # would fail in certain cases like `reversed(x).__iter__` if we
             # just returned the result directly.
             stmts = [FakeStatement([r]) for r in rev]
-            objects = (FakeArray(stmts, objects[0].parent),)
+            objects = (iterable.Array(evaluator, FakeArray(stmts, objects[0].parent)),)
     return [er.Instance(evaluator, obj, objects)]
 
 

@@ -83,6 +83,7 @@ from jedi.evaluate import stdlib
 from jedi.evaluate import finder
 from jedi.evaluate import compiled
 from jedi.evaluate import precedence
+from jedi.evaluate.helpers import FakeStatement
 
 
 class Evaluator(object):
@@ -124,6 +125,8 @@ class Evaluator(object):
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
         expression_list = stmt.expression_list()
+        if isinstance(stmt, FakeStatement):
+            return expression_list  # Already contains the results.
 
         result = self.eval_expression_list(expression_list)
 
