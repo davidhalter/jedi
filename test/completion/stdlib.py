@@ -133,10 +133,19 @@ hashlib.md5
 # -----------------
 
 import copy
-a = copy.deepcopy(1)
 #? int()
-a
+copy.deepcopy(1)
 
-a = copy.copy()
 #? 
-a
+copy.copy()
+
+# -----------------
+# json
+# -----------------
+
+# We don't want any results for json, because it depends on IO.
+import json
+#? 
+json.load('asdf')
+#? 
+json.loads('[1]')

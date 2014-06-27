@@ -124,4 +124,8 @@ _implemented = {
         'copy': _return_first_param,
         'deepcopy': _return_first_param,
     },
+    'json': {
+        'load': lambda *args: [],
+        'loads': lambda *args: [],
+    },
 }
