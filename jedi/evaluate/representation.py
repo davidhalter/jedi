@@ -303,12 +303,9 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         # TODO mro!
         for cls in self.get_super_classes():
             # Get the inherited names.
-            if isinstance(cls, compiled.CompiledObject):
-                super_result += cls.get_defined_names()
-            else:
-                for i in cls.instance_names():
-                    if not in_iterable(i, result):
-                        super_result.append(i)
+            for i in cls.instance_names():
+                if not in_iterable(i, result):
+                    super_result.append(i)
         result += super_result
         return result
 

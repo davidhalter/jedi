@@ -82,16 +82,19 @@ class CompiledObject(Base):
             return CompiledObject(c, self.parent)
         return self
 
-    @underscore_memoization
     def get_defined_names(self):
+        if inspect.ismodule(self.obj):
+            return self.instance_names()
+        else:
+            return type_names + self.instance_names()
+
+    @underscore_memoization
+    def instance_names(self):
         names = []
         cls = self._cls()
         for name in dir(cls.obj):
             names.append(CompiledName(cls, name))
         return names
-
-    def instance_names(self):
-        return self.get_defined_names()
 
     def get_subscope_by_name(self, name):
         if name in dir(self._cls().obj):
@@ -355,10 +358,6 @@ def _a_generator(foo):
     yield 42
     yield foo
 
-builtin = Builtin(_builtins)
-magic_function_class = CompiledObject(type(load_module), parent=builtin)
-generator_obj = CompiledObject(_a_generator(1.0))
-
 
 def _create_from_name(module, parent, name):
     faked = fake.get_faked(module.obj, parent.obj, name)
@@ -375,6 +374,13 @@ def _create_from_name(module, parent, name):
         # -> just set it to None
         obj = None
     return CompiledObject(obj, parent)
+
+
+builtin = Builtin(_builtins)
+magic_function_class = CompiledObject(type(load_module), parent=builtin)
+generator_obj = CompiledObject(_a_generator(1.0))
+type_names = []  # Need this, because it's return in get_defined_names.
+type_names = builtin.get_by_name('type').get_defined_names()
 
 
 def compiled_objects_cache(func):

@@ -31,6 +31,10 @@ next(open(''))
 #? int()
 {'a':2}.setdefault('a', 3)
 
+# Compiled classes should have the meta class attributes.
+#? ['__itemsize__']
+tuple.__itemsize__
+
 # -----------------
 # re
 # -----------------
