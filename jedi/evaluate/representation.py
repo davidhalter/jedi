@@ -535,7 +535,7 @@ class FunctionExecution(Executable):
         return "<%s of %s>" % (type(self).__name__, self.base)
 
 
-class ModuleWrapper(pr.Module):
+class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
     def __init__(self, evaluator, module):
         self._evaluator = evaluator
         self._module = module

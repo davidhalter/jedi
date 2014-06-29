@@ -100,3 +100,14 @@ string = '%s %s' % (1, 2)
 # Shouldn't raise an error, because `string` is really just a string, not an
 # array or something.
 string.upper
+
+# -----------------
+# imports
+# -----------------
+
+# Star imports and the like in modules should not cause attribute errors in
+# this module.
+import import_tree
+
+import_tree.a
+import_tree.b

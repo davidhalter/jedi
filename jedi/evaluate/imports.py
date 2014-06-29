@@ -167,17 +167,17 @@ class ImportWrapper(pr.Base):
 
         if self.import_path:
             try:
-                scope, rest = self._importer.follow_file_system()
+                module, rest = self._importer.follow_file_system()
             except ModuleNotFound as e:
                 analysis.add(self._evaluator, 'import-error', e.name_part)
                 return []
 
             if self.import_stmt.is_nested() and not self.nested_resolve:
-                scopes = [NestedImportModule(scope, self.import_stmt)]
+                scopes = [NestedImportModule(module, self.import_stmt)]
             else:
-                scopes = [scope]
+                scopes = [module]
 
-            star_imports = remove_star_imports(self._evaluator, scope)
+            star_imports = remove_star_imports(self._evaluator, module)
             if star_imports:
                 scopes = [StarImportModule(scopes[0], star_imports)]
 
@@ -190,7 +190,7 @@ class ImportWrapper(pr.Base):
                     # ``os.path``, because it's a very important one in Python
                     # that is being achieved by messing with ``sys.modules`` in
                     # ``os``.
-                    scopes = self._evaluator.follow_path(iter(rest), [scope], scope)
+                    scopes = self._evaluator.follow_path(iter(rest), [module], module)
             elif rest:
                 if is_goto:
                     scopes = list(chain.from_iterable(
@@ -251,7 +251,8 @@ class StarImportModule(pr.Module):
         self.star_import_modules = star_import_modules
 
     def scope_names_generator(self):
-        yield self._module, self._module.get_defined_names()
+        for module, names in self._module.scope_names_generator():
+            yield module, names
         for s in self.star_import_modules:
             yield s, s.get_defined_names()
 
@@ -360,7 +361,11 @@ class _Importer(object):
         else:
             sys_path_mod = list(get_sys_path())
 
-        return self._follow_sys_path(sys_path_mod)
+        from jedi.evaluate.representation import ModuleWrapper
+        module, rest = self._follow_sys_path(sys_path_mod)
+        if isinstance(module, pr.Module):
+            return ModuleWrapper(self._evaluator, module), rest
+        return module, rest
 
     def namespace_packages(self, found_path, import_path):
         """
@@ -475,11 +480,6 @@ def follow_imports(evaluator, scopes):
     for s in scopes:
         if isinstance(s, pr.Import):
             for r in ImportWrapper(evaluator, s).follow():
-                if isinstance(r, pr.Module) and not isinstance(r,
-                    StarImportModule):
-                    # TODO This check is strange and feels wrong somehow. Change it.
-                    from jedi.evaluate import representation as er
-                    r = er.ModuleWrapper(evaluator, r)
                 result.append(r)
         else:
             result.append(s)
