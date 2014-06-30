@@ -33,3 +33,5 @@ elif len(argv) > 1 and argv[1] == 'force':
         if '--pdb' in sys.argv:
             import pdb
             pdb.post_mortem()
+        else:
+            raise
