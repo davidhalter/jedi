@@ -6,6 +6,7 @@ from jedi.evaluate import iterable
 from jedi import common
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
+from jedi.evaluate.compiled import CompiledObject
 
 
 class ExecutedParam(pr.Param):
@@ -303,6 +304,12 @@ def _iterate_star_args(evaluator, array, expression_list, func):
 
 def _star_star_dict(evaluator, array, expression_list, func):
     dct = {}
+    from jedi.evaluate.representation import Instance
+    if isinstance(array, Instance) and array.name == 'dict':
+        # For now ignore this case. In the future add proper iterators and just
+        # make one call without crazy isinstance checks.
+        return {}
+
     if isinstance(array, iterable.Array) and array.type == pr.Array.DICT:
         for key_stmt, value_stmt in array.items():
             # first index, is the key if syntactically correct
