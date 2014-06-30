@@ -296,7 +296,9 @@ class NameFinder(object):
 
         cls = func.parent.get_parent_until((pr.Class, pr.Function))
 
-        if isinstance(cls, pr.Class) and param.position_nr == 0:
+        from jedi.evaluate.param import ExecutedParam
+        if isinstance(cls, pr.Class) and param.position_nr == 0 \
+                and not isinstance(param, ExecutedParam):
             # This is where we add self - if it has never been
             # instantiated.
             if isinstance(self.scope, er.InstanceElement):

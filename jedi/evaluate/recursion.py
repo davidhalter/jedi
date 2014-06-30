@@ -39,7 +39,7 @@ class RecursionDetector(object):
     def push_stmt(self, stmt):
         self.current = _RecursionNode(stmt, self.current)
         check = self._check_recursion()
-        if check:  # TODO remove False!!!!
+        if check:
             debug.warning('catched stmt recursion: %s against %s @%s', stmt,
                           check.stmt, stmt.start_pos)
             self.pop_stmt()

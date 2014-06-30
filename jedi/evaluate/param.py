@@ -356,7 +356,7 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
 
 
 def _error_argument_count(func, actual_count):
-    default_arguments = sum(1 for p in func.params if p.assignment_details)
+    default_arguments = sum(1 for p in func.params if p.assignment_details or p.stars)
 
     if default_arguments == 0:
         before = 'exactly '
