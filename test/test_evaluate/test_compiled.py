@@ -1,7 +1,8 @@
-from jedi._compatibility import builtins
+from jedi._compatibility import builtins, is_py3
 from jedi.parser.representation import Function
 from jedi.evaluate import compiled
 from jedi.evaluate import Evaluator
+from jedi import Script
 
 
 def test_simple():
@@ -47,3 +48,19 @@ def test_doc():
     """
     obj = compiled.CompiledObject(''.__getnewargs__)
     assert obj.doc == ''
+
+
+def test_string_literals():
+    def typ(string):
+        d = Script(string).goto_definitions()[0]
+        return d.name
+
+    assert typ('""') == 'str'
+    assert typ('r""') == 'str'
+    if is_py3:
+        assert typ('br""') == 'bytes'
+        assert typ('b""') == 'bytes'
+        assert typ('u""') == 'str'
+    else:
+        assert typ('b""') == 'string'
+        assert typ('u""') == 'unicode'

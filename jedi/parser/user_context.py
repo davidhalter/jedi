@@ -91,9 +91,12 @@ class UserContext(object):
             elif tok_str == '.':
                 force_point = False
             elif force_point:
-                # it is reversed, therefore a number is getting recognized
-                # as a floating point number
-                if tok_type == tokenize.NUMBER and tok_str[0] == '.':
+                # Reversed tokenizing, therefore a number is recognized as a
+                # floating point number.
+                # The same is true for string prefixes -> represented as a
+                # combination of string and name.
+                if tok_type == tokenize.NUMBER and tok_str[0] == '.' \
+                        or tok_type == tokenize.NAME and last_type == tokenize.STRING:
                     force_point = False
                 else:
                     break
