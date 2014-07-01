@@ -13,25 +13,27 @@ elif len(argv) > 1 and argv[1] == 'force':
     if '--debug' in sys.argv:
         jedi.set_debug_function()
 
-    path = sys.argv[2]
-    if isdir(path):
-        import fnmatch
-        import os
+    for path in sys.argv[2:]:
+        if path.startswith('--'):
+            continue
+        if isdir(path):
+            import fnmatch
+            import os
 
-        paths = []
-        for root, dirnames, filenames in os.walk(path):
-            for filename in fnmatch.filter(filenames, '*.py'):
-                paths.append(os.path.join(root, filename))
-    else:
-        paths = [path]
-
-    try:
-        for path in paths:
-            for error in jedi.Script(path=path)._analysis():
-                print(error)
-    except Exception:
-        if '--pdb' in sys.argv:
-            import pdb
-            pdb.post_mortem()
+            paths = []
+            for root, dirnames, filenames in os.walk(path):
+                for filename in fnmatch.filter(filenames, '*.py'):
+                    paths.append(os.path.join(root, filename))
         else:
-            raise
+            paths = [path]
+
+        try:
+            for path in paths:
+                for error in jedi.Script(path=path)._analysis():
+                    print(error)
+        except Exception:
+            if '--pdb' in sys.argv:
+                import pdb
+                pdb.post_mortem()
+            else:
+                raise
