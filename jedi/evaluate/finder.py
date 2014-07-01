@@ -16,6 +16,7 @@ from itertools import chain
 
 from jedi._compatibility import hasattr, unicode, u, reraise
 from jedi.parser import representation as pr, tokenize
+from jedi.parser import fast
 from jedi import debug
 from jedi import common
 from jedi import settings
@@ -513,6 +514,8 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
                     for g in scope.scope_names_generator():
                         yield g
                 else:
+                    if isinstance(scope, (pr.SubModule, fast.Module)):
+                        scope = er.ModuleWrapper(evaluator, scope)
                     yield scope, _get_defined_names_for_position(scope, position, in_func_scope)
             except StopIteration:
                 reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
