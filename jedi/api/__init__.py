@@ -205,9 +205,11 @@ class Script(object):
             scopes = list(self._prepare_goto(path, True))
         except NotFoundError:
             scopes = []
-            scope_names_generator = get_names_of_scope(self._evaluator,
-                                                       self._parser.user_scope(),
-                                                       self._pos)
+            scope = self._parser.user_scope()
+            if isinstance(scope, pr.Module) \
+                    and not isinstance(scope, interpreter.InterpreterNamespace):
+                scope = er.ModuleWrapper(self._evaluator, scope)
+            scope_names_generator = get_names_of_scope(self._evaluator, scope, self._pos)
             completions = []
             for scope, name_list in scope_names_generator:
                 for c in name_list:
@@ -286,7 +288,11 @@ class Script(object):
             stmt.start_pos = self._pos
         else:
             stmt.start_pos = user_stmt.start_pos
-        stmt.parent = self._parser.user_scope()
+        scope = self._parser.user_scope()
+        if isinstance(scope, pr.Module) \
+                and not isinstance(scope, interpreter.InterpreterNamespace):
+            scope = er.ModuleWrapper(self._evaluator, scope)
+        stmt.parent = scope
         return stmt
 
     def complete(self):

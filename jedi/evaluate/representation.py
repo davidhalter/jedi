@@ -554,6 +554,10 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
 
     @memoize_default()
     def _sub_modules(self):
+        """
+        Lists modules in the directory of this module (if this module is a
+        package).
+        """
         path = self._module.path
         names = []
         if path.endswith(os.path.sep + '__init__.py'):

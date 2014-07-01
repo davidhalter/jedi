@@ -365,3 +365,13 @@ if foo is not None:
     foo = ''.join(foo)
 #? str()
 foo
+
+# -----------------
+# module attributes
+# -----------------
+
+# Don't move this to imports.py, because there's a star import.
+#? str()
+__file__
+#? ['__file__']
+__file__

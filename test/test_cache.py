@@ -75,9 +75,8 @@ def test_star_import_cache_duration():
 
     # reset values
     jedi.settings.star_import_cache_validity = old
-    length = len(cache._star_import_cache)
+    assert len(cache._star_import_cache) == 1
     cache._star_import_cache = {}
-    assert length == 1
 
 
 def test_cache_call_signatures():
