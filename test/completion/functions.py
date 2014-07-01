@@ -46,6 +46,15 @@ def multi_line_func(a, # comment blabla
 #? str()
 multi_line_func(1,'')
 
+def multi_line_call(b):
+    return b
+
+
+multi_line_call(
+#? int()
+  b=1)
+
+
 # nothing after comma
 def asdf(a):
     return a

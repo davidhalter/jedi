@@ -253,6 +253,8 @@ def _unpack_var_args(evaluator, var_args, func):
         else:
             if stmt.assignment_details:
                 key_arr, op = stmt.assignment_details[0]
+                # Filter error tokens
+                key_arr = [x for x in key_arr if isinstance(x, pr.Call)]
                 # named parameter
                 if key_arr and isinstance(key_arr[0], pr.Call):
                     argument_list.append((key_arr[0].name, [stmt]))
