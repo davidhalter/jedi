@@ -7,6 +7,10 @@ if len(argv) == 2 and argv[1] == 'repl':
     # something else. So just use the keyword ``repl`` for now.
     print(join(dirname(abspath(__file__)), 'api', 'replstartup.py'))
 elif len(argv) > 1 and argv[1] == 'force':
+    """
+    This is a pre-alpha API. You're not supposed to use it at all, except for
+    testing. It will very likely change.
+    """
     import jedi
     import sys
 
