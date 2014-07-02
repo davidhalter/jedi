@@ -15,9 +15,13 @@ def get_sys_path():
         if not venv:
             return
         venv = os.path.abspath(venv)
-        p = os.path.join(
-            venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
-        sys_path.insert(0, p)
+        if os.name == 'nt':
+            p = os.path.join(venv, 'lib', 'site-packages')
+        else:
+            p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
+                             'site-packages')
+        if p not in sys_path:
+            sys_path.insert(0, p)
 
     check_virtual_env(sys.path)
     return [p for p in sys.path if p != ""]

@@ -18,7 +18,7 @@ andviro (@andviro)
 Mike Gilbert (@floppym) <floppym@gentoo.org>
 Aaron Meurer (@asmeurer) <asmeurer@gmail.com>
 Lubos Trilety <ltrilety@redhat.com>
-Akinori Hattori (@hattya)
+Akinori Hattori (@hattya) <hattya@gmail.com>
 srusskih (@srusskih)
 Steven Silvester (@blink1073)
 Colin Duquesnoy (@ColinDuquesnoy) <colin.duquesnoy@gmail.com>
