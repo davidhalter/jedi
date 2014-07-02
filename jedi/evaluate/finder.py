@@ -11,10 +11,9 @@ would check whether a flow has the form of ``if isinstance(a, type_or_tuple)``.
 Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
 check for -> a is a string). There's big potential in these checks.
 """
-import sys
 from itertools import chain
 
-from jedi._compatibility import hasattr, unicode, u, reraise
+from jedi._compatibility import hasattr, unicode, u
 from jedi.parser import representation as pr, tokenize
 from jedi.parser import fast
 from jedi import debug
@@ -513,23 +512,12 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
                 and non_flow.isinstance(er.Function)
                 or isinstance(scope, compiled.CompiledObject)
                 and scope.type() == 'class' and in_func_scope != scope):
-            try:
-                if isinstance(scope, (pr.SubModule, fast.Module)):
-                    scope = er.ModuleWrapper(evaluator, scope)
 
-                for g in scope.scope_names_generator(position):
-                    yield g
-                """
-                try:
-                    sng = scope.scope_names_generator
-                except AttributeError:
-                    yield scope, _get_defined_names_for_position(scope, position, in_func_scope)
-                else:
-                    for g in sng(position):
-                        yield g
-                """
-            except StopIteration:
-                reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
+            if isinstance(scope, (pr.SubModule, fast.Module)):
+                scope = er.ModuleWrapper(evaluator, scope)
+
+            for g in scope.scope_names_generator(position):
+                yield g
         if scope.isinstance(pr.ListComprehension):
             # is a list comprehension
             yield scope, scope.get_defined_names(is_internal_call=True)

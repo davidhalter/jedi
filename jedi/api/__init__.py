@@ -218,26 +218,20 @@ class Script(object):
             for s in scopes:
                 if s.isinstance(er.Function):
                     names = s.get_magic_function_names()
-                else:
-                    if isinstance(s, imports.ImportWrapper):
-                        under = like + self._user_context.get_path_after_cursor()
-                        if under == 'import':
-                            current_line = self._user_context.get_position_line()
-                            if not current_line.endswith('import import'):
-                                continue
-                        a = s.import_stmt.alias
-                        if a and a.start_pos <= self._pos <= a.end_pos:
+                elif isinstance(s, imports.ImportWrapper):
+                    under = like + self._user_context.get_path_after_cursor()
+                    if under == 'import':
+                        current_line = self._user_context.get_position_line()
+                        if not current_line.endswith('import import'):
                             continue
-                        names = s.get_defined_names(on_import_stmt=True)
-                    else:
-                        try:
-                            sng = s.scope_names_generator
-                        except AttributeError:
-                            names = s.get_defined_names()
-                        else:
-                            names = []
-                            for _, new_names in sng():
-                                names += new_names
+                    a = s.import_stmt.alias
+                    if a and a.start_pos <= self._pos <= a.end_pos:
+                        continue
+                    names = s.get_defined_names(on_import_stmt=True)
+                else:
+                    names = []
+                    for _, new_names in s.scope_names_generator():
+                        names += new_names
 
                 for c in names:
                     completions.append((c, s))

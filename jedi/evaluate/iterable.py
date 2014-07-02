@@ -44,7 +44,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         self.var_args = var_args
 
     @underscore_memoization
-    def get_defined_names(self):
+    def _get_defined_names(self):
         """
         Returns a list of names that define a generator, which can return the
         content of a generator.
@@ -56,6 +56,9 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
                 yield helpers.FakeName(name.name, parent)
             else:
                 yield name
+
+    def scope_names_generator(self):
+        yield self, self._get_defined_names()
 
     def iter_content(self):
         """ returns the content of __iter__ """
@@ -172,7 +175,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         values = [self._array.values[index]]
         return _follow_values(self._evaluator, values)
 
-    def get_defined_names(self):
+    def scope_names_generator(self):
         """
         This method generates all `ArrayMethod` for one pr.Array.
         It returns e.g. for a list: append, pop, ...
@@ -181,7 +184,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
         names = scope.get_defined_names()
-        return [ArrayMethod(n) for n in names]
+        yield self, [ArrayMethod(n) for n in names]
 
     @common.safe_property
     def parent(self):
