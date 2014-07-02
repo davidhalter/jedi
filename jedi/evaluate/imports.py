@@ -250,8 +250,8 @@ class StarImportModule(pr.Module):
         self._module = module
         self.star_import_modules = star_import_modules
 
-    def scope_names_generator(self):
-        for module, names in self._module.scope_names_generator():
+    def scope_names_generator(self, position=None):
+        for module, names in self._module.scope_names_generator(position):
             yield module, names
         for s in self.star_import_modules:
             yield s, s.get_defined_names()

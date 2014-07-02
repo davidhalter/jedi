@@ -478,12 +478,18 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     is the most outer scope.
 
     >>> pairs[1]
-    (<SubModule: None@1-5>, [<Name: x@2,0>, <Name: func@3,4>])
+    (<ModuleWrapper: <SubModule: None@1-5>>, [<Name: x@2,0>, <Name: func@3,4>])
+
+    After that we have a few underscore names that have been defined
+
+    >>> pairs[2]
+    (<ModuleWrapper: <SubModule: None@1-5>>, [<FakeName: __file__@0,0>, ...])
+
 
     Finally, it yields names from builtin, if `include_builtin` is
     true (default).
 
-    >>> pairs[2]                                        #doctest: +ELLIPSIS
+    >>> pairs[3]                                        #doctest: +ELLIPSIS
     (<Builtin: ...builtin...>, [<CompiledName: ...>, ...])
 
     :rtype: [(pr.Scope, [pr.Name])]
@@ -510,13 +516,15 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
                 or isinstance(scope, compiled.CompiledObject)
                 and scope.type() == 'class' and in_func_scope != scope):
             try:
-                if isinstance(scope, er.Instance):
-                    for g in scope.scope_names_generator():
-                        yield g
-                else:
-                    if isinstance(scope, (pr.SubModule, fast.Module)):
-                        scope = er.ModuleWrapper(evaluator, scope)
+                if isinstance(scope, (pr.SubModule, fast.Module)):
+                    scope = er.ModuleWrapper(evaluator, scope)
+                try:
+                    sng = scope.scope_names_generator
+                except AttributeError:
                     yield scope, _get_defined_names_for_position(scope, position, in_func_scope)
+                else:
+                    for g in sng(position):
+                        yield g
             except StopIteration:
                 reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
         if scope.isinstance(pr.ListComprehension):
@@ -528,6 +536,9 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
         # results.
         if scope and scope.isinstance(er.Function, pr.Function, er.FunctionExecution):
             in_func_scope = scope
+        if in_func_scope != scope \
+                and isinstance(in_func_scope, (pr.Function, er.FunctionExecution)):
+            position = None
 
     # Add star imports.
     if star_search:

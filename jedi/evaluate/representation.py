@@ -151,7 +151,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
             names.append(InstanceElement(self._evaluator, self, var, True))
         return names
 
-    def scope_names_generator(self):
+    def scope_names_generator(self, position=None):
         """
         An Instance has two scopes: The scope with self names and the class
         scope. Instance variables have priority over the class scope.
@@ -540,17 +540,19 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
         self._evaluator = evaluator
         self._module = module
 
-    def scope_names_generator(self):
-        yield self, self.get_defined_names()
-        yield self, self._sub_modules()
+    def scope_names_generator(self, position=None):
+        yield self, filter_after_position(self.get_defined_names(), position)
+        yield self, self.module_attributes()
+        sub_modules = self._sub_modules()
+        if sub_modules:
+            yield self, self._sub_modules()
 
     @memoize_default()
-    def get_defined_names(self):
+    def module_attributes(self):
         names = ['__file__', '__package__', '__doc__', '__name__', '__version__']
         # All the additional module attributes are strings.
         parent = Instance(self._evaluator, compiled.create(self._evaluator, str))
-        module_attributes = [helpers.FakeName(n, parent) for n in names]
-        return self._module.get_defined_names() + module_attributes
+        return [helpers.FakeName(n, parent) for n in names]
 
     @memoize_default()
     def _sub_modules(self):
@@ -560,7 +562,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
         """
         path = self._module.path
         names = []
-        if path.endswith(os.path.sep + '__init__.py'):
+        if path is not None and path.endswith(os.path.sep + '__init__.py'):
             mods = pkgutil.iter_modules([os.path.dirname(path)])
             for module_loader, name, is_pkg in mods:
                 name = helpers.FakeName(name)
@@ -575,3 +577,14 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self._module)
+
+
+def filter_after_position(names, position):
+    if position is None:
+        return names
+
+    names_new = []
+    for n in names:
+        if n.start_pos[0] is not None and n.start_pos < position:
+            names_new.append(n)
+    return names_new
