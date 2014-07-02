@@ -3,6 +3,12 @@
 Changelog
 ---------
 
+0.8.1 (2014-07-15)
++++++++++++++++++++
+
+* Bugfix release, the last release forgot to include files that improve
+    autocompletion for builtin libraries. Fixed.
+
 0.8.0 (2014-05-05)
 +++++++++++++++++++
 
