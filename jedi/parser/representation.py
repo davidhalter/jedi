@@ -49,6 +49,17 @@ from jedi.parser import tokenize
 SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
 
 
+def filter_after_position(names, position):
+    if position is None:
+        return names
+
+    names_new = []
+    for n in names:
+        if n.start_pos[0] is not None and n.start_pos < position:
+            names_new.append(n)
+    return names_new
+
+
 class GetCodeState(object):
     """A helper class for passing the state of get_code in a thread-safe
     manner."""
@@ -499,6 +510,9 @@ class Class(Scope):
                     sub.get_call_signature(funcname=self.name.names[-1]), docstr)
         return docstr
 
+    def scope_names_generator(self, position=None):
+        yield self, filter_after_position(self.get_defined_names(), position)
+
 
 class Function(Scope):
     """
@@ -544,6 +558,9 @@ class Function(Scope):
             except IndexError:
                 debug.warning("multiple names in param %s", n)
         return n
+
+    def scope_names_generator(self, position=None):
+        yield self, filter_after_position(self.get_defined_names(), position)
 
     def get_call_signature(self, width=72, funcname=None):
         """

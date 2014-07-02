@@ -18,11 +18,15 @@ class InterpreterNamespace(pr.Module):
         self.parser_module = parser_module
         self._evaluator = evaluator
 
+    @underscore_memoization
     def get_defined_names(self):
         for name in self.parser_module.get_defined_names():
             yield name
         for key, value in self.namespace.items():
             yield LazyName(self._evaluator, key, value)
+
+    def scope_names_generator(self, position=None):
+        yield self, list(self.get_defined_names())
 
     def __getattr__(self, name):
         return getattr(self.parser_module, name)

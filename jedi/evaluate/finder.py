@@ -435,9 +435,7 @@ def _get_defined_names_for_position(scope, position=None, start_scope=None):
     names = scope.get_defined_names()
     # Instances have special rules, always return all the possible completions,
     # because class variables are always valid and the `self.` variables, too.
-    if not position or isinstance(scope, (iterable.Array, er.Instance, compiled.CompiledObject)) \
-            or start_scope != scope \
-            and isinstance(start_scope, (pr.Function, er.FunctionExecution)):
+    if not position or isinstance(scope, (iterable.Array, er.Instance, compiled.CompiledObject)):
         return names
     names_new = []
     for n in names:
@@ -518,6 +516,10 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
             try:
                 if isinstance(scope, (pr.SubModule, fast.Module)):
                     scope = er.ModuleWrapper(evaluator, scope)
+
+                for g in scope.scope_names_generator(position):
+                    yield g
+                """
                 try:
                     sng = scope.scope_names_generator
                 except AttributeError:
@@ -525,6 +527,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
                 else:
                     for g in sng(position):
                         yield g
+                """
             except StopIteration:
                 reraise(common.MultiLevelStopIteration, sys.exc_info()[2])
         if scope.isinstance(pr.ListComprehension):

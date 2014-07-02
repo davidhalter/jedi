@@ -315,6 +315,10 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         type_cls = self._evaluator.find_types(compiled.builtin, 'type')[0]
         return result + list(type_cls.get_defined_names())
 
+    def scope_names_generator(self, position=None):
+        yield self, self.instance_names()
+        yield self, compiled.type_names
+
     def get_subscope_by_name(self, name):
         for s in [self] + self.get_super_classes():
             for sub in reversed(s.subscopes):
@@ -468,6 +472,10 @@ class FunctionExecution(Executable):
         """
         return self._get_params() + pr.Scope.get_defined_names(self)
 
+    def scope_names_generator(self, position=None):
+        names = pr.filter_after_position(pr.Scope.get_defined_names(self), position)
+        yield self, self._get_params() + names
+
     def _copy_properties(self, prop):
         """
         Literally copies a property of a Function. Copying is very expensive,
@@ -541,7 +549,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
         self._module = module
 
     def scope_names_generator(self, position=None):
-        yield self, filter_after_position(self.get_defined_names(), position)
+        yield self, pr.filter_after_position(self.get_defined_names(), position)
         yield self, self.module_attributes()
         sub_modules = self._sub_modules()
         if sub_modules:
@@ -577,14 +585,3 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self._module)
-
-
-def filter_after_position(names, position):
-    if position is None:
-        return names
-
-    names_new = []
-    for n in names:
-        if n.start_pos[0] is not None and n.start_pos < position:
-            names_new.append(n)
-    return names_new

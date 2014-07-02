@@ -88,6 +88,9 @@ class CompiledObject(Base):
         else:
             return type_names + self.instance_names()
 
+    def scope_names_generator(self, position=None):
+        yield self, self.get_defined_names()
+
     @underscore_memoization
     def instance_names(self):
         names = []
