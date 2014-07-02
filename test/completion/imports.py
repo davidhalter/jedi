@@ -19,8 +19,6 @@ def scope_basic():
     #? str()
     import_tree.a
 
-    #? []
-    import_tree.mod1
 
 def scope_pkg():
     import import_tree.mod1
@@ -64,7 +62,11 @@ def scope_nested2():
     import_tree.mod1
     #? ['pkg']
     import_tree.pkg
-    #? []
+
+    # With the latest changes this completion also works, because submodules
+    # are always included (some nested import structures lead to this,
+    # typically).
+    #? ['rename1']
     import_tree.rename1
 
 def from_names():

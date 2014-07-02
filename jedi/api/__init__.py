@@ -230,7 +230,14 @@ class Script(object):
                             continue
                         names = s.get_defined_names(on_import_stmt=True)
                     else:
-                        names = s.get_defined_names()
+                        try:
+                            sng = s.scope_names_generator
+                        except AttributeError:
+                            names = s.get_defined_names()
+                        else:
+                            names = []
+                            for _, new_names in sng():
+                                names += new_names
 
                 for c in names:
                     completions.append((c, s))
