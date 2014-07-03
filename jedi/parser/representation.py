@@ -705,6 +705,10 @@ class Flow(Scope):
             self.next.parent = self.parent
             return next
 
+    def scope_names_generator(self, position=None):
+        # For `with` and `for`.
+        yield self, filter_after_position(self.get_defined_names(), position)
+
 
 class ForFlow(Flow):
     """

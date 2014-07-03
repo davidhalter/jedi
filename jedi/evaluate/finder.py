@@ -66,18 +66,7 @@ class NameFinder(object):
         if search_global:
             return get_names_of_scope(self._evaluator, self.scope, self.position)
         else:
-            try:
-                gen = self.scope.scope_names_generator
-            except AttributeError:
-                if isinstance(self.scope, er.Class):
-                    # Classes don't have a positional limitation of their
-                    # state. It's the whole class.
-                    names = self.scope.get_defined_names()
-                else:
-                    names = _get_defined_names_for_position(self.scope, self.position)
-                return iter([(self.scope, names)])
-            else:
-                return gen(self.position)
+            return self.scope.scope_names_generator(self.position)
 
     def filter_name(self, scope_names_generator):
         """
