@@ -50,6 +50,10 @@ SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
 
 
 def filter_after_position(names, position):
+    """
+    Removes all names after a certain position. If position is None, just
+    returns the names list.
+    """
     if position is None:
         return names
 

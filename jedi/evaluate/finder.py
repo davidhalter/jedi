@@ -403,33 +403,6 @@ def _check_isinstance_type(evaluator, stmt, search_name_part):
     return result
 
 
-def _get_defined_names_for_position(scope, position=None, start_scope=None):
-    """
-    Return filtered version of ``scope.get_defined_names()``.
-
-    This function basically does what :meth:`scope.get_defined_names
-    <parsing_representation.Scope.get_defined_names>` does.
-
-    - If `position` is given, delete all names defined after `position`.
-    - For special objects like instances, `position` is ignored and all
-      names are returned.
-
-    :type     scope: :class:`parsing_representation.IsScope`
-    :param    scope: Scope in which names are searched.
-    :param position: The position as a line/column tuple, default is infinity.
-    """
-    names = scope.get_defined_names()
-    # Instances have special rules, always return all the possible completions,
-    # because class variables are always valid and the `self.` variables, too.
-    if not position or isinstance(scope, (iterable.Array, er.Instance, compiled.CompiledObject)):
-        return names
-    names_new = []
-    for n in names:
-        if n.start_pos[0] is not None and n.start_pos < position:
-            names_new.append(n)
-    return names_new
-
-
 def get_names_of_scope(evaluator, scope, position=None, star_search=True, include_builtin=True):
     """
     Get all completions (names) possible for the current scope. The star search
