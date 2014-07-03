@@ -57,7 +57,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
             else:
                 yield name
 
-    def scope_names_generator(self):
+    def scope_names_generator(self, position=None):
         yield self, self._get_defined_names()
 
     def iter_content(self):
@@ -175,7 +175,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         values = [self._array.values[index]]
         return _follow_values(self._evaluator, values)
 
-    def scope_names_generator(self):
+    def scope_names_generator(self, position=None):
         """
         This method generates all `ArrayMethod` for one pr.Array.
         It returns e.g. for a list: append, pop, ...

@@ -549,14 +549,14 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
         self._module = module
 
     def scope_names_generator(self, position=None):
-        yield self, pr.filter_after_position(self.get_defined_names(), position)
-        yield self, self.module_attributes()
+        yield self, pr.filter_after_position(self._module.get_defined_names(), position)
+        yield self, self._module_attributes()
         sub_modules = self._sub_modules()
         if sub_modules:
             yield self, self._sub_modules()
 
     @memoize_default()
-    def module_attributes(self):
+    def _module_attributes(self):
         names = ['__file__', '__package__', '__doc__', '__name__', '__version__']
         # All the additional module attributes are strings.
         parent = Instance(self._evaluator, compiled.create(self._evaluator, str))

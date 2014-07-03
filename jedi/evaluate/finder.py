@@ -67,8 +67,6 @@ class NameFinder(object):
             return get_names_of_scope(self._evaluator, self.scope, self.position)
         else:
             try:
-                # Use scope generators if parts of it (e.g. sub classes or star
-                # imports).
                 gen = self.scope.scope_names_generator
             except AttributeError:
                 if isinstance(self.scope, er.Class):
@@ -79,7 +77,7 @@ class NameFinder(object):
                     names = _get_defined_names_for_position(self.scope, self.position)
                 return iter([(self.scope, names)])
             else:
-                return gen()
+                return gen(self.position)
 
     def filter_name(self, scope_names_generator):
         """

@@ -73,6 +73,7 @@ import itertools
 from jedi._compatibility import next, hasattr, unicode
 from jedi.parser import representation as pr
 from jedi.parser.tokenize import Token
+from jedi.parser import fast
 from jedi import debug
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
@@ -136,7 +137,10 @@ class Evaluator(object):
             # `=` is always the last character in aug assignments -> -1
             operator = operator[:-1]
             name = str(expr_list[0].name)
-            left = self.find_types(stmt.parent, name, stmt.start_pos)
+            parent = stmt.parent
+            if isinstance(parent, (pr.SubModule, fast.Module)):
+                parent = er.ModuleWrapper(self, parent)
+            left = self.find_types(parent, name, stmt.start_pos)
             if isinstance(stmt.parent, pr.ForFlow):
                 # iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
