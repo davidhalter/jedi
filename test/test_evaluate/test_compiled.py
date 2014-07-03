@@ -62,5 +62,5 @@ def test_string_literals():
         assert typ('b""') == 'bytes'
         assert typ('u""') == 'str'
     else:
-        assert typ('b""') == 'string'
+        assert typ('b""') == 'str'
         assert typ('u""') == 'unicode'

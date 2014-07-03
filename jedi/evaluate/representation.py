@@ -139,18 +139,6 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         args = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
         return self.execute_subscope_by_name('__get__', args)
 
-    @memoize_default([])
-    def get_defined_names(self):
-        """
-        Get the instance vars of a class. This includes the vars of all
-        classes
-        """
-        names = self.get_self_attributes()
-
-        for var in self.base.instance_names():
-            names.append(InstanceElement(self._evaluator, self, var, True))
-        return names
-
     def scope_names_generator(self, position=None):
         """
         An Instance has two scopes: The scope with self names and the class
@@ -308,12 +296,6 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
                     super_result.append(i)
         result += super_result
         return result
-
-    @memoize_default(default=())
-    def get_defined_names(self):
-        result = self.instance_names()
-        type_cls = self._evaluator.find_types(compiled.builtin, 'type')[0]
-        return result + list(type_cls.get_defined_names())
 
     def scope_names_generator(self, position=None):
         yield self, self.instance_names()

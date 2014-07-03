@@ -230,7 +230,12 @@ class NestedImportModule(pr.Module):
         debug.dbg('Generated a nested import: %s', new)
         return helpers.FakeName(str(i.namespace.names[1]), new)
 
-    def get_defined_names(self):
+    def _get_defined_names(self):
+        """
+        NesteImportModule don't seem to be actively used, right now.
+        However, they might in the future. If we do more sophisticated static
+        analysis checks.
+        """
         nested = self._get_nested_import_name()
         return self._module.get_defined_names() + [nested]
 
@@ -255,12 +260,6 @@ class StarImportModule(pr.Module):
             yield module, names
         for s in self.star_import_modules:
             yield s, s.get_defined_names()
-
-    def get_defined_names(self):
-        result = self._module.get_defined_names()
-        for m in self.star_import_modules:
-            result += m.get_defined_names()
-        return result
 
     def __getattr__(self, name):
         return getattr(self._module, name)

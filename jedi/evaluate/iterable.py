@@ -183,8 +183,8 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
-        names = scope.get_defined_names()
-        yield self, [ArrayMethod(n) for n in names]
+        for _, names in scope.scope_names_generator():
+            yield self, [ArrayMethod(n) for n in names]
 
     @common.safe_property
     def parent(self):
