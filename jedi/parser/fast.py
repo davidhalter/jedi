@@ -183,6 +183,9 @@ class ParserNode(object):
 
 
 class FastParser(use_metaclass(CachedFastParser)):
+
+    _keyword_re = re.compile('^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS))
+
     def __init__(self, code, module_path=None):
         # set values like `pr.Module`.
         self.module_path = module_path
@@ -224,8 +227,6 @@ class FastParser(use_metaclass(CachedFastParser)):
                     parts.append(txt)
                 del current_lines[:]
 
-        r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS)
-
         # Split only new lines. Distinction between \r\n is the tokenizer's
         # job.
         self._lines = code.split('\n')
@@ -240,9 +241,9 @@ class FastParser(use_metaclass(CachedFastParser)):
         # All things within flows are simply being ignored.
         for i, l in enumerate(self._lines):
             # check for dedents
-            m = re.match('^([\t ]*)(.?)', l)
-            indent = len(m.group(1))
-            if m.group(2) in ['', '#']:
+            s = l.lstrip('\t ')
+            indent = len(l) - len(s)
+            if not s or s[0] == '#':
                 current_lines.append(l)  # just ignore comments and blank lines
                 continue
 
@@ -259,7 +260,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
             # Check lines for functions/classes and split the code there.
             if not in_flow:
-                m = re.match(r_keyword, l)
+                m = self._keyword_re.match(l)
                 if m:
                     in_flow = m.group(1) in tokenize.FLOWS
                     if not is_decorator and not in_flow:
@@ -296,7 +297,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         for code_part in parts:
             lines = code_part.count('\n') + 1
             if is_first or line_offset >= p.module.end_pos[0]:
-                indent = len(re.match(r'[ \t]*', code_part).group(0))
+                indent = len(code_part) - len(code_part.lstrip('\t '))
                 if is_first and self.current_node is not None:
                     nodes = [self.current_node]
                 else:
