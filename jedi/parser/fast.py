@@ -196,7 +196,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             self._parse(code)
         except:
             # FastParser is cached, be careful with exceptions
-            self.parsers[:] = []
+            del self.parsers[:]
             raise
 
     def update(self, code):
@@ -206,7 +206,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             self._parse(code)
         except:
             # FastParser is cached, be careful with exceptions
-            self.parsers[:] = []
+            del self.parsers[:]
             raise
 
     def _split_parts(self, code):
@@ -222,7 +222,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     parts[-1] += '\n' + txt
                 else:
                     parts.append(txt)
-                current_lines[:] = []
+                del current_lines[:]
 
         r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS)
 
@@ -286,7 +286,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             return new
 
         parts = self._split_parts(code)
-        self.parsers[:] = []
+        del self.parsers[:]
 
         line_offset = 0
         start = 0
