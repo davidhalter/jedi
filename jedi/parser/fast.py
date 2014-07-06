@@ -363,25 +363,23 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def _get_parser(self, code, parser_code, line_offset, nodes, no_docstr):
         h = hash(code)
-        hashes = [n.hash for n in nodes]
-        node = None
-        try:
-            index = hashes.index(h)
-            if nodes[index].code != code:
-                raise ValueError()
-        except ValueError:
+        for index, node in enumerate(nodes):
+            if node.hash != h or node.code != code:
+                continue
+
+            if node != self.current_node:
+                offset = int(nodes[0] == self.current_node)
+                self.current_node.old_children.pop(index - offset)
+            p = node.parser
+            m = p.module
+            m.line_offset += line_offset + 1 - m.start_pos[0]
+            break
+        else:
             tokenizer = FastTokenizer(parser_code, line_offset)
             p = Parser(parser_code, self.module_path, tokenizer=tokenizer,
                        top_module=self.module, no_docstr=no_docstr)
             p.module.parent = self.module
-        else:
-            if nodes[index] != self.current_node:
-                offset = int(nodes[0] == self.current_node)
-                self.current_node.old_children.pop(index - offset)
-            node = nodes.pop(index)
-            p = node.parser
-            m = p.module
-            m.line_offset += line_offset + 1 - m.start_pos[0]
+            node = None
 
         return p, node
 
