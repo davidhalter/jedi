@@ -237,7 +237,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             # check for dedents
             s = l.lstrip('\t ')
             indent = len(l) - len(s)
-            if not s or s[0] == '#':
+            if not s or s[0] in ('#', '\r'):
                 current_lines.append(l)  # just ignore comments and blank lines
                 continue
 
