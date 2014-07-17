@@ -251,7 +251,7 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use documentation() instead.", DeprecationWarning)
+        warnings.warn("Use docstring() instead.", DeprecationWarning)
         return self.docstring()
 
     @property
@@ -261,7 +261,7 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use documentation() instead.", DeprecationWarning)
+        warnings.warn("Use docstring() instead.", DeprecationWarning)
         return self.docstring(raw=True)
 
     @property
@@ -313,11 +313,12 @@ class BaseDefinition(object):
         stripped = self._definition
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
-            # We should probably work in `Finder._names_to_types` here.
-            if isinstance(stripped, pr.Function):
-                stripped = er.Function(self._evaluator, stripped)
-            elif isinstance(stripped, pr.Class):
-                stripped = er.Class(self._evaluator, stripped)
+
+        # We should probably work in `Finder._names_to_types` here.
+        if isinstance(stripped, pr.Function):
+            stripped = er.Function(self._evaluator, stripped)
+        elif isinstance(stripped, pr.Class):
+            stripped = er.Class(self._evaluator, stripped)
 
         if stripped.isinstance(pr.Statement):
             return self._evaluator.eval_statement(stripped)
@@ -469,7 +470,7 @@ class Completion(BaseDefinition):
         :param fast: Don't follow imports that are only one level deep like
             ``import foo``, but follow ``from foo import bar``. This makes
             sense for speed reasons. Completing `import a` is slow if you use
-            the ``foo.documentation(fast=False)`` on every object, because it
+            the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
         definition = self._definition

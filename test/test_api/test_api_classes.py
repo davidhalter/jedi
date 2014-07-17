@@ -127,6 +127,11 @@ def test_completion_docstring():
     assert c.docstring(raw=True, fast=False) == cleandoc(Script.__doc__)
 
 
+def test_completion_params():
+    c = Script('import string; string.capwords').completions()[0]
+    assert [p.name for p in c.params] == ['s', 'sep']
+
+
 def test_signature_params():
     def check(defs):
         params = defs[0].params

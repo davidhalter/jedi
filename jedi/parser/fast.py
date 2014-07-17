@@ -183,6 +183,9 @@ class ParserNode(object):
 
 
 class FastParser(use_metaclass(CachedFastParser)):
+
+    _keyword_re = re.compile('^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS))
+
     def __init__(self, code, module_path=None):
         # set values like `pr.Module`.
         self.module_path = module_path
@@ -196,7 +199,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             self._parse(code)
         except:
             # FastParser is cached, be careful with exceptions
-            self.parsers[:] = []
+            del self.parsers[:]
             raise
 
     def update(self, code):
@@ -206,7 +209,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             self._parse(code)
         except:
             # FastParser is cached, be careful with exceptions
-            self.parsers[:] = []
+            del self.parsers[:]
             raise
 
     def _split_parts(self, code):
@@ -215,34 +218,26 @@ class FastParser(use_metaclass(CachedFastParser)):
         each part seperately and therefore cache parts of the file and not
         everything.
         """
-        def add_part():
-            txt = '\n'.join(current_lines)
-            if txt:
-                if add_to_last and parts:
-                    parts[-1] += '\n' + txt
-                else:
-                    parts.append(txt)
-                current_lines[:] = []
-
-        r_keyword = '^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS)
+        def gen_part():
+            text = '\n'.join(current_lines)
+            del current_lines[:]
+            return text
 
         # Split only new lines. Distinction between \r\n is the tokenizer's
         # job.
         self._lines = code.split('\n')
         current_lines = []
-        parts = []
         is_decorator = False
         current_indent = 0
         old_indent = 0
         new_indent = False
         in_flow = False
-        add_to_last = False
         # All things within flows are simply being ignored.
-        for i, l in enumerate(self._lines):
+        for l in self._lines:
             # check for dedents
-            m = re.match('^([\t ]*)(.?)', l)
-            indent = len(m.group(1))
-            if m.group(2) in ['', '#']:
+            s = l.lstrip('\t ')
+            indent = len(l) - len(s)
+            if not s or s[0] in ('#', '\r'):
                 current_lines.append(l)  # just ignore comments and blank lines
                 continue
 
@@ -250,8 +245,8 @@ class FastParser(use_metaclass(CachedFastParser)):
                 current_indent = indent
                 new_indent = False
                 if not in_flow or indent < old_indent:
-                    add_part()
-                    add_to_last = False
+                    if current_lines:
+                        yield gen_part()
                 in_flow = False
             elif new_indent:
                 current_indent = indent
@@ -259,12 +254,12 @@ class FastParser(use_metaclass(CachedFastParser)):
 
             # Check lines for functions/classes and split the code there.
             if not in_flow:
-                m = re.match(r_keyword, l)
+                m = self._keyword_re.match(l)
                 if m:
                     in_flow = m.group(1) in tokenize.FLOWS
                     if not is_decorator and not in_flow:
-                        add_part()
-                        add_to_last = False
+                        if current_lines:
+                            yield gen_part()
                     is_decorator = '@' == m.group(1)
                     if not is_decorator:
                         old_indent = current_indent
@@ -272,12 +267,10 @@ class FastParser(use_metaclass(CachedFastParser)):
                         new_indent = True
                 elif is_decorator:
                     is_decorator = False
-                    add_to_last = True
 
             current_lines.append(l)
-        add_part()
-
-        return parts
+        if current_lines:
+            yield gen_part()
 
     def _parse(self, code):
         """ :type code: str """
@@ -285,24 +278,20 @@ class FastParser(use_metaclass(CachedFastParser)):
             new, temp = self._get_parser(unicode(''), unicode(''), 0, [], False)
             return new
 
-        parts = self._split_parts(code)
-        self.parsers[:] = []
+        del self.parsers[:]
 
         line_offset = 0
         start = 0
         p = None
         is_first = True
-
-        for code_part in parts:
-            lines = code_part.count('\n') + 1
+        for code_part in self._split_parts(code):
             if is_first or line_offset >= p.module.end_pos[0]:
-                indent = len(re.match(r'[ \t]*', code_part).group(0))
+                indent = len(code_part) - len(code_part.lstrip('\t '))
                 if is_first and self.current_node is not None:
                     nodes = [self.current_node]
                 else:
                     nodes = []
                 if self.current_node is not None:
-
                     self.current_node = \
                         self.current_node.parent_until_indent(indent)
                     nodes += self.current_node.old_children
@@ -347,7 +336,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             #else:
                 #print '#'*45, line_offset, p.module.end_pos, 'theheck\n', repr(code_part)
 
-            line_offset += lines
+            line_offset += code_part.count('\n') + 1
             start += len(code_part) + 1  # +1 for newline
 
         if self.parsers:
@@ -358,29 +347,26 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.module.end_pos = self.parsers[-1].module.end_pos
 
         # print(self.parsers[0].module.get_code())
-        del code
 
     def _get_parser(self, code, parser_code, line_offset, nodes, no_docstr):
         h = hash(code)
-        hashes = [n.hash for n in nodes]
-        node = None
-        try:
-            index = hashes.index(h)
-            if nodes[index].code != code:
-                raise ValueError()
-        except ValueError:
+        for index, node in enumerate(nodes):
+            if node.hash != h or node.code != code:
+                continue
+
+            if node != self.current_node:
+                offset = int(nodes[0] == self.current_node)
+                self.current_node.old_children.pop(index - offset)
+            p = node.parser
+            m = p.module
+            m.line_offset += line_offset + 1 - m.start_pos[0]
+            break
+        else:
             tokenizer = FastTokenizer(parser_code, line_offset)
             p = Parser(parser_code, self.module_path, tokenizer=tokenizer,
                        top_module=self.module, no_docstr=no_docstr)
             p.module.parent = self.module
-        else:
-            if nodes[index] != self.current_node:
-                offset = int(nodes[0] == self.current_node)
-                self.current_node.old_children.pop(index - offset)
-            node = nodes.pop(index)
-            p = node.parser
-            m = p.module
-            m.line_offset += line_offset + 1 - m.start_pos[0]
+            node = None
 
         return p, node
 
