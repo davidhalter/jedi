@@ -270,7 +270,12 @@ class FastParser(use_metaclass(CachedFastParser)):
 
             current_lines.append(l)
         if current_lines:
-            yield gen_part()
+            # skip newline at end of code,
+            # since it is not counted by Parser
+            if not current_lines[-1]:
+                del current_lines[-1]
+            if current_lines:
+                yield gen_part()
 
     def _parse(self, code):
         """ :type code: str """
