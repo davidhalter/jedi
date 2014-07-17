@@ -57,7 +57,7 @@ class TestRegression(TestCase):
 
         self.assertRaises(jedi.NotFoundError, get_def, cls)
 
-    @pytest.mark.skip('Skip for now, test case is not really supported.')
+    @pytest.mark.skipif('True', reason='Skip for now, test case is not really supported.')
     @cwd_at('jedi')
     def test_add_dynamic_mods(self):
         fname = '__main__.py'
