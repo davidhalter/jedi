@@ -76,11 +76,16 @@ class Parser(object):
             d.parent = self.module
 
         self.module.end_pos = self._gen.current.end_pos
-        if self._gen.current.type in (tokenize.NEWLINE,):
+        if self._gen.current.type == tokenize.NEWLINE:
             # This case is only relevant with the FastTokenizer, because
-            # otherwise there's always an EndMarker.
+            # otherwise there's always an ENDMARKER.
             # we added a newline before, so we need to "remove" it again.
-            self.module.end_pos = self._gen.tokenizer_previous.end_pos
+            #
+            # NOTE: It should be keep end_pos as-is if the last token of
+            # a source is a NEWLINE, otherwise the newline at the end of
+            # a source is not included in a ParserNode.code.
+            if self._gen.previous.type != tokenize.NEWLINE:
+                self.module.end_pos = self._gen.previous.end_pos
 
         del self._gen
 
@@ -620,17 +625,10 @@ class PushBackTokenizer(object):
         if self._push_backs:
             return self._push_backs.pop(0)
 
-        self.previous = self.current
+        previous = self.current
         self.current = next(self._tokenizer)
+        self.previous = previous
         return self.current
 
     def __iter__(self):
         return self
-
-    @property
-    def tokenizer_previous(self):
-        """
-        Temporary hack, basically returns the last previous if the fast parser
-        sees an EndMarker. The fast parser positions have to be changed anyway.
-        """
-        return self._tokenizer.previous
