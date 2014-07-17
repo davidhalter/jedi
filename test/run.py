@@ -365,6 +365,11 @@ if __name__ == '__main__':
     current = cases[0].path if cases else None
     count = fails = 0
     for c in cases:
+        if current != c.path:
+            file_change(current, count, fails)
+            current = c.path
+            count = fails = 0
+
         try:
             if c.run(report):
                 tests_fail += 1
@@ -380,10 +385,6 @@ if __name__ == '__main__':
 
         count += 1
 
-        if current != c.path:
-            file_change(current, count, fails)
-            current = c.path
-            count = fails = 0
     file_change(current, count, fails)
 
     print('\nSummary: (%s fails of %s tests) in %.3fs' % (tests_fail,
