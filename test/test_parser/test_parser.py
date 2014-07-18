@@ -119,3 +119,9 @@ def test_carriage_return_statements():
     source = source.replace('\n', '\r\n')
     stmt = Parser(source).module.statements[0]
     assert '#' not in stmt.get_code()
+
+
+def test_incomplete_list_comprehension():
+    """ Shouldn't raise an error, same bug as #418. """
+    s = Parser(u('(1 for def')).module.statements[0]
+    assert s.expression_list()

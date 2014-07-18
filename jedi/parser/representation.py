@@ -1073,7 +1073,8 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                         end_pos = end_pos[0], end_pos[1] - 1
                         break
 
-                token_list.append(tok)
+                if tok is not None:  # Can be None, because of lambda/for.
+                    token_list.append(tok)
 
             if not token_list:
                 return None, tok
