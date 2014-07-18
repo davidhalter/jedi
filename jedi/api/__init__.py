@@ -86,7 +86,8 @@ class Script(object):
             with open(path) as f:
                 source = f.read()
 
-        lines = common.splitlines(source)
+        self.source = common.source_to_unicode(source, encoding)
+        lines = common.splitlines(self.source)
         line = max(len(lines), 1) if line is None else line
         if not (0 < line <= len(lines)):
             raise ValueError('`line` parameter is not in a valid range.')
@@ -99,7 +100,6 @@ class Script(object):
 
         cache.clear_caches()
         debug.reset_time()
-        self.source = common.source_to_unicode(source, encoding)
         self._user_context = UserContext(self.source, self._pos)
         self._parser = UserContextParser(self.source, path, self._pos, self._user_context)
         self._evaluator = Evaluator()

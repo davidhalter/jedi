@@ -100,9 +100,7 @@ def time_cache(time_add_setting):
 def cache_call_signatures(source, user_pos, stmt):
     """This function calculates the cache key."""
     index = user_pos[0] - 1
-    lines = source.splitlines() or ['']
-    if source and source[-1] == '\n':
-        lines.append('')
+    lines = common.splitlines(source)
 
     before_cursor = lines[index][:user_pos[1]]
     other_lines = lines[stmt.start_pos[0]:index]

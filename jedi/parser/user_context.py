@@ -2,6 +2,7 @@ import re
 import os
 
 from jedi import cache
+from jedi import common
 from jedi.parser import tokenize
 from jedi._compatibility import u
 from jedi.parser.fast import FastParser
@@ -178,12 +179,7 @@ class UserContext(object):
 
     def get_line(self, line_nr):
         if not self._line_cache:
-            self._line_cache = self.source.splitlines()
-            if self.source:
-                if self.source[-1] == '\n':
-                    self._line_cache.append(u(''))
-            else:  # ''.splitlines() == []
-                self._line_cache = [u('')]
+            self._line_cache = common.splitlines(self.source)
 
         if line_nr == 0:
             # This is a fix for the zeroth line. We need a newline there, for
