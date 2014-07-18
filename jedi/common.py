@@ -146,3 +146,13 @@ def source_to_unicode(source, encoding=None):
 
     # cast to unicode by default
     return unicode(source, detect_encoding(), 'replace')
+
+
+def splitlines(string):
+    """
+    A splitlines for Python code. In contrast to Python's ``str.splitlines``,
+    looks at form feeds and other special characters as normal text. Just
+    splits ``\n`` and ``\r\n``.
+    Also different: Returns ``['']`` for an empty string input.
+    """
+    return re.split('\n|\r\n', string)

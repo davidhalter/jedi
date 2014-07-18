@@ -86,9 +86,7 @@ class Script(object):
             with open(path) as f:
                 source = f.read()
 
-        lines = source.splitlines() or ['']
-        if source and source[-1] == '\n':
-            lines.append('')
+        lines = common.splitlines(source)
         line = max(len(lines), 1) if line is None else line
         if not (0 < line <= len(lines)):
             raise ValueError('`line` parameter is not in a valid range.')
