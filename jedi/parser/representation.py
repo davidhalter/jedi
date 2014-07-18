@@ -1023,7 +1023,11 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
                 # always dictionaries and not sets.
                 arr.type = Array.DICT
 
-            arr.end_pos = (break_tok or stmt or old_stmt).end_pos
+            try:
+                arr.end_pos = (break_tok or stmt or old_stmt).end_pos
+            except UnboundLocalError:
+                # In case of something like `(def`
+                arr.end_pos = start_pos[0], start_pos[1] + 1
             return arr, break_tok
 
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
