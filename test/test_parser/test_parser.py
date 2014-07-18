@@ -1,4 +1,6 @@
-from jedi._compatibility import u
+# -*- coding: utf-8 -*-
+
+from jedi._compatibility import u, is_py3
 from jedi.parser import Parser
 from jedi.parser.user_context import UserContextParser
 from jedi.parser import representation as pr
@@ -136,4 +138,8 @@ def test_hex_values_in_docstring():
             return 1
         '''
 
-    assert Parser(dedent(u(source))).module.subscopes[0].raw_doc == '\xff'
+    doc = Parser(dedent(u(source))).module.subscopes[0].raw_doc
+    if is_py3:
+        assert doc == '\xff'
+    else:
+        assert doc == u('�')

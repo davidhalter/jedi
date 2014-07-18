@@ -85,7 +85,13 @@ class DocstringMixin(object):
         """ Returns a cleaned version of the docstring token. """
         try:
             # Returns a literal cleaned version of the ``Token``.
-            return unicode(cleandoc(literal_eval(self._doc_token.string)))
+            cleaned = cleandoc(literal_eval(self._doc_token.string))
+            # Since we want the docstr output to be always unicode, just force
+            # it.
+            if is_py3 or isinstance(cleaned, unicode):
+                return cleaned
+            else:
+                return unicode(cleaned, 'UTF-8', 'replace')
         except AttributeError:
             return u('')
 
