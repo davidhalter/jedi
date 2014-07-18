@@ -392,6 +392,7 @@ class FastTokenizer(object):
         self.parser_indent = self.old_parser_indent = 0
         self.is_decorator = False
         self.first_stmt = True
+        self.parentheses_level = 0
 
     def next(self):
         """ Python 2 Compatibility """
@@ -419,14 +420,15 @@ class FastTokenizer(object):
                 self.closed = True
                 raise common.MultiLevelStopIteration()
 
-        # Ignore comments/newlines/closing parentheses, because they are all
-        # irrelevant for the indentation.
+        # Ignore comments/newlines, irrelevant for indentation.
         if self.previous.type in (None, NEWLINE) \
-                and tok_type not in (COMMENT, NEWLINE) \
-                and tok_str not in ')]}':
+                and tok_type not in (COMMENT, NEWLINE):
             # print c, tok_name[c[0]]
             indent = current.start_pos[1]
-            if indent < self.parser_indent:  # -> dedent
+            if self.parentheses_level:
+                # parentheses ignore the indentation rules.
+                pass
+            elif indent < self.parser_indent:  # -> dedent
                 self.parser_indent = indent
                 self.new_indent = False
                 if not self.in_flow or indent < self.old_parser_indent:
@@ -453,4 +455,12 @@ class FastTokenizer(object):
                 if self.first_stmt and not self.new_indent:
                     self.parser_indent = indent
                 self.first_stmt = False
+
+        # Ignore closing parentheses, because they are all
+        # irrelevant for the indentation.
+
+        if tok_str in '([{':
+            self.parentheses_level += 1
+        elif tok_str in ')]}':
+            self.parentheses_level = max(self.parentheses_level - 1, 0)
         return current

@@ -2,17 +2,26 @@
 Issues with the parser not the completion engine should be here.
 """
 
-class C():
+class IndentIssues():
     """
     issue jedi-vim#288
     Which is really a fast parser issue. It used to start a new block at the
     parentheses, because it had problems with the indentation.
     """
-    def indent_issues(
+    def one_param(
         self,
     ):
         return 1
 
+    def with_param(
+        self,
+    y):
+        return y
+
+
 
 #? int()
-C().indent_issues()
+IndentIssues().one_param()
+
+#? str()
+IndentIssues().with_param('')
