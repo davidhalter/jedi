@@ -125,3 +125,15 @@ def test_incomplete_list_comprehension():
     """ Shouldn't raise an error, same bug as #418. """
     s = Parser(u('(1 for def')).module.statements[0]
     assert s.expression_list()
+
+
+def test_hex_values_in_docstring():
+    source = r'''
+        def foo(object):
+            """
+             \xff
+            """
+            return 1
+        '''
+
+    assert Parser(dedent(u(source))).module.subscopes[0].raw_doc == '\xff'
