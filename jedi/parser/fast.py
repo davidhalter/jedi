@@ -419,8 +419,11 @@ class FastTokenizer(object):
                 self.closed = True
                 raise common.MultiLevelStopIteration()
 
-        # ignore comments/ newlines
-        if self.previous.type in (None, NEWLINE) and tok_type not in (COMMENT, NEWLINE):
+        # Ignore comments/newlines/closing parentheses, because they are all
+        # irrelevant for the indentation.
+        if self.previous.type in (None, NEWLINE) \
+                and tok_type not in (COMMENT, NEWLINE) \
+                and tok_str not in ')]}':
             # print c, tok_name[c[0]]
             indent = current.start_pos[1]
             if indent < self.parser_indent:  # -> dedent
@@ -428,6 +431,7 @@ class FastTokenizer(object):
                 self.new_indent = False
                 if not self.in_flow or indent < self.old_parser_indent:
                     close()
+
                 self.in_flow = False
             elif self.new_indent:
                 self.parser_indent = indent
@@ -438,6 +442,7 @@ class FastTokenizer(object):
                     self.in_flow = tok_str in FLOWS
                     if not self.is_decorator and not self.in_flow:
                         close()
+
                     self.is_decorator = '@' == tok_str
                     if not self.is_decorator:
                         self.old_parser_indent = self.parser_indent
