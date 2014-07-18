@@ -227,7 +227,7 @@ def test_no_signature():
     assert len(Script(s, column=2).call_signatures()) == 1
 
 
-def test_dicts():
+def test_dict_literal_in_incomplete_call():
     source = """\
     import json
 

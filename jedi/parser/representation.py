@@ -934,7 +934,7 @@ isinstance(c, (tokenize.Token, Operator)) else unicode(c)
 
             def search_calls(calls):
                 for call in calls:
-                    if isinstance(call, Array):
+                    if isinstance(call, Array) and call.type != Array.DICT:
                         for stmt in call:
                             search_calls(stmt.expression_list())
                     elif isinstance(call, Call):
