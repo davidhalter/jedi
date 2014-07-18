@@ -227,6 +227,23 @@ def test_no_signature():
     assert len(Script(s, column=2).call_signatures()) == 1
 
 
+def test_dicts():
+    source = """\
+    import json
+
+    def foo():
+        json.loads(
+
+        json.load.return_value = {'foo': [],
+                                  'bar': True}
+
+        c = Foo()
+    """
+
+    script = Script(dedent(source), line=4, column=15)
+    assert script.call_signatures()
+
+
 def test_completion_interference():
     """Seems to cause problems, see also #396."""
     cache.parser_cache.pop(None, None)
