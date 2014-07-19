@@ -103,7 +103,8 @@ class ImportWrapper(pr.Base):
                     names += self._get_module_names([path])
 
                     if self._is_relative_import():
-                        rel_path = self._importer.get_relative_path() + '/__init__.py'
+                        rel_path = os.path.join(self._importer.get_relative_path(),
+                                                '__init__.py')
                         if os.path.exists(rel_path):
                             m = _load_module(rel_path)
                             names += m.get_defined_names()
@@ -459,7 +460,7 @@ class _Importer(object):
         if is_package_directory or current_namespace[0]:
             # is a directory module
             if is_package_directory:
-                path += '/__init__.py'
+                path = os.path.join(path, '__init__.py')
                 with open(path, 'rb') as f:
                     source = f.read()
             else:
