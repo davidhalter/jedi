@@ -14,7 +14,7 @@ def test_parent_dir_with_file():
     parent = _get_parent_dir_with_file(
         os.path.abspath(os.curdir), 'buildout.cfg')
     assert parent is not None
-    assert parent.endswith('test/test_evaluate/buildout_project')
+    assert parent.endswith(os.path.join('test', 'test_evaluate', 'buildout_project'))
 
 
 @cwd_at('test/test_evaluate/buildout_project/src/proj_name')
