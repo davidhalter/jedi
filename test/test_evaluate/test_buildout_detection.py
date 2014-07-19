@@ -1,12 +1,12 @@
 import os
-from ..helpers import cwd_at
+
 from jedi._compatibility import u
+from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
+                                    _get_buildout_scripts,
+                                    _check_module)
 from jedi.parser import Parser
-from jedi.evaluate.sys_path import (
-    _get_parent_dir_with_file,
-    _get_buildout_scripts,
-    _check_module
-)
+
+from ..helpers import cwd_at
 
 
 @cwd_at('test/test_evaluate/buildout_project/src/proj_name')

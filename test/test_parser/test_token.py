@@ -1,10 +1,7 @@
-from jedi import parser
 from jedi._compatibility import u
+from jedi import parser
 
-try:
-    import unittest2 as unittest
-except ImportError:  # pragma: no cover
-    import unittest
+from ..helpers import unittest
 
 
 class TokenTest(unittest.TestCase):
