@@ -1,10 +1,15 @@
-import readline
+try:
+    import readline
+except ImportError:
+    readline = False
 
 from jedi import utils
-from .helpers import TestCase, cwd_at
+
+from .helpers import unittest, cwd_at
 
 
-class TestSetupReadline(TestCase):
+@unittest.skipIf(not readline, "readline not found")
+class TestSetupReadline(unittest.TestCase):
     class NameSpace(object):
         pass
 
