@@ -139,7 +139,7 @@ class IntegrationTestCase(object):
 
     @property
     def module_name(self):
-        return re.sub('.*/|\.py$', '', self.path)
+        return os.path.splitext(os.path.basename(self.path))[0]
 
     @property
     def line_nr_test(self):

@@ -15,6 +15,13 @@ from jedi.evaluate.helpers import FakeName
 from . import fake
 
 
+_sep = os.path.sep
+if os.path.altsep is not None:
+    _sep += os.path.altsep
+_path_re = re.compile('(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
+del _sep
+
+
 class CompiledObject(Base):
     # comply with the parser
     start_pos = 0, 0
@@ -220,21 +227,27 @@ def dotted_from_fs_path(fs_path, sys_path=None):
     compares the path with sys.path and then returns the dotted_path. If the
     path is not in the sys.path, just returns None.
     """
-    sep = os.path.sep
-    shortest = None
     if sys_path is None:
         sys_path = get_sys_path()
+
+    # prefer
+    #   - UNIX
+    #     /path/to/pythonX.Y/lib-dynload
+    #     /path/to/pythonX.Y/site-packages
+    #   - Windows
+    #     C:\path\to\DLLs
+    #     C:\path\to\Lib\site-packages
+    # over
+    #   - UNIX
+    #     /path/to/pythonX.Y
+    #   - Windows
+    #     C:\path\to\Lib
+    path = ''
     for s in sys_path:
-        if fs_path.startswith(s):
-            path = fs_path[len(s):].strip(sep)
-            path = re.sub('\.[^%s]*|%s__init__.py$' % (sep, sep), '', path)
-            dotted = path.split(sep)
-            dotted = '.'.join(dotted)
-            # At this point dotted could be both `lib-dynload.datetime` and
-            # `datetime`. The shorter one is typically the module we want.
-            if shortest is None or len(shortest) > len(dotted):
-                shortest = dotted
-    return shortest
+        if (fs_path.startswith(s) and
+            len(path) < len(s)):
+            path = s
+    return _path_re.sub('', fs_path[len(path):].lstrip(os.path.sep)).replace(os.path.sep, '.')
 
 
 def load_module(path, name):
