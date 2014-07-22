@@ -26,7 +26,7 @@ Emacs:
 
 - Jedi.el_
 - elpy_
-- company-jedi_
+- anaconda-mode_
 
 Sublime Text 2/3:
 
@@ -78,7 +78,7 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
 .. _elpy: https://github.com/jorgenschaefer/elpy
-.. _company-jedi: https://github.com/proofit404/company-jedi
+.. _anaconda-mode: https://github.com/proofit404/anaconda-mode
 .. _sublimejedi: https://github.com/srusskih/SublimeJEDI
 .. _anaconda: https://github.com/DamnWidget/anaconda
 .. _SynJedi: http://uvviewsoft.com/synjedi/
