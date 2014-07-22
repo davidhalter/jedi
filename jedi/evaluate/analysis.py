@@ -17,7 +17,8 @@ CODES = {
     'type-error-keyword-argument': (7, TypeError, None),
     'type-error-multiple-values': (8, TypeError, None),
     'type-error-star-star': (9, TypeError, None),
-    'type-error-star': (9, TypeError, None),
+    'type-error-star': (10, TypeError, None),
+    'type-error-operation': (11, TypeError, None),
 }
 
 
