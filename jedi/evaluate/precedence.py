@@ -71,7 +71,7 @@ class Precedence(object):
                 which = which.value
             return which
 
-        return (process(self.left), self.operator, process(self.right))
+        return (process(self.left), self.operator.string, process(self.right))
 
     def __repr__(self):
         return '(%s %s %s)' % (self.left, self.operator, self.right)
@@ -114,6 +114,21 @@ def _get_number(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
         return el
 
 
+class MergedOperator(pr.Operator):
+    """
+    A way to merge the two operators `is not` and `not int`, which are two
+    words instead of one.
+    Maybe there's a better way (directly in the tokenizer/parser? but for now
+    this is fine.)
+    """
+    def __init__(self, first, second):
+        string = first.string + ' ' + second.string
+        super(MergedOperator, self).__init__(string, first.start_pos)
+
+        self.first = first
+        self.second = second
+
+
 def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
     try:
         left = _get_number(iterator, priority)
@@ -140,14 +155,14 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
             match = check[match_index]
             if isinstance(match, PythonGrammar.MultiPart):
                 next_tok = next(iterator)
-                if next_tok != match.second:
+                if next_tok == match.second:
+                    el = MergedOperator(el, next_tok)
+                else:
                     iterator.push_back(next_tok)
-                    if el == 'is':  # `is not` special case
-                        match = 'is'
-                    else:
+                    if el == 'not':
                         continue
 
-            operator = match
+            operator = el
             break
 
         if operator is None:
@@ -171,9 +186,9 @@ def _check_operator(iterator, priority=PythonGrammar.LOWEST_PRIORITY):
             _syntax_error(iterator.current, 'SyntaxError operand missing')
         else:
             if operator in PythonGrammar.TERNARY:
-                left = TernaryPrecedence(left, str(operator), right, middle)
+                left = TernaryPrecedence(left, operator, right, middle)
             else:
-                left = Precedence(left, str(operator), right)
+                left = Precedence(left, operator, right)
     return left
 
 

@@ -157,7 +157,7 @@ class NameFinder(object):
                 else:
                     p = precedence.create_precedence(expression_list)
                     if (isinstance(p, precedence.Precedence)
-                            and p.operator == 'is not'
+                            and p.operator.string == 'is not'
                             and p.right.get_code() == 'None'
                             and p.left.get_code() == unicode(self.name_str)):
                         return True
