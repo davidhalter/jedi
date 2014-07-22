@@ -262,6 +262,8 @@ def _is_list(obj):
 
 def _element_calculate(evaluator, left, operator, right):
     from jedi.evaluate import iterable
+    l_is_num = _is_number(left)
+    r_is_num = _is_number(right)
     if operator == '*':
         # for iterables, ignore * operations
         if isinstance(left, iterable.Array) or _is_string(left):
@@ -269,22 +271,22 @@ def _element_calculate(evaluator, left, operator, right):
         elif isinstance(right, iterable.Array) or _is_string(right):
             return [right]
     elif operator == '+':
-        l_is_num = _is_number(left)
-        r_is_num = _is_number(right)
         if l_is_num and r_is_num or _is_string(left) and _is_string(right):
             return [create(evaluator, left.obj + right.obj)]
         elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
             return [iterable.MergedArray(evaluator, (left, right))]
-        # Static analysis, one is a number, the other one is not.
-        elif l_is_num != r_is_num:
-            message = "TypeError: unsupported operand type(s) for +: %s and %s"
-            analysis.add(evaluator, 'type-error-operation', operator,
-                         message % (left, right))
     elif operator == '-':
-        if _is_number(left) and _is_number(right):
+        if l_is_num and r_is_num:
             return [create(evaluator, left.obj - right.obj)]
     elif operator == '%':
         # With strings and numbers the left type typically remains. Except for
         # `int() % float()`.
         return [left]
+
+    # Static analysis, one is a number, the other one is not.
+    if operator in ['+', '-'] and l_is_num != r_is_num:
+        message = "TypeError: unsupported operand type(s) for +: %s and %s"
+        analysis.add(evaluator, 'type-error-operation', operator,
+                     message % (left, right))
+
     return [left, right]
