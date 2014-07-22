@@ -918,7 +918,7 @@ class Statement(Simple, DocstringMixin):
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
             pieces = [c.get_code() if isinstance(c, Simple) else c.string if
-isinstance(c, (tokenize.Token, Operator)) else unicode(c)
+isinstance(c, tokenize.Token) else unicode(c)
                       for c in command_list]
             if assignment is None:
                 return ''.join(pieces)
@@ -1565,25 +1565,20 @@ class ListComprehension(ForFlow):
         return "%s for %s in %s" % tuple(code)
 
 
-class Operator(Base):
-    __slots__ = ('string', '_line', '_column')
+class Operator(Simple):
+    __slots__ = ('string',)
 
-    def __init__(self, string, start_pos):
-        # TODO needs module param
+    def __init__(self, module, string, parent, start_pos):
+        end_pos = start_pos[0], start_pos[1] + len(string)
+        super(Operator, self).__init__(module, start_pos, end_pos)
         self.string = string
-        self._line = start_pos[0]
-        self._column = start_pos[1]
+        self.parent = parent
+
+    def get_code(self):
+        return self.string
 
     def __repr__(self):
         return "<%s: `%s`>" % (type(self).__name__, self.string)
-
-    @property
-    def start_pos(self):
-        return self._line, self._column
-
-    @property
-    def end_pos(self):
-        return self._line, self._column + len(self.string)
 
     def __eq__(self, other):
         """Make comparisons easy. Improves the readability of the parser."""

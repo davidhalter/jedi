@@ -123,8 +123,8 @@ class MergedOperator(pr.Operator):
     """
     def __init__(self, first, second):
         string = first.string + ' ' + second.string
-        super(MergedOperator, self).__init__(string, first.start_pos)
-
+        super(MergedOperator, self).__init__(first._sub_module, string,
+                                             first.parent, first.start_pos)
         self.first = first
         self.second = second
 
@@ -278,7 +278,7 @@ def _element_calculate(evaluator, left, operator, right):
         # Static analysis, one is a number, the other one is not.
         elif l_is_num != r_is_num:
             message = "TypeError: unsupported operand type(s) for +: %s and %s"
-            analysis.add(evaluator, 'type-error-operation', right,
+            analysis.add(evaluator, 'type-error-operation', operator,
                          message % (left, right))
     elif operator == '-':
         if _is_number(left) and _is_number(right):

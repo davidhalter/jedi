@@ -48,7 +48,7 @@ class CompiledObject(Base):
         for p in tokens:
             parts = [FakeName(part) for part in p.strip().split('=')]
             if len(parts) >= 2:
-                parts.insert(1, Operator('=', (0, 0)))
+                parts.insert(1, Operator(module, '=', module, (0, 0)))
             params.append(Param(module, parts, start_pos,
                                 end_pos, builtin))
         return params

@@ -325,7 +325,9 @@ class Parser(object):
                 # print 'parse_stmt', tok, tokenize.tok_name[token_type]
                 is_kw = tok.string in OPERATOR_KEYWORDS
                 if tok.type == tokenize.OP or is_kw:
-                    tok_list.append(pr.Operator(tok.string, tok.start_pos))
+                    tok_list.append(
+                        pr.Operator(self.module, tok.string, self._scope, tok.start_pos)
+                    )
                 else:
                     tok_list.append(tok)
 
