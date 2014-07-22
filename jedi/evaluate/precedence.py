@@ -261,7 +261,7 @@ def _is_list(obj):
 
 
 def _element_calculate(evaluator, left, operator, right):
-    from jedi.evaluate import iterable
+    from jedi.evaluate import iterable, representation as er
     l_is_num = _is_number(left)
     r_is_num = _is_number(right)
     if operator == '*':
@@ -283,8 +283,13 @@ def _element_calculate(evaluator, left, operator, right):
         # `int() % float()`.
         return [left]
 
+    def check(obj):
+        """Checks if a Jedi object is either a float or an int."""
+        return isinstance(obj, er.Instance) and obj.name in ('int', 'float')
+
     # Static analysis, one is a number, the other one is not.
-    if operator in ['+', '-'] and l_is_num != r_is_num:
+    if operator in ('+', '-') and l_is_num != r_is_num \
+            and not (check(left) or check(right)):
         message = "TypeError: unsupported operand type(s) for +: %s and %s"
         analysis.add(evaluator, 'type-error-operation', operator,
                      message % (left, right))
