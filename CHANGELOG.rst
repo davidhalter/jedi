@@ -3,7 +3,7 @@
 Changelog
 ---------
 
-0.8.1 (2014-07-15)
+0.8.1 (2014-07-23)
 +++++++++++++++++++
 
 * Bugfix release, the last release forgot to include files that improve
