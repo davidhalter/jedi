@@ -16,7 +16,7 @@ Changelog
   drastically. Loading times are down as well (it takes basically as long as an
   import).
 - REPL completion is starting to become usable.
-- Various small API changes. Generally this released focuses on stability and
+- Various small API changes. Generally this release focuses on stability and
   refactoring of internal APIs.
 - Introducing operator precedence, which makes calculating correct Array indices
   and ``__getattr__`` strings possible.
