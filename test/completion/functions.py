@@ -205,7 +205,7 @@ exe[0]
 exe[1]
 
 # illegal args (TypeError)
-#? 
+#?
 args_func(*1)[0]
 # iterator
 #? int()
