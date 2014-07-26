@@ -236,7 +236,7 @@ def collect_file_tests(lines, lines_to_execute):
     correct = None
     test_type = None
     for line_nr, line in enumerate(lines, 1):
-        if correct:
+        if correct is not None:
             r = re.match('^(\d+)\s*(.*)$', correct)
             if r:
                 column = int(r.group(1))
@@ -255,10 +255,13 @@ def collect_file_tests(lines, lines_to_execute):
             correct = None
         else:
             try:
-                r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]+)', line)
+                r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]*)', line)
                 # test_type is ? for completion and ! for goto_assignments
                 test_type = r.group(1)
                 correct = r.group(2)
+                # Quick hack to make everything work (not quite a bloody unicorn hack though).
+                if correct == '':
+                    correct = ' '
                 start = r.start()
             except AttributeError:
                 correct = None
