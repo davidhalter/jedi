@@ -224,7 +224,7 @@ f()
 d = dict({'a':''})
 def y(a):
     return a
-#? 
+#?
 y(**d)
 
 # problem with more complicated casts
@@ -297,7 +297,7 @@ list(a)[1]
 
 #? int() str()
 list(a)[0]
-#? 
+#?
 set(a)[0]
 
 #? int() str()

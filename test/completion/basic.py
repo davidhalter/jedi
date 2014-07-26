@@ -204,7 +204,7 @@ gen = (i for i in (1,))
 
 #? int()
 next(gen)
-#? 
+#?
 gen[0]
 
 gen = (a for arr in [[1.0]] for a in arr)
@@ -275,7 +275,7 @@ def a():
     """
     pass
 
-#? 
+#?
 # str literals in comment """ upper
 
 # -----------------
