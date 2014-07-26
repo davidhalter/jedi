@@ -3,13 +3,14 @@
 # -----------------
 # sphinx style
 # -----------------
-def f(a, b, c, d):
+def f(a, b, c, d, x):
     """ asdfasdf
     :param a: blablabla
     :type a: str
     :type b: (str, int)
     :type c: threading.Thread
     :type d: :class:`threading.Thread`
+    :param str x: blablabla
     :rtype: dict
     """
     #? str()
@@ -22,23 +23,28 @@ def f(a, b, c, d):
     c.join
     #? ['join']
     d.join
+    #? ['lower']
+    x.lower
 
 #? dict()
 f()
 
 # wrong declarations
-def f(a, b):
+def f(a, b, x):
     """
     :param a: Forgot type declaration
     :type a:
     :param b: Just something
     :type b: ``
-    :rtype: 
+    :param x: Just something without type
+    :rtype:
     """
     #? 
     a
     #? 
     b
+    #?
+    x
 
 #? 
 f()

@@ -50,6 +50,16 @@ class TestDocstring(unittest.TestCase):
         names = [c.name for c in jedi.Script(s).completions()]
         assert 'start' in names
 
+    def test_docstrings_param_type(self):
+        s = """
+                def func(arg):
+                    '''
+                    :param str arg: some description
+                    '''
+                    arg."""
+        names = [c.name for c in jedi.Script(s).completions()]
+        assert 'join' in names
+
     def test_docstrings_type_str(self):
         s = """
                 def func(arg):
