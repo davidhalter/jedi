@@ -119,10 +119,11 @@ http://sphinx-doc.org/domains.html#info-field-lists
 
 ::
 
-    def myfunction(node):
+    def myfunction(node, foo):
         """Do something with a ``node``.
 
         :type node: ProgramNode
+        :param str foo: foo parameter description
 
         """
         node.| # complete here

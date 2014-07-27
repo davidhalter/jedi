@@ -14,6 +14,7 @@ As an addition to parameter searching, this module also provides return
 annotations.
 """
 
+from ast import literal_eval
 import re
 from itertools import chain
 from textwrap import dedent
@@ -24,6 +25,7 @@ from jedi.common import indent_block
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
+    r'\s*:param\s+(\w+)\s+%s:[^\n]+', # Sphinx param with type
     r'\s*@type\s+%s:\s*([^\n]+)',  # Epydoc
 ]
 
@@ -35,26 +37,44 @@ DOCSTRING_RETURN_PATTERNS = [
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 
 
-@memoize_default(None, evaluator_is_first_arg=True)
-def follow_param(evaluator, param):
-    func = param.parent_function
-    param_str = _search_param_in_docstr(func.raw_doc, str(param.get_name()))
-    return _evaluate_for_statement_string(evaluator, param_str, param.get_parent_until())
+try:
+    from numpydoc.docscrape import NumpyDocString
+except ImportError:
+    def _search_param_in_numpydocstr(docstr, param_str):
+        return []
+else:
+    def _search_param_in_numpydocstr(docstr, param_str):
+        """Search `docstr` (in numpydoc format) for type(-s) of `param_str`."""
+        params = NumpyDocString(docstr)._parsed_data['Parameters']
+        for p_name, p_type, p_descr in params:
+            if p_name == param_str:
+                m = re.match('([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
+                if m:
+                    p_type = m.group(1)
+
+                if p_type.startswith('{'):
+                    types = set(type(x).__name__ for x in literal_eval(p_type))
+                    return list(types)
+                else:
+                    return [p_type]
+        return []
 
 
 def _search_param_in_docstr(docstr, param_str):
     """
-    Search `docstr` for a type of `param_str`.
+    Search `docstr` for type(-s) of `param_str`.
 
     >>> _search_param_in_docstr(':type param: int', 'param')
-    'int'
+    ['int']
     >>> _search_param_in_docstr('@type param: int', 'param')
-    'int'
+    ['int']
     >>> _search_param_in_docstr(
     ...   ':type param: :class:`threading.Thread`', 'param')
-    'threading.Thread'
-    >>> _search_param_in_docstr('no document', 'param') is None
-    True
+    ['threading.Thread']
+    >>> bool(_search_param_in_docstr('no document', 'param'))
+    False
+    >>> _search_param_in_docstr(':param int param: some description', 'param')
+    ['int']
 
     """
     # look at #40 to see definitions of those params
@@ -63,9 +83,10 @@ def _search_param_in_docstr(docstr, param_str):
     for pattern in patterns:
         match = pattern.search(docstr)
         if match:
-            return _strip_rst_role(match.group(1))
+            return [_strip_rst_role(match.group(1))]
 
-    return None
+    return (_search_param_in_numpydocstr(docstr, param_str) or
+            [])
 
 
 def _strip_rst_role(type_str):
@@ -124,6 +145,17 @@ def _evaluate_for_statement_string(evaluator, string, module):
     # At this point we just return the classes if executing wasn't possible,
     # i.e. is a tuple.
     return list(chain.from_iterable(it)) or definitions
+
+
+@memoize_default(None, evaluator_is_first_arg=True)
+def follow_param(evaluator, param):
+    func = param.parent_function
+
+    return [p
+            for param_str in _search_param_in_docstr(func.raw_doc,
+                                                     str(param.get_name()))
+            for p in _evaluate_for_statement_string(evaluator, param_str,
+                                                    param.get_parent_until())]
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
