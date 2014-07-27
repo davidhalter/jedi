@@ -174,7 +174,7 @@ class Parser(object):
                 break
         return imports
 
-    def _parse_parentheses(self):
+    def _parse_parentheses(self, is_class):
         """
         Functions and Classes have params (which means for classes
         super-classes). They are parsed here and returned as Statements.
@@ -195,8 +195,9 @@ class Parser(object):
                 if annotation:
                     param.add_annotation(annotation)
 
-            # params without vars are usually syntax errors.
-            if param and (param.get_defined_names()):
+            # function params without vars are usually syntax errors.
+            # expressions are valid in superclass declarations.
+            if param and (param.get_defined_names() or is_class):
                 param.position_nr = pos
                 names.append(param)
                 pos += 1
@@ -222,7 +223,7 @@ class Parser(object):
         tok = next(self._gen)
         if tok.string != '(':
             return None
-        params = self._parse_parentheses()
+        params = self._parse_parentheses(is_class=False)
 
         colon = next(self._gen)
         annotation = None
@@ -259,17 +260,17 @@ class Parser(object):
         cname = pr.Name(self.module, [(cname.string, cname.start_pos)],
                         cname.start_pos, cname.end_pos)
 
-        super = []
+        superclasses = []
         _next = next(self._gen)
         if _next.string == '(':
-            super = self._parse_parentheses()
+            superclasses = self._parse_parentheses(is_class=True)
             _next = next(self._gen)
 
         if _next.string != ':':
             debug.warning("class syntax: %s@%s", cname, _next.start_pos[0])
             return None
 
-        return pr.Class(self.module, cname, super, first_pos)
+        return pr.Class(self.module, cname, superclasses, first_pos)
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
                          stmt_class=pr.Statement, names_are_set_vars=False):

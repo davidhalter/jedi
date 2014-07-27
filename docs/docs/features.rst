@@ -157,9 +157,9 @@ https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
         Parameters
         ----------
         var1 : array_like
-            Array_like means all those objects -- lists, nested lists, etc. --
-            that can be converted to an array.  We can also refer to
-            variables like `var1`.
+            Array_like means all those objects -- lists, nested lists,
+            etc. -- that can be converted to an array. We can also
+            refer to variables like `var1`.
         var2 : int
             The type above can either refer to an actual Python type
             (e.g. ``int``), or describe the type of the variable in more
