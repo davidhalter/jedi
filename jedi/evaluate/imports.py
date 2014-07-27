@@ -353,13 +353,13 @@ class _Importer(object):
         # Handle "magic" Flask extension imports:
         # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
         if len(self.import_path) > 2 and \
-           [part._string for part in self.import_path[:2]] == ['flask', 'ext']:
+           [str(part) for part in self.import_path[:2]] == ['flask', 'ext']:
             orig_path = tuple(self.import_path)
             part = orig_path[2]
             pos = (part._line, part._column)
             try:
                 self.import_path = (
-                    pr.NamePart('flask_' + part._string, part.parent, pos),
+                    pr.NamePart('flask_' + str(part), part.parent, pos),
                 ) + orig_path[3:]
                 return self._real_follow_file_system()
             except ModuleNotFound as e:
