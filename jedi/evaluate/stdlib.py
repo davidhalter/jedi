@@ -1,12 +1,18 @@
 """
 Implementations of standard library functions, because it's not possible to
 understand them with Jedi.
+
+To add a new implementation, create a function and add it to the
+``_implemented`` dict at the bottom of this module.
+
 """
+import collections
 from jedi._compatibility import unicode
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate.helpers import FakeArray, FakeStatement
+from jedi.parser import Parser
 from jedi.parser import representation as pr
 from jedi import debug
 
@@ -107,6 +113,49 @@ def builtins_reversed(evaluator, obj, params):
     return [er.Instance(evaluator, obj, objects)]
 
 
+def collections_namedtuple(evaluator, obj, params):
+    """
+    Implementation of the namedtuple function.
+
+    This has to be done by processing the namedtuple class template and
+    evaluating the result.
+
+    .. note:: |jedi| only supports namedtuples on Python >2.6.
+
+    """
+    # Namedtuples are not supported on Python 2.6
+    if not hasattr(collections, '_class_template'):
+        return []
+
+    # Process arguments
+    name = _follow_param(evaluator, params, 0)[0].obj
+    _fields = _follow_param(evaluator, params, 1)[0]
+    if isinstance(_fields, compiled.CompiledObject):
+        fields = _fields.obj.replace(',', ' ').split()
+    elif isinstance(_fields, iterable.Array):
+        try:
+            fields = [v.obj for v in _fields.values()]
+        except AttributeError:
+            return []
+    else:
+        return []
+
+    # Build source
+    source = collections._class_template.format(
+        typename=name,
+        field_names=fields,
+        num_fields=len(fields),
+        arg_list=', '.join(fields),
+        repr_fmt=', '.join(collections._repr_template.format(name=name) for name in fields),
+        field_defs='\n'.join(collections._field_template.format(index=index, name=name)
+                             for index, name in enumerate(fields))
+    )
+
+    # Parse source
+    generated_class = Parser(unicode(source)).module.subscopes[0]
+    return [er.Class(evaluator, generated_class)]
+
+
 def _return_first_param(evaluator, obj, params):
     if len(params) == 1:
         return _follow_param(evaluator, params, 0)
@@ -127,5 +176,8 @@ _implemented = {
     'json': {
         'load': lambda *args: [],
         'loads': lambda *args: [],
+    },
+    'collections': {
+        'namedtuple': collections_namedtuple,
     },
 }
