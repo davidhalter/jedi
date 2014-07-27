@@ -192,6 +192,22 @@ Base.upper
 Base().upper
 
 # -----------------
+# dynamic inheritance
+# -----------------
+
+class Angry(object):
+    def shout(self):
+        return 'THIS IS MALARKEY!'
+
+def classgetter():
+    return Angry
+
+class Dude(classgetter()):
+    def react(self):
+        #? ['shout']
+        self.s
+
+# -----------------
 # __call__
 # -----------------
 
