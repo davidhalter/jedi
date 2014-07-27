@@ -322,7 +322,6 @@ class Parser(object):
                    or tok.string in breaks and level <= 0
                    and not (in_lambda_param and tok.string in ',:')):
             try:
-                # print 'parse_stmt', tok, tokenize.tok_name[token_type]
                 is_kw = tok.string in OPERATOR_KEYWORDS
                 if tok.type == tokenize.OP or is_kw:
                     tok_list.append(

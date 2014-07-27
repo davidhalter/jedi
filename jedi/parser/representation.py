@@ -113,13 +113,13 @@ class Base(object):
     @property
     def newline(self):
         """Returns the newline type for the current code."""
-        #TODO: we need newline detection
+        # TODO: we need newline detection
         return "\n"
 
     @property
     def whitespace(self):
         """Returns the whitespace type for the current code: tab or space."""
-        #TODO: we need tab detection
+        # TODO: we need tab detection
         return " "
 
     @Python3Method
@@ -998,7 +998,7 @@ isinstance(c, tokenize.Token) else unicode(c)
         """
         def is_assignment(tok):
             return isinstance(tok, Operator) and tok.string.endswith('=') \
-                and not tok.string in ('>=', '<=', '==', '!=')
+                and tok.string not in ('>=', '<=', '==', '!=')
 
         def parse_array(token_iterator, array_type, start_pos, add_el=None):
             arr = Array(self._sub_module, start_pos, array_type, self)
@@ -1164,7 +1164,7 @@ isinstance(c, tokenize.Token) else unicode(c)
                 if is_assignment(tok):
                     # This means, there is an assignment here.
                     # Add assignments, which can be more than one
-                    self._assignment_details.append((result, tok.string))
+                    self._assignment_details.append((result, tok))
                     result = []
                     is_chain = False
                     continue
@@ -1579,6 +1579,9 @@ class Operator(Simple):
 
     def __repr__(self):
         return "<%s: `%s`>" % (type(self).__name__, self.string)
+
+    def __str__(self):
+        return self.get_code()
 
     def __eq__(self, other):
         """Make comparisons easy. Improves the readability of the parser."""
