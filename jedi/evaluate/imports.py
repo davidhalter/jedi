@@ -345,7 +345,8 @@ class _Importer(object):
     def follow_file_system(self):
         # Handle "magic" Flask extension imports:
         # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
-        if [part._string for part in self.import_path[:2]] == ['flask', 'ext']:
+        if len(self.import_path) > 2 and \
+           [part._string for part in self.import_path[:2]] == ['flask', 'ext']:
             orig_path = tuple(self.import_path)
             part = orig_path[2]
             pos = (part._line, part._column)

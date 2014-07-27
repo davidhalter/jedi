@@ -52,3 +52,7 @@ def test_flask_ext(script, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
     """
     assert name in [c.name for c in jedi.Script(script).completions()]
+
+
+def test_flask_regression():
+    jedi.Script("from flask.ext.").completions()
