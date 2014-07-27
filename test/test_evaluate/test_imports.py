@@ -43,19 +43,12 @@ def teardown_function(function):
     ("from flask.ext import bar; bar.", "Bar"), # flaskext/bar.py
     ("from flask.ext import baz; baz.", "Baz"), # flask_baz/__init__.py
     ("from flask.ext import moo; moo.", "Moo"), # flaskext/moo/__init__.py
+    pytest.mark.xfail(("import flask.ext.foo; flask.ext.foo.", "Foo")),
+    pytest.mark.xfail(("import flask.ext.bar; flask.ext.bar.", "Foo")),
+    pytest.mark.xfail(("import flask.ext.baz; flask.ext.baz.", "Foo")),
+    pytest.mark.xfail(("import flask.ext.moo; flask.ext.moo.", "Foo")),
 ])
 def test_flask_ext(script, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
     """
-    assert name in [c.name for c in jedi.Script(script).completions()]
-
-
-@pytest.mark.xfail
-@pytest.mark.parametrize("script,name", [
-    ("import flask.ext.foo; flask.ext.foo.", "Foo"),
-    ("import flask.ext.bar; flask.ext.bar.", "Foo"),
-    ("import flask.ext.baz; flask.ext.baz.", "Foo"),
-    ("import flask.ext.moo; flask.ext.moo.", "Foo"),
-])
-def test_flask_ext_more(script, name):
     assert name in [c.name for c in jedi.Script(script).completions()]
