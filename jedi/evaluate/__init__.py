@@ -68,6 +68,7 @@ backtracking algorithm.
 
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
+import copy
 import itertools
 
 from jedi._compatibility import next, hasattr, unicode
@@ -133,9 +134,10 @@ class Evaluator(object):
 
         ass_details = stmt.assignment_details
         if ass_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
-            expr_list, operator = ass_details[0]
+            expr_list, _operator = ass_details[0]
             # `=` is always the last character in aug assignments -> -1
-            operator = operator[:-1]
+            operator = copy.copy(_operator)
+            operator.string = operator.string[:-1]
             name = str(expr_list[0].name)
             parent = stmt.parent
             if isinstance(parent, (pr.SubModule, fast.Module)):
@@ -333,7 +335,8 @@ class Evaluator(object):
         else:
             stmts = []
             if obj.isinstance(er.Function):
-                stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
+                stmts = er.FunctionExecution(self, obj, params) \
+                          .get_return_types(evaluate_generator)
             else:
                 if hasattr(obj, 'execute_subscope_by_name'):
                     try:

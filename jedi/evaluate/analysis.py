@@ -63,7 +63,7 @@ class Error(object):
         return hash((self.path, self._start_pos, self.name))
 
     def __repr__(self):
-        return '<%s %s: %s@%s,%s' % (self.__class__.__name__,
+        return '<%s %s: %s@%s,%s>' % (self.__class__.__name__,
                                      self.name, self.path,
                                      self._start_pos[0], self._start_pos[1])
 
