@@ -6,6 +6,13 @@ from textwrap import dedent
 import jedi
 from ..helpers import unittest
 
+try:
+    import numpydoc
+except ImportError:
+    numpydoc_unavailable = True
+else:
+    numpydoc_unavailable = False
+
 
 class TestDocstring(unittest.TestCase):
     def test_function_doc(self):
@@ -97,3 +104,49 @@ class TestDocstring(unittest.TestCase):
         assert 'a' in names
         assert '__init__' in names
         assert 'mro' not in names  # Exists only for types.
+
+    @unittest.skipIf(numpydoc_unavailable, 'numpydoc module is unavailable')
+    def test_numpydoc_docstring(self):
+        s = dedent('''
+        def foobar(x, y):
+            """
+            Parameters
+            ----------
+            x : int
+            y : str
+            """
+            y.''')
+        names = [c.name for c in jedi.Script(s).completions()]
+        assert 'isupper' in names
+        assert 'capitalize' in names
+
+    @unittest.skipIf(numpydoc_unavailable, 'numpydoc module is unavailable')
+    def test_numpydoc_docstring_set_of_values(self):
+        s = dedent('''
+        def foobar(x, y):
+            """
+            Parameters
+            ----------
+            x : {'foo', 'bar', 100500}, optional
+            """
+            x.''')
+        names = [c.name for c in jedi.Script(s).completions()]
+        assert 'isupper' in names
+        assert 'capitalize' in names
+        assert 'numerator' in names
+
+    @unittest.skipIf(numpydoc_unavailable, 'numpydoc module is unavailable')
+    def test_numpydoc_alternative_types(self):
+        s = dedent('''
+        def foobar(x, y):
+            """
+            Parameters
+            ----------
+            x : int or str or list
+            """
+            x.''')
+        names = [c.name for c in jedi.Script(s).completions()]
+        assert 'isupper' in names
+        assert 'capitalize' in names
+        assert 'numerator' in names
+        assert 'append' in names
