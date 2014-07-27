@@ -109,6 +109,13 @@ class ImportWrapper(pr.Base):
                             m = _load_module(rel_path)
                             names += m.get_defined_names()
             else:
+                if self.import_path == ('flask', 'ext'):
+                    # List Flask extensions in ``flask_foo``
+                    for mod in self._get_module_names():
+                        modname = str(mod)
+                        if modname.startswith('flask_'):
+                            extname = modname[len('flask_'):]
+                            names.append(self._generate_name(extname))
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
@@ -325,7 +332,7 @@ class _Importer(object):
         # `from gunicorn import something`. But gunicorn is not in the
         # sys.path. Therefore look if gunicorn is a parent directory, #56.
         in_path = []
-        if self.import_path:
+        if self.import_path and self.file_path is not None:
             parts = self.file_path.split(os.path.sep)
             for i, p in enumerate(parts):
                 if p == unicode(self.import_path[0]):

@@ -43,6 +43,8 @@ def teardown_function(function):
     ("from flask.ext import bar; bar.", "Bar"), # flaskext/bar.py
     ("from flask.ext import baz; baz.", "Baz"), # flask_baz/__init__.py
     ("from flask.ext import moo; moo.", "Moo"), # flaskext/moo/__init__.py
+    ("from flask.ext.", "foo"),
+    ("from flask.ext.", "baz"),
     pytest.mark.xfail(("import flask.ext.foo; flask.ext.foo.", "Foo")),
     pytest.mark.xfail(("import flask.ext.bar; flask.ext.bar.", "Foo")),
     pytest.mark.xfail(("import flask.ext.baz; flask.ext.baz.", "Foo")),
@@ -53,6 +55,3 @@ def test_flask_ext(script, name):
     """
     assert name in [c.name for c in jedi.Script(script).completions()]
 
-
-def test_flask_regression():
-    jedi.Script("from flask.ext.").completions()
