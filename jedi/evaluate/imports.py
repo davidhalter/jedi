@@ -343,6 +343,25 @@ class _Importer(object):
 
     @memoize_default(NO_DEFAULT)
     def follow_file_system(self):
+        # Handle "magic" Flask extension imports:
+        # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
+        if [part._string for part in self.import_path[:2]] == ['flask', 'ext']:
+            orig_path = tuple(self.import_path)
+            part = orig_path[2]
+            pos = (part._line, part._column)
+            try:
+                self.import_path = (
+                    pr.NamePart('flask_' + part._string, part.parent, pos),
+                ) + orig_path[3:]
+                return self._real_follow_file_system()
+            except ModuleNotFound as e:
+                self.import_path = (
+                    pr.NamePart('flaskext', part.parent, pos),
+                ) + orig_path[2:]
+                return self._real_follow_file_system()
+        return self._real_follow_file_system()
+
+    def _real_follow_file_system(self):
         if self.file_path:
             sys_path_mod = list(self.sys_path_with_modifications())
             if not self.module.has_explicit_absolute_import:
