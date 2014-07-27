@@ -24,6 +24,7 @@ from jedi.common import indent_block
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
+    r'\s*:param\s+(\w+)\s+%s:[^\n]+', # Sphinx param with type
     r'\s*@type\s+%s:\s*([^\n]+)',  # Epydoc
 ]
 
@@ -55,6 +56,8 @@ def _search_param_in_docstr(docstr, param_str):
     'threading.Thread'
     >>> _search_param_in_docstr('no document', 'param') is None
     True
+    >>> _search_param_in_docstr(':param int param: some description', 'param')
+    'int'
 
     """
     # look at #40 to see definitions of those params
