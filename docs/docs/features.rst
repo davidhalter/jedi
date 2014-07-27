@@ -170,6 +170,7 @@ https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
         ...
 
         """
+        var2.| # complete here
 
 A little history
 ----------------
