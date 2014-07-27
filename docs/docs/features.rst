@@ -146,6 +146,9 @@ http://epydoc.sourceforge.net/manual-fields.html
 
 https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
+In order to support the numpydoc format, you need to install the `numpydoc
+<https://pypi.python.org/pypi/numpydoc>`__ package.
+
 ::
 
     def foo(var1, var2, long_var_name='hi'):
