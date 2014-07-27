@@ -110,12 +110,17 @@ class ImportWrapper(pr.Base):
                             names += m.get_defined_names()
             else:
                 if self.import_path == ('flask', 'ext'):
-                    # List Flask extensions in ``flask_foo``
+                    # List Flask extensions like ``flask_foo``
                     for mod in self._get_module_names():
                         modname = str(mod)
                         if modname.startswith('flask_'):
                             extname = modname[len('flask_'):]
                             names.append(self._generate_name(extname))
+                    # Now the old style: ``flaskext.foo``
+                    for dir in self._importer.sys_path_with_modifications():
+                        flaskext = os.path.join(dir, 'flaskext')
+                        if os.path.isdir(flaskext):
+                            names += self._get_module_names([flaskext])
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)

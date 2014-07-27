@@ -44,7 +44,9 @@ def teardown_function(function):
     ("from flask.ext import baz; baz.", "Baz"), # flask_baz/__init__.py
     ("from flask.ext import moo; moo.", "Moo"), # flaskext/moo/__init__.py
     ("from flask.ext.", "foo"),
+    ("from flask.ext.", "bar"),
     ("from flask.ext.", "baz"),
+    ("from flask.ext.", "moo"),
     pytest.mark.xfail(("import flask.ext.foo; flask.ext.foo.", "Foo")),
     pytest.mark.xfail(("import flask.ext.bar; flask.ext.bar.", "Foo")),
     pytest.mark.xfail(("import flask.ext.baz; flask.ext.baz.", "Foo")),
