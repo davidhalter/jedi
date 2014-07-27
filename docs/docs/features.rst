@@ -13,8 +13,8 @@ General Features
 - ignores syntax errors and wrong indentation
 - can deal with complex module / function / class structures
 - virtualenv support
-- can infer function arguments from sphinx and epydoc docstrings (:ref:`type
-  hinting <type-hinting>`)
+- can infer function arguments from sphinx, epydoc and basic numpydoc docstrings
+  (:ref:`type hinting <type-hinting>`)
 
 
 Supported Python Features
@@ -111,7 +111,7 @@ Type Hinting
 
 If |jedi| cannot detect the type of a function argument correctly (due to the
 dynamic nature of Python), you can help it by hinting the type using
-Sphinx-style info field lists or Epydoc docstrings.
+one of the following docstring syntax styles:
 
 **Sphinx style**
 
@@ -141,6 +141,35 @@ http://epydoc.sourceforge.net/manual-fields.html
 
         """
         node.| # complete here
+
+**Numpydoc**
+
+https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
+
+::
+
+    def foo(var1, var2, long_var_name='hi'):
+        r"""A one-line summary that does not use variable names or the
+        function name.
+
+        ...
+
+        Parameters
+        ----------
+        var1 : array_like
+            Array_like means all those objects -- lists, nested lists, etc. --
+            that can be converted to an array.  We can also refer to
+            variables like `var1`.
+        var2 : int
+            The type above can either refer to an actual Python type
+            (e.g. ``int``), or describe the type of the variable in more
+            detail, e.g. ``(N,) ndarray`` or ``array_like``.
+        long_variable_name : {'hi', 'ho'}, optional
+            Choices in brackets, default first when optional.
+
+        ...
+
+        """
 
 A little history
 ----------------
