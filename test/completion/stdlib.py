@@ -18,11 +18,11 @@ next(reversed(arr))
 def yielder():
     yield None
 
-#? 
+#?
 next(reversed(yielder()))
 
 # empty reversed should not raise an error
-#? 
+#?
 next(reversed())
 
 #? str()
@@ -140,7 +140,7 @@ import copy
 #? int()
 copy.deepcopy(1)
 
-#? 
+#?
 copy.copy()
 
 # -----------------
@@ -149,7 +149,20 @@ copy.copy()
 
 # We don't want any results for json, because it depends on IO.
 import json
-#? 
+#?
 json.load('asdf')
-#? 
+#?
 json.loads('[1]')
+
+# -----------------
+# random
+# -----------------
+
+import random
+class A(object):
+    def say(self): pass
+class B(object):
+    def shout(self): pass
+cls = random.choice([A, B])
+#? ['say', 'shout']
+cls().s

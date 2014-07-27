@@ -11,3 +11,4 @@
 /dist/
 jedi.egg-info/
 record.json
+/.cache/

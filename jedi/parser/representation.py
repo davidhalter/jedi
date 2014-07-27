@@ -396,6 +396,9 @@ class Module(IsScope):
     For isinstance checks. fast_parser.Module also inherits from this.
     """
 
+    def scope_names_generator(self, position=None):
+        yield self, filter_after_position(self.get_defined_names(), position)
+
 
 class SubModule(Scope, Module):
     """
