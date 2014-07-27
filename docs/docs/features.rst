@@ -41,6 +41,7 @@ Supported Python Features
 - simple/usual ``sys.path`` modifications
 - ``isinstance`` checks for if/while/assert
 - namespace packages (includes ``pkgutil`` and ``pkg_resources`` namespaces)
+- Django / Flask / Buildout support
 
 
 Unsupported Features
