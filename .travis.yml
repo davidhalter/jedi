@@ -15,12 +15,6 @@ matrix:
         - env: TOXENV=pypy
 install:
     - pip install --quiet --use-mirrors tox
-    # install python 3.4 from PPA since Travis does not have python 3.4 yet
-    - if [ "$TOXENV" = "py34" ]; then
-        sudo apt-add-repository -y ppa:fkrull/deadsnakes;
-        sudo apt-get update;
-        sudo apt-get install python3.4;
-      fi
 script:
     - tox
 after_script:
