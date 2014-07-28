@@ -78,3 +78,10 @@ def test_change_and_undo():
     fp('a')
     fp('b')
     fp('a')
+
+
+def test_incomplete_function():
+    source = '''return ImportErr'''
+
+    script = jedi.Script(dedent(source), 1, 3)
+    assert script.completions()

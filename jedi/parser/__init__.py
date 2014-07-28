@@ -555,8 +555,9 @@ class Parser(object):
             elif tok_str in ('return', 'yield'):
                 s = tok.start_pos
                 self.freshscope = False
-                # add returns to the scope
-                func = self._scope.get_parent_until(pr.Function)
+                # Add returns to the scope
+                # Should be a function, otherwise just add it to a module!
+                func = self._scope.get_parent_until((pr.Function, pr.Module))
                 if tok_str == 'yield':
                     func.is_generator = True
 
