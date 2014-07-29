@@ -82,6 +82,13 @@ def builtins_type(evaluator, obj, params):
     return []
 
 
+class SuperInstance(er.Instance):
+    """To be used like the object ``super`` returns."""
+    def __init__(self, evaluator, cls):
+        su = cls.get_super_classes()
+        super().__init__(evaluator, su and su[0] or self)
+
+
 def builtins_super(evaluator, obj, params):
     # TODO make this able to detect multiple inheritance super
     accept = (pr.Function,)
