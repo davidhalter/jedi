@@ -58,7 +58,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             # compare the module path with the builtin name.
             self.var_args = iterable.check_array_instances(evaluator, self)
         else:
-            # need to execute the __init__ function, because the dynamic param
+            # Need to execute the __init__ function, because the dynamic param
             # searching needs it.
             with common.ignored(KeyError):
                 self.execute_subscope_by_name('__init__', self.var_args)
@@ -251,9 +251,14 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return isinstance(self.var, cls)
 
     def py__call__(self, evaluator, params):
-        # TODO Why are CompiledObject and Instance even InstanceObjects?
+        # TODO Why is CompiledObject even an InstanceObject?
         if isinstance(self.var, (compiled.CompiledObject, Instance)):
-            return self.var.py__call__(evaluator, params)
+            try:
+                func = self.var.py__call__
+            except AttributeError:
+                return []
+            else:
+                return func(evaluator, params)
         else:
             return Function.py__call__(self, evaluator, params)
 

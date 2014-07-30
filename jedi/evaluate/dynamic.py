@@ -78,7 +78,7 @@ def search_params(evaluator, param):
                     pos = c.start_pos
                     scope = stmt.parent
 
-                    # this whole stuff is just to not execute certain parts
+                    # This whole stuff is just to not execute certain parts
                     # (speed improvement), basically we could just call
                     # ``eval_call_path`` on the call_path and it would
                     # also work.

@@ -191,6 +191,18 @@ f()
 #? int()
 g()
 
+
+class X():
+    @str
+    def x(self):
+        pass
+
+    def y(self):
+        #? str()
+        self.x
+        #?
+        self.x()
+
 # -----------------
 # method decorators
 # -----------------
