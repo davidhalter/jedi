@@ -66,6 +66,19 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
         # (No var_args) used.
         self.is_generated = False
 
+    @property
+    def py__call__(self):
+        def actual(evaluator, params):
+            return evaluator.execute(method, params)
+
+        try:
+            method = self.get_subscope_by_name('__call__')
+        except KeyError:
+            # Means the Instance is not callable.
+            raise AttributeError
+
+        return actual
+
     @memoize_default()
     def _get_method_execution(self, func):
         func = InstanceElement(self._evaluator, self, func, True)
@@ -247,13 +260,13 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def is_callable(self):
         return self.var.is_callable()
 
-    def py__call__(self, params, evaluate_generator=False):
+    def py__call__(self, evaluator, params, evaluate_generator=False):
         # TODO this should be working nicer.
-        if isinstance(self.var, compiled.CompiledObject):
-            return self.var.py__call__(self._evaluator, params)
-        stmts = FunctionExecution(self._evaluator, self, params) \
+        if isinstance(self.var, (compiled.CompiledObject, Instance)):
+            return self.var.py__call__(evaluator, params)
+        stmts = FunctionExecution(evaluator, self, params) \
             .get_return_types(evaluate_generator)
-        return imports.follow_imports(self._evaluator, stmts)
+        return imports.follow_imports(evaluator, stmts)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)
@@ -301,8 +314,8 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
             supers += self._evaluator.find_types(compiled.builtin, 'object')
         return supers
 
-    def py__call__(self, params):
-        return [Instance(self._evaluator, self, params)]
+    def py__call__(self, evaluator, params):
+        return [Instance(evaluator, self, params)]
 
     @memoize_default(default=())
     def instance_names(self):
@@ -424,10 +437,10 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
     def is_callable(self):
         return True
 
-    def py__call__(self, params, evaluate_generator=False):
-        stmts = FunctionExecution(self._evaluator, self, params) \
+    def py__call__(self, evaluator, params, evaluate_generator=False):
+        stmts = FunctionExecution(evaluator, self, params) \
             .get_return_types(evaluate_generator)
-        return imports.follow_imports(self._evaluator, stmts)
+        return imports.follow_imports(evaluator, stmts)
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)

@@ -94,7 +94,7 @@ class GeneratorMethod(object):
         self._builtin_func = builtin_func
         self._generator = generator
 
-    def py__call__(self, params):
+    def py__call__(self, evaluator, params):
         # TODO add TypeError if params are given.
         return self._generator.iter_content()
 

@@ -325,24 +325,24 @@ class Evaluator(object):
             pass
 
         if isinstance(obj, iterable.GeneratorMethod):
-            return obj.py__call__(params)
+            return obj.py__call__(self, params)
         elif obj.isinstance(compiled.CompiledObject):
             return obj.py__call__(self, params)
         elif obj.isinstance(er.Class):
             # There maybe executions of executions.
-            return obj.py__call__(params)
+            return obj.py__call__(self, params)
         else:
             stmts = []
             if obj.isinstance(er.Function):
-                return obj.py__call__(params, evaluate_generator)
+                return obj.py__call__(self, params, evaluate_generator)
             else:
-                if hasattr(obj, 'execute_subscope_by_name'):
-                    try:
-                        stmts = obj.execute_subscope_by_name('__call__', params)
-                    except KeyError:
-                        debug.warning("no __call__ func available %s", obj)
-                else:
+                try:
+                    func = obj.py__call__
+                except AttributeError:
                     debug.warning("no execution possible %s", obj)
+                    return []
+                else:
+                    return func(self, params)
 
             debug.dbg('execute result: %s in %s', stmts, obj)
             return imports.follow_imports(self, stmts)
