@@ -398,6 +398,8 @@ PrivateVar().__var
 # -----------------
 class Super(object):
     a = 3
+    def return_sup(self):
+        return 1
 
 class TestSuper(Super):
     #?
@@ -413,6 +415,13 @@ class TestSuper(Super):
         def a():
             #?
             super()
+
+    def return_sup(self):
+        #? int()
+        return super().return_sup()
+
+#? int()
+TestSuper().return_sup()
 
 
 # -----------------

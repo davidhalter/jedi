@@ -91,13 +91,15 @@ class SuperInstance(er.Instance):
 
 def builtins_super(evaluator, obj, params):
     # TODO make this able to detect multiple inheritance super
-    accept = (pr.Function,)
+    accept = (pr.Function, er.FunctionExecution)
     func = params.get_parent_until(accept)
     if func.isinstance(*accept):
-        cls = func.get_parent_until(accept + (pr.Class,),
+        wanted = (pr.Class, er.Instance)
+        cls = func.get_parent_until(accept + wanted,
                                     include_current=False)
-        if isinstance(cls, pr.Class):
-            cls = er.Class(evaluator, cls)
+        if isinstance(cls, wanted):
+            if isinstance(cls, pr.Class):
+                cls = er.Class(evaluator, cls)
             su = cls.py_bases()
             if su:
                 return evaluator.execute(su[0])

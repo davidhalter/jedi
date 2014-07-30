@@ -176,7 +176,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'name', 'get_imports',
-                        'doc', 'raw_doc', 'asserts']:
+                        'doc', 'raw_doc', 'asserts', 'py_bases']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                  % (self, name))
         return getattr(self.base, name)
