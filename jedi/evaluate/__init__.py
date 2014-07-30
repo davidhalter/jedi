@@ -318,17 +318,16 @@ class Evaluator(object):
 
         debug.dbg('execute: %s %s', obj, params)
         try:
+            # Some stdlib functions like super(), namedtuple(), etc. have been
+            # hard-coded in Jedi to support them.
             return stdlib.execute(self, obj, params)
         except stdlib.NotInStdLib:
             pass
 
         if isinstance(obj, iterable.GeneratorMethod):
-            return obj.execute()
+            return obj.py__call__(params)
         elif obj.isinstance(compiled.CompiledObject):
-            if obj.is_executable_class():
-                return [er.Instance(self, obj, params)]
-            else:
-                return list(obj.execute_function(self, params))
+            return obj.py__call__(self, params)
         elif obj.isinstance(er.Class):
             # There maybe executions of executions.
             return obj.py__call__(params)

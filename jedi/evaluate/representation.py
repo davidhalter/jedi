@@ -248,6 +248,9 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return self.var.is_callable()
 
     def py__call__(self, params, evaluate_generator=False):
+        # TODO this should be working nicer.
+        if isinstance(self.var, compiled.CompiledObject):
+            return self.var.py__call__(self._evaluator, params)
         stmts = FunctionExecution(self._evaluator, self, params) \
             .get_return_types(evaluate_generator)
         return imports.follow_imports(self._evaluator, stmts)

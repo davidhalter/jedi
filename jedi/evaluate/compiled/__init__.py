@@ -32,6 +32,13 @@ class CompiledObject(Base):
         self.obj = obj
         self.parent = parent
 
+    def py__call__(self, evaluator, params):
+        if inspect.isclass(self.obj):
+            from jedi.evaluate.representation import Instance
+            return [Instance(evaluator, self, params)]
+        else:
+            return list(self._execute_function(evaluator, params))
+
     @property
     def doc(self):
         return inspect.getdoc(self.obj) or ''
@@ -72,9 +79,6 @@ class CompiledObject(Base):
         elif inspect.isbuiltin(cls) or inspect.ismethod(cls) \
                 or inspect.ismethoddescriptor(cls):
             return 'function'
-
-    def is_executable_class(self):
-        return inspect.isclass(self.obj)
 
     @underscore_memoization
     def _cls(self):
@@ -148,7 +152,7 @@ class CompiledObject(Base):
         # might not exist sometimes (raises AttributeError)
         return self._cls().obj.__name__
 
-    def execute_function(self, evaluator, params):
+    def _execute_function(self, evaluator, params):
         if self.type() != 'function':
             return
 
