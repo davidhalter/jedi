@@ -62,7 +62,10 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
 
     def iter_content(self):
         """ returns the content of __iter__ """
-        return self.func.py__call__(self._evaluator, self.var_args, True)
+        # Directly execute it, because with a normal call to py__call__ a
+        # Generator will be returned.
+        from jedi.evaluate.representation import FunctionExecution
+        return FunctionExecution(self._evaluator, self.func, self.var_args).get_return_types()
 
     def get_index_types(self, index_array):
         #debug.warning('Tried to get array access on a generator: %s', self)
@@ -285,6 +288,7 @@ def get_iterator_types(inputs):
             except KeyError:
                 debug.warning('Instance has no __next__ function in %s.', it)
         else:
+            # TODO this is not correct, __iter__ can return arbitrary input!
             # Is a generator.
             result += it.iter_content()
     return result

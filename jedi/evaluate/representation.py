@@ -250,12 +250,13 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def isinstance(self, *cls):
         return isinstance(self.var, cls)
 
-    def py__call__(self, evaluator, params, evaluate_generator=False):
+    def py__call__(self, evaluator, params):
         # TODO this should be working nicer.
         if isinstance(self.var, (compiled.CompiledObject, Instance)):
             return self.var.py__call__(evaluator, params)
-        stmts = FunctionExecution(evaluator, self, params) \
-            .get_return_types(evaluate_generator)
+        if self.is_generator:
+            return [iterable.Generator(evaluator, self, params)]
+        stmts = FunctionExecution(evaluator, self, params).get_return_types()
         return stmts
 
     def __repr__(self):
@@ -421,10 +422,11 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
     def get_magic_function_scope(self):
         return compiled.magic_function_class
 
-    def py__call__(self, evaluator, params, evaluate_generator=False):
-        stmts = FunctionExecution(evaluator, self, params) \
-            .get_return_types(evaluate_generator)
-        return stmts
+    def py__call__(self, evaluator, params):
+        if self.is_generator:
+            return [iterable.Generator(evaluator, self, params)]
+        else:
+            return FunctionExecution(evaluator, self, params).get_return_types()
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
@@ -448,7 +450,7 @@ class FunctionExecution(Executed):
     """
     @memoize_default(default=())
     @recursion.execution_recursion_decorator
-    def get_return_types(self, evaluate_generator=False):
+    def get_return_types(self):
         func = self.base
         # Feed the listeners, with the params.
         for listener in func.listeners:
@@ -459,14 +461,11 @@ class FunctionExecution(Executed):
             # inserted params, not in the actual execution of the function.
             return []
 
-        if func.is_generator and not evaluate_generator:
-            return [iterable.Generator(self._evaluator, func, self.var_args)]
-        else:
-            stmts = list(docstrings.find_return_types(self._evaluator, func))
-            for r in self.returns:
-                if r is not None:
-                    stmts += self._evaluator.eval_statement(r)
-            return imports.follow_imports(self._evaluator, stmts)
+        stmts = list(docstrings.find_return_types(self._evaluator, func))
+        for r in self.returns:
+            if r is not None:
+                stmts += self._evaluator.eval_statement(r)
+        return imports.follow_imports(self._evaluator, stmts)
 
     @memoize_default(default=())
     def _get_params(self):
