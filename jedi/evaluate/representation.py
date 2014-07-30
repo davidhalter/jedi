@@ -452,20 +452,21 @@ class FunctionExecution(Executed):
     @recursion.execution_recursion_decorator
     def get_return_types(self):
         func = self.base
-        # Feed the listeners, with the params.
-        for listener in func.listeners:
-            listener.execute(self._get_params())
+
         if func.listeners:
+            # Feed the listeners, with the params.
+            for listener in func.listeners:
+                listener.execute(self._get_params())
             # If we do have listeners, that means that there's not a regular
             # execution ongoing. In this case Jedi is interested in the
             # inserted params, not in the actual execution of the function.
             return []
 
-        stmts = list(docstrings.find_return_types(self._evaluator, func))
+        types = list(docstrings.find_return_types(self._evaluator, func))
         for r in self.returns:
             if r is not None:
-                stmts += self._evaluator.eval_statement(r)
-        return imports.follow_imports(self._evaluator, stmts)
+                types += self._evaluator.eval_statement(r)
+        return types
 
     @memoize_default(default=())
     def _get_params(self):
