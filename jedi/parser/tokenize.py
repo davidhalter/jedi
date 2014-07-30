@@ -37,43 +37,47 @@ tok_name[COMMENT] = 'COMMENT'
 class Token(object):
     """
     The token object is an efficient representation of the structure
-    (type, token, (start_pos_line, start_pos_col)). It has indexer
+    (type, token, (start_pos_line, start_pos_col, preceding_whitespace)). It has indexer
     methods that maintain compatibility to existing code that expects the above
     structure.
 
-    >>> repr(Token(1, "test", (1, 1)))
-    "<Token: ('NAME', 'test', (1, 1))>"
-    >>> Token(1, 'bar', (3, 4)).__getstate__()
-    (1, 'bar', 3, 4)
-    >>> a = Token(0, 'baz', (0, 0))
-    >>> a.__setstate__((1, 'foo', 3, 4))
+    >>> repr(Token(1, "test", (1, 1, '')))
+    "<Token: ('NAME', 'test', (1, 1, ''))>"
+    >>> Token(1, 'bar', (3, 4, '')).__getstate__()
+    (1, 'bar', 3, 4, '')
+    >>> a = Token(0, 'baz', (0, 0, ''))
+    >>> a.__setstate__((1, 'foo', 3, 4, ''))
     >>> a
-    <Token: ('NAME', 'foo', (3, 4))>
+    <Token: ('NAME', 'foo', (3, 4, ''))>
     >>> a.start_pos
     (3, 4)
     >>> a.string
     'foo'
     >>> a._start_pos_col
     4
-    >>> Token(1, u("😷"), (1 ,1)).string + "p" == u("😷p")
+    >>> Token(1, u("😷"), (1 ,1, '')).string + "p" == u("😷p")
     True
     """
-    __slots__ = ("type", "string", "_start_pos_line", "_start_pos_col")
+    __slots__ = ("type", "string", "_start_pos_line", "_start_pos_col",
+                 "_preceding_whitespace")
 
-    def __init__(self, type, string, start_pos):
+    def __init__(self, type, string, start_pos, whitespace=''):
         self.type = type
         self.string = string
         self._start_pos_line = start_pos[0]
         self._start_pos_col = start_pos[1]
+        self._preceding_whitespace = whitespace
 
     def __repr__(self):
         typ = tok_name[self.type]
-        content = typ, self.string, (self._start_pos_line, self._start_pos_col)
+        content = typ, self.string,\
+            (self._start_pos_line, self._start_pos_col,
+             self._preceding_whitespace)
         return "<%s: %s>" % (type(self).__name__, content)
 
     @property
     def start_pos(self):
-        return (self._start_pos_line, self._start_pos_col)
+        return self._start_pos_line, self._start_pos_col
 
     @property
     def end_pos(self):
@@ -94,13 +98,16 @@ class Token(object):
 
     # Make cache footprint smaller for faster unpickling
     def __getstate__(self):
-        return (self.type, self.string, self._start_pos_line, self._start_pos_col)
+        return (self.type, self.string,
+                self._start_pos_line, self._start_pos_col,
+                self._preceding_whitespace)
 
     def __setstate__(self, state):
         self.type = state[0]
         self.string = state[1]
         self._start_pos_line = state[2]
         self._start_pos_col = state[3]
+        self._preceding_whitespace = state[4]
 
 
 def group(*choices):
@@ -158,7 +165,8 @@ cont_str = group(r"[bBuU]?[rR]?'[^\n'\\]*(?:\\.[^\n'\\]*)*" +
                  r'[bBuU]?[rR]?"[^\n"\\]*(?:\\.[^\n"\\]*)*' +
                  group('"', r'\\\r?\n'))
 pseudo_extras = group(r'\\\r?\n', comment, triple)
-pseudo_token = whitespace + group(pseudo_extras, number, funny, cont_str, name)
+pseudo_token = group(whitespace) + \
+    group(pseudo_extras, number, funny, cont_str, name)
 
 
 def _compile(expr):
@@ -167,6 +175,7 @@ def _compile(expr):
 
 pseudoprog, single3prog, double3prog = map(
     _compile, (pseudo_token, single3, double3))
+
 endprogs = {"'": _compile(single), '"': _compile(double),
             "'''": single3prog, '"""': double3prog,
             "r'''": single3prog, 'r"""': double3prog,
@@ -219,11 +228,12 @@ def generate_tokens(readline, line_offset=0):
     numchars = '0123456789'
     contstr = ''
     contline = None
-    while True:             # loop over lines in stream
-        line = readline()  # readline returns empty if it's finished. See StringIO
+    ws = ''  # Should never be required, but here for safety
+    while True:            # loop over lines in stream
+        line = readline()  # readline returns empty when finished. See StringIO
         if not line:
             if contstr:
-                yield Token(ERRORTOKEN, contstr, contstr_start)
+                yield Token(ERRORTOKEN, contstr, contstr_start, whitespace=ws)
             break
 
         lnum += 1
@@ -233,7 +243,8 @@ def generate_tokens(readline, line_offset=0):
             endmatch = endprog.match(line)
             if endmatch:
                 pos = endmatch.end(0)
-                yield Token(STRING, contstr + line[:pos], contstr_start)
+                yield Token(STRING, contstr + line[:pos],
+                            contstr_start, whitespace=ws)
                 contstr = ''
                 contline = None
             else:
@@ -248,32 +259,33 @@ def generate_tokens(readline, line_offset=0):
                 if line[pos] in '"\'':
                     # If a literal starts but doesn't end the whole rest of the
                     # line is an error token.
-                    txt = txt = line[pos:]
+                    txt = line[pos:]
                 yield Token(ERRORTOKEN, txt, (lnum, pos))
                 pos += 1
                 continue
 
-            start, pos = pseudomatch.span(1)
+            ws = pseudomatch.group(1)
+            start, pos = pseudomatch.span(2)
             spos = (lnum, start)
             token, initial = line[start:pos], line[start]
 
             if (initial in numchars or                      # ordinary number
                     (initial == '.' and token != '.' and token != '...')):
-                yield Token(NUMBER, token, spos)
+                yield Token(NUMBER, token, spos, whitespace=ws)
             elif initial in '\r\n':
-                yield Token(NEWLINE, token, spos)
+                yield Token(NEWLINE, token, spos, whitespace=ws)
             elif initial == '#':
                 assert not token.endswith("\n")
-                yield Token(COMMENT, token, spos)
+                yield Token(COMMENT, token, spos, whitespace=ws)
             elif token in triple_quoted:
                 endprog = endprogs[token]
                 endmatch = endprog.match(line, pos)
                 if endmatch:                                # all on one line
                     pos = endmatch.end(0)
                     token = line[start:pos]
-                    yield Token(STRING, token, spos)
+                    yield Token(STRING, token, spos, whitespace=ws)
                 else:
-                    contstr_start = (lnum, start)                # multiple lines
+                    contstr_start = (lnum, start)           # multiple lines
                     contstr = line[start:]
                     contline = line
                     break
@@ -288,12 +300,12 @@ def generate_tokens(readline, line_offset=0):
                     contline = line
                     break
                 else:                                       # ordinary string
-                    yield Token(STRING, token, spos)
+                    yield Token(STRING, token, spos, whitespace=ws)
             elif initial in namechars:                      # ordinary name
-                yield Token(NAME, token, spos)
+                yield Token(NAME, token, spos, whitespace=ws)
             elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
                 continue
             else:
-                yield Token(OP, token, spos)
+                yield Token(OP, token, spos, whitespace=ws)
 
     yield Token(ENDMARKER, '', (lnum, 0))
