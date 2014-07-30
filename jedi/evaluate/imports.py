@@ -109,6 +109,18 @@ class ImportWrapper(pr.Base):
                             m = _load_module(rel_path)
                             names += m.get_defined_names()
             else:
+                if self.import_path == ('flask', 'ext'):
+                    # List Flask extensions like ``flask_foo``
+                    for mod in self._get_module_names():
+                        modname = str(mod)
+                        if modname.startswith('flask_'):
+                            extname = modname[len('flask_'):]
+                            names.append(self._generate_name(extname))
+                    # Now the old style: ``flaskext.foo``
+                    for dir in self._importer.sys_path_with_modifications():
+                        flaskext = os.path.join(dir, 'flaskext')
+                        if os.path.isdir(flaskext):
+                            names += self._get_module_names([flaskext])
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
@@ -325,7 +337,7 @@ class _Importer(object):
         # `from gunicorn import something`. But gunicorn is not in the
         # sys.path. Therefore look if gunicorn is a parent directory, #56.
         in_path = []
-        if self.import_path:
+        if self.import_path and self.file_path is not None:
             parts = self.file_path.split(os.path.sep)
             for i, p in enumerate(parts):
                 if p == unicode(self.import_path[0]):
@@ -343,6 +355,26 @@ class _Importer(object):
 
     @memoize_default(NO_DEFAULT)
     def follow_file_system(self):
+        # Handle "magic" Flask extension imports:
+        # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
+        if len(self.import_path) > 2 and \
+           [str(part) for part in self.import_path[:2]] == ['flask', 'ext']:
+            orig_path = tuple(self.import_path)
+            part = orig_path[2]
+            pos = (part._line, part._column)
+            try:
+                self.import_path = (
+                    pr.NamePart('flask_' + str(part), part.parent, pos),
+                ) + orig_path[3:]
+                return self._real_follow_file_system()
+            except ModuleNotFound as e:
+                self.import_path = (
+                    pr.NamePart('flaskext', part.parent, pos),
+                ) + orig_path[2:]
+                return self._real_follow_file_system()
+        return self._real_follow_file_system()
+
+    def _real_follow_file_system(self):
         if self.file_path:
             sys_path_mod = list(self.sys_path_with_modifications())
             if not self.module.has_explicit_absolute_import:
