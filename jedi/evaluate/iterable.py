@@ -62,7 +62,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
 
     def iter_content(self):
         """ returns the content of __iter__ """
-        return self._evaluator.execute(self.func, self.var_args, True)
+        return self.func.py__call__(self._evaluator, self.var_args, True)
 
     def get_index_types(self, index_array):
         #debug.warning('Tried to get array access on a generator: %s', self)

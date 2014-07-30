@@ -312,7 +312,7 @@ class Evaluator(object):
         return self.follow_path(path, result, scope)
 
     @debug.increase_indent
-    def execute(self, obj, params=(), evaluate_generator=False):
+    def execute(self, obj, params=()):
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
@@ -324,28 +324,15 @@ class Evaluator(object):
         except stdlib.NotInStdLib:
             pass
 
-        if isinstance(obj, iterable.GeneratorMethod):
-            return obj.py__call__(self, params)
-        elif obj.isinstance(compiled.CompiledObject):
-            return obj.py__call__(self, params)
-        elif obj.isinstance(er.Class):
-            # There maybe executions of executions.
-            return obj.py__call__(self, params)
+        try:
+            func = obj.py__call__
+        except AttributeError:
+            debug.warning("no execution possible %s", obj)
+            return []
         else:
-            stmts = []
-            if obj.isinstance(er.Function):
-                return obj.py__call__(self, params, evaluate_generator)
-            else:
-                try:
-                    func = obj.py__call__
-                except AttributeError:
-                    debug.warning("no execution possible %s", obj)
-                    return []
-                else:
-                    return func(self, params)
-
-            debug.dbg('execute result: %s in %s', stmts, obj)
-            return imports.follow_imports(self, stmts)
+            types = func(self, params)
+            debug.dbg('execute result: %s in %s', types, obj)
+            return types
 
     def goto(self, stmt, call_path):
         scope = stmt.get_parent_until(pr.IsScope)
