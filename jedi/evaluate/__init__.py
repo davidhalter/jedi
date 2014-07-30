@@ -331,12 +331,11 @@ class Evaluator(object):
                 return list(obj.execute_function(self, params))
         elif obj.isinstance(er.Class):
             # There maybe executions of executions.
-            return [er.Instance(self, obj, params)]
+            return obj.py__call__(params)
         else:
             stmts = []
             if obj.isinstance(er.Function):
-                stmts = er.FunctionExecution(self, obj, params) \
-                          .get_return_types(evaluate_generator)
+                return obj.py__call__(params, evaluate_generator)
             else:
                 if hasattr(obj, 'execute_subscope_by_name'):
                     try:

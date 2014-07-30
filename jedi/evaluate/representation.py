@@ -26,6 +26,7 @@ from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
 from jedi.evaluate import helpers
 from jedi.evaluate import param
+from jedi.evaluate import imports
 
 
 class Executable(pr.IsScope):
@@ -246,6 +247,11 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def is_callable(self):
         return self.var.is_callable()
 
+    def py__call__(self, params, evaluate_generator=False):
+        stmts = FunctionExecution(self._evaluator, self, params) \
+            .get_return_types(evaluate_generator)
+        return imports.follow_imports(self._evaluator, stmts)
+
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
@@ -291,6 +297,9 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
             # add `object` to classes
             supers += self._evaluator.find_types(compiled.builtin, 'object')
         return supers
+
+    def py__call__(self, params):
+        return [Instance(self._evaluator, self, params)]
 
     @memoize_default(default=())
     def instance_names(self):
@@ -411,6 +420,11 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
 
     def is_callable(self):
         return True
+
+    def py__call__(self, params, evaluate_generator=False):
+        stmts = FunctionExecution(self._evaluator, self, params) \
+            .get_return_types(evaluate_generator)
+        return imports.follow_imports(self._evaluator, stmts)
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
