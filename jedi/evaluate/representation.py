@@ -29,7 +29,7 @@ from jedi.evaluate import param
 from jedi.evaluate import imports
 
 
-class Executable(pr.IsScope):
+class Executed(pr.IsScope):
     """
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of `pr.Array` or list.
@@ -47,7 +47,7 @@ class Executable(pr.IsScope):
         return self.base.parent
 
 
-class Instance(use_metaclass(CachedMetaClass, Executable)):
+class Instance(use_metaclass(CachedMetaClass, Executed)):
     """
     This class is used to evaluate instances.
     """
@@ -256,7 +256,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
             return self.var.py__call__(evaluator, params)
         stmts = FunctionExecution(evaluator, self, params) \
             .get_return_types(evaluate_generator)
-        return imports.follow_imports(evaluator, stmts)
+        return stmts
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)
@@ -424,7 +424,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
     def py__call__(self, evaluator, params, evaluate_generator=False):
         stmts = FunctionExecution(evaluator, self, params) \
             .get_return_types(evaluate_generator)
-        return imports.follow_imports(evaluator, stmts)
+        return stmts
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
@@ -437,7 +437,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
-class FunctionExecution(Executable):
+class FunctionExecution(Executed):
     """
     This class is used to evaluate functions and their returns.
 
@@ -466,7 +466,7 @@ class FunctionExecution(Executable):
             for r in self.returns:
                 if r is not None:
                     stmts += self._evaluator.eval_statement(r)
-            return stmts
+            return imports.follow_imports(self._evaluator, stmts)
 
     @memoize_default(default=())
     def _get_params(self):
