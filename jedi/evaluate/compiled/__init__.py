@@ -32,12 +32,18 @@ class CompiledObject(Base):
         self.obj = obj
         self.parent = parent
 
-    def py__call__(self, evaluator, params):
-        if inspect.isclass(self.obj):
-            from jedi.evaluate.representation import Instance
-            return [Instance(evaluator, self, params)]
-        else:
-            return list(self._execute_function(evaluator, params))
+    @property
+    def py__call__(self):
+        def actual(evaluator, params):
+            if inspect.isclass(self.obj):
+                from jedi.evaluate.representation import Instance
+                return [Instance(evaluator, self, params)]
+            else:
+                return list(self._execute_function(evaluator, params))
+
+        # Might raise an AttributeError, which is intentional.
+        self.obj.__call__
+        return actual
 
     @property
     def doc(self):
