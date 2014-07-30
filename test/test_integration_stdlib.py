@@ -6,6 +6,10 @@ import pytest
 from jedi import Script
 from jedi._compatibility import is_py26
 
+# The namedtuple is different for different Python2.7 versions. Some versions
+# are missing the attribute `_class_template`.
+pytestmark = pytest.mark.skipif('sys.version_info[0] < 3')
+
 
 @pytest.mark.parametrize(['letter', 'expected'], [
     ('n', ['name']),

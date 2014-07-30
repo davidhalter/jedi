@@ -14,7 +14,7 @@ import copy
 import os
 import pkgutil
 
-from jedi._compatibility import use_metaclass, unicode
+from jedi._compatibility import use_metaclass, unicode, Python3Method
 from jedi.parser import representation as pr
 from jedi.parser.tokenize import Token
 from jedi import debug
@@ -251,13 +251,11 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return isinstance(self.var, cls)
 
     def py__call__(self, evaluator, params):
-        # TODO this should be working nicer.
+        # TODO Why are CompiledObject and Instance even InstanceObjects?
         if isinstance(self.var, (compiled.CompiledObject, Instance)):
             return self.var.py__call__(evaluator, params)
-        if self.is_generator:
-            return [iterable.Generator(evaluator, self, params)]
-        stmts = FunctionExecution(evaluator, self, params).get_return_types()
-        return stmts
+        else:
+            return Function.py__call__(self, evaluator, params)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)
@@ -422,6 +420,7 @@ class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
     def get_magic_function_scope(self):
         return compiled.magic_function_class
 
+    @Python3Method
     def py__call__(self, evaluator, params):
         if self.is_generator:
             return [iterable.Generator(evaluator, self, params)]
