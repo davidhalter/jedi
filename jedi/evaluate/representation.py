@@ -119,7 +119,7 @@ class Instance(use_metaclass(CachedMetaClass, Executable)):
                     add_self_dot_name(n)
 
         if not isinstance(self.base, compiled.CompiledObject):
-            for s in self.base.get_super_classes():
+            for s in self.base.py_bases():
                 for inst in self._evaluator.execute(s):
                     names += inst.get_self_attributes()
         return names
@@ -260,9 +260,25 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         self.base = base
 
     @memoize_default(default=())
-    def get_super_classes(self):
+    def py_mro(self):
+        def add(cls):
+            if cls not in mro:
+                mro.add(cls)
+
+        mro = [self]
+        # TODO Do a proper mro resolution. Currently we are just listing
+        # classes. However, it's a complicated algorithm.
+        for cls in self.py_bases():
+            # TODO detect for TypeError: duplicate base class str,
+            # e.g.  `class X(str, str): pass`
+            add(cls)
+            for cls_new in cls.mro():
+                add(cls_new)
+        return mro
+
+    @memoize_default(default=())
+    def py_bases(self):
         supers = []
-        # TODO care for mro stuff (multiple super classes).
         for s in self.base.supers:
             # Super classes are statements.
             for cls in self._evaluator.eval_statement(s):
@@ -270,6 +286,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
                     debug.warning('Received non class as a super class.')
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
+
         if not supers and self.base.parent != compiled.builtin:
             # add `object` to classes
             supers += self._evaluator.find_types(compiled.builtin, 'object')
@@ -289,7 +306,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         result = self.base.get_defined_names()
         super_result = []
         # TODO mro!
-        for cls in self.get_super_classes():
+        for cls in self.py_bases():
             # Get the inherited names.
             for i in cls.instance_names():
                 if not in_iterable(i, result):
@@ -302,7 +319,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         yield self, compiled.type_names
 
     def get_subscope_by_name(self, name):
-        for s in [self] + self.get_super_classes():
+        for s in [self] + self.py_bases():
             for sub in reversed(s.subscopes):
                 if sub.name.get_code() == name:
                     return sub

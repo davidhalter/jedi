@@ -85,7 +85,7 @@ def builtins_type(evaluator, obj, params):
 class SuperInstance(er.Instance):
     """To be used like the object ``super`` returns."""
     def __init__(self, evaluator, cls):
-        su = cls.get_super_classes()
+        su = cls.py_mro()[1]
         super().__init__(evaluator, su and su[0] or self)
 
 
@@ -98,7 +98,7 @@ def builtins_super(evaluator, obj, params):
                                     include_current=False)
         if isinstance(cls, pr.Class):
             cls = er.Class(evaluator, cls)
-            su = cls.get_super_classes()
+            su = cls.py_bases()
             if su:
                 return evaluator.execute(su[0])
     return []
