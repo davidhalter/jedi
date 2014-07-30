@@ -335,7 +335,7 @@ class BaseDefinition(object):
         Otherwise returns a list of `Definition` that represents the params.
         """
         followed = self._follow_statements_imports()
-        if not followed or not followed[0].is_callable():
+        if not followed or not hasattr(followed[0], 'py__call__'):
             raise AttributeError()
         followed = followed[0]  # only check the first one.
 

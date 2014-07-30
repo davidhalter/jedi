@@ -195,10 +195,6 @@ class CompiledObject(Base):
     def get_imports(self):
         return []  # Builtins don't have imports
 
-    def is_callable(self):
-        """Check if the object has a ``__call__`` method."""
-        return hasattr(self.obj, '__call__')
-
 
 class CompiledName(FakeName):
     def __init__(self, obj, name):
@@ -248,8 +244,7 @@ def dotted_from_fs_path(fs_path, sys_path=None):
     #     C:\path\to\Lib
     path = ''
     for s in sys_path:
-        if (fs_path.startswith(s) and
-            len(path) < len(s)):
+        if (fs_path.startswith(s) and len(path) < len(s)):
             path = s
     return _path_re.sub('', fs_path[len(path):].lstrip(os.path.sep)).replace(os.path.sep, '.')
 

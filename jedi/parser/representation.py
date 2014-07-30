@@ -139,13 +139,6 @@ class Base(object):
             scope = scope.parent
         return scope
 
-    def is_callable(self):
-        """
-        By default parser objects are not callable, we make them callable by
-        the ``evaluate.representation`` objects.
-        """
-        return False
-
     def space(self, from_pos, to_pos):
         """Return the space between two tokens"""
         linecount = to_pos[0] - from_pos[0]

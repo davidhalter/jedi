@@ -585,7 +585,7 @@ class Script(object):
             except (IndexError, AttributeError):
                 pass
         return [classes.CallSignature(self._evaluator, o, call, index, key_name)
-                for o in origins if o.is_callable()]
+                for o in origins if hasattr(o, 'py__call__')]
 
     def _analysis(self):
         #statements = set(chain(*self._parser.module().used_names.values()))
