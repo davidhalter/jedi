@@ -399,7 +399,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             # InstanceElements are special, because they don't get copied,
             # but have this wrapper around them.
             if isinstance(comp_arr_parent, er.InstanceElement):
-                stmt = er.InstanceElement(comp_arr_parent.instance, stmt)
+                stmt = er.get_instance_el(comp_arr_parent.instance, stmt)
 
             if evaluator.recursion_detector.push_stmt(stmt):
                 # check recursion

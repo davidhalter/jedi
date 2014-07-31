@@ -81,7 +81,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
     @memoize_default()
     def _get_method_execution(self, func):
-        func = InstanceElement(self._evaluator, self, func, True)
+        func = get_instance_el(self._evaluator, self, func, True)
         return FunctionExecution(self._evaluator, func, self.var_args)
 
     def _get_func_self_name(self, func):
@@ -104,7 +104,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             n = copy.copy(name)
             n.names = n.names[1:]
             n._get_code = unicode(n.names[-1])
-            names.append(InstanceElement(self._evaluator, self, n))
+            names.append(get_instance_el(self._evaluator, self, n))
 
         names = []
         # This loop adds the names of the self object, copies them and removes
@@ -140,7 +140,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
     def get_subscope_by_name(self, name):
         sub = self.base.get_subscope_by_name(name)
-        return InstanceElement(self._evaluator, self, sub, True)
+        return get_instance_el(self._evaluator, self, sub, True)
 
     def execute_subscope_by_name(self, name, args=()):
         method = self.get_subscope_by_name(name)
@@ -162,7 +162,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
         names = []
         for var in self.base.instance_names():
-            names.append(InstanceElement(self._evaluator, self, var, True))
+            names.append(get_instance_el(self._evaluator, self, var, True))
         yield self, names
 
     def get_index_types(self, index_array):
@@ -193,17 +193,29 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             (type(self).__name__, self.base, len(self.var_args or []))
 
 
+def get_instance_el(evaluator, instance, var, is_class_var=False):
+    """
+    Returns an InstanceElement if it makes sense, otherwise leaves the object
+    untouched.
+    """
+    if isinstance(var, (Instance, compiled.CompiledObject)):
+        return var
+
+    if isinstance(var, pr.Function):
+        var = Function(evaluator, var)
+    elif isinstance(var, pr.Class):
+        var = Class(evaluator, var)
+
+    return InstanceElement(evaluator, instance, var, is_class_var)
+
+
 class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     """
     InstanceElement is a wrapper for any object, that is used as an instance
     variable (e.g. self.variable or class methods).
     """
-    def __init__(self, evaluator, instance, var, is_class_var=False):
+    def __init__(self, evaluator, instance, var, is_class_var):
         self._evaluator = evaluator
-        if isinstance(var, pr.Function):
-            var = Function(evaluator, var)
-        elif isinstance(var, pr.Class):
-            var = Class(evaluator, var)
         self.instance = instance
         self.var = var
         self.is_class_var = is_class_var
@@ -217,7 +229,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
                 and par == self.instance.base.base:
             par = self.instance
         elif not isinstance(par, (pr.Module, compiled.CompiledObject)):
-            par = InstanceElement(self.instance._evaluator, self.instance, par, self.is_class_var)
+            par = get_instance_el(self.instance._evaluator, self.instance, par, self.is_class_var)
         return par
 
     def get_parent_until(self, *args, **kwargs):
@@ -226,22 +238,22 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
         func = self.var.get_decorated_func()
-        func = InstanceElement(self._evaluator, self.instance, func)
+        func = get_instance_el(self._evaluator, self.instance, func)
         return func
 
     def expression_list(self):
         # Copy and modify the array.
-        return [InstanceElement(self._evaluator, self.instance, command, self.is_class_var)
+        return [get_instance_el(self._evaluator, self.instance, command, self.is_class_var)
                 if not isinstance(command, (pr.Operator, Token)) else command
                 for command in self.var.expression_list()]
 
     def __iter__(self):
         for el in self.var.__iter__():
-            yield InstanceElement(self.instance._evaluator, self.instance, el,
+            yield get_instance_el(self.instance._evaluator, self.instance, el,
                                   self.is_class_var)
 
     def __getitem__(self, index):
-        return InstanceElement(self._evaluator, self.instance, self.var[index],
+        return get_instance_el(self._evaluator, self.instance, self.var[index],
                                self.is_class_var)
 
     def __getattr__(self, name):

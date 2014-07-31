@@ -271,7 +271,7 @@ class NameFinder(object):
 
         if check_instance is not None:
             # class renames
-            types = [er.InstanceElement(evaluator, check_instance, a, True)
+            types = [er.get_instance_el(evaluator, check_instance, a, True)
                      if isinstance(a, (er.Function, pr.Function))
                      else a for a in types]
         return types
