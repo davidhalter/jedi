@@ -148,7 +148,7 @@ def both():
     """
     return 23
 
-#? str(), int()
+#? str() int()
 both()
 
 class Test(object):

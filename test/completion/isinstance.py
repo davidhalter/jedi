@@ -38,7 +38,7 @@ import datetime
 
 def fooooo(obj):
     if isinstance(obj, datetime.datetime):
-        #? datetime.datetime
+        #? datetime.datetime()
         obj
 
 
@@ -48,7 +48,7 @@ def fooooo2(obj):
     else:
         return 1
 
-#? int() datetime.datetime
+#? int() datetime.datetime()
 fooooo2('')
 
 

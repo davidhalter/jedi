@@ -148,6 +148,8 @@ class BaseDefinition(object):
             stripped = stripped.parent
         if isinstance(stripped, pr.Name):
             stripped = stripped.parent
+        if isinstance(stripped, iterable.Array):
+            return 'instance'
         return type(stripped).__name__.lower().replace('wrapper', '')
 
     def _path(self):

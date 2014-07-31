@@ -31,7 +31,7 @@ def fu(a, b, c, *args, **kwargs):
 
 exe = fu(list, c=set, b=3, d='')
 
-#? list()
+#? list
 exe[0]
 #? int()
 exe[1]
@@ -63,7 +63,7 @@ def fu2(a, b, c, *args, **kwargs):
 
 exe = fu2(list, c=set, b=3, d='str')
 
-#? list()
+#? list
 exe[0]
 #? int()
 exe[1]

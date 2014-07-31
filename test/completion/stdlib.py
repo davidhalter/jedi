@@ -64,7 +64,7 @@ import weakref
 #? int()
 weakref.proxy(1)
 
-#? weakref.ref
+#? weakref.ref()
 weakref.ref(1)
 #? int()
 weakref.ref(1)()

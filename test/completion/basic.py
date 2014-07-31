@@ -51,7 +51,7 @@ func()
 assert []
 
 def focus_return():
-    #? list
+    #? list()
     return []
 
 
@@ -163,7 +163,7 @@ def listen(arg):
         x
 
 listen(['' for x in [1]])
-#? str()
+#? str
 ([str for x in []])[0]
 
 
