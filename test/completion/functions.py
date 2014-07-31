@@ -21,7 +21,7 @@ arr
 def inputs(param):
     return param
 
-#? list()
+#? list
 inputs(list)
 
 def variable_middle():

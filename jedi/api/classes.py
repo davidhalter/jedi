@@ -621,7 +621,10 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             d = d.parent
 
         if isinstance(d, compiled.CompiledObject):
-            d = d.type() + ' ' + d.name
+            typ = d.type()
+            if typ == 'instance':
+                typ = 'class'  # The description should be similar to Py objects.
+            d = typ + ' ' + d.name
         elif isinstance(d, iterable.Array):
             d = 'class ' + d.type
         elif isinstance(d, (pr.Class, er.Class, er.Instance)):

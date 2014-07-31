@@ -77,6 +77,9 @@ class CompiledObject(Base):
         return _parse_function_doc(self.doc)
 
     def type(self):
+        if fake.is_class_instance(self.obj):
+            return 'instance'
+
         cls = self._cls().obj
         if inspect.isclass(cls):
             return 'class'
