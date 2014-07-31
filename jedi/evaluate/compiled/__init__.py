@@ -171,13 +171,11 @@ class CompiledObject(Base):
             except AttributeError:
                 continue
             else:
-                if isinstance(bltn_obj, CompiledObject):
+                if isinstance(bltn_obj, CompiledObject) and bltn_obj.obj is None:
                     # We want everything except None.
-                    if bltn_obj.obj is not None:
-                        yield bltn_obj
-                else:
-                    for result in evaluator.execute(bltn_obj, params):
-                        yield result
+                    continue
+                for result in evaluator.execute(bltn_obj, params):
+                    yield result
 
     @property
     @underscore_memoization
