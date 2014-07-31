@@ -564,9 +564,10 @@ class Script(object):
             # Go to parent literal/variable until not possible anymore. This
             # makes it possible to return the whole expression.
             stmt_el = stmt_el.parent
-        # We can reset the execution since it's a new object
+        # We can change the execution since it's a new object
         # (fast_parent_copy).
         execution_arr, call.execution = call.execution, None
+        call.next = None
 
         with common.scale_speed_settings(settings.scale_call_signatures):
             _callable = lambda: self._evaluator.eval_call(stmt_el)
