@@ -198,7 +198,8 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
     Returns an InstanceElement if it makes sense, otherwise leaves the object
     untouched.
     """
-    if isinstance(var, (Instance, compiled.CompiledObject)):
+    if isinstance(var, (Instance, compiled.CompiledObject, pr.Operator, Token,
+                        pr.Module)):
         return var
 
     if isinstance(var, pr.Function):
@@ -228,8 +229,9 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
                 or isinstance(par, pr.Class) \
                 and par == self.instance.base.base:
             par = self.instance
-        elif not isinstance(par, (pr.Module, compiled.CompiledObject)):
-            par = get_instance_el(self.instance._evaluator, self.instance, par, self.is_class_var)
+        else:
+            par = get_instance_el(self._evaluator, self.instance, par,
+                                  self.is_class_var)
         return par
 
     def get_parent_until(self, *args, **kwargs):
@@ -244,12 +246,11 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def expression_list(self):
         # Copy and modify the array.
         return [get_instance_el(self._evaluator, self.instance, command, self.is_class_var)
-                if not isinstance(command, (pr.Operator, Token)) else command
                 for command in self.var.expression_list()]
 
     def __iter__(self):
         for el in self.var.__iter__():
-            yield get_instance_el(self.instance._evaluator, self.instance, el,
+            yield get_instance_el(self._evaluator, self.instance, el,
                                   self.is_class_var)
 
     def __getitem__(self, index):
@@ -263,16 +264,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return isinstance(self.var, cls)
 
     def py__call__(self, evaluator, params):
-        # TODO Why is CompiledObject even an InstanceObject?
-        if isinstance(self.var, (compiled.CompiledObject, Instance)):
-            try:
-                func = self.var.py__call__
-            except AttributeError:
-                return []
-            else:
-                return func(evaluator, params)
-        else:
-            return Function.py__call__(self, evaluator, params)
+        return Function.py__call__(self, evaluator, params)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)
