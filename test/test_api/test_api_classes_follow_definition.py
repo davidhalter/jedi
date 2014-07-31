@@ -34,7 +34,7 @@ def test_follow_import_incomplete():
 
     # incomplete `from * import` part
     datetime = check_follow_definition_types("from datetime import datetim")
-    assert set(datetime) == set(['class'])  # py33: builtin and pure py version
+    assert set(datetime) == set(['class', 'instance'])  # py33: builtin and pure py version
 
     # os.path check
     ospath = check_follow_definition_types("from os.path import abspat")
@@ -54,7 +54,7 @@ def test_follow_definition_nested_import():
     assert types == ['module']
 
     types = check_follow_definition_types("import pkg.mod1; pkg.mod1.a")
-    assert types == ['class']
+    assert types == ['instance']
 
 
 def test_follow_definition_land_on_import():

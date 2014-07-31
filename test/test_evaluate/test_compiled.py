@@ -1,6 +1,6 @@
 from jedi._compatibility import builtins, is_py3
 from jedi.parser.representation import Function
-from jedi.evaluate import compiled
+from jedi.evaluate import compiled, representation
 from jedi.evaluate import Evaluator
 from jedi import Script
 
@@ -13,7 +13,7 @@ def test_simple():
     assert len(upper) == 1
     objs = list(e.execute(upper[0]))
     assert len(objs) == 1
-    assert objs[0].obj is str
+    assert isinstance(objs[0], representation.Instance)
 
 
 def test_fake_loading():
