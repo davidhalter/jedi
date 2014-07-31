@@ -59,9 +59,9 @@ def local_classes(node, node2):
     ... and the class definition after this func definition:
     :type node2: ProgramNode2
     """
-    #? ProgramNode
+    #? ProgramNode()
     node
-    #? ProgramNode2
+    #? ProgramNode2()
     node2
 
 class ProgramNode2():

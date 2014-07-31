@@ -22,6 +22,9 @@ from textwrap import dedent
 from jedi.evaluate.cache import memoize_default
 from jedi.parser import Parser
 from jedi.common import indent_block
+from jedi.evaluate.iterable import Array
+from jedi.evaluate import helpers
+
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
@@ -137,14 +140,34 @@ def _evaluate_for_statement_string(evaluator, string, module):
     # call. In that case it's the module of the function call.
     # stuffed with content from a function call.
     pseudo_cls.parent = module
+    return list(_execute_types_in_stmt(evaluator, stmt))
+
+
+def _execute_types_in_stmt(evaluator, stmt):
+    """
+    Executing all types or general elements that we find in a statement. This
+    doesn't include tuple, list and dict literals, because the stuff they
+    contain is executed. (Used as type information).
+    """
     definitions = evaluator.eval_statement(stmt)
-    it = (evaluator.execute(d) for d in definitions)
-    # TODO Executing tuples does not make sense, people tend to say
-    # `(str, int)` in a type annotation, which means that it returns a tuple
-    # with both types.
-    # At this point we just return the classes if executing wasn't possible,
-    # i.e. is a tuple.
-    return list(chain.from_iterable(it)) or definitions
+    return chain.from_iterable(_execute_array_values(evaluator, d) for d in definitions)
+
+
+def _execute_array_values(evaluator, array):
+    """
+    Tuples indicate that there's not just one return value, but the listed
+    ones.  `(str, int)` means that it returns a tuple with both types.
+    """
+    if isinstance(array, Array):
+        values = []
+        for typ in array.values():
+            objects = _execute_array_values(evaluator, typ)
+            values.append(helpers.FakeStatement(objects))
+        arr = helpers.FakeArray(values, array.parent, array.type)
+        # Wrap it, because that's what the evaluator knows.
+        return [Array(evaluator, arr)]
+    else:
+        return evaluator.execute(array)
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
