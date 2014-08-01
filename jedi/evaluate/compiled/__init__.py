@@ -45,6 +45,9 @@ class CompiledObject(Base):
         self.obj.__call__
         return actual
 
+    def py__mro__(self, evaluator):
+        return tuple(create(evaluator, cls) for cls in self.obj.__mro__)
+
     @property
     def doc(self):
         return inspect.getdoc(self.obj) or ''
@@ -431,5 +434,11 @@ def create(evaluator, obj, parent=builtin, module=None):
         if faked is not None:
             faked.parent = parent
             return faked
+
+    try:
+        if obj.__module__ in ('builtins', '__builtin__'):
+            return builtin.get_by_name(obj.__name__)
+    except AttributeError:
+        pass
 
     return CompiledObject(obj, parent)

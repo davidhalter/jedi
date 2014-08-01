@@ -26,7 +26,6 @@ from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
 from jedi.evaluate import helpers
 from jedi.evaluate import param
-from jedi.evaluate import imports
 
 
 class Executed(pr.IsScope):
@@ -280,10 +279,10 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         self.base = base
 
     @memoize_default(default=())
-    def py_mro(self):
+    def py__mro__(self, evaluator):
         def add(cls):
             if cls not in mro:
-                mro.add(cls)
+                mro.append(cls)
 
         mro = [self]
         # TODO Do a proper mro resolution. Currently we are just listing
@@ -292,9 +291,9 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
             # TODO detect for TypeError: duplicate base class str,
             # e.g.  `class X(str, str): pass`
             add(cls)
-            for cls_new in cls.mro():
+            for cls_new in cls.py__mro__(evaluator):
                 add(cls_new)
-        return mro
+        return tuple(mro)
 
     @memoize_default(default=())
     def py_bases(self):
