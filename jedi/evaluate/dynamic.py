@@ -80,8 +80,8 @@ def search_params(evaluator, param):
 
                     # This whole stuff is just to not execute certain parts
                     # (speed improvement), basically we could just call
-                    # ``eval_call_path`` on the call_path and it would
-                    # also work.
+                    # ``eval_call_path`` on the call_path and it would also
+                    # work.
                     def listRightIndex(lst, value):
                         return len(lst) - lst[-1::-1].index(value) - 1
 
@@ -90,12 +90,12 @@ def search_params(evaluator, param):
                     call_path_simple = [unicode(d) if isinstance(d, pr.NamePart)
                                         else d for d in call_path]
                     i = listRightIndex(call_path_simple, func_name)
-                    first, last = call_path[:i], call_path[i + 1:]
-                    if not last and not call_path_simple.index(func_name) != i:
+                    before, after = call_path[:i], call_path[i + 1:]
+                    if not after and not call_path_simple.index(func_name) != i:
                         continue
                     scopes = [scope]
-                    if first:
-                        scopes = evaluator.eval_call_path(iter(first), c.parent, pos)
+                    if before:
+                        scopes = evaluator.eval_call_path(iter(before), c.parent, pos)
                         pos = None
                     from jedi.evaluate import representation as er
                     for scope in scopes:
@@ -105,7 +105,7 @@ def search_params(evaluator, param):
                         # doesn't matter. But this is a way to get potential
                         # candidates for calling that function really quick!
                         s = evaluator.find_types(scope, func_name, position=pos,
-                                                 search_global=not first,
+                                                 search_global=not before,
                                                  resolve_decorator=False)
 
                         c = [getattr(escope, 'base_func', None) or escope.base
@@ -114,7 +114,7 @@ def search_params(evaluator, param):
                         if compare in c:
                             # only if we have the correct function we execute
                             # it, otherwise just ignore it.
-                            evaluator.follow_path(iter(last), s, scope)
+                            evaluator.follow_path(iter(after), s, scope)
             return listener.param_possibilities
 
         result = []
