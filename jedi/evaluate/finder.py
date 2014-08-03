@@ -1,5 +1,5 @@
 """
-Searcjing for names with given scope and name. This is very central in Jedi and
+Searching for names with given scope and name. This is very central in Jedi and
 Python. The name resolution is quite complicated with descripter,
 ``__getattribute__``, ``__getattr__``, ``global``, etc.
 

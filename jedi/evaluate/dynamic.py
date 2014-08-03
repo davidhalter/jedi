@@ -99,6 +99,11 @@ def search_params(evaluator, param):
                         pos = None
                     from jedi.evaluate import representation as er
                     for scope in scopes:
+                        # Not resolving decorators is a speed hack:
+                        # By ignoring them, we get the function that is
+                        # probably called really fast. If it's not called, it
+                        # doesn't matter. But this is a way to get potential
+                        # candidates for calling that function really quick!
                         s = evaluator.find_types(scope, func_name, position=pos,
                                                  search_global=not first,
                                                  resolve_decorator=False)
