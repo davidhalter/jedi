@@ -83,6 +83,14 @@ def list_with_non_imports(lst):
     lst[1][10]
 
 
+def two_dots(a):
+    """
+    :type a: json.decoder.JSONDecoder
+    """
+    #? ['raw_decode']
+    a.raw_decode
+
+
 # sphinx returns
 def return_module_object():
     """
@@ -91,6 +99,7 @@ def return_module_object():
 
 #? ['join']
 return_module_object().join
+
 
 # -----------------
 # epydoc style
