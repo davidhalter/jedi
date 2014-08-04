@@ -197,16 +197,19 @@ class NameFinder(object):
 
     def _names_to_types(self, names, resolve_decorator):
         types = []
+        evaluator = self._evaluator
+
         # Add isinstance and other if/assert knowledge.
         flow_scope = self.scope
-        evaluator = self._evaluator
-        while flow_scope:
-            # TODO check if result is in scope -> no evaluation necessary
-            n = check_flow_information(evaluator, flow_scope,
-                                       self.name_str, self.position)
-            if n:
-                return n
-            flow_scope = flow_scope.parent
+        if isinstance(self.name_str, pr.NamePart):
+            flow_scope = self.name_str.parent.parent
+            while flow_scope:
+                # TODO check if result is in scope -> no evaluation necessary
+                n = check_flow_information(evaluator, flow_scope,
+                                           self.name_str, self.position)
+                if n:
+                    return n
+                flow_scope = flow_scope.parent
 
         for name in names:
             typ = name.parent
@@ -359,7 +362,7 @@ def check_flow_information(evaluator, flow, search_name_part, pos):
         return None
 
     result = []
-    if isinstance(flow, pr.IsScope) and not result:
+    if isinstance(flow, pr.IsScope):
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
@@ -391,7 +394,7 @@ def _check_isinstance_type(evaluator, stmt, search_name_part):
         assert isinstance(obj[0], pr.Call)
 
         # names fit?
-        assert unicode(obj[0].name) == unicode(search_name_part)
+        assert unicode(obj[0].name) == unicode(search_name_part.parent)
         assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
     except AssertionError:
         return []

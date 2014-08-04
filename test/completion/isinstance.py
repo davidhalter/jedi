@@ -65,5 +65,7 @@ class Test():
 
     def boo(self):
         if isinstance(self.testing, str):
-            ##? str()
+            #? str()
             self.testing
+            #? Test()
+            self
