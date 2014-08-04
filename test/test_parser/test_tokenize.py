@@ -21,3 +21,9 @@ asdfasdf""" + "h"
 '''))
         tok = parsed.module.subscopes[0].statements[0]._token_list[2]
         self.assertEqual(tok.end_pos, (4, 11))
+
+
+def test_tokenizer_with_string_literal_backslash():
+    import jedi
+    c = jedi.Script("statement = u'foo\\\n'; statement").goto_definitions()
+    assert c[0]._definition.obj == 'foo'

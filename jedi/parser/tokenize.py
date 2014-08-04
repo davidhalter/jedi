@@ -282,8 +282,8 @@ def generate_tokens(readline, line_offset=0):
                     token[:3] in single_quoted:
                 if token[-1] == '\n':                       # continued string
                     contstr_start = lnum, start
-                    endprog = (endprogs[initial] or endprogs[token[1]] or
-                               endprogs[token[2]])
+                    endprog = (endprogs.get(initial) or endprogs.get(token[1])
+                               or endprogs.get(token[2]))
                     contstr = line[start:]
                     contline = line
                     break
