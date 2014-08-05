@@ -476,7 +476,7 @@ class FunctionExecution(Executed):
                 continue
 
             check = flow_analysis.break_check(self._evaluator, self, r.parent.parent)
-            if check is not flow_analysis.NOT_REACHABLE:
+            if check is not flow_analysis.UNREACHABLE:
                 types += self._evaluator.eval_statement(r)
             if check is flow_analysis.REACHABLE:
                 break
