@@ -475,7 +475,7 @@ class FunctionExecution(Executed):
             if r is None:
                 continue
 
-            check = flow_analysis.break_check(r.parent.parent)
+            check = flow_analysis.break_check(self._evaluator, self, r.parent.parent)
             if check is not flow_analysis.NOT_REACHABLE:
                 types += self._evaluator.eval_statement(r)
             if check is flow_analysis.REACHABLE:
