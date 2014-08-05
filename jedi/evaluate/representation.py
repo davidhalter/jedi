@@ -26,6 +26,7 @@ from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
 from jedi.evaluate import helpers
 from jedi.evaluate import param
+from jedi.evaluate import flow_analysis
 
 
 class Executed(pr.IsScope):
@@ -471,8 +472,14 @@ class FunctionExecution(Executed):
 
         types = list(docstrings.find_return_types(self._evaluator, func))
         for r in self.returns:
-            if r is not None:
+            if r is None:
+                continue
+
+            check = flow_analysis.break_check(r.parent.parent)
+            if check is not flow_analysis.NOT_REACHABLE:
                 types += self._evaluator.eval_statement(r)
+            if check is flow_analysis.REACHABLE:
+                break
         return types
 
     @memoize_default(default=())

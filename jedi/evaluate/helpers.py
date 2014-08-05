@@ -47,7 +47,10 @@ def fast_parent_copy(obj):
             elif isinstance(value, list):
                 setattr(new_obj, key, list_rec(value))
             elif isinstance(value, pr.Simple):
-                setattr(new_obj, key, recursion(value))
+                try:  # because of the circular Flow.previous/Flow.next
+                    setattr(new_obj, key, new_elements[value])
+                except KeyError:
+                    setattr(new_obj, key, recursion(value))
         return new_obj
 
     def list_rec(list_obj):

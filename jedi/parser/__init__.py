@@ -538,9 +538,9 @@ class Parser(object):
 
                 f = pr.Flow(self.module, command, inputs, first_pos)
                 if command in extended_flow:
-                    # the last statement has to be another part of
-                    # the flow statement, because a dedent releases the
-                    # main scope, so just take the last statement.
+                    # The last statement has to be another part of the flow
+                    # statement, because a dedent releases the main scope, so
+                    # just take the last statement.
                     try:
                         s = self._scope.statements[-1].set_next(f)
                     except (AttributeError, IndexError):
@@ -565,8 +565,9 @@ class Parser(object):
                 if stmt is not None:
                     stmt.parent = use_as_parent_scope
                 try:
-                    func.statements.append(pr.KeywordStatement(tok_str, s,
-                                           use_as_parent_scope, stmt))
+                    kw_stmt = pr.KeywordStatement(tok_str, s,
+                                                  use_as_parent_scope, stmt)
+                    self._scope.statements.append(kw_stmt)
                     func.returns.append(stmt)
                     # start_pos is the one of the return statement
                     stmt.start_pos = s

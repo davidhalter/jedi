@@ -637,10 +637,11 @@ class Flow(Scope):
     :param start_pos: Position (line, column) of the Flow statement.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('next', 'command', '_parent', 'inputs', 'set_vars')
+    __slots__ = ('next', 'previous', 'command', '_parent', 'inputs', 'set_vars')
 
     def __init__(self, module, command, inputs, start_pos):
         self.next = None
+        self.previous = None
         self.command = command
         super(Flow, self).__init__(module, start_pos)
         self._parent = None
@@ -706,6 +707,7 @@ class Flow(Scope):
         else:
             self.next = next
             self.next.parent = self.parent
+            self.next.previous = self
             return next
 
     def scope_names_generator(self, position=None):
