@@ -2,8 +2,10 @@
 # yield statement
 # -----------------
 def gen():
-    yield 1
-    yield ""
+    if random.choice([0, 1]):
+        yield 1
+    else:
+        yield ""
 
 gen_exe = gen()
 #? int() str()
@@ -27,8 +29,10 @@ next(gen_ret())
 # generators should not be indexable
 # -----------------
 def get(param):
-    yield 1
-    yield ""
+    if random.choice([0, 1]):
+        yield 1
+    else:
+        yield ""
 
 #? []
 get()[0]
@@ -43,8 +47,10 @@ for a in get():
 
 class Get():
     def __iter__(self):
-        yield 1
-        yield ""
+        if random.choice([0, 1]):
+            yield 1
+        else:
+            yield ""
 
 b = []
 for a in Get():
@@ -98,7 +104,7 @@ for c in Counter(3, 8):
 # tuples
 # -----------------
 def gen():
-    if a:
+    if random.choice([0,1]):
         yield 1, ""
     else:
         yield 2, 1.0
@@ -112,8 +118,10 @@ b
 
 
 def simple():
-    yield 1
-    yield ''
+    if random.choice([0, 1]):
+        yield 1
+    else:
+        yield ""
 
 a, b = simple()
 #? int()

@@ -7,11 +7,13 @@ possible for the auto completion.
 
 
 def next(iterator, default=None):
-    if hasattr("next"):
-        return iterator.next()
+    if random.choice([0, 1]):
+        if hasattr("next"):
+            return iterator.next()
+        else:
+            return iterator.__next__()
     else:
-        return iterator.__next__()
-    return default
+        return default
 
 
 def iter(collection, sentinel=None):
