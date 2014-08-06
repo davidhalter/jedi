@@ -568,11 +568,12 @@ class Parser(object):
                     kw_stmt = pr.KeywordStatement(tok_str, s,
                                                   use_as_parent_scope, stmt)
                     self._scope.statements.append(kw_stmt)
-                    func.returns.append(stmt)
+                    func.returns.append(kw_stmt)
                     # start_pos is the one of the return statement
                     stmt.start_pos = s
                 except AttributeError:
                     debug.warning('return in non-function')
+                stmt = None
             elif tok_str == 'assert':
                 stmt, tok = self._parse_statement()
                 if stmt is not None:

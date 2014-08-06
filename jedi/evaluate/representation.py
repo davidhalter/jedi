@@ -79,6 +79,10 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
         return actual
 
+    def py__bool__(self):
+        # Signalize that we don't know about the bool type.
+        return None
+
     @memoize_default()
     def _get_method_execution(self, func):
         func = get_instance_el(self._evaluator, self, func, True)
@@ -472,12 +476,13 @@ class FunctionExecution(Executed):
 
         types = list(docstrings.find_return_types(self._evaluator, func))
         for r in self.returns:
-            if r is None:
+            # r is a KeywordStatement
+            if r.stmt is None:
                 continue
 
-            check = flow_analysis.break_check(self._evaluator, self, r.parent.parent)
+            check = flow_analysis.break_check(self._evaluator, self, r.parent)
             if check is not flow_analysis.UNREACHABLE:
-                types += self._evaluator.eval_statement(r)
+                types += self._evaluator.eval_statement(r.stmt)
             if check is flow_analysis.REACHABLE:
                 break
         return types

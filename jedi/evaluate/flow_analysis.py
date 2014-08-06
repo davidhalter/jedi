@@ -37,10 +37,10 @@ def break_check(evaluator, base_scope, element_scope):
             types = evaluator.eval_statement(element_scope.inputs[0])
             values = set(x.py__bool__() for x in types)
             if len(values) == 1:
-                return Status.lookup_table[values.pop()]
+                reachable = Status.lookup_table[values.pop()]
             else:
                 return UNSURE
 
-    if base_scope != element_scope.parent:
-        return reachable & break_check(base_scope, element_scope.parent)
-    return UNSURE
+    if base_scope != element_scope and base_scope != element_scope.parent:
+        return reachable & break_check(evaluator, base_scope, element_scope.parent)
+    return reachable
