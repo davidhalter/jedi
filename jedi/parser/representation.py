@@ -46,7 +46,7 @@ from jedi import cache
 from jedi.parser import tokenize
 
 
-SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements'
+SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
 
 
 def filter_after_position(names, position):
