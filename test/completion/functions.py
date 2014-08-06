@@ -96,11 +96,13 @@ def other(a):
     return recursion2(a)
 
 def recursion2(a):
-    if a:
+    if random.choice([0, 1]):
         return other(a)
     else:
-        return recursion2("")
-    return a
+        if random.choice([0, 1]):
+            return recursion2("")
+        else:
+            return a
 
 #? int() str()
 recursion2(1)

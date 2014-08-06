@@ -46,7 +46,7 @@ from jedi import cache
 from jedi.parser import tokenize
 
 
-SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
+SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements'
 
 
 def filter_after_position(names, position):
@@ -1105,6 +1105,7 @@ class Statement(Simple, DocstringMixin):
             ret, tok = parse_stmt(token_iterator)
             if ret is not None:
                 ret.parent = lambd
+                lambd.statements.append(ret)
                 lambd.returns.append(ret)
             lambd.end_pos = self.end_pos
             return lambd, tok

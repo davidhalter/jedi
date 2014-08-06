@@ -476,13 +476,17 @@ class FunctionExecution(Executed):
 
         types = list(docstrings.find_return_types(self._evaluator, func))
         for r in self.returns:
-            # r is a KeywordStatement
-            if r.stmt is None:
+            if isinstance(r, pr.KeywordStatement):
+                stmt = r.stmt
+            else:
+                stmt = r  # Lambdas
+
+            if stmt is None:
                 continue
 
             check = flow_analysis.break_check(self._evaluator, self, r.parent)
             if check is not flow_analysis.UNREACHABLE:
-                types += self._evaluator.eval_statement(r.stmt)
+                types += self._evaluator.eval_statement(stmt)
             if check is flow_analysis.REACHABLE:
                 break
         return types

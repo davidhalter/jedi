@@ -9,12 +9,6 @@ class Status(object):
         self._name = name
         Status.lookup_table[value] = self
 
-    def __eq__(self, other):
-        return self._value == other.value
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def __and__(self, other):
         if UNSURE in (self, other):
             return other
