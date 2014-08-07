@@ -9,6 +9,14 @@ class Status(object):
         self._name = name
         Status.lookup_table[value] = self
 
+    def invert(self):
+        if self is REACHABLE:
+            return UNREACHABLE
+        elif self is UNREACHABLE:
+            return REACHABLE
+        else:
+            return UNSURE
+
     def __and__(self, other):
         if UNSURE in (self, other):
             return UNSURE
@@ -27,11 +35,20 @@ UNSURE = Status(None, 'unsure')
 def break_check(evaluator, base_scope, element_scope):
     reachable = REACHABLE
     if isinstance(element_scope, Flow):
+        invert = False
+        if element_scope.command == 'else':
+            element_scope = element_scope.previous
+            invert = True
+
         if element_scope.command == 'if' and element_scope.inputs:
             types = evaluator.eval_statement(element_scope.inputs[0])
             values = set(x.py__bool__() for x in types)
             if len(values) == 1:
                 reachable = Status.lookup_table[values.pop()]
+                if invert:
+                    reachable = reachable.invert()
+                if reachable is UNREACHABLE:
+                    return UNREACHABLE
             else:
                 return UNSURE
         elif element_scope.command == 'try':
