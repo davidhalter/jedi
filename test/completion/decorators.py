@@ -269,7 +269,7 @@ class MethodDecoratorDoesntExist(Base):
 # -----------------
 def memoize(function):
         def wrapper(*args):
-            if 1:
+            if random.choice([0, 1]):
                 pass
             else:
                 rv = function(*args)

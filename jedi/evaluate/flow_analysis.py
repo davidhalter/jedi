@@ -65,3 +65,5 @@ def _check_flow(evaluator, flow):
             return UNSURE
     elif flow.command in ('try', 'except', 'finally', 'while'):
         return UNSURE
+    else:  # for loop
+        return REACHABLE

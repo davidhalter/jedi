@@ -318,8 +318,8 @@ blub()[0]
 
 # with else clause
 def blub():
-    if 1:
-        1
+    if random.choice([0, 1]):
+         1
     else:
         a = []
         a.append(1)
