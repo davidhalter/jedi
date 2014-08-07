@@ -35,13 +35,14 @@ UNSURE = Status(None, 'unsure')
 def break_check(evaluator, base_scope, element_scope):
     reachable = REACHABLE
     if isinstance(element_scope, Flow):
+        check_scope = element_scope
         invert = False
-        if element_scope.command == 'else':
-            element_scope = element_scope.previous
+        if check_scope.command == 'else':
+            check_scope = check_scope.previous
             invert = True
 
-        if element_scope.command == 'if' and element_scope.inputs:
-            types = evaluator.eval_statement(element_scope.inputs[0])
+        if check_scope.command == 'if' and check_scope.inputs:
+            types = evaluator.eval_statement(check_scope.inputs[0])
             values = set(x.py__bool__() for x in types)
             if len(values) == 1:
                 reachable = Status.lookup_table[values.pop()]
@@ -51,9 +52,9 @@ def break_check(evaluator, base_scope, element_scope):
                     return UNREACHABLE
             else:
                 return UNSURE
-        elif element_scope.command == 'try':
+        elif check_scope.command in ('try', 'except', 'finally'):
             reachable = UNSURE
 
-    if base_scope != element_scope and base_scope != element_scope.parent:
+    if base_scope != element_scope and base_scope != check_scope.parent:
         return reachable & break_check(evaluator, base_scope, element_scope.parent)
     return reachable
