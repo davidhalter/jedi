@@ -11,7 +11,7 @@ class Status(object):
 
     def __and__(self, other):
         if UNSURE in (self, other):
-            return other
+            return UNSURE
         else:
             return REACHABLE if self._value and other._value else UNREACHABLE
 
@@ -34,6 +34,8 @@ def break_check(evaluator, base_scope, element_scope):
                 reachable = Status.lookup_table[values.pop()]
             else:
                 return UNSURE
+        elif element_scope.command == 'try':
+            reachable = UNSURE
 
     if base_scope != element_scope and base_scope != element_scope.parent:
         return reachable & break_check(evaluator, base_scope, element_scope.parent)
