@@ -145,14 +145,15 @@ def search_params(evaluator, param):
     listener = ParamListener()
     func.listeners.add(listener)
 
-    result = []
-    # This is like backtracking: Get the first possible result.
-    for mod in imports.get_modules_containing_name([current_module], func_name):
-        result = get_params_for_module(mod)
-        if result:
-            break
-
-    # cleanup: remove the listener; important: should not stick.
-    func.listeners.remove(listener)
+    try:
+        result = []
+        # This is like backtracking: Get the first possible result.
+        for mod in imports.get_modules_containing_name([current_module], func_name):
+            result = get_params_for_module(mod)
+            if result:
+                break
+    finally:
+        # cleanup: remove the listener; important: should not stick.
+        func.listeners.remove(listener)
 
     return result
