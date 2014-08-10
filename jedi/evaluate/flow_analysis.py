@@ -33,6 +33,10 @@ UNSURE = Status(None, 'unsure')
 
 
 def break_check(evaluator, base_scope, element_scope):
+    from jedi.evaluate.representation import wrap
+    base_scope = wrap(evaluator, base_scope)
+    element_scope = wrap(evaluator, element_scope)
+
     reachable = REACHABLE
     if isinstance(element_scope, Flow):
         if element_scope.command == 'else':

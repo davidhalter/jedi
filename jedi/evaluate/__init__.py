@@ -139,7 +139,7 @@ class Evaluator(object):
             operator = copy.copy(_operator)
             operator.string = operator.string[:-1]
             name = str(expr_list[0].name)
-            parent = stmt.parent
+            parent = stmt.parent.get_parent_until(pr.Flow, reverse=True)
             if isinstance(parent, (pr.SubModule, fast.Module)):
                 parent = er.ModuleWrapper(self, parent)
             left = self.find_types(parent, name, stmt.start_pos)

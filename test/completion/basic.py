@@ -23,18 +23,18 @@ a(0):.
 # if/else/elif
 # -----------------
 
-if 1:
+if (random.choice([0, 1])):
     1
-elif(3):
+elif(random.choice([0, 1])):
     a = 3
 else:
     a = ''
 #? int() str()
 a
 def func():
-    if 1:
+    if random.choice([0, 1]):
         1
-    elif(3):
+    elif(random.choice([0, 1])):
         a = 3
     else:
         a = ''

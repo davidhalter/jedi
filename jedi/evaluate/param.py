@@ -6,7 +6,6 @@ from jedi.evaluate import iterable
 from jedi import common
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
-from jedi.evaluate.compiled import CompiledObject
 
 
 class ExecutedParam(pr.Param):

@@ -27,6 +27,7 @@ from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import analysis
 from jedi.evaluate import precedence
+from jedi.evaluate import flow_analysis
 
 
 class NameFinder(object):
@@ -86,13 +87,30 @@ class NameFinder(object):
                 if unicode(self.name_str) != name.get_code():
                     continue
 
-                scope = name.parent.parent
+                stmt = name.parent
+                scope = stmt.parent
                 if scope in break_scopes:
                     continue
 
                 # Exclude `arr[1] =` from the result set.
                 if not self._name_is_array_assignment(name):
-                    result.append(name)
+                   if False:
+                       result.append(name)
+                   else:
+                    if isinstance(stmt, (pr.Param, pr.Import)) \
+                            or isinstance(name_list_scope, (pr.ListComprehension, er.Instance)) \
+                            or isinstance(scope, compiled.CompiledObject) \
+                            or isinstance(stmt, pr.Statement) and stmt.is_global():
+                        # Always reachable.
+                        result.append(name)
+                    else:
+                        check = flow_analysis.break_check(self._evaluator,
+                                                          name_list_scope,
+                                                          er.wrap(self._evaluator, scope))
+                        if check is not flow_analysis.UNREACHABLE:
+                            result.append(name)
+                        if check is flow_analysis.REACHABLE:
+                            break
 
                 if result and self._is_name_break_scope(name):
                     if self._does_scope_break_immediately(scope, name_list_scope):

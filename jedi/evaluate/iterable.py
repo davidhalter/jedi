@@ -123,6 +123,9 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         self._evaluator = evaluator
         self._array = array
 
+    def py__bool__(self):
+        return None  # We don't know the length, because of appends.
+
     @memoize_default(NO_DEFAULT)
     def get_index_types(self, index_array=()):
         """
