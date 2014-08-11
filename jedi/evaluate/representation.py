@@ -41,7 +41,7 @@ def wrap(evaluator, element):
         return element
 
 
-class Executed(pr.IsScope):
+class Executed(pr.Base):
     """
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of `pr.Array` or list.
@@ -50,6 +50,9 @@ class Executed(pr.IsScope):
         self._evaluator = evaluator
         self.base = base
         self.var_args = var_args
+
+    def is_scope(self):
+        return True
 
     def get_parent_until(self, *args, **kwargs):
         return self.base.get_parent_until(*args, **kwargs)
@@ -278,6 +281,12 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def isinstance(self, *cls):
         return isinstance(self.var, cls)
 
+    def is_scope(self):
+        """
+        Since we inherit from Base, it would overwrite the action we want here.
+        """
+        return self.var.is_scope()
+
     def py__call__(self, evaluator, params):
         return Function.py__call__(self, evaluator, params)
 
@@ -285,7 +294,12 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
 
-class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
+class Wrapper(pr.Base):
+    def is_scope(self):
+        return True
+
+
+class Class(use_metaclass(CachedMetaClass, Wrapper)):
     """
     This class is not only important to extend `pr.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -376,7 +390,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
         return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
-class Function(use_metaclass(CachedMetaClass, pr.IsScope)):
+class Function(use_metaclass(CachedMetaClass, Wrapper)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """

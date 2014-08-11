@@ -337,7 +337,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             backtrack_path = iter(call_path[:separate_index])
 
             position = c.start_pos
-            scope = c.get_parent_until(pr.IsScope)
+            scope = c.get_parent_scope()
 
             found = evaluator.eval_call_path(backtrack_path, scope, position)
             if not compare_array in found:

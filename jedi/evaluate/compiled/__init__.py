@@ -10,7 +10,7 @@ from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize
 from jedi.evaluate.sys_path import get_sys_path
-from jedi.parser.representation import Param, SubModule, Base, IsScope, Operator
+from jedi.parser.representation import Param, SubModule, Base, Operator
 from jedi.evaluate.helpers import FakeName
 from . import fake
 
@@ -374,11 +374,14 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-class Builtin(CompiledObject, IsScope):
+class Builtin(CompiledObject, Base):
     @memoize
     def get_by_name(self, name):
         item = [n for n in self.get_defined_names() if n.get_code() == name][0]
         return item.parent
+
+    def is_scope(self):
+        return True
 
 
 def _a_generator(foo):

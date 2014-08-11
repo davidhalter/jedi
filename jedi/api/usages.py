@@ -19,7 +19,7 @@ def usages(evaluator, definitions, search_name, mods):
 
     def check_call_for_usage(call):
         stmt = call.parent
-        while not isinstance(stmt.parent, pr.IsScope):
+        while not stmt.parent.is_scope():
             stmt = stmt.parent
         # New definition, call cannot be a part of stmt
         if len(call.name) == 1 and call.execution is None \

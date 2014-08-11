@@ -134,7 +134,19 @@ class Base(object):
             classes = (classes,)
         scope = self if include_current else self.parent
         while scope.parent is not None:
+            # TODO why if classes?
             if classes and reverse != scope.isinstance(*classes):
+                break
+            scope = scope.parent
+        return scope
+
+    def get_parent_scope(self, include_current=True):
+        """
+        Returns the underlying scope.
+        """
+        scope = self if include_current else self.parent
+        while scope.parent is not None:
+            if scope.is_scope():
                 break
             scope = scope.parent
         return scope
@@ -149,6 +161,10 @@ class Base(object):
                 self.newline * linecount,
                 self.whitespace * to_pos[1],
             )
+
+    def is_scope(self):
+        # Default is not being a scope. Just inherit from Scope.
+        return False
 
 
 class Simple(Base):
@@ -205,18 +221,8 @@ class Simple(Base):
         return "<%s: %s@%s,%s>" % \
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
 
-    def is_scope(self):
-        return False
 
-
-class IsScope(Base):
-    __slots__ = ()
-
-    def is_scope(self):
-        return True
-
-
-class Scope(IsScope, Simple, DocstringMixin):
+class Scope(Simple, DocstringMixin):
     """
     Super class for the parser tree, which represents the state of a python
     text file.
@@ -241,6 +247,9 @@ class Scope(IsScope, Simple, DocstringMixin):
         # returns will be in "normal" modules.
         self.returns = []
         self.is_generator = False
+
+    def is_scope(self):
+        return True
 
     def add_scope(self, sub, decorators):
         sub.parent = self.use_as_parent
@@ -384,10 +393,12 @@ class Scope(IsScope, Simple, DocstringMixin):
                 r = r.next
 
 
-class Module(IsScope):
+class Module(Base):
     """
     For isinstance checks. fast_parser.Module also inherits from this.
     """
+    def is_scope(self):
+        return True
 
 
 class SubModule(Scope, Module):
@@ -846,9 +857,6 @@ class KeywordStatement(Base):
         if stmt is not None:
             stmt.parent = self
 
-    def is_scope(self):
-        return False
-
     def __repr__(self):
         return "<%s(%s): %s>" % (type(self).__name__, self.name, self.stmt)
 
@@ -1099,7 +1107,7 @@ class Statement(Simple, DocstringMixin):
                 return None, tok
 
             # Since Lambda is a Function scope, it needs Scope parents.
-            parent = self.get_parent_until(IsScope)
+            parent = self.get_parent_scope()
             lambd = Lambda(self._sub_module, params, start_pos, parent)
 
             ret, tok = parse_stmt(token_iterator)

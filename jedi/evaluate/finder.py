@@ -380,7 +380,7 @@ def check_flow_information(evaluator, flow, search_name_part, pos):
         return None
 
     result = []
-    if isinstance(flow, pr.IsScope):
+    if flow.is_scope():
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue

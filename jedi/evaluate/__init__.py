@@ -220,9 +220,10 @@ class Evaluator(object):
         """Follow a call is following a function, variable, string, etc."""
         path = call.generate_call_path()
 
+        # TODO use scope_parent
         # find the statement of the Scope
         s = call
-        while not s.parent.isinstance(pr.IsScope):
+        while not s.parent.is_scope():
             s = s.parent
         par = s.parent
         return self.eval_call_path(path, par, s.start_pos)
@@ -335,7 +336,7 @@ class Evaluator(object):
             return types
 
     def goto(self, stmt, call_path):
-        scope = stmt.get_parent_until(pr.IsScope)
+        scope = stmt.get_parent_scope()
         pos = stmt.start_pos
         call_path, search_name_part = call_path[:-1], call_path[-1]
 
