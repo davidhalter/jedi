@@ -360,7 +360,7 @@ class BaseDefinition(object):
         if isinstance(self._definition, compiled.CompiledObject):
             non_flow = self._definition.parent
         else:
-            scope = self._definition.get_parent_scope(include_current=False)
+            scope = self._definition.get_parent_scope()
             non_flow = scope.get_parent_until(pr.Flow, reverse=True)
         return Definition(self._evaluator, non_flow)
 

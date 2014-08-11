@@ -140,11 +140,11 @@ class Base(object):
             scope = scope.parent
         return scope
 
-    def get_parent_scope(self, include_current=True):
+    def get_parent_scope(self):
         """
         Returns the underlying scope.
         """
-        scope = self if include_current else self.parent
+        scope = self.parent
         while scope.parent is not None:
             if scope.is_scope():
                 break
