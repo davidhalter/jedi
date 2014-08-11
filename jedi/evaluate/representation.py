@@ -176,10 +176,9 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         """
         yield self, self.get_self_attributes()
 
-        names = []
-        for var in self.base.instance_names():
-            names.append(get_instance_el(self._evaluator, self, var, True))
-        yield self, names
+        for scope, names in self.base.scope_names_generator(add_class_vars=False):
+            yield self, [get_instance_el(self._evaluator, self, var, True)
+                         for var in names]
 
     def get_index_types(self, index_array):
 
@@ -331,8 +330,7 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
     def py__call__(self, evaluator, params):
         return [Instance(evaluator, self, params)]
 
-    @memoize_default(default=())
-    def instance_names(self):
+    def scope_names_generator(self, position=None, add_class_vars=True):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """
             for i in iterable:
@@ -342,20 +340,19 @@ class Class(use_metaclass(CachedMetaClass, pr.IsScope)):
                     return True
             return False
 
-        result = self.base.get_defined_names()
-        super_result = []
-        # TODO mro!
-        for cls in self.py_bases():
-            # Get the inherited names.
-            for i in cls.instance_names():
-                if not in_iterable(i, result):
-                    super_result.append(i)
-        result += super_result
-        return result
-
-    def scope_names_generator(self, position=None):
-        yield self, self.instance_names()
-        yield self, compiled.type_names
+        all_names = []
+        for cls in self.py__mro__(self._evaluator):
+            names = []
+            if isinstance(cls, compiled.CompiledObject):
+                x = cls.instance_names()
+            else:
+                x = reversed(cls.base.get_defined_names())
+            for n in x:
+                if not in_iterable(n, all_names):
+                    names.append(n)
+            yield cls, names
+        if add_class_vars:
+            yield self, compiled.type_names
 
     def get_subscope_by_name(self, name):
         for s in [self] + self.py_bases():
