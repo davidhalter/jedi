@@ -74,6 +74,9 @@ class NameFinder(object):
         Filters all variables of a scope (which are defined in the
         `scope_names_generator`), until the name fits.
         """
+        # TODO Now this import is really ugly. Try to remove it.
+        # It's possibly the only api dependency.
+        from jedi.api.interpreter import InterpreterNamespace
         result = []
         for name_list_scope, name_list in scope_names_generator:
             break_scopes = []
@@ -94,11 +97,8 @@ class NameFinder(object):
 
                 # Exclude `arr[1] =` from the result set.
                 if not self._name_is_array_assignment(name):
-                   if False:
-                       result.append(name)
-                   else:
                     if isinstance(stmt, (pr.Param, pr.Import)) \
-                            or isinstance(name_list_scope, (pr.ListComprehension, er.Instance)) \
+                            or isinstance(name_list_scope, (pr.ListComprehension, er.Instance, InterpreterNamespace)) \
                             or isinstance(scope, compiled.CompiledObject) \
                             or isinstance(stmt, pr.Statement) and stmt.is_global():
                         # Always reachable.
