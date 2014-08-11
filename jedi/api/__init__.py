@@ -511,31 +511,35 @@ class Script(object):
         """
         temp, settings.dynamic_flow_information = \
             settings.dynamic_flow_information, False
-        user_stmt = self._parser.user_stmt()
-        definitions, search_name = self._goto(add_import_name=True)
-        if isinstance(user_stmt, pr.Statement):
-            c = user_stmt.expression_list()[0]
-            if not isinstance(c, unicode) and self._pos < c.start_pos:
-                # the search_name might be before `=`
-                definitions = [v for v in user_stmt.get_defined_names()
-                               if unicode(v.names[-1]) == search_name]
-        if not isinstance(user_stmt, pr.Import):
-            # import case is looked at with add_import_name option
-            definitions = usages.usages_add_import_modules(self._evaluator, definitions, search_name)
+        try:
+            user_stmt = self._parser.user_stmt()
+            definitions, search_name = self._goto(add_import_name=True)
+            if isinstance(user_stmt, pr.Statement):
+                c = user_stmt.expression_list()[0]
+                if not isinstance(c, unicode) and self._pos < c.start_pos:
+                    # the search_name might be before `=`
+                    definitions = [v for v in user_stmt.get_defined_names()
+                                   if unicode(v.names[-1]) == search_name]
+            if not isinstance(user_stmt, pr.Import):
+                # import case is looked at with add_import_name option
+                definitions = usages.usages_add_import_modules(self._evaluator,
+                                                               definitions,
+                                                               search_name)
 
-        module = set([d.get_parent_until() for d in definitions])
-        module.add(self._parser.module())
-        names = usages.usages(self._evaluator, definitions, search_name, module)
+            module = set([d.get_parent_until() for d in definitions])
+            module.add(self._parser.module())
+            names = usages.usages(self._evaluator, definitions, search_name, module)
 
-        for d in set(definitions):
-            try:
-                name_part = d.names[-1]
-            except AttributeError:
-                names.append(classes.Definition(self._evaluator, d))
-            else:
-                names.append(classes.Definition(self._evaluator, name_part))
+            for d in set(definitions):
+                try:
+                    name_part = d.names[-1]
+                except AttributeError:
+                    names.append(classes.Definition(self._evaluator, d))
+                else:
+                    names.append(classes.Definition(self._evaluator, name_part))
+        finally:
+            settings.dynamic_flow_information = temp
 
-        settings.dynamic_flow_information = temp
         return helpers.sorted_definitions(set(names))
 
     def call_signatures(self):

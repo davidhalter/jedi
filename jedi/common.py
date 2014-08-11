@@ -92,9 +92,11 @@ def scale_speed_settings(factor):
     b = settings.max_until_execution_unique
     settings.max_executions *= factor
     settings.max_until_execution_unique *= factor
-    yield
-    settings.max_executions = a
-    settings.max_until_execution_unique = b
+    try:
+        yield
+    finally:
+        settings.max_executions = a
+        settings.max_until_execution_unique = b
 
 
 def indent_block(text, indention='    '):
