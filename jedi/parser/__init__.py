@@ -273,7 +273,8 @@ class Parser(object):
         return pr.Class(self.module, cname, superclasses, first_pos)
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
-                         stmt_class=pr.Statement, names_are_set_vars=False):
+                         stmt_class=pr.Statement, names_are_set_vars=False,
+                         maybe_docstr=False):
         """
         Parses statements like::
 
@@ -368,7 +369,7 @@ class Parser(object):
         first_tok = tok_list[0]
         # docstrings
         if len(tok_list) == 1 and isinstance(first_tok, tokenize.Token) \
-                and first_tok.type == tokenize.STRING:
+                and first_tok.type == tokenize.STRING and maybe_docstr:
             # Normal docstring check
             if self.freshscope and not self.no_docstr:
                 self._scope.add_docstr(first_tok)
@@ -376,7 +377,7 @@ class Parser(object):
 
             # Attribute docstring (PEP 224) support (sphinx uses it, e.g.)
             # If string literal is being parsed...
-            elif first_tok.type == tokenize.STRING:
+            else:
                 with common.ignored(IndexError, AttributeError):
                     # ...then set it as a docstring
                     self._scope.statements[-1].add_docstr(first_tok)
@@ -604,7 +605,8 @@ class Parser(object):
                 # this is the main part - a name can be a function or a
                 # normal var, which can follow anything. but this is done
                 # by the statement parser.
-                stmt, tok = self._parse_statement(self._gen.current)
+                stmt, tok = self._parse_statement(self._gen.current,
+                                                  maybe_docstr=True)
                 if stmt:
                     self._scope.add_statement(stmt)
                 self.freshscope = False

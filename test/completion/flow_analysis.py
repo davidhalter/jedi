@@ -82,6 +82,19 @@ def elif_flows3(x):
 elif_flows3(1)
 
 # -----------------
+# mid-difficulty if statements
+# -----------------
+def check(a):
+    if a is None:
+        return 1
+    return ''
+
+#? int()
+check(None)
+#? str()
+check('asb')
+
+# -----------------
 # name resolution
 # -----------------
 
@@ -108,3 +121,5 @@ else:
 
 #? int
 a
+
+
