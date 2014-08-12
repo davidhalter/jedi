@@ -13,7 +13,8 @@ def next(iterator, default=None):
         else:
             return iterator.__next__()
     else:
-        return default
+        if default is not None:
+            return default
 
 
 def iter(collection, sentinel=None):

@@ -39,11 +39,6 @@ class NameFinder(object):
 
     @debug.increase_indent
     def find(self, scopes, resolve_decorator=True, search_global=False):
-        if unicode(self.name_str) == 'None':
-            # Filter None, because it's really just a keyword, nobody wants to
-            # access it.
-            return []
-
         names = self.filter_name(scopes)
         types = self._names_to_types(names, resolve_decorator)
 

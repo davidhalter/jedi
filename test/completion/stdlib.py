@@ -18,7 +18,7 @@ next(reversed(arr))
 def yielder():
     yield None
 
-#?
+#? None
 next(reversed(yielder()))
 
 # empty reversed should not raise an error
