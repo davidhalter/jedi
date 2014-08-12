@@ -217,9 +217,11 @@ def _literals_to_types(evaluator, result):
 def calculate(evaluator, left_result, operator, right_result):
     result = []
     if left_result is None and right_result:
-        # cases like `-1` or `1 + ~1`
+        # Cases like `-1`, `1 + ~1` or `not X`.
         for right in right_result:
-            result.append(_factor_calculate(evaluator, operator, right))
+            obj = _factor_calculate(evaluator, operator, right)
+            if obj is not None:
+                result.append(obj)
         return result
     else:
         if not left_result or not right_result:
@@ -243,6 +245,11 @@ def _factor_calculate(evaluator, operator, right):
     if _is_number(right):
         if operator == '-':
             return create(evaluator, -right.obj)
+    if operator == 'not':
+        value = right.py__bool__()
+        if value is None:  # Uncertainty.
+            return None
+        return _keyword_from_value(not value)
     return right
 
 

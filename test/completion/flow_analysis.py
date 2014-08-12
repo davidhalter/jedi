@@ -117,9 +117,9 @@ else:
     a = dict
 #? dict
 a
-if (check is not check):
+if not (check is not check):
     a = 1
-#? dict
+#? int()
 a
 
 
