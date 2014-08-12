@@ -80,3 +80,31 @@ def elif_flows3(x):
 
 #? int() set
 elif_flows3(1)
+
+# -----------------
+# name resolution
+# -----------------
+
+a = list
+def elif_name(x):
+    try:
+        if True:
+            a = 1
+        elif 0:
+            a = 1.0
+        else:
+            return ''
+    except ValueError:
+        a = x
+    return a
+
+#? int() set
+elif_name(set)
+
+if 0:
+    a = ''
+else:
+    a = int
+
+#? int
+a
