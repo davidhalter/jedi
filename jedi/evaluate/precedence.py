@@ -1,13 +1,23 @@
 """
 Handles operator precedence.
 """
+import operator
 
 from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.common import PushBackIterator
-from jedi.evaluate.compiled import CompiledObject, create, builtin
+from jedi.evaluate.compiled import (CompiledObject, create, builtin, false_obj,
+                                    true_obj, none_obj)
 from jedi.evaluate import analysis
+
+# Maps Python syntax to the operator module.
+OPERATOR_MAPPING = {
+    '==': operator.eq,
+    '!=': operator.ne,
+    'is': operator.is_,
+    'is not': operator.is_not,
+}
 
 
 class PythonGrammar(object):
@@ -260,6 +270,15 @@ def _is_list(obj):
     return isinstance(obj, iterable.Array) and obj.type == pr.Array.LIST
 
 
+def _keyword_from_value(obj):
+    if obj is None:
+        return none_obj
+    elif obj is False:
+        return false_obj
+    elif obj is True:
+        return true_obj
+
+
 def _element_calculate(evaluator, left, operator, right):
     from jedi.evaluate import iterable, representation as er
     l_is_num = _is_number(left)
@@ -282,6 +301,13 @@ def _element_calculate(evaluator, left, operator, right):
         # With strings and numbers the left type typically remains. Except for
         # `int() % float()`.
         return [left]
+    elif operator in OPERATOR_MAPPING:
+        operation = OPERATOR_MAPPING[operator]
+        if isinstance(left, CompiledObject) and isinstance(right, CompiledObject):
+            # Possible, because the return is not an option. Just compare.
+            left = left.obj
+            right = right.obj
+        return [_keyword_from_value(operation(left, right))]
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""

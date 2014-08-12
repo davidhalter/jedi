@@ -88,11 +88,40 @@ def check(a):
     if a is None:
         return 1
     return ''
+    return set
 
 #? int()
 check(None)
 #? str()
 check('asb')
+
+a = list
+if 2 == True:
+    a = set
+elif 1 == True:
+    a = 0
+
+#? int()
+a
+if check != 1:
+    a = ''
+#? str()
+a
+if check == check:
+    a = list
+#? list
+a
+if check != check:
+    a = set
+else:
+    a = dict
+#? dict
+a
+if (check is not check):
+    a = 1
+#? dict
+a
+
 
 # -----------------
 # name resolution
@@ -121,5 +150,3 @@ else:
 
 #? int
 a
-
-

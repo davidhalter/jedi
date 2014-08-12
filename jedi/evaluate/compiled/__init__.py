@@ -412,6 +412,9 @@ magic_function_class = CompiledObject(type(load_module), parent=builtin)
 generator_obj = CompiledObject(_a_generator(1.0))
 type_names = []  # Need this, because it's return in get_defined_names.
 type_names = builtin.get_by_name('type').get_defined_names()
+none_obj = builtin.get_by_name('None')
+false_obj = builtin.get_by_name('False')
+true_obj = builtin.get_by_name('True')
 
 
 def compiled_objects_cache(func):
