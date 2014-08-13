@@ -415,6 +415,7 @@ type_names = builtin.get_by_name('type').get_defined_names()
 none_obj = builtin.get_by_name('None')
 false_obj = builtin.get_by_name('False')
 true_obj = builtin.get_by_name('True')
+object_obj = builtin.get_by_name('object')
 
 
 def compiled_objects_cache(func):

@@ -336,9 +336,9 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
                     continue  # Just ignore other stuff (user input error).
                 supers.append(cls)
 
-        if not supers and self.base.parent != compiled.builtin:
-            # add `object` to classes
-            supers += self._evaluator.find_types(compiled.builtin, 'object')
+        if not supers:
+            # Add `object` to classes (implicit in Python 3.)
+            supers.append(compiled.object_obj)
         return supers
 
     def py__call__(self, evaluator, params):
