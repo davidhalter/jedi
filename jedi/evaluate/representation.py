@@ -169,7 +169,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         """ Throws a KeyError if there's no method. """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        args = [obj, obj.base] if isinstance(obj, Instance) else [None, obj]
+        args = [obj, obj.base] if isinstance(obj, Instance) else [compiled.none_obj, obj]
         return self.execute_subscope_by_name('__get__', args)
 
     def scope_names_generator(self, position=None):

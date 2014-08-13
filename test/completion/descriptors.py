@@ -180,3 +180,40 @@ E.t(1)
 e.u(1)
 #? str()
 E.u(1)
+
+# -----------------
+# Conditions
+# -----------------
+
+from functools import partial
+
+
+class Memoize():
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, obj, objtype):
+        if obj is None:
+            return self.func
+
+        return partial(self, obj)
+
+    def __call__(self, *args, **kwargs):
+        # We don't do caching here, but that's what would normally happen.
+        return self.func(*args, **kwargs)
+
+
+class MemoizeTest():
+    def __init__(self, x):
+        self.x = x
+
+    @Memoize
+    def some_func(self):
+        return self.x
+
+
+#? int()
+MemoizeTest(10).some_func()
+# Now also call the same function over the class (see if clause above).
+#? float()
+MemoizeTest.some_func(MemoizeTest(10.0))
