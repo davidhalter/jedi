@@ -48,6 +48,9 @@ class CompiledObject(Base):
     def py__mro__(self, evaluator):
         return tuple(create(evaluator, cls) for cls in self.obj.__mro__)
 
+    def py__bases__(self, evaluator):
+        return tuple(create(evaluator, cls) for cls in self.obj.__bases__)
+
     def py__bool__(self):
         return bool(self.obj)
 

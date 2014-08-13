@@ -102,7 +102,7 @@ def builtins_super(evaluator, obj, params):
                 cls = er.Class(evaluator, cls)
             elif isinstance(cls, er.Instance):
                 cls = cls.base
-            su = cls.py_bases()
+            su = cls.py__bases__(evaluator)
             if su:
                 return evaluator.execute(su[0])
     return []

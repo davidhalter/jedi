@@ -151,7 +151,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                 if unicode(n.names[0]) == self_name and len(n.names) == 2:
                     add_self_dot_name(n)
 
-        for s in self.base.py__mro__(self._evaluator):
+        for s in self.base.py__bases__(self._evaluator):
             if not isinstance(s, compiled.CompiledObject):
                 for inst in self._evaluator.execute(s):
                     names += inst.get_self_attributes()
@@ -317,7 +317,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         mro = [self]
         # TODO Do a proper mro resolution. Currently we are just listing
         # classes. However, it's a complicated algorithm.
-        for cls in self.py_bases():
+        for cls in self.py__bases__(self._evaluator):
             # TODO detect for TypeError: duplicate base class str,
             # e.g.  `class X(str, str): pass`
             add(cls)
@@ -326,7 +326,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         return tuple(mro)
 
     @memoize_default(default=())
-    def py_bases(self):
+    def py__bases__(self, evaluator):
         supers = []
         for s in self.base.supers:
             # Super classes are statements.
@@ -369,7 +369,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
             yield self, compiled.type_names
 
     def get_subscope_by_name(self, name):
-        for s in [self] + self.py_bases():
+        for s in [self] + self.py__bases__(self._evaluator):
             for sub in reversed(s.subscopes):
                 if sub.name.get_code() == name:
                     return sub
