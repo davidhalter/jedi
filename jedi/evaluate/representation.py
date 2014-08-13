@@ -151,8 +151,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                 if unicode(n.names[0]) == self_name and len(n.names) == 2:
                     add_self_dot_name(n)
 
-        if not isinstance(self.base, compiled.CompiledObject):
-            for s in self.base.py_bases():
+        for s in self.base.py__mro__(self._evaluator):
+            if not isinstance(s, compiled.CompiledObject):
                 for inst in self._evaluator.execute(s):
                     names += inst.get_self_attributes()
         return names
