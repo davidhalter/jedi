@@ -1177,7 +1177,7 @@ class Statement(Simple, DocstringMixin):
                 lambd, tok_str = parse_lambda(token_iterator)
                 if lambd is not None:
                     result.append(lambd)
-                if tok_str not in (')', ','):
+                if tok_str != ',':
                     continue
 
             is_literal = token_type in (tokenize.STRING, tokenize.NUMBER)
