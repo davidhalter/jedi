@@ -78,14 +78,21 @@ basetwo = functools.partial(int, base=2)
 #? int()
 basetwo()
 
-def a(a, b):
+def function(a, b):
     return a, b
-a = functools.partial(a, 0)
+a = functools.partial(function, 0)
 
 #? int()
 a('')[0]
 #? str()
 a('')[1]
+
+kw = functools.partial(function, b=1.0)
+tup = kw(1)
+#? int()
+tup[0]
+#? float()
+tup[1]
 
 def my_decorator(f):
     @functools.wraps(f)

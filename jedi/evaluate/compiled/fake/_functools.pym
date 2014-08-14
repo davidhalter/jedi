@@ -6,4 +6,4 @@ class partial():
 
     def __call__(self, *args, **kwargs):
         # I know this doesn't work in Python, but in Jedi it does ;-)
-        return self.__func(*self.__args, *args, **self.keywords, **kwargs)
+        return self.__func(*self.__args, *args, **self.__keywords, **kwargs)
