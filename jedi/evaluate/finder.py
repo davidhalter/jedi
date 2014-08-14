@@ -72,6 +72,7 @@ class NameFinder(object):
         # It's possibly the only api dependency.
         from jedi.api.interpreter import InterpreterNamespace
         result = []
+        self.maybe_descriptor = isinstance(self.scope, er.Class)
         for name_list_scope, name_list in scope_names_generator:
             break_scopes = []
             if not isinstance(name_list_scope, compiled.CompiledObject):
@@ -113,6 +114,11 @@ class NameFinder(object):
                         break_scopes.append(scope)
             if result:
                 break
+
+            if isinstance(self.scope, er.Instance):
+                # After checking the dictionary of an instance (self
+                # attributes), an attribute maybe a descriptor.
+                self.maybe_descriptor = True
 
         scope_txt = (self.scope if self.scope == name_list_scope
                      else '%s-%s' % (self.scope, name_list_scope))
@@ -332,6 +338,8 @@ class NameFinder(object):
 
     def _resolve_descriptors(self, types):
         """Processes descriptors"""
+        if not self.maybe_descriptor:
+            return types
         result = []
         for r in types:
             if isinstance(self.scope, (er.Instance, er.Class)) \
