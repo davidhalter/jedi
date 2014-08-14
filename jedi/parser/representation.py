@@ -1107,8 +1107,7 @@ class Statement(Simple, DocstringMixin):
                 return None, tok
 
             # Since Lambda is a Function scope, it needs Scope parents.
-            parent = self.get_parent_scope()
-            lambd = Lambda(self._sub_module, params, start_pos, parent)
+            lambd = Lambda(self._sub_module, params, start_pos, self)
 
             ret, tok = parse_stmt(token_iterator)
             if ret is not None:
@@ -1278,7 +1277,7 @@ class StatementElement(Simple):
 
     def set_next(self, call):
         """ Adds another part of the statement"""
-        call.parent = self
+        call.parent = self.parent
         if self.next is not None:
             self.next.set_next(call)
         else:
@@ -1289,7 +1288,7 @@ class StatementElement(Simple):
         An execution is nothing else than brackets, with params in them, which
         shows access on the internals of this name.
         """
-        call.parent = self
+        call.parent = self.parent
         if self.next is not None:
             self.next.set_execution(call)
         elif self.execution is not None:

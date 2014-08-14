@@ -551,6 +551,7 @@ class FunctionExecution(Executed):
             else:
                 copied = helpers.fast_parent_copy(element)
                 copied.parent = self._scope_copy(copied.parent)
+                # TODO remove? Doesn't make sense, at least explain.
                 if isinstance(copied, pr.Function):
                     copied = Function(self._evaluator, copied)
             objects.append(copied)

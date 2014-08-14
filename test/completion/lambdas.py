@@ -61,6 +61,15 @@ class C():
 C().a()
 
 
+def xy(param):
+    def ret(a, b):
+        return a + b
+
+    return lambda b: ret(param, b)
+
+#? int()
+xy(1)(2)
+
 # -----------------
 # lambda param (#379)
 # -----------------

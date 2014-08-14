@@ -11,6 +11,7 @@ def fast_parent_copy(obj):
     """
     new_elements = {}
     accept = (pr.Simple, pr.NamePart)
+    start=obj
 
     def recursion(obj):
         if isinstance(obj, pr.Statement):
@@ -48,7 +49,7 @@ def fast_parent_copy(obj):
             elif isinstance(value, (list, tuple)):
                 setattr(new_obj, key, list_or_tuple_rec(value))
             elif isinstance(value, accept):
-                try:  # because of the circular Flow.previous/Flow.next
+                try:
                     setattr(new_obj, key, new_elements[value])
                 except KeyError:
                     setattr(new_obj, key, recursion(value))
@@ -61,7 +62,10 @@ def fast_parent_copy(obj):
             copied_array = array_obj[:]   # lists, tuples, strings, unicode
         for i, el in enumerate(copied_array):
             if isinstance(el, accept):
-                copied_array[i] = recursion(el)
+                try:
+                    copied_array[i] = new_elements[el]
+                except KeyError:
+                    copied_array[i] = recursion(el)
             elif isinstance(el, (tuple, list)):
                 copied_array[i] = list_or_tuple_rec(el)
 

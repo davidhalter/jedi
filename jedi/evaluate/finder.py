@@ -92,8 +92,13 @@ class NameFinder(object):
 
                 # Exclude `arr[1] =` from the result set.
                 if not self._name_is_array_assignment(name):
+                    # TODO we ignore a lot of elements here that should not be
+                    #   ignored. But then again flow_analysis also stops when the
+                    #   input scope is reached. This is not correct: variables
+                    #   might still have conditions if defined outside of the
+                    #   current scope.
                     if isinstance(stmt, (pr.Param, pr.Import)) \
-                            or isinstance(name_list_scope, (pr.ListComprehension, er.Instance, InterpreterNamespace)) \
+                            or isinstance(name_list_scope, (pr.Lambda, pr.ListComprehension, er.Instance, InterpreterNamespace)) \
                             or isinstance(scope, compiled.CompiledObject) \
                             or isinstance(stmt, pr.Statement) and stmt.is_global():
                         # Always reachable.
