@@ -10,6 +10,7 @@ def fast_parent_copy(obj):
     Much, much faster than copy.deepcopy, but just for certain elements.
     """
     new_elements = {}
+    accept = (pr.Simple, pr.NamePart)
 
     def recursion(obj):
         if isinstance(obj, pr.Statement):
@@ -44,23 +45,30 @@ def fast_parent_copy(obj):
                     setattr(new_obj, key, new_elements[value])
             elif key in ['parent_function', 'use_as_parent', '_sub_module']:
                 continue
-            elif isinstance(value, list):
-                setattr(new_obj, key, list_rec(value))
-            elif isinstance(value, pr.Simple):
+            elif isinstance(value, (list, tuple)):
+                setattr(new_obj, key, list_or_tuple_rec(value))
+            elif isinstance(value, accept):
                 try:  # because of the circular Flow.previous/Flow.next
                     setattr(new_obj, key, new_elements[value])
                 except KeyError:
                     setattr(new_obj, key, recursion(value))
         return new_obj
 
-    def list_rec(list_obj):
-        copied_list = list_obj[:]   # lists, tuples, strings, unicode
-        for i, el in enumerate(copied_list):
-            if isinstance(el, pr.Simple):
-                copied_list[i] = recursion(el)
-            elif isinstance(el, list):
-                copied_list[i] = list_rec(el)
-        return copied_list
+    def list_or_tuple_rec(array_obj):
+        if isinstance(array_obj, tuple):
+            copied_array = list(array_obj)
+        else:
+            copied_array = array_obj[:]   # lists, tuples, strings, unicode
+        for i, el in enumerate(copied_array):
+            if isinstance(el, accept):
+                copied_array[i] = recursion(el)
+            elif isinstance(el, (tuple, list)):
+                copied_array[i] = list_or_tuple_rec(el)
+
+        if isinstance(array_obj, tuple):
+            return tuple(copied_array)
+        return copied_array
+
     return recursion(obj)
 
 
