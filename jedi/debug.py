@@ -48,8 +48,10 @@ def increase_indent(func):
     def wrapper(*args, **kwargs):
         global _debug_indent
         _debug_indent += 1
-        result = func(*args, **kwargs)
-        _debug_indent -= 1
+        try:
+            result = func(*args, **kwargs)
+        finally:
+            _debug_indent -= 1
         return result
     return wrapper
 
