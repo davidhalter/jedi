@@ -220,6 +220,20 @@ class FakeName(pr.Name):
         super(FakeName, self).__init__(FakeSubModule, names, p, p, parent)
 
 
+class LazyName(FakeName):
+    def __init__(self, name, parent_callback):
+        super(LazyName, self).__init__(name)
+        self._parent_callback = parent_callback
+
+    @property
+    def parent(self):
+        return self._parent_callback()
+
+    @parent.setter
+    def parent(self, value):
+        pass  # Do nothing, lower level can try to set the parent.
+
+
 def stmts_to_stmt(statements):
     """
     Sometimes we want to have something like a result_set and unite some

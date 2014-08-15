@@ -617,10 +617,12 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
 
     @memoize_default()
     def _module_attributes(self):
+        def parent_callback():
+            return Instance(self._evaluator, compiled.create(self._evaluator, str))
+
         names = ['__file__', '__package__', '__doc__', '__name__', '__version__']
         # All the additional module attributes are strings.
-        parent = Instance(self._evaluator, compiled.create(self._evaluator, str))
-        return [helpers.FakeName(n, parent) for n in names]
+        return [helpers.LazyName(n, parent_callback) for n in names]
 
     @memoize_default()
     def _sub_modules(self):
