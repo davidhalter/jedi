@@ -150,3 +150,27 @@ else:
 
 #? int
 a
+
+# -----------------
+# isinstance
+# -----------------
+
+def isinst(x):
+    if isinstance(x, int) and x == 1 or x is True:
+        return set
+    elif isinstance(x, (float, tuple)):
+        return list
+    elif not isinstance(x, str):
+        return tuple
+    return 1
+
+#? set
+isinst(1)
+#? set
+isinst(True)
+#? list
+isinst(1.0)
+#? list
+isinst(False)
+#? int()
+isinst('')
