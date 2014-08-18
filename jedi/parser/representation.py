@@ -1277,7 +1277,7 @@ class StatementElement(Simple):
 
     def set_next(self, call):
         """ Adds another part of the statement"""
-        call.parent = self.parent
+        call.parent = self
         if self.next is not None:
             self.next.set_next(call)
         else:
@@ -1288,7 +1288,7 @@ class StatementElement(Simple):
         An execution is nothing else than brackets, with params in them, which
         shows access on the internals of this name.
         """
-        call.parent = self.parent
+        call.parent = self
         if self.next is not None:
             self.next.set_execution(call)
         elif self.execution is not None:
