@@ -79,7 +79,7 @@ def call_signature_array_for_pos(stmt, pos):
     """
     Searches for the array and position of a tuple.
     """
-    def search_array(arr, pos):
+    def search_array(arr, pos, origin_call=None):
         accepted_types = pr.Array.TUPLE, pr.Array.NOARRAY
         if arr.type == 'dict':
             for stmt in arr.values + arr.keys:
@@ -94,22 +94,20 @@ def call_signature_array_for_pos(stmt, pos):
 
                 # TODO couldn't we merge with the len(arr) == 0 check?
                 if arr.start_pos < pos <= stmt.end_pos:
-                    if arr.type in accepted_types and isinstance(arr.parent, pr.Call):
+                    if arr.type in accepted_types and isinstance(origin_call, pr.Call):
                         return arr, i
         if len(arr) == 0 and arr.start_pos < pos < arr.end_pos:
-            if arr.type in accepted_types and isinstance(arr.parent, pr.Call):
+            if arr.type in accepted_types and isinstance(origin_call, pr.Call):
                 return arr, 0
         return None, 0
 
-    def search_call(call, pos):
+    def search_call(call, pos, origin_call=None):
         arr, index = None, 0
         if call.next is not None:
-            if isinstance(call.next, pr.Array):
-                arr, index = search_array(call.next, pos)
-            else:
-                arr, index = search_call(call.next, pos)
+            method = search_array if isinstance(call.next, pr.Array) else search_call
+            arr, index = method(call.next, pos, origin_call or call)
         if not arr and call.execution is not None:
-            arr, index = search_array(call.execution, pos)
+            arr, index = search_array(call.execution, pos, origin_call)
         return arr, index
 
     if stmt.start_pos >= pos >= stmt.end_pos:
@@ -120,7 +118,7 @@ def call_signature_array_for_pos(stmt, pos):
         if isinstance(command, pr.Array):
             arr, index = search_array(command, pos)
         elif isinstance(command, pr.StatementElement):
-            arr, index = search_call(command, pos)
+            arr, index = search_call(command, pos, command)
         if arr is not None:
             return arr, index
     return None, 0
