@@ -24,6 +24,9 @@ class TestCallSignatures(TestCase):
 
     def test_simple(self):
         run = self._run_simple
+        s7 = "str().upper().center("
+        s8 = "str(int[zip("
+        run(s7, 'center', 0)
 
         # simple
         s1 = "sorted(a, str("

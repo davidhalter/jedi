@@ -106,9 +106,10 @@ def call_signature_array_for_pos(stmt, pos):
 
     def search_call(call, pos, origin_call=None):
         tup = None, 0, None
-        if call.next is not None:
+        while call.next is not None and tup[0] is None:
             method = search_array if isinstance(call.next, pr.Array) else search_call
             tup = method(call.next, pos, origin_call or call)
+            call = call.next
         return tup
 
     if stmt.start_pos >= pos >= stmt.end_pos:

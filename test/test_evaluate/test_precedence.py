@@ -8,7 +8,7 @@ def parse_tree(statement_string, is_slice=False):
     stmt = p.module.statements[0]
     if is_slice:
         # get the part of the execution that is the slice
-        stmt = stmt.expression_list()[0].execution[0]
+        stmt = stmt.expression_list()[0].next[0]
     iterable = stmt.expression_list()
     pr = precedence.create_precedence(iterable)
     if isinstance(pr, precedence.Precedence):
