@@ -379,7 +379,7 @@ class Script(object):
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                (call, _) = search_call_signatures(user_stmt, self._pos)
+                (call, _, _) = search_call_signatures(user_stmt, self._pos)
                 if call is not None:
                     while call.next is not None:
                         call = call.next
@@ -559,22 +559,12 @@ class Script(object):
         :rtype: list of :class:`classes.CallSignature`
         """
         user_stmt = self._parser.user_stmt_with_whitespace()
-        call, index = search_call_signatures(user_stmt, self._pos)
+        call, execution_arr, index = search_call_signatures(user_stmt, self._pos)
         if call is None:
             return []
 
-        stmt_el = call
-        while isinstance(stmt_el.parent, pr.StatementElement):
-            # Go to parent literal/variable until not possible anymore. This
-            # makes it possible to return the whole expression.
-            stmt_el = stmt_el.parent
-        # We can change the execution since it's a new object
-        # (fast_parent_copy).
-        execution_arr, call.execution = call.execution, None
-        call.next = None
-
         with common.scale_speed_settings(settings.scale_call_signatures):
-            _callable = lambda: self._evaluator.eval_call(stmt_el)
+            _callable = lambda: self._evaluator.eval_call(call)
             origins = cache.cache_call_signatures(_callable, self.source,
                                                   self._pos, user_stmt)
         debug.speed('func_call followed')

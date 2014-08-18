@@ -78,50 +78,53 @@ def fast_parent_copy(obj):
 def call_signature_array_for_pos(stmt, pos):
     """
     Searches for the array and position of a tuple.
+    Returns a tuple of (array, index-in-the-array, call).
     """
     def search_array(arr, pos, origin_call=None):
         accepted_types = pr.Array.TUPLE, pr.Array.NOARRAY
         if arr.type == 'dict':
             for stmt in arr.values + arr.keys:
-                new_arr, index = call_signature_array_for_pos(stmt, pos)
-                if new_arr is not None:
-                    return new_arr, index
+                tup = call_signature_array_for_pos(stmt, pos)
+                if tup[0] is not None:
+                    return tup
         else:
             for i, stmt in enumerate(arr):
-                new_arr, index = call_signature_array_for_pos(stmt, pos)
-                if new_arr is not None:
-                    return new_arr, index
+                tup = call_signature_array_for_pos(stmt, pos)
+                if tup[0] is not None:
+                    return tup
 
-                # TODO couldn't we merge with the len(arr) == 0 check?
+                # Since we need the index, we duplicate efforts (with empty
+                # arrays).
                 if arr.start_pos < pos <= stmt.end_pos:
                     if arr.type in accepted_types and isinstance(origin_call, pr.Call):
-                        return arr, i
+                        return arr, i, origin_call
+
         if len(arr) == 0 and arr.start_pos < pos < arr.end_pos:
             if arr.type in accepted_types and isinstance(origin_call, pr.Call):
-                return arr, 0
-        return None, 0
+                return arr, 0, origin_call
+        return None, 0, None
 
     def search_call(call, pos, origin_call=None):
-        arr, index = None, 0
+        tup = None, 0, None
         if call.next is not None:
             method = search_array if isinstance(call.next, pr.Array) else search_call
-            arr, index = method(call.next, pos, origin_call or call)
-        if not arr and call.execution is not None:
-            arr, index = search_array(call.execution, pos, origin_call)
-        return arr, index
+            tup = method(call.next, pos, origin_call or call)
+        if not tup[0] and call.execution is not None:
+            tup = search_array(call.execution, pos, origin_call)
+        return tup
 
     if stmt.start_pos >= pos >= stmt.end_pos:
-        return None, 0
+        return None, 0, None
 
+    tup = None, 0, None
     for command in stmt.expression_list():
-        arr = None
         if isinstance(command, pr.Array):
-            arr, index = search_array(command, pos)
+            tup = search_array(command, pos)
         elif isinstance(command, pr.StatementElement):
-            arr, index = search_call(command, pos, command)
-        if arr is not None:
-            return arr, index
-    return None, 0
+            tup = search_call(command, pos, command)
+        if tup[0] is not None:
+            break
+    return tup
 
 
 def search_call_signatures(user_stmt, position):
@@ -129,16 +132,25 @@ def search_call_signatures(user_stmt, position):
     Returns the function Call that matches the position before.
     """
     debug.speed('func_call start')
-    call, index = None, 0
+    call, arr, index = None, None, 0
     if user_stmt is not None and isinstance(user_stmt, pr.Statement):
         # some parts will of the statement will be removed
         user_stmt = fast_parent_copy(user_stmt)
-        arr, index = call_signature_array_for_pos(user_stmt, position)
-        if arr is not None:
-            call = arr.parent
+        arr, index, call = call_signature_array_for_pos(user_stmt, position)
+
+        # Now remove the part after the call. Including the array from the
+        # statement.
+        stmt_el = call
+        while isinstance(stmt_el, pr.StatementElement):
+            if stmt_el.execution == arr:
+                stmt_el.execution = None
+                stmt_el.next = None
+                break
+
+            stmt_el = stmt_el.next
 
     debug.speed('func_call parsed')
-    return call, index
+    return call, arr, index
 
 
 def scan_statement_for_calls(stmt, search_name, assignment_details=False):
