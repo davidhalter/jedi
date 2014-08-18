@@ -621,7 +621,7 @@ class Interpreter(Script):
     upper
     """
 
-    def __init__(self, source, namespaces=[], **kwds):
+    def __init__(self, source, namespaces, **kwds):
         """
         Parse `source` and mixin interpreted Python objects from `namespaces`.
 
@@ -635,6 +635,10 @@ class Interpreter(Script):
         If `line` and `column` are None, they are assumed be at the end of
         `source`.
         """
+        if type(namespaces) is not list or len(namespaces) == 0 or \
+           any([type(x) is not dict for x in namespaces]):
+            raise TypeError("namespaces must be a non-empty list of dict")
+
         super(Interpreter, self).__init__(source, **kwds)
         self.namespaces = namespaces
 
