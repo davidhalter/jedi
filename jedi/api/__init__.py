@@ -379,16 +379,9 @@ class Script(object):
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                (call, _, _) = search_call_signatures(user_stmt, self._pos)
+                call, _, _ = search_call_signatures(user_stmt, self._pos)
                 if call is not None:
-                    while call.next is not None:
-                        call = call.next
-                    # reset cursor position:
-                    (row, col) = call.name.end_pos
-                    pos = (row, max(col - 1, 0))
-                    self._user_context = UserContext(self.source, pos)
-                    # then try to find the path again
-                    goto_path = self._user_context.get_path_under_cursor()
+                    definitions = set(self._evaluator.eval_call(call))
 
         if not definitions:
             if goto_path:
