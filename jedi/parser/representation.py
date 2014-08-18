@@ -1587,8 +1587,14 @@ class Operator(Simple):
         return self.get_code()
 
     def __eq__(self, other):
-        """Make comparisons easy. Improves the readability of the parser."""
-        return self.string == other
+        """
+        Make comparisons with strings easy.
+        Improves the readability of the parser.
+        """
+        if isinstance(other, Operator):
+            return self is other
+        else:
+            return self.string == other
 
     def __ne__(self, other):
         """Python 2 compatibility."""

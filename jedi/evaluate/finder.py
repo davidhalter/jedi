@@ -451,7 +451,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     After that we have a few underscore names that have been defined
 
     >>> pairs[2]
-    (<ModuleWrapper: <SubModule: None@1-5>>, [<FakeName: __file__@0,0>, ...])
+    (<ModuleWrapper: <SubModule: None@1-5>>, [<LazyName: __file__@0,0>, ...])
 
 
     Finally, it yields names from builtin, if `include_builtin` is

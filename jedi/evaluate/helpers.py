@@ -11,7 +11,6 @@ def fast_parent_copy(obj):
     """
     new_elements = {}
     accept = (pr.Simple, pr.NamePart)
-    start=obj
 
     def recursion(obj):
         if isinstance(obj, pr.Statement):
@@ -93,6 +92,7 @@ def call_signature_array_for_pos(stmt, pos):
                 if new_arr is not None:
                     return new_arr, index
 
+                # TODO couldn't we merge with the len(arr) == 0 check?
                 if arr.start_pos < pos <= stmt.end_pos:
                     if arr.type in accepted_types and isinstance(arr.parent, pr.Call):
                         return arr, i
