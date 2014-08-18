@@ -161,7 +161,8 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
             assert len(expression_list) == 1
             call = expression_list[0]
             assert isinstance(call, pr.Call) and str(call.name) == 'hasattr'
-            execution = call.execution
+            assert call.next_is_execution()
+            execution = call.next
             assert execution and len(execution) == 2
 
             # check if the names match

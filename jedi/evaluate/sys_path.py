@@ -71,17 +71,20 @@ def _paths_from_insert(module_path, exe):
     """ extract the inserted module path from an "sys.path.insert" statement
     """
     exe_type, exe.type = exe.type, pr.Array.NOARRAY
-    exe_pop = exe.values.pop(0)
-    res = _execute_code(module_path, exe.get_code())
-    exe.type = exe_type
+    try:
+        exe_pop = exe.values.pop(0)
+        res = _execute_code(module_path, exe.get_code())
+    finally:
+        exe.type = exe_type
     exe.values.insert(0, exe_pop)
     return res
 
 
 def _paths_from_call_expression(module_path, call):
     """ extract the path from either "sys.path.append" or "sys.path.insert" """
-    if call.execution is None:
+    if not call.next_is_execution():
         return
+
     n = call.name
     if not isinstance(n, pr.Name) or len(n.names) != 3:
         return
@@ -89,7 +92,7 @@ def _paths_from_call_expression(module_path, call):
     if names[:2] != ['sys', 'path']:
         return
     cmd = names[2]
-    exe = call.execution
+    exe = call.next
     if cmd == 'insert' and len(exe) == 2:
         path = _paths_from_insert(module_path, exe)
     elif cmd == 'append' and len(exe) == 1:
@@ -109,10 +112,8 @@ def _check_module(module):
         if len(expressions) == 1 and isinstance(expressions[0], pr.Call):
             sys_path.extend(
                 _paths_from_call_expression(module.path, expressions[0]) or [])
-        elif (
-            hasattr(stmt, 'assignment_details') and
-            len(stmt.assignment_details) == 1
-        ):
+        elif hasattr(stmt, 'assignment_details') \
+                and len(stmt.assignment_details) == 1:
             sys_path.extend(_paths_from_assignment(stmt) or [])
     return sys_path
 

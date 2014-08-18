@@ -952,7 +952,8 @@ class Statement(Simple, DocstringMixin):
                         # not a set_var.
                         is_execution = False
                         while c:
-                            if Array.is_type(c.execution, Array.TUPLE):
+                            # TODO use StatementElement.next_is_execution
+                            if Array.is_type(c.next, Array.TUPLE):
                                 is_execution = True
                             c = c.next
                         if is_execution:
@@ -1194,7 +1195,7 @@ class Statement(Simple, DocstringMixin):
                     token_iterator, brackets[tok.string], tok.start_pos
                 )
                 if result and isinstance(result[-1], StatementElement):
-                    result[-1].set_execution(arr)
+                    result[-1].set_next(arr)
                 else:
                     arr.parent = self
                     result.append(arr)
@@ -1264,7 +1265,7 @@ class Param(Statement):
 
 
 class StatementElement(Simple):
-    __slots__ = ('parent', 'next', 'execution')
+    __slots__ = ('parent', 'next')
 
     def __init__(self, module, start_pos, end_pos, parent):
         super(StatementElement, self).__init__(module, start_pos, end_pos)
@@ -1273,7 +1274,6 @@ class StatementElement(Simple):
         # be an array.
         self.parent = parent
         self.next = None
-        self.execution = None
 
     def set_next(self, call):
         """ Adds another part of the statement"""
@@ -1283,18 +1283,8 @@ class StatementElement(Simple):
         else:
             self.next = call
 
-    def set_execution(self, call):
-        """
-        An execution is nothing else than brackets, with params in them, which
-        shows access on the internals of this name.
-        """
-        call.parent = self.parent
-        if self.next is not None:
-            self.next.set_execution(call)
-        elif self.execution is not None:
-            self.execution.set_execution(call)
-        else:
-            self.execution = call
+    def next_is_execution(self):
+        return Array.is_type(self.next, Array.TUPLE, Array.NOARRAY)
 
     def generate_call_path(self):
         """ Helps to get the order in which statements are executed. """
@@ -1303,20 +1293,15 @@ class StatementElement(Simple):
                 yield name_part
         except AttributeError:
             yield self
-        if self.execution is not None:
-            for y in self.execution.generate_call_path():
-                yield y
         if self.next is not None:
             for y in self.next.generate_call_path():
                 yield y
 
     def get_code(self):
-        s = ''
-        if self.execution is not None:
-            s += self.execution.get_code()
         if self.next is not None:
-            s += '.' + self.next.get_code()
-        return s
+            s = '.' if isinstance(self, Array) else ''
+            return s + self.next.get_code()
+        return ''
 
 
 class Call(StatementElement):

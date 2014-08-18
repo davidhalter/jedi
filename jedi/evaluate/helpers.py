@@ -96,11 +96,11 @@ def call_signature_array_for_pos(stmt, pos):
                 # Since we need the index, we duplicate efforts (with empty
                 # arrays).
                 if arr.start_pos < pos <= stmt.end_pos:
-                    if arr.type in accepted_types and isinstance(origin_call, pr.Call):
+                    if arr.type in accepted_types and origin_call:
                         return arr, i, origin_call
 
         if len(arr) == 0 and arr.start_pos < pos < arr.end_pos:
-            if arr.type in accepted_types and isinstance(origin_call, pr.Call):
+            if arr.type in accepted_types and origin_call:
                 return arr, 0, origin_call
         return None, 0, None
 
@@ -109,8 +109,6 @@ def call_signature_array_for_pos(stmt, pos):
         if call.next is not None:
             method = search_array if isinstance(call.next, pr.Array) else search_call
             tup = method(call.next, pos, origin_call or call)
-        if not tup[0] and call.execution is not None:
-            tup = search_array(call.execution, pos, origin_call)
         return tup
 
     if stmt.start_pos >= pos >= stmt.end_pos:
@@ -142,11 +140,9 @@ def search_call_signatures(user_stmt, position):
         # statement.
         stmt_el = call
         while isinstance(stmt_el, pr.StatementElement):
-            if stmt_el.execution == arr:
-                stmt_el.execution = None
+            if stmt_el.next == arr:
                 stmt_el.next = None
                 break
-
             stmt_el = stmt_el.next
 
     debug.speed('func_call parsed')
@@ -178,13 +174,14 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
         elif isinstance(c, pr.Call):
             s_new = c
             while s_new is not None:
-                n = s_new.name
-                if isinstance(n, pr.Name) \
-                        and search_name in [str(x) for x in n.names]:
-                    result.append(c)
+                if isinstance(s_new, pr.Array):
+                    result += scan_array(s_new, search_name)
+                else:
+                    n = s_new.name
+                    if isinstance(n, pr.Name) \
+                            and search_name in [str(x) for x in n.names]:
+                        result.append(c)
 
-                if s_new.execution is not None:
-                    result += scan_array(s_new.execution, search_name)
                 s_new = s_new.next
         elif isinstance(c, pr.ListComprehension):
             for s in c.stmt, c.middle, c.input:

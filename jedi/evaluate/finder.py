@@ -187,7 +187,7 @@ class NameFinder(object):
                         # Compare start_pos, because names may be different
                         # because of executions.
                         if c.name.start_pos == name.start_pos \
-                                and c.execution:
+                                and isinstance(c.next, pr.Array):
                             return True
                 return False
 
@@ -391,10 +391,10 @@ def _check_isinstance_type(evaluator, stmt, search_name_part):
         assert len(expression_list) == 1
         call = expression_list[0]
         assert isinstance(call, pr.Call) and str(call.name) == 'isinstance'
-        assert bool(call.execution)
+        assert call.next_is_execution()
 
         # isinstance check
-        isinst = call.execution.values
+        isinst = call.next.values
         assert len(isinst) == 2  # has two params
         obj, classes = [statement.expression_list() for statement in isinst]
         assert len(obj) == 1
