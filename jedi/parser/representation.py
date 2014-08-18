@@ -175,7 +175,7 @@ class Simple(Base):
     __slots__ = ('parent', '_sub_module', '_start_pos', 'use_as_parent',
                  '_end_pos')
 
-    def __init__(self, module, start_pos, end_pos=(None, None)):
+    def __init__(self, module, start_pos, end_pos=(None, None), parent=None):
         """
         Initialize :class:`Simple`.
 
@@ -190,7 +190,7 @@ class Simple(Base):
         self._start_pos = start_pos
         self._end_pos = end_pos
 
-        self.parent = None
+        self.parent = parent
         # use this attribute if parent should be something else than self.
         self.use_as_parent = self
 
@@ -897,7 +897,7 @@ class Statement(Simple, DocstringMixin):
 
     def __init__(self, module, token_list, start_pos, end_pos, parent=None,
                  as_names=(), names_are_set_vars=False, set_name_parents=True):
-        super(Statement, self).__init__(module, start_pos, end_pos)
+        super(Statement, self).__init__(module, start_pos, end_pos, parent)
         self._token_list = token_list
         self._names_are_set_vars = names_are_set_vars
         if set_name_parents:
@@ -906,7 +906,6 @@ class Statement(Simple, DocstringMixin):
                     t.parent = self.use_as_parent
             for n in as_names:
                 n.parent = self.use_as_parent
-        self.parent = parent
         self._doc_token = None
         self._set_vars = None
         self.as_names = list(as_names)
@@ -1265,14 +1264,10 @@ class Param(Statement):
 
 
 class StatementElement(Simple):
-    __slots__ = ('parent', 'next')
+    __slots__ = ('next',)
 
     def __init__(self, module, start_pos, end_pos, parent):
-        super(StatementElement, self).__init__(module, start_pos, end_pos)
-
-        # parent is not the oposite of next. The parent of c: a = [b.c] would
-        # be an array.
-        self.parent = parent
+        super(StatementElement, self).__init__(module, start_pos, end_pos, parent)
         self.next = None
 
     def set_next(self, call):
@@ -1484,15 +1479,13 @@ class Name(Simple):
     __slots__ = ('names', '_get_code')
 
     def __init__(self, module, names, start_pos, end_pos, parent=None):
-        super(Name, self).__init__(module, start_pos, end_pos)
+        super(Name, self).__init__(module, start_pos, end_pos, parent)
         # Cache get_code, because it's used quite often for comparisons
         # (seen by using the profiler).
         self._get_code = ".".join(n[0] for n in names)
 
         names = tuple(NamePart(n[0], self, n[1]) for n in names)
         self.names = names
-        if parent is not None:
-            self.parent = parent
 
     def get_code(self):
         """ Returns the names in a full string format """
@@ -1558,9 +1551,8 @@ class Operator(Simple):
 
     def __init__(self, module, string, parent, start_pos):
         end_pos = start_pos[0], start_pos[1] + len(string)
-        super(Operator, self).__init__(module, start_pos, end_pos)
+        super(Operator, self).__init__(module, start_pos, end_pos, parent)
         self.string = string
-        self.parent = parent
 
     def get_code(self):
         return self.string
