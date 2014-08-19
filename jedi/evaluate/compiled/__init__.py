@@ -421,6 +421,17 @@ true_obj = builtin.get_by_name('True')
 object_obj = builtin.get_by_name('object')
 
 
+def keyword_from_value(obj):
+    if obj is None:
+        return none_obj
+    elif obj is False:
+        return false_obj
+    elif obj is True:
+        return true_obj
+    else:
+        raise NotImplementedError
+
+
 def compiled_objects_cache(func):
     def wrapper(evaluator, obj, parent=builtin, module=None):
         # Do a very cheap form of caching here.

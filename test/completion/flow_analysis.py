@@ -155,8 +155,12 @@ a
 # isinstance
 # -----------------
 
+class A(): pass
+
 def isinst(x):
-    if isinstance(x, int) and x == 1 or x is True:
+    if isinstance(x, A):
+        return dict
+    elif isinstance(x, int) and x == 1 or x is True:
         return set
     elif isinstance(x, (float, tuple)):
         return list
@@ -164,8 +168,8 @@ def isinst(x):
         return tuple
     return 1
 
-#? set
-isinst(1)
+#? dict
+isinst(A())
 #? set
 isinst(True)
 #? list

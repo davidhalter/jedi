@@ -124,6 +124,31 @@ def builtins_reversed(evaluator, obj, params):
     return [er.Instance(evaluator, obj, objects)]
 
 
+def builtins_isinstance(evaluator, obj, params):
+    any_bool = [compiled.false_obj, compiled.true_obj]
+    obj = _follow_param(evaluator, params, 0)
+    raw_classes = _follow_param(evaluator, params, 1)
+    classes = []
+    # Check for tuples.
+    for cls_or_tup in raw_classes:
+        if isinstance(cls_or_tup, er.Class):
+            classes.append(cls_or_tup)
+        else:
+            classes += iterable.get_iterator_types([cls_or_tup])
+
+    bool_results = []
+    for o in obj:
+        for cls in classes:
+            try:
+                mro_func = o.base.py__mro__
+            except AttributeError:
+                return any_bool
+            else:
+                bool_result = cls in mro_func(evaluator)
+                bool_results.append(compiled.keyword_from_value(bool_result))
+    return set(bool_results)
+
+
 def collections_namedtuple(evaluator, obj, params):
     """
     Implementation of the namedtuple function.
@@ -179,6 +204,7 @@ _implemented = {
         'type': builtins_type,
         'super': builtins_super,
         'reversed': builtins_reversed,
+        'isinstance': builtins_isinstance,
     },
     'copy': {
         'copy': _return_first_param,

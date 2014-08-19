@@ -7,8 +7,8 @@ from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.common import PushBackIterator
-from jedi.evaluate.compiled import (CompiledObject, create, builtin, false_obj,
-                                    true_obj, none_obj)
+from jedi.evaluate.compiled import (CompiledObject, create, builtin,
+                                    keyword_from_value)
 from jedi.evaluate import analysis
 
 # Maps Python syntax to the operator module.
@@ -249,7 +249,7 @@ def _factor_calculate(evaluator, operator, right):
         value = right.py__bool__()
         if value is None:  # Uncertainty.
             return None
-        return _keyword_from_value(not value)
+        return keyword_from_value(not value)
     return right
 
 
@@ -275,15 +275,6 @@ def _is_tuple(obj):
 def _is_list(obj):
     from jedi.evaluate import iterable
     return isinstance(obj, iterable.Array) and obj.type == pr.Array.LIST
-
-
-def _keyword_from_value(obj):
-    if obj is None:
-        return none_obj
-    elif obj is False:
-        return false_obj
-    elif obj is True:
-        return true_obj
 
 
 def _element_calculate(evaluator, left, operator, right):
@@ -314,7 +305,7 @@ def _element_calculate(evaluator, left, operator, right):
             # Possible, because the return is not an option. Just compare.
             left = left.obj
             right = right.obj
-        return [_keyword_from_value(operation(left, right))]
+        return [keyword_from_value(operation(left, right))]
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
