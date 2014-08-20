@@ -5,6 +5,7 @@ import inspect
 import re
 import sys
 import os
+from functools import partial
 
 from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
@@ -20,6 +21,19 @@ if os.path.altsep is not None:
     _sep += os.path.altsep
 _path_re = re.compile('(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
 del _sep
+
+
+class CheckAttribute(object):
+    """Raises an AttributeError if the attribute X isn't available."""
+    def __init__(self, func):
+        self.func = func
+        # Remove the py in front of e.g. py__call__.
+        self.check_name = func.__name__[2:]
+
+    def __get__(self, instance, owner):
+        # This might raise an AttributeError. That's wanted.
+        getattr(instance.obj, self.check_name)
+        return partial(self.func, instance)
 
 
 class CompiledObject(Base):
@@ -45,9 +59,15 @@ class CompiledObject(Base):
         self.obj.__call__
         return actual
 
+    @CheckAttribute
+    def py__class__(self, evaluator):
+        return CompiledObject(self.obj.__class__, parent=self.parent)
+
+    @CheckAttribute
     def py__mro__(self, evaluator):
         return tuple(create(evaluator, cls) for cls in self.obj.__mro__)
 
+    @CheckAttribute
     def py__bases__(self, evaluator):
         return tuple(create(evaluator, cls) for cls in self.obj.__bases__)
 
@@ -55,7 +75,7 @@ class CompiledObject(Base):
         return bool(self.obj)
 
     def is_class(self):
-        return isinstance(self.obj, type)
+        return inspect.isclass(self.obj)
 
     @property
     def doc(self):

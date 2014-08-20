@@ -140,7 +140,7 @@ def builtins_isinstance(evaluator, obj, params):
     for o in obj:
         for cls in classes:
             try:
-                mro_func = o.base.py__mro__
+                mro_func = o.py__class__(evaluator).py__mro__
             except AttributeError:
                 return any_bool
             else:

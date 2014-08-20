@@ -110,6 +110,9 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
         return actual
 
+    def py__class__(self, evaluator):
+        return self.base
+
     def py__bool__(self):
         # Signalize that we don't know about the bool type.
         return None
