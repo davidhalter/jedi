@@ -92,7 +92,7 @@ class TestRegression(TestCase):
         class C:
             pass
 
-        variable = f or C""")
+        variable = f if random.choice([0, 1]) else C""")
         defs = Script(source, column=3).goto_definitions()
         defs = sorted(defs, key=lambda d: d.line)
         self.assertEqual([d.description for d in defs],

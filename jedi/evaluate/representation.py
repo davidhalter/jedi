@@ -484,6 +484,9 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         else:
             return FunctionExecution(evaluator, self, params).get_return_types()
 
+    def py__bool__(self):
+        return True
+
     def __getattr__(self, name):
         return getattr(self.base_func, name)
 
@@ -668,3 +671,6 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self._module)
+
+    def py__bool__(self):
+        return True

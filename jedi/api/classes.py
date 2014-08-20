@@ -114,8 +114,10 @@ class BaseDefinition(object):
         ... def f():
         ...     pass
         ...
-        ... variable = keyword or f or C or x'''
-        >>> script = Script(source, len(source.splitlines()), 3, 'example.py')
+        ... for variable in [keyword, f, C, x]:
+        ...     variable'''
+
+        >>> script = Script(source)
         >>> defs = script.goto_definitions()
 
         Before showing what is in ``defs``, let's sort it by :attr:`line`
@@ -604,7 +606,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         ... class C:
         ...     pass
         ...
-        ... variable = f or C'''
+        ... variable = f if random.choice([0,1]) else C'''
         >>> script = Script(source, column=3)  # line is maximum by default
         >>> defs = script.goto_definitions()
         >>> defs = sorted(defs, key=lambda d: d.line)
