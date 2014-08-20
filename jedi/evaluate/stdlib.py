@@ -125,28 +125,29 @@ def builtins_reversed(evaluator, obj, params):
 
 
 def builtins_isinstance(evaluator, obj, params):
-    any_bool = [compiled.false_obj, compiled.true_obj]
     obj = _follow_param(evaluator, params, 0)
     raw_classes = _follow_param(evaluator, params, 1)
-    classes = []
-    # Check for tuples.
-    for cls_or_tup in raw_classes:
-        if cls_or_tup.is_class():
-            classes.append(cls_or_tup)
-        else:
-            classes += iterable.get_iterator_types([cls_or_tup])
-
-    bool_results = []
+    bool_results = set([])
     for o in obj:
-        for cls in classes:
-            try:
-                mro_func = o.py__class__(evaluator).py__mro__
-            except AttributeError:
-                return any_bool
+        try:
+            mro_func = o.py__class__(evaluator).py__mro__
+        except AttributeError:
+            # This is temporary. Everything should have a class attribute in
+            # Python?! Maybe we'll leave it here, because some numpy objects or
+            # whatever might not.
+            return [compiled.true_obj, compiled.false_obj]
+
+        mro = mro_func(evaluator)
+
+        for cls_or_tup in raw_classes:
+            if cls_or_tup.is_class():
+                bool_results.add(cls_or_tup in mro)
             else:
-                bool_result = cls in mro_func(evaluator)
-                bool_results.append(compiled.keyword_from_value(bool_result))
-    return set(bool_results)
+                # Check for tuples.
+                classes = iterable.get_iterator_types([cls_or_tup])
+                bool_results.add(any(cls in mro for cls in classes))
+
+    return [compiled.keyword_from_value(x) for x in bool_results]
 
 
 def collections_namedtuple(evaluator, obj, params):

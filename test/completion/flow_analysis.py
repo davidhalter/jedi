@@ -162,7 +162,7 @@ def isinst(x):
         return dict
     elif isinstance(x, int) and x == 1 or x is True:
         return set
-    elif isinstance(x, (float, tuple)):
+    elif isinstance(x, (float, reversed)):
         return list
     elif not isinstance(x, str):
         return tuple
@@ -174,11 +174,11 @@ isinst(A())
 isinst(True)
 #? set
 isinst(1)
-#? int
+#? tuple
 isinst(2)
 #? list
 isinst(1.0)
-#? list
+#? tuple
 isinst(False)
 #? int()
 isinst('')
