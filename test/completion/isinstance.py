@@ -48,7 +48,9 @@ def fooooo2(obj):
     else:
         return 1
 
-#? int() datetime.datetime()
+# In earlier versions of Jedi, this returned both datetime and int, but now
+# Jedi does flow checks and realizes that the top return isn't executed.
+#? int()
 fooooo2('')
 
 

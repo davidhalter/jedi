@@ -1,5 +1,5 @@
 """
-Like described in the :mod:`jedi.evaluate.parsing_representation` module,
+Like described in the :mod:`jedi.parser.representation` module,
 there's a need for an ast like module to represent the states of parsed
 modules.
 
@@ -9,6 +9,22 @@ instantiated. This class represents these cases.
 
 So, why is there also a ``Class`` class here? Well, there are decorators and
 they change classes in Python 3.
+
+Representation modules also define "magic methods". Those methods look like
+``py__foo__`` and are typically mappable to the Python equivalents ``__call__``
+and others. Here's a list:
+
+====================================== ========================================
+**Method**                             **Description**
+-------------------------------------- ----------------------------------------
+py__call__(evaluator, params: Array)   On callable objects, returns types.
+py__bool__()                           Returns True/False/None; None means that
+                                       there's no certainty.
+py__bases__(evaluator)                 Returns a list of base classes.
+py__mro__(evaluator)                   Returns a list of classes (the mro).
+====================================== ========================================
+
+__
 """
 import copy
 import os
@@ -603,7 +619,7 @@ class FunctionExecution(Executed):
         return "<%s of %s>" % (type(self).__name__, self.base)
 
 
-class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module)):
+class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     def __init__(self, evaluator, module):
         self._evaluator = evaluator
         self._module = module
