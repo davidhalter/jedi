@@ -54,6 +54,9 @@ class CompiledObject(Base):
     def py__bool__(self):
         return bool(self.obj)
 
+    def is_class(self):
+        return isinstance(self.obj, type)
+
     @property
     def doc(self):
         return inspect.getdoc(self.obj) or ''

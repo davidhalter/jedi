@@ -314,6 +314,9 @@ class Wrapper(pr.Base):
     def is_scope(self):
         return True
 
+    def is_class(self):
+        return False
+
 
 class Class(use_metaclass(CachedMetaClass, Wrapper)):
     """
@@ -383,6 +386,9 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
             yield cls, names
         if add_class_vars:
             yield self, compiled.type_names
+
+    def is_class(self):
+        return True
 
     def get_subscope_by_name(self, name):
         for s in [self] + self.py__bases__(self._evaluator):
