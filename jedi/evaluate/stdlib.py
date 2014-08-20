@@ -131,7 +131,7 @@ def builtins_isinstance(evaluator, obj, params):
     classes = []
     # Check for tuples.
     for cls_or_tup in raw_classes:
-        if isinstance(cls_or_tup, er.Class):
+        if cls_or_tup.is_class():
             classes.append(cls_or_tup)
         else:
             classes += iterable.get_iterator_types([cls_or_tup])

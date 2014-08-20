@@ -35,7 +35,12 @@ from jedi.cache import underscore_memoization
 from jedi.evaluate import analysis
 
 
-class Generator(use_metaclass(CachedMetaClass, pr.Base)):
+class IterableWrapper(pr.Base):
+    def is_class(self):
+        return False
+
+
+class Generator(use_metaclass(CachedMetaClass, IterableWrapper)):
     """Handling of `yield` functions."""
     def __init__(self, evaluator, func, var_args):
         super(Generator, self).__init__()
@@ -91,7 +96,7 @@ class Generator(use_metaclass(CachedMetaClass, pr.Base)):
         return "<%s of %s>" % (type(self).__name__, self.func)
 
 
-class GeneratorMethod(object):
+class GeneratorMethod(IterableWrapper):
     """``__next__`` and ``send`` methods."""
     def __init__(self, generator, builtin_func):
         self._builtin_func = builtin_func
@@ -114,7 +119,7 @@ class GeneratorComprehension(Generator):
         return self._evaluator.eval_statement_element(self.comprehension)
 
 
-class Array(use_metaclass(CachedMetaClass, pr.Base)):
+class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
     """
     Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.
@@ -216,7 +221,7 @@ class Array(use_metaclass(CachedMetaClass, pr.Base)):
         return "<e%s of %s>" % (type(self).__name__, self._array)
 
 
-class ArrayMethod(object):
+class ArrayMethod(IterableWrapper):
     """
     A name, e.g. `list.append`, it is used to access the original array
     methods.
@@ -423,7 +428,7 @@ def check_array_instances(evaluator, instance):
     return [ai]
 
 
-class ArrayInstance(pr.Base):
+class ArrayInstance(IterableWrapper):
     """
     Used for the usage of set() and list().
     This is definitely a hack, but a good one :-)
