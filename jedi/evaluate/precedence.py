@@ -219,9 +219,19 @@ def process_precedence_element(evaluator, precedence):
         return None
     else:
         if isinstance(precedence, Precedence):
-            left = process_precedence_element(evaluator, precedence.left)
-            right = process_precedence_element(evaluator, precedence.right)
-            return calculate(evaluator, left, precedence.operator, right)
+            left_objs = process_precedence_element(evaluator, precedence.left)
+            operator = precedence.operator
+            lazy_right = lambda: process_precedence_element(evaluator, precedence.right)
+            # handle lazy evaluation of and/or here.
+            if operator == 'and':
+                left_bools = set([left.py__bool__() for left in left_objs])
+                if left_bools == set([True]):
+                    return left_objs
+                elif left_bools == set([False]):
+                    return lazy_right()
+                # Otherwise continue, because of uncertainty.
+            return calculate(evaluator, left_objs, precedence.operator,
+                             lazy_right())
         else:
             # normal element, no operators
             return evaluator.eval_statement_element(precedence)
