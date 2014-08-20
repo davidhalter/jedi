@@ -206,10 +206,11 @@ class NameFinder(object):
         evaluator = self._evaluator
 
         # Add isinstance and other if/assert knowledge.
-        flow_scope = self.scope
         if isinstance(self.name_str, pr.NamePart):
             flow_scope = self.name_str.parent.parent
-            while flow_scope:
+            # Ignore FunctionExecution parents for now.
+            until = flow_scope.get_parent_until(er.FunctionExecution)
+            while flow_scope and not isinstance(until, er.FunctionExecution):
                 # TODO check if result is in scope -> no evaluation necessary
                 n = check_flow_information(evaluator, flow_scope,
                                            self.name_str, self.position)
