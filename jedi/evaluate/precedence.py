@@ -214,6 +214,19 @@ def _literals_to_types(evaluator, result):
     return list(set(result))
 
 
+def process_precedence_element(evaluator, precedence):
+    if precedence is None:
+        return None
+    else:
+        if isinstance(precedence, Precedence):
+            left = process_precedence_element(evaluator, precedence.left)
+            right = process_precedence_element(evaluator, precedence.right)
+            return calculate(evaluator, left, precedence.operator, right)
+        else:
+            # normal element, no operators
+            return evaluator.eval_statement_element(precedence)
+
+
 def calculate(evaluator, left_result, operator, right_result):
     result = []
     if left_result is None and right_result:

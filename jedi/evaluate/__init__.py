@@ -169,22 +169,7 @@ class Evaluator(object):
         """
         debug.dbg('eval_expression_list: %s', expression_list)
         p = precedence.create_precedence(expression_list)
-        return self.process_precedence_element(p) or []
-
-    def process_precedence_element(self, el):
-        if el is None:
-            return None
-        else:
-            if isinstance(el, precedence.Precedence):
-                return self._eval_precedence(el)
-            else:
-                # normal element, no operators
-                return self.eval_statement_element(el)
-
-    def _eval_precedence(self, _precedence):
-        left = self.process_precedence_element(_precedence.left)
-        right = self.process_precedence_element(_precedence.right)
-        return precedence.calculate(self, left, _precedence.operator, right)
+        return precedence.process_precedence_element(self, p) or []
 
     def eval_statement_element(self, element):
         if pr.Array.is_type(element, pr.Array.NOARRAY):

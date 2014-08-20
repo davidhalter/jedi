@@ -490,7 +490,7 @@ class Slice(object):
             if element is None:
                 return None
 
-            result = self._evaluator.process_precedence_element(element)
+            result = precedence.process_precedence_element(self._evaluator, element)
             if len(result) != 1:
                 # We want slices to be clear defined with just one type.
                 # Otherwise we will return an empty slice object.
@@ -528,4 +528,4 @@ def create_indexes_or_slices(evaluator, index_array):
             step = None
         return (Slice(evaluator, start, stop, step),)
     else:
-        return tuple(evaluator.process_precedence_element(prec))
+        return tuple(precedence.process_precedence_element(evaluator, prec))

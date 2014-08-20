@@ -172,6 +172,10 @@ def isinst(x):
 isinst(A())
 #? set
 isinst(True)
+#? set
+isinst(1)
+#? int
+isinst(2)
 #? list
 isinst(1.0)
 #? list
