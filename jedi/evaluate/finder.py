@@ -231,12 +231,7 @@ class NameFinder(object):
                 else:
                     types += self._remove_statements(typ, name)
             else:
-                if isinstance(typ, pr.Class):
-                    typ = er.Class(evaluator, typ)
-                elif isinstance(typ, pr.Function):
-                    typ = er.Function(evaluator, typ)
-                elif isinstance(typ, pr.Module):
-                    typ = er.ModuleWrapper(evaluator, typ)
+                typ = er.wrap(evaluator, typ)
 
                 if typ.isinstance(er.Function) and resolve_decorator:
                     typ = typ.get_decorated_func()

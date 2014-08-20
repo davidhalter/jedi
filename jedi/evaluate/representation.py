@@ -236,11 +236,7 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
                         pr.Module, FunctionExecution)):
         return var
 
-    if isinstance(var, pr.Function):
-        var = Function(evaluator, var)
-    elif isinstance(var, pr.Class):
-        var = Class(evaluator, var)
-
+    var = wrap(evaluator, var)
     return InstanceElement(evaluator, instance, var, is_class_var)
 
 
