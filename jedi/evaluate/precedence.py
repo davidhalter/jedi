@@ -223,12 +223,18 @@ def process_precedence_element(evaluator, precedence):
             operator = precedence.operator
             lazy_right = lambda: process_precedence_element(evaluator, precedence.right)
             # handle lazy evaluation of and/or here.
-            if operator == 'and':
+            if operator in ('and', 'or'):
                 left_bools = set([left.py__bool__() for left in left_objs])
                 if left_bools == set([True]):
-                    return left_objs
+                    if operator == 'and':
+                        return lazy_right()
+                    else:
+                        return left_objs
                 elif left_bools == set([False]):
-                    return lazy_right()
+                    if operator == 'and':
+                        return left_objs
+                    else:
+                        return lazy_right()
                 # Otherwise continue, because of uncertainty.
             return calculate(evaluator, left_objs, precedence.operator,
                              lazy_right())
