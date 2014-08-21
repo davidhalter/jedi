@@ -5,7 +5,7 @@ from jedi.parser import representation as pr
 from jedi import debug
 
 
-def fast_parent_copy(obj, new_elements_default=None):
+def deep_ast_copy(obj, new_elements_default=None):
     """
     Much, much faster than copy.deepcopy, but just for Parser elements (Doesn't
     copy parents).
@@ -132,7 +132,7 @@ def search_call_signatures(user_stmt, position):
     call, arr, index = None, None, 0
     if user_stmt is not None and isinstance(user_stmt, pr.Statement):
         # some parts will of the statement will be removed
-        user_stmt = fast_parent_copy(user_stmt)
+        user_stmt = deep_ast_copy(user_stmt)
         arr, index, call = call_signature_array_for_pos(user_stmt, position)
 
         # Now remove the part after the call. Including the array from the

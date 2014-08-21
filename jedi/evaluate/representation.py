@@ -509,7 +509,7 @@ class FunctionExecution(Executed):
     """
     def __init__(self, evaluator, base, *args, **kwargs):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
-        # for fast_parent_copy
+        # for deep_ast_copy
         self._copy_dict = {base.base_func: self}
 
     @memoize_default(default=())
@@ -579,7 +579,7 @@ class FunctionExecution(Executed):
         objects = []
         for element in lst:
             self._scope_copy(element.parent)
-            copied = helpers.fast_parent_copy(element, self._copy_dict)
+            copied = helpers.deep_ast_copy(element, self._copy_dict)
             objects.append(copied)
         return objects
 
@@ -593,7 +593,7 @@ class FunctionExecution(Executed):
         if scope != self.base.base_func:
             # Just make sure the parents been copied.
             self._scope_copy(scope.parent)
-            helpers.fast_parent_copy(scope, self._copy_dict)
+            helpers.deep_ast_copy(scope, self._copy_dict)
 
     @common.safe_property
     @memoize_default([])
