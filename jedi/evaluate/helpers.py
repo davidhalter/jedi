@@ -7,7 +7,8 @@ from jedi import debug
 
 def fast_parent_copy(obj, new_elements_default=None):
     """
-    Much, much faster than copy.deepcopy, but just for certain elements.
+    Much, much faster than copy.deepcopy, but just for Parser elements (Doesn't
+    copy parents).
     """
     new_elements = new_elements_default or {}
     accept = (pr.Simple, pr.NamePart, pr.KeywordStatement)

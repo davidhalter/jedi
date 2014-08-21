@@ -567,25 +567,19 @@ class FunctionExecution(Executed):
         names = pr.filter_after_position(pr.Scope.get_defined_names(self), position)
         yield self, self._get_params() + names
 
-    def _copy_properties(self, prop):
+    def _copy_list(self, list_name):
         """
-        Literally copies a property of a Function. Copying is very expensive,
-        because it is something like `copy.deepcopy`. However, these copied
-        objects can be used for the executions, as if they were in the
+        Copies a list attribute of a parser Function. Copying is very
+        expensive, because it is something like `copy.deepcopy`. However, these
+        copied objects can be used for the executions, as if they were in the
         execution.
         """
         # Copy all these lists into this local function.
-        attr = getattr(self.base, prop)
+        lst = getattr(self.base, list_name)
         objects = []
-        for element in attr:
-            if element is None:
-                copied = None
-            else:
-                self._scope_copy(element.parent)
-                copied = helpers.fast_parent_copy(element, self._copy_dict)
-                # TODO remove? Doesn't make sense, at least explain.
-                #if isinstance(copied, pr.Function):
-                    #copied = Function(self._evaluator, copied)
+        for element in lst:
+            self._scope_copy(element.parent)
+            copied = helpers.fast_parent_copy(element, self._copy_dict)
             objects.append(copied)
         return objects
 
@@ -594,38 +588,32 @@ class FunctionExecution(Executed):
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
-    @memoize_default()
     def _scope_copy(self, scope):
-        """ Copies a scope (e.g. if) in an execution """
-        # just check the start_pos, sometimes it's difficult with closures
-        # to compare the scopes directly.
-        if scope.start_pos == self.start_pos:
-            return self
-        else:
+        """ Copies a scope (e.g. `if foo:`) in an execution """
+        if scope != self.base.base_func:
+            # Just make sure the parents been copied.
             self._scope_copy(scope.parent)
-            copied = helpers.fast_parent_copy(scope, self._copy_dict)
-            #copied.parent = self._scope_copy(copied.parent)
-            return copied
+            helpers.fast_parent_copy(scope, self._copy_dict)
 
     @common.safe_property
     @memoize_default([])
     def returns(self):
-        return self._copy_properties('returns')
+        return self._copy_list('returns')
 
     @common.safe_property
     @memoize_default([])
     def asserts(self):
-        return self._copy_properties('asserts')
+        return self._copy_list('asserts')
 
     @common.safe_property
     @memoize_default([])
     def statements(self):
-        return self._copy_properties('statements')
+        return self._copy_list('statements')
 
     @common.safe_property
     @memoize_default([])
     def subscopes(self):
-        return self._copy_properties('subscopes')
+        return self._copy_list('subscopes')
 
     def get_statement_for_position(self, pos):
         return pr.Scope.get_statement_for_position(self, pos)
