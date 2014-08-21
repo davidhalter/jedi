@@ -8,15 +8,19 @@ from jedi.parser import representation as pr
 from jedi import debug
 from jedi.common import PushBackIterator
 from jedi.evaluate.compiled import (CompiledObject, create, builtin,
-                                    keyword_from_value)
+                                    keyword_from_value, true_obj, false_obj)
 from jedi.evaluate import analysis
 
 # Maps Python syntax to the operator module.
-OPERATOR_MAPPING = {
+COMPARISON_OPERATORS = {
     '==': operator.eq,
     '!=': operator.ne,
     'is': operator.is_,
     'is not': operator.is_not,
+    '<': operator.lt,
+    '<=': operator.le,
+    '>': operator.gt,
+    '>=': operator.ge,
 }
 
 
@@ -328,13 +332,18 @@ def _element_calculate(evaluator, left, operator, right):
         # With strings and numbers the left type typically remains. Except for
         # `int() % float()`.
         return [left]
-    elif operator in OPERATOR_MAPPING:
-        operation = OPERATOR_MAPPING[operator]
+    elif operator in COMPARISON_OPERATORS:
+        operation = COMPARISON_OPERATORS[operator]
         if isinstance(left, CompiledObject) and isinstance(right, CompiledObject):
             # Possible, because the return is not an option. Just compare.
             left = left.obj
             right = right.obj
-        return [keyword_from_value(operation(left, right))]
+
+        try:
+            return [keyword_from_value(operation(left, right))]
+        except TypeError:
+            # Could be True or False.
+            return [true_obj, false_obj]
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
