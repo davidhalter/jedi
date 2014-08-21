@@ -507,6 +507,11 @@ class FunctionExecution(Executed):
     multiple calls to functions and recursion has to be avoided. But this is
     responsibility of the decorators.
     """
+    def __init__(self, evaluator, base, *args, **kwargs):
+        super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
+        # for fast_parent_copy
+        self._copy_dict = {base.base_func: self}
+
     @memoize_default(default=())
     @recursion.execution_recursion_decorator
     def get_return_types(self):
@@ -571,13 +576,13 @@ class FunctionExecution(Executed):
         objects = []
         for element in attr:
             if element is None:
-                copied = element
+                copied = None
             else:
-                copied = helpers.fast_parent_copy(element)
-                copied.parent = self._scope_copy(copied.parent)
+                self._scope_copy(element.parent)
+                copied = helpers.fast_parent_copy(element, self._copy_dict)
                 # TODO remove? Doesn't make sense, at least explain.
-                if isinstance(copied, pr.Function):
-                    copied = Function(self._evaluator, copied)
+                #if isinstance(copied, pr.Function):
+                    #copied = Function(self._evaluator, copied)
             objects.append(copied)
         return objects
 
@@ -596,8 +601,9 @@ class FunctionExecution(Executed):
         if scope.start_pos == self.start_pos:
             return self
         else:
-            copied = helpers.fast_parent_copy(scope)
-            copied.parent = self._scope_copy(copied.parent)
+            self._scope_copy(scope.parent)
+            copied = helpers.fast_parent_copy(scope, self._copy_dict)
+            #copied.parent = self._scope_copy(copied.parent)
             return copied
 
     @common.safe_property

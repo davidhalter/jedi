@@ -43,11 +43,12 @@ def fooooo(obj):
 
 
 def fooooo2(obj):
-    if isinstance(obj, datetime.datetime):
+    if isinstance(obj, datetime.date):
         return obj
     else:
         return 1
 
+a
 # In earlier versions of Jedi, this returned both datetime and int, but now
 # Jedi does flow checks and realizes that the top return isn't executed.
 #? int()

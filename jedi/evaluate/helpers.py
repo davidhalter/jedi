@@ -5,11 +5,11 @@ from jedi.parser import representation as pr
 from jedi import debug
 
 
-def fast_parent_copy(obj):
+def fast_parent_copy(obj, new_elements_default=None):
     """
     Much, much faster than copy.deepcopy, but just for certain elements.
     """
-    new_elements = {}
+    new_elements = new_elements_default or {}
     accept = (pr.Simple, pr.NamePart)
 
     def recursion(obj):
@@ -18,8 +18,11 @@ def fast_parent_copy(obj):
             # correctly, don't know why.
             obj.get_defined_names()
 
-        new_obj = copy.copy(obj)
-        new_elements[obj] = new_obj
+        try:
+            return new_elements[obj]
+        except KeyError:
+            new_obj = copy.copy(obj)
+            new_elements[obj] = new_obj
 
         try:
             items = list(new_obj.__dict__.items())
@@ -48,10 +51,7 @@ def fast_parent_copy(obj):
             elif isinstance(value, (list, tuple)):
                 setattr(new_obj, key, list_or_tuple_rec(value))
             elif isinstance(value, accept):
-                try:
-                    setattr(new_obj, key, new_elements[value])
-                except KeyError:
-                    setattr(new_obj, key, recursion(value))
+                setattr(new_obj, key, recursion(value))
         return new_obj
 
     def list_or_tuple_rec(array_obj):
@@ -61,10 +61,7 @@ def fast_parent_copy(obj):
             copied_array = array_obj[:]   # lists, tuples, strings, unicode
         for i, el in enumerate(copied_array):
             if isinstance(el, accept):
-                try:
-                    copied_array[i] = new_elements[el]
-                except KeyError:
-                    copied_array[i] = recursion(el)
+                copied_array[i] = recursion(el)
             elif isinstance(el, (tuple, list)):
                 copied_array[i] = list_or_tuple_rec(el)
 
