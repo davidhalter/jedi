@@ -10,7 +10,7 @@ def fast_parent_copy(obj, new_elements_default=None):
     Much, much faster than copy.deepcopy, but just for certain elements.
     """
     new_elements = new_elements_default or {}
-    accept = (pr.Simple, pr.NamePart)
+    accept = (pr.Simple, pr.NamePart, pr.KeywordStatement)
 
     def recursion(obj):
         if isinstance(obj, pr.Statement):

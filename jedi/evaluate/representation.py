@@ -537,9 +537,12 @@ class FunctionExecution(Executed):
                 continue
 
             check = flow_analysis.break_check(self._evaluator, self, r.parent)
-            if check is not flow_analysis.UNREACHABLE:
+            if check is flow_analysis.UNREACHABLE:
+                debug.dbg('Return unreachable: %s', r)
+            else:
                 types += self._evaluator.eval_statement(stmt)
             if check is flow_analysis.REACHABLE:
+                debug.dbg('Return reachable: %s', r)
                 break
         return types
 
@@ -594,8 +597,6 @@ class FunctionExecution(Executed):
     @memoize_default()
     def _scope_copy(self, scope):
         """ Copies a scope (e.g. if) in an execution """
-        # TODO method uses different scopes than the subscopes property.
-
         # just check the start_pos, sometimes it's difficult with closures
         # to compare the scopes directly.
         if scope.start_pos == self.start_pos:
