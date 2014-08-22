@@ -16,7 +16,8 @@ def get_sys_path():
         venv = os.path.abspath(venv)
         p = os.path.join(
             venv, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages')
-        sys_path.insert(0, p)
+        if not p in sys_path:
+            sys_path.insert(0, p)
 
     check_virtual_env(sys.path)
     return [p for p in sys.path if p != ""]
