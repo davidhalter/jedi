@@ -32,7 +32,7 @@ from jedi.evaluate import Evaluator, filter_private_variable
 from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
-from jedi.evaluate.helpers import FakeName
+from jedi.evaluate.helpers import FakeName, get_module_name_parts
 from jedi.evaluate.finder import get_names_of_scope
 from jedi.evaluate.helpers import search_call_signatures
 from jedi.evaluate import analysis
@@ -686,6 +686,14 @@ def defined_names(source, path=None, encoding='utf-8'):
         module_path=path,
     )
     return classes.defined_names(Evaluator(), parser.module)
+
+
+def _names(source=None, path=None, encoding='utf-8'):
+    # Set line/column to a random position, because they don't matter.
+    script = Script(source, line=1, column=0, path=path, encoding=encoding)
+    defs = [classes.Definition(script._evaluator, name_part)
+            for name_part in get_module_name_parts(script._parser.module())]
+    return sorted(defs, key=lambda x: (x.line, x.column))
 
 
 def preload_module(*modules):

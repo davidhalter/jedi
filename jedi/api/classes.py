@@ -309,6 +309,19 @@ class BaseDefinition(object):
 
         return '.'.join(path if path[0] else path[1:])
 
+    def goto_assignments(self):
+        if not isinstance(self._definition, pr.NamePart):
+            raise TypeError('Definition is not a NamePart.')
+
+        if self.type not in ('statement', 'import'):
+            # Functions, classes and modules are already fixed definitions, we
+            # cannot follow them anymore.
+            return [self]
+        stmt_or_imp = self._definition.parent.parent
+
+        names, _ = self._evaluator.goto(stmt_or_imp, [self._definition])
+        return [Definition(self._evaluator, n) for n in names]
+
     @memoize_default()
     def _follow_statements_imports(self):
         """

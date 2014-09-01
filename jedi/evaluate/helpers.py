@@ -191,6 +191,10 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
 
 
 def get_module_name_parts(module):
+    """
+    Returns a dictionary with name parts as keys and their call paths as
+    values.
+    """
     def scope_name_parts(scope):
         for s in scope.subscopes:
             # Yield the name parts, not names.
