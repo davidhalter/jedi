@@ -1,4 +1,5 @@
 import copy
+from itertools import chain
 
 from jedi import common
 from jedi.parser import representation as pr
@@ -187,6 +188,36 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
                 result += scan_statement_for_calls(s, search_name)
 
     return result
+
+
+def get_module_name_parts(module):
+    def scope_name_parts(scope):
+        for s in scope.subscopes:
+            # Yield the name parts, not names.
+            yield s.name.names[0]
+            for need_yield_from in scope_name_parts(s):
+                yield need_yield_from
+
+    statements_or_imports = set(chain(*module.used_names.values()))
+    name_parts = set(scope_name_parts(module))
+    for stmt_or_import in statements_or_imports:
+        if isinstance(stmt_or_import, pr.Import):
+            for name in stmt_or_import.get_all_import_names():
+                name_parts.update(name.names)
+        else:
+            # Running this ensures that all the expression lists are generated
+            # and the parents are all set. (Important for Lambdas) Howeer, this
+            # is only necessary because of the weird fault-tolerant structure
+            # of the parser. I hope to get rid of such behavior in the future.
+            stmt_or_import.expression_list()
+            # For now this is ok, but this could change if we don't have a
+            # token_list anymore, but for now this is the easiest way to get
+            # all the name_parts.
+            for tok in stmt_or_import._token_list:
+                if isinstance(tok, pr.Name):
+                    name_parts.update(tok.names)
+
+    return name_parts
 
 
 class FakeSubModule():
