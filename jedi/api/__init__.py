@@ -689,6 +689,11 @@ def defined_names(source, path=None, encoding='utf-8'):
 
 
 def _names(source=None, path=None, encoding='utf-8'):
+    """
+    Returns a list of `Definition` objects, containing name parts.
+    This means you can call ``Definition.goto_assignments()`` and get the
+    reference of a name.
+    """
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding)
     defs = [classes.Definition(script._evaluator, name_part)

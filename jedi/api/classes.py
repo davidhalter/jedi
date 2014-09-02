@@ -11,6 +11,7 @@ from jedi import settings
 from jedi import common
 from jedi.parser import representation as pr
 from jedi.cache import underscore_memoization
+from jedi.evaluate.helpers import statement_elements_in_statement
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
@@ -310,6 +311,16 @@ class BaseDefinition(object):
         return '.'.join(path if path[0] else path[1:])
 
     def goto_assignments(self):
+        def call_path_for_name_part(stmt_or_imp, name_part):
+            if isinstance(stmt_or_imp, pr.Import):
+                return [name_part]
+            else:
+                for stmt_el in statement_elements_in_statement(stmt_or_imp):
+                    call_path = list(stmt_el.generate_call_path())
+                    for i, element in enumerate(call_path):
+                        if element is name_part:
+                            return call_path[:i+1]
+
         if not isinstance(self._definition, pr.NamePart):
             raise TypeError('Definition is not a NamePart.')
 
@@ -317,9 +328,9 @@ class BaseDefinition(object):
             # Functions, classes and modules are already fixed definitions, we
             # cannot follow them anymore.
             return [self]
-        stmt_or_imp = self._definition.parent.parent
-
-        names, _ = self._evaluator.goto(stmt_or_imp, [self._definition])
+        stmt_or_imp = self._definition.get_parent_until((pr.Statement, pr.Import))
+        call_path = call_path_for_name_part(stmt_or_imp, self._definition)
+        names, _ = self._evaluator.goto(stmt_or_imp, call_path)
         return [Definition(self._evaluator, n) for n in names]
 
     @memoize_default()

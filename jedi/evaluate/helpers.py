@@ -107,6 +107,8 @@ def call_signature_array_for_pos(stmt, pos):
         tup = None, 0, None
         while call.next is not None and tup[0] is None:
             method = search_array if isinstance(call.next, pr.Array) else search_call
+            # TODO This is wrong, don't call search_call again, because it will
+            # automatically be called by call.next.
             tup = method(call.next, pos, origin_call or call)
             call = call.next
         return tup
@@ -222,6 +224,26 @@ def get_module_name_parts(module):
                     name_parts.update(tok.names)
 
     return name_parts
+
+
+def statement_elements_in_statement(stmt):
+    """
+    Returns a list of statements. Statements can contain statements again in
+    Arrays.
+    """
+    def search_stmt_el(stmt_el, stmt_els):
+        stmt_els.append(stmt_el)
+        while stmt_el is not None:
+            if isinstance(stmt_el, pr.Array):
+                for stmt in stmt_el.values + stmt_el.keys:
+                    stmt_els.extend(statement_elements_in_statement(stmt))
+            stmt_el = stmt_el.next
+
+    stmt_els = []
+    for item in stmt.expression_list():
+        if isinstance(item, pr.StatementElement):
+            search_stmt_el(item, stmt_els)
+    return stmt_els
 
 
 class FakeSubModule():
