@@ -106,7 +106,8 @@ class NameFinder(object):
                     else:
                         check = flow_analysis.break_check(self._evaluator,
                                                           name_list_scope,
-                                                          er.wrap(self._evaluator, scope))
+                                                          er.wrap(self._evaluator, scope),
+                                                          self.scope)
                         if check is not flow_analysis.UNREACHABLE:
                             result.append(name)
                         if check is flow_analysis.REACHABLE:

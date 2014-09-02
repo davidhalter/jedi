@@ -182,3 +182,26 @@ isinst(1.0)
 isinst(False)
 #? int()
 isinst('')
+
+# -----------------
+# flows that are not reachable should be able to access parent scopes.
+# -----------------
+
+foobar = ''
+
+if 0:
+    within_flow = 1.0
+    #? float()
+    within_flow
+    #? str()
+    foobar
+    if 0:
+        nested = 1
+        #? int()
+        nested
+        #? float()
+        within_flow
+        #? str()
+        foobar
+    #?
+    nested

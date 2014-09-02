@@ -32,10 +32,20 @@ UNREACHABLE = Status(False, 'unreachable')
 UNSURE = Status(None, 'unsure')
 
 
-def break_check(evaluator, base_scope, element_scope):
+def break_check(evaluator, base_scope, element_scope, origin_scope=None):
     from jedi.evaluate.representation import wrap
     base_scope = wrap(evaluator, base_scope)
     element_scope = wrap(evaluator, element_scope)
+
+    # Direct parents get resolved, we filter scopes that are separate branches.
+    # This makes sense for autocompletion and static analysis. For actual
+    # Python it doesn't matter, because we're talking about potentially
+    # unreachable code.
+    s = origin_scope
+    while s is not None:
+        if element_scope == s:
+            return REACHABLE
+        s = s.parent
 
     reachable = REACHABLE
     if isinstance(element_scope, Flow):
