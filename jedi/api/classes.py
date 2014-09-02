@@ -319,7 +319,7 @@ class BaseDefinition(object):
                     call_path = list(stmt_el.generate_call_path())
                     for i, element in enumerate(call_path):
                         if element is name_part:
-                            return call_path[:i+1]
+                            return call_path[:i + 1]
 
         if not isinstance(self._definition, pr.NamePart):
             raise TypeError('Definition is not a NamePart.')

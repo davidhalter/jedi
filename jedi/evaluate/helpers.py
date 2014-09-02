@@ -240,9 +240,22 @@ def statement_elements_in_statement(stmt):
             stmt_el = stmt_el.next
 
     stmt_els = []
-    for item in stmt.expression_list():
+    for as_name in stmt.as_names:
+        # TODO This creates a custom pr.Call, we shouldn't do that.
+        stmt_els.append(pr.Call(as_name._sub_module, as_name,
+                                as_name.start_pos, as_name.end_pos))
+
+    ass_items = chain.from_iterable(items for items, op in stmt.assignment_details)
+    for item in stmt.expression_list() + list(ass_items):
         if isinstance(item, pr.StatementElement):
             search_stmt_el(item, stmt_els)
+        elif isinstance(item, pr.ListComprehension):
+            for stmt in (item.stmt, item.middle, item.input):
+                stmt_els.extend(statement_elements_in_statement(stmt))
+        elif isinstance(item, pr.Lambda):
+            for stmt in item.params + item.returns:
+                stmt_els.extend(statement_elements_in_statement(stmt))
+
     return stmt_els
 
 
