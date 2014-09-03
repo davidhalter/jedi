@@ -430,6 +430,7 @@ class Script(object):
         context = self._user_context.get_context()
         user_stmt = self._parser.user_stmt()
         if next(context) in ('class', 'def'):
+            # The cursor is on a class/function name.
             user_scope = self._parser.user_scope()
             definitions = set([user_scope.name])
             search_name = unicode(user_scope.name)
@@ -468,15 +469,17 @@ class Script(object):
                 expression_list = stmt.expression_list()
                 if len(expression_list) == 0:
                     return [], ''
-                # Only the first command is important, the rest should basically not
-                # happen except in broken code (e.g. docstrings that aren't code).
+                # The reverse tokenizer only generates parses call.
+                assert len(expression_list) == 1
                 call = expression_list[0]
                 if isinstance(call, pr.Call):
                     call_path = list(call.generate_call_path())
                 else:
-                    call_path = [call]
+                    # goto_assignments on Operator returns nothing.
+                    return [], search_name
 
-                defs, search_name_part = self._evaluator.goto(stmt, call_path)
+                defs, search_name_part = self._evaluator.goto(user_stmt or stmt,
+                                                              call_path)
                 search_name = unicode(search_name_part)
                 definitions = follow_inexistent_imports(defs)
             else:
@@ -697,7 +700,8 @@ def _names(source=None, path=None, encoding='utf-8'):
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding)
     defs = [classes.Definition(script._evaluator, name_part)
-            for name_part in get_module_name_parts(script._parser.module())]
+            for name_part in get_module_name_parts(script._parser.module())
+        if 390 < name_part.start_pos[0] < 399]
     return sorted(defs, key=lambda x: (x.line, x.column))
 
 
