@@ -429,6 +429,20 @@ class Script(object):
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
         user_stmt = self._parser.user_stmt()
+
+        stmt = self._get_under_cursor_stmt(goto_path)
+        expression_list = stmt.expression_list()
+        if len(expression_list) == 0:
+            return []
+        # The reverse tokenizer only generates parses call.
+        assert len(expression_list) == 1
+        call = expression_list[0]
+        if isinstance(call, pr.Call):
+            call_path = list(call.generate_call_path())
+        else:
+            # goto_assignments on Operator returns nothing.
+            return []
+
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.
             user_scope = self._parser.user_scope()
@@ -448,7 +462,6 @@ class Script(object):
                         and unicode(name_part) == unicode(import_name[0].names[-1]):
                     definitions.append(import_name[0])
         else:
-            stmt = self._get_under_cursor_stmt(goto_path)
 
             def test_lhs():
                 """
@@ -464,20 +477,7 @@ class Script(object):
 
             lhs = test_lhs()
             if lhs is None:
-                expression_list = stmt.expression_list()
-                if len(expression_list) == 0:
-                    return []
-                # The reverse tokenizer only generates parses call.
-                assert len(expression_list) == 1
-                call = expression_list[0]
-                if isinstance(call, pr.Call):
-                    call_path = list(call.generate_call_path())
-                else:
-                    # goto_assignments on Operator returns nothing.
-                    return []
-
-                defs = self._evaluator.goto(user_stmt or stmt,
-                                                              call_path)
+                defs = self._evaluator.goto(user_stmt or stmt, call_path)
                 definitions = follow_inexistent_imports(defs)
             else:
                 definitions = [lhs]
