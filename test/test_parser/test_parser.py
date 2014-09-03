@@ -90,14 +90,14 @@ def test_module():
     module = Parser(u('asdf'), 'example.py', no_docstr=True).module
     name = module.name
     assert str(name) == 'example'
-    assert name.start_pos == (0, 0)
-    assert name.end_pos == (0, 7)
+    assert name.start_pos == (1, 0)
+    assert name.end_pos == (1, 7)
 
     module = Parser(u('asdf'), no_docstr=True).module
     name = module.name
     assert str(name) == ''
-    assert name.start_pos == (0, 0)
-    assert name.end_pos == (0, 0)
+    assert name.start_pos == (1, 0)
+    assert name.end_pos == (1, 0)
 
 
 def test_end_pos():

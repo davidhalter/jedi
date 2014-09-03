@@ -188,12 +188,10 @@ class CompiledObject(Base):
                 pass  # self.obj maynot have an __iter__ method.
         return result
 
-    """
     @property
     def name(self):
         # might not exist sometimes (raises AttributeError)
-        return self._cls().obj.__name__
-    """
+        return FakeName(self._cls().obj.__name__, self)
 
     def _execute_function(self, evaluator, params):
         if self.type() != 'function':

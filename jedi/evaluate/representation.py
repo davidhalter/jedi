@@ -84,7 +84,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
     """
     def __init__(self, evaluator, base, var_args=()):
         super(Instance, self).__init__(evaluator, base, var_args)
-        if str(base.name) in ['list', 'set'] \
+        if base.name.get_code() in ['list', 'set'] \
                 and compiled.builtin == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = iterable.check_array_instances(evaluator, self)

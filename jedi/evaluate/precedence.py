@@ -213,7 +213,7 @@ def _literals_to_types(evaluator, result):
         if is_literal(r):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
-            cls = builtin.get_by_name(r.name)
+            cls = builtin.get_by_name(r.name.get_code())
             result[i] = evaluator.execute(cls)[0]
     return list(set(result))
 
