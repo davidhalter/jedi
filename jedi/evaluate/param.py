@@ -293,12 +293,12 @@ def _iterate_star_args(evaluator, array, expression_list, func):
     elif isinstance(array, iterable.Generator):
         for field_stmt in array.iter_content():
             yield helpers.FakeStatement([field_stmt])
-    elif isinstance(array, Instance) and array.name == 'tuple':
+    elif isinstance(array, Instance) and array.name.get_code() == 'tuple':
         pass
     else:
         if expression_list:
             m = "TypeError: %s() argument after * must be a sequence, not %s" \
-                % (func.name, array)
+                % (func.name.get_code(), array)
             analysis.add(evaluator, 'type-error-star',
                          expression_list[0], message=m)
 
@@ -306,7 +306,7 @@ def _iterate_star_args(evaluator, array, expression_list, func):
 def _star_star_dict(evaluator, array, expression_list, func):
     dct = {}
     from jedi.evaluate.representation import Instance
-    if isinstance(array, Instance) and array.name == 'dict':
+    if isinstance(array, Instance) and array.name.get_code() == 'dict':
         # For now ignore this case. In the future add proper iterators and just
         # make one call without crazy isinstance checks.
         return {}
@@ -328,7 +328,7 @@ def _star_star_dict(evaluator, array, expression_list, func):
     else:
         if expression_list:
             m = "TypeError: %s argument after ** must be a mapping, not %s" \
-                % (func.name, array)
+                % (func.name.get_code(), array)
             analysis.add(evaluator, 'type-error-star-star',
                          expression_list[0], message=m)
     return dct
