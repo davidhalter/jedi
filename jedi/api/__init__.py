@@ -502,17 +502,24 @@ class Script(object):
         try:
             user_stmt = self._parser.user_stmt()
             definitions, search_name = self._goto(add_import_name=True)
+            if not definitions:
+                # Without a definition for a name we cannot find references.
+                return []
+
+            # Once Script._goto works correct, we can probably remove this
+            # branch.
             if isinstance(user_stmt, pr.Statement):
                 c = user_stmt.expression_list()[0]
                 if not isinstance(c, unicode) and self._pos < c.start_pos:
-                    # the search_name might be before `=`
+                    # The lookup might be before `=`
                     definitions = [v for v in user_stmt.get_defined_names()
-                                   if unicode(v.names[-1]) == search_name]
+                                   if unicode(v.names[-1]) ==
+                                   list(definitions)[0].get_code()]
+
             if not isinstance(user_stmt, pr.Import):
                 # import case is looked at with add_import_name option
                 definitions = usages.usages_add_import_modules(self._evaluator,
-                                                               definitions,
-                                                               search_name)
+                                                               definitions)
 
             module = set([d.get_parent_until() for d in definitions])
             module.add(self._parser.module())

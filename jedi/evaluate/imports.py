@@ -194,6 +194,10 @@ class ImportWrapper(pr.Base):
             if star_imports:
                 scopes = [StarImportModule(scopes[0], star_imports)]
 
+            # goto only accepts Names or NameParts
+            if is_goto and not rest:
+                scopes = [s.name for s in scopes]
+
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
                 scopes = []

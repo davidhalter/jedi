@@ -46,16 +46,14 @@ def usages(evaluator, definitions, search_name, mods):
             #follow_res = [r for r in follow_res if str(r) == search]
             #print search.start_pos,search_name.start_pos
             #print follow_res, search, search_name, [(r, r.start_pos) for r in follow_res]
-            follow_res = usages_add_import_modules(evaluator, follow_res, search)
+            follow_res = usages_add_import_modules(evaluator, follow_res)
 
             compare_follow_res = compare_array(follow_res)
             # compare to see if they match
             if any(r in compare_definitions for r in compare_follow_res):
                 yield classes.Definition(evaluator, search)
 
-    if not definitions:
-        return set()
-
+    search_name = unicode(list(definitions)[0].names[-1])
     compare_definitions = compare_array(definitions)
     mods |= set([d.get_parent_until() for d in definitions])
     names = []
@@ -86,7 +84,7 @@ def usages(evaluator, definitions, search_name, mods):
     return names
 
 
-def usages_add_import_modules(evaluator, definitions, search_name):
+def usages_add_import_modules(evaluator, definitions):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:

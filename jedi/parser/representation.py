@@ -455,11 +455,12 @@ class SubModule(Scope, Module):
         else:
             sep = (re.escape(os.path.sep),) * 2
             r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self.path)
-            # remove PEP 3149 names
+            # Remove PEP 3149 names
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
-        # positions are not real therefore choose (0, 0)
-        names = [(string, (0, 0))]
-        return Name(self, names, (0, 0), (0, 0), self.use_as_parent)
+        # Positions are not real, but a module starts at (1, 0)
+        p = (1, 0)
+        names = [(string, p)]
+        return Name(self, names, p, p, self.use_as_parent)
 
     @property
     def has_explicit_absolute_import(self):
