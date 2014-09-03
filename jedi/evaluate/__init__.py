@@ -322,16 +322,16 @@ class Evaluator(object):
     def goto(self, stmt, call_path):
         scope = stmt.get_parent_scope()
         pos = stmt.start_pos
-        call_path, search_name_part = call_path[:-1], call_path[-1]
+        first_part, search_name_part = call_path[:-1], call_path[-1]
 
-        if call_path:
-            scopes = self.eval_call_path(iter(call_path), scope, pos)
+        if first_part:
+            scopes = self.eval_call_path(iter(first_part), scope, pos)
             search_global = False
             pos = None
         else:
-            # TODO does this exist? i don't think so
             scopes = [scope]
             search_global = True
+
         follow_res = []
         for s in scopes:
             follow_res += self.find_types(s, search_name_part, pos,
