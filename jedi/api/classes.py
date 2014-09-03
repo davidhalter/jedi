@@ -330,7 +330,7 @@ class BaseDefinition(object):
             return [self]
         stmt_or_imp = self._definition.get_parent_until((pr.Statement, pr.Import))
         call_path = call_path_for_name_part(stmt_or_imp, self._definition)
-        names, _ = self._evaluator.goto(stmt_or_imp, call_path)
+        names = self._evaluator.goto(stmt_or_imp, call_path)
         return [Definition(self._evaluator, n) for n in names]
 
     @memoize_default()

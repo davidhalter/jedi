@@ -336,7 +336,7 @@ class Evaluator(object):
         for s in scopes:
             follow_res += self.find_types(s, search_name_part, pos,
                                           search_global=search_global, is_goto=True)
-        return follow_res, search_name_part
+        return follow_res
 
 
 def filter_private_variable(scope, call_scope, var_name):

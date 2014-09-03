@@ -6,7 +6,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import helpers
 
 
-def usages(evaluator, definitions, search_name, mods):
+def usages(evaluator, definitions, mods):
     def compare_array(definitions):
         """ `definitions` are being compared by module/start_pos, because
         sometimes the id's of the objects change (e.g. executions).
@@ -37,7 +37,8 @@ def usages(evaluator, definitions, search_name, mods):
                 follow.append(call_path[:i + 1])
 
         for call_path in follow:
-            follow_res, search = evaluator.goto(call.parent, call_path)
+            follow_res = evaluator.goto(call.parent, call_path)
+            search = call_path[-1]
             # names can change (getattr stuff), therefore filter names that
             # don't match `search`.
 

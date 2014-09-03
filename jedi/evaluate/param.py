@@ -43,7 +43,7 @@ def _get_calling_var_args(evaluator, var_args):
             if len(exp_list) != 2 or exp_list[0] not in ('*', '**'):
                 continue
 
-            names, _ = evaluator.goto(argument, [exp_list[1].get_code()])
+            names = evaluator.goto(argument, [exp_list[1].get_code()])
             if len(names) != 1:
                 break
             param = names[0].parent

@@ -401,7 +401,7 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        results, _ = self._goto()
+        results = self._goto()
         d = [classes.Definition(self._evaluator, d) for d in set(results)
              if d is not imports.ImportWrapper.GlobalNamespace]
         return helpers.sorted_definitions(d)
@@ -433,7 +433,6 @@ class Script(object):
             # The cursor is on a class/function name.
             user_scope = self._parser.user_scope()
             definitions = set([user_scope.name])
-            search_name = unicode(user_scope.name)
         elif isinstance(user_stmt, pr.Import):
             s, name_part = helpers.get_on_import_stmt(self._evaluator,
                                                       self._user_context, user_stmt)
@@ -441,7 +440,6 @@ class Script(object):
                 definitions = [s.follow(is_goto=True)[0]]
             except IndexError:
                 definitions = []
-            search_name = unicode(name_part)
 
             if add_import_name:
                 import_name = user_stmt.get_defined_names()
@@ -461,14 +459,14 @@ class Script(object):
                     for name in user_stmt.get_defined_names():
                         if name.start_pos <= self._pos <= name.end_pos \
                                 and len(name.names) == 1:
-                            return name, unicode(name.names[-1])
-                return None, None
+                            return name
+                return None
 
-            lhs, search_name = test_lhs()
+            lhs = test_lhs()
             if lhs is None:
                 expression_list = stmt.expression_list()
                 if len(expression_list) == 0:
-                    return [], ''
+                    return []
                 # The reverse tokenizer only generates parses call.
                 assert len(expression_list) == 1
                 call = expression_list[0]
@@ -476,15 +474,14 @@ class Script(object):
                     call_path = list(call.generate_call_path())
                 else:
                     # goto_assignments on Operator returns nothing.
-                    return [], search_name
+                    return []
 
-                defs, search_name_part = self._evaluator.goto(user_stmt or stmt,
+                defs = self._evaluator.goto(user_stmt or stmt,
                                                               call_path)
-                search_name = unicode(search_name_part)
                 definitions = follow_inexistent_imports(defs)
             else:
                 definitions = [lhs]
-        return definitions, search_name
+        return definitions
 
     def usages(self, additional_module_paths=()):
         """
@@ -501,7 +498,7 @@ class Script(object):
             settings.dynamic_flow_information, False
         try:
             user_stmt = self._parser.user_stmt()
-            definitions, search_name = self._goto(add_import_name=True)
+            definitions = self._goto(add_import_name=True)
             if not definitions:
                 # Without a definition for a name we cannot find references.
                 return []
@@ -523,7 +520,7 @@ class Script(object):
 
             module = set([d.get_parent_until() for d in definitions])
             module.add(self._parser.module())
-            names = usages.usages(self._evaluator, definitions, search_name, module)
+            names = usages.usages(self._evaluator, definitions, module)
 
             for d in set(definitions):
                 try:
