@@ -484,14 +484,6 @@ class Script(object):
                 definitions = follow_inexistent_imports(defs)
             else:
                 definitions = [lhs]
-            if isinstance(user_stmt, pr.Statement):
-                c = user_stmt.expression_list()
-                if c and not isinstance(c[0], (str, unicode)) \
-                        and c[0].start_pos > self._pos \
-                        and not re.search(r'\.\w+$', goto_path):
-                    # The cursor must be after the start, otherwise the
-                    # statement is just an assignee.
-                    definitions = [user_stmt]
         return definitions, search_name
 
     def usages(self, additional_module_paths=()):
