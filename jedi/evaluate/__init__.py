@@ -320,6 +320,15 @@ class Evaluator(object):
             return types
 
     def goto(self, stmt, call_path):
+        # Return the name defined in the call_path, if it's part of the
+        # statement name definitions. Only return, if it's one name and one
+        # name only. Otherwise it's a mixture between a definition and a
+        # reference. In this case it's just a definition. So we stay on it.
+        print stmt.get_defined_names()
+        if len(call_path) == 1 and isinstance(call_path[0], pr.NamePart) \
+                and call_path[0] in [d.names[-1] for d in stmt.get_defined_names()]:
+            return [call_path[0]]
+
         scope = stmt.get_parent_scope()
         pos = stmt.start_pos
         first_part, search_name_part = call_path[:-1], call_path[-1]

@@ -462,25 +462,17 @@ class Script(object):
                         and unicode(name_part) == unicode(import_name[0].names[-1]):
                     definitions.append(import_name[0])
         else:
+            # The Evaluator.goto function checks for definitions, but since we
+            # use a reverse tokenizer, we have new name_part objects, so we
+            # have to check the user_stmt here for positions.
+            if isinstance(user_stmt, pr.Statement):
+                for name in user_stmt.get_defined_names():
+                    if name.start_pos <= self._pos <= name.end_pos \
+                            and len(name.names) == 1:
+                        return [name]
 
-            def test_lhs():
-                """
-                Special rule for goto, left hand side of the statement returns
-                itself, if the name is ``foo``, but not ``foo.bar``.
-                """
-                if isinstance(user_stmt, pr.Statement):
-                    for name in user_stmt.get_defined_names():
-                        if name.start_pos <= self._pos <= name.end_pos \
-                                and len(name.names) == 1:
-                            return name
-                return None
-
-            lhs = test_lhs()
-            if lhs is None:
-                defs = self._evaluator.goto(user_stmt or stmt, call_path)
-                definitions = follow_inexistent_imports(defs)
-            else:
-                definitions = [lhs]
+            defs = self._evaluator.goto(stmt, call_path)
+            definitions = follow_inexistent_imports(defs)
         return definitions
 
     def usages(self, additional_module_paths=()):
