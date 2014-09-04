@@ -324,7 +324,6 @@ class Evaluator(object):
         # statement name definitions. Only return, if it's one name and one
         # name only. Otherwise it's a mixture between a definition and a
         # reference. In this case it's just a definition. So we stay on it.
-        print stmt.get_defined_names()
         if len(call_path) == 1 and isinstance(call_path[0], pr.NamePart) \
                 and call_path[0] in [d.names[-1] for d in stmt.get_defined_names()]:
             return [call_path[0]]

@@ -182,27 +182,31 @@ class Parser(object):
         :return: List of Statements
         :rtype: list
         """
-        names = []
+        params = []
         tok = None
         pos = 0
         breaks = [',', ':']
         while tok is None or tok.string not in (')', ':'):
+            # Classes don't have params, a Class works more like a function
+            # call.
             param, tok = self._parse_statement(added_breaks=breaks,
-                                               stmt_class=pr.Param)
-            if param and tok.string == ':':
-                # parse annotations
-                annotation, tok = self._parse_statement(added_breaks=breaks)
-                if annotation:
-                    param.add_annotation(annotation)
+                                               stmt_class=pr.Statement
+                                               if is_class else pr.Param)
+            if not is_class:
+                if param and tok.string == ':':
+                    # parse annotations
+                    annotation, tok = self._parse_statement(added_breaks=breaks)
+                    if annotation:
+                        param.add_annotation(annotation)
 
-            # function params without vars are usually syntax errors.
-            # expressions are valid in superclass declarations.
-            if param and (param.get_defined_names() or is_class):
-                param.position_nr = pos
-                names.append(param)
-                pos += 1
+                # function params without vars are usually syntax errors.
+                # expressions are valid in superclass declarations.
+                if param and param.get_defined_names():
+                    param.position_nr = pos
+                    params.append(param)
+                    pos += 1
 
-        return names
+        return params
 
     def _parse_function(self):
         """
