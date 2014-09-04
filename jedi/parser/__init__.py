@@ -202,7 +202,7 @@ class Parser(object):
                     if annotation:
                         param.add_annotation(annotation)
 
-                # function params without vars are usually syntax errors.
+                # Function params without vars are usually syntax errors.
                 # expressions are valid in superclass declarations.
                 if param is not None and param.get_defined_names():
                     param.position_nr = pos

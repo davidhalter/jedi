@@ -950,15 +950,12 @@ class Statement(Simple, DocstringMixin):
                         c = call
                         # Check if there's an execution in it, if so this is
                         # not a set_var.
-                        is_execution = False
                         while c:
-                            # TODO use StatementElement.next_is_execution
-                            if Array.is_type(c.next, Array.TUPLE):
-                                is_execution = True
+                            if isinstance(c.next, Array):
+                                break
                             c = c.next
-                        if is_execution:
-                            continue
-                        self._set_vars.append(call.name)
+                        else:
+                            self._set_vars.append(call.name)
 
             self._set_vars = []
             for calls, operation in self.assignment_details:
