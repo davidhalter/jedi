@@ -291,13 +291,13 @@ def _is_number(obj):
         and isinstance(obj.obj, (int, float))
 
 
-def _is_string(obj):
+def is_string(obj):
     return isinstance(obj, CompiledObject) \
         and isinstance(obj.obj, (str, unicode))
 
 
 def is_literal(obj):
-    return _is_number(obj) or _is_string(obj)
+    return _is_number(obj) or is_string(obj)
 
 
 def _is_tuple(obj):
@@ -316,12 +316,12 @@ def _element_calculate(evaluator, left, operator, right):
     r_is_num = _is_number(right)
     if operator == '*':
         # for iterables, ignore * operations
-        if isinstance(left, iterable.Array) or _is_string(left):
+        if isinstance(left, iterable.Array) or is_string(left):
             return [left]
-        elif isinstance(right, iterable.Array) or _is_string(right):
+        elif isinstance(right, iterable.Array) or is_string(right):
             return [right]
     elif operator == '+':
-        if l_is_num and r_is_num or _is_string(left) and _is_string(right):
+        if l_is_num and r_is_num or is_string(left) and is_string(right):
             return [create(evaluator, left.obj + right.obj)]
         elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
             return [iterable.MergedArray(evaluator, (left, right))]

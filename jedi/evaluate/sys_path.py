@@ -67,9 +67,9 @@ def _paths_from_assignment(evaluator, statement):
         # complicated checks.
 
         from jedi.evaluate.iterable import get_iterator_types
-        from jedi.evaluate.precedence import _is_string
+        from jedi.evaluate.precedence import is_string
         for val in get_iterator_types(evaluator.eval_statement(statement)):
-            if _is_string(val):
+            if is_string(val):
                 yield val.obj
 
 
