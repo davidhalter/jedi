@@ -192,8 +192,11 @@ class Parser(object):
             param, tok = self._parse_statement(added_breaks=breaks,
                                                stmt_class=pr.Statement
                                                if is_class else pr.Param)
-            if not is_class:
-                if param and tok.string == ':':
+            if is_class:
+                if param is not None:
+                    params.append(param)
+            else:
+                if param is not None and tok.string == ':':
                     # parse annotations
                     annotation, tok = self._parse_statement(added_breaks=breaks)
                     if annotation:
@@ -201,7 +204,7 @@ class Parser(object):
 
                 # function params without vars are usually syntax errors.
                 # expressions are valid in superclass declarations.
-                if param and param.get_defined_names():
+                if param is not None and param.get_defined_names():
                     param.position_nr = pos
                     params.append(param)
                     pos += 1
