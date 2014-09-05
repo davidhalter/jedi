@@ -153,7 +153,11 @@ class BaseDefinition(object):
             stripped = stripped.parent
         if isinstance(stripped, iterable.Array):
             return 'instance'
-        return type(stripped).__name__.lower().replace('wrapper', '')
+        string = type(stripped).__name__.lower().replace('wrapper', '')
+        if string == 'exprstatement':
+            return 'statement'
+        else:
+            return string
 
     def _path(self):
         """The module path."""

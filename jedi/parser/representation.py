@@ -1223,7 +1223,19 @@ class Statement(Simple, DocstringMixin):
         self._expression_list = lst
 
 
-class Param(Statement):
+class ExprStatement(Statement):
+    """
+    This class exists temporarily, to be able to distinguish real statements
+    (``small_stmt`` in Python grammar) from the so called ``test`` parts, that
+    may be used to defined part of an array, but are never a whole statement.
+
+    The reason for this class is purely historical. It was easier to just use
+    Statement nested, than to create a new class for Test (plus Jedi's fault
+    tolerant parser just makes things very complicated).
+    """
+
+
+class Param(ExprStatement):
     """
     The class which shows definitions of params of classes and functions.
     But this is not to define function calls.

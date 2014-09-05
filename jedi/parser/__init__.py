@@ -190,7 +190,7 @@ class Parser(object):
             # Classes don't have params, a Class works more like a function
             # call.
             param, tok = self._parse_statement(added_breaks=breaks,
-                                               stmt_class=pr.Statement
+                                               stmt_class=pr.ExprStatement
                                                if is_class else pr.Param)
             if is_class:
                 if param is not None:
@@ -280,7 +280,7 @@ class Parser(object):
         return pr.Class(self.module, cname, superclasses, first_pos)
 
     def _parse_statement(self, pre_used_token=None, added_breaks=None,
-                         stmt_class=pr.Statement, names_are_set_vars=False,
+                         stmt_class=pr.ExprStatement, names_are_set_vars=False,
                          maybe_docstr=False):
         """
         Parses statements like::
@@ -292,8 +292,8 @@ class Parser(object):
 
         :param pre_used_token: The pre parsed token.
         :type pre_used_token: set
-        :return: Statement + last parsed token.
-        :rtype: (Statement, str)
+        :return: ExprStatement + last parsed token.
+        :rtype: (ExprStatement, str)
         """
         set_vars = []
         level = 0  # The level of parentheses
