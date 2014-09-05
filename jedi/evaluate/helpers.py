@@ -11,34 +11,48 @@ def deep_ast_copy(obj, new_elements_default=None):
     Much, much faster than copy.deepcopy, but just for Parser elements (Doesn't
     copy parents).
     """
+    def sort_stmt(key_value):
+        return key_value[0] in ('_expression_list', '_assignment_details')
+
     new_elements = new_elements_default or {}
     accept = (pr.Simple, pr.NamePart, pr.KeywordStatement)
 
     def recursion(obj):
-        if isinstance(obj, pr.Statement):
-            # Need to set _set_vars, otherwise the cache is not working
-            # correctly, don't know why.
-            obj.get_defined_names()
-
+        # If it's already in the cache, just return it.
         try:
             return new_elements[obj]
         except KeyError:
-            new_obj = copy.copy(obj)
-            new_elements[obj] = new_obj
+            pass
 
+        if isinstance(obj, pr.Statement):
+            # Need to set _set_vars, otherwise the cache is not working
+            # correctly, don't know exactly why.
+            obj.get_defined_names()
+
+        # Gather items
         try:
-            items = list(new_obj.__dict__.items())
+            items = list(obj.__dict__.items())
         except AttributeError:
             # __dict__ not available, because of __slots__
             items = []
 
         before = ()
-        for cls in new_obj.__class__.__mro__:
+        for cls in obj.__class__.__mro__:
             with common.ignored(AttributeError):
                 if before == cls.__slots__:
                     continue
                 before = cls.__slots__
-                items += [(n, getattr(new_obj, n)) for n in before]
+                items += [(n, getattr(obj, n)) for n in before]
+
+        if isinstance(obj, pr.Statement):
+            # We need to process something with priority for statements,
+            # because there are several references that don't walk the whole
+            # tree in there.
+            items = sorted(items, key=sort_stmt)
+
+        # Actually copy and set attributes.
+        new_obj = copy.copy(obj)
+        new_elements[obj] = new_obj
 
         for key, value in items:
             # replace parent (first try _parent and then parent)
