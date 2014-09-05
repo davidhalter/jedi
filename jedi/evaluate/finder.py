@@ -91,7 +91,7 @@ class NameFinder(object):
                     continue
 
                 # Exclude `arr[1] =` from the result set.
-                if not self._name_is_array_assignment(name):
+                if not self._name_is_array_assignment(name, stmt):
                     # TODO we ignore a lot of elements here that should not be
                     #   ignored. But then again flow_analysis also stops when the
                     #   input scope is reached. This is not correct: variables
@@ -113,7 +113,7 @@ class NameFinder(object):
                         if check is flow_analysis.REACHABLE:
                             break
 
-                if result and self._is_name_break_scope(name):
+                if result and self._is_name_break_scope(name, stmt):
                     if self._does_scope_break_immediately(scope, name_list_scope):
                         break
                     else:
@@ -148,15 +148,14 @@ class NameFinder(object):
                 result = inst.execute_subscope_by_name('__getattribute__', [name])
         return result
 
-    def _is_name_break_scope(self, name):
+    def _is_name_break_scope(self, name, stmt):
         """
         Returns True except for nested imports and instance variables.
         """
-        par = name.parent
-        if par.isinstance(pr.Statement):
+        if stmt.isinstance(pr.Statement):
             if isinstance(name, er.InstanceElement) and not name.is_class_var:
                 return False
-        elif isinstance(par, pr.Import) and par.is_nested():
+        elif isinstance(stmt, pr.Import) and stmt.is_nested():
             return False
         return True
 
@@ -175,8 +174,8 @@ class NameFinder(object):
         else:
             return True
 
-    def _name_is_array_assignment(self, name):
-        if name.parent.isinstance(pr.Statement):
+    def _name_is_array_assignment(self, name, stmt):
+        if stmt.isinstance(pr.Statement):
             def is_execution(calls):
                 for c in calls:
                     if isinstance(c, (unicode, str, tokenize.Token)):
@@ -193,7 +192,7 @@ class NameFinder(object):
                 return False
 
             is_exe = False
-            for assignee, op in name.parent.assignment_details:
+            for assignee, op in stmt.assignment_details:
                 is_exe |= is_execution(assignee)
 
             if is_exe:
