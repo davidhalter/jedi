@@ -1223,7 +1223,7 @@ class Statement(Simple, DocstringMixin):
         self._expression_list = lst
 
 
-class ExprStatement(Statement):
+class ExprStmt(Statement):
     """
     This class exists temporarily, to be able to distinguish real statements
     (``small_stmt`` in Python grammar) from the so called ``test`` parts, that
@@ -1235,7 +1235,7 @@ class ExprStatement(Statement):
     """
 
 
-class Param(ExprStatement):
+class Param(ExprStmt):
     """
     The class which shows definitions of params of classes and functions.
     But this is not to define function calls.
@@ -1463,6 +1463,9 @@ class NamePart(object):
     def get_code(self):
         return self._string
 
+    def get_parent_stmt(self):
+        return self.parent.parent_stmt()
+
     def get_parent_until(self, *args, **kwargs):
         return self.parent.get_parent_until(*args, **kwargs)
 
@@ -1500,6 +1503,9 @@ class Name(Simple):
     def get_code(self):
         """ Returns the names in a full string format """
         return self._get_code
+
+    def get_parent_stmt(self):
+        return self.get_parent_until(ExprStmt)
 
     @property
     def end_pos(self):

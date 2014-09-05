@@ -154,7 +154,7 @@ class BaseDefinition(object):
         if isinstance(stripped, iterable.Array):
             return 'instance'
         string = type(stripped).__name__.lower().replace('wrapper', '')
-        if string == 'exprstatement':
+        if string == 'exprstmt':
             return 'statement'
         else:
             return string
