@@ -275,7 +275,7 @@ class Script(object):
             raise NotFoundError()
         if isinstance(stmt, pr.KeywordStatement):
             stmt = stmt.stmt
-        if not isinstance(stmt, pr.Statement):
+        if not isinstance(stmt, pr.ExprStmt):
             raise NotFoundError()
 
         user_stmt = self._parser.user_stmt()
@@ -465,7 +465,7 @@ class Script(object):
             # The Evaluator.goto function checks for definitions, but since we
             # use a reverse tokenizer, we have new name_part objects, so we
             # have to check the user_stmt here for positions.
-            if isinstance(user_stmt, pr.Statement):
+            if isinstance(user_stmt, pr.ExprStmt):
                 for name in user_stmt.get_defined_names():
                     if name.start_pos <= self._pos <= name.end_pos \
                             and len(name.names) == 1:
@@ -497,7 +497,7 @@ class Script(object):
 
             # Once Script._goto works correct, we can probably remove this
             # branch.
-            if isinstance(user_stmt, pr.Statement):
+            if isinstance(user_stmt, pr.ExprStmt):
                 c = user_stmt.expression_list()[0]
                 if not isinstance(c, unicode) and self._pos < c.start_pos:
                     # The lookup might be before `=`

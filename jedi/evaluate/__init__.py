@@ -123,7 +123,7 @@ class Evaluator(object):
         names are defined in the statement, `seek_name` returns the result for
         this name.
 
-        :param stmt: A `pr.Statement`.
+        :param stmt: A `pr.ExprStmt`.
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
         expression_list = stmt.expression_list()

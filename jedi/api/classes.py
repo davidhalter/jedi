@@ -332,7 +332,7 @@ class BaseDefinition(object):
             # Functions, classes and modules are already fixed definitions, we
             # cannot follow them anymore.
             return [self]
-        stmt_or_imp = self._definition.get_parent_until((pr.Statement, pr.Import))
+        stmt_or_imp = self._definition.get_parent_until((pr.ExprStmt, pr.Import))
         call_path = call_path_for_name_part(stmt_or_imp, self._definition)
         names = self._evaluator.goto(stmt_or_imp, call_path)
         return [Definition(self._evaluator, n) for n in names]
@@ -352,7 +352,7 @@ class BaseDefinition(object):
         elif isinstance(stripped, pr.Class):
             stripped = er.Class(self._evaluator, stripped)
 
-        if stripped.isinstance(pr.Statement):
+        if stripped.isinstance(pr.ExprStmt):
             return self._evaluator.eval_statement(stripped)
         elif stripped.isinstance(pr.Import):
             return imports.follow_imports(self._evaluator, [stripped])
@@ -606,7 +606,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
                 return None
         elif isinstance(d, pr.Param):
             name = d.get_name()
-        elif isinstance(d, pr.Statement):
+        elif isinstance(d, pr.ExprStmt):
             try:
                 expression_list = d.assignment_details[0][0]
                 name = expression_list[0].name.names[-1]

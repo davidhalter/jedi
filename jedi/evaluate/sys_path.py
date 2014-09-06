@@ -112,7 +112,7 @@ def _check_module(evaluator, module):
     except KeyError:
         return get_sys_path()
     sys_path = list(get_sys_path())  # copy
-    statements = (p for p in possible_stmts if isinstance(p, pr.Statement))
+    statements = (p for p in possible_stmts if isinstance(p, pr.ExprStmt))
     for stmt in statements:
         expressions = stmt.expression_list()
         if len(expressions) == 1 and isinstance(expressions[0], pr.Call):

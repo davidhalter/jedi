@@ -100,7 +100,7 @@ class NameFinder(object):
                     if isinstance(stmt, (pr.Param, pr.Import)) \
                             or isinstance(name_list_scope, (pr.Lambda, pr.ListComprehension, er.Instance, InterpreterNamespace)) \
                             or isinstance(scope, compiled.CompiledObject) \
-                            or isinstance(stmt, pr.Statement) and stmt.is_global():
+                            or isinstance(stmt, pr.ExprStmt) and stmt.is_global():
                         # Always reachable.
                         result.append(name)
                     else:
@@ -152,7 +152,7 @@ class NameFinder(object):
         """
         Returns True except for nested imports and instance variables.
         """
-        if stmt.isinstance(pr.Statement):
+        if stmt.isinstance(pr.ExprStmt):
             if isinstance(name, er.InstanceElement) and not name.is_class_var:
                 return False
         elif isinstance(stmt, pr.Import) and stmt.is_nested():
@@ -175,7 +175,7 @@ class NameFinder(object):
             return True
 
     def _name_is_array_assignment(self, name, stmt):
-        if stmt.isinstance(pr.Statement):
+        if stmt.isinstance(pr.ExprStmt):
             def is_execution(calls):
                 for c in calls:
                     if isinstance(c, (unicode, str, tokenize.Token)):
@@ -224,7 +224,7 @@ class NameFinder(object):
                 types += self._handle_for_loops(typ)
             elif isinstance(typ, pr.Param):
                 types += self._eval_param(typ)
-            elif typ.isinstance(pr.Statement):
+            elif typ.isinstance(pr.ExprStmt):
                 if typ.is_global():
                     # global keyword handling.
                     types += evaluator.find_types(typ.parent.parent, str(name))
