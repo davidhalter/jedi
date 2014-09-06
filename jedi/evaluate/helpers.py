@@ -1,7 +1,6 @@
 import copy
 from itertools import chain
 
-from jedi import common
 from jedi.parser import representation as pr
 from jedi import debug
 
@@ -12,7 +11,7 @@ def deep_ast_copy(obj, new_elements_default=None):
     copy parents).
     """
     def sort_stmt(key_value):
-        return key_value[0] in ('_expression_list', '_assignment_details')
+        return key_value[0] not in ('_expression_list', '_assignment_details')
 
     new_elements = new_elements_default or {}
     accept = (pr.Simple, pr.NamePart, pr.KeywordStatement)
@@ -38,11 +37,13 @@ def deep_ast_copy(obj, new_elements_default=None):
 
         before = ()
         for cls in obj.__class__.__mro__:
-            with common.ignored(AttributeError):
+            try:
                 if before == cls.__slots__:
                     continue
                 before = cls.__slots__
                 items += [(n, getattr(obj, n)) for n in before]
+            except AttributeError:
+                pass
 
         if isinstance(obj, pr.Statement):
             # We need to process something with priority for statements,
@@ -60,8 +61,10 @@ def deep_ast_copy(obj, new_elements_default=None):
                 if key == 'parent' and '_parent' in items:
                     # parent can be a property
                     continue
-                with common.ignored(KeyError):
+                try:
                     setattr(new_obj, key, new_elements[value])
+                except KeyError:
+                    pass
             elif key in ['parent_function', 'use_as_parent', '_sub_module']:
                 continue
             elif isinstance(value, (list, tuple)):

@@ -1323,6 +1323,7 @@ class Call(StatementElement):
 
     def __init__(self, module, name, start_pos, end_pos, parent=None):
         super(Call, self).__init__(module, start_pos, end_pos, parent)
+        name.parent = self
         self.name = name
 
     def get_code(self):
