@@ -147,7 +147,7 @@ def search_call_signatures(user_stmt, position):
     """
     debug.speed('func_call start')
     call, arr, index = None, None, 0
-    if user_stmt is not None and isinstance(user_stmt, pr.Statement):
+    if user_stmt is not None and isinstance(user_stmt, pr.ExprStmt):
         # some parts will of the statement will be removed
         user_stmt = deep_ast_copy(user_stmt)
         arr, index, call = call_signature_array_for_pos(user_stmt, position)
@@ -284,7 +284,7 @@ class FakeArray(pr.Array):
         self.values = values
 
 
-class FakeStatement(pr.Statement):
+class FakeStatement(pr.ExprStmt):
     def __init__(self, expression_list, start_pos=(0, 0), parent=None):
         p = start_pos
         super(FakeStatement, self).__init__(FakeSubModule, expression_list, p, p)

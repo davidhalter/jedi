@@ -271,7 +271,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return pr.Simple.get_parent_until(self, *args, **kwargs)
 
     def get_definition(self):
-        return self.get_parent_until((pr.Statement, pr.IsScope, pr.Import))
+        return self.get_parent_until((pr.ExprStmt, pr.IsScope, pr.Import))
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """

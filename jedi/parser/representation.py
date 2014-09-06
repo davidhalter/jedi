@@ -1515,7 +1515,7 @@ class Name(Simple):
 
     def get_definition(self):
         # TODO This is way to complicated, simplify this with a new parser.
-        return self.get_parent_until((Statement, IsScope, Import))
+        return self.get_parent_until((ExprStmt, IsScope, Import))
 
     @property
     def end_pos(self):
