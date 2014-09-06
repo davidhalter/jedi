@@ -43,6 +43,9 @@ class KeywordName(object):
         self.names = [name]
         self.start_pos = start_pos
 
+    def get_definition(self):
+        return self.parent
+
     @property
     def end_pos(self):
         return self.start_pos[0], self.start_pos[1] + len(self.name)

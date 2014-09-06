@@ -7,7 +7,6 @@ from inspect import cleandoc
 import pytest
 
 from jedi import Script, defined_names, __doc__ as jedi_doc
-from jedi.parser import representation as pr
 from ..helpers import cwd_at
 from ..helpers import TestCase
 

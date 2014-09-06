@@ -147,10 +147,8 @@ class BaseDefinition(object):
             return stripped.type()
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
-        if isinstance(stripped, pr.NamePart):
-            stripped = stripped.parent
-        if isinstance(stripped, pr.Name):
-            stripped = stripped.parent
+        if isinstance(stripped, (pr.Name, pr.NamePart)):
+            stripped = stripped.get_definition()
         if isinstance(stripped, iterable.Array):
             return 'instance'
         string = type(stripped).__name__.lower().replace('wrapper', '')
@@ -343,8 +341,8 @@ class BaseDefinition(object):
         Follow both statements and imports, as far as possible.
         """
         stripped = self._definition
-        if isinstance(stripped, pr.Name):
-            stripped = stripped.parent
+        if isinstance(stripped, (pr.Name, pr.NamePart)):
+            stripped = stripped.get_definition()
 
         # We should probably work in `Finder._names_to_types` here.
         if isinstance(stripped, pr.Function):
@@ -404,7 +402,8 @@ class Completion(BaseDefinition):
     provide additional information about a completion.
     """
     def __init__(self, evaluator, name, needs_dot, like_name_length, base):
-        super(Completion, self).__init__(evaluator, name.parent, name.start_pos)
+        super(Completion, self).__init__(evaluator, name.get_definition(),
+                                         name.start_pos)
 
         self._name = name
         self._needs_dot = needs_dot
@@ -482,7 +481,7 @@ class Completion(BaseDefinition):
     @property
     def description(self):
         """Provide a description of the completion object."""
-        parent = self._name.parent
+        parent = self._name.get_definition()
         if parent is None:
             return ''
         t = self.type
@@ -649,8 +648,8 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         d = self._definition
         if isinstance(d, er.InstanceElement):
             d = d.var
-        if isinstance(d, pr.Name):
-            d = d.parent
+        if isinstance(d, (pr.Name, pr.NamePart)):
+            d = d.get_definition()
 
         if isinstance(d, compiled.CompiledObject):
             typ = d.type()
