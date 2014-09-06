@@ -309,6 +309,9 @@ class FakeName(pr.Name):
             names = [(name_or_names, p)]
         super(FakeName, self).__init__(FakeSubModule, names, p, p, parent)
 
+    def get_definition(self):
+        return self.parent
+
 
 class LazyName(FakeName):
     def __init__(self, name, parent_callback):

@@ -39,7 +39,7 @@ import re
 from inspect import cleandoc
 
 from jedi._compatibility import (next, Python3Method, encoding, unicode,
-                                 is_py3, u, literal_eval)
+                                 is_py3, u, literal_eval, use_metaclass)
 from jedi import common
 from jedi import debug
 from jedi import cache
@@ -220,6 +220,15 @@ class Simple(Base):
             code = code.encode(encoding, 'replace')
         return "<%s: %s@%s,%s>" % \
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
+
+
+class IsScopeMeta(type):
+    def __instancecheck__(self, other):
+        return other.is_scope()
+
+
+class IsScope(use_metaclass(IsScopeMeta)):
+    pass
 
 
 class Scope(Simple, DocstringMixin):
@@ -1463,8 +1472,8 @@ class NamePart(object):
     def get_code(self):
         return self._string
 
-    def get_parent_stmt(self):
-        return self.parent.parent_stmt()
+    def get_definition(self):
+        return self.parent.get_definition()
 
     def get_parent_until(self, *args, **kwargs):
         return self.parent.get_parent_until(*args, **kwargs)
@@ -1504,8 +1513,9 @@ class Name(Simple):
         """ Returns the names in a full string format """
         return self._get_code
 
-    def get_parent_stmt(self):
-        return self.get_parent_until(ExprStmt)
+    def get_definition(self):
+        # TODO This is way to complicated, simplify this with a new parser.
+        return self.get_parent_until((Statement, IsScope, Import))
 
     @property
     def end_pos(self):

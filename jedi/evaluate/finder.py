@@ -85,7 +85,7 @@ class NameFinder(object):
                 if unicode(self.name_str) != name.get_code():
                     continue
 
-                stmt = name.parent
+                stmt = name.get_definition()
                 scope = stmt.parent
                 if scope in break_scopes:
                     continue
@@ -219,7 +219,7 @@ class NameFinder(object):
                 flow_scope = flow_scope.parent
 
         for name in names:
-            typ = name.parent
+            typ = name.get_definition()
             if typ.isinstance(pr.ForFlow):
                 types += self._handle_for_loops(typ)
             elif isinstance(typ, pr.Param):

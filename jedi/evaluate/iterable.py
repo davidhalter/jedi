@@ -232,8 +232,9 @@ class ArrayMethod(IterableWrapper):
 
     def __getattr__(self, name):
         # Set access privileges:
-        if name not in ['parent', 'names', 'start_pos', 'end_pos', 'get_code']:
-            raise AttributeError('Strange accesson %s: %s.' % (self, name))
+        if name not in ['parent', 'names', 'start_pos', 'end_pos', 'get_code',
+                        'get_definition']:
+            raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self.name, name)
 
     def get_parent_until(self):
