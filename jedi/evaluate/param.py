@@ -46,7 +46,7 @@ def _get_calling_var_args(evaluator, var_args):
             names = evaluator.goto(argument, [exp_list[1].get_code()])
             if len(names) != 1:
                 break
-            param = names[0].parent
+            param = names[0].get_definition()
             if not isinstance(param, ExecutedParam):
                 if isinstance(param, pr.Param):
                     # There is no calling var_args in this case - there's just
