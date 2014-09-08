@@ -679,11 +679,21 @@ def defined_names(source, path=None, encoding='utf-8'):
     return classes.defined_names(Evaluator(), parser.module)
 
 
-def _names(source=None, path=None, encoding='utf-8'):
+def names(source=None, path=None, encoding='utf-8', all_scopes=False,
+          definitions=True, references=False):
     """
     Returns a list of `Definition` objects, containing name parts.
     This means you can call ``Definition.goto_assignments()`` and get the
     reference of a name.
+    The parameters are the same as in :py:class:`Script`, except or the
+    following ones:
+
+    :param all_scopes: If True lists the names of all scopes instead of only
+        the module namespace.
+    :param definitions: If True lists the names that have been defined by a
+        class, function or a statement (``a = b`` returns ``a``).
+    :param references: If True lists all the names that are not listed by
+        ``definitions=True``. E.g. ``a = b`` returns ``b``.
     """
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding)
