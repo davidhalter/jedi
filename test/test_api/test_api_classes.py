@@ -6,7 +6,7 @@ from inspect import cleandoc
 
 import pytest
 
-from jedi import Script, defined_names, __doc__ as jedi_doc
+from jedi import Script, defined_names, __doc__ as jedi_doc, names
 from ..helpers import cwd_at
 from ..helpers import TestCase
 
@@ -192,3 +192,16 @@ def test_type():
     """
     for c in Script('import os; os.path.').completions():
         assert c.type
+
+
+class TestGotoAssignments(TestCase):
+    """
+    This tests the BaseDefinition.goto_assignments function, not the jedi
+    function. They are not really different in functionality, but really
+    different as an implementation.
+    """
+    def test_basic(self):
+        refs = names('a = 1; a', references=True, definitions=False)
+        assert len(refs) == 1
+        ass = refs[0].goto_assignments()
+        assert ass[0].description == ''
