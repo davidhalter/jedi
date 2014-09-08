@@ -699,6 +699,19 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         iterable = list(iterable)
         return list(chain.from_iterable(iterable))
 
+    def is_definition(self):
+        """
+        Returns True, if defined as a name in a statement, function or class.
+        Returns False, if it's a reference to such a definition.
+        """
+        if not isinstance(self._definition, pr.NamePart):
+            # Currently only handle NameParts. Once we have a proper API, this
+            # will be the standard anyway.
+            raise NotImplementedError
+        stmt_or_imp = self._definition.get_parent_until((pr.ExprStmt, pr.Import))
+        exp_list = stmt_or_imp.expression_list()
+        return not exp_list or self._definition.start_pos < exp_list[0].start_pos
+
     def __eq__(self, other):
         return self._start_pos == other._start_pos \
             and self.module_path == other.module_path \

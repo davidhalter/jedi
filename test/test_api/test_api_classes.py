@@ -200,8 +200,11 @@ class TestGotoAssignments(TestCase):
     function. They are not really different in functionality, but really
     different as an implementation.
     """
-    def test_basic(self):
-        refs = names('a = 1; a', references=True, definitions=False)
-        assert len(refs) == 1
-        ass = refs[0].goto_assignments()
-        assert ass[0].description == ''
+    def test_repetition(self):
+        defs = names('a = 1; a', references=True, definitions=False)
+        # Repeat on the same variable. Shouldn't change once we're on a
+        # definition.
+        for _ in range(3):
+            assert len(defs) == 1
+            ass = defs[0].goto_assignments()
+            assert ass[0].description == 'a = 1'

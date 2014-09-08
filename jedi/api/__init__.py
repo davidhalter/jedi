@@ -695,12 +695,15 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
     :param references: If True lists all the names that are not listed by
         ``definitions=True``. E.g. ``a = b`` returns ``b``.
     """
+    def def_ref_filter(_def):
+        is_def = _def.is_definition()
+        return definitions and is_def or references and not is_def
+
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding)
     defs = [classes.Definition(script._evaluator, name_part)
-            for name_part in get_module_name_parts(script._parser.module())
-        if 390 < name_part.start_pos[0] < 399]
-    return sorted(defs, key=lambda x: (x.line, x.column))
+            for name_part in get_module_name_parts(script._parser.module())]
+    return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 
 
 def preload_module(*modules):
