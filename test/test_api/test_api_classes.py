@@ -208,3 +208,14 @@ class TestGotoAssignments(TestCase):
             assert len(defs) == 1
             ass = defs[0].goto_assignments()
             assert ass[0].description == 'a = 1'
+
+    def test_named_params(self):
+        src = """\
+                def foo(bar):
+                    pass
+                foo(bar=1)
+              """
+        bar = names(dedent(src), references=True)[-1]
+        param = bar.goto_assignments()[0]
+        assert param.start_pos == (1, 9)
+        assert param.type == 'param'
