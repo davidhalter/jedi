@@ -388,6 +388,7 @@ class Script(object):
             if goto_path:
                 definitions = set(self._prepare_goto(goto_path))
 
+        definitions = resolve_import_paths(definitions)
         names = [s if isinstance(s, pr.Name) else s.name for s in definitions
                  if s is not imports.ImportWrapper.GlobalNamespace]
         defs = [classes.Definition(self._evaluator, name.names[-1])

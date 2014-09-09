@@ -507,6 +507,7 @@ class Completion(BaseDefinition):
             the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
+        definition = self._definition
         if isinstance(definition, pr.Import):
             i = imports.ImportWrapper(self._evaluator, definition)
             if len(i.import_path) > 1 or not fast:

@@ -305,7 +305,6 @@ class FakeImport(pr.Import):
 
 class FakeName(pr.Name):
     def __init__(self, name_or_names, parent=None, start_pos=(0, 0)):
-        start_pos = 0, 0
         if isinstance(name_or_names, list):
             names = [(n, start_pos) for n in name_or_names]
         else:

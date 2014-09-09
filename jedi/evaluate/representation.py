@@ -291,6 +291,12 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return [get_instance_el(self._evaluator, self.instance, command, self.is_class_var)
                 for command in self.var.expression_list()]
 
+    @property
+    @underscore_memoization
+    def name(self):
+        name = self.var.name
+        return helpers.FakeName(unicode(name), self, name.start_pos)
+
     def __iter__(self):
         for el in self.var.__iter__():
             yield get_instance_el(self._evaluator, self.instance, el,
