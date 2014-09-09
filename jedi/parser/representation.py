@@ -1286,11 +1286,12 @@ class Param(ExprStmt):
 
 
 class StatementElement(Simple):
-    __slots__ = ('next',)
+    __slots__ = ('next', 'previous')
 
     def __init__(self, module, start_pos, end_pos, parent):
         super(StatementElement, self).__init__(module, start_pos, end_pos, parent)
         self.next = None
+        self.previous = None
 
     def set_next(self, call):
         """ Adds another part of the statement"""
@@ -1299,6 +1300,7 @@ class StatementElement(Simple):
             self.next.set_next(call)
         else:
             self.next = call
+            call.previous = self
 
     def next_is_execution(self):
         return Array.is_type(self.next, Array.TUPLE, Array.NOARRAY)
