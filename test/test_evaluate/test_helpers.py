@@ -1,3 +1,5 @@
+from jedi._compatibility import unicode
+
 from jedi.evaluate import helpers
 from jedi.parser import representation as pr
 from jedi.parser import Parser

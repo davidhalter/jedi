@@ -131,4 +131,4 @@ def test_goto_definition_not_multiple():
 
 def test_usage_description():
     descs = [u.description for u in api.Script("foo = ''; foo").usages()]
-    assert set(descs) == {"foo = ''", 'foo'}
+    assert set(descs) == set(["foo = ''", 'foo'])

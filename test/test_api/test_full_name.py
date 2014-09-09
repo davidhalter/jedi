@@ -44,7 +44,7 @@ class MixinTestFullName(object):
 class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
     operation = 'goto_definitions'
 
-    @pytest.mark.skipif('sys.version_info[:2] <= (2, 6)', reason='Python 2.6 also yields None.')
+    @pytest.mark.skipif('sys.version_info[0] < 3', reason='Python 2 also yields None.')
     def test_tuple_mapping(self):
         self.check("""
         import re
