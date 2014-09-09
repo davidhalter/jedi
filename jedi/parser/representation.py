@@ -922,6 +922,9 @@ class Statement(Simple, DocstringMixin):
 
         # cache
         self._assignment_details = []
+        # For now just generate the expression list, even if its not needed.
+        # This will help to adapt a better new AST.
+        self.expression_list()
 
     @property
     def end_pos(self):
