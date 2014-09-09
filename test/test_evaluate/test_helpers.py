@@ -13,7 +13,7 @@ def test_deep_ast_copy():
 
 def test_statement_elements_in_statement():
     def get_stmt_els(string):
-        p = Parser(string)
+        p = Parser(unicode(string))
         return helpers.statement_elements_in_statement(p.module.statements[0])
 
     # list comprehension
