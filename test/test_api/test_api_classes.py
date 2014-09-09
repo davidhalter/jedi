@@ -211,11 +211,11 @@ class TestGotoAssignments(TestCase):
 
     def test_named_params(self):
         src = """\
-                def foo(bar):
+                def foo(a=1, bar=2):
                     pass
                 foo(bar=1)
               """
         bar = names(dedent(src), references=True)[-1]
         param = bar.goto_assignments()[0]
-        assert param.start_pos == (1, 9)
+        assert param.start_pos == (1, 13)
         assert param.type == 'param'

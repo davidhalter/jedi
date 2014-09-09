@@ -85,7 +85,7 @@ from jedi.evaluate import stdlib
 from jedi.evaluate import finder
 from jedi.evaluate import compiled
 from jedi.evaluate import precedence
-from jedi.evaluate.helpers import FakeStatement
+from jedi.evaluate.helpers import FakeStatement, deep_ast_copy
 
 
 class Evaluator(object):
@@ -326,6 +326,21 @@ class Evaluator(object):
         # reference. In this case it's just a definition. So we stay on it.
         if len(call_path) == 1 and isinstance(call_path[0], pr.NamePart) \
                 and call_path[0] in [d.names[-1] for d in stmt.get_defined_names()]:
+            # Named params should get resolved to their param defintions.
+            if pr.Array.is_type(stmt.parent, pr.Array.TUPLE, pr.Array.NOARRAY) \
+                    and stmt.parent.previous:
+                call = deep_ast_copy(stmt.parent.previous)
+                # We have made a copy, so we're fine to change it.
+                call.next = None
+                while call.previous is not None:
+                    call = call.previous
+                param_names = []
+                named_param_name = stmt.get_defined_names()[0]
+                for typ in self.eval_call(call):
+                    for param in typ.params:
+                        if unicode(param.get_name()) == unicode(named_param_name):
+                            param_names.append(param.get_name())
+                return param_names
             return [call_path[0]]
 
         scope = stmt.get_parent_scope()
