@@ -304,13 +304,13 @@ class FakeImport(pr.Import):
 
 
 class FakeName(pr.Name):
-    def __init__(self, name_or_names, parent=None):
-        p = 0, 0
+    def __init__(self, name_or_names, parent=None, start_pos=(0, 0)):
+        start_pos = 0, 0
         if isinstance(name_or_names, list):
-            names = [(n, p) for n in name_or_names]
+            names = [(n, start_pos) for n in name_or_names]
         else:
-            names = [(name_or_names, p)]
-        super(FakeName, self).__init__(FakeSubModule, names, p, p, parent)
+            names = [(name_or_names, start_pos)]
+        super(FakeName, self).__init__(FakeSubModule, names, start_pos, start_pos, parent)
 
     def get_definition(self):
         return self.parent

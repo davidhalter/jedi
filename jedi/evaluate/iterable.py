@@ -128,6 +128,10 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         self._evaluator = evaluator
         self._array = array
 
+    @property
+    def name(self):
+        return helpers.FakeName(self._array.type, parent=self)
+
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
 

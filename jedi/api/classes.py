@@ -330,7 +330,7 @@ class BaseDefinition(object):
             # Functions, classes and modules are already fixed definitions, we
             # cannot follow them anymore.
             return [self]
-        stmt_or_imp = self._definition.get_parent_until((pr.ExprStmt, pr.Import))
+        stmt_or_imp = self._definition.get_parent_until((pr.Statement, pr.Import))
         call_path = call_path_for_name_part(stmt_or_imp, self._definition)
         names = self._evaluator.goto(stmt_or_imp, call_path)
         return [Definition(self._evaluator, n) for n in names]
@@ -708,9 +708,13 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             # Currently only handle NameParts. Once we have a proper API, this
             # will be the standard anyway.
             raise NotImplementedError
-        stmt_or_imp = self._definition.get_parent_until((pr.ExprStmt, pr.Import))
-        exp_list = stmt_or_imp.expression_list()
-        return not exp_list or self._definition.start_pos < exp_list[0].start_pos
+        _def = self._definition.get_parent_until((pr.ExprStmt,
+                        pr.Import, pr.Function, pr.Class, pr.Module))
+        if isinstance(_def, pr.ExprStmt):
+            exp_list = _def.expression_list()
+            return not exp_list or self._definition.start_pos < exp_list[0].start_pos
+        else:
+            return True
 
     def __eq__(self, other):
         return self._start_pos == other._start_pos \

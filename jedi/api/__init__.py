@@ -263,6 +263,7 @@ class Script(object):
                 if user_stmt is not None:
                     eval_stmt.start_pos = user_stmt.end_pos
             scopes = self._evaluator.eval_statement(eval_stmt)
+
         return scopes
 
     def _get_under_cursor_stmt(self, cursor_txt):
@@ -387,10 +388,11 @@ class Script(object):
             if goto_path:
                 definitions = set(self._prepare_goto(goto_path))
 
-        definitions = resolve_import_paths(definitions)
-        d = set([classes.Definition(self._evaluator, s) for s in definitions
-                 if s is not imports.ImportWrapper.GlobalNamespace])
-        return helpers.sorted_definitions(d)
+        names = [s if isinstance(s, pr.Name) else s.name for s in definitions
+                 if s is not imports.ImportWrapper.GlobalNamespace]
+        defs = [classes.Definition(self._evaluator, name.names[-1])
+                for name in names]
+        return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self):
         """
@@ -563,7 +565,7 @@ class Script(object):
                 key_name = unicode(detail[0][0].name)
             except (IndexError, AttributeError):
                 pass
-        return [classes.CallSignature(self._evaluator, o, call, index, key_name)
+        return [classes.CallSignature(self._evaluator, o.name.names[-1], call, index, key_name)
                 for o in origins if hasattr(o, 'py__call__')]
 
     def _analysis(self):

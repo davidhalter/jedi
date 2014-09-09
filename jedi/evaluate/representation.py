@@ -35,6 +35,7 @@ from jedi.parser import representation as pr
 from jedi.parser.tokenize import Token
 from jedi import debug
 from jedi import common
+from jedi.cache import underscore_memoization
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import compiled
 from jedi.evaluate import recursion
@@ -218,8 +219,14 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             debug.warning('No __getitem__, cannot access the array.')
             return []
 
+    @property
+    @underscore_memoization
+    def name(self):
+        name = self.base.name
+        return helpers.FakeName(unicode(name), self, name.start_pos)
+
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'name', 'get_imports',
+        if name not in ['start_pos', 'end_pos', 'get_imports',
                         'doc', 'raw_doc', 'asserts']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                  % (self, name))
