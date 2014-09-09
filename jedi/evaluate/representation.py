@@ -326,6 +326,12 @@ class Wrapper(pr.Base):
     def is_class(self):
         return False
 
+    @property
+    @underscore_memoization
+    def name(self):
+        name = self.base.name
+        return helpers.FakeName(unicode(name), self, name.start_pos)
+
 
 class Class(use_metaclass(CachedMetaClass, Wrapper)):
     """
@@ -406,10 +412,6 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
                     return sub
         raise KeyError("Couldn't find subscope.")
 
-    @common.safe_property
-    def name(self):
-        return self.base.name
-
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'asserts', 'raw_doc',
                         'doc', 'get_imports', 'get_parent_until', 'get_code',
@@ -428,7 +430,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
     def __init__(self, evaluator, func, is_decorated=False):
         """ This should not be called directly """
         self._evaluator = evaluator
-        self.base_func = func
+        self.base = self.base_func = func
         self.is_decorated = is_decorated
 
     @memoize_default()
@@ -635,7 +637,7 @@ class FunctionExecution(Executed):
 class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     def __init__(self, evaluator, module):
         self._evaluator = evaluator
-        self._module = module
+        self.base = self._module = module
 
     def scope_names_generator(self, position=None):
         yield self, pr.filter_after_position(self._module.get_defined_names(), position)

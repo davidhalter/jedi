@@ -143,12 +143,12 @@ class BaseDefinition(object):
         """
         # generate the type
         stripped = self._definition
-        if isinstance(stripped, compiled.CompiledObject):
-            return stripped.type()
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
         if isinstance(stripped, (pr.Name, pr.NamePart)):
             stripped = stripped.get_definition()
+        if isinstance(stripped, compiled.CompiledObject):
+            return stripped.type()
         if isinstance(stripped, iterable.Array):
             return 'instance'
         string = type(stripped).__name__.lower().replace('wrapper', '')
@@ -246,10 +246,13 @@ class BaseDefinition(object):
         Document for function f.
 
         """
+        definition = self._definition
+        if isinstance(definition, pr.NamePart):
+            definition = definition.parent.parent
         if raw:
-            return _Help(self._definition).raw()
+            return _Help(definition).raw()
         else:
-            return _Help(self._definition).full()
+            return _Help(definition).full()
 
     @property
     def doc(self):
@@ -504,9 +507,8 @@ class Completion(BaseDefinition):
             the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
-        definition = self._definition
-        if isinstance(self._definition, pr.Import):
-            i = imports.ImportWrapper(self._evaluator, self._definition)
+        if isinstance(definition, pr.Import):
+            i = imports.ImportWrapper(self._evaluator, definition)
             if len(i.import_path) > 1 or not fast:
                 followed = self._follow_statements_imports()
                 if followed:

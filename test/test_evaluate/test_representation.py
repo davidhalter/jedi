@@ -5,7 +5,7 @@ from jedi import Script
 
 def get_definition_and_evaluator(source):
     d = Script(dedent(source)).goto_definitions()[0]
-    return d._definition, d._evaluator
+    return d._definition.parent.parent, d._evaluator
 
 
 def test_function_execution():

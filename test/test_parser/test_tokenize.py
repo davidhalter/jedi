@@ -26,4 +26,4 @@ asdfasdf""" + "h"
 def test_tokenizer_with_string_literal_backslash():
     import jedi
     c = jedi.Script("statement = u'foo\\\n'; statement").goto_definitions()
-    assert c[0]._definition.obj == 'foo'
+    assert c[0]._definition.parent.parent.obj == 'foo'
