@@ -234,10 +234,14 @@ class ArrayMethod(IterableWrapper):
         super(ArrayMethod, self).__init__()
         self.name = name
 
+    @property
+    @underscore_memoization
+    def names(self):
+        return [pr.NamePart(unicode(n), self, n.start_pos) for n in self.name.names]
+
     def __getattr__(self, name):
         # Set access privileges:
-        if name not in ['parent', 'names', 'start_pos', 'end_pos', 'get_code',
-                        'get_definition']:
+        if name not in ['parent', 'start_pos', 'end_pos', 'get_code', 'get_definition']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self.name, name)
 

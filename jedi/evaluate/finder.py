@@ -103,7 +103,6 @@ class NameFinder(object):
                             or isinstance(stmt, pr.ExprStmt) and stmt.is_global():
                         # Always reachable.
                         result.append(name.names[-1])
-                        assert name == name.names[-1].parent
                     else:
                         check = flow_analysis.break_check(self._evaluator,
                                                           name_list_scope,
@@ -269,7 +268,7 @@ class NameFinder(object):
         p = stmt.parent
         # TODO this looks really hacky, improve parser representation!
         if isinstance(p, pr.Flow) and p.command == 'except' \
-                and p.inputs and p.inputs[0].as_names == [name]:
+                and p.inputs and p.inputs[0].as_names[0].names[-1] == name:
             # TODO check for types that are not classes and add it to the
             # static analysis report.
             types = list(chain.from_iterable(
