@@ -62,9 +62,8 @@ class BaseDefinition(object):
         '_sre.SRE_Pattern': 're.RegexObject',
     }.items())
 
-    def __init__(self, evaluator, name, start_pos):
+    def __init__(self, evaluator, name):
         self._evaluator = evaluator
-        self._start_pos = start_pos
         self._name = name
         """
         An instance of :class:`jedi.parsing_representation.Base` subclass.
@@ -98,7 +97,7 @@ class BaseDefinition(object):
         .. todo:: Remove!
         """
         warnings.warn("Use line/column instead.", DeprecationWarning)
-        return self._start_pos
+        return self._name.start_pos
 
     @property
     def type(self):
@@ -219,14 +218,14 @@ class BaseDefinition(object):
         """The line where the definition occurs (starting with 1)."""
         if self.in_builtin_module():
             return None
-        return self._start_pos[0]
+        return self._name.start_pos[0]
 
     @property
     def column(self):
         """The column where the definition occurs (starting with 0)."""
         if self.in_builtin_module():
             return None
-        return self._start_pos[1]
+        return self._name.start_pos[1]
 
     def docstring(self, raw=False):
         r"""
@@ -406,7 +405,7 @@ class Completion(BaseDefinition):
     provide additional information about a completion.
     """
     def __init__(self, evaluator, name, needs_dot, like_name_length, base):
-        super(Completion, self).__init__(evaluator, name, name.start_pos)
+        super(Completion, self).__init__(evaluator, name)
 
         self._needs_dot = needs_dot
         self._like_name_length = like_name_length
@@ -563,7 +562,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
     or :meth:`api.Script.goto_definitions`.
     """
     def __init__(self, evaluator, definition):
-        super(Definition, self).__init__(evaluator, definition, definition.start_pos)
+        super(Definition, self).__init__(evaluator, definition)
 
     @property
     def description(self):
@@ -659,7 +658,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             return True
 
     def __eq__(self, other):
-        return self._start_pos == other._start_pos \
+        return self._name.start_pos == other._name.start_pos \
             and self.module_path == other.module_path \
             and self.name == other.name \
             and self._evaluator == other._evaluator
@@ -668,7 +667,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self._start_pos, self.module_path, self.name, self._evaluator))
+        return hash((self._name.start_pos, self.module_path, self.name, self._evaluator))
 
 
 class CallSignature(Definition):
