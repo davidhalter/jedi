@@ -339,7 +339,7 @@ class Evaluator(object):
                 for typ in self.eval_call(call):
                     for param in typ.params:
                         if unicode(param.get_name()) == unicode(named_param_name):
-                            param_names.append(param.get_name())
+                            param_names.append(param.get_name().names[-1])
                 return param_names
             return [call_path[0]]
 

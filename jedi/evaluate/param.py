@@ -359,6 +359,8 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
     new_param.set_expression_list([arr])
 
     name = copy.copy(param.get_name())
+    name.names = [copy.copy(name.names[0])]
+    name.names[0].parent = name
     name.parent = new_param
     return name
 

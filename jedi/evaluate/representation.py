@@ -293,6 +293,11 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
 
     @property
     @underscore_memoization
+    def names(self):
+        return [pr.NamePart(unicode(n), self, n.start_pos) for n in self.var.names]
+
+    @property
+    @underscore_memoization
     def name(self):
         name = self.var.name
         return helpers.FakeName(unicode(name), self, name.start_pos)
