@@ -66,9 +66,10 @@ class BaseDefinition(object):
         self._evaluator = evaluator
         self._name = name
         """
-        An instance of :class:`jedi.parsing_representation.Base` subclass.
+        An instance of :class:`jedi.parser.reprsentation.Name` subclass.
         """
-        self.is_keyword = isinstance(name, keywords.Keyword)
+        self._definition = self._name.get_definition()
+        self.is_keyword = isinstance(self._definition, keywords.Keyword)
 
         # generate a path to the definition
         self._module = name.get_parent_until()
@@ -150,7 +151,7 @@ class BaseDefinition(object):
         'function'
 
         """
-        stripped = self._name.get_definition()
+        stripped = self._definition
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
 
@@ -172,17 +173,16 @@ class BaseDefinition(object):
             if x:
                 path.insert(0, x)
 
-        if not isinstance(self._name, keywords.Keyword):
-            par = self._name.get_definition()
-            while par is not None:
-                if isinstance(par, pr.Import):
-                    insert_nonnone(par.namespace)
-                    insert_nonnone(par.from_ns)
-                    if par.relative_count == 0:
-                        break
-                with common.ignored(AttributeError):
-                    path.insert(0, par.name)
-                par = par.parent
+        par = self._definition
+        while par is not None:
+            if isinstance(par, pr.Import):
+                insert_nonnone(par.namespace)
+                insert_nonnone(par.from_ns)
+                if par.relative_count == 0:
+                    break
+            with common.ignored(AttributeError):
+                path.insert(0, par.name)
+            par = par.parent
         return path
 
     @property
@@ -253,11 +253,10 @@ class BaseDefinition(object):
         Document for function f.
 
         """
-        definition = self._name.get_definition()
         if raw:
-            return _Help(definition).raw()
+            return _Help(self._definition).raw()
         else:
-            return _Help(definition).full()
+            return _Help(self._definition).full()
 
     @property
     def doc(self):
@@ -345,7 +344,7 @@ class BaseDefinition(object):
         """
         Follow both statements and imports, as far as possible.
         """
-        stripped = self._name.get_definition()
+        stripped = self._definition
 
         # We should probably work in `Finder._names_to_types` here.
         if isinstance(stripped, pr.Function):
@@ -388,11 +387,8 @@ class BaseDefinition(object):
         return [_Param(self._evaluator, p.get_name().names[-1]) for p in params]
 
     def parent(self):
-        if isinstance(self._name, compiled.CompiledObject):
-            non_flow = self._name.parent
-        else:
-            scope = self._name.get_definition().get_parent_scope()
-            non_flow = scope.get_parent_until(pr.Flow, reverse=True)
+        scope = self._definition.get_parent_scope()
+        non_flow = scope.get_parent_until(pr.Flow, reverse=True)
         return Definition(self._evaluator, non_flow.name.names[-1])
 
     def __repr__(self):
@@ -470,12 +466,11 @@ class Completion(BaseDefinition):
     @property
     def description(self):
         """Provide a description of the completion object."""
-        parent = self._name.get_definition()
-        if parent is None:
+        if self._definition is None:
             return ''
         t = self.type
         if t == 'statement' or t == 'import':
-            desc = self._name.get_definition().get_code(False)
+            desc = self._definition.get_code(False)
         else:
             desc = '.'.join(unicode(p) for p in self._path())
 
@@ -493,7 +488,7 @@ class Completion(BaseDefinition):
             the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
-        definition = self._name.get_definition()
+        definition = self._definition
         if isinstance(definition, pr.Import):
             i = imports.ImportWrapper(self._evaluator, definition)
             if len(i.import_path) > 1 or not fast:
@@ -513,9 +508,8 @@ class Completion(BaseDefinition):
         The type of the completion objects. Follows imports. For a further
         description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
         """
-        definition = self._name.get_definition()
-        if isinstance(definition, pr.Import):
-            i = imports.ImportWrapper(self._evaluator, definition)
+        if isinstance(self._definition, pr.Import):
+            i = imports.ImportWrapper(self._evaluator, self._definition)
             if len(i.import_path) <= 1:
                 return 'module'
 
@@ -531,7 +525,7 @@ class Completion(BaseDefinition):
     def _follow_statements_imports(self):
         # imports completion is very complicated and needs to be treated
         # separately in Completion.
-        definition = self._name.get_definition()
+        definition = self._definition
         if definition.isinstance(pr.Import) and definition.alias is None:
             i = imports.ImportWrapper(self._evaluator, definition, True)
             import_path = i.import_path + (unicode(self._name),)
@@ -592,7 +586,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         'class C'
 
         """
-        d = self._name.get_definition()
+        d = self._definition
         if isinstance(d, er.InstanceElement):
             d = d.var
 
@@ -610,8 +604,6 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         elif isinstance(d, pr.Module):
             # only show module name
             d = 'module %s' % self.module_name
-        elif self.is_keyword:
-            d = 'keyword %s' % d.name
         else:
             d = d.get_code().replace('\n', '').replace('\r', '')
         return d
