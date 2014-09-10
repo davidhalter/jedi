@@ -430,7 +430,7 @@ class Completion(BaseDefinition):
         if isinstance(self._base, pr.Param):
             append += '='
 
-        name = str(self._name.names[-1])
+        name = str(self._name)
         if like_name:
             name = name[self._like_name_length:]
         return dot + name + append
@@ -457,7 +457,7 @@ class Completion(BaseDefinition):
 
         would return `isinstance`.
         """
-        return unicode(self._name.names[-1])
+        return unicode(self._name)
 
     @property
     def name_with_symbols(self):
@@ -575,8 +575,6 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
     """
     def __init__(self, evaluator, definition):
         super(Definition, self).__init__(evaluator, definition, definition.start_pos)
-        if not isinstance(definition, pr.NamePart):
-            raise NotImplementedError(definition)
 
     @property
     @underscore_memoization

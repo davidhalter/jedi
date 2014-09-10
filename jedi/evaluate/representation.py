@@ -294,7 +294,8 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     @property
     @underscore_memoization
     def names(self):
-        return [pr.NamePart(unicode(n), self, n.start_pos) for n in self.var.names]
+        return [pr.NamePart(helpers.FakeSubModule, unicode(n), self, n.start_pos)
+                for n in self.var.names]
 
     @property
     @underscore_memoization

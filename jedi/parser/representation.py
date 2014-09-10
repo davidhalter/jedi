@@ -1458,11 +1458,12 @@ class NamePart(object):
     # Unfortunately there's no way to use slots for str (non-zero __itemsize__)
     # -> http://utcc.utoronto.ca/~cks/space/blog/python/IntSlotsPython3k
     # Therefore don't subclass `str`.
-    __slots__ = ('parent', '_string', '_line', '_column')
+    __slots__ = ('_sub_module', 'parent', '_string', '_line', '_column')
 
-    def __init__(self, string, parent, start_pos):
+    def __init__(self, sub_module, string, parent, start_pos):
         self._string = string
         self.parent = parent
+        self._sub_module = sub_module
         self._line = start_pos[0]
         self._column = start_pos[1]
 
@@ -1489,7 +1490,7 @@ class NamePart(object):
 
     @property
     def start_pos(self):
-        offset = self.parent._sub_module.line_offset
+        offset = self._sub_module.line_offset
         return offset + self._line, self._column
 
     @property
@@ -1512,7 +1513,7 @@ class Name(Simple):
         # (seen by using the profiler).
         self._get_code = ".".join(n[0] for n in names)
 
-        names = tuple(NamePart(n[0], self, n[1]) for n in names)
+        names = tuple(NamePart(module, n[0], self, n[1]) for n in names)
         self.names = names
 
     def get_code(self):

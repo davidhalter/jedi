@@ -179,7 +179,9 @@ class Script(object):
         comps = []
         comp_dct = {}
         for c, s in set(completions):
-            n = str(c.names[-1])
+            # TODO Remove this line. c should be a namepart even before that.
+            c = c.names[-1]
+            n = str(c)
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):

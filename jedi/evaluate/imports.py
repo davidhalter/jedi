@@ -29,6 +29,7 @@ from jedi.common import source_to_unicode
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate.cache import memoize_default, NO_DEFAULT
+from jedi.evaluate.helpers import FakeSubModule
 
 
 class ModuleNotFound(Exception):
@@ -368,12 +369,12 @@ class _Importer(object):
             pos = (part._line, part._column)
             try:
                 self.import_path = (
-                    pr.NamePart('flask_' + str(part), part.parent, pos),
+                    pr.NamePart(FakeSubModule, 'flask_' + str(part), part.parent, pos),
                 ) + orig_path[3:]
                 return self._real_follow_file_system()
             except ModuleNotFound as e:
                 self.import_path = (
-                    pr.NamePart('flaskext', part.parent, pos),
+                    pr.NamePart(FakeSubModule, 'flaskext', part.parent, pos),
                 ) + orig_path[2:]
                 return self._real_follow_file_system()
         return self._real_follow_file_system()

@@ -237,7 +237,8 @@ class ArrayMethod(IterableWrapper):
     @property
     @underscore_memoization
     def names(self):
-        return [pr.NamePart(unicode(n), self, n.start_pos) for n in self.name.names]
+        # TODO remove this method, we need the ArrayMethod input to be a NamePart.
+        return [pr.NamePart(self.name._sub_module, unicode(n), self, n.start_pos) for n in self.name.names]
 
     def __getattr__(self, name):
         # Set access privileges:

@@ -1,9 +1,11 @@
 import pydoc
 import keyword
 
+from jedi.parser.representation import NamePart
 from jedi._compatibility import is_py3
 from jedi import common
 from jedi.evaluate import compiled
+from jedi.evaluate.helpers import FakeSubModule
 
 try:
     from pydoc_data import topics as pydoc_topics
@@ -40,7 +42,7 @@ def get_operator(string, pos):
 class KeywordName(object):
     def __init__(self, parent, name, start_pos):
         self.parent = parent
-        self.names = [name]
+        self.names = [NamePart(FakeSubModule, name, self, (0, 0))]
         self.start_pos = start_pos
 
     def get_definition(self):
