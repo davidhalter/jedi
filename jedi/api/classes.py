@@ -166,7 +166,7 @@ class BaseDefinition(object):
                 path.insert(0, x)
 
         if not isinstance(self._definition, keywords.Keyword):
-            par = self._definition
+            par = self._definition.get_definition()
             while par is not None:
                 if isinstance(par, pr.Import):
                     insert_nonnone(par.namespace)
@@ -405,8 +405,7 @@ class Completion(BaseDefinition):
     provide additional information about a completion.
     """
     def __init__(self, evaluator, name, needs_dot, like_name_length, base):
-        super(Completion, self).__init__(evaluator, name.get_definition(),
-                                         name.start_pos)
+        super(Completion, self).__init__(evaluator, name, name.start_pos)
 
         self._name = name
         self._needs_dot = needs_dot
@@ -489,7 +488,7 @@ class Completion(BaseDefinition):
             return ''
         t = self.type
         if t == 'statement' or t == 'import':
-            desc = self._definition.get_code(False)
+            desc = self._definition.get_definition().get_code(False)
         else:
             desc = '.'.join(unicode(p) for p in self._path())
 
@@ -507,7 +506,7 @@ class Completion(BaseDefinition):
             the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
-        definition = self._definition
+        definition = self._definition.get_definition()
         if isinstance(definition, pr.Import):
             i = imports.ImportWrapper(self._evaluator, definition)
             if len(i.import_path) > 1 or not fast:
@@ -527,8 +526,9 @@ class Completion(BaseDefinition):
         The type of the completion objects. Follows imports. For a further
         description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
         """
-        if isinstance(self._definition, pr.Import):
-            i = imports.ImportWrapper(self._evaluator, self._definition)
+        definition = self._definition.get_definition()
+        if isinstance(definition, pr.Import):
+            i = imports.ImportWrapper(self._evaluator, definition)
             if len(i.import_path) <= 1:
                 return 'module'
 
@@ -544,8 +544,9 @@ class Completion(BaseDefinition):
     def _follow_statements_imports(self):
         # imports completion is very complicated and needs to be treated
         # separately in Completion.
-        if self._definition.isinstance(pr.Import) and self._definition.alias is None:
-            i = imports.ImportWrapper(self._evaluator, self._definition, True)
+        definition = self._definition.get_definition()
+        if definition.isinstance(pr.Import) and definition.alias is None:
+            i = imports.ImportWrapper(self._evaluator, definition, True)
             import_path = i.import_path + (unicode(self._name),)
             try:
                 return imports.get_importer(self._evaluator, import_path,
