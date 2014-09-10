@@ -18,8 +18,6 @@ import textwrap
 import pytest
 
 import jedi
-from jedi.api import classes
-from jedi.evaluate import Evaluator
 from ..helpers import TestCase
 
 
@@ -79,12 +77,3 @@ class TestFullDefinedName(TestCase):
         from os.path import join
         from os import path as opath
         """, ['os', 'os.path', 'os.path.join', 'os.path'])
-
-
-def test_keyword_full_name_should_be_none():
-    """issue #94"""
-    # Using `from jedi.keywords import Keyword` here does NOT work
-    # in Python 3.  This is due to the import hack jedi using.
-    Keyword = classes.keywords.Keyword
-    d = classes.Definition(Evaluator(), Keyword('(', (0, 0)))
-    assert d.full_name is None
