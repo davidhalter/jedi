@@ -267,12 +267,16 @@ class NameFinder(object):
         # check for `except X as y` usages, because y needs to be instantiated.
         p = stmt.parent
         # TODO this looks really hacky, improve parser representation!
-        if isinstance(p, pr.Flow) and p.command == 'except' \
-                and p.inputs and p.inputs[0].as_names[0].names[-1] == name:
-            # TODO check for types that are not classes and add it to the
-            # static analysis report.
-            types = list(chain.from_iterable(
-                         evaluator.execute(t) for t in types))
+        if isinstance(p, pr.Flow) and p.command == 'except' and p.inputs:
+            as_names = p.inputs[0].as_names
+            try:
+                if as_names[0].names[-1] == name:
+                    # TODO check for types that are not classes and add it to
+                    # the static analysis report.
+                    types = list(chain.from_iterable(
+                                 evaluator.execute(t) for t in types))
+            except IndexError:
+                pass
 
         if check_instance is not None:
             # class renames

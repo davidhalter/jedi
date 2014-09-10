@@ -196,7 +196,7 @@ class ImportWrapper(pr.Base):
 
             # goto only accepts Names or NameParts
             if is_goto and not rest:
-                scopes = [s.name for s in scopes]
+                scopes = [s.name.names[-1] for s in scopes]
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:

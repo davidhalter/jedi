@@ -170,8 +170,8 @@ class TestParent(TestCase):
         parent = self._parent('''\
             def spam():
                 pass''', 1, len('def spam'))
-        assert parent.name == 'spam'
-        assert parent.parent().type == 'module'
+        assert parent.name == ''
+        assert parent.type == 'module'
 
     def test_parent_on_completion(self):
         parent = Script(dedent('''\

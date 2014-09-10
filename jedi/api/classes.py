@@ -391,9 +391,9 @@ class BaseDefinition(object):
         if isinstance(self._definition, compiled.CompiledObject):
             non_flow = self._definition.parent
         else:
-            scope = self._definition.get_parent_scope()
+            scope = self._definition.get_definition().get_parent_scope()
             non_flow = scope.get_parent_until(pr.Flow, reverse=True)
-        return Definition(self._evaluator, non_flow)
+        return Definition(self._evaluator, non_flow.name.names[-1])
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
@@ -565,7 +565,7 @@ class Completion(BaseDefinition):
         it's just PITA-slow.
         """
         defs = self._follow_statements_imports()
-        return [Definition(self._evaluator, d) for d in defs]
+        return [Definition(self._evaluator, d.name.names[-1]) for d in defs]
 
 
 class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
@@ -760,7 +760,7 @@ class CallSignature(Definition):
             for i, param in enumerate(self.params):
                 if self._key_name == param.name:
                     return i
-            if self.params and self.params[-1]._definition.stars == 2:
+            if self.params and self.params[-1]._definition.get_definition().stars == 2:
                 return i
             else:
                 return None
@@ -769,7 +769,7 @@ class CallSignature(Definition):
 
             for i, param in enumerate(self.params):
                 # *args case
-                if param._definition.stars == 1:
+                if param._definition.get_definition().stars == 1:
                     return i
             return None
         return self._index
