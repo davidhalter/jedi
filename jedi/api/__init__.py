@@ -504,7 +504,7 @@ class Script(object):
                 c = user_stmt.expression_list()[0]
                 if not isinstance(c, unicode) and self._pos < c.start_pos:
                     # The lookup might be before `=`
-                    definitions = [v for v in user_stmt.get_defined_names()
+                    definitions = [v.names[-1] for v in user_stmt.get_defined_names()
                                    if unicode(v.names[-1]) ==
                                    list(definitions)[0].get_code()]
 

@@ -92,8 +92,9 @@ def usages_add_import_modules(evaluator, definitions):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:
-        if isinstance(d.parent, pr.Import):
-            s = imports.ImportWrapper(evaluator, d.parent, nested_resolve=True)
+        imp_or_stmt = d.get_definition()
+        if isinstance(imp_or_stmt, pr.Import):
+            s = imports.ImportWrapper(evaluator, imp_or_stmt, nested_resolve=True)
             with common.ignored(IndexError):
                 new.add(s.follow(is_goto=True)[0])
     return set(definitions) | new
