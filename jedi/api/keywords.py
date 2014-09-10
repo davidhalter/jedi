@@ -5,7 +5,7 @@ from jedi.parser.representation import NamePart
 from jedi._compatibility import is_py3
 from jedi import common
 from jedi.evaluate import compiled
-from jedi.evaluate.helpers import FakeSubModule
+from jedi.evaluate.helpers import FakeName
 
 try:
     from pydoc_data import topics as pydoc_topics
@@ -28,34 +28,16 @@ def keywords(string='', pos=(0, 0), all=False):
 
 
 def keyword_names(*args, **kwargs):
-    kwds = []
-    for k in keywords(*args, **kwargs):
-        start = k.start_pos
-        kwds.append(KeywordName(k, k.name, start))
-    return kwds
+    return [k.name for k in keywords(*args, **kwargs)]
 
 
 def get_operator(string, pos):
     return Keyword(string, pos)
 
 
-class KeywordName(object):
-    def __init__(self, parent, name, start_pos):
-        self.parent = parent
-        self.names = [NamePart(FakeSubModule, name, self, (0, 0))]
-        self.start_pos = start_pos
-
-    def get_definition(self):
-        return self.parent
-
-    @property
-    def end_pos(self):
-        return self.start_pos[0], self.start_pos[1] + len(self.name)
-
-
 class Keyword(object):
     def __init__(self, name, pos):
-        self.name = name
+        self.name = FakeName(name, self, pos)
         self.start_pos = pos
         self.parent = compiled.builtin
 
