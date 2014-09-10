@@ -7,6 +7,9 @@ from jedi.evaluate import helpers
 
 
 def usages(evaluator, definitions, mods):
+    """
+    :param definitions: list of NameParts
+    """
     def compare_array(definitions):
         """ `definitions` are being compared by module/start_pos, because
         sometimes the id's of the objects change (e.g. executions).
@@ -54,7 +57,7 @@ def usages(evaluator, definitions, mods):
             if any(r in compare_definitions for r in compare_follow_res):
                 yield classes.Definition(evaluator, search)
 
-    search_name = unicode(list(definitions)[0].names[-1])
+    search_name = unicode(list(definitions)[0])
     compare_definitions = compare_array(definitions)
     mods |= set([d.get_parent_until() for d in definitions])
     names = []

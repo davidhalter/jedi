@@ -38,7 +38,7 @@ def defined_names(evaluator, scope):
                                        include_builtin=False), None)
     names = pair[1] if pair else []
     names = [n for n in names if isinstance(n, pr.Import) or (len(n) == 1)]
-    return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
+    return [Definition(evaluator, d.names[-1]) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class BaseDefinition(object):
@@ -653,6 +653,8 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             d = d.var
         if isinstance(d, (pr.Name, pr.NamePart)):
             d = d.get_definition()
+            if isinstance(d, er.InstanceElement):
+                d = d.var
 
         if isinstance(d, compiled.CompiledObject):
             typ = d.type()
@@ -707,6 +709,8 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         Returns True, if defined as a name in a statement, function or class.
         Returns False, if it's a reference to such a definition.
         """
+        if isinstance(self._definition, compiled.CompiledName):
+            return True
         if not isinstance(self._definition, pr.NamePart):
             # Currently only handle NameParts. Once we have a proper API, this
             # will be the standard anyway.

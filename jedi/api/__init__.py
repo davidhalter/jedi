@@ -426,7 +426,7 @@ class Script(object):
                         and d.start_pos == (0, 0):
                     i = imports.ImportWrapper(self._evaluator, d.parent).follow(is_goto=True)
                     definitions.remove(d)
-                    definitions |= follow_inexistent_imports(i)
+                    definitions |= follow_inexistent_imports(i.names[-1])
             return definitions
 
         goto_path = self._user_context.get_path_under_cursor()
@@ -449,7 +449,7 @@ class Script(object):
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.
             user_scope = self._parser.user_scope()
-            definitions = set([user_scope.name])
+            definitions = set([user_scope.name.names[-1]])
         elif isinstance(user_stmt, pr.Import):
             s, name_part = helpers.get_on_import_stmt(self._evaluator,
                                                       self._user_context, user_stmt)
@@ -461,9 +461,9 @@ class Script(object):
             if add_import_name:
                 import_name = user_stmt.get_defined_names()
                 # imports have only one name
-                if not user_stmt.star \
-                        and unicode(name_part) == unicode(import_name[0].names[-1]):
-                    definitions.append(import_name[0])
+                np = import_name[0].names[-1]
+                if not user_stmt.star and unicode(name_part) == unicode(np):
+                    definitions.append(np)
         else:
             # The Evaluator.goto function checks for definitions, but since we
             # use a reverse tokenizer, we have new name_part objects, so we
@@ -472,7 +472,7 @@ class Script(object):
                 for name in user_stmt.get_defined_names():
                     if name.start_pos <= self._pos <= name.end_pos \
                             and len(name.names) == 1:
-                        return [name]
+                        return [name.names[0]]
 
             defs = self._evaluator.goto(stmt, call_path)
             definitions = follow_inexistent_imports(defs)
