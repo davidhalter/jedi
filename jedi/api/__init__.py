@@ -159,7 +159,7 @@ class Script(object):
         if not dot:
             # add named params
             for call_sig in self.call_signatures():
-                # allow protected access, because it's a public API.
+                # Allow protected access, because it's a public API.
                 module = call_sig._definition.get_parent_until()
                 # Compiled modules typically don't allow keyword arguments.
                 if not isinstance(module, compiled.CompiledObject):
@@ -167,8 +167,8 @@ class Script(object):
                         # Allow access on _definition here, because it's a
                         # public API and we don't want to make the internal
                         # Name object public.
-                        if p._definition.stars == 0:  # no *args/**kwargs
-                            completions.append((p._definition.get_name(), p))
+                        if p._definition.get_definition().stars == 0:  # no *args/**kwargs
+                            completions.append((p._definition.parent, p))
 
             if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords

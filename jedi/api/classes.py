@@ -385,7 +385,7 @@ class BaseDefinition(object):
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
-        return [_Param(self._evaluator, p) for p in params]
+        return [_Param(self._evaluator, p.get_name().names[-1]) for p in params]
 
     def parent(self):
         if isinstance(self._definition, compiled.CompiledObject):
@@ -575,6 +575,8 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
     """
     def __init__(self, evaluator, definition):
         super(Definition, self).__init__(evaluator, definition, definition.start_pos)
+        if not isinstance(definition, pr.NamePart):
+            raise NotImplementedError(definition)
 
     @property
     @underscore_memoization
