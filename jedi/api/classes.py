@@ -10,7 +10,6 @@ from jedi._compatibility import next, unicode, use_metaclass
 from jedi import settings
 from jedi import common
 from jedi.parser import representation as pr
-from jedi.cache import underscore_memoization
 from jedi.evaluate.helpers import statement_elements_in_statement
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import representation as er
@@ -152,12 +151,10 @@ class BaseDefinition(object):
         'function'
 
         """
-        # generate the type
-        stripped = self._name
+        stripped = self._name.get_definition()
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
-        if isinstance(stripped, (pr.Name, pr.NamePart)):
-            stripped = stripped.get_definition()
+
         if isinstance(stripped, compiled.CompiledObject):
             return stripped.type()
         if isinstance(stripped, iterable.Array):
@@ -257,9 +254,7 @@ class BaseDefinition(object):
         Document for function f.
 
         """
-        definition = self._name
-        if isinstance(definition, pr.NamePart):
-            definition = definition.parent.parent
+        definition = self._name.get_definition()
         if raw:
             return _Help(definition).raw()
         else:
@@ -337,9 +332,6 @@ class BaseDefinition(object):
                         if element is name_part:
                             return call_path[:i + 1]
 
-        if not isinstance(self._name, pr.NamePart):
-            raise TypeError('Definition is not a NamePart.')
-
         if self.type not in ('statement', 'import'):
             # Functions, classes and modules are already fixed definitions, we
             # cannot follow them anymore.
@@ -354,9 +346,7 @@ class BaseDefinition(object):
         """
         Follow both statements and imports, as far as possible.
         """
-        stripped = self._name
-        if isinstance(stripped, (pr.Name, pr.NamePart)):
-            stripped = stripped.get_definition()
+        stripped = self._name.get_definition()
 
         # We should probably work in `Finder._names_to_types` here.
         if isinstance(stripped, pr.Function):
@@ -603,13 +593,9 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         'class C'
 
         """
-        d = self._name
+        d = self._name.get_definition()
         if isinstance(d, er.InstanceElement):
             d = d.var
-        if isinstance(d, (pr.Name, pr.NamePart)):
-            d = d.get_definition()
-            if isinstance(d, er.InstanceElement):
-                d = d.var
 
         if isinstance(d, compiled.CompiledObject):
             typ = d.type()
@@ -664,14 +650,8 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         Returns True, if defined as a name in a statement, function or class.
         Returns False, if it's a reference to such a definition.
         """
-        if isinstance(self._name, compiled.CompiledName):
-            return True
-        if not isinstance(self._name, pr.NamePart):
-            # Currently only handle NameParts. Once we have a proper API, this
-            # will be the standard anyway.
-            raise NotImplementedError
-        _def = self._name.get_parent_until((pr.ExprStmt,
-                        pr.Import, pr.Function, pr.Class, pr.Module))
+        _def = self._name.get_parent_until((pr.ExprStmt, pr.Import,
+                                            pr.Function, pr.Class, pr.Module))
         if isinstance(_def, pr.ExprStmt):
             exp_list = _def.expression_list()
             return not exp_list or self._name.start_pos < exp_list[0].start_pos
