@@ -186,6 +186,10 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not filter_private_variable(s, user_stmt or self._parser.user_scope(), n):
+                    if isinstance(c.parent.parent, (pr.Function, pr.Class)):
+                        # TODO I think this is a hack. It should be an
+                        #   er.Function/er.Class before that.
+                        c = er.wrap(self._evaluator, c.parent.parent).name.names[-1]
                     new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
@@ -378,7 +382,7 @@ class Script(object):
         context = self._user_context.get_context()
         definitions = set()
         if next(context) in ('class', 'def'):
-            definitions = set([self._parser.user_scope()])
+            definitions = set([er.wrap(self._evaluator, self._parser.user_scope())])
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:

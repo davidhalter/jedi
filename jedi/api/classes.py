@@ -344,20 +344,12 @@ class BaseDefinition(object):
         """
         Follow both statements and imports, as far as possible.
         """
-        stripped = self._definition
-
-        # We should probably work in `Finder._names_to_types` here.
-        if isinstance(stripped, pr.Function):
-            stripped = er.Function(self._evaluator, stripped)
-        elif isinstance(stripped, pr.Class):
-            stripped = er.Class(self._evaluator, stripped)
-
-        if stripped.isinstance(pr.ExprStmt):
-            return self._evaluator.eval_statement(stripped)
-        elif stripped.isinstance(pr.Import):
-            return imports.follow_imports(self._evaluator, [stripped])
+        if self._definition.isinstance(pr.ExprStmt):
+            return self._evaluator.eval_statement(self._definition)
+        elif self._definition.isinstance(pr.Import):
+            return imports.follow_imports(self._evaluator, [self._definition])
         else:
-            return [stripped]
+            return [self._definition]
 
     @property
     @memoize_default()

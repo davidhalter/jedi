@@ -71,7 +71,7 @@ class NameFinder(object):
         # TODO Now this import is really ugly. Try to remove it.
         # It's possibly the only api dependency.
         from jedi.api.interpreter import InterpreterNamespace
-        result = []
+        names = []
         self.maybe_descriptor = isinstance(self.scope, er.Class)
         for name_list_scope, name_list in scope_names_generator:
             break_scopes = []
@@ -102,23 +102,23 @@ class NameFinder(object):
                             or isinstance(scope, compiled.CompiledObject) \
                             or isinstance(stmt, pr.ExprStmt) and stmt.is_global():
                         # Always reachable.
-                        result.append(name.names[-1])
+                        names.append(name.names[-1])
                     else:
                         check = flow_analysis.break_check(self._evaluator,
                                                           name_list_scope,
                                                           er.wrap(self._evaluator, scope),
                                                           self.scope)
                         if check is not flow_analysis.UNREACHABLE:
-                            result.append(name.names[-1])
+                            names.append(name.names[-1])
                         if check is flow_analysis.REACHABLE:
                             break
 
-                if result and self._is_name_break_scope(name, stmt):
+                if names and self._is_name_break_scope(name, stmt):
                     if self._does_scope_break_immediately(scope, name_list_scope):
                         break
                     else:
                         break_scopes.append(scope)
-            if result:
+            if names:
                 break
 
             if isinstance(self.scope, er.Instance):
@@ -129,8 +129,21 @@ class NameFinder(object):
         scope_txt = (self.scope if self.scope == name_list_scope
                      else '%s-%s' % (self.scope, name_list_scope))
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
-                  scope_txt, u(result), self.position)
-        return result
+                  scope_txt, u(names), self.position)
+        return list(self._clean_names(names))
+
+    def _clean_names(self, names):
+        """
+        ``NameFinder.filter_name`` should only output names with correct
+        wrapper parents. We don't want to see AST classes out in the
+        evaluation, so remove them already here!
+        """
+        for n in names:
+            definition = n.parent.parent
+            if isinstance(definition, (pr.Function, pr.Class, pr.Module)):
+                yield er.wrap(self._evaluator, definition).name.names[-1]
+            else:
+                yield n
 
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
@@ -231,8 +244,6 @@ class NameFinder(object):
                 else:
                     types += self._remove_statements(typ, name)
             else:
-                typ = er.wrap(evaluator, typ)
-
                 if typ.isinstance(er.Function) and resolve_decorator:
                     typ = typ.get_decorated_func()
                 types.append(typ)
