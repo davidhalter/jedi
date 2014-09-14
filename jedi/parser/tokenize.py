@@ -137,7 +137,7 @@ double = r'[^"\\]*(?:\\.[^"\\]*)*"'
 single3 = r"[^'\\]*(?:(?:\\.|'(?!''))[^'\\]*)*'''"
 # Tail end of """ string.
 double3 = r'[^"\\]*(?:(?:\\.|"(?!""))[^"\\]*)*"""'
-triple = group("[bB]?[rR]?'''", '[bB]?[rR]?"""')
+triple = group("[uUbB]?[rR]?'''", '[uUbB]?[rR]?"""')
 # Single-line ' or " string.
 
 # Because of leftmost-then-longest match semantics, be sure to put the
@@ -193,7 +193,7 @@ single_quoted = {}
 for t in ("'", '"',
           "r'", 'r"', "R'", 'R"',
           "b'", 'b"', "B'", 'B"',
-          "u'", 'u""', "U'", 'U"',
+          "u'", 'u"', "U'", 'U"',
           "br'", 'br"', "Br'", 'Br"',
           "bR'", 'bR"', "BR'", 'BR"'):
     single_quoted[t] = t
