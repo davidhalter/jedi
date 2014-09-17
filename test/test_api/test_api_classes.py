@@ -148,6 +148,28 @@ def test_signature_params():
     check(Script(s + '\nbar=foo\nbar').goto_assignments())
 
 
+class TestIsDefinition(TestCase):
+    def _def(self, source, index=-1):
+        return names(dedent(source), references=True, all_scopes=True)[index]
+
+    def test_name(self):
+        d = self._def('name')
+        assert d.name == 'name'
+        assert not d.is_definition()
+
+    def test_stmt(self):
+        src = 'a = f(x)'
+        d = self._def(src, 0)
+        assert d.name == 'a'
+        assert d.is_definition()
+        d = self._def(src, 1)
+        assert d.name == 'f'
+        assert not d.is_definition()
+        d = self._def(src)
+        assert d.name == 'x'
+        assert not d.is_definition()
+
+
 class TestParent(TestCase):
     def _parent(self, source, line=None, column=None):
         defs = Script(dedent(source), line, column).goto_assignments()
