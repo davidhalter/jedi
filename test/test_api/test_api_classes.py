@@ -249,3 +249,7 @@ class TestGotoAssignments(TestCase):
         param_def = n.goto_assignments()[0]
         assert param_def.name == 'group'
         assert param_def.type == 'param'
+
+    def test_parentheses(self):
+        n = names('("").upper', references=True)[-1]
+        assert n.goto_assignments()[0].name == 'upper'

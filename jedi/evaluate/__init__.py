@@ -69,7 +69,7 @@ backtracking algorithm.
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
 import copy
-import itertools
+from itertools import tee, chain
 
 from jedi._compatibility import next, hasattr, unicode
 from jedi.parser import representation as pr
@@ -172,20 +172,7 @@ class Evaluator(object):
         return precedence.process_precedence_element(self, p) or []
 
     def eval_statement_element(self, element):
-        if pr.Array.is_type(element, pr.Array.NOARRAY):
-            try:
-                lst_cmp = element[0].expression_list()[0]
-                if not isinstance(lst_cmp, pr.ListComprehension):
-                    raise IndexError
-            except IndexError:
-                r = list(itertools.chain.from_iterable(self.eval_statement(s)
-                                                       for s in element))
-            else:
-                r = [iterable.GeneratorComprehension(self, lst_cmp)]
-            call_path = element.generate_call_path()
-            next(call_path, None)  # the first one has been used already
-            return self.follow_path(call_path, r, element.parent)
-        elif isinstance(element, pr.ListComprehension):
+        if isinstance(element, pr.ListComprehension):
             return self.eval_statement(element.stmt)
         elif isinstance(element, pr.Lambda):
             return [er.Function(self, element)]
@@ -219,7 +206,18 @@ class Evaluator(object):
         current = next(path)
 
         if isinstance(current, pr.Array):
-            types = [iterable.Array(self, current)]
+            if current.type == pr.Array.NOARRAY:
+                try:
+                    lst_cmp = current[0].expression_list()[0]
+                    if not isinstance(lst_cmp, pr.ListComprehension):
+                        raise IndexError
+                except IndexError:
+                    types = list(chain.from_iterable(self.eval_statement(s)
+                                                     for s in current))
+                else:
+                    types = [iterable.GeneratorComprehension(self, lst_cmp)]
+            else:
+                types = [iterable.Array(self, current)]
         else:
             if isinstance(current, pr.NamePart):
                 # This is the first global lookup.
@@ -241,7 +239,7 @@ class Evaluator(object):
         to follow a call like ``module.a_type.Foo.bar`` (in ``from_somewhere``).
         """
         results_new = []
-        iter_paths = itertools.tee(path, len(types))
+        iter_paths = tee(path, len(types))
 
         for i, typ in enumerate(types):
             fp = self._follow_path(iter_paths[i], typ, call_scope)
