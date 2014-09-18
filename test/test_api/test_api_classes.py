@@ -253,3 +253,17 @@ class TestGotoAssignments(TestCase):
     def test_parentheses(self):
         n = names('("").upper', references=True)[-1]
         assert n.goto_assignments()[0].name == 'upper'
+
+    def test_import(self):
+        nms = names('from json import decode', references=True)
+        assert nms[0].name == 'json'
+        assert nms[0].type == 'import'
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'json'
+        assert n.type == 'module'
+
+        assert nms[1].name == 'decode'
+        assert nms[1].type == 'import'
+        n = nms[1].goto_assignments()[0]
+        assert n.name == 'decode'
+        assert n.type == 'function'
