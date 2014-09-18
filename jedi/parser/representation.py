@@ -833,20 +833,6 @@ class Import(Simple):
     def get_all_import_names(self):
         n = []
         if self.from_ns:
-            n.append(self.from_ns)
-        if self.namespace:
-            n.append(self.namespace)
-        if self.alias:
-            n.append(self.alias)
-        return n
-
-    def get_all_import_name_parts(self):
-        """
-        TODO refactor and use this method, because NamePart will not exist in
-          the future.
-        """
-        n = []
-        if self.from_ns:
             n += self.from_ns.names
         if self.namespace:
             n += self.namespace.names

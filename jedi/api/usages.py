@@ -70,11 +70,10 @@ def usages(evaluator, definitions, mods):
             if isinstance(stmt, pr.Import):
                 count = 0
                 imps = []
-                for i in stmt.get_all_import_names():
-                    for name_part in i.names:
-                        count += 1
-                        if unicode(name_part) == search_name:
-                            imps.append((count, name_part))
+                for name in stmt.get_all_import_names():
+                    count += 1
+                    if unicode(name) == search_name:
+                        imps.append((count, name))
 
                 for used_count, name_part in imps:
                     i = imports.ImportWrapper(evaluator, stmt, kill_count=count - used_count,

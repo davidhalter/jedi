@@ -226,7 +226,7 @@ def get_module_name_parts(module):
     for stmt_or_import in statements_or_imports:
         if isinstance(stmt_or_import, pr.Import):
             for name in stmt_or_import.get_all_import_names():
-                name_parts.update(name.names)
+                name_parts.add(name)
         else:
             # Running this ensures that all the expression lists are generated
             # and the parents are all set. (Important for Lambdas) Howeer, this
