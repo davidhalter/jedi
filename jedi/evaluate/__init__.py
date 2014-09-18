@@ -318,6 +318,17 @@ class Evaluator(object):
             return types
 
     def goto(self, stmt, call_path):
+        if isinstance(stmt, pr.Import):
+            # Nowhere to goto for aliases
+            if stmt.alias_name_part == call_path[0]:
+                return [call_path[0]]
+
+            names = stmt.get_all_import_name_parts()
+            # Filter names that are after our Name
+            removed_names = len(names) - names.index(call_path[0]) - 1
+            i = imports.ImportWrapper(self, stmt, kill_count=removed_names)
+            return i.follow(is_goto=True)
+
         # Return the name defined in the call_path, if it's part of the
         # statement name definitions. Only return, if it's one name and one
         # name only. Otherwise it's a mixture between a definition and a

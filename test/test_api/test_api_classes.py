@@ -255,15 +255,15 @@ class TestGotoAssignments(TestCase):
         assert n.goto_assignments()[0].name == 'upper'
 
     def test_import(self):
-        nms = names('from json import decode', references=True)
+        nms = names('from json import load', references=True)
         assert nms[0].name == 'json'
         assert nms[0].type == 'import'
         n = nms[0].goto_assignments()[0]
         assert n.name == 'json'
         assert n.type == 'module'
 
-        assert nms[1].name == 'decode'
+        assert nms[1].name == 'load'
         assert nms[1].type == 'import'
         n = nms[1].goto_assignments()[0]
-        assert n.name == 'decode'
+        assert n.name == 'load'
         assert n.type == 'function'

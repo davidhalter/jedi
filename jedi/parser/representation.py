@@ -840,6 +840,28 @@ class Import(Simple):
             n.append(self.alias)
         return n
 
+    def get_all_import_name_parts(self):
+        """
+        TODO refactor and use this method, because NamePart will not exist in
+          the future.
+        """
+        n = []
+        if self.from_ns:
+            n += self.from_ns.names
+        if self.namespace:
+            n += self.namespace.names
+        if self.alias:
+            n += self.alias.names
+        return n
+
+    @property
+    def alias_name_part(self):
+        """
+        TODO refactor and dont use this method, because NamePart will not exist in
+          the future.
+        """
+        return self.alias.names[0] if self.alias else None
+
     def is_nested(self):
         """
         This checks for the special case of nested imports, without aliases and
