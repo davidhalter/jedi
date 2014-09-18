@@ -241,3 +241,9 @@ class TestGotoAssignments(TestCase):
         param = bar.goto_assignments()[0]
         assert param.start_pos == (1, 13)
         assert param.type == 'param'
+
+    def test_class_call(self):
+        src = 'from threading import Thread; Thread(group=1)'
+        n = names(src, references=True)[-1]
+        assert n.name == 'group'
+        assert n.goto_assignments()
