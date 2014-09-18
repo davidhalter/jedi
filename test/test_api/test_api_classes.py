@@ -246,4 +246,6 @@ class TestGotoAssignments(TestCase):
         src = 'from threading import Thread; Thread(group=1)'
         n = names(src, references=True)[-1]
         assert n.name == 'group'
-        assert n.goto_assignments()
+        param_def = n.goto_assignments()[0]
+        assert param_def.name == 'group'
+        assert param_def.type == 'param'

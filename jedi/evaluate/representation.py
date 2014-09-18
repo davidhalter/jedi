@@ -390,6 +390,9 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def py__call__(self, evaluator, params):
         return [Instance(evaluator, self, params)]
 
+    def py__getattribute__(self, name):
+        return self._evaluator.find_types(self, name)
+
     def scope_names_generator(self, position=None, add_class_vars=True):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """

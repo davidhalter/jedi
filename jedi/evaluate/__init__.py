@@ -337,7 +337,13 @@ class Evaluator(object):
                 param_names = []
                 named_param_name = stmt.get_defined_names()[0]
                 for typ in self.eval_call(call):
-                    for param in typ.params:
+                    if isinstance(typ, er.Class):
+                        params = []
+                        for init_method in typ.py__getattribute__('__init__'):
+                            params += init_method.params
+                    else:
+                        params = typ.params
+                    for param in params:
                         if unicode(param.get_name()) == unicode(named_param_name):
                             param_names.append(param.get_name().names[-1])
                 return param_names
