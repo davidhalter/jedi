@@ -179,52 +179,54 @@ class ImportWrapper(pr.Base):
             # check recursion
             return []
 
-        if self.import_path:
-            try:
-                module, rest = self._importer.follow_file_system()
-            except ModuleNotFound as e:
-                analysis.add(self._evaluator, 'import-error', e.name_part)
-                return []
+        try:
+            if self.import_path:
+                try:
+                    module, rest = self._importer.follow_file_system()
+                except ModuleNotFound as e:
+                    analysis.add(self._evaluator, 'import-error', e.name_part)
+                    return []
 
-            if self.import_stmt.is_nested() and not self.nested_resolve:
-                scopes = [NestedImportModule(module, self.import_stmt)]
-            else:
-                scopes = [module]
-
-            star_imports = remove_star_imports(self._evaluator, module)
-            if star_imports:
-                scopes = [StarImportModule(scopes[0], star_imports)]
-
-            # goto only accepts Names or NameParts
-            if is_goto and not rest:
-                scopes = [s.name.names[-1] for s in scopes]
-
-            # follow the rest of the import (not FS -> classes, functions)
-            if len(rest) > 1 or rest and self.is_like_search:
-                scopes = []
-                if ('os', 'path') == self.import_path[:2] \
-                        and not self._is_relative_import():
-                    # This is a huge exception, we follow a nested import
-                    # ``os.path``, because it's a very important one in Python
-                    # that is being achieved by messing with ``sys.modules`` in
-                    # ``os``.
-                    scopes = self._evaluator.follow_path(iter(rest), [module], module)
-            elif rest:
-                if is_goto:
-                    scopes = list(chain.from_iterable(
-                        self._evaluator.find_types(s, rest[0], is_goto=True)
-                        for s in scopes))
+                if self.import_stmt.is_nested() and not self.nested_resolve:
+                    scopes = [NestedImportModule(module, self.import_stmt)]
                 else:
-                    scopes = list(chain.from_iterable(
-                        self._evaluator.follow_path(iter(rest), [s], s)
-                        for s in scopes))
-        else:
-            scopes = [ImportWrapper.GlobalNamespace]
-        debug.dbg('after import: %s', scopes)
-        if not scopes:
-            analysis.add(self._evaluator, 'import-error',
-                         self._importer.import_path[-1])
-        self._evaluator.recursion_detector.pop_stmt()
+                    scopes = [module]
+
+                star_imports = remove_star_imports(self._evaluator, module)
+                if star_imports:
+                    scopes = [StarImportModule(scopes[0], star_imports)]
+
+                # goto only accepts Names or NameParts
+                if is_goto and not rest:
+                    scopes = [s.name.names[-1] for s in scopes]
+
+                # follow the rest of the import (not FS -> classes, functions)
+                if len(rest) > 1 or rest and self.is_like_search:
+                    scopes = []
+                    if ('os', 'path') == self.import_path[:2] \
+                            and not self._is_relative_import():
+                        # This is a huge exception, we follow a nested import
+                        # ``os.path``, because it's a very important one in Python
+                        # that is being achieved by messing with ``sys.modules`` in
+                        # ``os``.
+                        scopes = self._evaluator.follow_path(iter(rest), [module], module)
+                elif rest:
+                    if is_goto:
+                        scopes = list(chain.from_iterable(
+                            self._evaluator.find_types(s, rest[0], is_goto=True)
+                            for s in scopes))
+                    else:
+                        scopes = list(chain.from_iterable(
+                            self._evaluator.follow_path(iter(rest), [s], s)
+                            for s in scopes))
+            else:
+                scopes = [ImportWrapper.GlobalNamespace]
+            debug.dbg('after import: %s', scopes)
+            if not scopes:
+                analysis.add(self._evaluator, 'import-error',
+                             self._importer.import_path[-1])
+        finally:
+            self._evaluator.recursion_detector.pop_stmt()
         return scopes
 
 

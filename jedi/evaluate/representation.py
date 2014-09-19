@@ -686,6 +686,14 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
                 imp = helpers.FakeImport(name, self, level=1)
                 name.parent = imp
                 names.append(name)
+
+        # TODO add something like this in the future, its cleaner than the
+        #   import hacks.
+        # ``os.path`` is a hardcoded exception, because it's a
+        # ``sys.modules`` modification.
+        #if str(self.name) == 'os':
+        #    names.append(helpers.FakeName('path', parent=self))
+
         return names
 
     def __getattr__(self, name):
