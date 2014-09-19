@@ -99,6 +99,7 @@ def _paths_from_call_expression(module_path, call):
         return
     cmd = names[2]
     exe = call.next
+    path = None
     if cmd == 'insert' and len(exe) == 2:
         path = _paths_from_insert(module_path, exe)
     elif cmd == 'append' and len(exe) == 1:
