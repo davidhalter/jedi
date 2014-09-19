@@ -278,3 +278,11 @@ class TestGotoAssignments(TestCase):
         n = nms[2].goto_assignments()[0]
         assert n.name == 'path'
         assert n.type == 'import'
+
+        nms = names('import os.path', references=True)
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'os'
+        assert n.type == 'module'
+        n = nms[1].goto_assignments()[0]
+        assert n.name == 'path'
+        assert n.type == 'import'
