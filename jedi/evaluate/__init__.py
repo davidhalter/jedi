@@ -324,6 +324,8 @@ class Evaluator(object):
                 return [call_path[0]]
 
             names = stmt.get_all_import_names()
+            if stmt.alias_name_part:
+                names = names[:-1]
             # Filter names that are after our Name
             removed_names = len(names) - names.index(call_path[0]) - 1
             i = imports.ImportWrapper(self, stmt, kill_count=removed_names,

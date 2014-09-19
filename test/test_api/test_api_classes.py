@@ -286,3 +286,15 @@ class TestGotoAssignments(TestCase):
         n = nms[1].goto_assignments()[0]
         assert n.name == 'path'
         assert n.type == 'import'
+
+    def test_import_alias(self):
+        nms = names('import json as foo', references=True)
+        assert nms[0].name == 'json'
+        assert nms[0].type == 'import'
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'json'
+        assert n.type == 'module'
+
+        assert nms[1].name == 'foo'
+        assert nms[1].type == 'import'
+        assert [nms[1]] == nms[1].goto_assignments()
