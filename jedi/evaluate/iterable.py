@@ -246,7 +246,7 @@ class ArrayMethod(IterableWrapper):
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self.name, name)
 
-    def get_parent_until(self):
+    def get_parent_until(self, *args, **kwargs):
         return compiled.builtin
 
     def __repr__(self):
