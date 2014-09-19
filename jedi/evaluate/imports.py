@@ -605,5 +605,5 @@ def get_modules_containing_name(mods, name):
         for p in sorted(paths):
             # make testing easier, sort it - same results on every interpreter
             c = check_python_file(p)
-            if c is not None and c not in mods:
+            if c is not None and c not in mods and not isinstance(c, compiled.CompiledObject):
                 yield c

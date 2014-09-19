@@ -121,7 +121,7 @@ def search_params(evaluator, param):
         for params in get_posibilities(evaluator, module, func_name):
             for p in params:
                 if str(p) == param_name:
-                    result += evaluator.eval_statement(p.parent)
+                    result += evaluator.eval_statement(p.get_definition())
         return result
 
     func = param.get_parent_until(pr.Function)
