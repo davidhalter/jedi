@@ -176,7 +176,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
                 key = key_expression_list[0]
                 if isinstance(key, pr.Literal):
                     key = key.value
-                elif isinstance(key, pr.Name):
+                elif isinstance(key, pr.NamePart):
                     key = str(key)
                 else:
                     continue
