@@ -484,8 +484,8 @@ class Parser(object):
                 if len(from_names) == 1 and str(from_names[0]) == 'import' and relative_count:
                     self._gen.push_last_back()
                     tok_str = 'import'
-                    names = []
-                if not names and not relative_count or tok_str != "import":
+                    from_names = []
+                if not from_names and not relative_count or tok_str != "import":
                     debug.warning("from: syntax error@%s", tok.start_pos[0])
                     defunct = True
                     if tok_str != 'import':

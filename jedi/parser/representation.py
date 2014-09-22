@@ -477,7 +477,7 @@ class SubModule(Scope, Module):
         is a ``__future__`` import.
         """
         for imp in self.imports:
-            if imp.from_ns is None or imp.namespace_names is None:
+            if imp.from_names is None or imp.namespace_names is None:
                 continue
 
             namespace, feature = imp.from_names[0], imp.namespace_names[0]
@@ -822,9 +822,9 @@ class Import(Simple):
         if self.alias:
             return [self.alias]
         if len(self.namespace_names) > 1:
-            return self.namespace_names[0]
+            return [self.namespace_names[0]]
         else:
-            return [self.namespace_names]
+            return self.namespace_names
 
     def get_all_import_names(self):
         n = []
