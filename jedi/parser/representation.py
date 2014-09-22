@@ -768,25 +768,25 @@ class Import(Simple):
 
     :param start_pos: Position (line, column) of the Import.
     :type start_pos: tuple(int, int)
-    :param namespace: The import, can be empty if a star is given
-    :type namespace: Name
+    :param namespace_names: The import, can be empty if a star is given
+    :type namespace_names: Name
     :param alias: The alias of a namespace(valid in the current namespace).
     :type alias: Name
-    :param from_ns: Like the namespace, can be equally used.
-    :type from_ns: Name
+    :param from_names: Like the namespace, can be equally used.
+    :type from_names: Name
     :param star: If a star is used -> from time import *.
     :type star: bool
     :param defunct: An Import is valid or not.
     :type defunct: bool
     """
-    def __init__(self, module, start_pos, end_pos, namespace, alias=None,
-                 from_ns=None, star=False, relative_count=0, defunct=False):
+    def __init__(self, module, start_pos, end_pos, namespace_names, alias=None,
+                 from_names=None, star=False, relative_count=0, defunct=False):
         super(Import, self).__init__(module, start_pos, end_pos)
 
-        self.namespace = namespace
+        self.namespace_names = namespace_names
         self.alias = alias
-        self.from_ns = from_ns
-        for n in namespace, alias, from_ns:
+        self.from_names = from_names
+        for n in namespace_names, alias, from_names:
             if n:
                 n.parent = self.use_as_parent
 
@@ -797,20 +797,19 @@ class Import(Simple):
     def get_code(self, new_line=True):
         # in case one of the names is None
         alias = self.alias or ''
-        namespace = self.namespace or ''
-        from_ns = self.from_ns or ''
 
+        namespace = '.'.join(self.namespace_names)
         if self.alias:
-            ns_str = "%s as %s" % (namespace, alias)
+            ns_str = "%s as %s" % ('.'.join(namespace), alias)
         else:
-            ns_str = unicode(namespace)
+            ns_str = namespace
 
         nl = '\n' if new_line else ''
-        if self.from_ns or self.relative_count:
+        if self.from_names or self.relative_count:
             if self.star:
                 ns_str = '*'
             dots = '.' * self.relative_count
-            return "from %s%s import %s%s" % (dots, from_ns, ns_str, nl)
+            return "from %s%s import %s%s" % (dots, '.'.join(self.from_names), ns_str, nl)
         else:
             return "import %s%s" % (ns_str, nl)
 
@@ -821,22 +820,19 @@ class Import(Simple):
             return [self]
         if self.alias:
             return [self.alias]
-        if len(self.namespace) > 1:
-            o = self.namespace
-            n = Name(self._sub_module, [(unicode(o.names[0]), o.start_pos)],
-                     o.start_pos, o.end_pos, parent=o.parent)
-            return [n]
+        if len(self.namespace_names) > 1:
+            return self.namespace_names[0]
         else:
-            return [self.namespace]
+            return [self.namespace_names]
 
     def get_all_import_names(self):
         n = []
-        if self.from_ns:
-            n += self.from_ns.names
-        if self.namespace:
-            n += self.namespace.names
-        if self.alias:
-            n += self.alias.names
+        if self.from_names:
+            n += self.from_names
+        if self.namespace_names:
+            n += self.namespace_names
+        if self.alias is not None:
+            n.append(self.alias)
         return n
 
     @property
@@ -854,7 +850,7 @@ class Import(Simple):
 
             import foo.bar
         """
-        return not self.alias and not self.from_ns and self.namespace is not None \
+        return not self.alias and not self.from_names and self.namespace is not None \
             and len(self.namespace.names) > 1
 
 

@@ -101,16 +101,17 @@ class Parser(object):
                 self.module.used_names[tok_name] = set([simple])
         self.module.temp_used_names = []
 
-    def _parse_dot_name(self, pre_used_token=None):
+    def _parse_dotted_name(self, pre_used_token=None):
         """
         The dot name parser parses a name, variable or function and returns
         their names.
+        Just used for parsing imports.
 
         :return: tuple of Name, next_token
         """
-        def append(el):
-            names.append(el)
-            self.module.temp_used_names.append(el[0])
+        def append(tok):
+            names.append(pr.NamePart(self.module, tok.string, None, tok.start_pos))
+            self.module.temp_used_names.append(tok.string)
 
         names = []
         tok = next(self._gen) if pre_used_token is None else pre_used_token
@@ -118,26 +119,23 @@ class Parser(object):
         if tok.type != tokenize.NAME and tok.string != '*':
             return None, tok
 
-        first_pos = tok.start_pos
-        append((tok.string, first_pos))
+        append(tok)
         while True:
-            end_pos = tok.end_pos
             tok = next(self._gen)
             if tok.string != '.':
                 break
             tok = next(self._gen)
             if tok.type != tokenize.NAME:
                 break
-            append((tok.string, tok.start_pos))
+            append(tok)
 
-        n = pr.Name(self.module, names, first_pos, end_pos) if names else None
-        return n, tok
+        return names, tok
 
     def _parse_name(self, pre_used_token=None):
         tok = next(self._gen) if pre_used_token is None else pre_used_token
         if tok.type != tokenize.NAME:
-            return None
-        return pr.NamePart(self.module, tok.string, None, tok.start_pos)
+            return None, tok
+        return pr.NamePart(self.module, tok.string, None, tok.start_pos), next(self._gen)
 
     def _parse_import_list(self):
         """
@@ -167,13 +165,13 @@ class Parser(object):
                 tok = next(self._gen)
             if brackets and tok.type == tokenize.NEWLINE:
                 tok = next(self._gen)
-            i, tok = self._parse_dot_name(tok)
-            if not i:
+            names, tok = self._parse_dotted_name(tok)
+            if not names:
                 defunct = True
-            name2 = None
+            alias = None
             if tok.string == 'as':
-                name2, tok = self._parse_dot_name()
-            imports.append((i, name2, defunct))
+                alias, tok = self._parse_name()
+            imports.append((names, alias, defunct))
             while tok.string not in continue_kw:
                 tok = next(self._gen)
             if not (tok.string == "," or brackets and tok.type == tokenize.NEWLINE):
@@ -230,9 +228,8 @@ class Parser(object):
         if tok.type != tokenize.NAME:
             return None
 
-        fname = self._parse_name(tok)
+        fname, tok = self._parse_name(tok)
 
-        tok = next(self._gen)
         if tok.string != '(':
             return None
         params = self._parse_parentheses(is_class=False)
@@ -269,10 +266,9 @@ class Parser(object):
                           cname.start_pos[0], tokenize.tok_name[cname.type], cname.string)
             return None
 
-        cname = self._parse_name(cname)
+        cname, _next = self._parse_name(cname)
 
         superclasses = []
-        _next = next(self._gen)
         if _next.string == '(':
             superclasses = self._parse_parentheses(is_class=True)
             _next = next(self._gen)
@@ -346,7 +342,7 @@ class Parser(object):
                 if tok.string == 'as':
                     tok = next(self._gen)
                     if tok.type == tokenize.NAME:
-                        n, tok = self._parse_dot_name(self._gen.current)
+                        n, tok = self._parse_name(self._gen.current)
                         if n:
                             set_vars.append(n)
                             as_names.append(n)
@@ -358,11 +354,6 @@ class Parser(object):
                 elif in_lambda_param and tok.string == ':':
                     in_lambda_param = False
                 elif tok.type == tokenize.NAME and not is_kw:
-                    n, tok = self._parse_dot_name(self._gen.current)
-                    # removed last entry, because we add Name
-                    tok_list.pop()
-                    if n:
-                        tok_list.append(n)
                     continue
                 elif tok.string in opening_brackets:
                     level += 1
@@ -464,10 +455,10 @@ class Parser(object):
             # import stuff
             elif tok_str == 'import':
                 imports = self._parse_import_list()
-                for count, (m, alias, defunct) in enumerate(imports):
+                for count, (names, alias, defunct) in enumerate(imports):
                     e = (alias or m or self._gen.previous).end_pos
                     end_pos = self._gen.previous.end_pos if count + 1 == len(imports) else e
-                    i = pr.Import(self.module, first_pos, end_pos, m,
+                    i = pr.Import(self.module, first_pos, end_pos, names,
                                   alias, defunct=defunct)
                     self._check_user_stmt(i)
                     self._scope.add_import(i)
@@ -486,26 +477,26 @@ class Parser(object):
                         break
                     relative_count += 1
                 # the from import
-                mod, tok = self._parse_dot_name(self._gen.current)
+                from_names, tok = self._parse_dotted_name(self._gen.current)
                 tok_str = tok.string
-                if str(mod) == 'import' and relative_count:
+                if len(from_names) == 1 and str(from_names[0]) == 'import' and relative_count:
                     self._gen.push_last_back()
                     tok_str = 'import'
-                    mod = None
-                if not mod and not relative_count or tok_str != "import":
+                    names = []
+                if not names and not relative_count or tok_str != "import":
                     debug.warning("from: syntax error@%s", tok.start_pos[0])
                     defunct = True
                     if tok_str != 'import':
                         self._gen.push_last_back()
                 names = self._parse_import_list()
-                for count, (name, alias, defunct2) in enumerate(names):
-                    star = name is not None and unicode(name.names[0]) == '*'
+                for count, (names, alias, defunct2) in enumerate(names):
+                    star = names and unicode(names) == '*'
                     if star:
-                        name = None
-                    e = (alias or name or self._gen.previous).end_pos
+                        names = []
+                    e = (alias or names and names[-1] or self._gen.previous).end_pos
                     end_pos = self._gen.previous.end_pos if count + 1 == len(names) else e
-                    i = pr.Import(self.module, first_pos, end_pos, name,
-                                  alias, mod, star, relative_count,
+                    i = pr.Import(self.module, first_pos, end_pos, names,
+                                  alias, from_names, star, relative_count,
                                   defunct=defunct or defunct2)
                     self._check_user_stmt(i)
                     self._scope.add_import(i)
@@ -540,7 +531,7 @@ class Parser(object):
                     if command == 'except' and tok.string == ',':
                         # the except statement defines a var
                         # this is only true for python 2
-                        n, tok = self._parse_dot_name()
+                        n, tok = self._parse_name()
                         if n:
                             n.parent = statement
                             statement.as_names.append(n)
