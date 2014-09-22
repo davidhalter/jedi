@@ -102,14 +102,20 @@ class NameFinder(object):
                             or isinstance(scope, compiled.CompiledObject) \
                             or isinstance(stmt, pr.ExprStmt) and stmt.is_global():
                         # Always reachable.
-                        names.append(name.names[-1])
+                        if isinstance(name, pr.Name):
+                            names.append(name.names[-1])
+                        else:
+                            names.append(name)
                     else:
                         check = flow_analysis.break_check(self._evaluator,
                                                           name_list_scope,
                                                           er.wrap(self._evaluator, scope),
                                                           self.scope)
                         if check is not flow_analysis.UNREACHABLE:
-                            names.append(name.names[-1])
+                            if isinstance(name, pr.Name):
+                                names.append(name.names[-1])
+                            else:
+                                names.append(name)
                         if check is flow_analysis.REACHABLE:
                             break
 
@@ -141,7 +147,7 @@ class NameFinder(object):
         for n in names:
             definition = n.parent.parent
             if isinstance(definition, (pr.Function, pr.Class, pr.Module)):
-                yield er.wrap(self._evaluator, definition).name.names[-1]
+                yield er.wrap(self._evaluator, definition).name
             else:
                 yield n
 

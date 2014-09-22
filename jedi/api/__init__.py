@@ -180,7 +180,8 @@ class Script(object):
         comp_dct = {}
         for c, s in set(completions):
             # TODO Remove this line. c should be a namepart even before that.
-            c = c.names[-1]
+            if isinstance(c, pr.Name):
+                c = c.names[-1]
             n = str(c)
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
@@ -189,7 +190,7 @@ class Script(object):
                     if isinstance(c.parent.parent, (pr.Function, pr.Class)):
                         # TODO I think this is a hack. It should be an
                         #   er.Function/er.Class before that.
-                        c = er.wrap(self._evaluator, c.parent.parent).name.names[-1]
+                        c = er.wrap(self._evaluator, c.parent.parent).name
                     new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
@@ -455,7 +456,7 @@ class Script(object):
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.
             user_scope = self._parser.user_scope()
-            definitions = set([user_scope.name.names[-1]])
+            definitions = set([user_scope.name])
         elif isinstance(user_stmt, pr.Import):
             s, name_part = helpers.get_on_import_stmt(self._evaluator,
                                                       self._user_context, user_stmt)

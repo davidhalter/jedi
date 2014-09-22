@@ -468,8 +468,7 @@ class SubModule(Scope, Module):
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # Positions are not real, but a module starts at (1, 0)
         p = (1, 0)
-        names = [(string, p)]
-        return Name(self, names, p, p, self.use_as_parent)
+        return NamePart(self, string, self.use_as_parent, p)
 
     @property
     def has_explicit_absolute_import(self):

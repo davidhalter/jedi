@@ -670,6 +670,11 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         # All the additional module attributes are strings.
         return [helpers.LazyName(n, parent_callback) for n in names]
 
+    @property
+    @memoize_default()
+    def name(self):
+        return pr.NamePart(self, unicode(self.base.name), self, (1, 0))
+
     @memoize_default()
     def _sub_modules(self):
         """

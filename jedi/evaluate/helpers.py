@@ -303,13 +303,9 @@ class FakeImport(pr.Import):
         self.parent = parent
 
 
-class FakeName(pr.Name):
-    def __init__(self, name_or_names, parent=None, start_pos=(0, 0)):
-        if isinstance(name_or_names, list):
-            names = [(n, start_pos) for n in name_or_names]
-        else:
-            names = [(name_or_names, start_pos)]
-        super(FakeName, self).__init__(FakeSubModule, names, start_pos, start_pos, parent)
+class FakeName(pr.NamePart):
+    def __init__(self, name_str, parent=None, start_pos=(0, 0)):
+        super(FakeName, self).__init__(FakeSubModule, name_str, parent, start_pos)
 
     def get_definition(self):
         return self.parent
