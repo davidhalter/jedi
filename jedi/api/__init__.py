@@ -180,7 +180,7 @@ class Script(object):
         comp_dct = {}
         for c, s in set(completions):
             # TODO Remove this line. c should be a namepart even before that.
-            if isinstance(c, pr.Name):
+            if c.isinstance(pr.Name):
                 c = c.names[-1]
             n = str(c)
             if settings.case_insensitive_completion \

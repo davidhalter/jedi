@@ -168,6 +168,10 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                 # Only names with the selfname are being added.
                 # It is also important, that they have a len() of 2,
                 # because otherwise, they are just something else
+                if isinstance(n, pr.NamePart):
+                    # NamePart currently means a function
+                    # TODO change this branch to scan properly for self names.
+                    continue
                 if unicode(n.names[0]) == self_name and len(n.names) == 2:
                     add_self_dot_name(n)
 
@@ -243,7 +247,12 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
     untouched.
     """
     if isinstance(var, (Instance, compiled.CompiledObject, pr.Operator, Token,
-                        pr.Module, FunctionExecution)):
+                        pr.Module, FunctionExecution, pr.NamePart)):
+        if isinstance(var, pr.NamePart):
+            # TODO temp solution, remove later, NameParts should never get
+            #     here.
+            par = get_instance_el(evaluator, instance, var.parent, is_class_var)
+            return helpers.FakeName(unicode(var), par, var.start_pos)
         return var
 
     var = wrap(evaluator, var)
@@ -275,6 +284,9 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return par
 
     def get_parent_until(self, *args, **kwargs):
+        if isinstance(self.var, pr.NamePart):
+            # TODO NameParts should never even be InstanceElements
+            return pr.Simple.get_parent_until(self.parent, *args, **kwargs)
         return pr.Simple.get_parent_until(self, *args, **kwargs)
 
     def get_definition(self):
