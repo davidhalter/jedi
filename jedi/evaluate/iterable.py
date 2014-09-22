@@ -193,14 +193,13 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
 
     def scope_names_generator(self, position=None):
         """
-        This method generates all `ArrayMethod` for one pr.Array.
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
         for _, names in scope.scope_names_generator():
-            yield self, [ArrayMethod(n) for n in names]
+            yield self, [helpers.FakeName(n.get_code(), self) for n in names]
 
     @common.safe_property
     def parent(self):

@@ -145,7 +145,7 @@ class NameFinder(object):
         evaluation, so remove them already here!
         """
         for n in names:
-            definition = n.parent.parent
+            definition = n.parent
             if isinstance(definition, (pr.Function, pr.Class, pr.Module)):
                 yield er.wrap(self._evaluator, definition).name
             else:

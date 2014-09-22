@@ -187,10 +187,10 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not filter_private_variable(s, user_stmt or self._parser.user_scope(), n):
-                    if isinstance(c.parent.parent, (pr.Function, pr.Class)):
+                    if isinstance(c.parent, (pr.Function, pr.Class)):
                         # TODO I think this is a hack. It should be an
                         #   er.Function/er.Class before that.
-                        c = er.wrap(self._evaluator, c.parent.parent).name
+                        c = er.wrap(self._evaluator, c.parent).name
                     new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
@@ -398,7 +398,7 @@ class Script(object):
         definitions = resolve_import_paths(definitions)
         names = [s if isinstance(s, pr.Name) else s.name for s in definitions
                  if s is not imports.ImportWrapper.GlobalNamespace]
-        defs = [classes.Definition(self._evaluator, name.names[-1])
+        defs = [classes.Definition(self._evaluator, name.names[-1] if isinstance(name, pr.Name) else name )
                 for name in names]
         return helpers.sorted_definitions(set(defs))
 
