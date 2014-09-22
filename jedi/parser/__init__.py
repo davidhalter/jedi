@@ -133,6 +133,7 @@ class Parser(object):
 
     def _parse_name(self, pre_used_token=None):
         tok = next(self._gen) if pre_used_token is None else pre_used_token
+        self.module.temp_used_names.append(tok.string)
         if tok.type != tokenize.NAME:
             return None, tok
         return pr.NamePart(self.module, tok.string, None, tok.start_pos), next(self._gen)

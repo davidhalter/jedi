@@ -1,6 +1,7 @@
 import copy
 from itertools import chain
 
+from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi import debug
 
@@ -196,9 +197,7 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
                 if isinstance(s_new, pr.Array):
                     result += scan_array(s_new, search_name)
                 else:
-                    n = s_new.name
-                    if isinstance(n, pr.Name) \
-                            and search_name in [str(x) for x in n.names]:
+                    if search_name == unicode(s_new.name):
                         result.append(c)
 
                 s_new = s_new.next
