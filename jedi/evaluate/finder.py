@@ -287,7 +287,7 @@ class NameFinder(object):
         if isinstance(p, pr.Flow) and p.command == 'except' and p.inputs:
             as_names = p.inputs[0].as_names
             try:
-                if as_names[0].names[-1] == name:
+                if as_names[0] == name:
                     # TODO check for types that are not classes and add it to
                     # the static analysis report.
                     types = list(chain.from_iterable(
@@ -589,7 +589,7 @@ def find_assignments(lhs, results, seek_name):
     """
     if isinstance(lhs, pr.Array):
         return _assign_tuples(lhs, results, seek_name)
-    elif unicode(lhs.name.names[-1]) == seek_name:
+    elif unicode(lhs.name) == seek_name:
         return results
     else:
         return []

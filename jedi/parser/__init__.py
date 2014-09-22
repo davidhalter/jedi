@@ -354,6 +354,7 @@ class Parser(object):
                 elif in_lambda_param and tok.string == ':':
                     in_lambda_param = False
                 elif tok.type == tokenize.NAME and not is_kw:
+                    tok_list[-1], tok = self._parse_name(tok)
                     continue
                 elif tok.string in opening_brackets:
                     level += 1
@@ -456,7 +457,7 @@ class Parser(object):
             elif tok_str == 'import':
                 imports = self._parse_import_list()
                 for count, (names, alias, defunct) in enumerate(imports):
-                    e = (alias or m or self._gen.previous).end_pos
+                    e = (alias or names and names[-1] or self._gen.previous).end_pos
                     end_pos = self._gen.previous.end_pos if count + 1 == len(imports) else e
                     i = pr.Import(self.module, first_pos, end_pos, names,
                                   alias, defunct=defunct)

@@ -217,7 +217,7 @@ def get_module_name_parts(module):
     def scope_name_parts(scope):
         for s in scope.subscopes:
             # Yield the name parts, not names.
-            yield s.name.names[0]
+            yield s.name
             for need_yield_from in scope_name_parts(s):
                 yield need_yield_from
 
@@ -237,8 +237,8 @@ def get_module_name_parts(module):
             # token_list anymore, but for now this is the easiest way to get
             # all the name_parts.
             for tok in stmt_or_import._token_list:
-                if isinstance(tok, pr.Name):
-                    name_parts.update(tok.names)
+                if isinstance(tok, pr.NamePart):
+                    name_parts.add(tok)
 
     return name_parts
 

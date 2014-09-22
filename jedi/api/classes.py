@@ -37,7 +37,7 @@ def defined_names(evaluator, scope):
                                        include_builtin=False), None)
     names = pair[1] if pair else []
     names = [n for n in names if isinstance(n, pr.Import) or (len(n) == 1)]
-    return [Definition(evaluator, d.names[-1]) for d in sorted(names, key=lambda s: s.start_pos)]
+    return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class BaseDefinition(object):
@@ -176,8 +176,8 @@ class BaseDefinition(object):
         par = self._definition
         while par is not None:
             if isinstance(par, pr.Import):
-                insert_nonnone(par.namespace)
-                insert_nonnone(par.from_ns)
+                insert_nonnone(par.namespace_names)
+                insert_nonnone(par.from_names)
                 if par.relative_count == 0:
                     break
             with common.ignored(AttributeError):
@@ -376,12 +376,12 @@ class BaseDefinition(object):
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
-        return [_Param(self._evaluator, p.get_name().names[-1]) for p in params]
+        return [_Param(self._evaluator, p.get_name()) for p in params]
 
     def parent(self):
         scope = self._definition.get_parent_scope()
         non_flow = scope.get_parent_until(pr.Flow, reverse=True)
-        return Definition(self._evaluator, non_flow.name.names[-1])
+        return Definition(self._evaluator, non_flow.name)
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
@@ -539,7 +539,7 @@ class Completion(BaseDefinition):
         it's just PITA-slow.
         """
         defs = self._follow_statements_imports()
-        return [Definition(self._evaluator, d.name.names[-1]) for d in defs]
+        return [Definition(self._evaluator, d.name) for d in defs]
 
 
 class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):

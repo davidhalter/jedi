@@ -357,7 +357,7 @@ class Evaluator(object):
                         params = typ.params
                     for param in params:
                         if unicode(param.get_name()) == unicode(named_param_name):
-                            param_names.append(param.get_name().names[-1])
+                            param_names.append(param.get_name())
                 return param_names
             return [call_path[0]]
 

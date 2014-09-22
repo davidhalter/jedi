@@ -433,7 +433,7 @@ class Script(object):
                         and d.start_pos == (0, 0):
                     i = imports.ImportWrapper(self._evaluator, d.parent).follow(is_goto=True)
                     definitions.remove(d)
-                    definitions |= follow_inexistent_imports(i.names[-1])
+                    definitions |= follow_inexistent_imports(i)
             return definitions
 
         goto_path = self._user_context.get_path_under_cursor()
@@ -468,7 +468,7 @@ class Script(object):
             if add_import_name:
                 import_name = user_stmt.get_defined_names()
                 # imports have only one name
-                np = import_name[0].names[-1]
+                np = import_name[0]
                 if not user_stmt.star and unicode(name_part) == unicode(np):
                     definitions.append(np)
         else:
@@ -573,7 +573,7 @@ class Script(object):
                 key_name = unicode(detail[0][0].name)
             except (IndexError, AttributeError):
                 pass
-        return [classes.CallSignature(self._evaluator, o.name.names[-1], call, index, key_name)
+        return [classes.CallSignature(self._evaluator, o.name, call, index, key_name)
                 for o in origins if hasattr(o, 'py__call__')]
 
     def _analysis(self):
@@ -584,7 +584,7 @@ class Script(object):
             iw = imports.ImportWrapper(self._evaluator, i,
                                        nested_resolve=True).follow()
             if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
-                analysis.add(self._evaluator, 'import-error', i.namespace.names[-1])
+                analysis.add(self._evaluator, 'import-error', i.namespace_names[-1])
         for stmt in sorted(stmts, key=lambda obj: obj.start_pos):
             if not (isinstance(stmt.parent, pr.ForFlow)
                     and stmt.parent.set_stmt == stmt):

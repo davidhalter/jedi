@@ -477,10 +477,10 @@ class SubModule(Scope, Module):
         is a ``__future__`` import.
         """
         for imp in self.imports:
-            if imp.from_ns is None or imp.namespace is None:
+            if imp.from_ns is None or imp.namespace_names is None:
                 continue
 
-            namespace, feature = imp.from_ns.names[0], imp.namespace.names[0]
+            namespace, feature = imp.from_names[0], imp.namespace_names[0]
             if unicode(namespace) == "__future__" and unicode(feature) == "absolute_import":
                 return True
 
@@ -528,9 +528,9 @@ class Class(Scope):
         if self._doc_token is not None:
             docstr = self.raw_doc
         for sub in self.subscopes:
-            if unicode(sub.name.names[-1]) == '__init__':
+            if unicode(sub.name) == '__init__':
                 return '%s\n\n%s' % (
-                    sub.get_call_signature(funcname=self.name.names[-1]), docstr)
+                    sub.get_call_signature(funcname=self.name), docstr)
         return docstr
 
     def scope_names_generator(self, position=None):
@@ -596,7 +596,7 @@ class Function(Scope):
 
         :rtype: str
         """
-        l = unicode(funcname or self.name.names[-1]) + '('
+        l = unicode(funcname or self.name) + '('
         lines = []
         for (i, p) in enumerate(self.params):
             code = p.get_code(False)
@@ -780,15 +780,16 @@ class Import(Simple):
     :type defunct: bool
     """
     def __init__(self, module, start_pos, end_pos, namespace_names, alias=None,
-                 from_names=None, star=False, relative_count=0, defunct=False):
+                 from_names=(), star=False, relative_count=0, defunct=False):
         super(Import, self).__init__(module, start_pos, end_pos)
 
         self.namespace_names = namespace_names
         self.alias = alias
+        if self.alias:
+            alias.parent = self
         self.from_names = from_names
-        for n in namespace_names, alias, from_names:
-            if n:
-                n.parent = self.use_as_parent
+        for n in namespace_names + list(from_names):
+            n.parent = self.use_as_parent
 
         self.star = star
         self.relative_count = relative_count
@@ -841,7 +842,7 @@ class Import(Simple):
         TODO refactor and dont use this method, because NamePart will not exist in
           the future.
         """
-        return self.alias.names[0] if self.alias else None
+        return self.alias
 
     def is_nested(self):
         """
@@ -850,8 +851,8 @@ class Import(Simple):
 
             import foo.bar
         """
-        return not self.alias and not self.from_names and self.namespace is not None \
-            and len(self.namespace.names) > 1
+        return not self.alias and not self.from_names \
+            and len(self.namespace_names) > 1
 
 
 class KeywordStatement(Base):
@@ -1193,7 +1194,7 @@ class Statement(Simple, DocstringMixin):
                     continue
 
             is_literal = token_type in (tokenize.STRING, tokenize.NUMBER)
-            if isinstance(tok_str, Name) or is_literal:
+            if is_literal or isinstance(tok, NamePart):
                 cls = Literal if is_literal else Call
 
                 call = cls(self._sub_module, tok_str, tok.start_pos, tok.end_pos, self)
@@ -1311,8 +1312,7 @@ class StatementElement(Simple):
     def generate_call_path(self):
         """ Helps to get the order in which statements are executed. """
         try:
-            for name_part in self.name.names:
-                yield name_part
+            yield self.name
         except AttributeError:
             yield self
         if self.next is not None:

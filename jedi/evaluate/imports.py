@@ -67,13 +67,13 @@ class ImportWrapper(pr.Base):
 
         # rest is import_path resolution
         import_path = []
-        if import_stmt.from_ns:
-            import_path += import_stmt.from_ns.names
-        if import_stmt.namespace:
+        if import_stmt.from_names:
+            import_path += import_stmt.from_names
+        if import_stmt.namespace_names:
             if self.import_stmt.is_nested() and not nested_resolve:
-                import_path.append(import_stmt.namespace.names[0])
+                import_path.append(import_stmt.namespace_names[0])
             else:
-                import_path += import_stmt.namespace.names
+                import_path += import_stmt.namespace_names
 
         for i in range(kill_count + int(is_like_search)):
             if import_path:
@@ -140,9 +140,9 @@ class ImportWrapper(pr.Base):
                 for s, scope_names in finder.get_names_of_scope(self._evaluator,
                                                                 scope, include_builtin=False):
                     for n in scope_names:
-                        if self.import_stmt.from_ns is None \
+                        if self.import_stmt.from_names is None \
                                 or self.is_partial_import:
-                                # from_ns must be defined to access module
+                                # from_names must be defined to access module
                                 # values plus a partial import means that there
                                 # is something after the import, which
                                 # automatically implies that there must not be
@@ -198,7 +198,7 @@ class ImportWrapper(pr.Base):
 
                 # goto only accepts Names or NameParts
                 if is_goto and not rest:
-                    scopes = [s.name.names[-1] for s in scopes]
+                    scopes = [s.name for s in scopes]
 
                 # follow the rest of the import (not FS -> classes, functions)
                 if len(rest) > 1 or rest and self.is_like_search:
@@ -243,12 +243,12 @@ class NestedImportModule(pr.Module):
         # This is not an existing Import statement. Therefore, set position to
         # 0 (0 is not a valid line number).
         zero = (0, 0)
-        names = [unicode(name_part) for name_part in i.namespace.names[1:]]
+        names = [unicode(name_part) for name_part in i.namespace_names[1:]]
         name = helpers.FakeName(names, self._nested_import)
         new = pr.Import(i._sub_module, zero, zero, name)
         new.parent = self._module
         debug.dbg('Generated a nested import: %s', new)
-        return helpers.FakeName(str(i.namespace.names[1]), new)
+        return helpers.FakeName(str(i.namespace_names[1]), new)
 
     def _get_defined_names(self):
         """

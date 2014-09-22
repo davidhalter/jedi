@@ -224,6 +224,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         return "<e%s of %s>" % (type(self).__name__, self._array)
 
 
+# TODO REMOVE, not used.
 class ArrayMethod(IterableWrapper):
     """
     A name, e.g. `list.append`, it is used to access the original array
