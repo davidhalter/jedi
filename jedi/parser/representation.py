@@ -1488,7 +1488,7 @@ class NamePart(object):
         return self._string
 
     def get_definition(self):
-        return self.parent.get_definition()
+        return self.get_parent_until((ExprStmt, IsScope, Import))
 
     def get_parent_until(self, *args, **kwargs):
         return self.parent.get_parent_until(*args, **kwargs)

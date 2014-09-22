@@ -133,6 +133,12 @@ class Parser(object):
         n = pr.Name(self.module, names, first_pos, end_pos) if names else None
         return n, tok
 
+    def _parse_name(self, pre_used_token=None):
+        tok = next(self._gen) if pre_used_token is None else pre_used_token
+        if tok.type != tokenize.NAME:
+            return None
+        return pr.NamePart(self.module, tok.string, None, tok.start_pos)
+
     def _parse_import_list(self):
         """
         The parser for the imports. Unlike the class and function parse
@@ -224,8 +230,7 @@ class Parser(object):
         if tok.type != tokenize.NAME:
             return None
 
-        fname = pr.Name(self.module, [(tok.string, tok.start_pos)], tok.start_pos,
-                        tok.end_pos)
+        fname = self._parse_name(tok)
 
         tok = next(self._gen)
         if tok.string != '(':
@@ -246,7 +251,7 @@ class Parser(object):
         if colon.string != ':':
             return None
 
-        # because of 2 line func param definitions
+        # Because of 2 line func param definitions
         return pr.Function(self.module, fname, params, first_pos, annotation)
 
     def _parse_class(self):
@@ -264,8 +269,7 @@ class Parser(object):
                           cname.start_pos[0], tokenize.tok_name[cname.type], cname.string)
             return None
 
-        cname = pr.Name(self.module, [(cname.string, cname.start_pos)],
-                        cname.start_pos, cname.end_pos)
+        cname = self._parse_name(cname)
 
         superclasses = []
         _next = next(self._gen)
