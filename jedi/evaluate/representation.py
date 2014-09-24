@@ -532,6 +532,15 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
+class LazyDict(object):
+    def __init__(self, old_dct, copy_func):
+        self._copy_func = copy_func
+        self._old_dct = old_dct
+
+    def __getitem__(self, key):
+        return self._copy_func(self._old_dct[key])
+
+
 class FunctionExecution(Executed):
     """
     This class is used to evaluate functions and their returns.
@@ -582,7 +591,7 @@ class FunctionExecution(Executed):
 
     @underscore_memoization
     def get_names_dict(self):
-        return self.
+        return LazyDict(self.base.get_names_dict(), self._copy_list)
 
     @memoize_default(default=())
     def _get_params(self):
@@ -605,15 +614,13 @@ class FunctionExecution(Executed):
         names = pr.filter_after_position(pr.Scope.get_defined_names(self), position)
         yield self, self._get_params() + names
 
-    def _copy_list(self, list_name):
+    def _copy_list(self, lst):
         """
         Copies a list attribute of a parser Function. Copying is very
         expensive, because it is something like `copy.deepcopy`. However, these
         copied objects can be used for the executions, as if they were in the
         execution.
         """
-        # Copy all these lists into this local function.
-        lst = getattr(self.base, list_name)
         objects = []
         for element in lst:
             self._scope_copy(element.parent)
@@ -636,22 +643,22 @@ class FunctionExecution(Executed):
     @common.safe_property
     @memoize_default([])
     def returns(self):
-        return self._copy_list(self)
+        return self._copy_list(self.base.returns)
 
     @common.safe_property
     @memoize_default([])
     def asserts(self):
-        return self._copy_list('asserts')
+        return self._copy_list(self.base.asserts)
 
     @common.safe_property
     @memoize_default([])
     def statements(self):
-        return self._copy_list('statements')
+        return self._copy_list(self.base.statements)
 
     @common.safe_property
     @memoize_default([])
     def subscopes(self):
-        return self._copy_list('subscopes')
+        return self._copy_list(self.base.subscopes)
 
     def get_statement_for_position(self, pos):
         return pr.Scope.get_statement_for_position(self, pos)
