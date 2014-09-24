@@ -110,6 +110,7 @@ class ImportWrapper(pr.Base):
                             m = _load_module(rel_path)
                             names += m.get_defined_names()
             else:
+                # flask
                 if self.import_path == ('flask', 'ext'):
                     # List Flask extensions like ``flask_foo``
                     for mod in self._get_module_names():
@@ -122,6 +123,8 @@ class ImportWrapper(pr.Base):
                         flaskext = os.path.join(dir, 'flaskext')
                         if os.path.isdir(flaskext):
                             names += self._get_module_names([flaskext])
+
+                # namespace packages
                 if on_import_stmt and isinstance(scope, pr.Module) \
                         and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
@@ -136,18 +139,18 @@ class ImportWrapper(pr.Base):
                         # ``sys.modules`` modification.
                         names.append(self._generate_name('path'))
                     continue
+
+                if not self.import_stmt.from_names or self.is_partial_import:
+                        # from_names must be defined to access module
+                        # values plus a partial import means that there
+                        # is something after the import, which
+                        # automatically implies that there must not be
+                        # any non-module scope.
+                        continue
                 from jedi.evaluate import finder
                 for s, scope_names in finder.get_names_of_scope(self._evaluator,
                                                                 scope, include_builtin=False):
                     for n in scope_names:
-                        if self.import_stmt.from_names is None \
-                                or self.is_partial_import:
-                                # from_names must be defined to access module
-                                # values plus a partial import means that there
-                                # is something after the import, which
-                                # automatically implies that there must not be
-                                # any non-module scope.
-                                continue
                         names.append(n)
         return names
 

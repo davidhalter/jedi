@@ -499,8 +499,8 @@ class Parser(object):
                     if star:
                         names = []
                     e = (alias or names and names[-1] or self._gen.previous).end_pos
-                    end_pos = self._gen.previous.end_pos if count + 1 == len(names) else e
-                    i = pr.Import(self.module, first_pos, end_pos, names,
+                    #end_pos = self._gen.previous.end_pos if count + 1 == len(names) else e
+                    i = pr.Import(self.module, first_pos, e, names,
                                   alias, from_names, star, relative_count,
                                   defunct=defunct or defunct2)
                     self._check_user_stmt(i)
