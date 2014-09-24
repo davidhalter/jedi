@@ -817,18 +817,17 @@ class Import(Simple):
         # in case one of the names is None
         alias = self.alias or ''
 
-        namespace = '.'.join(self.namespace_names)
+        ns_str = '.'.join(unicode(n) for n in self.namespace_names)
         if self.alias:
-            ns_str = "%s as %s" % ('.'.join(namespace), alias)
-        else:
-            ns_str = namespace
+            ns_str = "%s as %s" % (ns_str, alias)
 
         nl = '\n' if new_line else ''
         if self.from_names or self.relative_count:
             if self.star:
                 ns_str = '*'
             dots = '.' * self.relative_count
-            return "from %s%s import %s%s" % (dots, '.'.join(self.from_names), ns_str, nl)
+            from_txt = '.'.join(unicode(n) for n in self.from_names)
+            return "from %s%s import %s%s" % (dots, from_txt, ns_str, nl)
         else:
             return "import %s%s" % (ns_str, nl)
 
