@@ -120,7 +120,7 @@ class Parser(object):
         tok = next(self._gen) if pre_used_token is None else pre_used_token
 
         if tok.type != tokenize.NAME and tok.string != '*':
-            return None, tok
+            return [], tok
 
         append(tok)
         while True:
@@ -493,9 +493,9 @@ class Parser(object):
                     defunct = True
                     if tok_str != 'import':
                         self._gen.push_last_back()
-                names = self._parse_import_list()
-                for count, (names, alias, defunct2) in enumerate(names):
-                    star = names and unicode(names) == '*'
+                imports = self._parse_import_list()
+                for count, (names, alias, defunct2) in enumerate(imports):
+                    star = names and unicode(names[-1]) == '*'
                     if star:
                         names = []
                     e = (alias or names and names[-1] or self._gen.previous).end_pos

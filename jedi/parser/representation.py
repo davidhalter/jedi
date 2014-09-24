@@ -494,7 +494,7 @@ class SubModule(Scope, Module):
         is a ``__future__`` import.
         """
         for imp in self.imports:
-            if imp.from_names is None or imp.namespace_names is None:
+            if not imp.from_names or not imp.namespace_names:
                 continue
 
             namespace, feature = imp.from_names[0], imp.namespace_names[0]
