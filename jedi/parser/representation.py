@@ -37,6 +37,7 @@ See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 import os
 import re
 from inspect import cleandoc
+from collections import defaultdict
 
 from jedi._compatibility import (next, Python3Method, encoding, unicode,
                                  is_py3, u, literal_eval, use_metaclass)
@@ -954,7 +955,7 @@ class Statement(Simple, DocstringMixin):
             return code
 
     def get_defined_names(self):
-        """ Get the names for the statement. """
+        """Get the names for the statement."""
         if self._set_vars is None:
 
             def search_calls(calls):
@@ -981,6 +982,37 @@ class Statement(Simple, DocstringMixin):
                 # In the case of Param, it's also a defining name without ``=``
                 search_calls(self.expression_list())
         return self._set_vars + self.as_names
+
+    def get_names_dict(self):
+        """The future of name resolution. Returns a dict(str -> Call)."""
+        dct = defaultdict(lambda: [])
+
+        def search_calls(calls):
+            for call in calls:
+                if isinstance(call, Array) and call.type != Array.DICT:
+                    for stmt in call:
+                        search_calls(stmt.expression_list())
+                elif isinstance(call, Call):
+                    c = call
+                    # Check if there's an execution in it, if so this is
+                    # not a set_var.
+                    while c:
+                        if isinstance(c.next, Array):
+                            break
+                        c = c.next
+                    else:
+                        dct[unicode(c.name)] = call
+
+        for calls, operation in self.assignment_details:
+            search_calls(calls)
+
+        if not self.assignment_details and self._names_are_set_vars:
+            # In the case of Param, it's also a defining name without ``=``
+            search_calls(self.expression_list())
+
+        for as_name in self.as_names:
+            dct[unicode(as_name)].append(as_name)
+        return dct
 
     def is_global(self):
         p = self.parent
