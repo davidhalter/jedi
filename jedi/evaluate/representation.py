@@ -164,17 +164,14 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     # because to follow them and their self variables is too
                     # complicated.
                     sub = self._get_method_execution(sub)
-            print(sub.get_names_dict())
-            for n in sub.get_defined_names():
-                # Only names with the selfname are being added.
-                # It is also important, that they have a len() of 2,
-                # because otherwise, they are just something else
-                if isinstance(n, pr.NamePart):
-                    # NamePart currently means a function
-                    # TODO change this branch to scan properly for self names.
-                    continue
-                if unicode(n.names[0]) == self_name and len(n.names) == 2:
-                    add_self_dot_name(n)
+            for per_name_list in sub.get_names_dict().values():
+                for call in per_name_list:
+                    if unicode(call.name) == self_name \
+                            and isinstance(call.next, pr.Call) \
+                            and call.next.next is None:
+                        names.append(get_instance_el(self._evaluator, self, call.next.name))
+                    #if unicode(n.names[0]) == self_name and len(n.names) == 2:
+                    #    add_self_dot_name(n)
 
         for s in self.base.py__bases__(self._evaluator):
             if not isinstance(s, compiled.CompiledObject):
@@ -539,6 +536,12 @@ class LazyDict(object):
 
     def __getitem__(self, key):
         return self._copy_func(self._old_dct[key])
+
+    @underscore_memoization
+    def values(self):
+        # TODO REMOVE this. Not necessary with correct name lookups.
+        for calls in self._old_dct.values():
+            yield self._copy_func(calls)
 
 
 class FunctionExecution(Executed):

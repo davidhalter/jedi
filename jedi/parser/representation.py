@@ -976,15 +976,11 @@ class Statement(Simple, DocstringMixin):
                         for stmt in call:
                             search_calls(stmt.expression_list())
                     elif isinstance(call, Call):
-                        c = call
                         # Check if there's an execution in it, if so this is
                         # not a set_var.
-                        while c:
-                            if isinstance(c.next, Array):
-                                break
-                            c = c.next
-                        else:
+                        if not call.next:
                             self._set_vars.append(call.name)
+                        continue
 
             self._set_vars = []
             for calls, operation in self.assignment_details:
