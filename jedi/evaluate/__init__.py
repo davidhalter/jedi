@@ -337,7 +337,7 @@ class Evaluator(object):
         # name only. Otherwise it's a mixture between a definition and a
         # reference. In this case it's just a definition. So we stay on it.
         if len(call_path) == 1 and isinstance(call_path[0], pr.NamePart) \
-                and call_path[0] in [d.names[-1] for d in stmt.get_defined_names()]:
+                and call_path[0] in stmt.get_defined_names():
             # Named params should get resolved to their param definitions.
             if pr.Array.is_type(stmt.parent, pr.Array.TUPLE, pr.Array.NOARRAY) \
                     and stmt.parent.previous:

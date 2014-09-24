@@ -25,8 +25,7 @@ def usages(evaluator, definitions, mods):
         while not stmt.parent.is_scope():
             stmt = stmt.parent
         # New definition, call cannot be a part of stmt
-        if len(call.name) == 1 and call.next is None \
-                and call.name in stmt.get_defined_names():
+        if call.next is None and call.name in stmt.get_defined_names():
             # Class params are not definitions (like function params). They
             # are super classes, that need to be resolved.
             if not (isinstance(stmt, pr.Param) and isinstance(stmt.parent, pr.Class)):

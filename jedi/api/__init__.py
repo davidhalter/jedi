@@ -478,8 +478,9 @@ class Script(object):
             if isinstance(user_stmt, pr.ExprStmt):
                 for name in user_stmt.get_defined_names():
                     if name.start_pos <= self._pos <= name.end_pos \
-                            and len(name.names) == 1:
-                        return [name.names[0]]
+                            and (not isinstance(name.parent, pr.Call)
+                                 or name.parent.next is None):
+                        return [name]
 
             defs = self._evaluator.goto(stmt, call_path)
             definitions = follow_inexistent_imports(defs)
@@ -504,16 +505,6 @@ class Script(object):
             if not definitions:
                 # Without a definition for a name we cannot find references.
                 return []
-
-            # Once Script._goto works correct, we can probably remove this
-            # branch.
-            if isinstance(user_stmt, pr.ExprStmt):
-                c = user_stmt.expression_list()[0]
-                if not isinstance(c, unicode) and self._pos < c.start_pos:
-                    # The lookup might be before `=`
-                    definitions = [v.names[-1] for v in user_stmt.get_defined_names()
-                                   if unicode(v.names[-1]) ==
-                                   list(definitions)[0].get_code()]
 
             if not isinstance(user_stmt, pr.Import):
                 # import case is looked at with add_import_name option
