@@ -244,7 +244,7 @@ class Scope(Simple, DocstringMixin):
     :type start_pos: tuple(int, int)
     """
     __slots__ = ('subscopes', 'imports', 'statements', '_doc_token', 'asserts',
-                 'returns', 'is_generator')
+                 'returns', 'is_generator', '_names_dict')
 
     def __init__(self, module, start_pos):
         super(Scope, self).__init__(module, start_pos)
@@ -256,10 +256,18 @@ class Scope(Simple, DocstringMixin):
         # Needed here for fast_parser, because the fast_parser splits and
         # returns will be in "normal" modules.
         self.returns = []
+        self._names_dict = defaultdict(lambda: [])
         self.is_generator = False
 
     def is_scope(self):
         return True
+
+    def add_name_call(self, name, call):
+        """Add a name to the names_dict."""
+        self._names_dict[name].append(call)
+
+    def get_names_dict(self):
+        return self._names_dict
 
     def add_scope(self, sub, decorators):
         sub.parent = self.use_as_parent
@@ -672,6 +680,10 @@ class Flow(Scope):
             s.parent = self.use_as_parent
         self.set_vars = []
 
+    def add_name_call(self, name, call):
+        """Add a name to the names_dict."""
+        self.parent.add_name_call(name, call)
+
     @property
     def parent(self):
         return self._parent
@@ -996,12 +1008,11 @@ class Statement(Simple, DocstringMixin):
                     c = call
                     # Check if there's an execution in it, if so this is
                     # not a set_var.
-                    while c:
-                        if isinstance(c.next, Array):
+                    while True:
+                        if c.next is None or isinstance(c.next, Array):
                             break
                         c = c.next
-                    else:
-                        dct[unicode(c.name)] = call
+                    dct[unicode(c.name)] = call
 
         for calls, operation in self.assignment_details:
             search_calls(calls)
