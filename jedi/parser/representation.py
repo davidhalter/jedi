@@ -1093,7 +1093,7 @@ class Statement(Simple, DocstringMixin):
             return arr, break_tok
 
         def parse_stmt(token_iterator, maybe_dict=False, added_breaks=(),
-                       break_on_assignment=False, stmt_class=Statement,
+                       break_on_assignment=False, stmt_class=ArrayStmt,
                        allow_comma=False):
             token_list = []
             level = 0
@@ -1183,7 +1183,7 @@ class Statement(Simple, DocstringMixin):
                     stmt._names_are_set_vars = names_are_set_vars
                 return stmt, tok
 
-            st = Statement(self._sub_module, token_list, start_pos,
+            st = ArrayStmt(self._sub_module, token_list, start_pos,
                            end_pos, set_name_parents=False)
 
             middle, tok = parse_stmt_or_arr(token_iterator, ['in'], True)
@@ -1256,7 +1256,7 @@ class Statement(Simple, DocstringMixin):
                     is_chain = True
             elif tok_str == ',' and result:  # implies a tuple
                 # expression is now an array not a statement anymore
-                stmt = Statement(self._sub_module, result, result[0].start_pos,
+                stmt = ArrayStmt(self._sub_module, result, result[0].start_pos,
                                  tok.end_pos, self.parent, set_name_parents=False)
                 stmt._expression_list = result
                 arr, break_tok = parse_array(token_iterator, Array.TUPLE,
@@ -1287,6 +1287,14 @@ class ExprStmt(Statement):
     The reason for this class is purely historical. It was easier to just use
     Statement nested, than to create a new class for Test (plus Jedi's fault
     tolerant parser just makes things very complicated).
+    """
+
+
+class ArrayStmt(Statement):
+    """
+    This class exists temporarily. Like ``ExprStatement``, this exists to
+    distinguish between real statements and stuff that is defined in those
+    statements.
     """
 
 
@@ -1522,7 +1530,7 @@ class NamePart(object):
         return self._string
 
     def get_definition(self):
-        return self.get_parent_until((ExprStmt, IsScope, Import))
+        return self.get_parent_until((ArrayStmt, StatementElement), reverse=True)
 
     def get_parent_until(self, *args, **kwargs):
         return self.parent.get_parent_until(*args, **kwargs)
@@ -1564,6 +1572,7 @@ class Name(Simple):
 
     def get_definition(self):
         # TODO This is way to complicated, simplify this with a new parser.
+        return self.get_parent_until((ArrayStmt, StatementElement), reverse=True)
         return self.get_parent_until((ExprStmt, IsScope, Import))
 
     @property

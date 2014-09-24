@@ -246,9 +246,9 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
     """
     if isinstance(var, (Instance, compiled.CompiledObject, pr.Operator, Token,
                         pr.Module, FunctionExecution, pr.NamePart)):
-        if isinstance(var, pr.NamePart):
+        if isinstance(var, pr.NamePart) and False:
             # TODO temp solution, remove later, NameParts should never get
-            #     here.
+            #     here?
             par = get_instance_el(evaluator, instance, var.parent, is_class_var)
             return helpers.FakeName(unicode(var), par, var.start_pos)
         return var
