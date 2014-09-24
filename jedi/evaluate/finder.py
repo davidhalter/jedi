@@ -119,7 +119,7 @@ class NameFinder(object):
                         if check is flow_analysis.REACHABLE:
                             break
 
-                if names and self._is_name_break_scope(name, stmt):
+                if names and self._is_name_break_scope(stmt):
                     if self._does_scope_break_immediately(scope, name_list_scope):
                         break
                     else:
@@ -167,12 +167,12 @@ class NameFinder(object):
                 result = inst.execute_subscope_by_name('__getattribute__', [name])
         return result
 
-    def _is_name_break_scope(self, name, stmt):
+    def _is_name_break_scope(self, stmt):
         """
         Returns True except for nested imports and instance variables.
         """
         if stmt.isinstance(pr.ExprStmt):
-            if isinstance(name, er.InstanceElement) and not name.is_class_var:
+            if isinstance(stmt, er.InstanceElement) and not stmt.is_class_var:
                 return False
         elif isinstance(stmt, pr.Import) and stmt.is_nested():
             return False

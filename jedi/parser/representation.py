@@ -682,7 +682,12 @@ class Flow(Scope):
 
     def add_name_call(self, name, call):
         """Add a name to the names_dict."""
-        self.parent.add_name_call(name, call)
+        parent = self.parent
+        if isinstance(parent, Module):
+            # TODO this also looks like code smell. Look for opportunities to
+            # remove.
+            parent = self._sub_module
+        parent.add_name_call(name, call)
 
     @property
     def parent(self):
