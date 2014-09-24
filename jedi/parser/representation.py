@@ -232,6 +232,14 @@ class IsScope(use_metaclass(IsScopeMeta)):
     pass
 
 
+def _return_empty_list():
+    """
+    Necessary for pickling. It needs to be reachable for pickle, cannot
+    be a lambda or a closure.
+    """
+    return []
+
+
 class Scope(Simple, DocstringMixin):
     """
     Super class for the parser tree, which represents the state of a python
@@ -256,7 +264,7 @@ class Scope(Simple, DocstringMixin):
         # Needed here for fast_parser, because the fast_parser splits and
         # returns will be in "normal" modules.
         self.returns = []
-        self._names_dict = defaultdict(lambda: [])
+        self._names_dict = defaultdict(_return_empty_list)
         self.is_generator = False
 
     def is_scope(self):
