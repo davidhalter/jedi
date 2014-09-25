@@ -88,17 +88,14 @@ def _paths_from_insert(module_path, exe):
 
 def _paths_from_call_expression(module_path, call):
     """ extract the path from either "sys.path.append" or "sys.path.insert" """
-    if not call.next_is_execution():
-        return
+    names = call.names()
+    if names[:3] != ['sys', 'path', 'append'] and names[:3] != ['sys', 'path', 'insert']:
+        return []
+    if not call.next.next.next_is_execution():
+        return []
 
-    n = call.name
-    if not isinstance(n, pr.Name) or len(n.names) != 3:
-        return
-    names = [unicode(x) for x in n.names]
-    if names[:2] != ['sys', 'path']:
-        return
     cmd = names[2]
-    exe = call.next
+    exe = call.next.next.next
     path = None
     if cmd == 'insert' and len(exe) == 2:
         path = _paths_from_insert(module_path, exe)

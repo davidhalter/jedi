@@ -402,25 +402,6 @@ def check_flow_information(evaluator, flow, search_name_part, pos):
 
 
 def _check_isinstance_type(evaluator, stmt, search_name):
-    def names(call, use_previous=False):
-        def check(call):
-            while call is not None:
-                if not isinstance(call, pr.Call):  # Could be an Array.
-                    raise ValueError
-                yield unicode(call.name)
-                if use_previous:
-                    call = call.previous
-                else:
-                    call = call.next
-
-        try:
-            if use_previous:
-                return list(check(call))
-            else:
-                return list(reversed(list(check(call))))
-        except ValueError:
-            return []
-
     try:
         expression_list = stmt.expression_list()
         # this might be removed if we analyze and, etc
@@ -437,7 +418,12 @@ def _check_isinstance_type(evaluator, stmt, search_name):
         assert len(classes) == 1
         assert isinstance(obj[0], pr.Call)
 
-        assert names(obj[0]) == names(search_name.parent, search_name)
+        prev = search_name.parent
+        while prev.previous is not None:
+            prev = prev.previous
+        # Do a simple get_code comparison. They should just have the same code,
+        # and everything will be all right.
+        assert obj[0].get_code() == prev.get_code()
         assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
     except AssertionError:
         return []

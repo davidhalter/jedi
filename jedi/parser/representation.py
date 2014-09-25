@@ -1396,6 +1396,21 @@ class Call(StatementElement):
     def get_code(self):
         return self.name.get_code() + super(Call, self).get_code()
 
+    def names(self):
+        """
+        Generate an array of string names. If a call is not just names,
+        raise an error.
+        """
+        def check(call):
+            while call is not None:
+                if not isinstance(call, Call):  # Could be an Array.
+                    break
+                yield unicode(call.name)
+                call = call.next
+
+        return list(check(self))
+
+
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.name)
 
