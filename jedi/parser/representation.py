@@ -1380,7 +1380,7 @@ class StatementElement(Simple):
 
     def get_code(self):
         if self.next is not None:
-            s = '.' if isinstance(self, Array) else ''
+            s = '.' if not isinstance(self.next, Array) else ''
             return s + self.next.get_code()
         return ''
 
