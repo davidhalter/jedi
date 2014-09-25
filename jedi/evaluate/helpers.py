@@ -51,6 +51,8 @@ def deep_ast_copy(obj, new_elements_default=None):
             # because there are several references that don't walk the whole
             # tree in there.
             items = sorted(items, key=sort_stmt)
+        else:
+            items = sorted(items, key=lambda x: x[0] == '_names_dict')
 
         # Actually copy and set attributes.
         new_obj = copy.copy(obj)
@@ -68,13 +70,17 @@ def deep_ast_copy(obj, new_elements_default=None):
                     pass
             elif key in ['parent_function', 'use_as_parent', '_sub_module']:
                 continue
+            elif key == '_names_dict':
+                d = dict((k, sequence_recursion(v)) for k, v in value.items())
+                setattr(new_obj, key, d)
             elif isinstance(value, (list, tuple)):
-                setattr(new_obj, key, list_or_tuple_rec(value))
+                setattr(new_obj, key, sequence_recursion(value))
             elif isinstance(value, accept):
                 setattr(new_obj, key, recursion(value))
+
         return new_obj
 
-    def list_or_tuple_rec(array_obj):
+    def sequence_recursion(array_obj):
         if isinstance(array_obj, tuple):
             copied_array = list(array_obj)
         else:
@@ -83,7 +89,7 @@ def deep_ast_copy(obj, new_elements_default=None):
             if isinstance(el, accept):
                 copied_array[i] = recursion(el)
             elif isinstance(el, (tuple, list)):
-                copied_array[i] = list_or_tuple_rec(el)
+                copied_array[i] = sequence_recursion(el)
 
         if isinstance(array_obj, tuple):
             return tuple(copied_array)
