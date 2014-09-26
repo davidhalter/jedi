@@ -167,8 +167,8 @@ class Script(object):
                         # Allow access on _definition here, because it's a
                         # public API and we don't want to make the internal
                         # Name object public.
-                        if p._name.get_definition().stars == 0:  # no *args/**kwargs
-                            completions.append((p._name.parent, p))
+                        if p._definition.stars == 0:  # no *args/**kwargs
+                            completions.append((p._name, p._name))
 
             if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords
