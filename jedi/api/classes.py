@@ -36,7 +36,6 @@ def defined_names(evaluator, scope):
         pair = next(get_names_of_scope(evaluator, scope, star_search=False,
                                        include_builtin=False), None)
     names = pair[1] if pair else []
-    names = [n for n in names if isinstance(n, pr.Import) or (len(n) == 1)]
     return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
@@ -168,16 +167,11 @@ class BaseDefinition(object):
     def _path(self):
         """The module path."""
         path = []
-
-        def insert_nonnone(x):
-            if x:
-                path.insert(0, x)
-
         par = self._definition
         while par is not None:
             if isinstance(par, pr.Import):
-                insert_nonnone(par.namespace_names)
-                insert_nonnone(par.from_names)
+                path += par.from_names
+                path += par.namespace_names
                 if par.relative_count == 0:
                     break
             with common.ignored(AttributeError):
