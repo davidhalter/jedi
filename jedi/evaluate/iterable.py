@@ -198,8 +198,9 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
+        from jedi.evaluate.representation import get_instance_el
         for _, names in scope.scope_names_generator():
-            yield self, [helpers.FakeName(n.get_code(), self) for n in names]
+            yield self, [get_instance_el(self._evaluator, self, n) for n in names]
 
     @common.safe_property
     def parent(self):
@@ -222,35 +223,6 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self._array)
-
-
-# TODO REMOVE, not used.
-class ArrayMethod(IterableWrapper):
-    """
-    A name, e.g. `list.append`, it is used to access the original array
-    methods.
-    """
-    def __init__(self, name):
-        super(ArrayMethod, self).__init__()
-        self.name = name
-
-    @property
-    @underscore_memoization
-    def names(self):
-        # TODO remove this method, we need the ArrayMethod input to be a NamePart.
-        return [pr.NamePart(self.name._sub_module, unicode(n), self, n.start_pos) for n in self.name.names]
-
-    def __getattr__(self, name):
-        # Set access privileges:
-        if name not in ['parent', 'start_pos', 'end_pos', 'get_code', 'get_definition']:
-            raise AttributeError('Strange access on %s: %s.' % (self, name))
-        return getattr(self.name, name)
-
-    def get_parent_until(self, *args, **kwargs):
-        return compiled.builtin
-
-    def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.name)
 
 
 class MergedArray(Array):
