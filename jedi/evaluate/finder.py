@@ -461,13 +461,13 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     >>> from jedi.evaluate import Evaluator
     >>> pairs = list(get_names_of_scope(Evaluator(), scope))
     >>> pairs[0]
-    (<Function: func@3-5>, [<Name: y@4,4>])
+    (<Function: func@3-5>, [<NamePart: y@4,4>])
 
     Then it yield the names from one level outer scope. For this example, this
     is the most outer scope.
 
     >>> pairs[1]
-    (<ModuleWrapper: <SubModule: None@1-5>>, [<Name: x@2,0>, <Name: func@3,4>])
+    (<ModuleWrapper: <SubModule: None@1-5>>, [<NamePart: x@2,0>, <NamePart: func@3,4>])
 
     After that we have a few underscore names that have been defined
 

@@ -1552,7 +1552,8 @@ class NamePart(object):
         return self._string
 
     def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self._string)
+        return "<%s: %s@%s,%s>" % (type(self).__name__, self._string,
+                                   self.start_pos[0], self.start_pos[1])
 
     def get_code(self):
         return self._string
