@@ -595,7 +595,7 @@ class Parser(object):
                 self._scope.add_statement(kw)
                 if stmt is not None and tok_str == 'global':
                     for t in stmt._token_list:
-                        if isinstance(t, pr.Name):
+                        if isinstance(t, pr.NamePart):
                             # Add the global to the top module, it counts there.
                             self.module.add_global(t)
             # decorator
