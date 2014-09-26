@@ -101,8 +101,8 @@ class Parser(object):
                 self.module.used_names[tok_name] = set([simple])
         self.module.temp_used_names = []
         if isinstance(simple, pr.Statement):
-            for name, call in simple.get_names_dict().items():
-                self._scope.add_name_call(name, call)
+            for name, calls in simple.get_names_dict().items():
+                self._scope.add_name_calls(name, calls)
 
     def _parse_dotted_name(self, pre_used_token=None):
         """

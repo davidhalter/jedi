@@ -270,9 +270,9 @@ class Scope(Simple, DocstringMixin):
     def is_scope(self):
         return True
 
-    def add_name_call(self, name, call):
+    def add_name_calls(self, name, calls):
         """Add a name to the names_dict."""
-        self._names_dict[name].append(call)
+        self._names_dict[name] += calls
 
     def get_names_dict(self):
         return self._names_dict
@@ -688,14 +688,14 @@ class Flow(Scope):
             s.parent = self.use_as_parent
         self.set_vars = []
 
-    def add_name_call(self, name, call):
+    def add_name_calls(self, name, calls):
         """Add a name to the names_dict."""
         parent = self.parent
         if isinstance(parent, Module):
             # TODO this also looks like code smell. Look for opportunities to
             # remove.
             parent = self._sub_module
-        parent.add_name_call(name, call)
+        parent.add_name_calls(name, calls)
 
     @property
     def parent(self):
@@ -1020,7 +1020,7 @@ class Statement(Simple, DocstringMixin):
                         if c.next is None or isinstance(c.next, Array):
                             break
                         c = c.next
-                    dct[unicode(c.name)] = call
+                    dct[unicode(c.name)].append(call)
 
         for calls, operation in self.assignment_details:
             search_calls(calls)
@@ -1030,7 +1030,8 @@ class Statement(Simple, DocstringMixin):
             search_calls(self.expression_list())
 
         for as_name in self.as_names:
-            dct[unicode(as_name)].append(as_name)
+            dct[unicode(as_name)].append(Call(self._sub_module, as_name,
+                                         as_name.start_pos, as_name.end_pos, self))
         return dct
 
     def is_global(self):
