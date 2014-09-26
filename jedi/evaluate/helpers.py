@@ -15,7 +15,7 @@ def deep_ast_copy(obj, new_elements_default=None):
         return key_value[0] not in ('_expression_list', '_assignment_details')
 
     new_elements = new_elements_default or {}
-    accept = (pr.Simple, pr.NamePart, pr.KeywordStatement)
+    accept = (pr.Simple, pr.Name, pr.KeywordStatement)
 
     def recursion(obj):
         # If it's already in the cache, just return it.
@@ -242,7 +242,7 @@ def get_module_name_parts(module):
             # token_list anymore, but for now this is the easiest way to get
             # all the name_parts.
             for tok in stmt_or_import._token_list:
-                if isinstance(tok, pr.NamePart):
+                if isinstance(tok, pr.Name):
                     name_parts.add(tok)
 
     return name_parts
@@ -308,7 +308,7 @@ class FakeImport(pr.Import):
         self.parent = parent
 
 
-class FakeName(pr.NamePart):
+class FakeName(pr.Name):
     def __init__(self, name_str, parent=None, start_pos=(0, 0)):
         super(FakeName, self).__init__(FakeSubModule, name_str, parent, start_pos)
 

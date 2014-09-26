@@ -113,7 +113,7 @@ class Parser(object):
         :return: tuple of Name, next_token
         """
         def append(tok):
-            names.append(pr.NamePart(self.module, tok.string, None, tok.start_pos))
+            names.append(pr.Name(self.module, tok.string, None, tok.start_pos))
             self.module.temp_used_names.append(tok.string)
 
         names = []
@@ -139,7 +139,7 @@ class Parser(object):
         self.module.temp_used_names.append(tok.string)
         if tok.type != tokenize.NAME:
             return None, tok
-        return pr.NamePart(self.module, tok.string, None, tok.start_pos), next(self._gen)
+        return pr.Name(self.module, tok.string, None, tok.start_pos), next(self._gen)
 
     def _parse_import_list(self):
         """
@@ -595,7 +595,7 @@ class Parser(object):
                 self._scope.add_statement(kw)
                 if stmt is not None and tok_str == 'global':
                     for t in stmt._token_list:
-                        if isinstance(t, pr.NamePart):
+                        if isinstance(t, pr.Name):
                             # Add the global to the top module, it counts there.
                             self.module.add_global(t)
             # decorator

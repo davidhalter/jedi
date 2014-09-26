@@ -199,7 +199,7 @@ class ImportWrapper(pr.Base):
                 if star_imports:
                     scopes = [StarImportModule(scopes[0], star_imports)]
 
-                # goto only accepts Names or NameParts
+                # goto only accepts `Name`
                 if is_goto and not rest:
                     scopes = [s.name for s in scopes]
 
@@ -332,7 +332,7 @@ class _Importer(object):
         self.file_path = os.path.dirname(path) if path is not None else None
 
     def str_import_path(self):
-        """Returns the import path as pure strings instead of NameParts."""
+        """Returns the import path as pure strings instead of `Name`."""
         return tuple(str(name_part) for name_part in self.import_path)
 
     def get_relative_path(self):
@@ -374,12 +374,12 @@ class _Importer(object):
             pos = (part._line, part._column)
             try:
                 self.import_path = (
-                    pr.NamePart(FakeSubModule, 'flask_' + str(part), part.parent, pos),
+                    pr.Name(FakeSubModule, 'flask_' + str(part), part.parent, pos),
                 ) + orig_path[3:]
                 return self._real_follow_file_system()
             except ModuleNotFound as e:
                 self.import_path = (
-                    pr.NamePart(FakeSubModule, 'flaskext', part.parent, pos),
+                    pr.Name(FakeSubModule, 'flaskext', part.parent, pos),
                 ) + orig_path[2:]
                 return self._real_follow_file_system()
         return self._real_follow_file_system()

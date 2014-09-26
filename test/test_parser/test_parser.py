@@ -38,7 +38,7 @@ class TestCallAndName():
     def test_call_type(self):
         call = self.get_call('hello')
         assert isinstance(call, pr.Call)
-        assert type(call.name) == pr.NamePart
+        assert type(call.name) == pr.Name
 
     def test_literal_type(self):
         literal = self.get_call('1.0')

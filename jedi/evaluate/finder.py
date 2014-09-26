@@ -42,7 +42,7 @@ class NameFinder(object):
         types = self._names_to_types(names, resolve_decorator)
 
         if not names and not types \
-                and not (isinstance(self.name_str, pr.NamePart)
+                and not (isinstance(self.name_str, pr.Name)
                          and isinstance(self.name_str.parent.parent, pr.Param)):
             if not isinstance(self.name_str, (str, unicode)):  # TODO Remove?
                 if search_global:
@@ -148,7 +148,7 @@ class NameFinder(object):
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
         result = []
-        # str is important to lose the NamePart!
+        # str is important, because it shouldn't be `Name`!
         name = compiled.create(self._evaluator, str(self.name_str))
         with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattr__', [name])
@@ -219,7 +219,7 @@ class NameFinder(object):
         evaluator = self._evaluator
 
         # Add isinstance and other if/assert knowledge.
-        if isinstance(self.name_str, pr.NamePart):
+        if isinstance(self.name_str, pr.Name):
             flow_scope = self.name_str.parent.parent
             # Ignore FunctionExecution parents for now.
             until = flow_scope.get_parent_until(er.FunctionExecution)
@@ -455,13 +455,13 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     >>> from jedi.evaluate import Evaluator
     >>> pairs = list(get_names_of_scope(Evaluator(), scope))
     >>> pairs[0]
-    (<Function: func@3-5>, [<NamePart: y@4,4>])
+    (<Function: func@3-5>, [<Name: y@4,4>])
 
     Then it yield the names from one level outer scope. For this example, this
     is the most outer scope.
 
     >>> pairs[1]
-    (<ModuleWrapper: <SubModule: None@1-5>>, [<NamePart: x@2,0>, <NamePart: func@3,4>])
+    (<ModuleWrapper: <SubModule: None@1-5>>, [<Name: x@2,0>, <Name: func@3,4>])
 
     After that we have a few underscore names that have been defined
 

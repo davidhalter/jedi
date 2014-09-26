@@ -219,7 +219,7 @@ class Evaluator(object):
             else:
                 types = [iterable.Array(self, current)]
         else:
-            if isinstance(current, pr.NamePart):
+            if isinstance(current, pr.Name):
                 # This is the first global lookup.
                 types = self.find_types(scope, current, position=position,
                                         search_global=True)
@@ -336,7 +336,7 @@ class Evaluator(object):
         # statement name definitions. Only return, if it's one name and one
         # name only. Otherwise it's a mixture between a definition and a
         # reference. In this case it's just a definition. So we stay on it.
-        if len(call_path) == 1 and isinstance(call_path[0], pr.NamePart) \
+        if len(call_path) == 1 and isinstance(call_path[0], pr.Name) \
                 and call_path[0] in stmt.get_defined_names():
             # Named params should get resolved to their param definitions.
             if pr.Array.is_type(stmt.parent, pr.Array.TUPLE, pr.Array.NOARRAY) \
@@ -382,7 +382,7 @@ class Evaluator(object):
 
 def filter_private_variable(scope, call_scope, var_name):
     """private variables begin with a double underline `__`"""
-    var_name = str(var_name)  # var_name could be a NamePart
+    var_name = str(var_name)  # var_name could be a Name
     if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
             and var_name.startswith('__') and not var_name.endswith('__'):
         s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.CompiledObject))

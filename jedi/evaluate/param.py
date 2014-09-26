@@ -316,7 +316,7 @@ def _star_star_dict(evaluator, array, expression_list, func):
         for key_stmt, value_stmt in array.items():
             # first index, is the key if syntactically correct
             call = key_stmt.expression_list()[0]
-            if isinstance(call, pr.NamePart):
+            if isinstance(call, pr.Name):
                 key = call
             elif isinstance(call, pr.Call):
                 key = call.name

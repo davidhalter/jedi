@@ -176,7 +176,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
                 key = key_expression_list[0]
                 if isinstance(key, pr.Literal):
                     key = key.value
-                elif isinstance(key, pr.NamePart):
+                elif isinstance(key, pr.Name):
                     key = str(key)
                 else:
                     continue
@@ -314,7 +314,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
         result = []
         for c in calls:
             call_path = list(c.generate_call_path())
-            call_path_simple = [unicode(n) if isinstance(n, pr.NamePart) else n
+            call_path_simple = [unicode(n) if isinstance(n, pr.Name) else n
                                 for n in call_path]
             separate_index = call_path_simple.index(add_name)
             if add_name == call_path_simple[-1] or separate_index == 0:

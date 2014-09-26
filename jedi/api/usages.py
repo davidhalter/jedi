@@ -8,7 +8,7 @@ from jedi.evaluate import helpers
 
 def usages(evaluator, definitions, mods):
     """
-    :param definitions: list of NameParts
+    :param definitions: list of Name
     """
     def compare_array(definitions):
         """ `definitions` are being compared by module/start_pos, because
@@ -34,7 +34,7 @@ def usages(evaluator, definitions, mods):
         follow = []  # There might be multiple search_name's in one call_path
         call_path = list(call.generate_call_path())
         for i, name in enumerate(call_path):
-            # name is `pr.NamePart`.
+            # name is `pr.Name`.
             if u(name) == search_name:
                 follow.append(call_path[:i + 1])
 

@@ -485,7 +485,7 @@ class SubModule(Scope, Module):
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # Positions are not real, but a module starts at (1, 0)
         p = (1, 0)
-        return NamePart(self, string, self.use_as_parent, p)
+        return Name(self, string, self.use_as_parent, p)
 
     @property
     def has_explicit_absolute_import(self):
@@ -1240,7 +1240,7 @@ class Statement(Simple, DocstringMixin):
                     continue
 
             is_literal = token_type in (tokenize.STRING, tokenize.NUMBER)
-            if is_literal or isinstance(tok, NamePart):
+            if is_literal or isinstance(tok, Name):
                 cls = Literal if is_literal else Call
 
                 call = cls(self._sub_module, tok_str, tok.start_pos, tok.end_pos, self)
@@ -1522,7 +1522,7 @@ class Array(StatementElement):
         return "<%s: %s%s>" % (type(self).__name__, typ, self.values)
 
 
-class NamePart(object):
+class Name(object):
     """
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
