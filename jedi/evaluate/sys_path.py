@@ -60,7 +60,7 @@ def _paths_from_assignment(evaluator, statement):
     for exp_list, operator in statement.assignment_details:
         if len(exp_list) != 1 or not isinstance(exp_list[0], pr.Call):
             continue
-        if unicode(exp_list[0].name) != 'sys.path':
+        if exp_list[0].names() != ['sys', 'path']:
             continue
         # TODO at this point we ignore all ways what could be assigned to
         # sys.path or an execution of it. Here we could do way more
