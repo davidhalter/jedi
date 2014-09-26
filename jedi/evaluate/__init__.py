@@ -320,11 +320,11 @@ class Evaluator(object):
     def goto(self, stmt, call_path):
         if isinstance(stmt, pr.Import):
             # Nowhere to goto for aliases
-            if stmt.alias_name_part == call_path[0]:
+            if stmt.alias == call_path[0]:
                 return [call_path[0]]
 
             names = stmt.get_all_import_names()
-            if stmt.alias_name_part:
+            if stmt.alias:
                 names = names[:-1]
             # Filter names that are after our Name
             removed_names = len(names) - names.index(call_path[0]) - 1

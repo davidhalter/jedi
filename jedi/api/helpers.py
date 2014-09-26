@@ -29,7 +29,7 @@ def get_on_import_stmt(evaluator, user_context, user_stmt, is_like_search=False)
     kill_count = -1
     cur_name_part = None
     for name in import_names:
-        if user_stmt.alias_name_part == name:
+        if user_stmt.alias == name:
             continue
 
         if name.end_pos >= user_context.position:
