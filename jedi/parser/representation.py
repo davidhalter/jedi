@@ -795,11 +795,11 @@ class Import(Simple):
     :param start_pos: Position (line, column) of the Import.
     :type start_pos: tuple(int, int)
     :param namespace_names: The import, can be empty if a star is given
-    :type namespace_names: Name
+    :type namespace_names: list of Name
     :param alias: The alias of a namespace(valid in the current namespace).
-    :type alias: Name
+    :type alias: list of Name
     :param from_names: Like the namespace, can be equally used.
-    :type from_names: Name
+    :type from_names: list of Name
     :param star: If a star is used -> from time import *.
     :type star: bool
     :param defunct: An Import is valid or not.
@@ -940,9 +940,6 @@ class Statement(Simple, DocstringMixin):
         self._token_list = token_list
         self._names_are_set_vars = names_are_set_vars
         if set_name_parents:
-            for t in token_list:
-                if isinstance(t, Name):
-                    t.parent = self.use_as_parent
             for n in as_names:
                 n.parent = self.use_as_parent
         self._doc_token = None
@@ -1120,7 +1117,7 @@ class Statement(Simple, DocstringMixin):
                     first = False
 
                 if isinstance(tok, Base):
-                    # the token is a Name, which has already been parsed
+                    # The token is a Name, which has already been parsed.
                     if not level:
                         if isinstance(tok, ListComprehension):
                             # it's not possible to set it earlier
@@ -1190,9 +1187,6 @@ class Statement(Simple, DocstringMixin):
                                        added_breaks=added_breaks)
 
                 if stmt is not None:
-                    for t in stmt._token_list:
-                        if isinstance(t, Name):
-                            t.parent = stmt
                     stmt._names_are_set_vars = names_are_set_vars
                 return stmt, tok
 
@@ -1226,7 +1220,7 @@ class Statement(Simple, DocstringMixin):
                     next(token_iterator, None)
                     continue
             else:
-                # the token is a Name, which has already been parsed
+                # The token is a Name, which has already been parsed
                 tok_str = tok
                 token_type = None
 
@@ -1575,49 +1569,6 @@ class NamePart(object):
     @property
     def end_pos(self):
         return self.start_pos[0], self.start_pos[1] + len(self._string)
-
-
-class Name(Simple):
-    """
-    Used to define names in python.
-    Which means the whole namespace/class/function stuff.
-    So a name like "module.class.function"
-    would result in an array of [module, class, function]
-    """
-    __slots__ = ('names', '_get_code')
-
-    def __init__(self, module, names, start_pos, end_pos, parent=None):
-        super(Name, self).__init__(module, start_pos, end_pos, parent)
-        # Cache get_code, because it's used quite often for comparisons
-        # (seen by using the profiler).
-        self._get_code = ".".join(n[0] for n in names)
-
-        names = tuple(NamePart(module, n[0], self, n[1]) for n in names)
-        self.names = names
-
-    def get_code(self):
-        """ Returns the names in a full string format """
-        return self._get_code
-
-    def get_definition(self):
-        # TODO This is way to complicated, simplify this with a new parser.
-        return self.get_parent_until((ArrayStmt, StatementElement), reverse=True)
-        return self.get_parent_until((ExprStmt, IsScope, Import))
-
-    @property
-    def end_pos(self):
-        return self.names[-1].end_pos
-
-    @property
-    def docstr(self):
-        """Return attribute docstring (PEP 257) if exists."""
-        return self.parent.docstr
-
-    def __str__(self):
-        return self.get_code()
-
-    def __len__(self):
-        return len(self.names)
 
 
 class ListComprehension(ForFlow):

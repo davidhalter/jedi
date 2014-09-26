@@ -179,9 +179,6 @@ class Script(object):
         comps = []
         comp_dct = {}
         for c, s in set(completions):
-            # TODO Remove this line. c should be a namepart even before that.
-            if c.isinstance(pr.Name):
-                c = c.names[-1]
             n = str(c)
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
@@ -396,10 +393,9 @@ class Script(object):
                 definitions = set(self._prepare_goto(goto_path))
 
         definitions = resolve_import_paths(definitions)
-        names = [s if isinstance(s, pr.Name) else s.name for s in definitions
+        names = [s.name for s in definitions
                  if s is not imports.ImportWrapper.GlobalNamespace]
-        defs = [classes.Definition(self._evaluator, name.names[-1] if isinstance(name, pr.Name) else name )
-                for name in names]
+        defs = [classes.Definition(self._evaluator, name) for name in names]
         return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self):
