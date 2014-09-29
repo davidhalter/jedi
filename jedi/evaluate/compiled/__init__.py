@@ -328,30 +328,8 @@ def load_module(path, name):
     except RuntimeError:
         # RuntimeError: the PyQt4.QtCore and PyQt5.QtCore modules both wrap
         # the QObject class
-        if 'PySide' in dotted_path or 'PyQt4' in dotted_path:
-            original_path = dotted_path
-            dotted_path = dotted_path.replace('PySide', 'PyQt5')
-            dotted_path = dotted_path.replace('PyQt4', 'PyQt5')
-            if 'QtGui' in dotted_path:
-                # special case, we need to merge QtGui and QtWidgets modules:
-                # PyQt4.QtGui (or PySide.QtGui) = PyQt5.QtGui + PyQt5.QtWidgets
-                __import__(dotted_path)
-                # get PyQt5.QtGui
-                qt_gui_module = sys.modules[dotted_path]
-                # get PyQt5.QtWidgets
-                dotted_path = dotted_path.replace('QtGui', 'QtWidgets')
-                __import__(dotted_path)
-                module_widgets = sys.modules[dotted_path]
-                # merge modules into PySide.QtGui or PyQt4.QtGui
-                qt_gui_module.__dict__.update(module_widgets.__dict__)
-                sys.modules[original_path] = qt_gui_module
-                return CompiledObject(qt_gui_module)
-        else:
-            dotted_path = dotted_path.replace('PyQt5', 'PyQt4')
-            if 'QtWidgets' in dotted_path:
-                # PyQt4.QtWidgets does not exists but all names can be found
-                # in QtGui
-                dotted_path = dotted_path.replace('QtWidgets', 'QtGui')
+        if 'PySide' in dotted_path or 'PyQt' in dotted_path:
+            return None
     # Just access the cache after import, because of #59 as well as the very
     # complicated import structure of Python.
     module = sys.modules[dotted_path]
