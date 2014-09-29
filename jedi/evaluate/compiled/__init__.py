@@ -322,7 +322,14 @@ def load_module(path, name):
         sys_path.insert(0, p)
 
     temp, sys.path = sys.path, sys_path
-    __import__(dotted_path)
+    try:
+        __import__(dotted_path)
+    except RuntimeError:
+        if 'PySide' in dotted_path or 'PyQt' in dotted_path:
+            # RuntimeError: the PyQt4.QtCore and PyQt5.QtCore modules both wrap
+            # the QObject class.
+            # See https://github.com/davidhalter/jedi/pull/483
+            return None
     # Just access the cache after import, because of #59 as well as the very
     # complicated import structure of Python.
     module = sys.modules[dotted_path]

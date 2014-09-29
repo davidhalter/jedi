@@ -190,6 +190,9 @@ class ImportWrapper(pr.Base):
                     analysis.add(self._evaluator, 'import-error', e.name_part)
                     return []
 
+                if module is None:
+                    return []
+
                 if self.import_stmt.is_nested() and not self.nested_resolve:
                     scopes = [NestedImportModule(module, self.import_stmt)]
                 else:
