@@ -148,6 +148,28 @@ def test_signature_params():
     check(Script(s + '\nbar=foo\nbar').goto_assignments())
 
 
+class TestIsDefinition(TestCase):
+    def _def(self, source, index=-1):
+        return names(dedent(source), references=True, all_scopes=True)[index]
+
+    def test_name(self):
+        d = self._def('name')
+        assert d.name == 'name'
+        assert not d.is_definition()
+
+    def test_stmt(self):
+        src = 'a = f(x)'
+        d = self._def(src, 0)
+        assert d.name == 'a'
+        assert d.is_definition()
+        d = self._def(src, 1)
+        assert d.name == 'f'
+        assert not d.is_definition()
+        d = self._def(src)
+        assert d.name == 'x'
+        assert not d.is_definition()
+
+
 class TestParent(TestCase):
     def _parent(self, source, line=None, column=None):
         defs = Script(dedent(source), line, column).goto_assignments()
@@ -219,3 +241,60 @@ class TestGotoAssignments(TestCase):
         param = bar.goto_assignments()[0]
         assert param.start_pos == (1, 13)
         assert param.type == 'param'
+
+    def test_class_call(self):
+        src = 'from threading import Thread; Thread(group=1)'
+        n = names(src, references=True)[-1]
+        assert n.name == 'group'
+        param_def = n.goto_assignments()[0]
+        assert param_def.name == 'group'
+        assert param_def.type == 'param'
+
+    def test_parentheses(self):
+        n = names('("").upper', references=True)[-1]
+        assert n.goto_assignments()[0].name == 'upper'
+
+    def test_import(self):
+        nms = names('from json import load', references=True)
+        assert nms[0].name == 'json'
+        assert nms[0].type == 'import'
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'json'
+        assert n.type == 'module'
+
+        assert nms[1].name == 'load'
+        assert nms[1].type == 'import'
+        n = nms[1].goto_assignments()[0]
+        assert n.name == 'load'
+        assert n.type == 'function'
+
+        nms = names('import os; os.path', references=True)
+        assert nms[0].name == 'os'
+        assert nms[0].type == 'import'
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'os'
+        assert n.type == 'module'
+
+        n = nms[2].goto_assignments()[0]
+        assert n.name == 'path'
+        assert n.type == 'import'
+
+        nms = names('import os.path', references=True)
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'os'
+        assert n.type == 'module'
+        n = nms[1].goto_assignments()[0]
+        assert n.name == 'path'
+        assert n.type == 'import'
+
+    def test_import_alias(self):
+        nms = names('import json as foo', references=True)
+        assert nms[0].name == 'json'
+        assert nms[0].type == 'import'
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'json'
+        assert n.type == 'module'
+
+        assert nms[1].name == 'foo'
+        assert nms[1].type == 'import'
+        assert [nms[1]] == nms[1].goto_assignments()

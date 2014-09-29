@@ -48,8 +48,7 @@ class LazyName(helpers.FakeName):
             module = obj
         else:
             class FakeParent(pr.Base):
-                parent = None  # To avoid having no parent for NamePart.
-                path = None
+                parent = compiled.builtin
 
             names = []
             try:
@@ -67,8 +66,7 @@ class LazyName(helpers.FakeName):
                 module = builtins
             else:
                 module = __import__(module_name)
-            fake_name = helpers.FakeName(names, FakeParent())
-            parser_path = fake_name.names
+            parser_path = [helpers.FakeName(n, FakeParent()) for n in names]
         raw_module = get_module(self._value)
 
         try:

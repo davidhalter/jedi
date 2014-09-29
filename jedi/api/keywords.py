@@ -1,7 +1,6 @@
 import pydoc
 import keyword
 
-from jedi.parser.representation import NamePart
 from jedi._compatibility import is_py3
 from jedi import common
 from jedi.evaluate import compiled

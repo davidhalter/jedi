@@ -164,12 +164,14 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     # because to follow them and their self variables is too
                     # complicated.
                     sub = self._get_method_execution(sub)
-            for n in sub.get_defined_names():
-                # Only names with the selfname are being added.
-                # It is also important, that they have a len() of 2,
-                # because otherwise, they are just something else
-                if unicode(n.names[0]) == self_name and len(n.names) == 2:
-                    add_self_dot_name(n)
+            for per_name_list in sub.get_names_dict().values():
+                for call in per_name_list:
+                    if unicode(call.name) == self_name \
+                            and isinstance(call.next, pr.Call) \
+                            and call.next.next is None:
+                        names.append(get_instance_el(self._evaluator, self, call.next.name))
+                    #if unicode(n.names[0]) == self_name and len(n.names) == 2:
+                    #    add_self_dot_name(n)
 
         for s in self.base.py__bases__(self._evaluator):
             if not isinstance(s, compiled.CompiledObject):
@@ -243,7 +245,12 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
     untouched.
     """
     if isinstance(var, (Instance, compiled.CompiledObject, pr.Operator, Token,
-                        pr.Module, FunctionExecution)):
+                        pr.Module, FunctionExecution, pr.Name)):
+        if isinstance(var, pr.Name):
+            # TODO temp solution, remove later, Name should never get
+            #     here?
+            par = get_instance_el(evaluator, instance, var.parent, is_class_var)
+            return pr.Name(var._sub_module, unicode(var), par, var.start_pos)
         return var
 
     var = wrap(evaluator, var)
@@ -275,6 +282,9 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return par
 
     def get_parent_until(self, *args, **kwargs):
+        if isinstance(self.var, pr.Name):
+            # TODO Name should never even be InstanceElements
+            return pr.Simple.get_parent_until(self.parent, *args, **kwargs)
         return pr.Simple.get_parent_until(self, *args, **kwargs)
 
     def get_definition(self):
@@ -290,12 +300,6 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         # Copy and modify the array.
         return [get_instance_el(self._evaluator, self.instance, command, self.is_class_var)
                 for command in self.var.expression_list()]
-
-    @property
-    @underscore_memoization
-    def names(self):
-        return [pr.NamePart(helpers.FakeSubModule, unicode(n), self, n.start_pos)
-                for n in self.var.names]
 
     @property
     @underscore_memoization
@@ -389,6 +393,9 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
 
     def py__call__(self, evaluator, params):
         return [Instance(evaluator, self, params)]
+
+    def py__getattribute__(self, name):
+        return self._evaluator.find_types(self, name)
 
     def scope_names_generator(self, position=None, add_class_vars=True):
         def in_iterable(name, iterable):
@@ -522,6 +529,21 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
+class LazyDict(object):
+    def __init__(self, old_dct, copy_func):
+        self._copy_func = copy_func
+        self._old_dct = old_dct
+
+    def __getitem__(self, key):
+        return self._copy_func(self._old_dct[key])
+
+    @underscore_memoization
+    def values(self):
+        # TODO REMOVE this. Not necessary with correct name lookups.
+        for calls in self._old_dct.values():
+            yield self._copy_func(calls)
+
+
 class FunctionExecution(Executed):
     """
     This class is used to evaluate functions and their returns.
@@ -570,6 +592,10 @@ class FunctionExecution(Executed):
                 break
         return types
 
+    @underscore_memoization
+    def get_names_dict(self):
+        return LazyDict(self.base.get_names_dict(), self._copy_list)
+
     @memoize_default(default=())
     def _get_params(self):
         """
@@ -591,15 +617,13 @@ class FunctionExecution(Executed):
         names = pr.filter_after_position(pr.Scope.get_defined_names(self), position)
         yield self, self._get_params() + names
 
-    def _copy_list(self, list_name):
+    def _copy_list(self, lst):
         """
         Copies a list attribute of a parser Function. Copying is very
         expensive, because it is something like `copy.deepcopy`. However, these
         copied objects can be used for the executions, as if they were in the
         execution.
         """
-        # Copy all these lists into this local function.
-        lst = getattr(self.base, list_name)
         objects = []
         for element in lst:
             self._scope_copy(element.parent)
@@ -622,22 +646,22 @@ class FunctionExecution(Executed):
     @common.safe_property
     @memoize_default([])
     def returns(self):
-        return self._copy_list('returns')
+        return self._copy_list(self.base.returns)
 
     @common.safe_property
     @memoize_default([])
     def asserts(self):
-        return self._copy_list('asserts')
+        return self._copy_list(self.base.asserts)
 
     @common.safe_property
     @memoize_default([])
     def statements(self):
-        return self._copy_list('statements')
+        return self._copy_list(self.base.statements)
 
     @common.safe_property
     @memoize_default([])
     def subscopes(self):
-        return self._copy_list('subscopes')
+        return self._copy_list(self.base.subscopes)
 
     def get_statement_for_position(self, pos):
         return pr.Scope.get_statement_for_position(self, pos)
@@ -667,6 +691,11 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         # All the additional module attributes are strings.
         return [helpers.LazyName(n, parent_callback) for n in names]
 
+    @property
+    @memoize_default()
+    def name(self):
+        return pr.Name(self, unicode(self.base.name), self, (1, 0))
+
     @memoize_default()
     def _sub_modules(self):
         """
@@ -683,6 +712,14 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
                 imp = helpers.FakeImport(name, self, level=1)
                 name.parent = imp
                 names.append(name)
+
+        # TODO add something like this in the future, its cleaner than the
+        #   import hacks.
+        # ``os.path`` is a hardcoded exception, because it's a
+        # ``sys.modules`` modification.
+        #if str(self.name) == 'os':
+        #    names.append(helpers.FakeName('path', parent=self))
+
         return names
 
     def __getattr__(self, name):

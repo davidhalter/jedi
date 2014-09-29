@@ -240,7 +240,6 @@ class CompiledName(FakeName):
         super(CompiledName, self).__init__(name)
         self._obj = obj
         self.name = name
-        self.start_pos = 0, 0  # an illegal start_pos, to make sorting easy.
 
     def __repr__(self):
         try:

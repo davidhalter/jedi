@@ -2,7 +2,9 @@
 This is used for dynamic object completion.
 Jedi tries to guess the types with a backtracking approach.
 """
-def func(a):
+def func(a, default_arg=2):
+    #? int()
+    default_arg
     #? int() str()
     return a
 

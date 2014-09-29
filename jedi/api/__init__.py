@@ -167,8 +167,8 @@ class Script(object):
                         # Allow access on _definition here, because it's a
                         # public API and we don't want to make the internal
                         # Name object public.
-                        if p._name.get_definition().stars == 0:  # no *args/**kwargs
-                            completions.append((p._name.parent, p))
+                        if p._definition.stars == 0:  # no *args/**kwargs
+                            completions.append((p._name, p._name))
 
             if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords
@@ -179,17 +179,15 @@ class Script(object):
         comps = []
         comp_dct = {}
         for c, s in set(completions):
-            # TODO Remove this line. c should be a namepart even before that.
-            c = c.names[-1]
             n = str(c)
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not filter_private_variable(s, user_stmt or self._parser.user_scope(), n):
-                    if isinstance(c.parent.parent, (pr.Function, pr.Class)):
+                    if isinstance(c.parent, (pr.Function, pr.Class)):
                         # TODO I think this is a hack. It should be an
                         #   er.Function/er.Class before that.
-                        c = er.wrap(self._evaluator, c.parent.parent).name.names[-1]
+                        c = er.wrap(self._evaluator, c.parent).name
                     new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
@@ -395,10 +393,9 @@ class Script(object):
                 definitions = set(self._prepare_goto(goto_path))
 
         definitions = resolve_import_paths(definitions)
-        names = [s if isinstance(s, pr.Name) else s.name for s in definitions
+        names = [s.name for s in definitions
                  if s is not imports.ImportWrapper.GlobalNamespace]
-        defs = [classes.Definition(self._evaluator, name.names[-1])
-                for name in names]
+        defs = [classes.Definition(self._evaluator, name) for name in names]
         return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self):
@@ -432,7 +429,7 @@ class Script(object):
                         and d.start_pos == (0, 0):
                     i = imports.ImportWrapper(self._evaluator, d.parent).follow(is_goto=True)
                     definitions.remove(d)
-                    definitions |= follow_inexistent_imports(i.names[-1])
+                    definitions |= follow_inexistent_imports(i)
             return definitions
 
         goto_path = self._user_context.get_path_under_cursor()
@@ -455,7 +452,7 @@ class Script(object):
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.
             user_scope = self._parser.user_scope()
-            definitions = set([user_scope.name.names[-1]])
+            definitions = set([user_scope.name])
         elif isinstance(user_stmt, pr.Import):
             s, name_part = helpers.get_on_import_stmt(self._evaluator,
                                                       self._user_context, user_stmt)
@@ -467,7 +464,7 @@ class Script(object):
             if add_import_name:
                 import_name = user_stmt.get_defined_names()
                 # imports have only one name
-                np = import_name[0].names[-1]
+                np = import_name[0]
                 if not user_stmt.star and unicode(name_part) == unicode(np):
                     definitions.append(np)
         else:
@@ -477,8 +474,9 @@ class Script(object):
             if isinstance(user_stmt, pr.ExprStmt):
                 for name in user_stmt.get_defined_names():
                     if name.start_pos <= self._pos <= name.end_pos \
-                            and len(name.names) == 1:
-                        return [name.names[0]]
+                            and (not isinstance(name.parent, pr.Call)
+                                 or name.parent.next is None):
+                        return [name]
 
             defs = self._evaluator.goto(stmt, call_path)
             definitions = follow_inexistent_imports(defs)
@@ -503,16 +501,6 @@ class Script(object):
             if not definitions:
                 # Without a definition for a name we cannot find references.
                 return []
-
-            # Once Script._goto works correct, we can probably remove this
-            # branch.
-            if isinstance(user_stmt, pr.ExprStmt):
-                c = user_stmt.expression_list()[0]
-                if not isinstance(c, unicode) and self._pos < c.start_pos:
-                    # The lookup might be before `=`
-                    definitions = [v.names[-1] for v in user_stmt.get_defined_names()
-                                   if unicode(v.names[-1]) ==
-                                   list(definitions)[0].get_code()]
 
             if not isinstance(user_stmt, pr.Import):
                 # import case is looked at with add_import_name option
@@ -572,7 +560,7 @@ class Script(object):
                 key_name = unicode(detail[0][0].name)
             except (IndexError, AttributeError):
                 pass
-        return [classes.CallSignature(self._evaluator, o.name.names[-1], call, index, key_name)
+        return [classes.CallSignature(self._evaluator, o.name, call, index, key_name)
                 for o in origins if hasattr(o, 'py__call__')]
 
     def _analysis(self):
@@ -583,7 +571,7 @@ class Script(object):
             iw = imports.ImportWrapper(self._evaluator, i,
                                        nested_resolve=True).follow()
             if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
-                analysis.add(self._evaluator, 'import-error', i.namespace.names[-1])
+                analysis.add(self._evaluator, 'import-error', i.namespace_names[-1])
         for stmt in sorted(stmts, key=lambda obj: obj.start_pos):
             if not (isinstance(stmt.parent, pr.ForFlow)
                     and stmt.parent.set_stmt == stmt):

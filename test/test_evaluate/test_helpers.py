@@ -1,16 +1,7 @@
 from jedi._compatibility import unicode
 
 from jedi.evaluate import helpers
-from jedi.parser import representation as pr
 from jedi.parser import Parser
-
-
-def test_deep_ast_copy():
-    name = pr.Name(object, [('hallo', (0, 0))], (0, 0), (0, 0))
-
-    # fast parent copy should switch parent
-    new_name = helpers.deep_ast_copy(name)
-    assert new_name.names[0].parent == new_name
 
 
 def test_statement_elements_in_statement():

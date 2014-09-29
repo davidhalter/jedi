@@ -1,6 +1,7 @@
 import copy
 from itertools import chain
 
+from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi import debug
 
@@ -14,7 +15,7 @@ def deep_ast_copy(obj, new_elements_default=None):
         return key_value[0] not in ('_expression_list', '_assignment_details')
 
     new_elements = new_elements_default or {}
-    accept = (pr.Simple, pr.NamePart, pr.KeywordStatement)
+    accept = (pr.Simple, pr.Name, pr.KeywordStatement)
 
     def recursion(obj):
         # If it's already in the cache, just return it.
@@ -50,6 +51,8 @@ def deep_ast_copy(obj, new_elements_default=None):
             # because there are several references that don't walk the whole
             # tree in there.
             items = sorted(items, key=sort_stmt)
+        else:
+            items = sorted(items, key=lambda x: x[0] == '_names_dict')
 
         # Actually copy and set attributes.
         new_obj = copy.copy(obj)
@@ -67,13 +70,17 @@ def deep_ast_copy(obj, new_elements_default=None):
                     pass
             elif key in ['parent_function', 'use_as_parent', '_sub_module']:
                 continue
+            elif key == '_names_dict':
+                d = dict((k, sequence_recursion(v)) for k, v in value.items())
+                setattr(new_obj, key, d)
             elif isinstance(value, (list, tuple)):
-                setattr(new_obj, key, list_or_tuple_rec(value))
+                setattr(new_obj, key, sequence_recursion(value))
             elif isinstance(value, accept):
                 setattr(new_obj, key, recursion(value))
+
         return new_obj
 
-    def list_or_tuple_rec(array_obj):
+    def sequence_recursion(array_obj):
         if isinstance(array_obj, tuple):
             copied_array = list(array_obj)
         else:
@@ -82,7 +89,7 @@ def deep_ast_copy(obj, new_elements_default=None):
             if isinstance(el, accept):
                 copied_array[i] = recursion(el)
             elif isinstance(el, (tuple, list)):
-                copied_array[i] = list_or_tuple_rec(el)
+                copied_array[i] = sequence_recursion(el)
 
         if isinstance(array_obj, tuple):
             return tuple(copied_array)
@@ -196,9 +203,7 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
                 if isinstance(s_new, pr.Array):
                     result += scan_array(s_new, search_name)
                 else:
-                    n = s_new.name
-                    if isinstance(n, pr.Name) \
-                            and search_name in [str(x) for x in n.names]:
+                    if search_name == unicode(s_new.name):
                         result.append(c)
 
                 s_new = s_new.next
@@ -217,7 +222,7 @@ def get_module_name_parts(module):
     def scope_name_parts(scope):
         for s in scope.subscopes:
             # Yield the name parts, not names.
-            yield s.name.names[0]
+            yield s.name
             for need_yield_from in scope_name_parts(s):
                 yield need_yield_from
 
@@ -226,7 +231,7 @@ def get_module_name_parts(module):
     for stmt_or_import in statements_or_imports:
         if isinstance(stmt_or_import, pr.Import):
             for name in stmt_or_import.get_all_import_names():
-                name_parts.update(name.names)
+                name_parts.add(name)
         else:
             # Running this ensures that all the expression lists are generated
             # and the parents are all set. (Important for Lambdas) Howeer, this
@@ -238,7 +243,7 @@ def get_module_name_parts(module):
             # all the name_parts.
             for tok in stmt_or_import._token_list:
                 if isinstance(tok, pr.Name):
-                    name_parts.update(tok.names)
+                    name_parts.add(tok)
 
     return name_parts
 
@@ -298,18 +303,14 @@ class FakeStatement(pr.ExprStmt):
 class FakeImport(pr.Import):
     def __init__(self, name, parent, level=0):
         p = 0, 0
-        super(FakeImport, self).__init__(FakeSubModule, p, p, name,
+        super(FakeImport, self).__init__(FakeSubModule, p, p, [name],
                                          relative_count=level)
         self.parent = parent
 
 
 class FakeName(pr.Name):
-    def __init__(self, name_or_names, parent=None, start_pos=(0, 0)):
-        if isinstance(name_or_names, list):
-            names = [(n, start_pos) for n in name_or_names]
-        else:
-            names = [(name_or_names, start_pos)]
-        super(FakeName, self).__init__(FakeSubModule, names, start_pos, start_pos, parent)
+    def __init__(self, name_str, parent=None, start_pos=(0, 0)):
+        super(FakeName, self).__init__(FakeSubModule, name_str, parent, start_pos)
 
     def get_definition(self):
         return self.parent

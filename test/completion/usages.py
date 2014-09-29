@@ -185,7 +185,7 @@ class TestClass(Super):
         TestClass.base_var
 
 
-        #< 13 (5,13), (0,13)
+        #< 13 (5,13), (0,13), (-24,13)
         self.instance_var = 3
 
     #< 9 (0,8), 

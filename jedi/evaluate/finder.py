@@ -42,7 +42,7 @@ class NameFinder(object):
         types = self._names_to_types(names, resolve_decorator)
 
         if not names and not types \
-                and not (isinstance(self.name_str, pr.NamePart)
+                and not (isinstance(self.name_str, pr.Name)
                          and isinstance(self.name_str.parent.parent, pr.Param)):
             if not isinstance(self.name_str, (str, unicode)):  # TODO Remove?
                 if search_global:
@@ -102,18 +102,18 @@ class NameFinder(object):
                             or isinstance(scope, compiled.CompiledObject) \
                             or isinstance(stmt, pr.ExprStmt) and stmt.is_global():
                         # Always reachable.
-                        names.append(name.names[-1])
+                        names.append(name)
                     else:
                         check = flow_analysis.break_check(self._evaluator,
                                                           name_list_scope,
                                                           er.wrap(self._evaluator, scope),
                                                           self.scope)
                         if check is not flow_analysis.UNREACHABLE:
-                            names.append(name.names[-1])
+                            names.append(name)
                         if check is flow_analysis.REACHABLE:
                             break
 
-                if names and self._is_name_break_scope(name, stmt):
+                if names and self._is_name_break_scope(stmt):
                     if self._does_scope_break_immediately(scope, name_list_scope):
                         break
                     else:
@@ -139,16 +139,16 @@ class NameFinder(object):
         evaluation, so remove them already here!
         """
         for n in names:
-            definition = n.parent.parent
+            definition = n.parent
             if isinstance(definition, (pr.Function, pr.Class, pr.Module)):
-                yield er.wrap(self._evaluator, definition).name.names[-1]
+                yield er.wrap(self._evaluator, definition).name
             else:
                 yield n
 
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
         result = []
-        # str is important to lose the NamePart!
+        # str is important, because it shouldn't be `Name`!
         name = compiled.create(self._evaluator, str(self.name_str))
         with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattr__', [name])
@@ -161,12 +161,12 @@ class NameFinder(object):
                 result = inst.execute_subscope_by_name('__getattribute__', [name])
         return result
 
-    def _is_name_break_scope(self, name, stmt):
+    def _is_name_break_scope(self, stmt):
         """
         Returns True except for nested imports and instance variables.
         """
         if stmt.isinstance(pr.ExprStmt):
-            if isinstance(name, er.InstanceElement) and not name.is_class_var:
+            if isinstance(stmt, er.InstanceElement) and not stmt.is_class_var:
                 return False
         elif isinstance(stmt, pr.Import) and stmt.is_nested():
             return False
@@ -219,7 +219,7 @@ class NameFinder(object):
         evaluator = self._evaluator
 
         # Add isinstance and other if/assert knowledge.
-        if isinstance(self.name_str, pr.NamePart):
+        if isinstance(self.name_str, pr.Name):
             flow_scope = self.name_str.parent.parent
             # Ignore FunctionExecution parents for now.
             until = flow_scope.get_parent_until(er.FunctionExecution)
@@ -281,7 +281,7 @@ class NameFinder(object):
         if isinstance(p, pr.Flow) and p.command == 'except' and p.inputs:
             as_names = p.inputs[0].as_names
             try:
-                if as_names[0].names[-1] == name:
+                if as_names[0] == name:
                     # TODO check for types that are not classes and add it to
                     # the static analysis report.
                     types = list(chain.from_iterable(
@@ -395,7 +395,7 @@ def check_flow_information(evaluator, flow, search_name_part, pos):
     return result
 
 
-def _check_isinstance_type(evaluator, stmt, search_name_part):
+def _check_isinstance_type(evaluator, stmt, search_name):
     try:
         expression_list = stmt.expression_list()
         # this might be removed if we analyze and, etc
@@ -412,8 +412,12 @@ def _check_isinstance_type(evaluator, stmt, search_name_part):
         assert len(classes) == 1
         assert isinstance(obj[0], pr.Call)
 
-        # names fit?
-        assert unicode(obj[0].name) == unicode(search_name_part.parent)
+        prev = search_name.parent
+        while prev.previous is not None:
+            prev = prev.previous
+        # Do a simple get_code comparison. They should just have the same code,
+        # and everything will be all right.
+        assert obj[0].get_code() == prev.get_code()
         assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
     except AssertionError:
         return []
@@ -583,7 +587,7 @@ def find_assignments(lhs, results, seek_name):
     """
     if isinstance(lhs, pr.Array):
         return _assign_tuples(lhs, results, seek_name)
-    elif unicode(lhs.name.names[-1]) == seek_name:
+    elif unicode(lhs.name) == seek_name:
         return results
     else:
         return []

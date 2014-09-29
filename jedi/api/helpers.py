@@ -28,14 +28,14 @@ def get_on_import_stmt(evaluator, user_context, user_stmt, is_like_search=False)
     import_names = user_stmt.get_all_import_names()
     kill_count = -1
     cur_name_part = None
-    for i in import_names:
-        if user_stmt.alias == i:
+    for name in import_names:
+        if user_stmt.alias == name:
             continue
-        for name_part in i.names:
-            if name_part.end_pos >= user_context.position:
-                if not cur_name_part:
-                    cur_name_part = name_part
-                kill_count += 1
+
+        if name.end_pos >= user_context.position:
+            if not cur_name_part:
+                cur_name_part = name
+            kill_count += 1
 
     context = user_context.get_context()
     just_from = next(context) == 'from'

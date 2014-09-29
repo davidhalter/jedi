@@ -8,7 +8,7 @@ from jedi.evaluate import helpers
 
 def usages(evaluator, definitions, mods):
     """
-    :param definitions: list of NameParts
+    :param definitions: list of Name
     """
     def compare_array(definitions):
         """ `definitions` are being compared by module/start_pos, because
@@ -25,8 +25,7 @@ def usages(evaluator, definitions, mods):
         while not stmt.parent.is_scope():
             stmt = stmt.parent
         # New definition, call cannot be a part of stmt
-        if len(call.name) == 1 and call.next is None \
-                and call.name in stmt.get_defined_names():
+        if call.next is None and call.name in stmt.get_defined_names():
             # Class params are not definitions (like function params). They
             # are super classes, that need to be resolved.
             if not (isinstance(stmt, pr.Param) and isinstance(stmt.parent, pr.Class)):
@@ -35,7 +34,7 @@ def usages(evaluator, definitions, mods):
         follow = []  # There might be multiple search_name's in one call_path
         call_path = list(call.generate_call_path())
         for i, name in enumerate(call_path):
-            # name is `pr.NamePart`.
+            # name is `pr.Name`.
             if u(name) == search_name:
                 follow.append(call_path[:i + 1])
 
@@ -70,11 +69,10 @@ def usages(evaluator, definitions, mods):
             if isinstance(stmt, pr.Import):
                 count = 0
                 imps = []
-                for i in stmt.get_all_import_names():
-                    for name_part in i.names:
-                        count += 1
-                        if unicode(name_part) == search_name:
-                            imps.append((count, name_part))
+                for name in stmt.get_all_import_names():
+                    count += 1
+                    if unicode(name) == search_name:
+                        imps.append((count, name))
 
                 for used_count, name_part in imps:
                     i = imports.ImportWrapper(evaluator, stmt, kill_count=count - used_count,

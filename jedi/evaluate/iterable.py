@@ -193,14 +193,14 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
 
     def scope_names_generator(self, position=None):
         """
-        This method generates all `ArrayMethod` for one pr.Array.
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
+        from jedi.evaluate.representation import get_instance_el
         for _, names in scope.scope_names_generator():
-            yield self, [ArrayMethod(n) for n in names]
+            yield self, [get_instance_el(self._evaluator, self, n) for n in names]
 
     @common.safe_property
     def parent(self):
@@ -223,34 +223,6 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self._array)
-
-
-class ArrayMethod(IterableWrapper):
-    """
-    A name, e.g. `list.append`, it is used to access the original array
-    methods.
-    """
-    def __init__(self, name):
-        super(ArrayMethod, self).__init__()
-        self.name = name
-
-    @property
-    @underscore_memoization
-    def names(self):
-        # TODO remove this method, we need the ArrayMethod input to be a NamePart.
-        return [pr.NamePart(self.name._sub_module, unicode(n), self, n.start_pos) for n in self.name.names]
-
-    def __getattr__(self, name):
-        # Set access privileges:
-        if name not in ['parent', 'start_pos', 'end_pos', 'get_code', 'get_definition']:
-            raise AttributeError('Strange access on %s: %s.' % (self, name))
-        return getattr(self.name, name)
-
-    def get_parent_until(self):
-        return compiled.builtin
-
-    def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.name)
 
 
 class MergedArray(Array):
@@ -342,7 +314,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
         result = []
         for c in calls:
             call_path = list(c.generate_call_path())
-            call_path_simple = [unicode(n) if isinstance(n, pr.NamePart) else n
+            call_path_simple = [unicode(n) if isinstance(n, pr.Name) else n
                                 for n in call_path]
             separate_index = call_path_simple.index(add_name)
             if add_name == call_path_simple[-1] or separate_index == 0:

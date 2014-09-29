@@ -69,7 +69,7 @@ backtracking algorithm.
 .. todo:: nonlocal statement, needed or can be ignored? (py3k)
 """
 import copy
-import itertools
+from itertools import tee, chain
 
 from jedi._compatibility import next, hasattr, unicode
 from jedi.parser import representation as pr
@@ -172,20 +172,7 @@ class Evaluator(object):
         return precedence.process_precedence_element(self, p) or []
 
     def eval_statement_element(self, element):
-        if pr.Array.is_type(element, pr.Array.NOARRAY):
-            try:
-                lst_cmp = element[0].expression_list()[0]
-                if not isinstance(lst_cmp, pr.ListComprehension):
-                    raise IndexError
-            except IndexError:
-                r = list(itertools.chain.from_iterable(self.eval_statement(s)
-                                                       for s in element))
-            else:
-                r = [iterable.GeneratorComprehension(self, lst_cmp)]
-            call_path = element.generate_call_path()
-            next(call_path, None)  # the first one has been used already
-            return self.follow_path(call_path, r, element.parent)
-        elif isinstance(element, pr.ListComprehension):
+        if isinstance(element, pr.ListComprehension):
             return self.eval_statement(element.stmt)
         elif isinstance(element, pr.Lambda):
             return [er.Function(self, element)]
@@ -219,9 +206,20 @@ class Evaluator(object):
         current = next(path)
 
         if isinstance(current, pr.Array):
-            types = [iterable.Array(self, current)]
+            if current.type == pr.Array.NOARRAY:
+                try:
+                    lst_cmp = current[0].expression_list()[0]
+                    if not isinstance(lst_cmp, pr.ListComprehension):
+                        raise IndexError
+                except IndexError:
+                    types = list(chain.from_iterable(self.eval_statement(s)
+                                                     for s in current))
+                else:
+                    types = [iterable.GeneratorComprehension(self, lst_cmp)]
+            else:
+                types = [iterable.Array(self, current)]
         else:
-            if isinstance(current, pr.NamePart):
+            if isinstance(current, pr.Name):
                 # This is the first global lookup.
                 types = self.find_types(scope, current, position=position,
                                         search_global=True)
@@ -241,7 +239,7 @@ class Evaluator(object):
         to follow a call like ``module.a_type.Foo.bar`` (in ``from_somewhere``).
         """
         results_new = []
-        iter_paths = itertools.tee(path, len(types))
+        iter_paths = tee(path, len(types))
 
         for i, typ in enumerate(types):
             fp = self._follow_path(iter_paths[i], typ, call_scope)
@@ -320,12 +318,26 @@ class Evaluator(object):
             return types
 
     def goto(self, stmt, call_path):
+        if isinstance(stmt, pr.Import):
+            # Nowhere to goto for aliases
+            if stmt.alias == call_path[0]:
+                return [call_path[0]]
+
+            names = stmt.get_all_import_names()
+            if stmt.alias:
+                names = names[:-1]
+            # Filter names that are after our Name
+            removed_names = len(names) - names.index(call_path[0]) - 1
+            i = imports.ImportWrapper(self, stmt, kill_count=removed_names,
+                                      nested_resolve=True)
+            return i.follow(is_goto=True)
+
         # Return the name defined in the call_path, if it's part of the
         # statement name definitions. Only return, if it's one name and one
         # name only. Otherwise it's a mixture between a definition and a
         # reference. In this case it's just a definition. So we stay on it.
-        if len(call_path) == 1 and isinstance(call_path[0], pr.NamePart) \
-                and call_path[0] in [d.names[-1] for d in stmt.get_defined_names()]:
+        if len(call_path) == 1 and isinstance(call_path[0], pr.Name) \
+                and call_path[0] in stmt.get_defined_names():
             # Named params should get resolved to their param definitions.
             if pr.Array.is_type(stmt.parent, pr.Array.TUPLE, pr.Array.NOARRAY) \
                     and stmt.parent.previous:
@@ -337,9 +349,15 @@ class Evaluator(object):
                 param_names = []
                 named_param_name = stmt.get_defined_names()[0]
                 for typ in self.eval_call(call):
-                    for param in typ.params:
+                    if isinstance(typ, er.Class):
+                        params = []
+                        for init_method in typ.py__getattribute__('__init__'):
+                            params += init_method.params
+                    else:
+                        params = typ.params
+                    for param in params:
                         if unicode(param.get_name()) == unicode(named_param_name):
-                            param_names.append(param.get_name().names[-1])
+                            param_names.append(param.get_name())
                 return param_names
             return [call_path[0]]
 
@@ -364,7 +382,7 @@ class Evaluator(object):
 
 def filter_private_variable(scope, call_scope, var_name):
     """private variables begin with a double underline `__`"""
-    var_name = str(var_name)  # var_name could be a NamePart
+    var_name = str(var_name)  # var_name could be a Name
     if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
             and var_name.startswith('__') and not var_name.endswith('__'):
         s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.CompiledObject))
