@@ -632,6 +632,8 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         if isinstance(_def, pr.ExprStmt):
             exp_list = _def.expression_list()
             return not exp_list or self._name.start_pos < exp_list[0].start_pos
+        elif isinstance(_def, pr.Import):
+            return self._name in _def.get_defined_names()
         else:
             return True
 
