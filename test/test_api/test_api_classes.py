@@ -152,6 +152,12 @@ class TestIsDefinition(TestCase):
     def _def(self, source, index=-1):
         return names(dedent(source), references=True, all_scopes=True)[index]
 
+    def _bool_is_definitions(self, source):
+        ns = names(dedent(source), references=True, all_scopes=True)
+        # Assure that names are definitely sorted.
+        ns = sorted(ns, key=lambda name: (name.line, name.column))
+        return [name.is_definition() for name in ns]
+
     def test_name(self):
         d = self._def('name')
         assert d.name == 'name'
@@ -168,6 +174,11 @@ class TestIsDefinition(TestCase):
         d = self._def(src)
         assert d.name == 'x'
         assert not d.is_definition()
+
+    def test_import(self):
+        assert self._bool_is_definitions('import x as a') == [False, True]
+        assert self._bool_is_definitions('from x import y') == [False, True]
+        assert self._bool_is_definitions('from x.z import y') == [False, False, True]
 
 
 class TestParent(TestCase):
