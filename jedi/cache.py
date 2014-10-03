@@ -47,7 +47,7 @@ class ParserCacheItem(object):
         self.change_time = change_time
 
 
-def clear_caches(delete_all=False):
+def clear_time_caches(delete_all=False):
     """ Jedi caches many things, that should be completed after each completion
     finishes.
 
