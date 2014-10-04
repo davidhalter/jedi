@@ -163,33 +163,33 @@ def memoize(func):
 def cache_star_import(func):
     def wrapper(evaluator, scope, *args, **kwargs):
         with common.ignored(KeyError):
-            mods = _star_import_cache[scope]
-            if mods[0] + settings.star_import_cache_validity > time.time():
-                return mods[1]
+            start_time, modules = _star_import_cache[scope]
+            if start_time + settings.star_import_cache_validity > time.time():
+                return modules
         # cache is too old and therefore invalid or not available
         _invalidate_star_import_cache_module(scope)
-        mods = func(evaluator, scope, *args, **kwargs)
-        _star_import_cache[scope] = time.time(), mods
+        modules = func(evaluator, scope, *args, **kwargs)
+        _star_import_cache[scope] = time.time(), modules
 
-        return mods
+        return modules
     return wrapper
 
 
 def _invalidate_star_import_cache_module(module, only_main=False):
     """ Important if some new modules are being reparsed """
     with common.ignored(KeyError):
-        t, mods = _star_import_cache[module]
+        t, modules = _star_import_cache[module]
 
         del _star_import_cache[module]
 
-        for m in mods:
+        for m in modules:
             _invalidate_star_import_cache_module(m, only_main=True)
 
     if not only_main:
         # We need a list here because otherwise the list is being changed
         # during the iteration in py3k: iteritems -> items.
-        for key, (t, mods) in list(_star_import_cache.items()):
-            if module in mods:
+        for key, (t, modules) in list(_star_import_cache.items()):
+            if module in modules:
                 _invalidate_star_import_cache_module(key)
 
 
