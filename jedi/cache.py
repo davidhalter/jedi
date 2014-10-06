@@ -33,8 +33,6 @@ from jedi import debug
 
 _time_caches = {}
 
-_star_import_cache = {}
-
 # for fast_parser, should not be deleted
 parser_cache = {}
 
@@ -59,7 +57,6 @@ def clear_time_caches(delete_all=False):
     if delete_all:
         for cache in _time_caches.values():
             cache.clear()
-        _star_import_cache.clear()
         parser_cache.clear()
     else:
         # normally just kill the expired entries, not all
