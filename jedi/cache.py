@@ -31,7 +31,7 @@ from jedi import settings
 from jedi import common
 from jedi import debug
 
-_time_caches = []
+_time_caches = {}
 
 _star_import_cache = {}
 
@@ -57,12 +57,13 @@ def clear_time_caches(delete_all=False):
     global _time_caches
 
     if delete_all:
-        _time_caches[:] = []
+        for cache in _time_caches.values():
+            cache.clear()
         _star_import_cache.clear()
         parser_cache.clear()
     else:
         # normally just kill the expired entries, not all
-        for tc in _time_caches:
+        for tc in _time_caches.values():
             # check time_cache for expired entries
             for key, (t, value) in list(tc.items()):
                 if t < time.time():
@@ -71,14 +72,16 @@ def clear_time_caches(delete_all=False):
 
 
 def time_cache(time_add_setting):
-    """ This decorator works as follows: Call it with a setting and after that
+    """
+    s
+    This decorator works as follows: Call it with a setting and after that
     use the function with a callable that returns the key.
     But: This function is only called if the key is not available. After a
     certain amount of time (`time_add_setting`) the cache is invalid.
     """
     def _temp(key_func):
         dct = {}
-        _time_caches.append(dct)
+        _time_caches[time_add_setting] = dct
 
         def wrapper(*args, **kwargs):
             generator = key_func(*args, **kwargs)
@@ -165,37 +168,21 @@ def memoize(func):
 
 
 def cache_star_import(func):
+    @time_cache("star_import_cache_validity")
     def wrapper(evaluator, scope, *args, **kwargs):
-        with common.ignored(KeyError):
-            start_time, modules = _star_import_cache[scope]
-            if start_time + settings.star_import_cache_validity > time.time():
-                return modules
-        # cache is too old and therefore invalid or not available
-        _invalidate_star_import_cache_module(scope)
-        modules = func(evaluator, scope, *args, **kwargs)
-        _star_import_cache[scope] = time.time(), modules
-
-        return modules
+        yield scope  # The cache key
+        yield func(evaluator, scope, *args, **kwargs)
     return wrapper
 
 
 def _invalidate_star_import_cache_module(module, only_main=False):
     """ Important if some new modules are being reparsed """
     try:
-        t, modules = _star_import_cache[module]
+        t, modules = _time_caches['star_import_cache_validity'][module]
     except KeyError:
         pass
     else:
-        del _star_import_cache[module]
-        for m in modules:
-            _invalidate_star_import_cache_module(m, only_main=True)
-
-    if not only_main:
-        # We need a list here because otherwise the list is being changed
-        # during the iteration in py3k: iteritems -> items.
-        for key, (t, modules) in list(_star_import_cache.items()):
-            if module in modules:
-                _invalidate_star_import_cache_module(key)
+        del _time_caches['star_import_cache_validity'][module]
 
 
 def invalidate_star_import_cache(path):
@@ -203,10 +190,9 @@ def invalidate_star_import_cache(path):
     try:
         parser_cache_item = parser_cache[path]
     except KeyError:
-        return False
+        pass
     else:
         _invalidate_star_import_cache_module(parser_cache_item.parser.module)
-        return True
 
 
 def load_parser(path, name):

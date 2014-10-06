@@ -377,7 +377,7 @@ class _Importer(object):
                     pr.Name(FakeSubModule, 'flask_' + str(part), part.parent, pos),
                 ) + orig_path[3:]
                 return self._real_follow_file_system()
-            except ModuleNotFound as e:
+            except ModuleNotFound:
                 self.import_path = (
                     pr.Name(FakeSubModule, 'flaskext', part.parent, pos),
                 ) + orig_path[2:]
