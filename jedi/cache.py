@@ -57,7 +57,7 @@ def clear_time_caches(delete_all=False):
     global _time_caches
 
     if delete_all:
-        _time_caches = []
+        _time_caches[:] = []
         _star_import_cache.clear()
         parser_cache.clear()
     else:
@@ -80,14 +80,17 @@ def time_cache(time_add_setting):
         dct = {}
         _time_caches.append(dct)
 
-        def wrapper(optional_callable, *args, **kwargs):
-            key = key_func(*args, **kwargs)
-            value = None
-            if key in dct:
+        def wrapper(*args, **kwargs):
+            generator = key_func(*args, **kwargs)
+            key = next(generator)
+            try:
                 expiry, value = dct[key]
                 if expiry > time.time():
                     return value
-            value = optional_callable()
+            except KeyError:
+                pass
+
+            value = next(generator)
             time_add = getattr(settings, time_add_setting)
             if key is not None:
                 dct[key] = time.time() + time_add, value
@@ -97,7 +100,7 @@ def time_cache(time_add_setting):
 
 
 @time_cache("call_signatures_validity")
-def cache_call_signatures(source, user_pos, stmt):
+def cache_call_signatures(evaluator, call, source, user_pos, stmt):
     """This function calculates the cache key."""
     index = user_pos[0] - 1
     lines = common.splitlines(source)
@@ -108,7 +111,8 @@ def cache_call_signatures(source, user_pos, stmt):
     before_bracket = re.match(r'.*\(', whole, re.DOTALL)
 
     module_path = stmt.get_parent_until().path
-    return None if module_path is None else (module_path, before_bracket, stmt.start_pos)
+    yield None if module_path is None else (module_path, before_bracket, stmt.start_pos)
+    yield evaluator.eval_call(call)
 
 
 def underscore_memoization(func):
@@ -177,11 +181,12 @@ def cache_star_import(func):
 
 def _invalidate_star_import_cache_module(module, only_main=False):
     """ Important if some new modules are being reparsed """
-    with common.ignored(KeyError):
+    try:
         t, modules = _star_import_cache[module]
-
+    except KeyError:
+        pass
+    else:
         del _star_import_cache[module]
-
         for m in modules:
             _invalidate_star_import_cache_module(m, only_main=True)
 
