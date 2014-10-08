@@ -312,11 +312,12 @@ class Leaf(Base):
         """
         assert 0 <= type < 256, type
         if context is not None:
-            self._prefix, (self.lineno, self.column) = context
+            self.prefix, (self.lineno, self.column) = context
+        if prefix is not None:
+            # The whitespace and comments preceding this token in the input.
+            self.prefix = prefix
         self.type = type
         self.value = value
-        # The whitespace and comments preceding this token in the input.
-        self.prefix = prefix or ''
 
     def __repr__(self):
         """Return a canonical string representation."""
