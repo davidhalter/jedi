@@ -78,39 +78,6 @@ class Base(object):
         assert cls is not Base, "Cannot instantiate Base"
         return object.__new__(cls)
 
-    def __eq__(self, other):
-        """
-        Compare two nodes for equality.
-
-        This calls the method _eq().
-        """
-        if self.__class__ is not other.__class__:
-            return NotImplemented
-        return self._eq(other)
-
-    __hash__ = None  # For Py3 compatibility.
-
-    def __ne__(self, other):
-        """
-        Compare two nodes for inequality.
-
-        This calls the method _eq().
-        """
-        if self.__class__ is not other.__class__:
-            return NotImplemented
-        return not self._eq(other)
-
-    def _eq(self, other):
-        """
-        Compare two nodes for equality.
-
-        This is called by __eq__ and __ne__.  It is only called if the two nodes
-        have the same type.  This must be implemented by the concrete subclass.
-        Nodes should be considered equal if they have the same structure,
-        ignoring the prefix string and other context information.
-        """
-        raise NotImplementedError
-
     def post_order(self):
         """
         Return a post-order iterator for the tree.
@@ -234,10 +201,6 @@ class Node(Base):
     if sys.version_info > (3, 0):
         __str__ = __unicode__
 
-    def _eq(self, other):
-        """Compare two nodes for equality."""
-        return (self.type, self.children) == (other.type, other.children)
-
     def post_order(self):
         """Return a post-order iterator for the tree."""
         for child in self.children:
@@ -335,10 +298,6 @@ class Leaf(Base):
 
     if sys.version_info > (3, 0):
         __str__ = __unicode__
-
-    def _eq(self, other):
-        """Compare two nodes for equality."""
-        return (self.type, self.value) == (other.type, other.value)
 
     def leaves(self):
         yield self
