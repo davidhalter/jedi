@@ -94,9 +94,7 @@ class Base(object):
 class Node(Base):
     """Concrete implementation for interior nodes."""
 
-    def __init__(self, type, children,
-                 context=None,
-                 prefix=None):
+    def __init__(self, type, children):
         """
         Initializer.
 
@@ -109,8 +107,6 @@ class Node(Base):
         self.children = children
         for ch in self.children:
             ch.parent = self
-        if prefix is not None:
-            self.prefix = prefix
 
     def __repr__(self):
         """Return a canonical string representation."""
@@ -163,19 +159,16 @@ class Leaf(Base):
     lineno = 0    # Line where this token starts in the input
     column = 0    # Column where this token tarts in the input
 
-    def __init__(self, type, value, context=None, prefix=None):
+    def __init__(self, type, value, start_pos, prefix):
         """
         Initializer.
 
         Takes a type constant (a token number < 256), a string value, and an
         optional context keyword argument.
         """
-        assert 0 <= type < 256, type
-        if context is not None:
-            self.prefix, (self.lineno, self.column) = context
-        if prefix is not None:
-            # The whitespace and comments preceding this token in the input.
-            self.prefix = prefix
+        # The whitespace and comments preceding this token in the input.
+        self.prefix = prefix
+        self.start_pos = start_pos
         self.type = type
         self.value = value
 
@@ -200,7 +193,7 @@ class Leaf(Base):
         yield self
 
 
-def convert(gr, raw_node):
+def convert(grammar, raw_node):
     """
     Convert raw node information to a Node or Leaf instance.
 
@@ -210,13 +203,18 @@ def convert(gr, raw_node):
     """
     #import pdb; pdb.set_trace()
     type, value, context, children = raw_node
-    if children or type in gr.number2symbol:
+    if type in grammar.number2symbol:
         # If there's exactly one child, return that child instead of
         # creating a new node.
         if len(children) == 1:
             return children[0]
         print(raw_node, type_repr(type))
-        return Node(type, children, context=context)
+        try:
+            return Node(type, children)
+            return ast_mapping[children](children)
+        except KeyError:
+            return Node(type, children)
     else:
         print('leaf', raw_node, type_repr(type))
-        return Leaf(type, value, context=context)
+        prefix, start_pos = context
+        return Leaf(type, value, start_pos, prefix)
