@@ -111,14 +111,6 @@ class Base(object):
         """
         raise NotImplementedError
 
-    def clone(self):
-        """
-        Return a cloned (deep) copy of self.
-
-        This must be implemented by the concrete subclass.
-        """
-        raise NotImplementedError
-
     def post_order(self):
         """
         Return a post-order iterator for the tree.
@@ -135,29 +127,6 @@ class Base(object):
         """
         raise NotImplementedError
 
-    def replace(self, new):
-        """Replace this node with a new one in the parent."""
-        assert self.parent is not None, str(self)
-        assert new is not None
-        if not isinstance(new, list):
-            new = [new]
-        l_children = []
-        found = False
-        for ch in self.parent.children:
-            if ch is self:
-                assert not found, (self.parent.children, self, new)
-                if new is not None:
-                    l_children.extend(new)
-                found = True
-            else:
-                l_children.append(ch)
-        assert found, (self.children, self, new)
-        self.parent.changed()
-        self.parent.children = l_children
-        for x in new:
-            x.parent = self.parent
-        self.parent = None
-
     def get_lineno(self):
         """Return the line number which generated the invocant node."""
         node = self
@@ -166,19 +135,6 @@ class Base(object):
                 return
             node = node.children[0]
         return node.lineno
-
-    def remove(self):
-        """
-        Remove the node from the tree. Returns the position of the node in its
-        parent's children before it was removed.
-        """
-        if self.parent:
-            for i, node in enumerate(self.parent.children):
-                if node is self:
-                    self.parent.changed()
-                    del self.parent.children[i]
-                    self.parent = None
-                    return i
 
     @property
     def next_sibling(self):
@@ -282,10 +238,6 @@ class Node(Base):
         """Compare two nodes for equality."""
         return (self.type, self.children) == (other.type, other.children)
 
-    def clone(self):
-        """Return a cloned (deep) copy of self."""
-        return Node(self.type, [ch.clone() for ch in self.children])
-
     def post_order(self):
         """Return a post-order iterator for the tree."""
         for child in self.children:
@@ -387,10 +339,6 @@ class Leaf(Base):
     def _eq(self, other):
         """Compare two nodes for equality."""
         return (self.type, self.value) == (other.type, other.value)
-
-    def clone(self):
-        """Return a cloned (deep) copy of self."""
-        return Leaf(self.type, self.value, (self.prefix, (self.lineno, self.column)))
 
     def leaves(self):
         yield self
