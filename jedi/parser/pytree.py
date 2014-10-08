@@ -210,8 +210,7 @@ def convert(grammar, raw_node):
             return children[0]
         print(raw_node, type_repr(type))
         try:
-            return Node(type, children)
-            return ast_mapping[children](children)
+            return ast_mapping[type](children)
         except KeyError:
             return Node(type, children)
     else:

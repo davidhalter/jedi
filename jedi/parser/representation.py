@@ -173,47 +173,31 @@ class Simple(Base):
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
     """
-    __slots__ = ('parent', '_sub_module', '_start_pos', 'use_as_parent',
-                 '_end_pos')
+    __slots__ = ('children',)
 
-    def __init__(self, module, start_pos, end_pos=(None, None), parent=None):
+    def __init__(self, children):
         """
         Initialize :class:`Simple`.
 
-        :type      module: :class:`SubModule`
-        :param     module: The module in which this Python object locates.
-        :type   start_pos: 2-tuple of int
-        :param  start_pos: Position (line, column) of the Statement.
-        :type     end_pos: 2-tuple of int
-        :param    end_pos: Same as `start_pos`.
+        :type  children: :class:`SubModule`
+        :param children: The module in which this Python object locates.
         """
-        self._sub_module = module
-        self._start_pos = start_pos
-        self._end_pos = end_pos
-
-        self.parent = parent
-        # use this attribute if parent should be something else than self.
-        self.use_as_parent = self
+        self.children = children
 
     @property
     def start_pos(self):
-        return self._sub_module.line_offset + self._start_pos[0], \
-            self._start_pos[1]
+        return self.children[0].start_pos
 
-    @start_pos.setter
-    def start_pos(self, value):
-        self._start_pos = value
+    @property
+    def _sub_module(self):
+        return self.get_parent_until()
 
     @property
     def end_pos(self):
-        if None in self._end_pos:
-            return self._end_pos
-        return self._sub_module.line_offset + self._end_pos[0], \
-            self._end_pos[1]
+        return self.children[-1].end_pos
 
-    @end_pos.setter
-    def end_pos(self, value):
-        self._end_pos = value
+    def get_code(self):
+        return "".join(str(c) for c in self.children)
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
