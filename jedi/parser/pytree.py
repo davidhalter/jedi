@@ -17,8 +17,6 @@ import os
 
 from . import pgen2
 
-HUGE = 0x7FFFFFFF  # maximum repeat count, default max
-
 _type_reprs = {}
 
 
@@ -44,6 +42,16 @@ python_symbols = Symbols(python_grammar)
 
 python_grammar_no_print_statement = python_grammar.copy()
 del python_grammar_no_print_statement.keywords["print"]
+
+
+from jedi.parser.representation import ExprStmt, Class, Function
+_ast_mapping = {
+    'simple_stmt': ExprStmt,
+    'classdef': Class,
+    'funcdef': Function
+}
+
+ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())
 
 
 def type_repr(type_num):
@@ -97,11 +105,9 @@ class Node(Base):
 
         As a side effect, the parent pointers of the children are updated.
         """
-        assert type >= 256, type
         self.type = type
-        self.children = list(children)
+        self.children = children
         for ch in self.children:
-            assert ch.parent is None, repr(ch)
             ch.parent = self
         if prefix is not None:
             self.prefix = prefix
@@ -203,13 +209,14 @@ def convert(gr, raw_node):
     strictly bottom-up.
     """
     #import pdb; pdb.set_trace()
-    print(raw_node)
     type, value, context, children = raw_node
     if children or type in gr.number2symbol:
         # If there's exactly one child, return that child instead of
         # creating a new node.
         if len(children) == 1:
             return children[0]
+        print(raw_node, type_repr(type))
         return Node(type, children, context=context)
     else:
+        print('leaf', raw_node, type_repr(type))
         return Leaf(type, value, context=context)
