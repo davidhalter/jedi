@@ -19,7 +19,7 @@ def test_basic():
     print(repr(tree))
     print(tree)
     #import pdb; pdb.set_trace()
-    print(repr(d.parse_string('def x(): pass\n')))
+    print(repr(d.parse_string('def x(a, b:3): pass\n')))
     print()
     x = d.parse_string('\na #pass\n')
     print(repr(x))

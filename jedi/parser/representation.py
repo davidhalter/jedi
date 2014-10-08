@@ -173,7 +173,7 @@ class Simple(Base):
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
     """
-    __slots__ = ('children',)
+    __slots__ = ('children', 'parent')
 
     def __init__(self, children):
         """
@@ -183,6 +183,7 @@ class Simple(Base):
         :param children: The module in which this Python object locates.
         """
         self.children = children
+        self.parent = None
 
     @property
     def start_pos(self):
@@ -238,8 +239,8 @@ class Scope(Simple, DocstringMixin):
     __slots__ = ('subscopes', 'imports', 'statements', '_doc_token', 'asserts',
                  'returns', 'is_generator', '_names_dict')
 
-    def __init__(self, module, start_pos):
-        super(Scope, self).__init__(module, start_pos)
+    def __init__(self, children):
+        super(Scope, self).__init__(children)
         self.subscopes = []
         self.imports = []
         self.statements = []
@@ -549,30 +550,25 @@ class Function(Scope):
     :param start_pos: The start position (line, column) the Function.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('name', 'params', 'decorators', 'listeners', 'annotation')
+    __slots__ = ('decorators', 'listeners')
 
-    def __init__(self, module, name, params, start_pos, annotation):
-        super(Function, self).__init__(module, start_pos)
-        self.name = name
-        if name is not None:
-            name.parent = self.use_as_parent
-        self.params = params
-        for p in params:
-            p.parent = self.use_as_parent
-            p.parent_function = self.use_as_parent
+    def __init__(self, children):
+        super(Function, self).__init__(children)
         self.decorators = []
         self.listeners = set()  # not used here, but in evaluation.
 
-        if annotation is not None:
-            annotation.parent = self.use_as_parent
-        self.annotation = annotation
+    @property
+    def name(self):
+        return self.children[1]  # First token after `def`
 
-    def get_code(self, first_indent=False, indention='    '):
-        string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
-        params = ', '.join([stmt.get_code(False) for stmt in self.params])
-        string += "def %s(%s):\n" % (self.name, params)
-        string += super(Function, self).get_code(True, indention)
-        return string
+    def params(self):
+        return self.children[3].children  # After def foo(
+
+    def annotation(self):
+        try:
+            return self.children[6]  # 6th element: def foo(...) -> bar
+        except IndexError:
+            return None
 
     def get_defined_names(self):
         n = super(Function, self).get_defined_names()

@@ -46,9 +46,9 @@ del python_grammar_no_print_statement.keywords["print"]
 
 from jedi.parser.representation import ExprStmt, Class, Function
 _ast_mapping = {
-    'simple_stmt': ExprStmt,
+    #'simple_stmt': ExprStmt,
     'classdef': Class,
-    'funcdef': Function
+    'funcdef': Function,
 }
 
 ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())
@@ -79,7 +79,6 @@ class Base(object):
     # Default values for instance variables
     type = None    # int: token number (< 256) or symbol number (>= 256)
     parent = None  # Parent node pointer, or None
-    children = ()  # Tuple of subnodes
 
     def leaves(self):
         for child in self.children:
@@ -134,6 +133,14 @@ class Node(Base):
             return ""
         return self.children[0].prefix
 
+    @property
+    def start_pos(self):
+        return self.children[0].start_pos
+
+    @property
+    def end_pos(self):
+        return self.children[-1].end_pos
+
     @prefix.setter
     def prefix(self, prefix):
         if self.children:
@@ -171,6 +178,10 @@ class Leaf(Base):
         self.start_pos = start_pos
         self.type = type
         self.value = value
+
+    @property
+    def end_pos(self):
+        return self.start_pos[0], self.start_pos[1] + len(self.value)
 
     def __repr__(self):
         """Return a canonical string representation."""
