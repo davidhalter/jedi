@@ -29,7 +29,8 @@ __author__ = 'Ka-Ping Yee <ping@lfw.org>'
 __credits__ = \
     'GvR, ESR, Tim Peters, Thomas Wouters, Fred Drake, Skip Montanaro'
 
-import string, re
+import string
+import re
 from codecs import BOM_UTF8, lookup
 
 from .token import *

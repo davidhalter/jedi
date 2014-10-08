@@ -72,8 +72,6 @@ class Base(object):
     type = None    # int: token number (< 256) or symbol number (>= 256)
     parent = None  # Parent node pointer, or None
     children = ()  # Tuple of subnodes
-    was_changed = False
-    was_checked = False
 
     def __new__(cls, *args, **kwds):
         """Constructor that prevents Base from being instantiated."""
@@ -169,11 +167,6 @@ class Base(object):
             node = node.children[0]
         return node.lineno
 
-    def changed(self):
-        if self.parent:
-            self.parent.changed()
-        self.was_changed = True
-
     def remove(self):
         """
         Remove the node from the tree. Returns the position of the node in its
@@ -250,8 +243,7 @@ class Node(Base):
 
     def __init__(self, type, children,
                  context=None,
-                 prefix=None,
-                 fixers_applied=None):
+                 prefix=None):
         """
         Initializer.
 
@@ -268,10 +260,6 @@ class Node(Base):
             ch.parent = self
         if prefix is not None:
             self.prefix = prefix
-        if fixers_applied:
-            self.fixers_applied = fixers_applied[:]
-        else:
-            self.fixers_applied = None
 
     def __repr__(self):
         """Return a canonical string representation."""
@@ -296,8 +284,7 @@ class Node(Base):
 
     def clone(self):
         """Return a cloned (deep) copy of self."""
-        return Node(self.type, [ch.clone() for ch in self.children],
-                    fixers_applied=self.fixers_applied)
+        return Node(self.type, [ch.clone() for ch in self.children])
 
     def post_order(self):
         """Return a post-order iterator for the tree."""
@@ -365,10 +352,7 @@ class Leaf(Base):
     lineno = 0    # Line where this token starts in the input
     column = 0    # Column where this token tarts in the input
 
-    def __init__(self, type, value,
-                 context=None,
-                 prefix=None,
-                 fixers_applied=[]):
+    def __init__(self, type, value, context=None, prefix=None):
         """
         Initializer.
 
@@ -382,7 +366,6 @@ class Leaf(Base):
         self.value = value
         if prefix is not None:
             self._prefix = prefix
-        self.fixers_applied = fixers_applied[:]
 
     def __repr__(self):
         """Return a canonical string representation."""
@@ -407,9 +390,7 @@ class Leaf(Base):
 
     def clone(self):
         """Return a cloned (deep) copy of self."""
-        return Leaf(self.type, self.value,
-                    (self.prefix, (self.lineno, self.column)),
-                    fixers_applied=self.fixers_applied)
+        return Leaf(self.type, self.value, (self.prefix, (self.lineno, self.column)))
 
     def leaves(self):
         yield self
