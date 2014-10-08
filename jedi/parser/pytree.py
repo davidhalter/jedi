@@ -73,58 +73,10 @@ class Base(object):
     parent = None  # Parent node pointer, or None
     children = ()  # Tuple of subnodes
 
-    @property
-    def next_sibling(self):
-        """
-        The node immediately following the invocant in their parent's children
-        list. If the invocant does not have a next sibling, it is None
-        """
-        if self.parent is None:
-            return None
-
-        # Can't use index(); we need to test by identity
-        for i, child in enumerate(self.parent.children):
-            if child is self:
-                try:
-                    return self.parent.children[i + 1]
-                except IndexError:
-                    return None
-
-    @property
-    def prev_sibling(self):
-        """
-        The node immediately preceding the invocant in their parent's children
-        list. If the invocant does not have a previous sibling, it is None.
-        """
-        if self.parent is None:
-            return None
-
-        # Can't use index(); we need to test by identity
-        for i, child in enumerate(self.parent.children):
-            if child is self:
-                if i == 0:
-                    return None
-                return self.parent.children[i - 1]
-
     def leaves(self):
         for child in self.children:
             for leave in child.leaves():
                 yield leave
-
-    def depth(self):
-        if self.parent is None:
-            return 0
-        return 1 + self.parent.depth()
-
-    def get_suffix(self):
-        """
-        Return the string immediately following the invocant node. This is
-        effectively equivalent to node.next_sibling.prefix
-        """
-        next_sib = self.next_sibling
-        if next_sib is None:
-            return ""
-        return next_sib.prefix
 
     if sys.version_info < (3, 0):
         def __str__(self):
