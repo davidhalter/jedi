@@ -252,7 +252,8 @@ class Node(Base):
             for el in child.post_order():
                 yield el
 
-    def _prefix_getter(self):
+    @property
+    def prefix(self):
         """
         The whitespace and comments preceding this node in the input.
         """
@@ -260,11 +261,12 @@ class Node(Base):
             return ""
         return self.children[0].prefix
 
-    def _prefix_setter(self, prefix):
+    @prefix.setter
+    def prefix(self, prefix):
         if self.children:
             self.children[0].prefix = prefix
-
-    prefix = property(_prefix_getter, _prefix_setter)
+        else:
+            raise NotImplementedError
 
     def set_child(self, i, child):
         """
@@ -274,7 +276,6 @@ class Node(Base):
         child.parent = self
         self.children[i].parent = None
         self.children[i] = child
-        self.changed()
 
     def insert_child(self, i, child):
         """
@@ -283,7 +284,6 @@ class Node(Base):
         """
         child.parent = self
         self.children.insert(i, child)
-        self.changed()
 
     def append_child(self, child):
         """
@@ -292,7 +292,6 @@ class Node(Base):
         """
         child.parent = self
         self.children.append(child)
-        self.changed()
 
 
 class Leaf(Base):
@@ -316,8 +315,8 @@ class Leaf(Base):
             self._prefix, (self.lineno, self.column) = context
         self.type = type
         self.value = value
-        if prefix is not None:
-            self._prefix = prefix
+        # The whitespace and comments preceding this token in the input.
+        self.prefix = prefix or ''
 
     def __repr__(self):
         """Return a canonical string representation."""
@@ -350,18 +349,6 @@ class Leaf(Base):
     def pre_order(self):
         """Return a pre-order iterator for the tree."""
         yield self
-
-    def _prefix_getter(self):
-        """
-        The whitespace and comments preceding this token in the input.
-        """
-        return self._prefix
-
-    def _prefix_setter(self, prefix):
-        self.changed()
-        self._prefix = prefix
-
-    prefix = property(_prefix_getter, _prefix_setter)
 
 
 def convert(gr, raw_node):
