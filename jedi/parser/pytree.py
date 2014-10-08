@@ -73,36 +73,6 @@ class Base(object):
     parent = None  # Parent node pointer, or None
     children = ()  # Tuple of subnodes
 
-    def __new__(cls, *args, **kwds):
-        """Constructor that prevents Base from being instantiated."""
-        assert cls is not Base, "Cannot instantiate Base"
-        return object.__new__(cls)
-
-    def post_order(self):
-        """
-        Return a post-order iterator for the tree.
-
-        This must be implemented by the concrete subclass.
-        """
-        raise NotImplementedError
-
-    def pre_order(self):
-        """
-        Return a pre-order iterator for the tree.
-
-        This must be implemented by the concrete subclass.
-        """
-        raise NotImplementedError
-
-    def get_lineno(self):
-        """Return the line number which generated the invocant node."""
-        node = self
-        while not isinstance(node, Leaf):
-            if not node.children:
-                return
-            node = node.children[0]
-        return node.lineno
-
     @property
     def next_sibling(self):
         """
@@ -201,20 +171,6 @@ class Node(Base):
     if sys.version_info > (3, 0):
         __str__ = __unicode__
 
-    def post_order(self):
-        """Return a post-order iterator for the tree."""
-        for child in self.children:
-            for el in child.post_order():
-                yield el
-        yield self
-
-    def pre_order(self):
-        """Return a pre-order iterator for the tree."""
-        yield self
-        for child in self.children:
-            for el in child.post_order():
-                yield el
-
     @property
     def prefix(self):
         """
@@ -230,23 +186,6 @@ class Node(Base):
             self.children[0].prefix = prefix
         else:
             raise NotImplementedError
-
-    def set_child(self, i, child):
-        """
-        Equivalent to 'node.children[i] = child'. This method also sets the
-        child's parent attribute appropriately.
-        """
-        child.parent = self
-        self.children[i].parent = None
-        self.children[i] = child
-
-    def insert_child(self, i, child):
-        """
-        Equivalent to 'node.children.insert(i, child)'. This method also sets
-        the child's parent attribute appropriately.
-        """
-        child.parent = self
-        self.children.insert(i, child)
 
     def append_child(self, child):
         """
@@ -300,14 +239,6 @@ class Leaf(Base):
         __str__ = __unicode__
 
     def leaves(self):
-        yield self
-
-    def post_order(self):
-        """Return a post-order iterator for the tree."""
-        yield self
-
-    def pre_order(self):
-        """Return a pre-order iterator for the tree."""
         yield self
 
 
