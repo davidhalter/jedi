@@ -21,5 +21,3 @@ def test_basic_parsing():
     compare('\na #pass\n')
     compare('wblabla* 1\t\n')
     compare('def x(a, b:3): pass\n')
-
-    assert False

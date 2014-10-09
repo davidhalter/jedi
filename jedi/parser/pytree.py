@@ -67,32 +67,7 @@ def type_repr(type_num):
     return _type_reprs.setdefault(type_num, type_num)
 
 
-class Base(object):
-
-    """
-    Abstract base class for Node and Leaf.
-
-    This provides some default functionality and boilerplate using the
-    template pattern.
-
-    A node may be a subnode of at most one parent.
-    """
-
-    # Default values for instance variables
-    type = None    # int: token number (< 256) or symbol number (>= 256)
-    parent = None  # Parent node pointer, or None
-
-    def leaves(self):
-        for child in self.children:
-            for leave in child.leaves():
-                yield leave
-
-    if sys.version_info < (3, 0):
-        def __str__(self):
-            return str(self).encode("ascii")
-
-
-class Node(Base):
+class Node(object):
     """Concrete implementation for interior nodes."""
 
     def __init__(self, type, children):
