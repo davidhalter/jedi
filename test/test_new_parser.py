@@ -5,6 +5,10 @@ from jedi.parser.pgen2 import Driver
 
 
 def test_basic():
+    def compare(string):
+        """Generates the AST object and then regenerates the code."""
+        return d.parse_string(string).get_code() == string
+
     #if self.options["print_function"]:
     #    python_grammar = pygram.python_grammar_no_print_statement
     #else:

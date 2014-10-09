@@ -159,53 +159,6 @@ class Node(Base):
         self.children.append(child)
 
 
-class Leaf(Base):
-
-    """Concrete implementation for leaf nodes."""
-
-    # Default values for instance variables
-    _prefix = ""  # Whitespace and comments preceding this token in the input
-    lineno = 0    # Line where this token starts in the input
-    column = 0    # Column where this token tarts in the input
-
-    def __init__(self, type, value, start_pos, prefix):
-        """
-        Initializer.
-
-        Takes a type constant (a token number < 256), a string value, and an
-        optional context keyword argument.
-        """
-        # The whitespace and comments preceding this token in the input.
-        self.prefix = prefix
-        self.start_pos = start_pos
-        self.type = type
-        self.value = value
-
-    @property
-    def end_pos(self):
-        return self.start_pos[0], self.start_pos[1] + len(self.value)
-
-    def __repr__(self):
-        """Return a canonical string representation."""
-        return "%s(%r, %r)" % (self.__class__.__name__,
-                               self.type,
-                               self.value)
-
-    def __unicode__(self):
-        """
-        Return a pretty string representation.
-
-        This reproduces the input source exactly.
-        """
-        return self.prefix + str(self.value)
-
-    if sys.version_info > (3, 0):
-        __str__ = __unicode__
-
-    def leaves(self):
-        yield self
-
-
 def convert(grammar, raw_node):
     """
     Convert raw node information to a Node or Leaf instance.
