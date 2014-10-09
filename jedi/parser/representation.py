@@ -987,8 +987,7 @@ class Statement(Simple, DocstringMixin):
     __slots__ = ('_token_list', '_set_vars', 'as_names', '_expression_list',
                  '_assignment_details', '_names_are_set_vars', '_doc_token')
 
-    def __init__(self, module, token_list, start_pos, end_pos, parent=None,
-                 as_names=(), names_are_set_vars=False, set_name_parents=True):
+    def __init__old(self, children, parent=None,):
         super(Statement, self).__init__(module, start_pos, end_pos, parent)
         self._token_list = token_list
         self._names_are_set_vars = names_are_set_vars
@@ -1004,29 +1003,6 @@ class Statement(Simple, DocstringMixin):
         # For now just generate the expression list, even if its not needed.
         # This will help to adapt a better new AST.
         self.expression_list()
-
-    @property
-    def end_pos(self):
-        return self._token_list[-1].end_pos
-
-    def get_code(self, new_line=True):
-        def assemble(command_list, assignment=None):
-            pieces = [c.get_code() if isinstance(c, Simple) else c.string
-                      if isinstance(c, tokenize.Token) else unicode(c)
-                      for c in command_list]
-            if assignment is None:
-                return ''.join(pieces)
-            return '%s %s ' % (''.join(pieces), assignment)
-
-        code = ''.join(assemble(*a) for a in self.assignment_details)
-        code += assemble(self.expression_list())
-        if self._doc_token:
-            code += '\n"""%s"""' % self.raw_doc
-
-        if new_line:
-            return code + '\n'
-        else:
-            return code
 
     def get_defined_names(self):
         """Get the names for the statement."""

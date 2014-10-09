@@ -47,7 +47,7 @@ del python_grammar_no_print_statement.keywords["print"]
 
 from jedi.parser import representation as pr
 _ast_mapping = {
-    #'simple_stmt': pr.ExprStmt,
+    'simple_stmt': pr.ExprStmt,
     'classdef': pr.Class,
     'funcdef': pr.Function,
     'file_input': pr.SubModule,
