@@ -127,7 +127,7 @@ class Node(Base):
         __str__ = __unicode__
 
     def get_code(self):
-        return str(self)
+        return "".join(c.get_code() for c in self.children)
 
     @property
     def prefix(self):

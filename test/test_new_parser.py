@@ -4,7 +4,7 @@ from jedi.parser import pytree
 from jedi.parser.pgen2 import Driver
 
 
-def test_basic():
+def test_basic_parsing():
     def compare(string):
         """Generates the AST object and then regenerates the code."""
         assert d.parse_string(string).get_code() == string
@@ -22,14 +22,4 @@ def test_basic():
     compare('wblabla* 1\t\n')
     compare('def x(a, b:3): pass\n')
 
-    print(d)
-    tree = d.parse_string('wblabla* 1\t\n')
-    print(repr(tree))
-    print(tree)
-    #import pdb; pdb.set_trace()
-    print(repr(d.parse_string('def x(a, b:3): pass\n')))
-    print()
-    x = d.parse_string('\na #pass\n')
-    print(repr(x))
-    print(x.get_code())
     assert False
