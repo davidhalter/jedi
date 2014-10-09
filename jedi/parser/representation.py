@@ -191,7 +191,6 @@ class Name(_Leaf):
     # Unfortunately there's no way to use slots for str (non-zero __itemsize__)
     # -> http://utcc.utoronto.ca/~cks/space/blog/python/IntSlotsPython3k
     # Therefore don't subclass `str`.
-    __slots__ = ('_string', '_line', '_column')
 
     def __str__(self):
         return self.value
@@ -205,6 +204,18 @@ class Name(_Leaf):
 
     def get_definition(self):
         return self.get_parent_until((ArrayStmt, StatementElement), reverse=True)
+
+
+class Literal(_Leaf):
+    def eval(self):
+        return literal_eval(self.value)
+
+    def __repr__(self):
+        if is_py3:
+            s = self.literal
+        else:
+            s = self.literal.encode('ascii', 'replace')
+        return "<%s: %s>" % (type(self).__name__, s)
 
 
 class Operator(_Leaf):
@@ -1442,25 +1453,6 @@ class Call(StatementElement):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.name)
-
-
-class Literal(StatementElement):
-    __slots__ = ('literal', 'value')
-
-    def __init__(self, module, literal, start_pos, end_pos, parent=None):
-        super(Literal, self).__init__(module, start_pos, end_pos, parent)
-        self.literal = literal
-        self.value = literal_eval(literal)
-
-    def get_code(self):
-        return self.literal + super(Literal, self).get_code()
-
-    def __repr__(self):
-        if is_py3:
-            s = self.literal
-        else:
-            s = self.literal.encode('ascii', 'replace')
-        return "<%s: %s>" % (type(self).__name__, s)
 
 
 class Array(StatementElement):
