@@ -16,12 +16,15 @@ complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
 import keyword
+import logging
 
 from jedi._compatibility import next, unicode
 from jedi import debug
 from jedi import common
 from jedi.parser import representation as pr
 from jedi.parser import tokenize
+from jedi.parser import pytree
+from jedi.parser.pgen2 import Driver
 
 OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
 # Not used yet. In the future I intend to add something like KeywordStatement
@@ -43,6 +46,21 @@ class Parser(object):
     """
     def __init__(self, source, module_path=None, no_docstr=False,
                  tokenizer=None, top_module=None):
+
+        if not source.endswith('\n'):
+            source += '\n'
+        #if self.options["print_function"]:
+        #    python_grammar = pygram.python_grammar_no_print_statement
+        #else:
+        # When this is True, the refactor*() methods will call write_file() for
+        # files processed even if they were not changed during refactoring. If
+        # and only if the refactor method's write parameter was True.
+        logger = logging.getLogger("RefactoringTool")
+        d = Driver(pytree.python_grammar, convert=pytree.convert, logger=logger)
+        self.module = d.parse_string(source)
+
+    def __init__old__(self, source, module_path=None, no_docstr=False,
+                      tokenizer=None, top_module=None):
         self.no_docstr = no_docstr
 
         tokenizer = tokenizer or tokenize.source_tokens(source)

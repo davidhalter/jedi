@@ -558,16 +558,20 @@ class Class(Scope):
     :param start_pos: The start position (line, column) of the class.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('name', 'supers', 'decorators')
+    __slots__ = ('decorators')
 
-    def __init__(self, module, name, supers, start_pos):
-        super(Class, self).__init__(module, start_pos)
-        self.name = name
-        name.parent = self.use_as_parent
-        self.supers = supers
-        for s in self.supers:
-            s.parent = self.use_as_parent
+    def __init__(self, children):
+        super(Class, self).__init__(children)
         self.decorators = []
+
+    @property
+    def supers(self):
+        raise NotImplementedError
+
+    @property
+    def name(self):
+        return self.children[1]  # First token after `def`
+
 
     @property
     def doc(self):
