@@ -16,6 +16,7 @@ import sys
 import os
 
 from . import pgen2
+from . import tokenize
 
 _type_reprs = {}
 
@@ -44,12 +45,12 @@ python_grammar_no_print_statement = python_grammar.copy()
 del python_grammar_no_print_statement.keywords["print"]
 
 
-from jedi.parser import representation as er
+from jedi.parser import representation as pr
 _ast_mapping = {
-    #'simple_stmt': ExprStmt,
-    'classdef': er.Class,
-    'funcdef': er.Function,
-    'file_input': er.SubModule,
+    #'simple_stmt': pr.ExprStmt,
+    'classdef': pr.Class,
+    'funcdef': pr.Function,
+    'file_input': pr.SubModule,
 }
 
 ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())
@@ -229,4 +230,11 @@ def convert(grammar, raw_node):
     else:
         print('leaf', raw_node, type_repr(type))
         prefix, start_pos = context
-        return Leaf(type, value, start_pos, prefix)
+        if type == tokenize.NAME:
+            return pr.Name(value, start_pos, prefix)
+        elif type in (tokenize.STRING, tokenize.NUMBER):
+            return pr.Name(value, start_pos, prefix)
+        elif type in (tokenize.NEWLINE, tokenize.ENDMARKER):
+            return pr.Whitespace(value, start_pos, prefix)
+        else:
+            return pr.Operator(value, start_pos, prefix)

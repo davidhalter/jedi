@@ -23,5 +23,5 @@ def test_basic():
     print()
     x = d.parse_string('\na #pass\n')
     print(repr(x))
-    print(x)
+    print(x.get_code())
     assert False

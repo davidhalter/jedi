@@ -176,11 +176,19 @@ class _Leaf(Base):
         self.start_pos = start_pos
         self.prefix = prefix
 
+    @property
+    def end_pos(self):
+        return self.start_pos[0], self.start_pos[1] + len(self.value)
+
     def get_code(self):
         return self.prefix + self.value
 
     def __repr__(self):
-        return "<%s: `%s`>" % (type(self).__name__, self.value)
+        return "<%s: %s>" % (type(self).__name__, repr(self.value))
+
+
+class Whitespace(_Leaf):
+    """Contains NEWLINE and ENDMARKER tokens."""
 
 
 class Name(_Leaf):
@@ -199,7 +207,7 @@ class Name(_Leaf):
         return self.value
 
     def __repr__(self):
-        return "<%s: %s@%s,%s>" % (type(self).__name__, self._string,
+        return "<%s: %s@%s,%s>" % (type(self).__name__, self.value,
                                    self.start_pos[0], self.start_pos[1])
 
     def get_definition(self):
