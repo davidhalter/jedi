@@ -219,11 +219,14 @@ class Literal(_Leaf):
         return literal_eval(self.value)
 
     def __repr__(self):
+        # TODO remove?
+        """
         if is_py3:
             s = self.literal
         else:
             s = self.literal.encode('ascii', 'replace')
-        return "<%s: %s>" % (type(self).__name__, s)
+        """
+        return "<%s: %s>" % (type(self).__name__, self.value)
 
 
 class Operator(_Leaf):
@@ -278,7 +281,7 @@ class Simple(Base):
         return self.children[-1].end_pos
 
     def get_code(self):
-        return "".join(str(c) for c in self.children)
+        return "".join(c.get_code() for c in self.children)
 
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')

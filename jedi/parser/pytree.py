@@ -126,6 +126,9 @@ class Node(Base):
     if sys.version_info > (3, 0):
         __str__ = __unicode__
 
+    def get_code(self):
+        return str(self)
+
     @property
     def prefix(self):
         """
@@ -186,7 +189,7 @@ def convert(grammar, raw_node):
         if type == tokenize.NAME:
             return pr.Name(value, start_pos, prefix)
         elif type in (tokenize.STRING, tokenize.NUMBER):
-            return pr.Name(value, start_pos, prefix)
+            return pr.Literal(value, start_pos, prefix)
         elif type in (tokenize.NEWLINE, tokenize.ENDMARKER):
             return pr.Whitespace(value, start_pos, prefix)
         else:

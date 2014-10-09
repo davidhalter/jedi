@@ -7,7 +7,7 @@ from jedi.parser.pgen2 import Driver
 def test_basic():
     def compare(string):
         """Generates the AST object and then regenerates the code."""
-        return d.parse_string(string).get_code() == string
+        assert d.parse_string(string).get_code() == string
 
     #if self.options["print_function"]:
     #    python_grammar = pygram.python_grammar_no_print_statement
@@ -17,6 +17,10 @@ def test_basic():
     # and only if the refactor method's write parameter was True.
     logger = logging.getLogger("RefactoringTool")
     d = Driver(pytree.python_grammar, convert=pytree.convert, logger=logger)
+
+    compare('\na #pass\n')
+    compare('wblabla* 1\t\n')
+    compare('def x(a, b:3): pass\n')
 
     print(d)
     tree = d.parse_string('wblabla* 1\t\n')
