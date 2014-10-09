@@ -421,7 +421,7 @@ class SubModule(Scope, Module):
     __slots__ = ('path', 'global_vars', 'used_names', 'temp_used_names',
                  'line_offset', 'use_as_parent')
 
-    def __init__(self, path, start_pos=(1, 0), top_module=None):
+    def __init__(self, children):
         """
         Initialize :class:`SubModule`.
 
@@ -430,15 +430,16 @@ class SubModule(Scope, Module):
 
         .. todo:: Document `top_module`.
         """
-        super(SubModule, self).__init__(self, start_pos)
-        self.path = path
+        super(SubModule, self).__init__(children)
+        self.path = None  # Set later.
         self.global_vars = []
         self.used_names = {}
         self.temp_used_names = []
         # this may be changed depending on fast_parser
         self.line_offset = 0
 
-        self.use_as_parent = top_module or self
+        if 0:
+            self.use_as_parent = top_module or self
 
     def add_global(self, name):
         """
@@ -1582,20 +1583,21 @@ class ListComprehension(ForFlow):
         return "%s for %s in %s" % tuple(code)
 
 
-class Operator(Simple):
-    __slots__ = ('string',)
-
-    def __init__(self, module, string, parent, start_pos):
-        end_pos = start_pos[0], start_pos[1] + len(string)
-        super(Operator, self).__init__(module, start_pos, end_pos, parent)
-        self.string = string
+class _Leaf(Base):
+    __slots__ = ('value', 'parent', 'start_pos', 'prefix')
+    def __init__(self, value, start_pos, prefix):
+        self.value = value
+        self.start_pos = start_pos
+        self.prefix = prefix
 
     def get_code(self):
-        return self.string
+        return self.prefix + self.value
 
     def __repr__(self):
-        return "<%s: `%s`>" % (type(self).__name__, self.string)
+        return "<%s: `%s`>" % (type(self).__name__, self.value)
 
+
+class Operator(_Leaf):
     def __str__(self):
         return self.get_code()
 
@@ -1607,11 +1609,11 @@ class Operator(Simple):
         if isinstance(other, Operator):
             return self is other
         else:
-            return self.string == other
+            return self.value == other
 
     def __ne__(self, other):
         """Python 2 compatibility."""
-        return self.string != other
+        return self.value != other
 
     def __hash__(self):
-        return hash(self.string)
+        return hash(self.value)

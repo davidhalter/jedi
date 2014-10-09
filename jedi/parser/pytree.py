@@ -44,11 +44,12 @@ python_grammar_no_print_statement = python_grammar.copy()
 del python_grammar_no_print_statement.keywords["print"]
 
 
-from jedi.parser.representation import ExprStmt, Class, Function
+from jedi.parser import representation as er
 _ast_mapping = {
     #'simple_stmt': ExprStmt,
-    'classdef': Class,
-    'funcdef': Function,
+    'classdef': er.Class,
+    'funcdef': er.Function,
+    'file_input': er.SubModule,
 }
 
 ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())
@@ -220,6 +221,7 @@ def convert(grammar, raw_node):
         if len(children) == 1:
             return children[0]
         print(raw_node, type_repr(type))
+        #import pdb; pdb.set_trace()
         try:
             return ast_mapping[type](children)
         except KeyError:
