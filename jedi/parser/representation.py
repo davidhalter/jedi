@@ -373,32 +373,6 @@ class Scope(Simple, DocstringMixin):
                 i += s.get_imports()
         return i
 
-    def get_code2(self, state=GetCodeState()):
-        string = []
-        return "".join(string)
-
-    def get_code(self, first_indent=False, indention='    '):
-        """
-        :return: Returns the code of the current scope.
-        :rtype: str
-        """
-        string = ""
-        if self._doc_token is not None:
-            string += '"""' + self.raw_doc + '"""\n'
-
-        objs = self.subscopes + self.imports + self.statements + self.returns
-        for obj in sorted(objs, key=lambda x: x.start_pos):
-            if isinstance(obj, Scope):
-                string += obj.get_code(first_indent=True, indention=indention)
-            else:
-                if obj in self.returns and not isinstance(self, Lambda):
-                    string += 'yield ' if self.is_generator else 'return '
-                string += obj.get_code()
-
-        if first_indent:
-            string = common.indent_block(string, indention=indention)
-        return string
-
     @Python3Method
     def get_defined_names(self):
         """
@@ -592,16 +566,6 @@ class Class(Scope):
             s.parent = self.use_as_parent
         self.decorators = []
 
-    def get_code(self, first_indent=False, indention='    '):
-        string = "\n".join('@' + stmt.get_code() for stmt in self.decorators)
-        string += 'class %s' % (self.name)
-        if len(self.supers) > 0:
-            sup = ', '.join(stmt.get_code(False) for stmt in self.supers)
-            string += '(%s)' % sup
-        string += ':\n'
-        string += super(Class, self).get_code(True, indention)
-        return string
-
     @property
     def doc(self):
         """
@@ -704,11 +668,6 @@ class Lambda(Function):
         super(Lambda, self).__init__(module, None, params, start_pos, None)
         self.parent = parent
 
-    def get_code(self, first_indent=False, indention='    '):
-        params = ','.join([stmt.get_code() for stmt in self.params])
-        string = "lambda %s: " % params
-        return string + super(Function, self).get_code(indention=indention)
-
     def __repr__(self):
         return "<%s @%s (%s-%s)>" % (type(self).__name__, self.start_pos[0],
                                      self.start_pos[1], self.end_pos[1])
@@ -770,17 +729,6 @@ class Flow(Scope):
         except AttributeError:
             return
 
-    def get_code(self, first_indent=False, indention='    '):
-        stmts = []
-        for s in self.inputs:
-            stmts.append(s.get_code(new_line=False))
-        stmt = ', '.join(stmts)
-        string = "%s %s:\n" % (self.command, stmt)
-        string += super(Flow, self).get_code(True, indention)
-        if self.next:
-            string += self.next.get_code()
-        return string
-
     def get_defined_names(self, is_internal_call=False):
         """
         Get the names for the flow. This includes also a call to the super
@@ -839,15 +787,6 @@ class ForFlow(Flow):
                 s.parent.parent = self.use_as_parent
                 s.parent = self.use_as_parent
 
-    def get_code(self, first_indent=False, indention=" " * 4):
-        vars = ",".join(x.get_code() for x in self.set_vars)
-        stmts = []
-        for s in self.inputs:
-            stmts.append(s.get_code(new_line=False))
-        stmt = ', '.join(stmts)
-        s = "for %s in %s:\n" % (vars, stmt)
-        return s + super(Flow, self).get_code(True, indention)
-
 
 class Import(Simple):
     """
@@ -881,24 +820,6 @@ class Import(Simple):
         self.star = star
         self.relative_count = relative_count
         self.defunct = defunct
-
-    def get_code(self, new_line=True):
-        # in case one of the names is None
-        alias = self.alias or ''
-
-        ns_str = '.'.join(unicode(n) for n in self.namespace_names)
-        if self.alias:
-            ns_str = "%s as %s" % (ns_str, alias)
-
-        nl = '\n' if new_line else ''
-        if self.from_names or self.relative_count:
-            if self.star:
-                ns_str = '*'
-            dots = '.' * self.relative_count
-            from_txt = '.'.join(unicode(n) for n in self.from_names)
-            return "from %s%s import %s%s" % (dots, from_txt, ns_str, nl)
-        else:
-            return "import %s%s" % (ns_str, nl)
 
     def get_defined_names(self):
         if self.defunct:
@@ -951,12 +872,6 @@ class KeywordStatement(Base):
 
     def __repr__(self):
         return "<%s(%s): %s>" % (type(self).__name__, self.name, self.stmt)
-
-    def get_code(self):
-        if self.stmt is None:
-            return "%s\n" % self.name
-        else:
-            return '%s %s\n' % (self.name, self.stmt)
 
     def get_defined_names(self):
         return []
@@ -1179,12 +1094,6 @@ class StatementElement(Simple):
             for y in self.next.generate_call_path():
                 yield y
 
-    def get_code(self):
-        if self.next is not None:
-            s = '.' if not isinstance(self.next, Array) else ''
-            return s + self.next.get_code()
-        return ''
-
 
 class Call(StatementElement):
     __slots__ = ('name',)
@@ -1193,9 +1102,6 @@ class Call(StatementElement):
         super(Call, self).__init__(module, start_pos, end_pos, parent)
         name.parent = self
         self.name = name
-
-    def get_code(self):
-        return self.name.get_code() + super(Call, self).get_code()
 
     def names(self):
         """
@@ -1281,26 +1187,6 @@ class Array(StatementElement):
             raise TypeError('only dicts allowed')
         return zip(self.keys, self.values)
 
-    def get_code(self):
-        map = {
-            self.NOARRAY: '(%s)',
-            self.TUPLE: '(%s)',
-            self.LIST: '[%s]',
-            self.DICT: '{%s}',
-            self.SET: '{%s}'
-        }
-        inner = []
-        for i, stmt in enumerate(self.values):
-            s = ''
-            with common.ignored(IndexError):
-                key = self.keys[i]
-                s += key.get_code(new_line=False) + ': '
-            s += stmt.get_code(new_line=False)
-            inner.append(s)
-        add = ',' if self.type == self.TUPLE and len(self) == 1 else ''
-        s = map[self.type] % (', '.join(inner) + add)
-        return s + super(Array, self).get_code()
-
     def __repr__(self):
         if self.type == self.NOARRAY:
             typ = 'noarray'
@@ -1341,8 +1227,3 @@ class ListComprehension(ForFlow):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.get_code())
-
-    def get_code(self):
-        statements = self.stmt, self.middle, self.input
-        code = [s.get_code().replace('\n', '') for s in statements]
-        return "%s for %s in %s" % tuple(code)
