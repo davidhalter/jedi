@@ -168,6 +168,67 @@ class Base(object):
         return False
 
 
+class _Leaf(Base):
+    __slots__ = ('value', 'parent', 'start_pos', 'prefix')
+
+    def __init__(self, value, start_pos, prefix):
+        self.value = value
+        self.start_pos = start_pos
+        self.prefix = prefix
+
+    def get_code(self):
+        return self.prefix + self.value
+
+    def __repr__(self):
+        return "<%s: `%s`>" % (type(self).__name__, self.value)
+
+
+class Name(_Leaf):
+    """
+    A string. Sometimes it is important to know if the string belongs to a name
+    or not.
+    """
+    # Unfortunately there's no way to use slots for str (non-zero __itemsize__)
+    # -> http://utcc.utoronto.ca/~cks/space/blog/python/IntSlotsPython3k
+    # Therefore don't subclass `str`.
+    __slots__ = ('_string', '_line', '_column')
+
+    def __str__(self):
+        return self.value
+
+    def __unicode__(self):
+        return self.value
+
+    def __repr__(self):
+        return "<%s: %s@%s,%s>" % (type(self).__name__, self._string,
+                                   self.start_pos[0], self.start_pos[1])
+
+    def get_definition(self):
+        return self.get_parent_until((ArrayStmt, StatementElement), reverse=True)
+
+
+class Operator(_Leaf):
+    def __str__(self):
+        return self.get_code()
+
+    def __eq__(self, other):
+        """
+        Make comparisons with strings easy.
+        Improves the readability of the parser.
+        """
+        if isinstance(other, Operator):
+            return self is other
+        else:
+            return self.value == other
+
+    def __ne__(self, other):
+        """Python 2 compatibility."""
+        return self.value != other
+
+    def __hash__(self):
+        return hash(self.value)
+
+
 class Simple(Base):
     """
     The super class for Scope, Import, Name and Statement. Every object in
@@ -1495,55 +1556,6 @@ class Array(StatementElement):
         return "<%s: %s%s>" % (type(self).__name__, typ, self.values)
 
 
-class Name(object):
-    """
-    A string. Sometimes it is important to know if the string belongs to a name
-    or not.
-    """
-    # Unfortunately there's no way to use slots for str (non-zero __itemsize__)
-    # -> http://utcc.utoronto.ca/~cks/space/blog/python/IntSlotsPython3k
-    # Therefore don't subclass `str`.
-    __slots__ = ('_sub_module', 'parent', '_string', '_line', '_column')
-
-    def __init__(self, sub_module, string, parent, start_pos):
-        self._string = string
-        self.parent = parent
-        self._sub_module = sub_module
-        self._line = start_pos[0]
-        self._column = start_pos[1]
-
-    def __str__(self):
-        return self._string
-
-    def __unicode__(self):
-        return self._string
-
-    def __repr__(self):
-        return "<%s: %s@%s,%s>" % (type(self).__name__, self._string,
-                                   self.start_pos[0], self.start_pos[1])
-
-    def get_code(self):
-        return self._string
-
-    def get_definition(self):
-        return self.get_parent_until((ArrayStmt, StatementElement), reverse=True)
-
-    def get_parent_until(self, *args, **kwargs):
-        return self.parent.get_parent_until(*args, **kwargs)
-
-    def isinstance(self, *cls):
-        return isinstance(self, cls)
-
-    @property
-    def start_pos(self):
-        offset = self._sub_module.line_offset
-        return offset + self._line, self._column
-
-    @property
-    def end_pos(self):
-        return self.start_pos[0], self.start_pos[1] + len(self._string)
-
-
 class ListComprehension(ForFlow):
     """ Helper class for list comprehensions """
     def __init__(self, module, stmt, middle, input, parent):
@@ -1581,39 +1593,3 @@ class ListComprehension(ForFlow):
         statements = self.stmt, self.middle, self.input
         code = [s.get_code().replace('\n', '') for s in statements]
         return "%s for %s in %s" % tuple(code)
-
-
-class _Leaf(Base):
-    __slots__ = ('value', 'parent', 'start_pos', 'prefix')
-    def __init__(self, value, start_pos, prefix):
-        self.value = value
-        self.start_pos = start_pos
-        self.prefix = prefix
-
-    def get_code(self):
-        return self.prefix + self.value
-
-    def __repr__(self):
-        return "<%s: `%s`>" % (type(self).__name__, self.value)
-
-
-class Operator(_Leaf):
-    def __str__(self):
-        return self.get_code()
-
-    def __eq__(self, other):
-        """
-        Make comparisons with strings easy.
-        Improves the readability of the parser.
-        """
-        if isinstance(other, Operator):
-            return self is other
-        else:
-            return self.value == other
-
-    def __ne__(self, other):
-        """Python 2 compatibility."""
-        return self.value != other
-
-    def __hash__(self):
-        return hash(self.value)
