@@ -287,9 +287,14 @@ class Script(object):
         if user_stmt is None:
             # Set the start_pos to a pseudo position, that doesn't exist but works
             # perfectly well (for both completions in docstrings and statements).
-            stmt.start_pos = self._pos
+            pos = self._pos
         else:
-            stmt.start_pos = user_stmt.start_pos
+            pos = user_stmt.start_pos
+
+        child = stmt
+        while hasattr(child, 'children'):
+            child = child.children[0]
+        child.start_pos = pos
         stmt.parent = self._parser.user_scope()
         return stmt
 

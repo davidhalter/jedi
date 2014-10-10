@@ -130,7 +130,7 @@ class Evaluator(object):
         if isinstance(stmt, FakeStatement):
             return expression_list  # Already contains the results.
 
-        result = self.eval_expression_list(expression_list)
+        result = self.eval_element(stmt.children[0])
 
         ass_details = stmt.assignment_details
         if ass_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
@@ -160,6 +160,14 @@ class Evaluator(object):
                 new_result += finder.find_assignments(ass_expression_list[0], result, seek_name)
             result = new_result
         return result
+
+    def eval_element(self, element):
+        if isinstance(element, pr.Name):
+            stmt = element.get_parent_until(pr.ExprStmt)
+            return self.find_types(stmt.parent, element, stmt.start_pos,
+                                   search_global=True)
+        else:
+            raise NotImplementedError
 
     def eval_expression_list(self, expression_list):
         """

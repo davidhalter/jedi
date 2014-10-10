@@ -175,6 +175,7 @@ class _Leaf(Base):
         self.value = value
         self.start_pos = start_pos
         self.prefix = prefix
+        self.parent = None
 
     @property
     def end_pos(self):
@@ -262,9 +263,10 @@ class Simple(Base):
         """
         Initialize :class:`Simple`.
 
-        :type  children: :class:`SubModule`
         :param children: The module in which this Python object locates.
         """
+        for c in children:
+            c.parent = self
         self.children = children
         self.parent = None
 
@@ -319,14 +321,13 @@ class Scope(Simple, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('subscopes', 'imports', 'statements', '_doc_token', 'asserts',
+    __slots__ = ('subscopes', 'imports', '_doc_token', 'asserts',
                  'returns', 'is_generator', '_names_dict')
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
         self.subscopes = []
         self.imports = []
-        self.statements = []
         self._doc_token = None
         self.asserts = []
         # Needed here for fast_parser, because the fast_parser splits and
@@ -334,6 +335,10 @@ class Scope(Simple, DocstringMixin):
         self.returns = []
         self._names_dict = defaultdict(_return_empty_list)
         self.is_generator = False
+
+    @property
+    def statements(self):
+        return [c for c in self.children if isinstance(c, ExprStmt)]
 
     def is_scope(self):
         return True
@@ -927,6 +932,7 @@ class Statement(Simple, DocstringMixin):
         self.expression_list()
 
     def get_defined_names(self):
+        return []
         """Get the names for the statement."""
         if self._set_vars is None:
 
@@ -997,8 +1003,6 @@ class Statement(Simple, DocstringMixin):
 
         would result in ``[(Name(x), '='), (Array([Name(y), Name(z)]), '=')]``.
         """
-        # parse statement which creates the assignment details.
-        self.expression_list()
         return self._assignment_details
 
     @cache.underscore_memoization
