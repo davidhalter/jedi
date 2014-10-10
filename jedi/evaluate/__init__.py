@@ -126,9 +126,8 @@ class Evaluator(object):
         :param stmt: A `pr.ExprStmt`.
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
-        expression_list = stmt.expression_list()
         if isinstance(stmt, FakeStatement):
-            return expression_list  # Already contains the results.
+            return stmt.children  # Already contains the results.
 
         result = self.eval_element(stmt.children[0])
 

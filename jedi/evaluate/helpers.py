@@ -310,7 +310,8 @@ class FakeImport(pr.Import):
 
 class FakeName(pr.Name):
     def __init__(self, name_str, parent=None, start_pos=(0, 0)):
-        super(FakeName, self).__init__(FakeSubModule, name_str, parent, start_pos)
+        super(FakeName, self).__init__(name_str, start_pos)
+        self.parent = parent
 
     def get_definition(self):
         return self.parent

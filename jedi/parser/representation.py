@@ -171,7 +171,7 @@ class Base(object):
 class _Leaf(Base):
     __slots__ = ('value', 'parent', 'start_pos', 'prefix')
 
-    def __init__(self, value, start_pos, prefix):
+    def __init__(self, value, start_pos, prefix=''):
         self.value = value
         self.start_pos = start_pos
         self.prefix = prefix
@@ -1003,14 +1003,7 @@ class Statement(Simple, DocstringMixin):
 
         would result in ``[(Name(x), '='), (Array([Name(y), Name(z)]), '=')]``.
         """
-        return self._assignment_details
-
-    @cache.underscore_memoization
-    def expression_list(self):
-        """
-        Parse a statement.
-        """
-        return self.children
+        return []
 
     def set_expression_list(self, lst):
         """It's necessary for some "hacks" to change the expression_list."""
