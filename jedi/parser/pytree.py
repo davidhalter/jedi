@@ -51,6 +51,8 @@ _ast_mapping = {
     'classdef': pr.Class,
     'funcdef': pr.Function,
     'file_input': pr.SubModule,
+    'import_name': pr.Import,
+    'import_from': pr.Import,
 }
 
 ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())
@@ -162,7 +164,10 @@ def convert(grammar, raw_node):
         print('leaf', raw_node, type_repr(type))
         prefix, start_pos = context
         if type == tokenize.NAME:
-            return pr.Name(value, start_pos, prefix)
+            if value in grammar.keywords:
+                return pr.Keyword(value, start_pos, prefix)
+            else:
+                return pr.Name(value, start_pos, prefix)
         elif type in (tokenize.STRING, tokenize.NUMBER):
             return pr.Literal(value, start_pos, prefix)
         elif type in (tokenize.NEWLINE, tokenize.ENDMARKER):

@@ -232,7 +232,7 @@ class Literal(_Leaf):
 
 class Operator(_Leaf):
     def __str__(self):
-        return self.get_code()
+        return self.value
 
     def __eq__(self, other):
         """
@@ -247,6 +247,22 @@ class Operator(_Leaf):
     def __ne__(self, other):
         """Python 2 compatibility."""
         return self.value != other
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class Keyword(_Leaf):
+    def __eq__(self, other):
+        """
+        Make comparisons with strings easy.
+        Improves the readability of the parser.
+        """
+        return self.value == other
+
+    def __ne__(self, other):
+        """Python 2 compatibility."""
+        return not self.__eq__(other)
 
     def __hash__(self):
         return hash(self.value)
@@ -396,20 +412,11 @@ class Scope(Simple, DocstringMixin):
         >>> parser.module.get_defined_names()
         [<Name: a@2,0>, <Name: b@3,0>, <Name: b.c@4,0>]
         """
-        n = []
-        for stmt in self.statements:
-            try:
-                n += stmt.get_defined_names(True)
-            except TypeError:
-                n += stmt.get_defined_names()
-
-        # function and class names
-        n += [s.name for s in self.subscopes]
-
-        for i in self.imports:
-            if not i.star:
-                n += i.get_defined_names()
-        return n
+        names = []
+        for c in self.children:
+            if isinstance(c, ExprStmt):
+                names += c.get_defined_names()
+        return names
 
     @Python3Method
     def get_statement_for_position(self, pos, include_imports=False):
@@ -817,7 +824,7 @@ class Import(Simple):
     :param defunct: An Import is valid or not.
     :type defunct: bool
     """
-    def __init__(self, module, start_pos, end_pos, namespace_names, alias=None,
+    def __init__old(self, module, start_pos, end_pos, namespace_names, alias=None,
                  from_names=(), star=False, relative_count=0, defunct=False):
         super(Import, self).__init__(module, start_pos, end_pos)
 
@@ -834,6 +841,7 @@ class Import(Simple):
         self.defunct = defunct
 
     def get_defined_names(self):
+        return []
         if self.defunct:
             return []
         if self.star:
@@ -932,6 +940,8 @@ class Statement(Simple, DocstringMixin):
         self.expression_list()
 
     def get_defined_names(self):
+        if isinstance(self.children[0], Import):
+            return self.children[0].get_defined_names()
         return []
         """Get the names for the statement."""
         if self._set_vars is None:
