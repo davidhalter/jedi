@@ -841,7 +841,12 @@ class Import(Simple):
         self.defunct = defunct
 
     def get_defined_names(self):
-        return []
+        if self.children[0] == 'import':
+            return self.children[1:]
+        else:  # from
+            raise NotImplementedError
+
+        # TODO remove
         if self.defunct:
             return []
         if self.star:
