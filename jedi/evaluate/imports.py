@@ -39,6 +39,7 @@ class ModuleNotFound(Exception):
 
 
 class ImportWrapper():
+    GlobalNamespace = 'TODO PLEASE DELETE ME'
     def __init__(self, evaluator, name):
         self._evaluator = evaluator
         self._name = name

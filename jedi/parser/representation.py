@@ -286,6 +286,17 @@ class Simple(Base):
         self.children = children
         self.parent = None
 
+    def move(self, line_offset, column_offset):
+        """
+        Move the Node's start_pos.
+        """
+        for c in self.children:
+            if isinstance(c, _Leaf):
+                c.start_pos = (c.start_pos[0] + line_offset,
+                               c.start_pos[1] + column_offset)
+            else:
+                c.move(line_offset, column_offset)
+
     @property
     def start_pos(self):
         return self.children[0].start_pos

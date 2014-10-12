@@ -264,7 +264,9 @@ class Script(object):
                 # goto_definition returns definitions of its statements if the
                 # cursor is on the assignee. By changing the start_pos of our
                 # "pseudo" statement, the Jedi evaluator can find the assignees.
-                if user_stmt is not None:
+                
+                # TODO remove?
+                if False and user_stmt is not None:
                     eval_stmt.start_pos = user_stmt.end_pos
             scopes = self._evaluator.eval_statement(eval_stmt)
 
@@ -291,10 +293,7 @@ class Script(object):
         else:
             pos = user_stmt.start_pos
 
-        child = stmt
-        while hasattr(child, 'children'):
-            child = child.children[0]
-        child.start_pos = pos
+        stmt.move(pos[0] - 1, pos[1])
         stmt.parent = self._parser.user_scope()
         return stmt
 
