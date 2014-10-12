@@ -38,7 +38,73 @@ class ModuleNotFound(Exception):
         self.name_part = name_part
 
 
-class ImportWrapper(pr.Base):
+class ImportWrapper():
+    def __init__(self, evaluator, name):
+        self._evaluator = evaluator
+        self._name = name
+
+        self._import = name.get_parent_until(pr.Import)
+
+    @memoize_default()
+    def follow(self, is_goto=False):
+        if self._evaluator.recursion_detector.push_stmt(self._import):
+            # check recursion
+            return []
+
+        try:
+            module = self._import.get_parent_until()
+            import_path = self._import.path_for_name(self._name)
+            importer = get_importer(self._evaluator, tuple(import_path), module, level=0)
+            try:
+                module, rest = importer.follow_file_system()
+            except ModuleNotFound as e:
+                analysis.add(self._evaluator, 'import-error', e.name_part)
+                return []
+
+            if module is None:
+                return []
+
+            if self._import.is_nested() and not self.nested_resolve:
+                scopes = [NestedImportModule(module, self._import)]
+            else:
+                scopes = [module]
+
+            star_imports = remove_star_imports(self._evaluator, module)
+            if star_imports:
+                scopes = [StarImportModule(scopes[0], star_imports)]
+
+            # goto only accepts `Name`
+            if is_goto and not rest:
+                scopes = [s.name for s in scopes]
+
+            # follow the rest of the import (not FS -> classes, functions)
+            if len(rest) > 1 or rest and self.is_like_search:
+                scopes = []
+                if ('os', 'path') == self.import_path[:2] \
+                        and not self._is_relative_import():
+                    # This is a huge exception, we follow a nested import
+                    # ``os.path``, because it's a very important one in Python
+                    # that is being achieved by messing with ``sys.modules`` in
+                    # ``os``.
+                    scopes = self._evaluator.follow_path(iter(rest), [module], module)
+            elif rest:
+                if is_goto:
+                    scopes = list(chain.from_iterable(
+                        self._evaluator.find_types(s, rest[0], is_goto=True)
+                        for s in scopes))
+                else:
+                    scopes = list(chain.from_iterable(
+                        self._evaluator.follow_path(iter(rest), [s], s)
+                        for s in scopes))
+            debug.dbg('after import: %s', scopes)
+            if not scopes:
+                analysis.add(self._evaluator, 'import-error',
+                             self._importer.import_path[-1])
+        finally:
+            self._evaluator.recursion_detector.pop_stmt()
+        return scopes
+
+class ImportWrapper2(pr.Base):
     """
     An ImportWrapper is the path of a `pr.Import` object.
     """

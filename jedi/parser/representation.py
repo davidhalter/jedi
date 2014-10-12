@@ -212,7 +212,7 @@ class Name(_Leaf):
                                    self.start_pos[0], self.start_pos[1])
 
     def get_definition(self):
-        return self.get_parent_until((ArrayStmt, StatementElement), reverse=True)
+        return self.parent.get_parent_until((ArrayStmt, StatementElement), reverse=True)
 
 
 class Literal(_Leaf):
@@ -416,6 +416,8 @@ class Scope(Simple, DocstringMixin):
         for c in self.children:
             if isinstance(c, ExprStmt):
                 names += c.get_defined_names()
+            elif isinstance(c, (Function, Class)):
+                names.append(c.name)
         return names
 
     @Python3Method
@@ -844,7 +846,8 @@ class Import(Simple):
         if self.children[0] == 'import':
             return self.children[1:]
         else:  # from
-            raise NotImplementedError
+# <Operator: '.'>, <Name: decoder@110,6>, <Keyword: 'import'>, <Name: JSONDecoder@110,21>
+            return [self.children[-1]]
 
         # TODO remove
         if self.defunct:
@@ -868,6 +871,23 @@ class Import(Simple):
             n.append(self.alias)
         return n
 
+    def _paths(self):
+        if self.children[0] == 'import':
+            return [self.children[1:]]
+        else:
+            raise NotImplementedError
+
+    def path_for_name(self, name):
+        for path in self._paths():
+            if name in path:
+                return path
+
+    @property
+    def level(self):
+        """The level parameter of ``__import__``."""
+        # TODO implement
+        return 0
+
     def is_nested(self):
         """
         This checks for the special case of nested imports, without aliases and
@@ -875,6 +895,8 @@ class Import(Simple):
 
             import foo.bar
         """
+        return False
+        # TODO use this check differently?
         return not self.alias and not self.from_names \
             and len(self.namespace_names) > 1
 

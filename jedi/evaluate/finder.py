@@ -82,7 +82,7 @@ class NameFinder(object):
                 name_list = sorted(name_list, key=lambda n: n.start_pos, reverse=True)
 
             for name in name_list:
-                if unicode(self.name_str) != name.get_code():
+                if unicode(self.name_str) != unicode(name):
                     continue
 
                 stmt = name.get_definition()
@@ -233,6 +233,7 @@ class NameFinder(object):
 
         for name in names:
             typ = name.get_definition()
+            print(typ)
             if typ.isinstance(pr.ForFlow):
                 types += self._handle_for_loops(typ)
             elif isinstance(typ, pr.Param):
@@ -243,6 +244,8 @@ class NameFinder(object):
                     types += evaluator.find_types(typ.parent.parent, str(name))
                 else:
                     types += self._remove_statements(typ, name)
+            elif isinstance(typ, pr.Import):
+                types += imports.ImportWrapper(self._evaluator, name).follow()
             else:
                 if typ.isinstance(er.Function) and resolve_decorator:
                     typ = typ.get_decorated_func()
