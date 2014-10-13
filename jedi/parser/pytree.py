@@ -56,76 +56,6 @@ def type_repr(type_num):
     return _type_reprs.setdefault(type_num, type_num)
 
 
-class Node(object):
-    """Concrete implementation for interior nodes."""
-
-    def __init__(self, type, children):
-        """
-        Initializer.
-
-        Takes a type constant (a symbol number >= 256), a sequence of
-        child nodes, and an optional context keyword argument.
-
-        As a side effect, the parent pointers of the children are updated.
-        """
-        self.type = type
-        self.children = children
-        for ch in self.children:
-            ch.parent = self
-
-    def __repr__(self):
-        """Return a canonical string representation."""
-        return "%s(%s, %r)" % (self.__class__.__name__,
-                               type_repr(self.type),
-                               self.children)
-
-    def __unicode__(self):
-        """
-        Return a pretty string representation.
-
-        This reproduces the input source exactly.
-        """
-        return "".join(map(str, self.children))
-
-    if sys.version_info > (3, 0):
-        __str__ = __unicode__
-
-    def get_code(self):
-        return "".join(c.get_code() for c in self.children)
-
-    @property
-    def prefix(self):
-        """
-        The whitespace and comments preceding this node in the input.
-        """
-        if not self.children:
-            return ""
-        return self.children[0].prefix
-
-    @property
-    def start_pos(self):
-        return self.children[0].start_pos
-
-    @property
-    def end_pos(self):
-        return self.children[-1].end_pos
-
-    @prefix.setter
-    def prefix(self, prefix):
-        if self.children:
-            self.children[0].prefix = prefix
-        else:
-            raise NotImplementedError
-
-    def append_child(self, child):
-        """
-        Equivalent to 'node.children.append(child)'. This method also sets the
-        child's parent attribute appropriately.
-        """
-        child.parent = self
-        self.children.append(child)
-
-
 def convert(grammar, raw_node):
     """
     Convert raw node information to a Node or Leaf instance.
@@ -160,7 +90,7 @@ def convert(grammar, raw_node):
         try:
             return ast_mapping[type](children)
         except KeyError:
-            return Node(type, children)
+            return pr.Node(type, children)
     else:
         print('leaf', raw_node, type_repr(type))
         prefix, start_pos = context

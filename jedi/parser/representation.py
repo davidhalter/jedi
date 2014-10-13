@@ -45,7 +45,7 @@ from jedi import common
 from jedi import debug
 from jedi import cache
 from jedi.parser import tokenize
-from jedi.parser.pytree import python_symbols, Node
+from jedi.parser.pytree import python_symbols, type_repr
 
 
 SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
@@ -324,6 +324,28 @@ class Simple(Base):
             code = code.encode(encoding, 'replace')
         return "<%s: %s@%s,%s>" % \
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
+
+
+class Node(Simple):
+    """Concrete implementation for interior nodes."""
+
+    def __init__(self, type, children):
+        """
+        Initializer.
+
+        Takes a type constant (a symbol number >= 256), a sequence of
+        child nodes, and an optional context keyword argument.
+
+        As a side effect, the parent pointers of the children are updated.
+        """
+        super(Node, self).__init__(children)
+        self.type = type
+
+    def __repr__(self):
+        """Return a canonical string representation."""
+        return "%s(%s, %r)" % (self.__class__.__name__,
+                               type_repr(self.type),
+                               self.children)
 
 
 class IsScopeMeta(type):
