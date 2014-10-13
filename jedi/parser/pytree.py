@@ -45,19 +45,6 @@ python_grammar_no_print_statement = python_grammar.copy()
 del python_grammar_no_print_statement.keywords["print"]
 
 
-from jedi.parser import representation as pr
-_ast_mapping = {
-    'simple_stmt': pr.ExprStmt,
-    'classdef': pr.Class,
-    'funcdef': pr.Function,
-    'file_input': pr.SubModule,
-    'import_name': pr.Import,
-    'import_from': pr.Import,
-}
-
-ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())
-
-
 def type_repr(type_num):
     global _type_reprs
     if not _type_reprs:
@@ -147,6 +134,20 @@ def convert(grammar, raw_node):
     grammar rule produces a new complete node, so that the tree is build
     strictly bottom-up.
     """
+
+    from jedi.parser import representation as pr
+    _ast_mapping = {
+        'simple_stmt': pr.ExprStmt,
+        'classdef': pr.Class,
+        'funcdef': pr.Function,
+        'file_input': pr.SubModule,
+        'import_name': pr.Import,
+        'import_from': pr.Import,
+    }
+
+    ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())
+
+
     #import pdb; pdb.set_trace()
     type, value, context, children = raw_node
     if type in grammar.number2symbol:

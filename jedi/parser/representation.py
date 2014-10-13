@@ -45,9 +45,15 @@ from jedi import common
 from jedi import debug
 from jedi import cache
 from jedi.parser import tokenize
+from jedi.parser.pytree import python_symbols, Node
 
 
 SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
+
+
+def is_node(node, symbol_name):
+    return isinstance(node, Node) \
+        and getattr(python_symbols, symbol_name) == node.type
 
 
 def filter_after_position(names, position):
@@ -978,8 +984,15 @@ class Statement(Simple, DocstringMixin):
         self.expression_list()
 
     def get_defined_names(self):
-        if isinstance(self.children[0], Import):
-            return self.children[0].get_defined_names()
+        first = self.children[0]  # children[1] is always a newline.
+        if isinstance(first, Import):
+            return first.get_defined_names()
+        elif is_node(first, 'expr_stmt'):
+            names = []
+            for i in range(0, len(first.children) - 2, 2):
+                if first.children[i + 1].value == '=':
+                    names.append(first.children[i])
+            return names
         return []
         """Get the names for the statement."""
         if self._set_vars is None:
