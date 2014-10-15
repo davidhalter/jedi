@@ -218,7 +218,7 @@ class Name(_Leaf):
                                    self.start_pos[0], self.start_pos[1])
 
     def get_definition(self):
-        return self.parent.get_parent_until((ArrayStmt, StatementElement), reverse=True)
+        return self.parent.get_parent_until((ArrayStmt, StatementElement, Node), reverse=True)
 
 
 class Literal(_Leaf):
@@ -1016,6 +1016,8 @@ class Statement(Simple, DocstringMixin):
                     names.append(first.children[i])
             return names
         return []
+
+
         """Get the names for the statement."""
         if self._set_vars is None:
 
@@ -1039,6 +1041,14 @@ class Statement(Simple, DocstringMixin):
                 # In the case of Param, it's also a defining name without ``=``
                 search_calls(self.expression_list())
         return self._set_vars + self.as_names
+
+    def get_rhs(self):
+        """Returns the right-hand-side of the equals."""
+        # TODO remove expr_stmt?
+        if is_node(self.children[0], 'expr_stmt'):
+            return self.children[0].children[-1]
+        else:
+            return self.children[0]
 
     def get_names_dict(self):
         """The future of name resolution. Returns a dict(str -> Call)."""

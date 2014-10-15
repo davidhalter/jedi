@@ -73,6 +73,7 @@ from itertools import tee, chain
 
 from jedi._compatibility import next, hasattr, unicode
 from jedi.parser import representation as pr
+from jedi.parser.pytree import python_symbols
 from jedi.parser.tokenize import Token
 from jedi.parser import fast
 from jedi import debug
@@ -129,7 +130,7 @@ class Evaluator(object):
         if isinstance(stmt, FakeStatement):
             return stmt.children  # Already contains the results.
 
-        result = self.eval_element(stmt.children[0])
+        result = self.eval_element(stmt.get_rhs())
 
         ass_details = stmt.assignment_details
         if ass_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
@@ -161,12 +162,67 @@ class Evaluator(object):
         return result
 
     def eval_element(self, element):
-        if isinstance(element, pr.Name):
-            stmt = element.get_parent_until(pr.ExprStmt)
-            return self.find_types(stmt.parent, element, stmt.start_pos,
-                                   search_global=True)
+        if isinstance(element, (pr.Name, pr.Literal)):
+            return self.eval_atom(element)
+        elif element.type == python_symbols.power:
+            types = self.eval_atom(element.children[0])
+            for trailer in element.children[1:]:
+                if trailer == '**':  # has a power operation.
+                    raise NotImplementedError
+                types = self.eval_trailer(types, trailer)
         else:
             raise NotImplementedError
+
+    def eval_atom(self, atom):
+        """
+        Basically to process ``atom`` nodes. The parser sometimes doesn't
+        generate the node (because it has just one child). In that case an atom
+        might be a name or a literal as well.
+        """
+        if isinstance(atom, pr.Name):
+            # This is the first global lookup.
+            stmt = atom.get_parent_until(pr.ExprStmt)
+            return self.find_types(stmt.parent, atom, stmt.start_pos,
+                                   search_global=True)
+        elif isinstance(atom, pr.Literal):
+            return [compiled.create(self, atom.value)]
+        else:
+            raise NotImplementedError
+
+    def eval_trailer(self, types, trailer):
+        trailer_op, node = trailer.children[:2]
+        new_types = []
+        for typ in types:
+            if trailer_op == '.':
+                raise NotImplementedError
+            elif trailer_op == '(':
+                new_types += self.execute(typ, node)
+            elif trailer_op == '[':
+                raise NotImplementedError
+        return new_types
+
+    @debug.increase_indent
+    def execute(self, obj, params=()):
+        if obj.isinstance(er.Function):
+            obj = obj.get_decorated_func()
+
+        debug.dbg('execute: %s %s', obj, params)
+        try:
+            # Some stdlib functions like super(), namedtuple(), etc. have been
+            # hard-coded in Jedi to support them.
+            return stdlib.execute(self, obj, params)
+        except stdlib.NotInStdLib:
+            pass
+
+        try:
+            func = obj.py__call__
+        except AttributeError:
+            debug.warning("no execution possible %s", obj)
+            return []
+        else:
+            types = func(self, params)
+            debug.dbg('execute result: %s in %s', types, obj)
+            return types
 
     def eval_expression_list(self, expression_list):
         """
@@ -302,7 +358,7 @@ class Evaluator(object):
         return self.follow_path(path, result, scope)
 
     @debug.increase_indent
-    def execute(self, obj, params=()):
+    def execute_old(self, obj, params=()):
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
