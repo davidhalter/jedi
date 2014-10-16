@@ -33,6 +33,10 @@ statements in this scope.  Check this out:
 [<Import: import os @1,0>]
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
+
+
+# TODO New docstring
+
 """
 import os
 import re
@@ -377,7 +381,7 @@ class Scope(Simple, DocstringMixin):
     :type start_pos: tuple(int, int)
     """
     __slots__ = ('subscopes', 'imports', '_doc_token', 'asserts',
-                 'returns', 'is_generator', '_names_dict')
+                 'is_generator', '_names_dict')
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
@@ -945,34 +949,14 @@ class Import(Simple):
             and len(self.namespace_names) > 1
 
 
-class KeywordStatement(Base):
+class KeywordStatement(Simple):
     """
     For the following statements: `assert`, `del`, `global`, `nonlocal`,
     `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
     """
-    __slots__ = ('name', 'start_pos', 'stmt', 'parent')
-
-    def __init__(self, name, start_pos, parent, stmt=None):
-        self.name = name
-        self.start_pos = start_pos
-        self.stmt = stmt
-        self.parent = parent
-
-        if stmt is not None:
-            stmt.parent = self
-
-    def __repr__(self):
-        return "<%s(%s): %s>" % (type(self).__name__, self.name, self.stmt)
-
-    def get_defined_names(self):
-        return []
-
     @property
-    def end_pos(self):
-        try:
-            return self.stmt.end_pos
-        except AttributeError:
-            return self.start_pos[0], self.start_pos[1] + len(self.name)
+    def keyword(self):
+        return self.children[0].value
 
 
 class Statement(Simple, DocstringMixin):
@@ -1110,8 +1094,6 @@ class Statement(Simple, DocstringMixin):
 
 class ExprStmt(Statement):
     """
-    TODO rename to SmallStmt
-
     This class exists temporarily, to be able to distinguish real statements
     (``small_stmt`` in Python grammar) from the so called ``test`` parts, that
     may be used to defined part of an array, but are never a whole statement.
