@@ -54,11 +54,29 @@ def _follow_param(evaluator, params, index):
             return [stmt]  # just some arbitrary object
 
 
-def builtins_getattr(evaluator, obj, params):
+def argument_clinic(string, want_obj=False):
+    """
+    Works like Argument Clinic (PEP 436), to validate function params.
+    """
+    args = []
+    # TODO Do the splitting and checking if the input is correct.
+    #re.
+    # = string.split(', ')
+
+    def f(func):
+        def wrapper(evaluator, obj, arguments):
+            args = arguments.eval_args()
+            return func(evaluator, *args)
+
+        return wrapper
+    return f
+
+
+@argument_clinic('object, name[, default], /')
+def builtins_getattr(evaluator, objects, names, defaults=None):
+    # TODO rename to types
     stmts = []
     # follow the first param
-    objects = _follow_param(evaluator, params, 0)
-    names = _follow_param(evaluator, params, 1)
     for obj in objects:
         if not isinstance(obj, (er.Instance, er.Class, pr.Module, compiled.CompiledObject)):
             debug.warning('getattr called without instance')
