@@ -12,7 +12,6 @@ There's also a pattern matching implementation here.
 
 __author__ = "Guido van Rossum <guido@python.org>"
 
-import sys
 import os
 
 from . import pgen2
@@ -22,7 +21,7 @@ _type_reprs = {}
 
 
 # The grammar file
-_GRAMMAR_FILE = os.path.join(os.path.dirname(__file__), "grammar.txt")
+_GRAMMAR_FILE = os.path.join(os.path.dirname(__file__), "grammar3.4.txt")
 
 
 class Symbols(object):
@@ -42,7 +41,10 @@ python_grammar = pgen2.load_grammar(_GRAMMAR_FILE)
 python_symbols = Symbols(python_grammar)
 
 python_grammar_no_print_statement = python_grammar.copy()
-del python_grammar_no_print_statement.keywords["print"]
+try:
+    del python_grammar_no_print_statement.keywords["print"]
+except KeyError:
+    pass  # Doesn't exist in the Python 3 grammar.
 
 
 def type_repr(type_num):
@@ -67,12 +69,22 @@ def convert(grammar, raw_node):
 
     from jedi.parser import representation as pr
     _ast_mapping = {
-        'simple_stmt': pr.ExprStmt,
+        'expr_stmt': pr.ExprStmt,
         'classdef': pr.Class,
         'funcdef': pr.Function,
         'file_input': pr.SubModule,
         'import_name': pr.Import,
         'import_from': pr.Import,
+        'break_stmt': pr.KeywordStatement,
+        'continue_stmt': pr.KeywordStatement,
+        'return_stmt': pr.KeywordStatement,
+        'raise_stmt': pr.KeywordStatement,
+        'yield_stmt': pr.KeywordStatement,
+        'del_stmt': pr.KeywordStatement,
+        'pass_stmt': pr.KeywordStatement,
+        'global_stmt': pr.KeywordStatement,
+        'nonlocal_stmt': pr.KeywordStatement,
+        'assert_stmt': pr.KeywordStatement,
     }
 
     ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())
@@ -83,7 +95,7 @@ def convert(grammar, raw_node):
     if type in grammar.number2symbol:
         # If there's exactly one child, return that child instead of
         # creating a new node.
-        if len(children) == 1:
+        if len(children) == 1 and type != 'expr_stmt':
             return children[0]
         print(raw_node, type_repr(type))
         #import pdb; pdb.set_trace()

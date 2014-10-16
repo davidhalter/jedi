@@ -23,9 +23,9 @@
 #diagram:rules
 
 # Start symbols for the grammar:
-#	file_input is a module or sequence of commands read from an input file;
-#	single_input is a single interactive statement;
-#	eval_input is the input for the eval() and input() functions.
+#	    file_input is a module or sequence of commands read from an input file;
+#	    single_input is a single interactive statement;
+#	    eval_input is the input for the eval() and input() functions.
 # NB: compound_stmt in single_input is followed by extra NEWLINE!
 file_input: (NEWLINE | stmt)* ENDMARKER
 single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
@@ -88,9 +88,9 @@ while_stmt: 'while' test ':' suite ['else' ':' suite]
 for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
 try_stmt: ('try' ':' suite
            ((except_clause ':' suite)+
-	    ['else' ':' suite]
-	    ['finally' ':' suite] |
-	   'finally' ':' suite))
+	        ['else' ':' suite]
+	        ['finally' ':' suite] |
+	       'finally' ':' suite))
 with_stmt: 'with' with_item (',' with_item)*  ':' suite
 with_item: test ['as' expr]
 with_var: 'as' expr
