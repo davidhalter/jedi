@@ -335,6 +335,31 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
 
+class Arguments(object):
+    def __init__(self, evaluator, argument_node):
+        self._argument_node = argument_node
+        self._evaluator = evaluator
+
+    def _split(self):
+        iterator = iter(self._argument_node.children)
+        for child in iterator:
+            if child == ',':
+                continue
+            elif child in ('*', '**'):
+                yield len(child), next(iterator)
+            else:
+                yield 0, child
+
+    def kwargs(self):
+        return []
+
+    def args(self):
+        return []
+
+    def eval_args(self):
+        return [self._evaluator.eval_element(el) for stars, el in self._split()]
+
+
 class Wrapper(pr.Base):
     def is_scope(self):
         return True

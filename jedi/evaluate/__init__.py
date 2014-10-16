@@ -170,6 +170,7 @@ class Evaluator(object):
                 if trailer == '**':  # has a power operation.
                     raise NotImplementedError
                 types = self.eval_trailer(types, trailer)
+            return types
         else:
             raise NotImplementedError
 
@@ -191,6 +192,8 @@ class Evaluator(object):
 
     def eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]
+        if node == ')':  # `arglist` is optional.
+            node = None
         new_types = []
         for typ in types:
             if trailer_op == '.':
@@ -202,15 +205,16 @@ class Evaluator(object):
         return new_types
 
     @debug.increase_indent
-    def execute(self, obj, params=()):
+    def execute(self, obj, arguments=()):
+        arguments = er.Arguments(self, arguments)
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
-        debug.dbg('execute: %s %s', obj, params)
+        debug.dbg('execute: %s %s', obj, arguments)
         try:
             # Some stdlib functions like super(), namedtuple(), etc. have been
             # hard-coded in Jedi to support them.
-            return stdlib.execute(self, obj, params)
+            return stdlib.execute(self, obj, arguments)
         except stdlib.NotInStdLib:
             pass
 
@@ -220,7 +224,7 @@ class Evaluator(object):
             debug.warning("no execution possible %s", obj)
             return []
         else:
-            types = func(self, params)
+            types = func(self, arguments)
             debug.dbg('execute result: %s in %s', types, obj)
             return types
 
