@@ -385,11 +385,14 @@ class Scope(Simple, DocstringMixin):
         self.imports = []
         self._doc_token = None
         self.asserts = []
-        # Needed here for fast_parser, because the fast_parser splits and
-        # returns will be in "normal" modules.
-        self.returns = []
         self._names_dict = defaultdict(_return_empty_list)
         self.is_generator = False
+
+    @property
+    def returns(self):
+        # Needed here for fast_parser, because the fast_parser splits and
+        # returns will be in "normal" modules.
+        return [c for c in self.children if isinstance(c, ExprStmt)]
 
     @property
     def statements(self):
@@ -1107,6 +1110,8 @@ class Statement(Simple, DocstringMixin):
 
 class ExprStmt(Statement):
     """
+    TODO rename to SmallStmt
+
     This class exists temporarily, to be able to distinguish real statements
     (``small_stmt`` in Python grammar) from the so called ``test`` parts, that
     may be used to defined part of an array, but are never a whole statement.
