@@ -1000,16 +1000,11 @@ class Statement(Simple, DocstringMixin):
         self.expression_list()
 
     def get_defined_names(self):
-        first = self.children[0]  # children[1] is always a newline.
-        if isinstance(first, Import):
-            return first.get_defined_names()
-        elif is_node(first, 'expr_stmt'):
-            names = []
-            for i in range(0, len(first.children) - 2, 2):
-                if first.children[i + 1].value == '=':
-                    names.append(first.children[i])
-            return names
-        return []
+        names = []
+        for i in range(0, len(self.children) - 2, 2):
+            if self.children[i + 1].value == '=':
+                names.append(self.children[i])
+        return names
 
 
         """Get the names for the statement."""
