@@ -81,7 +81,7 @@ def convert(grammar, raw_node):
         'yield_stmt': pr.KeywordStatement,
         'del_stmt': pr.KeywordStatement,
         'pass_stmt': pr.KeywordStatement,
-        'global_stmt': pr.KeywordStatement,
+        'global_stmt': pr.GlobalStmt,
         'nonlocal_stmt': pr.KeywordStatement,
         'assert_stmt': pr.KeywordStatement,
     }

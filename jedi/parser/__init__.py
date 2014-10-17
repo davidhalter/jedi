@@ -49,6 +49,7 @@ class Parser(object):
 
         if not source.endswith('\n'):
             source += '\n'
+        self.global_names = []
         #if self.options["print_function"]:
         #    python_grammar = pygram.python_grammar_no_print_statement
         #else:
@@ -56,9 +57,15 @@ class Parser(object):
         # files processed even if they were not changed during refactoring. If
         # and only if the refactor method's write parameter was True.
         logger = logging.getLogger("RefactoringTool")
-        d = Driver(pytree.python_grammar, convert=pytree.convert, logger=logger)
+        d = Driver(pytree.python_grammar, convert=self.convert, logger=logger)
         print(repr(source))
         self.module = d.parse_string(source).get_parent_until()
+
+    def convert(self, grammar, raw_node):
+        new_node = pytree.convert(grammar, raw_node)
+        if isinstance(new_node, pr.GlobalStmt):
+            self.global_names += new_node.names()
+        return new_node
 
     def __init__old__(self, source, module_path=None, no_docstr=False,
                       tokenizer=None, top_module=None):

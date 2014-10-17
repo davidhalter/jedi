@@ -964,6 +964,11 @@ class KeywordStatement(Simple):
         return self.children[0].value
 
 
+class GlobalStmt(Simple):
+    def names(self):
+        return self.children[1::2]
+
+
 class Statement(Simple, DocstringMixin):
     """
     This is the class for all the possible statements. Which means, this class
