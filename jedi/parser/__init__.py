@@ -61,6 +61,8 @@ class Parser(object):
         print(repr(source))
         self.module = d.parse_string(source).get_parent_until()
 
+        self.module.set_global_names(self.global_names)
+
     def convert(self, grammar, raw_node):
         new_node = pytree.convert(grammar, raw_node)
         if isinstance(new_node, pr.GlobalStmt):

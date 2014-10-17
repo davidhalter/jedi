@@ -179,7 +179,7 @@ class NameFinder(object):
         defined.
         """
         if isinstance(scope, pr.Flow) \
-                or isinstance(scope, pr.KeywordStatement) and scope.name == 'global':
+                or isinstance(scope, pr.GlobalStmt):
 
             if isinstance(name_list_scope, er.Class):
                 name_list_scope = name_list_scope.base

@@ -540,7 +540,7 @@ class SubModule(Scope, Module):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    __slots__ = ('path', 'global_vars', 'used_names', 'temp_used_names',
+    __slots__ = ('path', 'global_names', 'used_names', 'temp_used_names',
                  'line_offset', 'use_as_parent')
 
     def __init__(self, children):
@@ -554,7 +554,6 @@ class SubModule(Scope, Module):
         """
         super(SubModule, self).__init__(children)
         self.path = None  # Set later.
-        self.global_vars = []
         self.used_names = {}
         self.temp_used_names = []
         # this may be changed depending on fast_parser
@@ -563,21 +562,25 @@ class SubModule(Scope, Module):
         if 0:
             self.use_as_parent = top_module or self
 
-    def add_global(self, name):
+    def set_global_names(self, names):
         """
         Global means in these context a function (subscope) which has a global
         statement.
         This is only relevant for the top scope.
 
-        :param name: The name of the global.
-        :type name: Name
+        :param names: names of the global.
+        :type names: list of Name
         """
+        self.global_names = names
+
+    def add_global(self, name):
         # set no parent here, because globals are not defined in this scope.
         self.global_vars.append(name)
 
     def get_defined_names(self):
         n = super(SubModule, self).get_defined_names()
-        n += self.global_vars
+        # TODO uncomment
+        #n += self.global_names
         return n
 
     @property
@@ -1038,11 +1041,7 @@ class Statement(Simple, DocstringMixin):
 
     def get_rhs(self):
         """Returns the right-hand-side of the equals."""
-        # TODO remove expr_stmt?
-        if is_node(self.children[0], 'expr_stmt'):
-            return self.children[0].children[-1]
-        else:
-            return self.children[0]
+        return self.children[-1]
 
     def get_names_dict(self):
         """The future of name resolution. Returns a dict(str -> Call)."""

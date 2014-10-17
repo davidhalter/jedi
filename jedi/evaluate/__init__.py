@@ -130,6 +130,7 @@ class Evaluator(object):
         if isinstance(stmt, FakeStatement):
             return stmt.children  # Already contains the results.
 
+        print('X', stmt.get_rhs())
         result = self.eval_element(stmt.get_rhs())
 
         ass_details = stmt.assignment_details
