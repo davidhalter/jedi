@@ -42,6 +42,7 @@ import os
 import re
 from inspect import cleandoc
 from collections import defaultdict
+from itertools import chain
 
 from jedi._compatibility import (next, Python3Method, encoding, unicode,
                                  is_py3, u, literal_eval, use_metaclass)
@@ -400,7 +401,9 @@ class Scope(Simple, DocstringMixin):
 
     @property
     def statements(self):
-        return [c for c in self.children if isinstance(c, ExprStmt)]
+        return [s for c in self.children if is_node(c, 'simple_stmt')
+                for s in c.children if isinstance(s, (ExprStmt, Import,
+                                                      KeywordStatement))]
 
     def is_scope(self):
         return True
@@ -460,8 +463,10 @@ class Scope(Simple, DocstringMixin):
         """
         names = []
         for c in self.children:
-            if isinstance(c, ExprStmt):
-                names += c.get_defined_names()
+            if is_node(c, 'simple_stmt'):
+                names += chain.from_iterable(
+                    [s.get_defined_names() for s in c.children
+                     if isinstance(s, (ExprStmt, Import, KeywordStatement))])
             elif isinstance(c, (Function, Class)):
                 names.append(c.name)
         return names

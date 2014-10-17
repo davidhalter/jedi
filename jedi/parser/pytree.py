@@ -25,7 +25,6 @@ _GRAMMAR_FILE = os.path.join(os.path.dirname(__file__), "grammar3.4.txt")
 
 
 class Symbols(object):
-
     def __init__(self, grammar):
         """Initializer.
 
@@ -95,7 +94,9 @@ def convert(grammar, raw_node):
     if type in grammar.number2symbol:
         # If there's exactly one child, return that child instead of
         # creating a new node.
-        if len(children) == 1 and type != 'expr_stmt':
+        # We still create expr_stmt though, because a lot of Jedi depends on
+        # its logic.
+        if len(children) == 1 and type != python_symbols.expr_stmt:
             return children[0]
         print(raw_node, type_repr(type))
         #import pdb; pdb.set_trace()
