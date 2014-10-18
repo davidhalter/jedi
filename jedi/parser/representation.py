@@ -397,7 +397,20 @@ class Scope(Simple, DocstringMixin):
     def returns(self):
         # Needed here for fast_parser, because the fast_parser splits and
         # returns will be in "normal" modules.
-        return [c for c in self.children if isinstance(c, ExprStmt)]
+        return self._search_in_scope(ReturnStmt)
+
+    def _search_in_scope(self, typ):
+        def scan(children):
+            elements = []
+            for element in children:
+                if isinstance(element, typ):
+                    elements.append(element)
+                elif is_node(element, 'suite') or is_node(element, 'simple_stmt'):
+                    elements += scan(element.children)
+            return elements
+
+        print('return', scan(self.children))
+        return scan(self.children)
 
     @property
     def statements(self):
@@ -970,6 +983,10 @@ class KeywordStatement(Simple):
 class GlobalStmt(Simple):
     def names(self):
         return self.children[1::2]
+
+
+class ReturnStmt(Simple):
+    pass
 
 
 class Statement(Simple, DocstringMixin):
