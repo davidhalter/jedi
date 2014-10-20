@@ -409,7 +409,6 @@ class Scope(Simple, DocstringMixin):
                     elements += scan(element.children)
             return elements
 
-        print('return', scan(self.children))
         return scan(self.children)
 
     @property
@@ -475,7 +474,10 @@ class Scope(Simple, DocstringMixin):
         [<Name: a@2,0>, <Name: b@3,0>, <Name: b.c@4,0>]
         """
         names = []
-        for c in self.children:
+        children = self.children
+        if is_node(children[-1], 'suite'):
+            children = children[-1].children
+        for c in children:
             if is_node(c, 'simple_stmt'):
                 names += chain.from_iterable(
                     [s.get_defined_names() for s in c.children

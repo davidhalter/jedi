@@ -233,7 +233,6 @@ class NameFinder(object):
 
         for name in names:
             typ = name.get_definition()
-            print(typ)
             if typ.isinstance(pr.ForFlow):
                 types += self._handle_for_loops(typ)
             elif isinstance(typ, pr.Param):

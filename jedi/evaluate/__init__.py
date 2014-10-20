@@ -131,7 +131,6 @@ class Evaluator(object):
         if isinstance(stmt, FakeStatement):
             return stmt.children  # Already contains the results.
 
-        print('X', stmt.get_rhs())
         result = self.eval_element(stmt.get_rhs())
 
         ass_details = stmt.assignment_details
@@ -188,7 +187,7 @@ class Evaluator(object):
             return self.find_types(stmt.parent, atom, stmt.start_pos,
                                    search_global=True)
         elif isinstance(atom, pr.Literal):
-            return [compiled.create(self, atom.value)]
+            return [compiled.create(self, atom.eval())]
         else:
             raise NotImplementedError
 

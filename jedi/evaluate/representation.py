@@ -250,7 +250,9 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
             # TODO temp solution, remove later, Name should never get
             #     here?
             par = get_instance_el(evaluator, instance, var.parent, is_class_var)
-            return pr.Name(var._sub_module, unicode(var), par, var.start_pos)
+            name = pr.Name(unicode(var), var.start_pos)
+            name.parent = par
+            return name
         return var
 
     var = wrap(evaluator, var)
