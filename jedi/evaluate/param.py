@@ -21,8 +21,12 @@ class Arguments(object):
     def _split(self):
         if isinstance(self._argument_node, (tuple, list)):
             for el in self._argument_node:
-                yield 0
+                yield 0, el
         else:
+            if not pr.is_node(self._argument_node, 'arglist'):
+                yield 0, self._argument_node
+                return
+
             iterator = iter(self._argument_node.children)
             for child in iterator:
                 if child == ',':

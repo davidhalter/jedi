@@ -647,9 +647,11 @@ class Class(Scope):
         super(Class, self).__init__(children)
         self.decorators = []
 
-    @property
-    def supers(self):
-        raise NotImplementedError
+    def get_super_arglist(self):
+        if len(self.children) == 4:  # Has no parentheses
+            return None
+        else:
+            return self.children[3]
 
     @property
     def name(self):

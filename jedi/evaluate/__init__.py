@@ -184,7 +184,7 @@ class Evaluator(object):
         """
         if isinstance(atom, pr.Name):
             # This is the first global lookup.
-            stmt = atom.get_parent_until((pr.ExprStmt, pr.ReturnStmt))
+            stmt = atom.get_parent_until((pr.ExprStmt, pr.ReturnStmt, pr.Scope))
             return self.find_types(stmt.parent, atom, stmt.start_pos,
                                    search_global=True)
         elif isinstance(atom, pr.Literal):

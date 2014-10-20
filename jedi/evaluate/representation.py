@@ -29,6 +29,7 @@ __
 import copy
 import os
 import pkgutil
+from itertools import chain
 
 from jedi._compatibility import use_metaclass, unicode, Python3Method
 from jedi.parser import representation as pr
@@ -235,8 +236,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         return getattr(self.base, name)
 
     def __repr__(self):
-        return "<e%s of %s (var_args: %s)>" % \
-            (type(self).__name__, self.base, len(self.var_args or []))
+        return "<e%s of %s %s>" % (type(self).__name__, self.base, self.var_args)
 
 
 def get_instance_el(evaluator, instance, var, is_class_var=False):
@@ -377,6 +377,10 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
 
     @memoize_default(default=())
     def py__bases__(self, evaluator):
+        args = param.Arguments(self._evaluator, self.base.get_super_arglist() or ())
+        return list(chain.from_iterable(args.eval_args()))
+        
+        # TODO remove
         supers = []
         for s in self.base.supers:
             # Super classes are statements.
