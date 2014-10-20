@@ -696,8 +696,12 @@ class Function(Scope):
     def name(self):
         return self.children[1]  # First token after `def`
 
+    @property
     def params(self):
-        return self.children[3].children  # After def foo(
+        third = self.children[3]  # After def foo(
+        if isinstance(third, Operator):
+            return []
+        return self.children[3].children
 
     def annotation(self):
         try:

@@ -9,6 +9,56 @@ from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 
 
+class Arguments(object):
+    def __init__(self, evaluator, argument_node):
+        """
+        The argument_node is either a parser node or a list of evaluated
+        objects.
+        """
+        self._argument_node = argument_node
+        self._evaluator = evaluator
+
+    def _split(self):
+        if isinstance(self._argument_node, (tuple, list)):
+            for el in self._argument_node:
+                yield 0
+        else:
+            iterator = iter(self._argument_node.children)
+            for child in iterator:
+                if child == ',':
+                    continue
+                elif child in ('*', '**'):
+                    yield len(child), next(iterator)
+                else:
+                    yield 0, child
+
+    def iterate(self):
+        """Returns key/value tuples, as statements."""
+        for stars, el in self._split():
+            if stars == 1:
+                arrays = self._evaluator.eval_element(el)
+                iterators = [_iterate_star_args(self._evaluator, a, expression_list[1:], func)
+                             for a in arrays]
+                for values in list(zip_longest(*iterators)):
+                    yield None, [v for v in values if v is not None]
+            elif stars == 2:
+                raise NotImplementedError
+            else:
+                yield None, [el]
+
+    def kwargs(self):
+        return []
+
+    def args(self):
+        return []
+
+    def eval_args(self):
+        return [self._evaluator.eval_element(el) for stars, el in self._split()]
+
+    def __repr__(self):
+        return '<%s: %s>' % (type(self).__name__, self._argument_node)
+
+
 class ExecutedParam(pr.Param):
     def __init__(self):
         """Don't use this method, it's just here to overwrite the old one."""
@@ -198,7 +248,7 @@ def _unpack_var_args(evaluator, var_args, func):
         argument_list.append((None, [helpers.FakeStatement([func.instance])]))
 
     # `var_args` is typically an Array, and not a list.
-    for stmt in _reorder_var_args(var_args):
+    for stmt in _reorder_var_args(var_args.iterate()):
         if not isinstance(stmt, pr.Statement):
             if stmt is None:
                 argument_list.append((None, []))
@@ -214,7 +264,7 @@ def _unpack_var_args(evaluator, var_args, func):
         # *args
         if expression_list[0] == '*':
             arrays = evaluator.eval_expression_list(expression_list[1:])
-            iterators = [_iterate_star_args(evaluator, a, expression_list[1:], func)
+            iterators = [_iterate_star_args(evaluator, arr, func)
                          for a in arrays]
             for values in list(zip_longest(*iterators)):
                 argument_list.append((None, [v for v in values if v is not None]))

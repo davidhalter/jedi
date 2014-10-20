@@ -86,6 +86,7 @@ from jedi.evaluate import stdlib
 from jedi.evaluate import finder
 from jedi.evaluate import compiled
 from jedi.evaluate import precedence
+from jedi.evaluate import param
 from jedi.evaluate.helpers import FakeStatement, deep_ast_copy
 
 
@@ -183,7 +184,7 @@ class Evaluator(object):
         """
         if isinstance(atom, pr.Name):
             # This is the first global lookup.
-            stmt = atom.get_parent_until(pr.ExprStmt)
+            stmt = atom.get_parent_until((pr.ExprStmt, pr.ReturnStmt))
             return self.find_types(stmt.parent, atom, stmt.start_pos,
                                    search_global=True)
         elif isinstance(atom, pr.Literal):
@@ -194,7 +195,7 @@ class Evaluator(object):
     def eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]
         if node == ')':  # `arglist` is optional.
-            node = None
+            node = ()
         new_types = []
         for typ in types:
             if trailer_op == '.':
@@ -207,7 +208,7 @@ class Evaluator(object):
 
     @debug.increase_indent
     def execute(self, obj, arguments=()):
-        arguments = er.Arguments(self, arguments)
+        arguments = param.Arguments(self, arguments)
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
