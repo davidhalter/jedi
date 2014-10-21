@@ -220,7 +220,8 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
     def _items(self):
         if pr.is_node(self._array_node, 'testlist_comp'):
             return self._array_node.children[::2]
-        raise NotImplementedError
+        else:
+            return [self._array_node]
 
     def __iter__(self):
         return iter(self._items())

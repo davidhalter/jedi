@@ -163,19 +163,21 @@ class Evaluator(object):
         return result
 
     def eval_element(self, element):
-        if isinstance(element, (pr.Name, pr.Literal)):
-            return self.eval_atom(element)
+        if isinstance(element, (pr.Name, pr.Literal)) or pr.is_node(element, 'atom'):
+            return self._eval_atom(element)
         elif element.type == python_symbols.power:
-            types = self.eval_atom(element.children[0])
+            types = self._eval_atom(element.children[0])
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
                     raise NotImplementedError
                 types = self.eval_trailer(types, trailer)
             return types
         else:
-            raise NotImplementedError
+            left, operator, right = element.children
+            return precedence.calculate(self, self.eval_element(left), operator,
+                                        self.eval_element(right))
 
-    def eval_atom(self, atom):
+    def _eval_atom(self, atom):
         """
         Basically to process ``atom`` nodes. The parser sometimes doesn't
         generate the node (because it has just one child). In that case an atom
