@@ -144,8 +144,7 @@ class Parser(object):
                         raise ParseError("too much input",
                                          type, value, context)
                 else:
-                    # No success finding a transition
-                    raise ParseError("bad input", type, value, context)
+                    self.error_recovery(type, value, context)
 
     def classify(self, type, value, context):
         """Turn a token into a label.  (Internal)"""
@@ -188,3 +187,25 @@ class Parser(object):
             else:
                 self.rootnode = newnode
                 self.rootnode.used_names = self.used_names
+
+    def error_recovery(self, type, value, context):
+        """
+        This parser is written in a dynamic way, meaning that this parser
+        allows using different grammars (even non-Python). However, error
+        recovery is purely written for Python.
+        """
+        print(self.stack)
+        #import pdb; pdb.set_trace()
+        if value == '\n':  # Statement is not finished.
+            # Now remove the whole statement.
+            for i, (dfa, state, node) in reversed(list(enumerate(self.stack))):
+                symbol, _, _, _ = node
+
+                # `suite` can sometimes be only simple_stmt, not stmt.
+                if symbol in (self.grammar.symbol2number['simple_stmt'],
+                              self.grammar.symbol2number['stmt']):
+                    index = i
+            self.stack[index:] = []
+        else:
+            # No success finding a transition
+            raise ParseError("bad input", type, value, context)
