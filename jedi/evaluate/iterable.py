@@ -131,7 +131,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
 
     @property
     def name(self):
-        return helpers.FakeName(self._array.type, parent=self)
+        return helpers.FakeName(self.type, parent=self)
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
@@ -144,13 +144,13 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         :param index: A subscriptlist node (or subnode).
         """
         indexes = create_indexes_or_slices(self._evaluator, index)
-        if [i for i in indexes if isinstance(index, Slice)]:
-            return [self]
-
         lookup_done = False
         types = []
         for index in indexes:
-            if isinstance(index, compiled.CompiledObject) \
+            if isinstance(index, Slice):
+                types += [self]
+                lookup_done = True
+            elif isinstance(index, compiled.CompiledObject) \
                     and isinstance(index.obj, (int, str, unicode)):
                 with common.ignored(KeyError, IndexError, TypeError):
                     types += self.get_exact_index_types(index.obj)
@@ -212,7 +212,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         return compiled.builtin
 
     def __getattr__(self, name):
-        if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
+        if name not in ['start_pos', 'get_only_subelement', 'parent',
                         'get_parent_until', 'items']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
@@ -489,6 +489,20 @@ class Slice(object):
 
 
 def create_indexes_or_slices(evaluator, index):
+    if pr.is_node(index, 'subscript'):  # subscript is a slice operation.
+        start, stop, step = None, None, None
+        result = []
+        for el in index.children:
+            if el == ':' and not result:
+                result.append(None)
+            elif pr.is_node(el, 'sliceop'):
+                if len(el.children) == 2:
+                    result.append(el.children[1])
+            else:
+                result.append(result)
+        result += [None] * (3 - len(result))
+
+        return (Slice(evaluator, *result),)
     return evaluator.eval_element(index)
     # TODO delete the rest?
 

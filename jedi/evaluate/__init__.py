@@ -160,6 +160,7 @@ class Evaluator(object):
             for ass_expression_list, op in ass_details:
                 new_result += finder.find_assignments(ass_expression_list[0], result, seek_name)
             result = new_result
+        debug.dbg('eval_statement result %s', result)
         return result
 
     def eval_element(self, element):
@@ -170,7 +171,8 @@ class Evaluator(object):
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
                     raise NotImplementedError
-                types = self.eval_trailer(types, trailer)
+                types = self._eval_trailer(types, trailer)
+
             return types
         else:
             left, operator, right = element.children
@@ -193,12 +195,13 @@ class Evaluator(object):
         else:
             return [iterable.Array(self, atom.children[1], pr.Array.LIST)]
 
-    def eval_trailer(self, types, trailer):
+    def _eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]
         if node == ')':  # `arglist` is optional.
             node = ()
         new_types = []
         for typ in types:
+            debug.dbg('_eval_trailer: %s in scope %s', trailer, typ)
             if trailer_op == '.':
                 raise NotImplementedError
             elif trailer_op == '(':
