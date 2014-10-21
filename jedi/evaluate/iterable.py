@@ -124,9 +124,9 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
     Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.
     """
-    def __init__(self, evaluator, array):
+    def __init__(self, evaluator, array_node):
         self._evaluator = evaluator
-        self._array = array
+        self._array_node = array_node
 
     @property
     def name(self):
@@ -216,13 +216,15 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         return getattr(self._array, name)
 
     def __iter__(self):
-        return iter(self._array)
+        if pr.is_node(self._array_node, 'testlist_comp'):
+            return iter(self._array_node.children[::2])
+        raise NotImplementedError
 
     def __len__(self):
         return len(self._array)
 
     def __repr__(self):
-        return "<e%s of %s>" % (type(self).__name__, self._array)
+        return "<e%s of %s>" % (type(self).__name__, self._array_node)
 
 
 class MergedArray(Array):

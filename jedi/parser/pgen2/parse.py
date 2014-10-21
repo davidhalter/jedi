@@ -194,8 +194,6 @@ class Parser(object):
         allows using different grammars (even non-Python). However, error
         recovery is purely written for Python.
         """
-        print(self.stack)
-        #import pdb; pdb.set_trace()
         if value == '\n':  # Statement is not finished.
             # Now remove the whole statement.
             for i, (dfa, state, node) in reversed(list(enumerate(self.stack))):

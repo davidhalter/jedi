@@ -189,7 +189,7 @@ class Evaluator(object):
         elif isinstance(atom, pr.Literal):
             return [compiled.create(self, atom.eval())]
         else:
-            raise NotImplementedError
+            return iterable.Array(self, atom.children[1])
 
     def eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]
