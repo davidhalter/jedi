@@ -160,8 +160,10 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
 
     @memoize_default(NO_DEFAULT)
     def values(self):
-        result = list(_follow_values(self._evaluator, self._array.values))
-        result += check_array_additions(self._evaluator, self)
+        result = list(chain.from_iterable(self._evaluator.eval_element(v)
+                      for v in self._items()))
+        # TODO reenable
+        #result += check_array_additions(self._evaluator, self)
         return result
 
     def get_exact_index_types(self, mixed_index):
@@ -449,11 +451,6 @@ class ArrayInstance(IterableWrapper):
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self._evaluator, self.instance, module, is_list)
         return items
-
-
-def _follow_values(evaluator, values):
-    """ helper function for the index getters """
-    return list(chain.from_iterable(evaluator.eval_statement(v) for v in values))
 
 
 class Slice(object):
