@@ -1039,7 +1039,11 @@ class Statement(Simple, DocstringMixin):
         names = []
         for i in range(0, len(self.children) - 2, 2):
             if self.children[i + 1].value == '=':
-                names.append(self.children[i])
+                current = self.children[i]
+                if is_node(current, 'testlist_star_expr'):
+                    names += current.children[::2]
+                else:
+                    names.append(current)
         return names
 
 
