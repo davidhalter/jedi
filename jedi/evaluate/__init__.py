@@ -209,7 +209,10 @@ class Evaluator(object):
         elif isinstance(atom, pr.Literal):
             return [compiled.create(self, atom.eval())]
         else:
-            return [iterable.Array(self, atom.children[1], pr.Array.LIST)]
+            mapping = {'(': pr.Array.TUPLE,
+                       '[': pr.Array.LIST,
+                       '{': pr.Array.DICT}
+            return [iterable.Array(self, atom.children[1], mapping[atom.children[0]])]
 
     def _eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]
