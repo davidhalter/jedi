@@ -238,12 +238,17 @@ class Name(_Leaf):
         """
         indexes = []
         node = self.parent
+        compare = self
         while node is not None:
             if is_node(node, 'testlist_comp') or is_node(node, 'testlist_star_expr'):
                 for i, child in enumerate(node.children):
-                    if child == self:
-                        indexes.insert(0, i)
+                    if child == compare:
+                        indexes.insert(0, int(i / 2))
+                        break
+                else:
+                    raise LookupError("Couldn't find the assignment.")
 
+            compare = node
             node = node.parent
         return indexes
 
@@ -1058,15 +1063,20 @@ class Statement(Simple, DocstringMixin):
         self.expression_list()
 
     def get_defined_names(self):
-        names = []
-        for i in range(0, len(self.children) - 2, 2):
-            if self.children[i + 1].value == '=':
-                current = self.children[i]
-                if is_node(current, 'testlist_star_expr'):
-                    names += current.children[::2]
-                else:
-                    names.append(current)
-        return names
+        def check_tuple(current):
+            names = []
+            if is_node(current, 'testlist_star_expr') or is_node(current, 'testlist_comp'):
+                for child in current.children[::2]:
+                    names += check_tuple(child)
+            elif is_node(current, 'atom'):
+                names += check_tuple(current.children[1])
+            else:
+                names.append(current)
+            return names
+
+        return list(chain.from_iterable(check_tuple(self.children[i])
+                                        for i in range(0, len(self.children) - 2, 2)
+                                        if self.children[i + 1].value == '='))
 
 
         """Get the names for the statement."""
