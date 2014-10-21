@@ -98,14 +98,14 @@ def convert(grammar, raw_node):
         # its logic.
         if len(children) == 1 and type != python_symbols.expr_stmt:
             return children[0]
-        print(raw_node, type_repr(type))
+        #print(raw_node, type_repr(type))
         #import pdb; pdb.set_trace()
         try:
             return ast_mapping[type](children)
         except KeyError:
             return pr.Node(type, children)
     else:
-        print('leaf', raw_node, type_repr(type))
+        #print('leaf', raw_node, type_repr(type))
         prefix, start_pos = context
         if type == tokenize.NAME:
             if value in grammar.keywords:

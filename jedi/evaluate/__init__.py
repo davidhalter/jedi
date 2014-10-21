@@ -189,7 +189,7 @@ class Evaluator(object):
         elif isinstance(atom, pr.Literal):
             return [compiled.create(self, atom.eval())]
         else:
-            return iterable.Array(self, atom.children[1])
+            return [iterable.Array(self, atom.children[1], pr.Array.LIST)]
 
     def eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]
@@ -202,7 +202,7 @@ class Evaluator(object):
             elif trailer_op == '(':
                 new_types += self.execute(typ, node)
             elif trailer_op == '[':
-                raise NotImplementedError
+                new_types += typ.get_index_types(node)
         return new_types
 
     @debug.increase_indent

@@ -58,7 +58,6 @@ class Parser(object):
         # and only if the refactor method's write parameter was True.
         logger = logging.getLogger("RefactoringTool")
         d = Driver(pytree.python_grammar, convert=self.convert, logger=logger)
-        print(repr(source))
         self.module = d.parse_string(source).get_parent_until()
 
         self.module.set_global_names(self.global_names)

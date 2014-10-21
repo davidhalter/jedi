@@ -124,9 +124,10 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
     Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.
     """
-    def __init__(self, evaluator, array_node):
+    def __init__(self, evaluator, array_node, type):
         self._evaluator = evaluator
         self._array_node = array_node
+        self.type = type
 
     @property
     def name(self):
@@ -136,14 +137,14 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         return None  # We don't know the length, because of appends.
 
     @memoize_default(NO_DEFAULT)
-    def get_index_types(self, index_array=()):
+    def get_index_types(self, index=()):
         """
         Get the types of a specific index or all, if not given.
 
-        :param indexes: The index input types.
+        :param index: A subscriptlist node (or subnode).
         """
-        indexes = create_indexes_or_slices(self._evaluator, index_array)
-        if [index for index in indexes if isinstance(index, Slice)]:
+        indexes = create_indexes_or_slices(self._evaluator, index)
+        if [i for i in indexes if isinstance(index, Slice)]:
             return [self]
 
         lookup_done = False
@@ -188,8 +189,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
                 raise KeyError('No key found in dictionary')
 
         # Can raise an IndexError
-        values = [self._array.values[index]]
-        return _follow_values(self._evaluator, values)
+        return self._evaluator.eval_element(self._items()[index])
 
     def scope_names_generator(self, position=None):
         """
@@ -215,13 +215,13 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
 
-    def __iter__(self):
+    def _items(self):
         if pr.is_node(self._array_node, 'testlist_comp'):
-            return iter(self._array_node.children[::2])
+            return self._array_node.children[::2]
         raise NotImplementedError
 
-    def __len__(self):
-        return len(self._array)
+    def __iter__(self):
+        return iter(self._items())
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self._array_node)
@@ -490,14 +490,15 @@ class Slice(object):
             return slice(None, None, None)
 
 
-def create_indexes_or_slices(evaluator, index_array):
-    if not index_array:
-        return ()
+def create_indexes_or_slices(evaluator, index):
+    return evaluator.eval_element(index)
+    # TODO delete the rest?
+
 
     # Just take the first part of the "array", because this is Python stdlib
     # behavior. Numpy et al. perform differently, but Jedi won't understand
     # that anyway.
-    expression_list = index_array[0].expression_list()
+    expression_list = index[0].expression_list()
     prec = precedence.create_precedence(expression_list)
 
     # check for slices
