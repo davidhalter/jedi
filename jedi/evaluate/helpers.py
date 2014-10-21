@@ -141,7 +141,8 @@ def call_signature_array_for_pos(stmt, pos):
         return None, 0, None
 
     tup = None, 0, None
-    for command in stmt.expression_list():
+    # TODO this is still old
+    for command in [] and stmt.expression_list():
         if isinstance(command, pr.Array):
             tup = search_array(command, pos)
         elif isinstance(command, pr.StatementElement):
@@ -293,10 +294,10 @@ class FakeArray(pr.Array):
 
 
 class FakeStatement(pr.ExprStmt):
-    def __init__(self, expression_list, start_pos=(0, 0), parent=None):
+    def __init__(self, values, start_pos=(0, 0), parent=None):
         p = start_pos
-        super(FakeStatement, self).__init__(FakeSubModule, expression_list, p, p)
-        self.set_expression_list(expression_list)
+        super(FakeStatement, self).__init__([])
+        self.values = values
         self.parent = parent
 
 

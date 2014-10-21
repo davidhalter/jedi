@@ -653,7 +653,10 @@ class Class(Scope):
         if len(self.children) == 4:  # Has no parentheses
             return None
         else:
-            return self.children[3]
+            if self.children[3] == ')':  # Empty parentheses
+                return None
+            else:
+                return self.children[3]
 
     @property
     def name(self):
