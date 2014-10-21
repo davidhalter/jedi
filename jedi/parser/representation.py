@@ -225,6 +225,28 @@ class Name(_Leaf):
     def get_definition(self):
         return self.parent.get_parent_until((ArrayStmt, StatementElement, Node), reverse=True)
 
+    def assignment_indexes(self):
+        """
+        Returns an array of ints of the indexes that are used in tuple
+        assignments.
+
+        For example if the name is ``y`` in the following code::
+
+            x, (y, z) = 2, ''
+
+        would result in ``[1, 0]``.
+        """
+        indexes = []
+        node = self.parent
+        while node is not None:
+            if is_node(node, 'testlist_comp') or is_node(node, 'testlist_star_expr'):
+                for i, child in enumerate(node.children):
+                    if child == self:
+                        indexes.insert(0, i)
+
+            node = node.parent
+        return indexes
+
 
 class Literal(_Leaf):
     def eval(self):

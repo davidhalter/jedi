@@ -275,7 +275,7 @@ class NameFinder(object):
             check_instance = stmt.instance
             stmt = stmt.var
 
-        types += evaluator.eval_statement(stmt, seek_name=unicode(self.name_str))
+        types += evaluator.eval_statement(stmt, seek_name=name)
 
         # check for `except X as y` usages, because y needs to be instantiated.
         p = stmt.parent

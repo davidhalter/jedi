@@ -131,7 +131,23 @@ class Evaluator(object):
         if isinstance(stmt, FakeStatement):
             return stmt.children  # Already contains the results.
 
-        result = self.eval_element(stmt.get_rhs())
+        types = self.eval_element(stmt.get_rhs())
+
+        if seek_name:
+            for index in seek_name.assignment_indexes():
+                new_types = []
+                for r in types:
+                    try:
+                        func = r.get_exact_index_types
+                    except AttributeError:
+                        debug.warning("Invalid tuple lookup #%s of result %s in %s",
+                                      index, types, seek_name)
+                    else:
+                        try:
+                            new_types += func(index)
+                        except IndexError:
+                            pass
+                types = new_types
 
         ass_details = stmt.assignment_details
         if ass_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
@@ -160,8 +176,8 @@ class Evaluator(object):
             for ass_expression_list, op in ass_details:
                 new_result += finder.find_assignments(ass_expression_list[0], result, seek_name)
             result = new_result
-        debug.dbg('eval_statement result %s', result)
-        return result
+        debug.dbg('eval_statement result %s', types)
+        return types
 
     def eval_element(self, element):
         if isinstance(element, (pr.Name, pr.Literal)) or pr.is_node(element, 'atom'):
