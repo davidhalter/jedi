@@ -57,7 +57,7 @@ class Parser(object):
         # files processed even if they were not changed during refactoring. If
         # and only if the refactor method's write parameter was True.
         self.used_names = {}
-        logger = logging.getLogger("RefactoringTool")
+        logger = logging.getLogger("Jedi-Parser")
         d = Driver(pytree.python_grammar, convert=self.convert, logger=logger)
         self.module = d.parse_string(source).get_parent_until()
 

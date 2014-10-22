@@ -408,12 +408,11 @@ class Scope(Simple, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('subscopes', 'imports', '_doc_token', 'asserts',
+    __slots__ = ('imports', '_doc_token', 'asserts',
                  'is_generator', '_names_dict')
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
-        self.subscopes = []
         self.imports = []
         self._doc_token = None
         self.asserts = []
@@ -425,6 +424,10 @@ class Scope(Simple, DocstringMixin):
         # Needed here for fast_parser, because the fast_parser splits and
         # returns will be in "normal" modules.
         return self._search_in_scope(ReturnStmt)
+
+    @property
+    def subscopes(self):
+        return self._search_in_scope(Scope)
 
     def _search_in_scope(self, typ):
         def scan(children):
@@ -519,7 +522,7 @@ class Scope(Simple, DocstringMixin):
         if include_imports:
             checks += self.imports
         if self.isinstance(Function):
-            checks += self.params + self.decorators
+            checks += self.decorators
             checks += [r for r in self.returns if r is not None]
         if self.isinstance(Flow):
             checks += self.inputs
@@ -717,7 +720,7 @@ class Function(Scope):
     :param start_pos: The start position (line, column) the Function.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('decorators', 'listeners')
+    __slots__ = ('decorators', 'listeners', '_params')
 
     def __init__(self, children):
         super(Function, self).__init__(children)
@@ -729,11 +732,30 @@ class Function(Scope):
         return self.children[1]  # First token after `def`
 
     @property
+    @cache.underscore_memoization
     def params(self):
-        third = self.children[3]  # After def foo(
-        if isinstance(third, Operator):
+        node = self.children[2].children[1:-1]  # After `def foo`
+        if not node:
             return []
-        return self.children[3].children
+        if is_node(node[0], 'typedargslist'):
+            params = []
+            iterator = node[0].children
+            for n in iterator:
+                stars = 0
+                if n in ('*', '**'):
+                    stars = len(n.value)
+                    n = next(iterator, None)
+
+                op = next(iterator, None)
+                if op == '=':
+                    default = op
+                    next(iterator, None)
+                else:
+                    default = None
+                params.append(Param(n, default, stars))
+            return params
+        else:
+            return [Param(node[0])]
 
     def annotation(self):
         try:
@@ -1178,15 +1200,28 @@ class ArrayStmt(Statement):
     """
 
 
-class Param(ExprStmt):
+class Param(object):
     """
     The class which shows definitions of params of classes and functions.
     But this is not to define function calls.
+
+    A helper class for functions. Read only.
     """
-    __slots__ = ('position_nr', 'is_generated', 'annotation_stmt',
+    __slots__ = ('tfpdef', 'default', 'stars', 'position_nr', 'is_generated', 'annotation_stmt',
                  'parent_function')
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, tfpdef, default=None, stars=0):
+        self.tfpdef = tfpdef  # tfpdef: see grammar.txt
+        self.default = default
+        self.stars = stars
+
+    def get_name(self):
+        if is_node(self.tfpdef, 'tfpdef'):
+            return self.tfpdef.children[0]
+        else:
+            return self.tfpdef
+
+    def __init__old(self):
         kwargs.pop('names_are_set_vars', None)
         super(Param, self).__init__(*args, names_are_set_vars=True, **kwargs)
 
@@ -1200,20 +1235,6 @@ class Param(ExprStmt):
     def add_annotation(self, annotation_stmt):
         annotation_stmt.parent = self.use_as_parent
         self.annotation_stmt = annotation_stmt
-
-    def get_name(self):
-        """ get the name of the param """
-        n = self.get_defined_names()
-        if len(n) > 1:
-            debug.warning("Multiple param names (%s).", n)
-        return n[0]
-
-    @property
-    def stars(self):
-        exp = self.expression_list()
-        if exp and isinstance(exp[0], Operator):
-            return exp[0].string.count('*')
-        return 0
 
 
 class StatementElement(Simple):

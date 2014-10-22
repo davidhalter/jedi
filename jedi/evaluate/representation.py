@@ -154,10 +154,10 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                 continue
             # Get the self name, if there's one.
             self_name = self._get_func_self_name(sub)
-            if not self_name:
+            if self_name is None:
                 continue
 
-            if sub.name.get_code() == '__init__':
+            if sub.name.value == '__init__':
                 # ``__init__`` is special because the params need are injected
                 # this way. Therefore an execution is necessary.
                 if not sub.decorators:
@@ -165,6 +165,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     # because to follow them and their self variables is too
                     # complicated.
                     sub = self._get_method_execution(sub)
+            print(sub.get_names_dict().values())
             for per_name_list in sub.get_names_dict().values():
                 for call in per_name_list:
                     if unicode(call.name) == self_name \
