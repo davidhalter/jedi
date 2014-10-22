@@ -165,10 +165,10 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     # because to follow them and their self variables is too
                     # complicated.
                     sub = self._get_method_execution(sub)
-            print(sub.get_names_dict().values())
-            for per_name_list in sub.get_names_dict().values():
+            print(sub.names_dict.values())
+            for per_name_list in sub.names_dict.values():
                 for call in per_name_list:
-                    if unicode(call.name) == self_name \
+                    if name.value == self_name \
                             and isinstance(call.next, pr.Call) \
                             and call.next.next is None:
                         names.append(get_instance_el(self._evaluator, self, call.next.name))
@@ -591,9 +591,10 @@ class FunctionExecution(Executed):
                 break
         return types
 
+    @property
     @underscore_memoization
-    def get_names_dict(self):
-        return LazyDict(self.base.get_names_dict(), self._copy_list)
+    def names_dict(self):
+        return LazyDict(self.base.names_dict, self._copy_list)
 
     @memoize_default(default=())
     def _get_params(self):

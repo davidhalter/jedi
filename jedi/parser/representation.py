@@ -408,15 +408,14 @@ class Scope(Simple, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('imports', '_doc_token', 'asserts',
-                 'is_generator', '_names_dict')
+    __slots__ = ('imports', '_doc_token', 'asserts', 'names_dict', 
+                 'is_generator')
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
         self.imports = []
         self._doc_token = None
         self.asserts = []
-        self._names_dict = defaultdict(_return_empty_list)
         self.is_generator = False
 
     @property
@@ -449,13 +448,6 @@ class Scope(Simple, DocstringMixin):
 
     def is_scope(self):
         return True
-
-    def add_name_calls(self, name, calls):
-        """Add a name to the names_dict."""
-        self._names_dict[name] += calls
-
-    def get_names_dict(self):
-        return self._names_dict
 
     def add_scope(self, sub, decorators):
         sub.parent = self.use_as_parent
@@ -661,6 +653,8 @@ class SubModule(Scope, Module):
 
 
 class ClassOrFunc(Scope):
+    __slots__ = ()
+
     @property
     def name(self):
         return self.children[1]
