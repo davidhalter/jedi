@@ -212,7 +212,12 @@ class Evaluator(object):
             mapping = {'(': pr.Array.TUPLE,
                        '[': pr.Array.LIST,
                        '{': pr.Array.DICT}
-            return [iterable.Array(self, atom.children[1], mapping[atom.children[0]])]
+            c = atom.children
+            # Parentheses without commas are not tuples.
+            if c[0] == '(' and (not pr.is_node(c[1], 'testlist_comp')
+                                or c[1].children[1] != ','):
+                return self.eval_element(c[1])
+            return [iterable.Array(self, c[1], mapping[c[0]])]
 
     def _eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]
