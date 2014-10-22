@@ -194,7 +194,6 @@ class Evaluator(object):
             # The implicit tuple in statements.
             return [iterable.Array(self, element, pr.Array.TUPLE)]
         else:
-            print(element)
             left, operator, right = element.children
             return precedence.calculate(self, self.eval_element(left), operator,
                                         self.eval_element(right))
@@ -231,7 +230,7 @@ class Evaluator(object):
         for typ in types:
             debug.dbg('_eval_trailer: %s in scope %s', trailer, typ)
             if trailer_op == '.':
-                raise NotImplementedError
+                new_types += self.find_types(typ, node)
             elif trailer_op == '(':
                 new_types += self.execute(typ, node)
             elif trailer_op == '[':
