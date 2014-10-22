@@ -136,16 +136,6 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
     @memoize_default([])
     def get_self_attributes(self):
-        def add_self_dot_name(name):
-            """
-            Need to copy and rewrite the name, because names are now
-            ``instance_usage.variable`` instead of ``self.variable``.
-            """
-            n = copy.copy(name)
-            n.names = n.names[1:]
-            n._get_code = unicode(n.names[-1])
-            names.append(get_instance_el(self._evaluator, self, n))
-
         names = []
         # This loop adds the names of the self object, copies them and removes
         # the self.
@@ -166,14 +156,12 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     # complicated.
                     sub = self._get_method_execution(sub)
             print(sub.names_dict.values())
-            for per_name_list in sub.names_dict.values():
-                for call in per_name_list:
-                    if name.value == self_name \
-                            and isinstance(call.next, pr.Call) \
-                            and call.next.next is None:
-                        names.append(get_instance_el(self._evaluator, self, call.next.name))
-                    #if unicode(n.names[0]) == self_name and len(n.names) == 2:
-                    #    add_self_dot_name(n)
+            for name_list in sub.names_dict.values():
+                for name in name_list:
+                    if name.value == self_name:
+                        next = name.next_sibling()
+                        if isinstance(next, pr.Name) and next.is_definition():
+                            names.append(get_instance_el(self._evaluator, self, next))
 
         for s in self.base.py__bases__(self._evaluator):
             if not isinstance(s, compiled.CompiledObject):

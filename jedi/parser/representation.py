@@ -195,6 +195,19 @@ class _Leaf(Base):
     def get_code(self):
         return self.prefix + self.value
 
+    def next_sibling(self):
+        """
+        The node immediately following the invocant in their parent's children
+        list. If the invocant does not have a next sibling, it is None
+        """
+        # Can't use index(); we need to test by identity
+        for i, child in enumerate(self.parent.children):
+            if child is self:
+                try:
+                    return self.parent.children[i + 1]
+                except IndexError:
+                    return None
+
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, repr(self.value))
 
