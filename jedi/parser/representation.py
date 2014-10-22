@@ -582,7 +582,7 @@ class SubModule(Scope, Module):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    __slots__ = ('path', 'global_names', 'used_names', 'temp_used_names',
+    __slots__ = ('path', 'global_names', 'used_names',
                  'line_offset', 'use_as_parent')
 
     def __init__(self, children):
@@ -596,8 +596,6 @@ class SubModule(Scope, Module):
         """
         super(SubModule, self).__init__(children)
         self.path = None  # Set later.
-        self.used_names = {}
-        self.temp_used_names = []
         # this may be changed depending on fast_parser
         self.line_offset = 0
 

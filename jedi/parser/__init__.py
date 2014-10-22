@@ -56,16 +56,22 @@ class Parser(object):
         # When this is True, the refactor*() methods will call write_file() for
         # files processed even if they were not changed during refactoring. If
         # and only if the refactor method's write parameter was True.
+        self.used_names = {}
         logger = logging.getLogger("RefactoringTool")
         d = Driver(pytree.python_grammar, convert=self.convert, logger=logger)
         self.module = d.parse_string(source).get_parent_until()
 
+        self.module.used_names = self.used_names
         self.module.set_global_names(self.global_names)
 
     def convert(self, grammar, raw_node):
         new_node = pytree.convert(grammar, raw_node)
         if isinstance(new_node, pr.GlobalStmt):
             self.global_names += new_node.names()
+        elif isinstance(new_node, pr.Name):
+            # Keep a listing of all used names
+            arr = self.used_names.setdefault(new_node.value, [])
+            arr.append(new_node)
         return new_node
 
     def __init__old__(self, source, module_path=None, no_docstr=False,
