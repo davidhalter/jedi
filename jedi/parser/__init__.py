@@ -25,6 +25,7 @@ from jedi.parser import representation as pr
 from jedi.parser import tokenize
 from jedi.parser import pytree
 from jedi.parser.pgen2 import Driver
+from jedi.parser import pgen2
 
 OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
 # Not used yet. In the future I intend to add something like KeywordStatement
@@ -57,6 +58,7 @@ class Parser(object):
         # files processed even if they were not changed during refactoring. If
         # and only if the refactor method's write parameter was True.
         self.used_names = {}
+        self.scope_names_stack = [{}]
         logger = logging.getLogger("Jedi-Parser")
         d = Driver(pytree.python_grammar, convert=self.convert, logger=logger)
         self.module = d.parse_string(source).get_parent_until()
@@ -65,13 +67,30 @@ class Parser(object):
         self.module.set_global_names(self.global_names)
 
     def convert(self, grammar, raw_node):
+        if raw_node[1] in ('def', 'class') and raw_node[0] == pgen2.tokenize.NAME:
+            self.scope_names_stack.append({})
+
         new_node = pytree.convert(grammar, raw_node)
-        if isinstance(new_node, pr.GlobalStmt):
+        # We need to check raw_node always, because the same node can be
+        # returned by convert multiple times.
+        if raw_node[0] == pytree.python_symbols.global_stmt:
             self.global_names += new_node.names()
-        elif isinstance(new_node, pr.Name):
+        elif isinstance(new_node, pr.Name) and raw_node[0] == pgen2.tokenize.NAME:
             # Keep a listing of all used names
             arr = self.used_names.setdefault(new_node.value, [])
             arr.append(new_node)
+            arr = self.scope_names_stack[-1].setdefault(new_node.value, [])
+            arr.append(new_node)
+        elif isinstance(new_node, pr.ClassOrFunc) \
+                and raw_node[0] == pytree.python_symbols.compound_stmt:
+            # scope_name_stack handling
+            n = new_node.name
+            scope_names = self.scope_names_stack.pop()
+            scope_names[n.value].remove(n)
+            new_node.names_dict = scope_names
+            # Set the func name of the current node
+            arr = self.scope_names_stack[-1].setdefault(n.value, [])
+            arr.append(n)
         return new_node
 
     def __init__old__(self, source, module_path=None, no_docstr=False,

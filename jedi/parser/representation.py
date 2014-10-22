@@ -660,7 +660,13 @@ class SubModule(Scope, Module):
         return False
 
 
-class Class(Scope):
+class ClassOrFunc(Scope):
+    @property
+    def name(self):
+        return self.children[1]
+
+
+class Class(ClassOrFunc):
     """
     Used to store the parsed contents of a python class.
 
@@ -687,11 +693,6 @@ class Class(Scope):
                 return self.children[3]
 
     @property
-    def name(self):
-        return self.children[1]  # First token after `def`
-
-
-    @property
     def doc(self):
         """
         Return a document string including call signature of __init__.
@@ -709,7 +710,7 @@ class Class(Scope):
         yield self, filter_after_position(self.get_defined_names(), position)
 
 
-class Function(Scope):
+class Function(ClassOrFunc):
     """
     Used to store the parsed contents of a python function.
 
