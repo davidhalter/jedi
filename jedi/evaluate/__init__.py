@@ -190,7 +190,11 @@ class Evaluator(object):
                 types = self._eval_trailer(types, trailer)
 
             return types
+        elif pr.is_node(element, 'testlist_star_expr'):
+            # The implicit tuple in statements.
+            return [iterable.Array(self, element, pr.Array.TUPLE)]
         else:
+            print(element)
             left, operator, right = element.children
             return precedence.calculate(self, self.eval_element(left), operator,
                                         self.eval_element(right))

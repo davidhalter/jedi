@@ -218,7 +218,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         return getattr(self._array, name)
 
     def _items(self):
-        if pr.is_node(self._array_node, 'testlist_comp'):
+        if pr.is_node(self._array_node, 'testlist_comp') or pr.is_node(self._array_node, 'testlist_star_expr'):
             return self._array_node.children[::2]
         else:
             return [self._array_node]
