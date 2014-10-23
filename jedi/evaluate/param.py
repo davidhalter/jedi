@@ -186,7 +186,7 @@ def get_params(evaluator, func, var_args):
             if va_values:
                 values = va_values
             else:
-                if param.assignment_details:
+                if param.default is not None:
                     # No value: Return the default values.
                     has_default_value = True
                     result.append(param.get_name())

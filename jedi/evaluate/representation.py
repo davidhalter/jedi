@@ -487,6 +487,9 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
             f = Function(self._evaluator, f, True)
         return f
 
+    def scope_names_generator(self, position=None):
+        yield self, self.get_magic_function_names()
+
     def get_decorated_func(self):
         """
         This function exists for the sole purpose of returning itself if the
