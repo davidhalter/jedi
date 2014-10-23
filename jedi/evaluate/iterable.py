@@ -161,37 +161,26 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
     @memoize_default(NO_DEFAULT)
     def values(self):
         result = list(chain.from_iterable(self._evaluator.eval_element(v)
-                      for v in self._items()))
+                      for v in self._values()))
         # TODO reenable
         #result += check_array_additions(self._evaluator, self)
         return result
 
     def get_exact_index_types(self, mixed_index):
         """ Here the index is an int/str. Raises IndexError/KeyError """
-        index = mixed_index
         if self.type == pr.Array.DICT:
-            index = None
-            for i, key_statement in enumerate(self._array.keys):
+            for key, value in self._items():
                 # Because we only want the key to be a string.
-                key_expression_list = key_statement.expression_list()
-                if len(key_expression_list) != 1:  # cannot deal with complex strings
-                    continue
-                key = key_expression_list[0]
-                if isinstance(key, pr.Literal):
-                    key = key.value
-                elif isinstance(key, pr.Name):
-                    key = str(key)
-                else:
-                    continue
+                keys = self._evaluator.eval_element(key)
 
-                if mixed_index == key:
-                    index = i
-                    break
-            if index is None:
-                raise KeyError('No key found in dictionary')
+                for k in keys:
+                    if isinstance(k, compiled.CompiledObject) \
+                            and mixed_index == k.obj:
+                        return self._evaluator.eval_element(value)
+            raise KeyError('No key found in dictionary %s.' % self)
 
         # Can raise an IndexError
-        return self._evaluator.eval_element(self._items()[index])
+        return self._evaluator.eval_element(self._items()[mixed_index])
 
     def scope_names_generator(self, position=None):
         """
@@ -217,9 +206,28 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self._array, name)
 
+    def _values(self):
+        if self.type == pr.Array.DICT:
+            return [v for k, v in self._items()]
+        else:
+            return self._items()
+
     def _items(self):
         if pr.is_node(self._array_node, 'testlist_comp') or pr.is_node(self._array_node, 'testlist_star_expr'):
             return self._array_node.children[::2]
+        elif pr.is_node(self._array_node, 'dictorsetmaker'):
+            kv = []
+            iterator = iter(self._array_node.children)
+            for key in iterator:
+                op = next(iterator, None)
+                if op is None or op == ',':
+                    kv.append(key)  # A set.
+                elif op == ':':  # A dict.
+                    kv.append((key, next(iterator)))
+                    next(iterator, None)  # Possible comma.
+                else:
+                    raise NotImplementedError('dict/set comprehensions')
+            return kv
         else:
             return [self._array_node]
 
