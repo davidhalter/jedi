@@ -238,6 +238,11 @@ class Name(_Leaf):
     def get_definition(self):
         return self.parent.get_parent_until((ArrayStmt, StatementElement, Node), reverse=True)
 
+    def is_definition(self):
+        stmt = self.get_definition()
+        return isinstance(stmt, (ExprStmt, Import)) \
+            and self in stmt.get_defined_names()
+
     def assignment_indexes(self):
         """
         Returns an array of ints of the indexes that are used in tuple
