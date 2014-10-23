@@ -82,7 +82,7 @@ class Parser(object):
             arr = self.scope_names_stack[-1].setdefault(new_node.value, [])
             arr.append(new_node)
         elif isinstance(new_node, pr.ClassOrFunc) \
-                and raw_node[0] == pytree.python_symbols.compound_stmt:
+                and raw_node[0] in (pytree.python_symbols.funcdef, pytree.python_symbols.funcdef):
             # scope_name_stack handling
             n = new_node.name
             scope_names = self.scope_names_stack.pop()

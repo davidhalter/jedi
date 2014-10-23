@@ -266,6 +266,7 @@ class Something():
     def x(self, a, b=1):
         return a
 
+#? int()
 Something().x(1)
 
 
