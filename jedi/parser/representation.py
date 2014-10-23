@@ -208,6 +208,18 @@ class _Leaf(Base):
                 except IndexError:
                     return None
 
+    def prev_sibling(self):
+        """
+        The node immediately preceding the invocant in their parent's children
+        list. If the invocant does not have a previous sibling, it is None.
+        """
+        # Can't use index(); we need to test by identity
+        for i, child in enumerate(self.parent.children):
+            if child is self:
+                if i == 0:
+                    return None
+                return self.parent.children[i - 1]
+
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, repr(self.value))
 
@@ -1248,6 +1260,10 @@ class Param(object):
     def add_annotation(self, annotation_stmt):
         annotation_stmt.parent = self.use_as_parent
         self.annotation_stmt = annotation_stmt
+
+    def __repr__(self):
+        default = '' if self.default is None else '=%s' % self.default
+        return '<%s: %s>' % (type(self).__name__, str(self.tfpdef) + default)
 
 
 class StatementElement(Simple):

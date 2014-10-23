@@ -155,13 +155,14 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     # because to follow them and their self variables is too
                     # complicated.
                     sub = self._get_method_execution(sub)
-            print(sub.names_dict.values())
             for name_list in sub.names_dict.values():
                 for name in name_list:
-                    if name.value == self_name:
-                        next = name.next_sibling()
-                        if isinstance(next, pr.Name) and next.is_definition():
-                            names.append(get_instance_el(self._evaluator, self, next))
+                    if name.value == self_name and name.prev_sibling() is None:
+                        trailer = name.next_sibling()
+                        if pr.is_node(trailer, 'trailer') \
+                                and len(trailer.children) == 2:
+                            name = trailer.children[1]  # After dot.
+                            names.append(get_instance_el(self._evaluator, self, name))
 
         for s in self.base.py__bases__(self._evaluator):
             if not isinstance(s, compiled.CompiledObject):

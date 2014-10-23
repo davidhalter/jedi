@@ -295,10 +295,15 @@ class FakeArray(pr.Array):
 
 class FakeStatement(pr.ExprStmt):
     def __init__(self, values, start_pos=(0, 0), parent=None):
-        p = start_pos
+        self._start_pos = start_pos
         super(FakeStatement, self).__init__([])
         self.values = values
         self.parent = parent
+
+    @property
+    def start_pos(self):
+        """Overwriting the original start_pos property."""
+        return self._start_pos
 
 
 class FakeImport(pr.Import):

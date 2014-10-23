@@ -394,6 +394,7 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
     """
     Create a param with the original scope (of varargs) as parent.
     """
+    print(func, var_args, param, keys, values, array_type)
     if isinstance(var_args, pr.Array):
         parent = var_args.parent
         start_pos = var_args.start_pos
