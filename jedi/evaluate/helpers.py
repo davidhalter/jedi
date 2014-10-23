@@ -305,6 +305,9 @@ class FakeStatement(pr.ExprStmt):
         """Overwriting the original start_pos property."""
         return self._start_pos
 
+    def __repr__(self):
+        return '<%s: %s>' % (type(self).__name__, self.values)
+
 
 class FakeImport(pr.Import):
     def __init__(self, name, parent, level=0):

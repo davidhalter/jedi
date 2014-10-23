@@ -230,6 +230,15 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         return "<e%s of %s>" % (type(self).__name__, self._array_node)
 
 
+class FakeArray(Array):
+    def __init__(self, evaluator, values, type):
+        super(FakeArray, self).__init__(evaluator, values, type)
+        self._values = values
+
+    def _items(self):
+        return self._values
+
+
 class MergedArray(Array):
     def __init__(self, evaluator, arrays):
         super(MergedArray, self).__init__(evaluator, arrays[-1]._array)

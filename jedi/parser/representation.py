@@ -764,7 +764,7 @@ class Function(ClassOrFunc):
             return []
         if is_node(node[0], 'typedargslist'):
             params = []
-            iterator = node[0].children
+            iterator = iter(node[0].children)
             for n in iterator:
                 stars = 0
                 if n in ('*', '**'):

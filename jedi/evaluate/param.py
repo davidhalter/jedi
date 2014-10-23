@@ -64,13 +64,13 @@ class Arguments(object):
 
 
 class ExecutedParam(pr.Param):
-    def __init__(self):
+    def __init__(self, values):
         """Don't use this method, it's just here to overwrite the old one."""
-        pass
+        self.values = values
 
     @classmethod
-    def from_param(cls, param, parent, var_args):
-        instance = cls()
+    def from_param(cls, values, param, parent, var_args):
+        instance = cls(values)
         before = ()
         for cls in param.__class__.__mro__:
             with common.ignored(AttributeError):
@@ -143,8 +143,8 @@ def get_params(evaluator, func, var_args):
             except KeyError:
                 non_matching_keys.append((key, va_values))
             else:
-                result.append(_gen_param_name_copy(func, var_args, key_param,
-                                                   values=va_values))
+                result.append(_gen_param_name_copy(evaluator, func, var_args,
+                                                   key_param, values=va_values))
 
             if k in keys_used:
                 had_multiple_value_error = True
@@ -205,7 +205,7 @@ def get_params(evaluator, func, var_args):
         # Now add to result if it's not one of the previously covered cases.
         if not has_default_value and (not keys_only or param.stars == 2):
             keys_used.add(unicode(param.get_name()))
-            result.append(_gen_param_name_copy(func, var_args, param,
+            result.append(_gen_param_name_copy(evaluator, func, var_args, param,
                                                keys=keys, values=values,
                                                array_type=array_type))
 
@@ -215,7 +215,7 @@ def get_params(evaluator, func, var_args):
         # there's nothing to find for certain names.
         for k in set(param_dict) - keys_used:
             param = param_dict[k]
-            result.append(_gen_param_name_copy(func, var_args, param))
+            result.append(_gen_param_name_copy(evaluator, func, var_args, param))
 
             if not (non_matching_keys or had_multiple_value_error
                     or param.stars or param.assignment_details):
@@ -390,11 +390,10 @@ def _star_star_dict(evaluator, array, expression_list, func):
     return dct
 
 
-def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=None):
+def _gen_param_name_copy(evaluator, func, var_args, param, keys=(), values=(), array_type=None):
     """
     Create a param with the original scope (of varargs) as parent.
     """
-    print(func, var_args, param, keys, values, array_type)
     if isinstance(var_args, pr.Array):
         parent = var_args.parent
         start_pos = var_args.start_pos
@@ -402,18 +401,20 @@ def _gen_param_name_copy(func, var_args, param, keys=(), values=(), array_type=N
         parent = func
         start_pos = 0, 0
 
-    new_param = ExecutedParam.from_param(param, parent, var_args)
-
     # create an Array (-> needed for *args/**kwargs tuples/dicts)
+    arr = iterable.FakeArray(evaluator, tuple(values), array_type)
+    # TODO change?!
+    """
     arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
-    arr.values = list(values)  # Arrays only work with list.
     key_stmts = []
     for key in keys:
         key_stmts.append(helpers.FakeStatement([key], start_pos))
     arr.keys = key_stmts
     arr.type = array_type
+    """
 
-    new_param.set_expression_list([arr])
+    new_param = ExecutedParam.from_param([arr], param, parent, var_args)
+
 
     name = copy.copy(param.get_name())
     name.parent = new_param
