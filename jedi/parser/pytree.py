@@ -94,9 +94,10 @@ def convert(grammar, raw_node):
     if type in grammar.number2symbol:
         # If there's exactly one child, return that child instead of
         # creating a new node.
-        # We still create expr_stmt though, because a lot of Jedi depends on
-        # its logic.
-        if len(children) == 1 and type != python_symbols.expr_stmt:
+        # We still create expr_stmt and file_input though, because a lot of
+        # Jedi depends on its logic.
+        if len(children) == 1 and type not in (python_symbols.expr_stmt,
+                                               python_symbols.file_input):
             return children[0]
         #print(raw_node, type_repr(type))
         #import pdb; pdb.set_trace()
