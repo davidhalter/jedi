@@ -36,7 +36,46 @@ class Arguments(object):
                 else:
                     yield 0, child
 
-    def iterate(self):
+    def unpack(self):
+        """
+        Reordering var_args is necessary, because star args sometimes appear after
+        named argument, but in the actual order it's prepended.
+        """
+        named_args = []
+        for stars, el in self._split():
+            if stars == 1:
+                raise NotImplementedError
+            elif stars == 2:
+                raise NotImplementedError
+            else:
+                if pr.is_node(el, 'argument'):
+                    named_args.append(el.children[::2])
+                else:
+                    yield None, [el]
+
+        for key_arg in named_args:
+            # TODO its always only one value?
+            yield key_arg[0], [key_arg[1]]
+
+    def _reorder_var_args(var_args):
+        named_index = None
+        new_args = []
+        for i, stmt in enumerate(var_args):
+            if isinstance(stmt, pr.Statement):
+                if named_index is None and stmt.assignment_details:
+                    named_index = i
+
+                if named_index is not None:
+                    expression_list = stmt.expression_list()
+                    if expression_list and expression_list[0] == '*':
+                        new_args.insert(named_index, stmt)
+                        named_index += 1
+                        continue
+
+            new_args.append(stmt)
+        return new_args
+
+    def _unpack_temp(self):
         """Returns key/value tuples, as statements."""
         for stars, el in self._split():
             if stars == 1:
@@ -86,6 +125,9 @@ class ExecutedParam(pr.Param):
         instance.var_args = var_args
         return instance
 
+    def get_parent_until(self, *args, **kwargs):
+        return self.parent.get_parent_until(*args, **kwargs)
+
 
 def _get_calling_var_args(evaluator, var_args):
     old_var_args = None
@@ -121,8 +163,8 @@ def get_params(evaluator, func, var_args):
     for param in func.params:
         param_dict[str(param.get_name())] = param
     # There may be calls, which don't fit all the params, this just ignores it.
-    unpacked_va = _unpack_var_args(evaluator, var_args, func)
-    var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
+    #unpacked_va = _unpack_var_args(evaluator, var_args, func)
+    var_arg_iterator = common.PushBackIterator(iter(var_args.unpack()))
 
     non_matching_keys = []
     keys_used = set()
@@ -251,8 +293,10 @@ def _unpack_var_args(evaluator, var_args, func):
         # Include self at this place.
         argument_list.append((None, [helpers.FakeStatement([func.instance])]))
 
+    print(var_args)
     # `var_args` is typically an Array, and not a list.
     for stmt in _reorder_var_args(var_args.iterate()):
+        print(stmt)
         if not isinstance(stmt, pr.Statement):
             if stmt is None:
                 argument_list.append((None, []))
@@ -315,29 +359,6 @@ def _unpack_var_args(evaluator, var_args, func):
             else:
                 argument_list.append((None, [stmt]))
     return argument_list
-
-
-def _reorder_var_args(var_args):
-    """
-    Reordering var_args is necessary, because star args sometimes appear after
-    named argument, but in the actual order it's prepended.
-    """
-    named_index = None
-    new_args = []
-    for i, stmt in enumerate(var_args):
-        if isinstance(stmt, pr.Statement):
-            if named_index is None and stmt.assignment_details:
-                named_index = i
-
-            if named_index is not None:
-                expression_list = stmt.expression_list()
-                if expression_list and expression_list[0] == '*':
-                    new_args.insert(named_index, stmt)
-                    named_index += 1
-                    continue
-
-        new_args.append(stmt)
-    return new_args
 
 
 def _iterate_star_args(evaluator, array, expression_list, func):
