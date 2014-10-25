@@ -87,7 +87,6 @@ class NameFinder(object):
 
                 stmt = name.get_definition()
                 scope = stmt.parent
-                print(name.parent, stmt, scope)
                 if scope in break_scopes:
                     continue
 
@@ -342,7 +341,8 @@ class NameFinder(object):
                 # this means that there are no default params,
                 # so just ignore it.
                 return res_new
-        return res_new + evaluator.eval_statement(param, seek_name=unicode(self.name_str))
+        return res_new + list(chain.from_iterable(evaluator.eval_element(v)
+                                                  for v in param.values))
 
     def _handle_for_loops(self, loop):
         # Take the first statement (for has always only one`in`).

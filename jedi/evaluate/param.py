@@ -431,7 +431,7 @@ def _gen_param_name_copy(evaluator, func, var_args, param, keys=(), values=(), a
     arr.type = array_type
     """
 
-    new_param = ExecutedParam.from_param([arr], param, parent, var_args)
+    new_param = ExecutedParam.from_param(values, param, parent, var_args)
 
 
     name = copy.copy(param.get_name())
