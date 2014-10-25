@@ -769,11 +769,11 @@ class Function(ClassOrFunc):
                 stars = 0
                 if n in ('*', '**'):
                     stars = len(n.value)
-                    n = next(iterator, None)
+                    n = next(iterator)
 
                 op = next(iterator, None)
                 if op == '=':
-                    default = op
+                    default = next(iterator)
                     next(iterator, None)
                 else:
                     default = None
