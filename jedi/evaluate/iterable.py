@@ -137,13 +137,13 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         return None  # We don't know the length, because of appends.
 
     @memoize_default(NO_DEFAULT)
-    def get_index_types(self, index=()):
+    def get_index_types(self, evaluator, index=()):
         """
         Get the types of a specific index or all, if not given.
 
         :param index: A subscriptlist node (or subnode).
         """
-        indexes = create_indexes_or_slices(self._evaluator, index)
+        indexes = create_indexes_or_slices(evaluator, index)
         lookup_done = False
         types = []
         for index in indexes:
@@ -213,7 +213,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
             return self._items()
 
     def _items(self):
-        if pr.is_node(self._array_node, 'testlist_comp') or pr.is_node(self._array_node, 'testlist_star_expr'):
+        if pr.is_node(self._array_node, 'testlist_comp', 'testlist_star_expr', 'testlist'):
             return self._array_node.children[::2]
         elif pr.is_node(self._array_node, 'dictorsetmaker'):
             kv = []

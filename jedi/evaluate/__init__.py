@@ -180,6 +180,7 @@ class Evaluator(object):
         return types
 
     def eval_element(self, element):
+        debug.dbg('eval_element %s', element)
         if isinstance(element, (pr.Name, pr.Literal)) or pr.is_node(element, 'atom'):
             return self._eval_atom(element)
         elif element.type == python_symbols.power:
@@ -190,7 +191,7 @@ class Evaluator(object):
                 types = self._eval_trailer(types, trailer)
 
             return types
-        elif pr.is_node(element, 'testlist_star_expr'):
+        elif pr.is_node(element, 'testlist_star_expr', 'testlist'):
             # The implicit tuple in statements.
             return [iterable.Array(self, element, pr.Array.TUPLE)]
         else:

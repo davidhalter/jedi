@@ -56,9 +56,12 @@ from jedi.parser.pytree import python_symbols, type_repr
 SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
 
 
-def is_node(node, symbol_name):
-    return isinstance(node, Node) \
-        and getattr(python_symbols, symbol_name) == node.type
+def is_node(node, *symbol_names):
+    if isinstance(node, Node):
+        for symbol_name in symbol_names:
+            if getattr(python_symbols, symbol_name) == node.type:
+                return True
+    return False
 
 
 def filter_after_position(names, position):
