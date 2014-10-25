@@ -37,7 +37,7 @@ from jedi.parser.tokenize import Token
 from jedi import debug
 from jedi import common
 from jedi.cache import underscore_memoization
-from jedi.evaluate.cache import memoize_default, CachedMetaClass
+from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT
 from jedi.evaluate import compiled
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
@@ -588,7 +588,7 @@ class FunctionExecution(Executed):
     def names_dict(self):
         return LazyDict(self.base.names_dict, self._copy_list)
 
-    @memoize_default(default=())
+    @memoize_default(default=NO_DEFAULT)
     def _get_params(self):
         """
         This returns the params for an TODO and is injected as a

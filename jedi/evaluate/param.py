@@ -51,11 +51,11 @@ class Arguments(object):
                 if pr.is_node(el, 'argument'):
                     named_args.append(el.children[::2])
                 else:
-                    yield None, [el]
+                    yield None, el
 
         for key_arg in named_args:
             # TODO its always only one value?
-            yield key_arg[0], [key_arg[1]]
+            yield key_arg[0], key_arg[1]
 
     def _reorder_var_args(var_args):
         named_index = None
@@ -125,6 +125,15 @@ class ExecutedParam(pr.Param):
         instance.var_args = var_args
         return instance
 
+    def eval(self, evaluator):
+        types = []
+        for v in self.values:
+            if isinstance(v, (pr.Simple, pr.Name, pr.Literal)):
+                types += evaluator.eval_element(v)
+            else:
+                types.append(v)
+        return types
+
 
 def _get_calling_var_args(evaluator, var_args):
     old_var_args = None
@@ -167,24 +176,23 @@ def get_params(evaluator, func, var_args):
     non_matching_keys = []
     keys_used = set()
     keys_only = False
-    va_values = None
     had_multiple_value_error = False
     for param in func.params:
         # The value and key can both be null. There, the defaults apply.
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
-        key, va_values = next(var_arg_iterator, (None, []))
+        key, va_value = next(var_arg_iterator, (None, []))
         while key:
             keys_only = True
             k = unicode(key)
             try:
                 key_param = param_dict[unicode(key)]
             except KeyError:
-                non_matching_keys.append((key, va_values))
+                non_matching_keys.append((key, va_value))
             else:
                 result.append(_gen_param_name_copy(evaluator, func, var_args,
-                                                   key_param, values=va_values))
+                                                   key_param, values=[va_value]))
 
             if k in keys_used:
                 had_multiple_value_error = True
@@ -196,7 +204,7 @@ def get_params(evaluator, func, var_args):
                                  calling_va, message=m)
             else:
                 keys_used.add(k)
-            key, va_values = next(var_arg_iterator, (None, []))
+            key, va_value = next(var_arg_iterator, (None, None))
 
         keys = []
         values = []
@@ -205,15 +213,18 @@ def get_params(evaluator, func, var_args):
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
-            lst_values = [va_values]
-            for key, va_values in var_arg_iterator:
+            lst_values = []
+            for key, va_value in var_arg_iterator:
                 # Iterate until a key argument is found.
                 if key:
-                    var_arg_iterator.push_back((key, va_values))
+                    var_arg_iterator.push_back((key, va_value))
                     break
-                lst_values.append(va_values)
-            if lst_values[0]:
-                values = [helpers.stmts_to_stmt(v) for v in lst_values]
+                lst_values.append(va_value)
+            print(lst_values)
+            if lst_values:
+                values = [iterable.FakeArray(evaluator, tuple(lst_values),
+                                             pr.Array.TUPLE)]
+                #values = [helpers.stmts_to_stmt(v) for v in lst_values]
         elif param.stars == 2:
             # **kwargs param
             array_type = pr.Array.DICT
@@ -223,8 +234,8 @@ def get_params(evaluator, func, var_args):
             non_matching_keys = []
         else:
             # normal param
-            if va_values:
-                values = va_values
+            if va_value is not None:
+                values = [va_value]
             else:
                 if param.default is not None:
                     # No value: Return the default values.

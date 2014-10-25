@@ -341,8 +341,7 @@ class NameFinder(object):
                 # this means that there are no default params,
                 # so just ignore it.
                 return res_new
-        return res_new + list(chain.from_iterable(evaluator.eval_element(v)
-                                                  for v in param.values))
+        return res_new + param.eval(self._evaluator)
 
     def _handle_for_loops(self, loop):
         # Take the first statement (for has always only one`in`).
