@@ -125,9 +125,6 @@ class ExecutedParam(pr.Param):
         instance.var_args = var_args
         return instance
 
-    def get_parent_until(self, *args, **kwargs):
-        return self.parent.get_parent_until(*args, **kwargs)
-
 
 def _get_calling_var_args(evaluator, var_args):
     old_var_args = None

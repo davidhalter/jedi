@@ -87,6 +87,7 @@ class NameFinder(object):
 
                 stmt = name.get_definition()
                 scope = stmt.parent
+                print(name.parent, stmt, scope)
                 if scope in break_scopes:
                     continue
 

@@ -1225,7 +1225,7 @@ class ArrayStmt(Statement):
     """
 
 
-class Param(object):
+class Param(Base):
     """
     The class which shows definitions of params of classes and functions.
     But this is not to define function calls.
@@ -1240,11 +1240,19 @@ class Param(object):
         self.default = default
         self.stars = stars
 
+    @property
+    def start_pos(self):
+        return self.tfpdef.start_pos
+
     def get_name(self):
         if is_node(self.tfpdef, 'tfpdef'):
             return self.tfpdef.children[0]
         else:
             return self.tfpdef
+
+    @property
+    def parent_function(self):
+        return self.get_parent_until(IsScope)
 
     def __init__old(self):
         kwargs.pop('names_are_set_vars', None)
