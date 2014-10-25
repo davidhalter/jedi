@@ -161,7 +161,8 @@ def get_params(evaluator, func, var_args):
         param_dict[str(param.get_name())] = param
     # There may be calls, which don't fit all the params, this just ignores it.
     #unpacked_va = _unpack_var_args(evaluator, var_args, func)
-    var_arg_iterator = common.PushBackIterator(iter(var_args.unpack()))
+    unpacked_va = var_args.unpack()
+    var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = []
     keys_used = set()

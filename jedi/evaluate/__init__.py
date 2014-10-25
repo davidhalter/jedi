@@ -234,7 +234,13 @@ class Evaluator(object):
             elif trailer_op == '(':
                 new_types += self.execute(typ, node)
             elif trailer_op == '[':
-                new_types += typ.get_index_types(node)
+                try:
+                    get = typ.get_index_types
+                except AttributeError:
+                    debug.warning("TypeError: '%s' object is not subscriptable"
+                                  % typ)
+                else:
+                    new_types += get(self, node)
         return new_types
 
     @debug.increase_indent
