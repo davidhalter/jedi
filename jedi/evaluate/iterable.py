@@ -238,13 +238,17 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         return "<e%s of %s>" % (type(self).__name__, self._array_node)
 
 
-class FakeArray(Array):
-    def __init__(self, evaluator, values, type):
-        super(FakeArray, self).__init__(evaluator, values, type)
-        self._values = values
+class FakeSequence(Array):
+    def __init__(self, evaluator, sequence_values, type):
+        super(FakeSequence, self).__init__(evaluator, None, type)
+        self._sequence_values = sequence_values
 
     def _items(self):
-        return self._values
+        return self._sequence_values
+
+    def get_exact_index_types(self, index):
+        return list(chain.from_iterable(self._evaluator.eval_element(v)
+                                        for v in self._sequence_values[index]))
 
 
 class MergedArray(Array):

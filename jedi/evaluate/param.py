@@ -32,30 +32,32 @@ class Arguments(object):
                 if child == ',':
                     continue
                 elif child in ('*', '**'):
-                    yield len(child), next(iterator)
+                    yield len(child.value), next(iterator)
                 else:
                     yield 0, child
 
     def unpack(self):
-        """
-        Reordering var_args is necessary, because star args sometimes appear after
-        named argument, but in the actual order it's prepended.
-        """
         named_args = []
         for stars, el in self._split():
             if stars == 1:
-                raise NotImplementedError
+                arrays = self._evaluator.eval_element(el)
+                iterators = [_iterate_star_args(self._evaluator, a, None, None)
+                             for a in arrays]
+                for values in list(zip_longest(*iterators)):
+                    yield None, tuple(v for v in values if v is not None)
             elif stars == 2:
                 raise NotImplementedError
             else:
                 if pr.is_node(el, 'argument'):
-                    named_args.append(el.children[::2])
+                    named_args.append((el.children[0], (el.children[2],)))
                 else:
-                    yield None, el
+                    yield None, (el,)
 
+        # Reordering var_args is necessary, because star args sometimes appear
+        # after named argument, but in the actual order it's prepended.
         for key_arg in named_args:
             # TODO its always only one value?
-            yield key_arg[0], key_arg[1]
+            yield key_arg[0], (key_arg[1],)
 
     def _reorder_var_args(var_args):
         named_index = None
@@ -74,20 +76,6 @@ class Arguments(object):
 
             new_args.append(stmt)
         return new_args
-
-    def _unpack_temp(self):
-        """Returns key/value tuples, as statements."""
-        for stars, el in self._split():
-            if stars == 1:
-                arrays = self._evaluator.eval_element(el)
-                iterators = [_iterate_star_args(self._evaluator, a, expression_list[1:], func)
-                             for a in arrays]
-                for values in list(zip_longest(*iterators)):
-                    yield None, [v for v in values if v is not None]
-            elif stars == 2:
-                raise NotImplementedError
-            else:
-                yield None, [el]
 
     def kwargs(self):
         return []
@@ -133,6 +121,14 @@ class ExecutedParam(pr.Param):
             else:
                 types.append(v)
         return types
+
+
+class Container(object):
+    def __init__(self, values):
+        self.values = values
+
+    def eval(self, evaluator):
+        return self.values
 
 
 def _get_calling_var_args(evaluator, var_args):
@@ -182,17 +178,17 @@ def get_params(evaluator, func, var_args):
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
-        key, va_value = next(var_arg_iterator, (None, []))
+        key, va_values = next(var_arg_iterator, (None, ()))
         while key:
             keys_only = True
             k = unicode(key)
             try:
                 key_param = param_dict[unicode(key)]
             except KeyError:
-                non_matching_keys.append((key, va_value))
+                non_matching_keys.append((key, va_values))
             else:
                 result.append(_gen_param_name_copy(evaluator, func, var_args,
-                                                   key_param, values=[va_value]))
+                                                   key_param, values=[va_values]))
 
             if k in keys_used:
                 had_multiple_value_error = True
@@ -204,7 +200,7 @@ def get_params(evaluator, func, var_args):
                                  calling_va, message=m)
             else:
                 keys_used.add(k)
-            key, va_value = next(var_arg_iterator, (None, None))
+            key, va_values = next(var_arg_iterator, (None, ()))
 
         keys = []
         values = []
@@ -213,16 +209,15 @@ def get_params(evaluator, func, var_args):
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
-            lst_values = []
-            for key, va_value in var_arg_iterator:
+            lst_values = [va_values] if va_values else []
+            for key, va_values in var_arg_iterator:
                 # Iterate until a key argument is found.
                 if key:
-                    var_arg_iterator.push_back((key, va_value))
+                    var_arg_iterator.push_back((key, va_values))
                     break
-                lst_values.append(va_value)
-            print(lst_values)
+                lst_values.append(va_values)
             if lst_values:
-                values = [iterable.FakeArray(evaluator, tuple(lst_values),
+                values = [iterable.FakeSequence(evaluator, tuple(lst_values),
                                              pr.Array.TUPLE)]
                 #values = [helpers.stmts_to_stmt(v) for v in lst_values]
         elif param.stars == 2:
@@ -234,8 +229,8 @@ def get_params(evaluator, func, var_args):
             non_matching_keys = []
         else:
             # normal param
-            if va_value is not None:
-                values = [va_value]
+            if va_values is not None:
+                values = va_values
             else:
                 if param.default is not None:
                     # No value: Return the default values.
@@ -320,7 +315,7 @@ def _unpack_var_args(evaluator, var_args, func):
         # *args
         if expression_list[0] == '*':
             arrays = evaluator.eval_expression_list(expression_list[1:])
-            iterators = [_iterate_star_args(evaluator, arr, func)
+            iterators = [_iterate_star_args(evaluator, a, func)
                          for a in arrays]
             for values in list(zip_longest(*iterators)):
                 argument_list.append((None, [v for v in values if v is not None]))
@@ -431,7 +426,7 @@ def _gen_param_name_copy(evaluator, func, var_args, param, keys=(), values=(), a
         start_pos = 0, 0
 
     # create an Array (-> needed for *args/**kwargs tuples/dicts)
-    arr = iterable.FakeArray(evaluator, tuple(values), array_type)
+    arr = iterable.FakeSequence(evaluator, tuple(values), array_type)
     # TODO change?!
     """
     arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
