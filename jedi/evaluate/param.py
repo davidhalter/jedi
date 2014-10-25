@@ -228,10 +228,7 @@ def get_params(evaluator, func, var_args):
             else:
                 if param.default is not None:
                     # No value: Return the default values.
-                    has_default_value = True
-                    result.append(param.get_name())
-                    # TODO is this allowed? it changes it long time.
-                    param.is_generated = True
+                    values = [param.default]
                 else:
                     # No value: Return an empty container
                     values = []
@@ -255,10 +252,12 @@ def get_params(evaluator, func, var_args):
         # there's nothing to find for certain names.
         for k in set(param_dict) - keys_used:
             param = param_dict[k]
-            result.append(_gen_param_name_copy(evaluator, func, var_args, param))
+            values = [] if param.default is None else [param.default]
+            result.append(_gen_param_name_copy(evaluator, func, var_args,
+                                               param, values))
 
             if not (non_matching_keys or had_multiple_value_error
-                    or param.stars or param.assignment_details):
+                    or param.stars or param.default):
                 # add a warning only if there's not another one.
                 calling_va = _get_calling_var_args(evaluator, var_args)
                 if calling_va is not None:
