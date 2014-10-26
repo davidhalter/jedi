@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 
 from jedi._compatibility import unicode, zip_longest
 from jedi import debug
@@ -49,7 +50,7 @@ class Arguments(object):
                 raise NotImplementedError
             else:
                 if pr.is_node(el, 'argument'):
-                    named_args.append((el.children[0], (el.children[2],)))
+                    named_args.append((el.children[0].value, (el.children[2],)))
                 else:
                     yield None, (el,)
 
@@ -57,7 +58,7 @@ class Arguments(object):
         # after named argument, but in the actual order it's prepended.
         for key_arg in named_args:
             # TODO its always only one value?
-            yield key_arg[0], (key_arg[1],)
+            yield key_arg
 
     def _reorder_var_args(var_args):
         named_index = None
@@ -169,7 +170,7 @@ def get_params(evaluator, func, var_args):
     unpacked_va = var_args.unpack()
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
-    non_matching_keys = []
+    non_matching_keys = defaultdict(lambda: [])
     keys_used = set()
     keys_only = False
     had_multiple_value_error = False
@@ -185,7 +186,7 @@ def get_params(evaluator, func, var_args):
             try:
                 key_param = param_dict[unicode(key)]
             except KeyError:
-                non_matching_keys.append((key, va_values))
+                non_matching_keys[key] += va_values
             else:
                 result.append(_gen_param_name_copy(evaluator, func, var_args,
                                                    key_param, values=[va_values]))
@@ -218,15 +219,13 @@ def get_params(evaluator, func, var_args):
                 lst_values.append(va_values)
             if lst_values:
                 values = [iterable.FakeSequence(evaluator, tuple(lst_values),
-                                             pr.Array.TUPLE)]
+                                                pr.Array.TUPLE)]
                 #values = [helpers.stmts_to_stmt(v) for v in lst_values]
         elif param.stars == 2:
             # **kwargs param
             array_type = pr.Array.DICT
-            if non_matching_keys:
-                keys, values = zip(*non_matching_keys)
-                values = [helpers.stmts_to_stmt(list(v)) for v in values]
-            non_matching_keys = []
+            values = [iterable.FakeDict(evaluator, dict(non_matching_keys))]
+            non_matching_keys = {}
         else:
             # normal param
             if va_values is not None:
@@ -271,7 +270,7 @@ def get_params(evaluator, func, var_args):
                     analysis.add(evaluator, 'type-error-too-few-arguments',
                                  calling_va, message=m)
 
-    for key, va_values in non_matching_keys:
+    for key, va_values in non_matching_keys.items():
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
             % (func.name, key)
         for value in va_values:

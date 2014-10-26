@@ -441,7 +441,7 @@ class Scope(Simple, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('imports', '_doc_token', 'asserts', 'names_dict', 
+    __slots__ = ('imports', '_doc_token', 'asserts', 'names_dict',
                  'is_generator')
 
     def __init__(self, children):

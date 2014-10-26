@@ -119,7 +119,7 @@ class GeneratorComprehension(Generator):
         return self._evaluator.eval_statement_element(self.comprehension)
 
 
-class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
+class Array(IterableWrapper):
     """
     Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.
@@ -208,7 +208,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
 
     def _values(self):
         if self.type == pr.Array.DICT:
-            return [v for k, v in self._items()]
+            return list(chain.from_iterable(v for k, v in self._items()))
         else:
             return self._items()
 
@@ -223,7 +223,7 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
                 if op is None or op == ',':
                     kv.append(key)  # A set.
                 elif op == ':':  # A dict.
-                    kv.append((key, next(iterator)))
+                    kv.append((key, [next(iterator)]))
                     next(iterator, None)  # Possible comma.
                 else:
                     raise NotImplementedError('dict/set comprehensions')
@@ -249,6 +249,19 @@ class FakeSequence(Array):
     def get_exact_index_types(self, index):
         return list(chain.from_iterable(self._evaluator.eval_element(v)
                                         for v in self._sequence_values[index]))
+
+
+class FakeDict(Array):
+    def __init__(self, evaluator, dct):
+        super(FakeDict, self).__init__(evaluator, None, pr.Array.DICT)
+        self._dct = dct
+
+    def get_exact_index_types(self, index):
+        return list(chain.from_iterable(self._evaluator.eval_element(v)
+                                        for v in self._dct[index]))
+
+    def _items(self):
+        return self._dct.items()
 
 
 class MergedArray(Array):
