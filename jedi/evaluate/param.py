@@ -1,5 +1,6 @@
 import copy
 from collections import defaultdict
+from itertools import chain
 
 from jedi._compatibility import unicode, zip_longest
 from jedi import debug
@@ -45,8 +46,9 @@ class Arguments(object):
                 arrays = self._evaluator.eval_element(el)
                 iterators = [_iterate_star_args(self._evaluator, a, None, None)
                              for a in arrays]
-                for values in list(zip_longest(*iterators)):
-                    yield None, tuple(v for v in values if v is not None)
+                iterators = list(iterators)
+                for values in list(zip_longest(*iterators, fillvalue=())):
+                    yield None, tuple(chain.from_iterable(values))
             elif stars == 2:
                 arrays = self._evaluator.eval_element(el)
                 dicts = [_star_star_dict(self._evaluator, a, None, None)
@@ -173,7 +175,7 @@ def get_params(evaluator, func, var_args):
         param_dict[str(param.get_name())] = param
     # There may be calls, which don't fit all the params, this just ignores it.
     #unpacked_va = _unpack_var_args(evaluator, var_args, func)
-    unpacked_va = var_args.unpack()
+    unpacked_va = list(var_args.unpack())
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])
@@ -442,7 +444,7 @@ def _gen_param_name_copy(evaluator, func, var_args, param, keys=(), values=(), a
 
 
 def _error_argument_count(func, actual_count):
-    default_arguments = sum(1 for p in func.params if p.assignment_details or p.stars)
+    default_arguments = sum(1 for p in func.params if p.default or p.stars)
 
     if default_arguments == 0:
         before = 'exactly '
