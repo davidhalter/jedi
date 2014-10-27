@@ -178,7 +178,8 @@ def get_params(evaluator, func, var_args):
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
-        key, va_values = next(var_arg_iterator, (None, [param.default]))
+        default = [] if param.default is None else [param.default]
+        key, va_values = next(var_arg_iterator, (None, default))
         while key is not None:
             keys_only = True
             k = unicode(key)
@@ -202,8 +203,6 @@ def get_params(evaluator, func, var_args):
                 keys_used.add(k)
             key, va_values = next(var_arg_iterator, (None, ()))
 
-        if keys_only:
-            break
 
         keys = []
         values = []
