@@ -12,25 +12,25 @@ from jedi.evaluate import analysis
 from jedi.evaluate import precedence
 
 
-class Arguments(object):
+class Arguments(pr.Base):
     def __init__(self, evaluator, argument_node):
         """
         The argument_node is either a parser node or a list of evaluated
         objects.
         """
-        self._argument_node = argument_node
+        self.argument_node = argument_node
         self._evaluator = evaluator
 
     def _split(self):
-        if isinstance(self._argument_node, (tuple, list)):
-            for el in self._argument_node:
+        if isinstance(self.argument_node, (tuple, list)):
+            for el in self.argument_node:
                 yield 0, el
         else:
-            if not pr.is_node(self._argument_node, 'arglist'):
-                yield 0, self._argument_node
+            if not pr.is_node(self.argument_node, 'arglist'):
+                yield 0, self.argument_node
                 return
 
-            iterator = iter(self._argument_node.children)
+            iterator = iter(self.argument_node.children)
             for child in iterator:
                 if child == ',':
                     continue
@@ -38,6 +38,14 @@ class Arguments(object):
                     yield len(child.value), next(iterator)
                 else:
                     yield 0, child
+
+    def as_tuple(self):
+        for stars, argument in self._split():
+            if pr.is_node(argument, 'argument'):
+                argument, default = argument.children[::2]
+            else:
+                default = None
+            yield argument, default, stars
 
     def unpack(self):
         named_args = []
@@ -86,17 +94,11 @@ class Arguments(object):
             new_args.append(stmt)
         return new_args
 
-    def kwargs(self):
-        return []
-
-    def args(self):
-        return []
-
     def eval_args(self):
         return [self._evaluator.eval_element(el) for stars, el in self._split()]
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self._argument_node)
+        return '<%s: %s>' % (type(self).__name__, self.argument_node)
 
 
 class ExecutedParam(pr.Param):
@@ -132,26 +134,15 @@ class ExecutedParam(pr.Param):
         return types
 
 
-class Container(object):
-    def __init__(self, values):
-        self.values = values
-
-    def eval(self, evaluator):
-        return self.values
-
-
 def _get_calling_var_args(evaluator, var_args):
     old_var_args = None
     while var_args != old_var_args:
         old_var_args = var_args
-        for argument in reversed(var_args):
-            if not isinstance(argument, pr.Statement):
-                continue
-            exp_list = argument.expression_list()
-            if len(exp_list) != 2 or exp_list[0] not in ('*', '**'):
+        for argument, default, stars in reversed(list(var_args.as_tuple())):
+            if not stars or not isinstance(argument, pr.Name):
                 continue
 
-            names = evaluator.goto(argument, [exp_list[1].get_code()])
+            names = evaluator.goto(argument, [argument.value])
             if len(names) != 1:
                 break
             param = names[0].get_definition()
@@ -187,8 +178,8 @@ def get_params(evaluator, func, var_args):
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
-        key, va_values = next(var_arg_iterator, (None, ()))
-        while key:
+        key, va_values = next(var_arg_iterator, (None, [param.default]))
+        while key is not None:
             keys_only = True
             k = unicode(key)
             try:
@@ -197,7 +188,7 @@ def get_params(evaluator, func, var_args):
                 non_matching_keys[key] += va_values
             else:
                 result.append(_gen_param_name_copy(evaluator, func, var_args,
-                                                   key_param, values=[va_values]))
+                                                   key_param, values=va_values))
 
             if k in keys_used:
                 had_multiple_value_error = True
@@ -206,15 +197,17 @@ def get_params(evaluator, func, var_args):
                 calling_va = _get_calling_var_args(evaluator, var_args)
                 if calling_va is not None:
                     analysis.add(evaluator, 'type-error-multiple-values',
-                                 calling_va, message=m)
+                                 calling_va.argument_node, message=m)
             else:
                 keys_used.add(k)
             key, va_values = next(var_arg_iterator, (None, ()))
 
+        if keys_only:
+            break
+
         keys = []
         values = []
         array_type = None
-        has_default_value = False
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
@@ -236,24 +229,20 @@ def get_params(evaluator, func, var_args):
             non_matching_keys = {}
         else:
             # normal param
-            if va_values is not None:
+            if va_values:
                 values = va_values
             else:
-                if param.default is not None:
-                    # No value: Return the default values.
-                    values = [param.default]
-                else:
-                    # No value: Return an empty container
-                    values = []
-                    if not keys_only and isinstance(var_args, pr.Array):
-                        calling_va = _get_calling_var_args(evaluator, var_args)
-                        if calling_va is not None:
-                            m = _error_argument_count(func, len(unpacked_va))
-                            analysis.add(evaluator, 'type-error-too-few-arguments',
-                                         calling_va, message=m)
+                # No value: Return an empty container
+                values = []
+                if not keys_only and isinstance(var_args, pr.Array):
+                    calling_va = _get_calling_var_args(evaluator, var_args)
+                    if calling_va is not None:
+                        m = _error_argument_count(func, len(unpacked_va))
+                        analysis.add(evaluator, 'type-error-too-few-arguments',
+                                     calling_va, message=m)
 
         # Now add to result if it's not one of the previously covered cases.
-        if not has_default_value and (not keys_only or param.stars == 2):
+        if (not keys_only or param.stars == 2):
             keys_used.add(unicode(param.get_name()))
             result.append(_gen_param_name_copy(evaluator, func, var_args, param,
                                                keys=keys, values=values,
@@ -267,16 +256,16 @@ def get_params(evaluator, func, var_args):
             param = param_dict[k]
             values = [] if param.default is None else [param.default]
             result.append(_gen_param_name_copy(evaluator, func, var_args,
-                                               param, values))
+                                               param, [], values))
 
             if not (non_matching_keys or had_multiple_value_error
                     or param.stars or param.default):
                 # add a warning only if there's not another one.
                 calling_va = _get_calling_var_args(evaluator, var_args)
-                if calling_va is not None:
+                if calling_va.argument_node is not None:
                     m = _error_argument_count(func, len(unpacked_va))
                     analysis.add(evaluator, 'type-error-too-few-arguments',
-                                 calling_va, message=m)
+                                 calling_va.argument_node, message=m)
 
     for key, va_values in non_matching_keys.items():
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
@@ -397,7 +386,9 @@ def _star_star_dict(evaluator, array, expression_list, func):
         # make one call without crazy isinstance checks.
         return {}
 
-    if isinstance(array, iterable.Array) and array.type == pr.Array.DICT:
+    if isinstance(array, iterable.FakeDict):
+        return array._dct
+    elif isinstance(array, iterable.Array) and array.type == pr.Array.DICT:
         for key_node, values in array._items():
             for key in evaluator.eval_element(key_node):
                 if precedence.is_string(key):

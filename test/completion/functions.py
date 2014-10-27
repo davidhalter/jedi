@@ -365,13 +365,11 @@ nested_kw(b=1)
 #? int()
 nested_kw(d=1.0, b=1, list)
 #? int()
-nested_kw(b=1)
-#? int()
 nested_kw(a=3.0, b=1)
 #? int()
 nested_kw(b=1, a=r"")
 #? []
-nested_kw('')
+nested_kw(1, '')
 #? []
 nested_kw(a='')
 
