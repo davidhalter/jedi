@@ -203,7 +203,6 @@ def get_params(evaluator, func, var_args):
                 keys_used.add(k)
             key, va_values = next(var_arg_iterator, (None, ()))
 
-
         keys = []
         values = []
         array_type = None
