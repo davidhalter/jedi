@@ -204,7 +204,7 @@ class Array(IterableWrapper):
         if name not in ['start_pos', 'get_only_subelement', 'parent',
                         'get_parent_until', 'items']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
-        return getattr(self._array, name)
+        return getattr(self._array_node, name)
 
     def _values(self):
         if self.type == pr.Array.DICT:

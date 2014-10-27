@@ -8,6 +8,7 @@ from jedi.parser import representation as pr
 from jedi.evaluate import iterable
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
+from jedi.evaluate import precedence
 
 
 class Arguments(object):
@@ -47,7 +48,12 @@ class Arguments(object):
                 for values in list(zip_longest(*iterators)):
                     yield None, tuple(v for v in values if v is not None)
             elif stars == 2:
-                raise NotImplementedError
+                arrays = self._evaluator.eval_element(el)
+                dicts = [_star_star_dict(self._evaluator, a, None, None)
+                         for a in arrays]
+                for dct in dicts:
+                    for key, values in dct.items():
+                        yield key, values
             else:
                 if pr.is_node(el, 'argument'):
                     named_args.append((el.children[0].value, (el.children[2],)))
@@ -382,7 +388,7 @@ def _iterate_star_args(evaluator, array, expression_list, func):
 
 
 def _star_star_dict(evaluator, array, expression_list, func):
-    dct = {}
+    dct = defaultdict(lambda: [])
     from jedi.evaluate.representation import Instance
     if isinstance(array, Instance) and array.name.get_code() == 'dict':
         # For now ignore this case. In the future add proper iterators and just
@@ -390,27 +396,18 @@ def _star_star_dict(evaluator, array, expression_list, func):
         return {}
 
     if isinstance(array, iterable.Array) and array.type == pr.Array.DICT:
-        for key_stmt, value_stmt in array.items():
-            # first index, is the key if syntactically correct
-            call = key_stmt.expression_list()[0]
-            if isinstance(call, pr.Name):
-                key = call
-            elif isinstance(call, pr.Call):
-                key = call.name
-            else:
-                debug.warning('Ignored complicated **kwargs stmt %s' % call)
-                continue  # We ignore complicated statements here, for now.
+        for key_node, values in array._items():
+            for key in evaluator.eval_element(key_node):
+                if precedence.is_string(key):
+                    dct[key.obj] += values
 
-            # If the string is a duplicate, we don't care it's illegal Python
-            # anyway.
-            dct[str(key)] = key, value_stmt
     else:
         if expression_list:
             m = "TypeError: %s argument after ** must be a mapping, not %s" \
                 % (func.name.get_code(), array)
             analysis.add(evaluator, 'type-error-star-star',
                          expression_list[0], message=m)
-    return dct
+    return dict(dct)
 
 
 def _gen_param_name_copy(evaluator, func, var_args, param, keys=(), values=(), array_type=None):
