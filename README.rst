@@ -34,7 +34,7 @@ me.
 Jedi can be used with the following editors:
 
 - Vim (jedi-vim_, YouCompleteMe_)
-- Emacs (Jedi.el_, elpy_, anaconda-mode_)
+- Emacs (Jedi.el_, elpy_, anaconda-mode_, ycmd_)
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
 - SynWrite_
 - TextMate_ (Not sure if it's actually working)
@@ -145,6 +145,7 @@ For more detailed information visit the `testing documentation
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
 .. _elpy: https://github.com/jorgenschaefer/elpy
 .. _anaconda-mode: https://github.com/proofit404/anaconda-mode
+.. _ycmd: https://github.com/abingham/emacs-ycmd
 .. _sublimejedi: https://github.com/srusskih/SublimeJEDI
 .. _anaconda: https://github.com/DamnWidget/anaconda
 .. _SynWrite: http://uvviewsoft.com/synjedi/
