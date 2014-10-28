@@ -1239,7 +1239,7 @@ class Param(Base):
 
     A helper class for functions. Read only.
     """
-    __slots__ = ('tfpdef', 'default', 'stars', 'parent', 'is_generated', 'annotation_stmt')
+    __slots__ = ('tfpdef', 'default', 'stars', 'parent', 'annotation_stmt')
 
     def __init__(self, tfpdef, parent, default=None, stars=0):
         self.tfpdef = tfpdef  # tfpdef: see grammar.txt
