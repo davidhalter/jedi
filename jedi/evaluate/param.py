@@ -94,6 +94,26 @@ class Arguments(pr.Base):
             new_args.append(stmt)
         return new_args
 
+    def eval_argument_clinic(self, arguments):
+        """Uses a list with argument clinic information (see PEP 436)."""
+        iterator = self.unpack()
+        for i, (name, optional, allow_kwargs) in enumerate(arguments):
+            key, va_values = next(iterator, (None, []))
+            if key is not None:
+                raise NotImplementedError
+            if not va_values and not optional:
+                debug.warning('TypeError: %s expected at least %s arguments, got %s',
+                              name, len(arguments), i)
+                raise ValueError
+            values = list(chain.from_iterable(self._evaluator.eval_element(el)
+                                              for el in va_values))
+            if not values and not optional:
+                # For the stdlib we always want values. If we don't get them,
+                # that's ok, maybe something is too hard to resolve, however,
+                # we will not proceed with the evaluation of that function. 
+                raise ValueError
+            yield values
+
     def eval_args(self):
         return [self._evaluator.eval_element(el) for stars, el in self._split()]
 

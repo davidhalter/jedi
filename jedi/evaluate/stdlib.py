@@ -7,6 +7,8 @@ To add a new implementation, create a function and add it to the
 
 """
 import collections
+import re
+
 from jedi._compatibility import unicode
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
@@ -58,15 +60,30 @@ def argument_clinic(string, want_obj=False):
     """
     Works like Argument Clinic (PEP 436), to validate function params.
     """
-    args = []
-    # TODO Do the splitting and checking if the input is correct.
-    #re.
-    # = string.split(', ')
+    clinic_args = []
+    allow_kwargs = False
+    while string:
+        # Optional arguments have to begin with a bracket. And should always be
+        # at the end of the arguments. This is therefore not a proper argument
+        # clinic implementation. `range()` for exmple allows an optional start
+        # value at the beginning.
+        match = re.match('(?:(?:(\[), ?|, ?|)(\w+)|, ?/)\]*', string)
+        string = string[len(match.group(0)):]
+        if not match.group(2):  # A slash -> allow named arguments
+            allow_kwargs = True
+            continue
+        optional = match.group(1)
+        word = match.group(2)
+        clinic_args.append((word, bool(optional), allow_kwargs))
 
     def f(func):
         def wrapper(evaluator, obj, arguments):
-            args = arguments.eval_args()
-            return func(evaluator, *args)
+            try:
+                lst = list(arguments.eval_argument_clinic(clinic_args))
+            except ValueError:
+                return []
+            else:
+                return func(evaluator, *lst)
 
         return wrapper
     return f
