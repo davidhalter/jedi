@@ -289,10 +289,15 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         func = get_instance_el(self._evaluator, self.instance, func)
         return func
 
-    def expression_list(self):
+    def get_rhs(self):
+        return get_instance_el(self._evaluator, self.instance,
+                               self.var.get_rhs(), self.is_class_var)
+
+    @property
+    def children(self):
         # Copy and modify the array.
         return [get_instance_el(self._evaluator, self.instance, command, self.is_class_var)
-                for command in self.var.expression_list()]
+                for command in self.var.children]
 
     @property
     @underscore_memoization
@@ -488,9 +493,6 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
             f = Function(self._evaluator, f, True)
         return f
 
-    def scope_names_generator(self, position=None):
-        yield self, self.get_magic_function_names()
-
     def get_decorated_func(self):
         """
         This function exists for the sole purpose of returning itself if the
@@ -644,7 +646,10 @@ class FunctionExecution(Executed):
     @common.safe_property
     @memoize_default([])
     def children(self):
-        return self._copy_list(self.base.children)
+        children = self.base.children
+        if isinstance(self.base, InstanceElement):
+            children = self.base.var.children
+        return self._copy_list(children)
 
     @common.safe_property
     @memoize_default([])

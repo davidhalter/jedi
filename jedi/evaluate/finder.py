@@ -61,6 +61,8 @@ class NameFinder(object):
         if search_global:
             return get_names_of_scope(self._evaluator, self.scope, self.position)
         else:
+            if self.scope.isinstance(er.Function):
+                return iter([(self.scope, self.scope.get_magic_function_names())])
             return self.scope.scope_names_generator(self.position)
 
     def filter_name(self, scope_names_generator):
@@ -74,7 +76,6 @@ class NameFinder(object):
         names = []
         self.maybe_descriptor = isinstance(self.scope, er.Class)
         for name_list_scope, name_list in scope_names_generator:
-            print(name_list_scope)
             break_scopes = []
             if not isinstance(name_list_scope, compiled.CompiledObject):
                 # Here is the position stuff happening (sorting of variables).
