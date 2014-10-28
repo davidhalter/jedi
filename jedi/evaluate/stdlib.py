@@ -56,7 +56,7 @@ def _follow_param(evaluator, params, index):
             return [stmt]  # just some arbitrary object
 
 
-def argument_clinic(string, want_obj=False):
+def argument_clinic(string, want_obj=False, want_scope=False):
     """
     Works like Argument Clinic (PEP 436), to validate function params.
     """
@@ -83,10 +83,12 @@ def argument_clinic(string, want_obj=False):
             except ValueError:
                 return []
             else:
+                kwargs = {}
+                if want_scope:
+                    kwargs['scope'] = arguments.scope()
                 if want_obj:
-                    return func(evaluator, obj, *lst)
-                else:
-                    return func(evaluator, *lst)
+                    kwargs['obj'] = obj
+                return func(evaluator, *lst, **kwargs)
 
         return wrapper
     return f
@@ -127,15 +129,14 @@ class SuperInstance(er.Instance):
         super().__init__(evaluator, su and su[0] or self)
 
 
-@argument_clinic('[type[, obj]], /', want_obj=True)
-def builtins_super(evaluator, obj, types, objects):
+@argument_clinic('[type[, obj]], /', want_scope=True)
+def builtins_super(evaluator, types, objects, scope):
     # TODO make this able to detect multiple inheritance super
     accept = (pr.Function, er.FunctionExecution)
-    func = obj.get_parent_until(accept)
-    if func.isinstance(*accept):
+    if scope.isinstance(*accept):
         wanted = (pr.Class, er.Instance)
-        cls = func.get_parent_until(accept + wanted,
-                                    include_current=False)
+        cls = scope.get_parent_until(accept + wanted,
+                                     include_current=False)
         if isinstance(cls, wanted):
             if isinstance(cls, pr.Class):
                 cls = er.Class(evaluator, cls)

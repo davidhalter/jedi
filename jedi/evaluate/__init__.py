@@ -233,7 +233,7 @@ class Evaluator(object):
             if trailer_op == '.':
                 new_types += self.find_types(typ, node)
             elif trailer_op == '(':
-                new_types += self.execute(typ, node)
+                new_types += self.execute(typ, node, trailer)
             elif trailer_op == '[':
                 try:
                     get = typ.get_index_types
@@ -245,8 +245,8 @@ class Evaluator(object):
         return new_types
 
     @debug.increase_indent
-    def execute(self, obj, arguments=()):
-        arguments = param.Arguments(self, arguments)
+    def execute(self, obj, arguments=(), trailer=None):
+        arguments = param.Arguments(self, arguments, trailer)
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 

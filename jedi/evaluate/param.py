@@ -13,13 +13,14 @@ from jedi.evaluate import precedence
 
 
 class Arguments(pr.Base):
-    def __init__(self, evaluator, argument_node):
+    def __init__(self, evaluator, argument_node, trailer=None):
         """
         The argument_node is either a parser node or a list of evaluated
         objects.
         """
         self.argument_node = argument_node
         self._evaluator = evaluator
+        self._trailer = trailer  # Can be None, e.g. in a class definition.
 
     def _split(self):
         if isinstance(self.argument_node, (tuple, list)):
@@ -110,9 +111,13 @@ class Arguments(pr.Base):
             if not values and not optional:
                 # For the stdlib we always want values. If we don't get them,
                 # that's ok, maybe something is too hard to resolve, however,
-                # we will not proceed with the evaluation of that function. 
+                # we will not proceed with the evaluation of that function.
                 raise ValueError
             yield values
+
+    def scope(self):
+        # Returns the scope in which the arguments are used.
+        return (self._trailer or self.argument_node).get_parent_until(pr.IsScope)
 
     def eval_args(self):
         return [self._evaluator.eval_element(el) for stars, el in self._split()]
