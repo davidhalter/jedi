@@ -297,10 +297,8 @@ def _unpack_var_args(evaluator, var_args, func):
         # Include self at this place.
         argument_list.append((None, [helpers.FakeStatement([func.instance])]))
 
-    print(var_args)
     # `var_args` is typically an Array, and not a list.
     for stmt in _reorder_var_args(var_args.iterate()):
-        print(stmt)
         if not isinstance(stmt, pr.Statement):
             if stmt is None:
                 argument_list.append((None, []))

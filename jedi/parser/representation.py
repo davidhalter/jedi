@@ -182,7 +182,7 @@ class Base(object):
         return False
 
 
-class _Leaf(Base):
+class Leaf(Base):
     __slots__ = ('value', 'parent', 'start_pos', 'prefix')
 
     def __init__(self, value, start_pos, prefix=''):
@@ -227,11 +227,11 @@ class _Leaf(Base):
         return "<%s: %s>" % (type(self).__name__, repr(self.value))
 
 
-class Whitespace(_Leaf):
+class Whitespace(Leaf):
     """Contains NEWLINE and ENDMARKER tokens."""
 
 
-class Name(_Leaf):
+class Name(Leaf):
     """
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
@@ -286,7 +286,7 @@ class Name(_Leaf):
         return indexes
 
 
-class Literal(_Leaf):
+class Literal(Leaf):
     def eval(self):
         return literal_eval(self.value)
 
@@ -301,7 +301,7 @@ class Literal(_Leaf):
         return "<%s: %s>" % (type(self).__name__, self.value)
 
 
-class Operator(_Leaf):
+class Operator(Leaf):
     def __str__(self):
         return self.value
 
@@ -323,7 +323,7 @@ class Operator(_Leaf):
         return hash(self.value)
 
 
-class Keyword(_Leaf):
+class Keyword(Leaf):
     def __eq__(self, other):
         """
         Make comparisons with strings easy.
@@ -362,7 +362,7 @@ class Simple(Base):
         Move the Node's start_pos.
         """
         for c in self.children:
-            if isinstance(c, _Leaf):
+            if isinstance(c, Leaf):
                 c.start_pos = (c.start_pos[0] + line_offset,
                                c.start_pos[1] + column_offset)
             else:

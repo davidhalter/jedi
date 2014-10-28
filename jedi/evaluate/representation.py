@@ -235,7 +235,7 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
     Returns an InstanceElement if it makes sense, otherwise leaves the object
     untouched.
     """
-    if isinstance(var, (Instance, compiled.CompiledObject, pr.Operator, Token,
+    if isinstance(var, (Instance, compiled.CompiledObject, pr.Leaf,
                         pr.Module, FunctionExecution, pr.Name)):
         if isinstance(var, pr.Name):
             # TODO temp solution, remove later, Name should never get
