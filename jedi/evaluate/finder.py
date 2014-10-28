@@ -74,6 +74,7 @@ class NameFinder(object):
         names = []
         self.maybe_descriptor = isinstance(self.scope, er.Class)
         for name_list_scope, name_list in scope_names_generator:
+            print(name_list_scope)
             break_scopes = []
             if not isinstance(name_list_scope, compiled.CompiledObject):
                 # Here is the position stuff happening (sorting of variables).
@@ -305,7 +306,7 @@ class NameFinder(object):
 
         cls = func.parent.get_parent_until((pr.Class, pr.Function))
 
-        from jedi.evaluate.param import ExecutedParam
+        from jedi.evaluate.param import ExecutedParam, Arguments
         if isinstance(cls, pr.Class) and param.position_nr == 0 \
                 and not isinstance(param, ExecutedParam):
             # This is where we add self - if it has never been
@@ -313,9 +314,9 @@ class NameFinder(object):
             if isinstance(self.scope, er.InstanceElement):
                 res_new.append(self.scope.instance)
             else:
-                for inst in evaluator.execute(er.Class(evaluator, cls)):
-                    inst.is_generated = True
-                    res_new.append(inst)
+                inst = er.Instance(evaluator, er.wrap(evaluator, cls),
+                                   Arguments(evaluator, ()), is_generated=True)
+                res_new.append(inst)
             return res_new
 
         # Instances are typically faked, if the instance is not called from
