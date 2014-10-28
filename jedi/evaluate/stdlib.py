@@ -67,7 +67,7 @@ def argument_clinic(string, want_obj=False):
         # at the end of the arguments. This is therefore not a proper argument
         # clinic implementation. `range()` for exmple allows an optional start
         # value at the beginning.
-        match = re.match('(?:(?:(\[), ?|, ?|)(\w+)|, ?/)\]*', string)
+        match = re.match('(?:(?:(\[),? ?|, ?|)(\w+)|, ?/)\]*', string)
         string = string[len(match.group(0)):]
         if not match.group(2):  # A slash -> allow named arguments
             allow_kwargs = True
@@ -83,7 +83,10 @@ def argument_clinic(string, want_obj=False):
             except ValueError:
                 return []
             else:
-                return func(evaluator, *lst)
+                if want_obj:
+                    return func(evaluator, obj, *lst)
+                else:
+                    return func(evaluator, *lst)
 
         return wrapper
     return f
@@ -124,10 +127,11 @@ class SuperInstance(er.Instance):
         super().__init__(evaluator, su and su[0] or self)
 
 
-def builtins_super(evaluator, obj, params):
+@argument_clinic('[type[, obj]], /', want_obj=True)
+def builtins_super(evaluator, obj, types, objects):
     # TODO make this able to detect multiple inheritance super
     accept = (pr.Function, er.FunctionExecution)
-    func = params.get_parent_until(accept)
+    func = obj.get_parent_until(accept)
     if func.isinstance(*accept):
         wanted = (pr.Class, er.Instance)
         cls = func.get_parent_until(accept + wanted,
