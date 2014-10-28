@@ -329,7 +329,8 @@ class NameFinder(object):
         if doc_params:
             return doc_params
 
-        if not param.is_generated:
+        if not isinstance(param, ExecutedParam):
+            print(param)
             # Param owns no information itself.
             res_new += dynamic.search_params(evaluator, param)
             if not res_new:

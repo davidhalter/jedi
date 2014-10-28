@@ -119,7 +119,6 @@ class ExecutedParam(pr.Param):
                     setattr(instance, name, getattr(param, name))
 
         instance.original_param = param
-        instance.is_generated = True
         instance.parent = parent
         instance.var_args = var_args
         return instance
@@ -132,6 +131,10 @@ class ExecutedParam(pr.Param):
             else:
                 types.append(v)
         return types
+
+    @property
+    def position_nr(self):
+        return self.original_param.position_nr
 
 
 def _get_calling_var_args(evaluator, var_args):
