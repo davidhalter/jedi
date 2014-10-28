@@ -38,7 +38,7 @@ class NameFinder(object):
 
     @debug.increase_indent
     def find(self, scopes, resolve_decorator=True, search_global=False):
-        names = self.filter_name(scopes)
+        names = self.filter_name(scopes, search_global)
         types = self._names_to_types(names, resolve_decorator)
 
         if not names and not types \
@@ -65,7 +65,7 @@ class NameFinder(object):
                 return iter([(self.scope, self.scope.get_magic_function_names())])
             return self.scope.scope_names_generator(self.position)
 
-    def filter_name(self, scope_names_generator):
+    def filter_name(self, scope_names_generator, search_global=False):
         """
         Filters all variables of a scope (which are defined in the
         `scope_names_generator`), until the name fits.
@@ -91,6 +91,11 @@ class NameFinder(object):
                 scope = stmt.parent
                 if scope in break_scopes:
                     continue
+                # TODO create a working version for filtering private
+                # variables.
+                #if not search_global and filter_private_variable(self.scope, scope, name.value):
+                #    filter_private_variable(name_list_scope, scope, name.value):
+                #    continue
 
                 # Exclude `arr[1] =` from the result set.
                 if not self._name_is_array_assignment(name, stmt):
@@ -595,3 +600,17 @@ def find_assignments(lhs, results, seek_name):
         return results
     else:
         return []
+
+
+def filter_private_variable(scope, call_scope, var_name):
+    """private variables begin with a double underline `__`"""
+    if isinstance(scope, er.Instance) and var_name.startswith('__') and not var_name.endswith('__'):
+        s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.CompiledObject))
+        if s != scope:
+            if isinstance(scope.base, compiled.CompiledObject):
+                if s != scope.base:
+                    return True
+            else:
+                if s != scope.base.base:
+                    return True
+    return False

@@ -120,6 +120,8 @@ class Arguments(pr.Base):
         return (self._trailer or self.argument_node).get_parent_until(pr.IsScope)
 
     def eval_args(self):
+        # TODO this method doesn't work with named args and a lot of other
+        # things. Use unpack.
         return [self._evaluator.eval_element(el) for stars, el in self._split()]
 
     def __repr__(self):

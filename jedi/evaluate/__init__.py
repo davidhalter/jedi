@@ -485,19 +485,3 @@ class Evaluator(object):
             follow_res += self.find_types(s, search_name_part, pos,
                                           search_global=search_global, is_goto=True)
         return follow_res
-
-
-def filter_private_variable(scope, call_scope, var_name):
-    """private variables begin with a double underline `__`"""
-    var_name = str(var_name)  # var_name could be a Name
-    if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
-            and var_name.startswith('__') and not var_name.endswith('__'):
-        s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.CompiledObject))
-        if s != scope:
-            if isinstance(scope.base, compiled.CompiledObject):
-                if s != scope.base:
-                    return True
-            else:
-                if s != scope.base.base:
-                    return True
-    return False

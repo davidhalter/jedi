@@ -28,12 +28,12 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import usages
 from jedi.api import helpers
-from jedi.evaluate import Evaluator, filter_private_variable
+from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate.helpers import FakeName, get_module_name_parts
-from jedi.evaluate.finder import get_names_of_scope
+from jedi.evaluate.finder import get_names_of_scope, filter_private_variable
 from jedi.evaluate.helpers import search_call_signatures
 from jedi.evaluate import analysis
 

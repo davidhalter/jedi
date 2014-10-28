@@ -17,6 +17,7 @@ from jedi.evaluate.helpers import FakeArray, FakeStatement
 from jedi.parser import Parser
 from jedi.parser import representation as pr
 from jedi import debug
+from jedi.evaluate import precedence
 
 
 class NotInStdLib(LookupError):
@@ -97,7 +98,7 @@ def argument_clinic(string, want_obj=False, want_scope=False):
 @argument_clinic('object, name[, default], /')
 def builtins_getattr(evaluator, objects, names, defaults=None):
     # TODO rename to types
-    stmts = []
+    types = []
     # follow the first param
     for obj in objects:
         if not isinstance(obj, (er.Instance, er.Class, pr.Module, compiled.CompiledObject)):
@@ -105,13 +106,12 @@ def builtins_getattr(evaluator, objects, names, defaults=None):
             continue
 
         for name in names:
-            s = unicode, str
-            if isinstance(name, compiled.CompiledObject) and isinstance(name.obj, s):
-                stmts += evaluator.follow_path(iter([name.obj]), [obj], obj)
+            if precedence.is_string(name):
+                return evaluator.find_types(obj, name.obj)
             else:
                 debug.warning('getattr called without str')
                 continue
-    return stmts
+    return types
 
 
 def builtins_type(evaluator, obj, params):
