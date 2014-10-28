@@ -429,7 +429,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def get_subscope_by_name(self, name):
         for s in [self] + self.py__bases__(self._evaluator):
             for sub in reversed(s.subscopes):
-                if sub.name.get_code() == name:
+                if sub.name.value == name:
                     return sub
         raise KeyError("Couldn't find subscope.")
 
