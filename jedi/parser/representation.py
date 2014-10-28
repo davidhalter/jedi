@@ -748,20 +748,19 @@ class Function(ClassOrFunc):
     :param start_pos: The start position (line, column) the Function.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('decorators', 'listeners', '_params')
+    __slots__ = ('decorators', 'listeners', 'params')
 
     def __init__(self, children):
         super(Function, self).__init__(children)
         self.decorators = []
         self.listeners = set()  # not used here, but in evaluation.
+        self.params = self._params()
 
     @property
     def name(self):
         return self.children[1]  # First token after `def`
 
-    @property
-    @cache.underscore_memoization
-    def params(self):
+    def _params(self):
         node = self.children[2].children[1:-1]  # After `def foo`
         if not node:
             return []
@@ -780,10 +779,10 @@ class Function(ClassOrFunc):
                     next(iterator, None)
                 else:
                     default = None
-                params.append(Param(n, default, stars))
+                params.append(Param(n, self, default, stars))
             return params
         else:
-            return [Param(node[0])]
+            return [Param(node[0], self)]
 
     def annotation(self):
         try:
@@ -1118,6 +1117,11 @@ class Statement(Simple, DocstringMixin):
                     names += check_tuple(child)
             elif is_node(current, 'atom'):
                 names += check_tuple(current.children[1])
+            elif is_node(current, 'power'):
+                if current.children[-2] != '**':  # Just if there's no operation
+                    trailer = current.children[-1]
+                    if trailer.children[0] == '.':
+                        names.append(trailer.children[1])
             else:
                 names.append(current)
             return names
@@ -1235,13 +1239,19 @@ class Param(Base):
 
     A helper class for functions. Read only.
     """
-    __slots__ = ('tfpdef', 'default', 'stars', 'position_nr', 'is_generated', 'annotation_stmt',
-                 'parent_function')
+    __slots__ = ('tfpdef', 'default', 'stars', 'parent', 'is_generated', 'annotation_stmt')
 
-    def __init__(self, tfpdef, default=None, stars=0):
+    def __init__(self, tfpdef, parent, default=None, stars=0):
         self.tfpdef = tfpdef  # tfpdef: see grammar.txt
         self.default = default
         self.stars = stars
+        self.parent = parent
+        # Here we reset the parent of our name. IMHO this is ok.
+        self.get_name().parent = self
+
+    @property
+    def children(self):
+        return []
 
     @property
     def start_pos(self):
@@ -1252,6 +1262,10 @@ class Param(Base):
             return self.tfpdef.children[0]
         else:
             return self.tfpdef
+
+    @property
+    def position_nr(self):
+        return self.parent.params.index(self)
 
     @property
     def parent_function(self):

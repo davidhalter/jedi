@@ -167,6 +167,10 @@ def get_params(evaluator, func, var_args):
     # There may be calls, which don't fit all the params, this just ignores it.
     #unpacked_va = _unpack_var_args(evaluator, var_args, func)
     unpacked_va = list(var_args.unpack())
+    from jedi.evaluate.representation import InstanceElement
+    if isinstance(func, InstanceElement):
+        # Include self at this place.
+        unpacked_va.insert(0, (None, [func.instance]))
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])

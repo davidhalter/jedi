@@ -162,7 +162,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                         if pr.is_node(trailer, 'trailer') \
                                 and len(trailer.children) == 2:
                             name = trailer.children[1]  # After dot.
-                            names.append(get_instance_el(self._evaluator, self, name))
+                            if name.is_definition():
+                                names.append(get_instance_el(self._evaluator, self, name))
 
         for s in self.base.py__bases__(self._evaluator):
             if not isinstance(s, compiled.CompiledObject):
