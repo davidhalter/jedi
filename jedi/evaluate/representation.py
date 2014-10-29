@@ -512,7 +512,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
 
     @Python3Method
     def py__call__(self, evaluator, params):
-        if self.is_generator:
+        if self.base.is_generator():
             return [iterable.Generator(evaluator, self, params)]
         else:
             return FunctionExecution(evaluator, self, params).get_return_types()

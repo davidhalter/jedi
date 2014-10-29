@@ -441,15 +441,13 @@ class Scope(Simple, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('imports', '_doc_token', 'asserts', 'names_dict',
-                 'is_generator')
+    __slots__ = ('imports', '_doc_token', 'asserts', 'names_dict')
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
         self.imports = []
         self._doc_token = None
         self.asserts = []
-        self.is_generator = False
 
     @property
     def returns(self):
@@ -784,6 +782,14 @@ class Function(ClassOrFunc):
         else:
             return [Param(node[0], self)]
 
+    @property
+    def yields(self):
+        # TODO This is incorrect, yields are also possible in a statement.
+        return self._search_in_scope(YieldExpr)
+
+    def is_generator(self):
+        return bool(self.yields)
+
     def annotation(self):
         try:
             return self.children[6]  # 6th element: def foo(...) -> bar
@@ -1071,6 +1077,10 @@ class GlobalStmt(Simple):
 
 
 class ReturnStmt(Simple):
+    pass
+
+
+class YieldExpr(Simple):
     pass
 
 

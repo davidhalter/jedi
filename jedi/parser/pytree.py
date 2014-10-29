@@ -78,7 +78,7 @@ def convert(grammar, raw_node):
         'continue_stmt': pr.KeywordStatement,
         'return_stmt': pr.ReturnStmt,
         'raise_stmt': pr.KeywordStatement,
-        'yield_stmt': pr.ReturnStmt,
+        'yield_expr': pr.YieldExpr,
         'del_stmt': pr.KeywordStatement,
         'pass_stmt': pr.KeywordStatement,
         'global_stmt': pr.GlobalStmt,
