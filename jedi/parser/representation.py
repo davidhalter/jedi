@@ -534,7 +534,7 @@ class Scope(Simple, DocstringMixin):
             if is_node(c, 'simple_stmt'):
                 names += chain.from_iterable(
                     [s.get_defined_names() for s in c.children
-                     if isinstance(s, (ExprStmt, Import, KeywordStatement))])
+                     if isinstance(s, (ExprStmt, Import))])
             elif isinstance(c, (Function, Class)):
                 names.append(c.name)
         return names

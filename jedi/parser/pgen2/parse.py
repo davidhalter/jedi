@@ -144,6 +144,7 @@ class Parser(object):
                                          type, value, context)
                 else:
                     self.error_recovery(type, value, context)
+                    break
 
     def classify(self, type, value, context):
         """Turn a token into a label.  (Internal)"""
@@ -201,5 +202,16 @@ class Parser(object):
                     index = i
             self.stack[index:] = []
         else:
+            # For now just discard everything that is not a suite or
+            # file_input, if we detect an error.
+            for i, (dfa, state, node) in reversed(list(enumerate(self.stack))):
+                symbol, _, _, _ = node
+
+                # `suite` can sometimes be only simple_stmt, not stmt.
+                if symbol in (self.grammar.symbol2number['file_input'],
+                              self.grammar.symbol2number['suite']):
+                    index = i
+                    break
+            self.stack[index + 1:] = []
             # No success finding a transition
-            raise ParseError("bad input", type, value, context)
+            #raise ParseError("bad input", type, value, context)
