@@ -1,5 +1,6 @@
 import re
 import os
+import keyword
 
 from jedi import cache
 from jedi import common
@@ -104,6 +105,10 @@ class UserContext(object):
             elif tok_str in close_brackets:
                 level += 1
             elif tok_type in [tokenize.NAME, tokenize.STRING]:
+                if keyword.iskeyword(tok_str[::-1]) and string:
+                    # If there's already something in the string, a keyword
+                    # never adds any meaning to the current statement.
+                    break
                 force_point = True
             elif tok_type == tokenize.NUMBER:
                 pass

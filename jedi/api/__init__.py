@@ -280,9 +280,7 @@ class Script(object):
             stmt = r.module.statements[-1]
         except IndexError:
             raise NotFoundError()
-        if isinstance(stmt, pr.KeywordStatement):
-            stmt = stmt.stmt
-        if not isinstance(stmt, pr.ExprStmt):
+        if not isinstance(stmt, (pr.ExprStmt, pr.KeywordStatement)):
             raise NotFoundError()
 
         user_stmt = self._parser.user_stmt()
