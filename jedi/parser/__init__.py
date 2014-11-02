@@ -112,7 +112,7 @@ class Parser(object):
                 if symbol in (grammar.symbol2number['simple_stmt'],
                               grammar.symbol2number['stmt']):
                     index = i
-            stack[index:] = []
+            self._stack_removal(stack, index)
         else:
             # For now just discard everything that is not a suite or
             # file_input, if we detect an error.
@@ -124,9 +124,25 @@ class Parser(object):
                               grammar.symbol2number['suite']):
                     index = i
                     break
-            stack[index + 1:] = []
+            self._stack_removal(stack, index + 1)
             # No success finding a transition
             #raise ParseError("bad input", type, value, context)
+
+    def _stack_removal(self, stack, start_index):
+        def clear_names(children):
+            for c in children:
+                try:
+                    clear_names(c.children)
+                except AttributeError:
+                    if isinstance(c, pr.Name):
+                        self.scope_names_stack[-1][c.value].remove(c)
+                        self.used_names[c.value].remove(c)
+
+        for dfa, state, node in stack[start_index:]:
+            clear_names(children=node[3])
+
+        stack[start_index:] = []
+
 
     def __init__old__(self, source, module_path=None, no_docstr=False,
                       tokenizer=None, top_module=None):
