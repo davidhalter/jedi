@@ -65,6 +65,13 @@ class NameFinder(object):
                 return iter([(self.scope, self.scope.get_magic_function_names())])
             return self.scope.scope_names_generator(self.position)
 
+    def names_dict_lookup(self, scope):
+        try:
+            names = scope.names_dict[str(self.name_str)]
+        except KeyError:
+            return []
+        return [name for name in names if name.is_definition()]
+
     def filter_name(self, scope_names_generator, search_global=False):
         """
         Filters all variables of a scope (which are defined in the
@@ -76,7 +83,12 @@ class NameFinder(object):
         names = []
         self.maybe_descriptor = isinstance(self.scope, er.Class)
         for name_list_scope, name_list in scope_names_generator:
-            print(name_list_scope, hasattr(name_list_scope, 'names_dict'))
+            if hasattr(name_list_scope, 'names_dict'):
+                names = self.names_dict_lookup(name_list_scope)
+                if names:
+                    break
+                continue
+
             break_scopes = []
             if not isinstance(name_list_scope, compiled.CompiledObject):
                 # Here is the position stuff happening (sorting of variables).

@@ -56,7 +56,7 @@ class Parser(object):
 
     """
 
-    def __init__(self, grammar, convert=None):
+    def __init__(self, grammar, convert, error_recovery):
         """Constructor.
 
         The grammar argument is a grammar.Grammar instance; see the
@@ -97,6 +97,7 @@ class Parser(object):
         stackentry = (self.grammar.dfas[start], 0, newnode)
         self.stack = [stackentry]
         self.rootnode = None
+        self.error_recovery = error_recovery
 
     def addtoken(self, type, value, context):
         """Add a token; return True iff this is the end of the program."""
@@ -143,7 +144,7 @@ class Parser(object):
                         raise ParseError("too much input",
                                          type, value, context)
                 else:
-                    self.error_recovery(type, value, context)
+                    self.error_recovery(self.grammar, self.stack, type, value)
                     break
 
     def classify(self, type, value, context):
@@ -184,34 +185,3 @@ class Parser(object):
                 node[-1].append(newnode)
             else:
                 self.rootnode = newnode
-
-    def error_recovery(self, type, value, context):
-        """
-        This parser is written in a dynamic way, meaning that this parser
-        allows using different grammars (even non-Python). However, error
-        recovery is purely written for Python.
-        """
-        if value == '\n':  # Statement is not finished.
-            # Now remove the whole statement.
-            for i, (dfa, state, node) in reversed(list(enumerate(self.stack))):
-                symbol, _, _, _ = node
-
-                # `suite` can sometimes be only simple_stmt, not stmt.
-                if symbol in (self.grammar.symbol2number['simple_stmt'],
-                              self.grammar.symbol2number['stmt']):
-                    index = i
-            self.stack[index:] = []
-        else:
-            # For now just discard everything that is not a suite or
-            # file_input, if we detect an error.
-            for i, (dfa, state, node) in reversed(list(enumerate(self.stack))):
-                symbol, _, _, _ = node
-
-                # `suite` can sometimes be only simple_stmt, not stmt.
-                if symbol in (self.grammar.symbol2number['file_input'],
-                              self.grammar.symbol2number['suite']):
-                    index = i
-                    break
-            self.stack[index + 1:] = []
-            # No success finding a transition
-            #raise ParseError("bad input", type, value, context)
