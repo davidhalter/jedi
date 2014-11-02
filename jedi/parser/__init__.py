@@ -81,16 +81,19 @@ class Parser(object):
             arr.append(new_node)
             arr = self.scope_names_stack[-1].setdefault(new_node.value, [])
             arr.append(new_node)
-        elif isinstance(new_node, pr.ClassOrFunc) \
-                and raw_node[0] in (pytree.python_symbols.funcdef, pytree.python_symbols.classdef):
+        elif isinstance(new_node, (pr.ClassOrFunc, pr.Module)) \
+                and raw_node[0] in (pytree.python_symbols.funcdef,
+                                    pytree.python_symbols.classdef,
+                                    pytree.python_symbols.file_input):
             # scope_name_stack handling
-            n = new_node.name
             scope_names = self.scope_names_stack.pop()
-            scope_names[n.value].remove(n)
+            if isinstance(new_node, pr.ClassOrFunc):
+                n = new_node.name
+                scope_names[n.value].remove(n)
+                # Set the func name of the current node
+                arr = self.scope_names_stack[-1].setdefault(n.value, [])
+                arr.append(n)
             new_node.names_dict = scope_names
-            # Set the func name of the current node
-            arr = self.scope_names_stack[-1].setdefault(n.value, [])
-            arr.append(n)
         return new_node
 
     def __init__old__(self, source, module_path=None, no_docstr=False,

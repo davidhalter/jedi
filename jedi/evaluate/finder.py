@@ -76,6 +76,7 @@ class NameFinder(object):
         names = []
         self.maybe_descriptor = isinstance(self.scope, er.Class)
         for name_list_scope, name_list in scope_names_generator:
+            print(name_list_scope, hasattr(name_list_scope, 'names_dict'))
             break_scopes = []
             if not isinstance(name_list_scope, compiled.CompiledObject):
                 # Here is the position stuff happening (sorting of variables).

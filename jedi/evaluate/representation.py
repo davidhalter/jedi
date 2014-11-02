@@ -436,7 +436,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'asserts', 'raw_doc',
                         'doc', 'get_imports', 'get_parent_until', 'get_code',
-                        'subscopes']:
+                        'subscopes', 'names_dict']:
             raise AttributeError("Don't touch this: %s of %s !" % (name, self))
         return getattr(self.base, name)
 
