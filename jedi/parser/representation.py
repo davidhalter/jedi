@@ -255,8 +255,11 @@ class Name(Leaf):
 
     def is_definition(self):
         stmt = self.get_definition()
-        return isinstance(stmt, (ExprStmt, Import)) \
-            and self in stmt.get_defined_names()
+        if isinstance(stmt, (Function, Class, Module)):
+            return True
+        else:
+            return isinstance(stmt, (ExprStmt, Import)) \
+                and self in stmt.get_defined_names()
 
     def assignment_indexes(self):
         """
