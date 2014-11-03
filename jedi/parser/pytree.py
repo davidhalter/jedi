@@ -84,6 +84,11 @@ def convert(grammar, raw_node):
         'global_stmt': pr.GlobalStmt,
         'nonlocal_stmt': pr.KeywordStatement,
         'assert_stmt': pr.KeywordStatement,
+        'if_stmt': pr.IfStmt,
+        'with_stmt': pr.WithStmt,
+        'for_stmt': pr.ForStmt,
+        'while_stmt': pr.WhileStmt,
+        'try_stmt': pr.TryStmt,
     }
 
     ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())

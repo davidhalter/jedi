@@ -470,7 +470,8 @@ class Scope(Simple, DocstringMixin):
             for element in children:
                 if isinstance(element, typ):
                     elements.append(element)
-                elif is_node(element, 'suite') or is_node(element, 'simple_stmt'):
+                elif is_node(element, 'suite') or is_node(element, 'simple_stmt') \
+                        or isinstance(element, Flow):
                     elements += scan(element.children)
             return elements
 
@@ -859,7 +860,31 @@ class Lambda(Function):
                                      self.start_pos[1], self.end_pos[1])
 
 
-class Flow(Scope):
+class Flow(Simple):
+    pass
+
+
+class IfStmt(Flow):
+    pass
+
+
+class WhileStmt(Flow):
+    pass
+
+
+class ForStmt(Flow):
+    pass
+
+
+class TryStmt(Flow):
+    pass
+
+
+class WithStmt(Flow):
+    pass
+
+
+class Flow_old(Scope):
     """
     Used to describe programming structure - flow statements,
     which indent code, but are not classes or functions:
