@@ -486,29 +486,6 @@ class Scope(Simple, DocstringMixin):
     def is_scope(self):
         return True
 
-    def add_scope(self, sub, decorators):
-        sub.parent = self.use_as_parent
-        sub.decorators = decorators
-        for d in decorators:
-            # the parent is the same, because the decorator has not the scope
-            # of the function
-            d.parent = self.use_as_parent
-        self.subscopes.append(sub)
-        return sub
-
-    def add_statement(self, stmt):
-        """
-        Used to add a Statement or a Scope.
-        A statement would be a normal command (Statement) or a Scope (Flow).
-        """
-        stmt.parent = self.use_as_parent
-        self.statements.append(stmt)
-        return stmt
-
-    def add_import(self, imp):
-        self.imports.append(imp)
-        imp.parent = self.use_as_parent
-
     def get_imports(self):
         """ Gets also the imports within flow statements """
         i = [] + self.imports
@@ -520,7 +497,7 @@ class Scope(Simple, DocstringMixin):
     @Python3Method
     def get_defined_names(self):
         """
-        Get all defined names in this scope.
+        Get all defined names in this scope. Useful for autocompletion.
 
         >>> from jedi._compatibility import u
         >>> from jedi.parser import Parser
@@ -532,18 +509,21 @@ class Scope(Simple, DocstringMixin):
         >>> parser.module.get_defined_names()
         [<Name: a@2,0>, <Name: b@3,0>, <Name: b.c@4,0>]
         """
-        names = []
+        def scan(children):
+            names = []
+            for c in children:
+                if is_node(c, 'simple_stmt'):
+                    names += chain.from_iterable(
+                        [s.get_defined_names() for s in c.children
+                         if isinstance(s, (ExprStmt, Import))])
+                elif isinstance(c, (Function, Class)):
+                    names.append(c.name)
+                elif isinstance(c, Flow) or is_node(c, 'suite'):
+                    names += scan(c.children)
+            return names
+
         children = self.children
-        if is_node(children[-1], 'suite'):
-            children = children[-1].children
-        for c in children:
-            if is_node(c, 'simple_stmt'):
-                names += chain.from_iterable(
-                    [s.get_defined_names() for s in c.children
-                     if isinstance(s, (ExprStmt, Import))])
-            elif isinstance(c, (Function, Class)):
-                names.append(c.name)
-        return names
+        return scan(children)
 
     @Python3Method
     def get_statement_for_position(self, pos, include_imports=False):

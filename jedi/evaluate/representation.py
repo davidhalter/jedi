@@ -22,6 +22,8 @@ py__bool__()                           Returns True/False/None; None means that
                                        there's no certainty.
 py__bases__(evaluator)                 Returns a list of base classes.
 py__mro__(evaluator)                   Returns a list of classes (the mro).
+py__getattribute__(evaluator, name)    Returns a list of attribute values. The
+                                       name can be str or Name.
 ====================================== ========================================
 
 __
