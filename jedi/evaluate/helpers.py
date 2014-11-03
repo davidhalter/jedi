@@ -15,7 +15,6 @@ def deep_ast_copy(obj, new_elements_default=None):
         return key_value[0] not in ('_expression_list', '_assignment_details')
 
     new_elements = new_elements_default or {}
-    accept = (pr.Simple, pr.Name, pr.KeywordStatement)
 
     def recursion(obj):
         # If it's already in the cache, just return it.
@@ -52,7 +51,7 @@ def deep_ast_copy(obj, new_elements_default=None):
             # tree in there.
             items = sorted(items, key=sort_stmt)
         else:
-            items = sorted(items, key=lambda x: x[0] == '_names_dict')
+            items = sorted(items, key=lambda x: x[0] != 'params')
 
         # Actually copy and set attributes.
         new_obj = copy.copy(obj)
@@ -75,7 +74,7 @@ def deep_ast_copy(obj, new_elements_default=None):
                 setattr(new_obj, key, d)
             elif isinstance(value, (list, tuple)):
                 setattr(new_obj, key, sequence_recursion(value))
-            elif isinstance(value, accept):
+            elif isinstance(value, (pr.Simple, pr.Name)):
                 setattr(new_obj, key, recursion(value))
 
         return new_obj
@@ -86,10 +85,10 @@ def deep_ast_copy(obj, new_elements_default=None):
         else:
             copied_array = array_obj[:]   # lists, tuples, strings, unicode
         for i, el in enumerate(copied_array):
-            if isinstance(el, accept):
-                copied_array[i] = recursion(el)
-            elif isinstance(el, (tuple, list)):
+            if isinstance(el, (tuple, list)):
                 copied_array[i] = sequence_recursion(el)
+            else:
+                copied_array[i] = recursion(el)
 
         if isinstance(array_obj, tuple):
             return tuple(copied_array)

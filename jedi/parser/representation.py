@@ -257,6 +257,8 @@ class Name(Leaf):
         stmt = self.get_definition()
         if isinstance(stmt, (Function, Class, Module)):
             return True
+        elif isinstance(stmt, Param):
+            return self == stmt.get_name()
         else:
             return isinstance(stmt, (ExprStmt, Import)) \
                 and self in stmt.get_defined_names()
@@ -878,7 +880,7 @@ class Flow(Scope):
     :param start_pos: Position (line, column) of the Flow statement.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('next', 'previous', 'command', '_parent', 'inputs', 'set_vars')
+    __slots__ = ('next', 'previous', 'command', 'parent', 'inputs', 'set_vars')
 
     def __init__(self, module, command, inputs, start_pos):
         self.next = None
@@ -1252,7 +1254,7 @@ class Param(Base):
 
     A helper class for functions. Read only.
     """
-    __slots__ = ('tfpdef', 'default', 'stars', 'parent', 'annotation_stmt')
+    __slots__ = ('tfpdef', 'default', 'stars', 'parent')
 
     def __init__(self, tfpdef, parent, default=None, stars=0):
         self.tfpdef = tfpdef  # tfpdef: see grammar.txt
@@ -1261,6 +1263,10 @@ class Param(Base):
         self.parent = parent
         # Here we reset the parent of our name. IMHO this is ok.
         self.get_name().parent = self
+
+    def annotation(self):
+        # Generate from tfpdef.
+        raise NotImplementedError
 
     @property
     def children(self):

@@ -61,16 +61,24 @@ class NameFinder(object):
         if search_global:
             return get_names_of_scope(self._evaluator, self.scope, self.position)
         else:
-            if self.scope.isinstance(er.Function):
-                return iter([(self.scope, self.scope.get_magic_function_names())])
             return self.scope.scope_names_generator(self.position)
 
-    def names_dict_lookup(self, scope):
+    def names_dict_lookup(self, scope, position):
+        def get_param(el):
+            if isinstance(el.parent, pr.Param) or isinstance(el.parent.parent, pr.Param):
+                return scope.param_by_name(str(el))
+            return el
+
         try:
             names = scope.names_dict[str(self.name_str)]
         except KeyError:
             return []
-        return [name for name in names if name.is_definition()]
+        names = [name for name in names if name.is_definition()]
+        names = pr.filter_after_position(names, position)
+        if isinstance(scope, er.FunctionExecution):
+            # Replace params
+            return [get_param(n) for n in names]
+        return names
 
     def filter_name(self, scope_names_generator, search_global=False):
         """
@@ -82,11 +90,17 @@ class NameFinder(object):
         from jedi.api.interpreter import InterpreterNamespace
         names = []
         self.maybe_descriptor = isinstance(self.scope, er.Class)
+        if not search_global and self.scope.isinstance(er.Function):
+            return [n for n in self.scope.get_magic_function_names()
+                    if str(n) == str(self.name_str)]
+
         for name_list_scope, name_list in scope_names_generator:
             if hasattr(name_list_scope, 'names_dict'):
-                names = self.names_dict_lookup(name_list_scope)
+                names = self.names_dict_lookup(name_list_scope, self.position)
                 if names:
                     break
+                if isinstance(name_list_scope, (pr.Function, er.FunctionExecution)):
+                    self.position = None
                 continue
 
             break_scopes = []

@@ -559,6 +559,9 @@ class FunctionExecution(Executed):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
         # for deep_ast_copy
         self._copy_dict = {base.base_func: self}
+        # We definitely want the params to be generated. Params are special,
+        # because they have been altered and are not normal "children".
+        self.params
 
     @memoize_default(default=())
     @recursion.execution_recursion_decorator
@@ -589,6 +592,11 @@ class FunctionExecution(Executed):
     @property
     @underscore_memoization
     def names_dict(self):
+        d = {}
+        for key, values in self.base.names_dict.items():
+            d[key] = self._copy_list(values)
+        return d
+        self.base.names_dict
         return LazyDict(self.base.names_dict, self._copy_list)
 
     @memoize_default(default=NO_DEFAULT)
@@ -600,6 +608,9 @@ class FunctionExecution(Executed):
         which act the same way as normal functions.
         """
         return param.get_params(self._evaluator, self.base, self.var_args)
+
+    def param_by_name(self, name):
+        return [n for n in self._get_params() if str(n) == name][0]
 
     def get_defined_names(self):
         """
@@ -637,6 +648,11 @@ class FunctionExecution(Executed):
             # Just make sure the parents been copied.
             self._scope_copy(scope.parent)
             helpers.deep_ast_copy(scope, self._copy_dict)
+
+    @common.safe_property
+    @memoize_default([])
+    def params(self):
+        return self._copy_list(self.base.params)
 
     @common.safe_property
     @memoize_default([])
