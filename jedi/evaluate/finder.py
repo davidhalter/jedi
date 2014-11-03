@@ -439,7 +439,7 @@ def check_flow_information(evaluator, flow, search_name_part, pos):
                 break
 
     if isinstance(flow, pr.Flow) and not result:
-        if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
+        if isinstance(flow, (pr.IfStmt, pr.WhileStmt)) and False and len(flow.inputs) == 1:
             result = _check_isinstance_type(evaluator, flow.inputs[0], search_name_part)
     return result
 
