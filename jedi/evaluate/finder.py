@@ -75,10 +75,23 @@ class NameFinder(object):
             return []
         names = [name for name in names if name.is_definition()]
         names = pr.filter_after_position(names, position)
+
+        # Only the names defined in the last position are valid definitions.
+        last_names = []
+        for name in reversed(sorted(names, key=lambda name: name.start_pos)):
+            check = flow_analysis.break_check(self._evaluator,
+                                              scope,
+                                              er.wrap(self._evaluator, scope),
+                                              self.scope)
+            if check is not flow_analysis.UNREACHABLE:
+                last_names.append(name)
+            if check is flow_analysis.REACHABLE:
+                break
+
         if isinstance(scope, er.FunctionExecution):
             # Replace params
-            return [get_param(n) for n in names]
-        return names
+            return [get_param(n) for n in last_names]
+        return last_names
 
     def filter_name(self, scope_names_generator, search_global=False):
         """
