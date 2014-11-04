@@ -134,7 +134,7 @@ class Parser(object):
                     itsstates, itsfirst = itsdfa
                     if ilabel in itsfirst:
                         # Push a symbol
-                        self.push(t, self.grammar.dfas[t], newstate, context)
+                        self.push(t, self.grammar.dfas[t], newstate)
                         break  # To continue the outer while loop
             else:
                 if (0, state) in arcs:
@@ -163,15 +163,14 @@ class Parser(object):
     def shift(self, type, value, newstate, context):
         """Shift a token.  (Internal)"""
         dfa, state, node = self.stack[-1]
-        newnode = (type, value, context, None)
         newnode = self.convert_leaf(self.grammar, type, value, *context)
         node[-1].append(newnode)
         self.stack[-1] = (dfa, newstate, node)
 
-    def push(self, type, newdfa, newstate, context):
+    def push(self, type, newdfa, newstate):
         """Push a nonterminal.  (Internal)"""
         dfa, state, node = self.stack[-1]
-        newnode = (type, None, context, [])
+        newnode = (type, None, None, [])
         self.stack[-1] = (dfa, newstate, node)
         self.stack.append((newdfa, 0, newnode))
 
