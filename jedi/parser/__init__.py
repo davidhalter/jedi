@@ -60,28 +60,19 @@ class Parser(object):
         self.used_names = {}
         self.scope_names_stack = [{}]
         logger = logging.getLogger("Jedi-Parser")
-        d = Driver(pytree.python_grammar, self.convert,
+        d = Driver(pytree.python_grammar, self.convert_node, self.convert_leaf,
                    self.error_recovery, logger=logger)
         self.module = d.parse_string(source).get_parent_until()
 
         self.module.used_names = self.used_names
         self.module.set_global_names(self.global_names)
 
-    def convert(self, grammar, raw_node):
-        if raw_node[1] in ('def', 'class') and raw_node[0] == pgen2.tokenize.NAME:
-            self.scope_names_stack.append({})
-
+    def convert_node(self, grammar, raw_node):
         new_node = pytree.convert(grammar, raw_node)
         # We need to check raw_node always, because the same node can be
         # returned by convert multiple times.
         if raw_node[0] == pytree.python_symbols.global_stmt:
             self.global_names += new_node.names()
-        elif isinstance(new_node, pr.Name) and raw_node[0] == pgen2.tokenize.NAME:
-            # Keep a listing of all used names
-            arr = self.used_names.setdefault(new_node.value, [])
-            arr.append(new_node)
-            arr = self.scope_names_stack[-1].setdefault(new_node.value, [])
-            arr.append(new_node)
         elif isinstance(new_node, (pr.ClassOrFunc, pr.Module)) \
                 and raw_node[0] in (pytree.python_symbols.funcdef,
                                     pytree.python_symbols.classdef,
@@ -96,6 +87,31 @@ class Parser(object):
                 arr.append(n)
             new_node.names_dict = scope_names
         return new_node
+
+    def convert_leaf(self, grammar, raw_node):
+        type, value, context, children = raw_node
+        #print('leaf', raw_node, type_repr(type))
+        prefix, start_pos = context
+        if type == tokenize.NAME:
+            if value in grammar.keywords:
+                if value in ('def', 'class'):
+                    self.scope_names_stack.append({})
+
+                return pr.Keyword(value, start_pos, prefix)
+            else:
+                name = pr.Name(value, start_pos, prefix)
+                # Keep a listing of all used names
+                arr = self.used_names.setdefault(name.value, [])
+                arr.append(name)
+                arr = self.scope_names_stack[-1].setdefault(name.value, [])
+                arr.append(name)
+                return name
+        elif type in (tokenize.STRING, tokenize.NUMBER):
+            return pr.Literal(value, start_pos, prefix)
+        elif type in (tokenize.NEWLINE, tokenize.ENDMARKER):
+            return pr.Whitespace(value, start_pos, prefix)
+        else:
+            return pr.Operator(value, start_pos, prefix)
 
     def error_recovery(self, grammar, stack, type, value):
         """

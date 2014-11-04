@@ -117,16 +117,4 @@ def convert(grammar, raw_node):
         except KeyError:
             return pr.Node(type, children)
     else:
-        #print('leaf', raw_node, type_repr(type))
-        prefix, start_pos = context
-        if type == tokenize.NAME:
-            if value in grammar.keywords:
-                return pr.Keyword(value, start_pos, prefix)
-            else:
-                return pr.Name(value, start_pos, prefix)
-        elif type in (tokenize.STRING, tokenize.NUMBER):
-            return pr.Literal(value, start_pos, prefix)
-        elif type in (tokenize.NEWLINE, tokenize.ENDMARKER):
-            return pr.Whitespace(value, start_pos, prefix)
-        else:
-            return pr.Operator(value, start_pos, prefix)
+        raise NotImplementedError

@@ -56,7 +56,7 @@ class Parser(object):
 
     """
 
-    def __init__(self, grammar, convert, error_recovery):
+    def __init__(self, grammar, convert_node, convert_leaf, error_recovery):
         """Constructor.
 
         The grammar argument is a grammar.Grammar instance; see the
@@ -86,7 +86,8 @@ class Parser(object):
 
         """
         self.grammar = grammar
-        self.convert = convert or (lambda grammar, node: node)
+        self.convert_node = convert_node
+        self.convert_leaf = convert_leaf
 
         # Prepare for parsing.
         start = self.grammar.start
@@ -163,9 +164,8 @@ class Parser(object):
         """Shift a token.  (Internal)"""
         dfa, state, node = self.stack[-1]
         newnode = (type, value, context, None)
-        newnode = self.convert(self.grammar, newnode)
-        if newnode is not None:
-            node[-1].append(newnode)
+        newnode = self.convert_leaf(self.grammar, newnode)
+        node[-1].append(newnode)
         self.stack[-1] = (dfa, newstate, node)
 
     def push(self, type, newdfa, newstate, context):
@@ -181,12 +181,15 @@ class Parser(object):
         children = popnode[3]
         if len(children) != 1 or popnode[0] in (self.grammar.symbol2number['expr_stmt'],
                                                 self.grammar.symbol2number['file_input']):
-            newnode = self.convert(self.grammar, popnode)
+            newnode = self.convert_node(self.grammar, popnode)
         else:
             newnode = children[0]
 
-        if self.stack:
-            dfa, state, node = self.stack[-1]
-            node[-1].append(newnode)
-        else:
+        try:
+            # Equal to:
+            # dfa, state, node = self.stack[-1]
+            # symbol, value, context, children = node
+            self.stack[-1][2][3].append(newnode)
+        except IndexError:
+            # stack is empty, set the rootnode.
             self.rootnode = newnode

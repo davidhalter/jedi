@@ -21,18 +21,19 @@ from . import tokenize
 
 
 class Driver(object):
-    def __init__(self, grammar, convert, error_recovery, logger=None):
+    def __init__(self, grammar, convert_node, convert_leaf, error_recovery, logger=None):
         self.grammar = grammar
         if logger is None:
             logger = logging.getLogger()
         self.logger = logger
-        self.convert = convert
+        self.convert_node = convert_node
+        self.convert_leaf = convert_leaf
         self.error_recovery = error_recovery
 
     def parse_tokens(self, tokens):
         """Parse a series of tokens and return the syntax tree."""
         # XXX Move the prefix computation into a wrapper around tokenize.
-        p = parse.Parser(self.grammar, self.convert, self.error_recovery)
+        p = parse.Parser(self.grammar, self.convert_node, self.convert_leaf, self.error_recovery)
         lineno = 1
         column = 0
         type = value = start = end = line_text = None
