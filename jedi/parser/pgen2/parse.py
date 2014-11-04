@@ -179,6 +179,9 @@ class Parser(object):
         """Pop a nonterminal.  (Internal)"""
         popdfa, popstate, popnode = self.stack.pop()
         children = popnode[3]
+        # If there's exactly one child, return that child instead of creating a
+        # new node.  We still create expr_stmt and file_input though, because a
+        # lot of Jedi depends on its logic.
         if len(children) != 1 or popnode[0] in (self.grammar.symbol2number['expr_stmt'],
                                                 self.grammar.symbol2number['file_input']):
             newnode = self.convert_node(self.grammar, popnode)

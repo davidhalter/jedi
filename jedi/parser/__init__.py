@@ -50,6 +50,34 @@ class Parser(object):
 
         if not source.endswith('\n'):
             source += '\n'
+
+        _ast_mapping = {
+            'expr_stmt': pr.ExprStmt,
+            'classdef': pr.Class,
+            'funcdef': pr.Function,
+            'file_input': pr.SubModule,
+            'import_name': pr.Import,
+            'import_from': pr.Import,
+            'break_stmt': pr.KeywordStatement,
+            'continue_stmt': pr.KeywordStatement,
+            'return_stmt': pr.ReturnStmt,
+            'raise_stmt': pr.KeywordStatement,
+            'yield_expr': pr.YieldExpr,
+            'del_stmt': pr.KeywordStatement,
+            'pass_stmt': pr.KeywordStatement,
+            'global_stmt': pr.GlobalStmt,
+            'nonlocal_stmt': pr.KeywordStatement,
+            'assert_stmt': pr.KeywordStatement,
+            'if_stmt': pr.IfStmt,
+            'with_stmt': pr.WithStmt,
+            'for_stmt': pr.ForStmt,
+            'while_stmt': pr.WhileStmt,
+            'try_stmt': pr.TryStmt,
+        }
+
+        self._ast_mapping = dict((getattr(pytree.python_symbols, k), v)
+                                 for k, v in _ast_mapping.items())
+
         self.global_names = []
         #if self.options["print_function"]:
         #    python_grammar = pygram.python_grammar_no_print_statement
@@ -68,7 +96,7 @@ class Parser(object):
         self.module.set_global_names(self.global_names)
 
     def convert_node(self, grammar, raw_node):
-        new_node = pytree.convert(grammar, raw_node)
+        new_node = self._convert(grammar, raw_node)
         # We need to check raw_node always, because the same node can be
         # returned by convert multiple times.
         if raw_node[0] == pytree.python_symbols.global_stmt:
@@ -88,9 +116,24 @@ class Parser(object):
             new_node.names_dict = scope_names
         return new_node
 
+    def _convert(self, grammar, raw_node):
+        """
+        Convert raw node information to a Node or Leaf instance.
+
+        This is passed to the parser driver which calls it whenever a reduction of a
+        grammar rule produces a new complete node, so that the tree is build
+        strictly bottom-up.
+        """
+        type, value, context, children = raw_node
+        #print(raw_node, pytree.type_repr(type))
+        try:
+            return self._ast_mapping[type](children)
+        except KeyError:
+            return pr.Node(type, children)
+
     def convert_leaf(self, grammar, raw_node):
         type, value, context, children = raw_node
-        #print('leaf', raw_node, type_repr(type))
+        #print('leaf', raw_node, pytree.type_repr(type))
         prefix, start_pos = context
         if type == tokenize.NAME:
             if value in grammar.keywords:
