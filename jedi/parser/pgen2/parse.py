@@ -164,7 +164,7 @@ class Parser(object):
         """Shift a token.  (Internal)"""
         dfa, state, node = self.stack[-1]
         newnode = (type, value, context, None)
-        newnode = self.convert_leaf(self.grammar, newnode)
+        newnode = self.convert_leaf(self.grammar, type, value, *context)
         node[-1].append(newnode)
         self.stack[-1] = (dfa, newstate, node)
 
@@ -178,13 +178,14 @@ class Parser(object):
     def pop(self):
         """Pop a nonterminal.  (Internal)"""
         popdfa, popstate, popnode = self.stack.pop()
+        type = popnode[0]
         children = popnode[3]
         # If there's exactly one child, return that child instead of creating a
         # new node.  We still create expr_stmt and file_input though, because a
         # lot of Jedi depends on its logic.
-        if len(children) != 1 or popnode[0] in (self.grammar.symbol2number['expr_stmt'],
-                                                self.grammar.symbol2number['file_input']):
-            newnode = self.convert_node(self.grammar, popnode)
+        if len(children) != 1 or type in (self.grammar.symbol2number['expr_stmt'],
+                                          self.grammar.symbol2number['file_input']):
+            newnode = self.convert_node(self.grammar, type, children)
         else:
             newnode = children[0]
 

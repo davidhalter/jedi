@@ -95,7 +95,7 @@ class Parser(object):
         self.module.used_names = self.used_names
         self.module.set_global_names(self.global_names)
 
-    def convert_node(self, grammar, raw_node):
+    def convert_node(self, grammar, type, children):
         """
         Convert raw node information to a Node instance.
 
@@ -103,8 +103,7 @@ class Parser(object):
         grammar rule produces a new complete node, so that the tree is build
         strictly bottom-up.
         """
-        type, value, context, children = raw_node
-        #print(raw_node, pytree.type_repr(type))
+        #print(type, children, pytree.type_repr(type))
         try:
             new_node = self._ast_mapping[type](children)
         except KeyError:
@@ -129,10 +128,8 @@ class Parser(object):
             new_node.names_dict = scope_names
         return new_node
 
-    def convert_leaf(self, grammar, raw_node):
-        type, value, context, children = raw_node
-        #print('leaf', raw_node, pytree.type_repr(type))
-        prefix, start_pos = context
+    def convert_leaf(self, grammar, type, value, prefix, start_pos):
+        #print('leaf', value, pytree.type_repr(type))
         if type == tokenize.NAME:
             if value in grammar.keywords:
                 if value in ('def', 'class'):
