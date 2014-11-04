@@ -73,6 +73,7 @@ class NameFinder(object):
             names = scope.names_dict[str(self.name_str)]
         except KeyError:
             return []
+
         names = [name for name in names if name.is_definition()]
         names = pr.filter_after_position(names, position)
 
