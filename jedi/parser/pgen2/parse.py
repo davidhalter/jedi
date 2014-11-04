@@ -178,10 +178,15 @@ class Parser(object):
     def pop(self):
         """Pop a nonterminal.  (Internal)"""
         popdfa, popstate, popnode = self.stack.pop()
-        newnode = self.convert(self.grammar, popnode)
-        if newnode is not None:
-            if self.stack:
-                dfa, state, node = self.stack[-1]
-                node[-1].append(newnode)
-            else:
-                self.rootnode = newnode
+        children = popnode[3]
+        if len(children) != 1 or popnode[0] in (self.grammar.symbol2number['expr_stmt'],
+                                                self.grammar.symbol2number['file_input']):
+            newnode = self.convert(self.grammar, popnode)
+        else:
+            newnode = children[0]
+
+        if self.stack:
+            dfa, state, node = self.stack[-1]
+            node[-1].append(newnode)
+        else:
+            self.rootnode = newnode

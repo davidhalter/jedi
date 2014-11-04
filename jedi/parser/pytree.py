@@ -57,15 +57,7 @@ def type_repr(type_num):
     return _type_reprs.setdefault(type_num, type_num)
 
 
-def convert(grammar, raw_node):
-    """
-    Convert raw node information to a Node or Leaf instance.
-
-    This is passed to the parser driver which calls it whenever a reduction of a
-    grammar rule produces a new complete node, so that the tree is build
-    strictly bottom-up.
-    """
-
+def gen_ast_mapping():
     from jedi.parser import representation as pr
     _ast_mapping = {
         'expr_stmt': pr.ExprStmt,
@@ -91,8 +83,22 @@ def convert(grammar, raw_node):
         'try_stmt': pr.TryStmt,
     }
 
+    global ast_mapping, pr
     ast_mapping = dict((getattr(python_symbols, k), v) for k, v in _ast_mapping.items())
 
+
+def convert(grammar, raw_node):
+    """
+    Convert raw node information to a Node or Leaf instance.
+
+    This is passed to the parser driver which calls it whenever a reduction of a
+    grammar rule produces a new complete node, so that the tree is build
+    strictly bottom-up.
+    """
+    try:
+        ast_mapping
+    except NameError:
+        gen_ast_mapping()
 
     #import pdb; pdb.set_trace()
     type, value, context, children = raw_node
