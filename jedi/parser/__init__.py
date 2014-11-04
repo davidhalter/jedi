@@ -96,15 +96,28 @@ class Parser(object):
         self.module.set_global_names(self.global_names)
 
     def convert_node(self, grammar, raw_node):
-        new_node = self._convert(grammar, raw_node)
+        """
+        Convert raw node information to a Node instance.
+
+        This is passed to the parser driver which calls it whenever a reduction of a
+        grammar rule produces a new complete node, so that the tree is build
+        strictly bottom-up.
+        """
+        type, value, context, children = raw_node
+        #print(raw_node, pytree.type_repr(type))
+        try:
+            new_node = self._ast_mapping[type](children)
+        except KeyError:
+            new_node = pr.Node(type, children)
+
         # We need to check raw_node always, because the same node can be
         # returned by convert multiple times.
-        if raw_node[0] == pytree.python_symbols.global_stmt:
+        if type == pytree.python_symbols.global_stmt:
             self.global_names += new_node.names()
         elif isinstance(new_node, (pr.ClassOrFunc, pr.Module)) \
-                and raw_node[0] in (pytree.python_symbols.funcdef,
-                                    pytree.python_symbols.classdef,
-                                    pytree.python_symbols.file_input):
+                and type in (pytree.python_symbols.funcdef,
+                             pytree.python_symbols.classdef,
+                             pytree.python_symbols.file_input):
             # scope_name_stack handling
             scope_names = self.scope_names_stack.pop()
             if isinstance(new_node, pr.ClassOrFunc):
@@ -115,21 +128,6 @@ class Parser(object):
                 arr.append(n)
             new_node.names_dict = scope_names
         return new_node
-
-    def _convert(self, grammar, raw_node):
-        """
-        Convert raw node information to a Node or Leaf instance.
-
-        This is passed to the parser driver which calls it whenever a reduction of a
-        grammar rule produces a new complete node, so that the tree is build
-        strictly bottom-up.
-        """
-        type, value, context, children = raw_node
-        #print(raw_node, pytree.type_repr(type))
-        try:
-            return self._ast_mapping[type](children)
-        except KeyError:
-            return pr.Node(type, children)
 
     def convert_leaf(self, grammar, raw_node):
         type, value, context, children = raw_node
