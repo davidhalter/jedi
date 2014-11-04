@@ -92,9 +92,9 @@ class Parser(object):
         # Prepare for parsing.
         start = self.grammar.start
         # Each stack entry is a tuple: (dfa, state, node).
-        # A node is a tuple: (type, value, context, children),
-        # where children is a list of nodes or None, and context may be None.
-        newnode = (start, None, None, [])
+        # A node is a tuple: (type, children),
+        # where children is a list of nodes or None
+        newnode = (start, [])
         stackentry = (self.grammar.dfas[start], 0, newnode)
         self.stack = [stackentry]
         self.rootnode = None
@@ -170,15 +170,13 @@ class Parser(object):
     def push(self, type, newdfa, newstate):
         """Push a nonterminal.  (Internal)"""
         dfa, state, node = self.stack[-1]
-        newnode = (type, None, None, [])
+        newnode = (type, [])
         self.stack[-1] = (dfa, newstate, node)
         self.stack.append((newdfa, 0, newnode))
 
     def pop(self):
         """Pop a nonterminal.  (Internal)"""
-        popdfa, popstate, popnode = self.stack.pop()
-        type = popnode[0]
-        children = popnode[3]
+        popdfa, popstate, (type, children) = self.stack.pop()
         # If there's exactly one child, return that child instead of creating a
         # new node.  We still create expr_stmt and file_input though, because a
         # lot of Jedi depends on its logic.
@@ -191,8 +189,8 @@ class Parser(object):
         try:
             # Equal to:
             # dfa, state, node = self.stack[-1]
-            # symbol, value, context, children = node
-            self.stack[-1][2][3].append(newnode)
+            # symbol, children = node
+            self.stack[-1][2][1].append(newnode)
         except IndexError:
             # stack is empty, set the rootnode.
             self.rootnode = newnode
