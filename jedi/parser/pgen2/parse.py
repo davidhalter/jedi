@@ -131,7 +131,7 @@ class Parser(object):
                     itsstates, itsfirst = itsdfa
                     if ilabel in itsfirst:
                         # Push a symbol
-                        self.push(t, self.grammar.dfas[t], newstate)
+                        self.push(t, itsdfa, newstate)
                         break  # To continue the outer while loop
             else:
                 if (0, state) in arcs:
@@ -139,8 +139,7 @@ class Parser(object):
                     self.pop()
                     if not self.stack:
                         # Done parsing, but another token is input
-                        raise ParseError("too much input",
-                                         type, value, start_pos)
+                        raise ParseError("too much input", type, value, start_pos)
                 else:
                     self.error_recovery(self.grammar, self.stack, type, value)
                     break
