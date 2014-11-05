@@ -218,12 +218,9 @@ def _literals_to_types(evaluator, result):
     return list(set(result))
 
 
-def process_precedence_element(evaluator, precedence):
-    if precedence is None:
-        return None
-    else:
-        if isinstance(precedence, Precedence):
-            left_objs = process_precedence_element(evaluator, precedence.left)
+def process_children(evaluator, children):
+    #first = children[0]
+    #if isinstance(first, 
             operator = precedence.operator
             lazy_right = lambda: process_precedence_element(evaluator, precedence.right)
             # handle lazy evaluation of and/or here.
@@ -242,48 +239,41 @@ def process_precedence_element(evaluator, precedence):
                 # Otherwise continue, because of uncertainty.
             return calculate(evaluator, left_objs, precedence.operator,
                              lazy_right())
-        else:
-            # normal element, no operators
-            return evaluator.eval_statement_element(precedence)
 
 
 def calculate(evaluator, left_result, operator, right_result):
     result = []
-    if left_result is None and right_result:
-        # Cases like `-1`, `1 + ~1` or `not X`.
-        for right in right_result:
-            obj = _factor_calculate(evaluator, operator, right)
-            if obj is not None:
-                result.append(obj)
-        return result
+    if not left_result or not right_result:
+        # illegal slices e.g. cause left/right_result to be None
+        result = (left_result or []) + (right_result or [])
+        result = _literals_to_types(evaluator, result)
     else:
-        if not left_result or not right_result:
-            # illegal slices e.g. cause left/right_result to be None
-            result = (left_result or []) + (right_result or [])
-            result = _literals_to_types(evaluator, result)
+        # I don't think there's a reasonable chance that a string
+        # operation is still correct, once we pass something like six
+        # objects.
+        if len(left_result) * len(right_result) > 6:
+            result = _literals_to_types(evaluator, left_result + right_result)
         else:
-            # I don't think there's a reasonable chance that a string
-            # operation is still correct, once we pass something like six
-            # objects.
-            if len(left_result) * len(right_result) > 6:
-                result = _literals_to_types(evaluator, left_result + right_result)
-            else:
-                for left in left_result:
-                    for right in right_result:
-                        result += _element_calculate(evaluator, left, operator, right)
+            for left in left_result:
+                for right in right_result:
+                    result += _element_calculate(evaluator, left, operator, right)
     return result
 
 
-def _factor_calculate(evaluator, operator, right):
-    if _is_number(right):
-        if operator == '-':
-            return create(evaluator, -right.obj)
-    if operator == 'not':
-        value = right.py__bool__()
-        if value is None:  # Uncertainty.
-            return None
-        return keyword_from_value(not value)
-    return right
+def factor_calculate(evaluator, types, operator):
+    """
+    Calculates `+`, `-`, `~` and `not` prefixes.
+    """
+    for typ in types:
+        if _is_number(typ):
+            if operator == '-':
+                yield create(evaluator, -typ.obj)
+        if operator == 'not':
+            value = typ.py__bool__()
+            if value is None:  # Uncertainty.
+                return
+            yield keyword_from_value(not value)
+        yield typ
 
 
 def _is_number(obj):

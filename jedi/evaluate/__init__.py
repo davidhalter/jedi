@@ -197,6 +197,11 @@ class Evaluator(object):
         elif pr.is_node(element, 'testlist_star_expr', 'testlist'):
             # The implicit tuple in statements.
             return [iterable.Array(self, element, pr.Array.TUPLE)]
+        elif pr.is_node(element, 'not_test') or pr.is_node(element, 'factor'):
+            types = self.eval_element(element.children[-1])
+            for operator in element.children[:-1]:
+                types = list(precedence.factor_calculate(self, types, operator))
+            return types
         else:
             if element.children[0] == 'not':
                 left = []
