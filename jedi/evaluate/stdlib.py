@@ -164,11 +164,10 @@ def builtins_reversed(evaluator, obj, params):
     return [er.Instance(evaluator, obj, objects)]
 
 
-def builtins_isinstance(evaluator, obj, params):
-    obj = _follow_param(evaluator, params, 0)
-    raw_classes = _follow_param(evaluator, params, 1)
+@argument_clinic('obj, type, /')
+def builtins_isinstance(evaluator, objects, types):
     bool_results = set([])
-    for o in obj:
+    for o in objects:
         try:
             mro_func = o.py__class__(evaluator).py__mro__
         except AttributeError:
@@ -179,7 +178,7 @@ def builtins_isinstance(evaluator, obj, params):
 
         mro = mro_func(evaluator)
 
-        for cls_or_tup in raw_classes:
+        for cls_or_tup in types:
             if cls_or_tup.is_class():
                 bool_results.add(cls_or_tup in mro)
             else:

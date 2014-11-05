@@ -198,8 +198,13 @@ class Evaluator(object):
             # The implicit tuple in statements.
             return [iterable.Array(self, element, pr.Array.TUPLE)]
         else:
-            left, operator, right = element.children
-            return precedence.calculate(self, self.eval_element(left), operator,
+            if element.children[0] == 'not':
+                left = []
+                operator, right = element.children
+            else:
+                left, operator, right = element.children
+                left = self.eval_element(left)
+            return precedence.calculate(self, left, operator,
                                         self.eval_element(right))
 
     def _eval_atom(self, atom):
