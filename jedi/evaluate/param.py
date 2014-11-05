@@ -153,7 +153,7 @@ class ExecutedParam(pr.Param):
     def eval(self, evaluator):
         types = []
         for v in self.values:
-            if isinstance(v, (pr.Simple, pr.Name, pr.Literal)):
+            if isinstance(v, (pr.Simple, pr.Leaf)):
                 types += evaluator.eval_element(v)
             else:
                 types.append(v)

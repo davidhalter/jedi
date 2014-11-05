@@ -34,9 +34,7 @@ UNSURE = Status(None, 'unsure')
 
 def break_check(evaluator, base_scope, stmt, origin_scope=None):
     from jedi.evaluate.representation import wrap
-    base_scope = wrap(evaluator, base_scope)
     element_scope = wrap(evaluator, stmt.parent)
-
     # Direct parents get resolved, we filter scopes that are separate branches.
     # This makes sense for autocompletion and static analysis. For actual
     # Python it doesn't matter, because we're talking about potentially
@@ -46,6 +44,13 @@ def break_check(evaluator, base_scope, stmt, origin_scope=None):
         if element_scope == s:
             return REACHABLE
         s = s.parent
+    return _break_check(evaluator, stmt, base_scope, element_scope)
+
+
+def _break_check(evaluator, stmt, base_scope, element_scope):
+    from jedi.evaluate.representation import wrap
+    element_scope = wrap(evaluator, element_scope)
+    base_scope = wrap(evaluator, base_scope)
 
     reachable = REACHABLE
     if isinstance(element_scope, pr.IfStmt):
@@ -66,7 +71,7 @@ def break_check(evaluator, base_scope, stmt, origin_scope=None):
         return reachable
 
     if base_scope != element_scope and base_scope != element_scope.parent:
-        return reachable & break_check(evaluator, base_scope, element_scope.parent)
+        return reachable & _break_check(evaluator, stmt, base_scope, element_scope.parent)
     return reachable
 
 

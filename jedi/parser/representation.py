@@ -334,6 +334,8 @@ class Keyword(Leaf):
         Make comparisons with strings easy.
         Improves the readability of the parser.
         """
+        if isinstance(other, Keyword):
+            return self is other
         return self.value == other
 
     def __ne__(self, other):
