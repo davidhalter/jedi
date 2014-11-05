@@ -17,13 +17,13 @@ from . import token
 class ParseError(Exception):
     """Exception to signal the parser is stuck."""
 
-    def __init__(self, msg, type, value, context):
-        Exception.__init__(self, "%s: type=%r, value=%r, context=%r" %
-                           (msg, type, value, context))
+    def __init__(self, msg, type, value, start_pos):
+        Exception.__init__(self, "%s: type=%r, value=%r, start_pos=%r" %
+                           (msg, type, value, start_pos))
         self.msg = msg
         self.type = type
         self.value = value
-        self.context = context
+        self.start_pos = start_pos
 
 
 class Parser(object):
@@ -74,12 +74,9 @@ class Parser(object):
         to be converted.  The syntax tree is converted from the bottom
         up.
 
-        A concrete syntax tree node is a (type, value, context, nodes)
-        tuple, where type is the node type (a token or symbol number),
-        value is None for symbols and a string for tokens, context is
-        None or an opaque value used for error reporting (typically a
-        (lineno, offset) pair), and nodes is a list of children for
-        symbols, and None for tokens.
+        A concrete syntax tree node is a (type, nodes) tuple, where
+        type is the node type (a token or symbol number) and nodes
+        is a list of children for symbols, and None for tokens.
 
         An abstract syntax tree node may be anything; this is entirely
         up to the converter function.
@@ -100,10 +97,10 @@ class Parser(object):
         self.rootnode = None
         self.error_recovery = error_recovery
 
-    def addtoken(self, type, value, context):
+    def addtoken(self, type, value, prefix, start_pos):
         """Add a token; return True iff this is the end of the program."""
         # Map from token to label
-        ilabel = self.classify(type, value, context)
+        ilabel = self.classify(type, value, start_pos)
         # Loop until the token is shifted; may raise exceptions
         while True:
             dfa, state, node = self.stack[-1]
@@ -116,7 +113,7 @@ class Parser(object):
                     # Look it up in the list of labels
                     assert t < 256
                     # Shift a token; we're done with it
-                    self.shift(type, value, newstate, context)
+                    self.shift(type, value, newstate, prefix, start_pos)
                     # Pop while we are in an accept-only state
                     state = newstate
                     while states[state] == [(0, state)]:
@@ -143,12 +140,12 @@ class Parser(object):
                     if not self.stack:
                         # Done parsing, but another token is input
                         raise ParseError("too much input",
-                                         type, value, context)
+                                         type, value, start_pos)
                 else:
                     self.error_recovery(self.grammar, self.stack, type, value)
                     break
 
-    def classify(self, type, value, context):
+    def classify(self, type, value, start_pos):
         """Turn a token into a label.  (Internal)"""
         if type == token.NAME:
             # Check for reserved words
@@ -157,13 +154,13 @@ class Parser(object):
                 return ilabel
         ilabel = self.grammar.tokens.get(type)
         if ilabel is None:
-            raise ParseError("bad token", type, value, context)
+            raise ParseError("bad token", type, value, start_pos)
         return ilabel
 
-    def shift(self, type, value, newstate, context):
+    def shift(self, type, value, newstate, prefix, start_pos):
         """Shift a token.  (Internal)"""
         dfa, state, node = self.stack[-1]
-        newnode = self.convert_leaf(self.grammar, type, value, *context)
+        newnode = self.convert_leaf(self.grammar, type, value, prefix, start_pos)
         node[-1].append(newnode)
         self.stack[-1] = (dfa, newstate, node)
 

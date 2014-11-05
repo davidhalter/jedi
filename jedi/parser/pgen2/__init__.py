@@ -60,7 +60,7 @@ class Driver(object):
             if type == token.OP:
                 type = grammar.opmap[value]
             #self.logger.debug("%s %r (prefix=%r)", token.tok_name[type], value, prefix)
-            if p.addtoken(type, value, (prefix, start)):
+            if p.addtoken(type, value, prefix, start):
                 break
             prefix = ""
             lineno, column = end

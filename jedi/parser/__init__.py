@@ -159,12 +159,10 @@ class Parser(object):
         """
         # For now just discard everything that is not a suite or
         # file_input, if we detect an error.
-        for i, (dfa, state, node) in reversed(list(enumerate(stack))):
-            symbol, _, _, _ = node
-
+        for i, (dfa, state, (type, _)) in reversed(list(enumerate(stack))):
             # `suite` can sometimes be only simple_stmt, not stmt.
-            if symbol in (grammar.symbol2number['file_input'],
-                          grammar.symbol2number['suite']):
+            if type in (grammar.symbol2number['file_input'],
+                        grammar.symbol2number['suite']):
                 index = i
                 break
         self._stack_removal(stack, index + 1)
@@ -182,7 +180,7 @@ class Parser(object):
                         self.used_names[c.value].remove(c)
 
         for dfa, state, node in stack[start_index:]:
-            clear_names(children=node[3])
+            clear_names(children=node[1])
 
         stack[start_index:] = []
 
