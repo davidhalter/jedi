@@ -82,7 +82,7 @@ class NameFinder(object):
         for name in reversed(sorted(names, key=lambda name: name.start_pos)):
             check = flow_analysis.break_check(self._evaluator,
                                               scope,
-                                              er.wrap(self._evaluator, scope),
+                                              name.get_definition(),
                                               self.scope)
             if check is not flow_analysis.UNREACHABLE:
                 last_names.append(name)
@@ -154,7 +154,7 @@ class NameFinder(object):
                     else:
                         check = flow_analysis.break_check(self._evaluator,
                                                           name_list_scope,
-                                                          er.wrap(self._evaluator, scope),
+                                                          stmt,
                                                           self.scope)
                         if check is not flow_analysis.UNREACHABLE:
                             names.append(name)

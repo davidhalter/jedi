@@ -180,7 +180,7 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
     while obj is not None and not obj.isinstance(pr.Function, pr.Class):
         if obj.isinstance(pr.Flow):
             # try/except catch check
-            if obj.command == 'try' and check_try_for_except(obj):
+            if obj.isinstance(pr.TryStmt) and check_try_for_except(obj):
                 return True
             # hasattr check
             if exception == AttributeError and obj.command in ('if', 'while'):

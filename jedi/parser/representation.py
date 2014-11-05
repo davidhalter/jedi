@@ -845,7 +845,34 @@ class Flow(Simple):
 
 
 class IfStmt(Flow):
-    pass
+    def check_nodes(self):
+        """
+        Returns all the `test` nodes that are defined as x, here:
+
+            if x:
+                pass
+            elif x:
+                pass
+        """
+        for i, c in enumerate(self.children):
+            if c in ('elif', 'if'):
+                yield self.children[i + 1]
+
+    def node_in_which_check_node(self, node):
+        for check_node in reversed(list(self.check_nodes())):
+            if check_node.start_pos < node.start_pos:
+                return check_node
+
+    def node_after_else(self, node):
+        """
+        Checks if a node is defined after `else`.
+        """
+        for c in self.children:
+            if c == 'else':
+                if node.start_pos > c.start_pos:
+                    return True
+        else:
+            return False
 
 
 class WhileStmt(Flow):

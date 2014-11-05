@@ -581,7 +581,7 @@ class FunctionExecution(Executed):
 
         types = list(docstrings.find_return_types(self._evaluator, func))
         for r in self.returns:
-            check = flow_analysis.break_check(self._evaluator, self, r.parent)
+            check = flow_analysis.break_check(self._evaluator, self, r)
             if check is flow_analysis.UNREACHABLE:
                 debug.dbg('Return unreachable: %s', r)
             else:

@@ -183,6 +183,9 @@ class Evaluator(object):
         debug.dbg('eval_element %s', element)
         if isinstance(element, (pr.Name, pr.Literal)) or pr.is_node(element, 'atom'):
             return self._eval_atom(element)
+        elif isinstance(element, pr.Keyword):
+            # For False/True/None
+            return [compiled.builtin.get_by_name(element.value)]
         elif element.type == python_symbols.power:
             types = self._eval_atom(element.children[0])
             for trailer in element.children[1:]:
