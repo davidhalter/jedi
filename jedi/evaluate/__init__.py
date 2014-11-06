@@ -183,7 +183,7 @@ class Evaluator(object):
             return types
         elif pr.is_node(element, 'testlist_star_expr', 'testlist'):
             # The implicit tuple in statements.
-            return [iterable.Array(self, element, pr.Array.TUPLE)]
+            return [iterable.ImplicitTuple(self, element)]
         elif pr.is_node(element, 'not_test') or pr.is_node(element, 'factor'):
             types = self.eval_element(element.children[-1])
             for operator in element.children[:-1]:
@@ -206,15 +206,12 @@ class Evaluator(object):
         elif isinstance(atom, pr.Literal):
             return [compiled.create(self, atom.eval())]
         else:
-            mapping = {'(': pr.Array.TUPLE,
-                       '[': pr.Array.LIST,
-                       '{': pr.Array.DICT}
             c = atom.children
             # Parentheses without commas are not tuples.
             if c[0] == '(' and (not pr.is_node(c[1], 'testlist_comp')
                                 or c[1].children[1] != ','):
                 return self.eval_element(c[1])
-            return [iterable.Array(self, c[1], mapping[c[0]])]
+            return [iterable.Array(self, atom)]
 
     def _eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]

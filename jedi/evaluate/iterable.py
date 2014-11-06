@@ -124,10 +124,14 @@ class Array(IterableWrapper):
     Used as a mirror to pr.Array, if needed. It defines some getter
     methods which are important in this module.
     """
-    def __init__(self, evaluator, array_node, type):
+    mapping = {'(': pr.Array.TUPLE,
+               '[': pr.Array.LIST,
+               '{': pr.Array.DICT}
+
+    def __init__(self, evaluator, atom):
         self._evaluator = evaluator
-        self._array_node = array_node
-        self.type = type
+        self._atom = atom
+        self.type = Array.mapping[atom.children[0]]
 
     @property
     def name(self):
@@ -204,7 +208,7 @@ class Array(IterableWrapper):
         if name not in ['start_pos', 'get_only_subelement', 'parent',
                         'get_parent_until', 'items']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
-        return getattr(self._array_node, name)
+        return getattr(self._atom, name)
 
     def _values(self):
         if self.type == pr.Array.DICT:
@@ -213,11 +217,16 @@ class Array(IterableWrapper):
             return self._items()
 
     def _items(self):
-        if pr.is_node(self._array_node, 'testlist_comp', 'testlist_star_expr', 'testlist'):
-            return self._array_node.children[::2]
-        elif pr.is_node(self._array_node, 'dictorsetmaker'):
+        c = self._atom.children
+        array_node = c[1]
+        if array_node in (']', '}', ')'):
+            return []  # Direct closing bracket, doesn't contain items.
+
+        if pr.is_node(array_node, 'testlist_comp', 'testlist_star_expr', 'testlist'):
+            return array_node.children[::2]
+        elif pr.is_node(array_node, 'dictorsetmaker'):
             kv = []
-            iterator = iter(self._array_node.children)
+            iterator = iter(array_node.children)
             for key in iterator:
                 op = next(iterator, None)
                 if op is None or op == ',':
@@ -229,18 +238,30 @@ class Array(IterableWrapper):
                     raise NotImplementedError('dict/set comprehensions')
             return kv
         else:
-            return [self._array_node]
+            return [array_node]
 
     def __iter__(self):
         return iter(self._items())
 
     def __repr__(self):
-        return "<e%s of %s>" % (type(self).__name__, self._array_node)
+        return "<e%s of %s>" % (type(self).__name__, self._atom)
+
+
+class ImplicitTuple(Array):
+    def __init__(self, evaluator, testlist):
+        self._evaluator = evaluator
+        self.type = pr.Array.TUPLE
+        self._testlist = testlist
+
+    def _items(self):
+        return self._testlist.children[::2]
 
 
 class FakeSequence(Array):
     def __init__(self, evaluator, sequence_values, type):
-        super(FakeSequence, self).__init__(evaluator, None, type)
+        # Intentionally don't call the parent __init__.
+        self._evaluator = evaluator
+        self.type = type
         self._sequence_values = sequence_values
 
     def _items(self):
@@ -253,7 +274,8 @@ class FakeSequence(Array):
 
 class FakeDict(Array):
     def __init__(self, evaluator, dct):
-        super(FakeDict, self).__init__(evaluator, None, pr.Array.DICT)
+        self._evaluator = evaluator
+        self.type = pr.Array.DICT
         self._dct = dct
 
     def get_exact_index_types(self, index):
