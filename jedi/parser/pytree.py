@@ -15,10 +15,6 @@ __author__ = "Guido van Rossum <guido@python.org>"
 import os
 
 from . import pgen2
-from . import tokenize
-
-_type_reprs = {}
-
 
 # The grammar file
 _GRAMMAR_FILE = os.path.join(os.path.dirname(__file__), "grammar3.4.txt")
@@ -36,10 +32,10 @@ class Symbols(object):
 
 
 python_grammar = pgen2.load_grammar(_GRAMMAR_FILE)
-
 python_symbols = Symbols(python_grammar)
-
 python_grammar_no_print_statement = python_grammar.copy()
+_type_reprs = {}
+
 try:
     del python_grammar_no_print_statement.keywords["print"]
 except KeyError:
@@ -55,5 +51,3 @@ def type_repr(type_num):
             if type(val) == int:
                 _type_reprs[val] = name
     return _type_reprs.setdefault(type_num, type_num)
-
-
