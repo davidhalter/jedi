@@ -203,14 +203,7 @@ class Evaluator(object):
                 types = list(precedence.factor_calculate(self, types, operator))
             return types
         else:
-            if element.children[0] == 'not':
-                left = []
-                operator, right = element.children
-            else:
-                left, operator, right = element.children
-                left = self.eval_element(left)
-            return precedence.calculate(self, left, operator,
-                                        self.eval_element(right))
+            return precedence.calculate_children(self, element.children)
 
     def _eval_atom(self, atom):
         """

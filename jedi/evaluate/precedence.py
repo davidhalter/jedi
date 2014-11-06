@@ -218,27 +218,30 @@ def _literals_to_types(evaluator, result):
     return list(set(result))
 
 
-def process_children(evaluator, children):
-    #first = children[0]
-    #if isinstance(first, 
-            operator = precedence.operator
-            lazy_right = lambda: process_precedence_element(evaluator, precedence.right)
-            # handle lazy evaluation of and/or here.
-            if operator in ('and', 'or'):
-                left_bools = set([left.py__bool__() for left in left_objs])
-                if left_bools == set([True]):
-                    if operator == 'and':
-                        return lazy_right()
-                    else:
-                        return left_objs
-                elif left_bools == set([False]):
-                    if operator == 'and':
-                        return left_objs
-                    else:
-                        return lazy_right()
-                # Otherwise continue, because of uncertainty.
-            return calculate(evaluator, left_objs, precedence.operator,
-                             lazy_right())
+def calculate_children(evaluator, children):
+    """
+    Calculate a list of children with operators.
+    """
+    iterator = iter(children)
+    types = evaluator.eval_element(next(iterator))
+    for operator in iterator:
+        right = next(iterator)
+        if pr.is_node(operator, 'comp_op'):  # not in / is not
+            operator = ' '.join(str(c.value) for c in operator.children)
+
+        # handle lazy evaluation of and/or here.
+        if operator in ('and', 'or'):
+            left_bools = set([left.py__bool__() for left in types])
+            if left_bools == set([True]):
+                if operator == 'and':
+                    types = evaluator.eval_element(right)
+            elif left_bools == set([False]):
+                if operator != 'and':
+                    types = evaluator.eval_element(right)
+            # Otherwise continue, because of uncertainty.
+        types = calculate(evaluator, types, operator,
+                          evaluator.eval_element(right))
+    return types
 
 
 def calculate(evaluator, left_result, operator, right_result):
@@ -273,7 +276,8 @@ def factor_calculate(evaluator, types, operator):
             if value is None:  # Uncertainty.
                 return
             yield keyword_from_value(not value)
-        yield typ
+        else:
+            yield typ
 
 
 def _is_number(obj):
