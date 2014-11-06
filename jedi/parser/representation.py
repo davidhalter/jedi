@@ -155,12 +155,14 @@ class Base(object):
             scope = scope.parent
         return scope
 
-    def get_parent_scope(self):
+    def get_parent_scope(self, include_flows=False):
         """
         Returns the underlying scope.
         """
         scope = self.parent
         while scope.parent is not None:
+            if include_flows and isinstance(scope, Flow):
+                return scope
             if scope.is_scope():
                 break
             scope = scope.parent
@@ -466,13 +468,17 @@ class Scope(Simple, DocstringMixin):
     def subscopes(self):
         return self._search_in_scope(Scope)
 
+    @property
+    def flows(self):
+        return self._search_in_scope(Flow)
+
     def _search_in_scope(self, typ):
         def scan(children):
             elements = []
             for element in children:
                 if isinstance(element, typ):
                     elements.append(element)
-                elif is_node(element, 'suite') or is_node(element, 'simple_stmt') \
+                if is_node(element, 'suite') or is_node(element, 'simple_stmt') \
                         or isinstance(element, Flow):
                     elements += scan(element.children)
             return elements

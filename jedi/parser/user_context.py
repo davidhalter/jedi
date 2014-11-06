@@ -7,7 +7,7 @@ from jedi import common
 from jedi.parser import tokenize
 from jedi._compatibility import u
 from jedi.parser.fast import FastParser
-from jedi.parser import representation
+from jedi.parser import representation as pr
 from jedi import debug
 from jedi.common import PushBackIterator
 
@@ -244,12 +244,17 @@ class UserContextParser(object):
 
     @cache.underscore_memoization
     def user_scope(self):
+        """
+        Returns the scope in which the user resides. This includes flows.
+        """
         user_stmt = self.user_stmt()
         if user_stmt is None:
             def scan(scope):
-                for s in scope.statements + scope.subscopes:
-                    if isinstance(s, representation.Scope):
+                for s in scope.subscopes + list(reversed(scope.flows)):
+                    if isinstance(s, (pr.Scope, pr.Flow)):
                         if s.start_pos <= self._position <= s.end_pos:
+                            if isinstance(s, pr.Flow):
+                                return s
                             return scan(s) or s
 
             return scan(self.module()) or self.module()

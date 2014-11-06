@@ -34,16 +34,18 @@ UNSURE = Status(None, 'unsure')
 
 def break_check(evaluator, base_scope, stmt, origin_scope=None):
     from jedi.evaluate.representation import wrap
-    element_scope = wrap(evaluator, stmt.parent)
+    element_scope = wrap(evaluator, stmt.get_parent_scope(include_flows=True))
     # Direct parents get resolved, we filter scopes that are separate branches.
     # This makes sense for autocompletion and static analysis. For actual
     # Python it doesn't matter, because we're talking about potentially
     # unreachable code.
-    s = origin_scope
-    while s is not None:
-        if element_scope == s:
+    # e.g. `if 0:` would cause all name lookup within the flow make
+    # unaccessible. This is not a "problem" in Python, because the code is
+    # never called. In Jedi though, we still want to infer types.
+    while origin_scope is not None:
+        if element_scope == origin_scope:
             return REACHABLE
-        s = s.parent
+        origin_scope = origin_scope.parent
     return _break_check(evaluator, stmt, base_scope, element_scope)
 
 

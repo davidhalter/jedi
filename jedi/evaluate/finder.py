@@ -83,7 +83,7 @@ class NameFinder(object):
             check = flow_analysis.break_check(self._evaluator,
                                               scope,
                                               name.get_definition(),
-                                              self.scope)
+                                              self.name_str.get_definition().parent)
             if check is not flow_analysis.UNREACHABLE:
                 last_names.append(name)
             if check is flow_analysis.REACHABLE:
