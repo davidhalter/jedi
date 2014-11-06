@@ -134,20 +134,7 @@ class Evaluator(object):
         types = self.eval_element(stmt.get_rhs())
 
         if seek_name:
-            for index in seek_name.assignment_indexes():
-                new_types = []
-                for r in types:
-                    try:
-                        func = r.get_exact_index_types
-                    except AttributeError:
-                        debug.warning("Invalid tuple lookup #%s of result %s in %s",
-                                      index, types, seek_name)
-                    else:
-                        try:
-                            new_types += func(index)
-                        except IndexError:
-                            pass
-                types = new_types
+            types = finder.check_tuple_assignments(types, seek_name)
 
         ass_details = stmt.assignment_details
         if ass_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.

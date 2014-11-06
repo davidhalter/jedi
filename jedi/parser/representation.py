@@ -259,6 +259,8 @@ class Name(Leaf):
         stmt = self.get_definition()
         if isinstance(stmt, (Function, Class, Module)):
             return True
+        elif isinstance(stmt, ForStmt):
+            return self.start_pos < stmt.children[2].start_pos
         elif isinstance(stmt, Param):
             return self == stmt.get_name()
         else:
@@ -280,7 +282,7 @@ class Name(Leaf):
         node = self.parent
         compare = self
         while node is not None:
-            if is_node(node, 'testlist_comp') or is_node(node, 'testlist_star_expr'):
+            if is_node(node, 'testlist_comp', 'testlist_star_expr', 'exprlist'):
                 for i, child in enumerate(node.children):
                     if child == compare:
                         indexes.insert(0, int(i / 2))
@@ -478,7 +480,7 @@ class Scope(Simple, DocstringMixin):
             for element in children:
                 if isinstance(element, typ):
                     elements.append(element)
-                if is_node(element, 'suite') or is_node(element, 'simple_stmt') \
+                if is_node(element, 'suite', 'simple_stmt') \
                         or isinstance(element, Flow):
                     elements += scan(element.children)
             return elements

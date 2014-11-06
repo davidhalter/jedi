@@ -281,8 +281,10 @@ class NameFinder(object):
 
         for name in names:
             typ = name.get_definition()
-            if typ.isinstance(pr.ForFlow):
-                types += self._handle_for_loops(typ)
+            if typ.isinstance(pr.ForStmt):
+                for_types = self._evaluator.eval_element(typ.children[-3])
+                for_types = iterable.get_iterator_types(for_types)
+                types += check_tuple_assignments(for_types, name)
             elif isinstance(typ, pr.Param):
                 types += self._eval_param(typ)
             elif typ.isinstance(pr.ExprStmt):
@@ -390,17 +392,6 @@ class NameFinder(object):
                 # so just ignore it.
                 return res_new
         return res_new + param.eval(self._evaluator)
-
-    def _handle_for_loops(self, loop):
-        # Take the first statement (for has always only one`in`).
-        if not loop.inputs:
-            return []
-        result = iterable.get_iterator_types(self._evaluator.eval_statement(loop.inputs[0]))
-        if len(loop.set_vars) > 1:
-            expression_list = loop.set_stmt.expression_list()
-            # loops with loop.set_vars > 0 only have one command
-            result = _assign_tuples(expression_list[0], result, unicode(self.name_str))
-        return result
 
     def _resolve_descriptors(self, types):
         """Processes descriptors"""
@@ -641,6 +632,27 @@ def find_assignments(lhs, results, seek_name):
         return results
     else:
         return []
+
+
+def check_tuple_assignments(types, name):
+    """
+    Checks if tuples are assigned.
+    """
+    for index in name.assignment_indexes():
+        new_types = []
+        for r in types:
+            try:
+                func = r.get_exact_index_types
+            except AttributeError:
+                debug.warning("Invalid tuple lookup #%s of result %s in %s",
+                              index, types, name)
+            else:
+                try:
+                    new_types += func(index)
+                except IndexError:
+                    pass
+        types = new_types
+    return types
 
 
 def filter_private_variable(scope, call_scope, var_name):
