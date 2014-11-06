@@ -239,8 +239,9 @@ def calculate_children(evaluator, children):
                 if operator != 'and':
                     types = evaluator.eval_element(right)
             # Otherwise continue, because of uncertainty.
-        types = calculate(evaluator, types, operator,
-                          evaluator.eval_element(right))
+        else:
+            types = calculate(evaluator, types, operator,
+                              evaluator.eval_element(right))
     return types
 
 
