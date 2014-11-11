@@ -74,8 +74,8 @@ class NameFinder(object):
         except KeyError:
             return []
 
-        names = [name for name in names if name.is_definition()]
         names = pr.filter_after_position(names, position)
+        names = [name for name in names if name.is_definition()]
 
         # Only the names defined in the last position are valid definitions.
         last_names = []
@@ -287,12 +287,8 @@ class NameFinder(object):
                 types += check_tuple_assignments(for_types, name)
             elif isinstance(typ, pr.Param):
                 types += self._eval_param(typ)
-            elif typ.isinstance(pr.ExprStmt):
-                if typ.is_global():
-                    # global keyword handling.
-                    types += evaluator.find_types(typ.parent.parent, str(name))
-                else:
-                    types += self._remove_statements(typ, name)
+            elif typ.isinstance(pr.ExprStmt, pr.CompFor):
+                types += self._remove_statements(typ, name)
             elif isinstance(typ, pr.Import):
                 types += imports.ImportWrapper(self._evaluator, name).follow()
             else:

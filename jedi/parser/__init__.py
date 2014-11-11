@@ -73,6 +73,7 @@ class Parser(object):
             'for_stmt': pr.ForStmt,
             'while_stmt': pr.WhileStmt,
             'try_stmt': pr.TryStmt,
+            'comp_for': pr.CompFor,
         }
 
         self._ast_mapping = dict((getattr(pytree.python_symbols, k), v)
@@ -126,6 +127,11 @@ class Parser(object):
                 arr = self.scope_names_stack[-1].setdefault(n.value, [])
                 arr.append(n)
             new_node.names_dict = scope_names
+        elif isinstance(new_node, pr.CompFor):
+            # The name definitions of comprehenions shouldn't be part of the
+            # current scope. They are part of the comprehension scope.
+            for n in new_node.get_defined_names():
+                self.scope_names_stack[-1][n.value].remove(n)
         return new_node
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
@@ -176,8 +182,11 @@ class Parser(object):
                     clear_names(c.children)
                 except AttributeError:
                     if isinstance(c, pr.Name):
-                        self.scope_names_stack[-1][c.value].remove(c)
-                        self.used_names[c.value].remove(c)
+                        try:
+                            self.scope_names_stack[-1][c.value].remove(c)
+                            self.used_names[c.value].remove(c)
+                        except ValueError:
+                            pass  # This may happen with CompFor.
 
         for dfa, state, node in stack[start_index:]:
             clear_names(children=node[1])

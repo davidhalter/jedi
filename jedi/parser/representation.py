@@ -253,7 +253,19 @@ class Name(Leaf):
                                    self.start_pos[0], self.start_pos[1])
 
     def get_definition(self):
-        return self.parent.get_parent_until((ArrayStmt, StatementElement, Node), reverse=True)
+        scope = self.parent
+        while scope.parent is not None:
+            if scope.isinstance(Node):
+                if scope.type == python_symbols.testlist_comp:
+                    try:
+                        if isinstance(scope.children[1], CompFor):
+                            return scope.children[1]
+                    except IndexError:
+                        pass
+            else:
+                break
+            scope = scope.parent
+        return scope
 
     def is_definition(self):
         stmt = self.get_definition()
@@ -264,7 +276,7 @@ class Name(Leaf):
         elif isinstance(stmt, Param):
             return self == stmt.get_name()
         else:
-            return isinstance(stmt, (ExprStmt, Import)) \
+            return isinstance(stmt, (ExprStmt, Import, CompFor)) \
                 and self in stmt.get_defined_names()
 
     def assignment_indexes(self):
@@ -289,6 +301,8 @@ class Name(Leaf):
                         break
                 else:
                     raise LookupError("Couldn't find the assignment.")
+            elif isinstance(node, (ExprStmt, CompFor)):
+                break
 
             compare = node
             node = node.parent
@@ -1131,6 +1145,27 @@ class YieldExpr(Simple):
     pass
 
 
+def _defined_names(current):
+    """
+    A helper function to find the defined names in statements, for loops and
+    list comprehensions.
+    """
+    names = []
+    if is_node(current, 'testlist_star_expr', 'testlist_comp', 'exprlist'):
+        for child in current.children[::2]:
+            names += _defined_names(child)
+    elif is_node(current, 'atom'):
+        names += _defined_names(current.children[1])
+    elif is_node(current, 'power'):
+        if current.children[-2] != '**':  # Just if there's no operation
+            trailer = current.children[-1]
+            if trailer.children[0] == '.':
+                names.append(trailer.children[1])
+    else:
+        names.append(current)
+    return names
+
+
 class Statement(Simple, DocstringMixin):
     """
     This is the class for all the possible statements. Which means, this class
@@ -1167,23 +1202,7 @@ class Statement(Simple, DocstringMixin):
         self.expression_list()
 
     def get_defined_names(self):
-        def check_tuple(current):
-            names = []
-            if is_node(current, 'testlist_star_expr') or is_node(current, 'testlist_comp'):
-                for child in current.children[::2]:
-                    names += check_tuple(child)
-            elif is_node(current, 'atom'):
-                names += check_tuple(current.children[1])
-            elif is_node(current, 'power'):
-                if current.children[-2] != '**':  # Just if there's no operation
-                    trailer = current.children[-1]
-                    if trailer.children[0] == '.':
-                        names.append(trailer.children[1])
-            else:
-                names.append(current)
-            return names
-
-        return list(chain.from_iterable(check_tuple(self.children[i])
+        return list(chain.from_iterable(_defined_names(self.children[i])
                                         for i in range(0, len(self.children) - 2, 2)
                                         if self.children[i + 1].value == '='))
 
@@ -1246,10 +1265,6 @@ class Statement(Simple, DocstringMixin):
             dct[unicode(as_name)].append(Call(self._sub_module, as_name,
                                          as_name.start_pos, as_name.end_pos, self))
         return dct
-
-    def is_global(self):
-        p = self.parent
-        return isinstance(p, KeywordStatement) and p.name == 'global'
 
     @property
     def assignment_details(self):
@@ -1481,6 +1496,28 @@ class Array(StatementElement):
         else:
             typ = self.type
         return "<%s: %s%s>" % (type(self).__name__, typ, self.values)
+
+
+class CompFor(Simple):
+    def is_scope(self):
+        return True
+
+    @property
+    def names_dict(self):
+        dct = {}
+        for name in self.get_defined_names():
+            arr = dct.setdefault(name.value, [])
+            arr.append(name)
+        return dct
+
+    def get_rhs(self):
+        return self.children[3]
+
+    def get_defined_names(self):
+        return _defined_names(self.children[1])
+
+    def scope_names_generator(self, position):
+        yield self, []
 
 
 class ListComprehension(ForFlow):

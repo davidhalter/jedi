@@ -136,7 +136,7 @@ a[0]
 
 arr = [1,'']
 a = [a for a in arr]
-#? int() str()
+#? int()
 a[0]
 
 a = [a if 1.0 else '' for a in [1] if [1.0]]

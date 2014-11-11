@@ -222,7 +222,7 @@ class Array(IterableWrapper):
         if array_node in (']', '}', ')'):
             return []  # Direct closing bracket, doesn't contain items.
 
-        if pr.is_node(array_node, 'testlist_comp', 'testlist_star_expr', 'testlist'):
+        if pr.is_node(array_node, 'testlist_comp'):
             return array_node.children[::2]
         elif pr.is_node(array_node, 'dictorsetmaker'):
             kv = []

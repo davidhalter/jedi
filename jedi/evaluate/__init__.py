@@ -136,8 +136,8 @@ class Evaluator(object):
         if seek_name:
             types = finder.check_tuple_assignments(types, seek_name)
 
-        ass_details = stmt.assignment_details
-        if ass_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
+        #ass_details = stmt.assignment_details
+        if False and stmt.assignment_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
             expr_list, _operator = ass_details[0]
             # `=` is always the last character in aug assignments -> -1
             operator = copy.copy(_operator)
@@ -156,7 +156,7 @@ class Evaluator(object):
                 result = left
             else:
                 result = precedence.calculate(self, left, operator, result)
-        elif len(stmt.get_defined_names()) > 1 and seek_name and ass_details:
+        elif False and len(stmt.get_defined_names()) > 1 and seek_name and ass_details:
             # Assignment checking is only important if the statement defines
             # multiple variables.
             new_result = []
@@ -201,8 +201,8 @@ class Evaluator(object):
         if isinstance(atom, pr.Name):
             # This is the first global lookup.
             stmt = atom.get_definition()
-            return self.find_types(stmt.get_parent_until(pr.IsScope), atom,
-                                   stmt.start_pos, search_global=True)
+            scope = stmt.get_parent_until(pr.IsScope, include_current=True)
+            return self.find_types(scope, atom, stmt.start_pos, search_global=True)
         elif isinstance(atom, pr.Literal):
             return [compiled.create(self, atom.eval())]
         else:
