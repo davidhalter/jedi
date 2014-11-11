@@ -5,17 +5,19 @@ import functools
 import re
 from ast import literal_eval
 
-from jedi._compatibility import unicode, next, reraise
+from jedi._compatibility import unicode, reraise
 from jedi import settings
 
 
 class MultiLevelStopIteration(Exception):
+
     """
     StopIteration's get catched pretty easy by for loops, let errors propagate.
     """
 
 
 class UncaughtAttributeError(Exception):
+
     """
     Important, because `__getattr__` and `hasattr` catch AttributeErrors
     implicitly. This is really evil (mainly because of `__getattr__`).
@@ -63,6 +65,7 @@ def reraise_uncaught(func):
 
 
 class PushBackIterator(object):
+
     def __init__(self, iterator):
         self.pushes = []
         self.iterator = iterator
