@@ -40,14 +40,7 @@ class IterableWrapper(pr.Base):
         return False
 
 
-class Generator(use_metaclass(CachedMetaClass, IterableWrapper)):
-    """Handling of `yield` functions."""
-    def __init__(self, evaluator, func, var_args):
-        super(Generator, self).__init__()
-        self._evaluator = evaluator
-        self.func = func
-        self.var_args = var_args
-
+class GeneratorMixin(object):
     @underscore_memoization
     def _get_defined_names(self):
         """
@@ -64,6 +57,15 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper)):
 
     def scope_names_generator(self, position=None):
         yield self, self._get_defined_names()
+
+
+class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
+    """Handling of `yield` functions."""
+    def __init__(self, evaluator, func, var_args):
+        super(Generator, self).__init__()
+        self._evaluator = evaluator
+        self.func = func
+        self.var_args = var_args
 
     def iter_content(self):
         """ returns the content of __iter__ """
@@ -153,7 +155,7 @@ class ListComprehension(Comprehension):
 
 
 
-class GeneratorComprehension(Comprehension):
+class GeneratorComprehension(Comprehension, GeneratorMixin):
     def iter_content(self):
         return self._evaluator.eval_statement_element(self.comprehension)
 

@@ -155,9 +155,9 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
                             return True
         return False
 
-    def check_hasattr(stmt):
-        expression_list = stmt.expression_list()
+    def check_hasattr(node):
         try:
+            assert False
             assert len(expression_list) == 1
             call = expression_list[0]
             assert isinstance(call, pr.Call) and str(call.name) == 'hasattr'
@@ -183,8 +183,8 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
             if obj.isinstance(pr.TryStmt) and check_try_for_except(obj):
                 return True
             # hasattr check
-            if exception == AttributeError and obj.command in ('if', 'while'):
-                if obj.inputs and check_hasattr(obj.inputs[0]):
+            if exception == AttributeError and obj.isinstance(pr.IfStmt, pr.WhileStmt):
+                if check_hasattr(obj.children[1]):
                     return True
         obj = obj.parent
 
