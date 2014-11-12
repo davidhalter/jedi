@@ -119,6 +119,29 @@ class GeneratorComprehension(Generator):
         return self._evaluator.eval_statement_element(self.comprehension)
 
 
+class Comprehension(IterableWrapper):
+    def __init__(self, evaluator, atom):
+        self._evaluator = evaluator
+        self._atom = atom
+
+    def get_index_types(self, evaluator, index):
+        return self._evaluator.eval_element(self.eval_node())
+
+    @memoize_default()
+    def eval_node(self):
+        """
+        The first part `x + 1` of the list comprehension:
+
+            [x + 1 for x in foo]
+        """
+        comprehension = self._atom.children[1]
+        c = comprehension.children
+        return helpers.deep_ast_copy(c[0], {comprehension: c[1]})
+
+    def __repr__(self):
+        return "<e%s of %s>" % (type(self).__name__, self._atom)
+
+
 class Array(IterableWrapper):
     """
     Used as a mirror to pr.Array, if needed. It defines some getter

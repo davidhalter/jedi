@@ -126,7 +126,7 @@ a = [a for a in [1]]
 #? int()
 a[0]
 
-a = [a for a in 1,2]
+a = [a for a in (1, 2)]
 #? int()
 a[0]
 

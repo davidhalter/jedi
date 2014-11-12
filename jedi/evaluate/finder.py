@@ -74,6 +74,8 @@ class NameFinder(object):
         except KeyError:
             return []
 
+        if isinstance(scope, pr.CompFor):
+            return names
         names = pr.filter_after_position(names, position)
         names = [name for name in names if name.is_definition()]
 
@@ -285,9 +287,13 @@ class NameFinder(object):
                 for_types = self._evaluator.eval_element(typ.children[-3])
                 for_types = iterable.get_iterator_types(for_types)
                 types += check_tuple_assignments(for_types, name)
+            elif typ.isinstance(pr.CompFor):
+                for_types = self._evaluator.eval_element(typ.children[3])
+                for_types = iterable.get_iterator_types(for_types)
+                types += check_tuple_assignments(for_types, name)
             elif isinstance(typ, pr.Param):
                 types += self._eval_param(typ)
-            elif typ.isinstance(pr.ExprStmt, pr.CompFor):
+            elif typ.isinstance(pr.ExprStmt):
                 types += self._remove_statements(typ, name)
             elif isinstance(typ, pr.Import):
                 types += imports.ImportWrapper(self._evaluator, name).follow()

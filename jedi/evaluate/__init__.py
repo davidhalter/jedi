@@ -211,6 +211,13 @@ class Evaluator(object):
             if c[0] == '(' and (not pr.is_node(c[1], 'testlist_comp')
                                 or c[1].children[1] != ','):
                 return self.eval_element(c[1])
+            try:
+                comp_for = c[1].children[1]
+            except (IndexError, AttributeError):
+                pass
+            else:
+                if isinstance(comp_for, pr.CompFor):
+                    return [iterable.Comprehension(self, atom)]
             return [iterable.Array(self, atom)]
 
     def _eval_trailer(self, types, trailer):
