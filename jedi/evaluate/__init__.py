@@ -136,26 +136,24 @@ class Evaluator(object):
         if seek_name:
             types = finder.check_tuple_assignments(types, seek_name)
 
-        #ass_details = stmt.assignment_details
-        if False and stmt.assignment_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
-            expr_list, _operator = ass_details[0]
+        ass_details = stmt.assignment_details
+        first_operation = stmt.first_operation()
+        if first_operation not in ('=', None) and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
             # `=` is always the last character in aug assignments -> -1
-            operator = copy.copy(_operator)
-            operator.string = operator.string[:-1]
-            name = str(expr_list[0].name)
-            parent = stmt.parent.get_parent_until(pr.Flow, reverse=True)
-            if isinstance(parent, (pr.SubModule, fast.Module)):
-                parent = er.ModuleWrapper(self, parent)
+            operator = copy.copy(first_operation)
+            operator.value = operator.value[:-1]
+            name = str(stmt.get_defined_names()[0])
+            parent = er.wrap(self, stmt.get_parent_scope())
             left = self.find_types(parent, name, stmt.start_pos)
             if isinstance(stmt.parent, pr.ForFlow):
                 # iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
                 # predictable.
-                for r in result:
+                for r in types:
                     left = precedence.calculate(self, left, operator, [r])
-                result = left
+                types = left
             else:
-                result = precedence.calculate(self, left, operator, result)
+                types = precedence.calculate(self, left, operator, types)
         elif False and len(stmt.get_defined_names()) > 1 and seek_name and ass_details:
             # Assignment checking is only important if the statement defines
             # multiple variables.

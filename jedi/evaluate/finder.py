@@ -82,10 +82,14 @@ class NameFinder(object):
         # Only the names defined in the last position are valid definitions.
         last_names = []
         for name in reversed(sorted(names, key=lambda name: name.start_pos)):
+            if isinstance(self.name_str, pr.Name):
+                origin_scope = self.name_str.get_definition().parent
+            else:
+                origin_scope = None
             check = flow_analysis.break_check(self._evaluator,
                                               scope,
                                               name.get_definition(),
-                                              self.name_str.get_definition().parent)
+                                              origin_scope)
             if check is not flow_analysis.UNREACHABLE:
                 last_names.append(name)
             if check is flow_analysis.REACHABLE:

@@ -1204,7 +1204,7 @@ class Statement(Simple, DocstringMixin):
     def get_defined_names(self):
         return list(chain.from_iterable(_defined_names(self.children[i])
                                         for i in range(0, len(self.children) - 2, 2)
-                                        if self.children[i + 1].value == '='))
+                                        if '=' in self.children[i + 1].value))
 
 
         """Get the names for the statement."""
@@ -1265,6 +1265,15 @@ class Statement(Simple, DocstringMixin):
             dct[unicode(as_name)].append(Call(self._sub_module, as_name,
                                          as_name.start_pos, as_name.end_pos, self))
         return dct
+
+    def first_operation(self):
+        """
+        Returns `+=`, `=`, etc or None if there is no operation.
+        """
+        try:
+            return self.children[1]
+        except IndexError:
+            return None
 
     @property
     def assignment_details(self):

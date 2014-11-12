@@ -330,10 +330,10 @@ class FakeDict(Array):
 
 class MergedArray(Array):
     def __init__(self, evaluator, arrays):
-        super(MergedArray, self).__init__(evaluator, arrays[-1]._array)
+        super(MergedArray, self).__init__(evaluator, arrays[-1]._atom)
         self._arrays = arrays
 
-    def get_index_types(self, mixed_index):
+    def get_index_types(self, evaluator, mixed_index):
         return list(chain(*(a.values() for a in self._arrays)))
 
     def get_exact_index_types(self, mixed_index):
