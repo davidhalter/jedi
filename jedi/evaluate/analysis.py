@@ -74,7 +74,7 @@ class Warning(Error):
 
 def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
     exception = CODES[name][1]
-    if _check_for_exception_catch(evaluator, jedi_obj, exception, payload):
+    if True or _check_for_exception_catch(evaluator, jedi_obj, exception, payload):
         return
 
     module_path = jedi_obj.get_parent_until().path
@@ -157,7 +157,6 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
 
     def check_hasattr(node):
         try:
-            assert False
             assert len(expression_list) == 1
             call = expression_list[0]
             assert isinstance(call, pr.Call) and str(call.name) == 'hasattr'
