@@ -58,6 +58,19 @@ class GeneratorMixin(object):
     def scope_names_generator(self, position=None):
         yield self, self._get_defined_names()
 
+    def get_index_types(self, evaluator, index_array):
+        #debug.warning('Tried to get array access on a generator: %s', self)
+        analysis.add(self._evaluator, 'type-error-generator', index_array)
+        return []
+
+    def get_exact_index_types(self, index):
+        """
+        Exact lookups are used for tuple lookups, which are perfectly fine if
+        used with generators.
+        """
+        return [self.iter_content()[index]]
+
+
 
 class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
     """Handling of `yield` functions."""
@@ -73,18 +86,6 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
         # Generator will be returned.
         from jedi.evaluate.representation import FunctionExecution
         return FunctionExecution(self._evaluator, self.func, self.var_args).get_return_types()
-
-    def get_index_types(self, index_array):
-        #debug.warning('Tried to get array access on a generator: %s', self)
-        analysis.add(self._evaluator, 'type-error-generator', index_array)
-        return []
-
-    def get_exact_index_types(self, index):
-        """
-        Exact lookups are used for tuple lookups, which are perfectly fine if
-        used with generators.
-        """
-        return [self.iter_content()[index]]
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
@@ -157,7 +158,7 @@ class ListComprehension(Comprehension):
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
     def iter_content(self):
-        return self._evaluator.eval_statement_element(self.comprehension)
+        return self._evaluator.eval_element(self.eval_node())
 
 
 class Array(IterableWrapper):
