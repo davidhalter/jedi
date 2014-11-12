@@ -706,7 +706,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     @memoize_default()
     def _module_attributes(self):
         def parent_callback():
-            return Instance(self._evaluator, compiled.create(self._evaluator, str))
+            return self._evaluator.execute(compiled.create(self._evaluator, str))[0]
 
         names = ['__file__', '__package__', '__doc__', '__name__', '__version__']
         # All the additional module attributes are strings.

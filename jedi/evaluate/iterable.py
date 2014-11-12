@@ -71,7 +71,6 @@ class GeneratorMixin(object):
         return [self.iter_content()[index]]
 
 
-
 class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
     """Handling of `yield` functions."""
     def __init__(self, evaluator, func, var_args):
@@ -153,7 +152,6 @@ class Comprehension(IterableWrapper):
 class ListComprehension(Comprehension):
     def get_index_types(self, evaluator, index):
         return self._evaluator.eval_element(self.eval_node())
-
 
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):

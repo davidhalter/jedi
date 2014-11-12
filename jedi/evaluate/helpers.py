@@ -336,7 +336,7 @@ class LazyName(FakeName):
 
     @parent.setter
     def parent(self, value):
-        pass  # Do nothing, lower level can try to set the parent.
+        pass  # Do nothing, super classes can try to set the parent.
 
 
 def stmts_to_stmt(statements):
