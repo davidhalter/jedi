@@ -135,8 +135,17 @@ class Comprehension(IterableWrapper):
             [x + 1 for x in foo]
         """
         comprehension = self._atom.children[1]
-        c = comprehension.children
-        return helpers.deep_ast_copy(c[0], {comprehension: c[1]})
+        # For nested comprehensions we need to search the last one.
+        last = comprehension.children[-1]
+        last_comp = comprehension.children[1]
+        while True:
+            if isinstance(last, pr.CompFor):
+                last_comp = last
+            elif not pr.is_node(last, 'comp_if'):
+                break
+            last = last.children[-1]
+
+        return helpers.deep_ast_copy(comprehension.children[0], {comprehension: last_comp})
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self._atom)
