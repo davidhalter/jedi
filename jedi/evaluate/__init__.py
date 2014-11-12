@@ -189,6 +189,10 @@ class Evaluator(object):
             for operator in element.children[:-1]:
                 types = list(precedence.factor_calculate(self, types, operator))
             return types
+        elif pr.is_node(element, 'test'):
+            # `x if foo else y` case.
+            return (self.eval_element(element.children[0]) +
+                    self.eval_element(element.children[-1]))
         else:
             return precedence.calculate_children(self, element.children)
 
