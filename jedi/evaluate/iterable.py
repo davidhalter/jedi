@@ -110,22 +110,18 @@ class GeneratorMethod(IterableWrapper):
         return getattr(self._builtin_func, name)
 
 
-class GeneratorComprehension(Generator):
-    def __init__(self, evaluator, comprehension):
-        super(GeneratorComprehension, self).__init__(evaluator, comprehension, None)
-        self.comprehension = comprehension
-
-    def iter_content(self):
-        return self._evaluator.eval_statement_element(self.comprehension)
-
-
 class Comprehension(IterableWrapper):
+    @staticmethod
+    def from_atom(evaluator, atom):
+        mapping = {
+            '(': GeneratorComprehension,
+            '[': ListComprehension
+        }
+        return mapping[atom.children[0]](evaluator, atom)
+
     def __init__(self, evaluator, atom):
         self._evaluator = evaluator
         self._atom = atom
-
-    def get_index_types(self, evaluator, index):
-        return self._evaluator.eval_element(self.eval_node())
 
     @memoize_default()
     def eval_node(self):
@@ -149,6 +145,17 @@ class Comprehension(IterableWrapper):
 
     def __repr__(self):
         return "<e%s of %s>" % (type(self).__name__, self._atom)
+
+
+class ListComprehension(Comprehension):
+    def get_index_types(self, evaluator, index):
+        return self._evaluator.eval_element(self.eval_node())
+
+
+
+class GeneratorComprehension(Comprehension):
+    def iter_content(self):
+        return self._evaluator.eval_statement_element(self.comprehension)
 
 
 class Array(IterableWrapper):

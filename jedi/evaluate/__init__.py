@@ -212,8 +212,8 @@ class Evaluator(object):
         else:
             c = atom.children
             # Parentheses without commas are not tuples.
-            if c[0] == '(' and (not pr.is_node(c[1], 'testlist_comp')
-                                or c[1].children[1] != ','):
+            if c[0] == '(' and not (pr.is_node(c[1], 'testlist_comp')
+                                    and len(c[1].children) > 1):
                 return self.eval_element(c[1])
             try:
                 comp_for = c[1].children[1]
@@ -221,7 +221,7 @@ class Evaluator(object):
                 pass
             else:
                 if isinstance(comp_for, pr.CompFor):
-                    return [iterable.Comprehension(self, atom)]
+                    return [iterable.Comprehension.from_atom(self, atom)]
             return [iterable.Array(self, atom)]
 
     def _eval_trailer(self, types, trailer):
