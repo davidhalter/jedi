@@ -114,8 +114,15 @@ class NameFinder(object):
             return [n for n in self.scope.get_magic_function_names()
                     if str(n) == str(self.name_str)]
 
+        # Need checked for now for the whole names_dict approach. That only
+        # works on the first name_list_scope, the second one may be the same
+        # with a different name set (e.g. ModuleWrapper yields the module
+        # names first and after that it yields the properties that all modules
+        # have like `__file__`, etc).
+        checked = set()
         for name_list_scope, name_list in scope_names_generator:
-            if hasattr(name_list_scope, 'names_dict'):
+            if name_list_scope not in checked and hasattr(name_list_scope, 'names_dict'):
+                checked.add(name_list_scope)
                 names = self.names_dict_lookup(name_list_scope, self.position)
                 if names:
                     break
@@ -303,6 +310,8 @@ class NameFinder(object):
                 types += evaluator.eval_element(typ.node_from_name(name))
             elif isinstance(typ, pr.Import):
                 types += imports.ImportWrapper(self._evaluator, name).follow()
+            elif isinstance(typ, pr.GlobalStmt):
+                types += evaluator.find_types(typ.get_parent_scope(), str(name))
             elif isinstance(typ, pr.TryStmt):
                 # TODO an exception can also be a tuple. Check for those.
                 # TODO check for types that are not classes and add it to

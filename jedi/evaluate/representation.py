@@ -699,6 +699,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     def scope_names_generator(self, position=None):
         yield self, pr.filter_after_position(self._module.get_defined_names(), position)
         yield self, self._module_attributes()
+        yield self, self.base.global_names
         sub_modules = self._sub_modules()
         if sub_modules:
             yield self, self._sub_modules()

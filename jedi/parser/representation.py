@@ -1152,7 +1152,7 @@ class KeywordStatement(Simple):
 
 
 class GlobalStmt(Simple):
-    def names(self):
+    def get_defined_names(self):
         return self.children[1::2]
 
 

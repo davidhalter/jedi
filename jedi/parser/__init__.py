@@ -113,7 +113,7 @@ class Parser(object):
         # We need to check raw_node always, because the same node can be
         # returned by convert multiple times.
         if type == pytree.python_symbols.global_stmt:
-            self.global_names += new_node.names()
+            self.global_names += new_node.get_defined_names()
         elif isinstance(new_node, (pr.ClassOrFunc, pr.Module)) \
                 and type in (pytree.python_symbols.funcdef,
                              pytree.python_symbols.classdef,
