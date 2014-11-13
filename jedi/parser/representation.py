@@ -275,6 +275,8 @@ class Name(Leaf):
             return self.start_pos < stmt.children[2].start_pos
         elif isinstance(stmt, Param):
             return self == stmt.get_name()
+        elif isinstance(stmt, TryStmt):
+            return self.prev_sibling() == 'as'
         else:
             return isinstance(stmt, (ExprStmt, Import, CompFor)) \
                 and self in stmt.get_defined_names()
