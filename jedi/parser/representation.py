@@ -282,7 +282,7 @@ class Name(Leaf):
         elif isinstance(stmt, TryStmt):
             return self.prev_sibling() == 'as'
         else:
-            return isinstance(stmt, (ExprStmt, Import, CompFor)) \
+            return isinstance(stmt, (ExprStmt, Import, CompFor, WithStmt)) \
                 and self in stmt.get_defined_names()
 
     def assignment_indexes(self):
@@ -918,7 +918,20 @@ class TryStmt(Flow):
 
 
 class WithStmt(Flow):
-    pass
+    def get_defined_names(self):
+        names = []
+        for with_item in self.children[1:-2:2]:
+            # Check with items for 'as' names.
+            if is_node(with_item, 'with_item'):
+                names += _defined_names(with_item.children[2])
+        return names
+
+    def node_from_name(self, name):
+        node = name
+        while True:
+            node = node.parent
+            if is_node(node, 'with_item'):
+                return node.children[0]
 
 
 class Flow_old(Scope):

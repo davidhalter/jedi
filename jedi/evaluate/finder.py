@@ -299,6 +299,8 @@ class NameFinder(object):
                 types += self._eval_param(typ)
             elif typ.isinstance(pr.ExprStmt):
                 types += self._remove_statements(typ, name)
+            elif typ.isinstance(pr.WithStmt):
+                types += evaluator.eval_element(typ.node_from_name(name))
             elif isinstance(typ, pr.Import):
                 types += imports.ImportWrapper(self._evaluator, name).follow()
             elif isinstance(typ, pr.TryStmt):
