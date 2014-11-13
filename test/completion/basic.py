@@ -327,9 +327,10 @@ except ImportError as i_a:
 try:
     import math
 except ImportError, i_b:
-    #? ['i_b']
+    # TODO check this only in Python2
+    ##? ['i_b']
     i_b
-    #? ImportError()
+    ##? ImportError()
     i_b
 
 

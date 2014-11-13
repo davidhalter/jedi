@@ -57,9 +57,13 @@ SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
 
 
 def is_node(node, *symbol_names):
-    if isinstance(node, Node):
+    try:
+        type = node.type
+    except AttributeError:
+        pass
+    else:
         for symbol_name in symbol_names:
-            if getattr(python_symbols, symbol_name) == node.type:
+            if getattr(python_symbols, symbol_name) == type:
                 return True
     return False
 
