@@ -174,6 +174,13 @@ class Array(IterableWrapper):
         self._atom = atom
         self.type = Array.mapping[atom.children[0]]
 
+        c = self._atom.children
+        array_node = c[1]
+        if self.type == pr.Array.DICT and array_node != '}' \
+                and (not hasattr(array_node, 'children')
+                     or ':' not in array_node.children):
+            self.type = pr.Array.SET
+
     @property
     def name(self):
         return helpers.FakeName(self.type, parent=self)
