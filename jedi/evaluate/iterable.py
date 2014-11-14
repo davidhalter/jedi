@@ -214,14 +214,15 @@ class Array(IterableWrapper):
     def get_exact_index_types(self, mixed_index):
         """ Here the index is an int/str. Raises IndexError/KeyError """
         if self.type == pr.Array.DICT:
-            for key, value in self._items():
+            for key, values in self._items():
                 # Because we only want the key to be a string.
                 keys = self._evaluator.eval_element(key)
 
                 for k in keys:
                     if isinstance(k, compiled.CompiledObject) \
                             and mixed_index == k.obj:
-                        return self._evaluator.eval_element(value)
+                        for value in values:
+                            return self._evaluator.eval_element(value)
             raise KeyError('No key found in dictionary %s.' % self)
 
         # Can raise an IndexError
