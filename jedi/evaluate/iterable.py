@@ -507,6 +507,10 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
 
 def check_array_instances(evaluator, instance):
     """Used for set() and list() instances."""
+    
+    return instance.var_args
+
+
     if not settings.dynamic_arrays_instances:
         return instance.var_args
     ai = ArrayInstance(evaluator, instance)
@@ -531,7 +535,6 @@ class ArrayInstance(IterableWrapper):
         """
         items = []
         from jedi.evaluate.representation import Instance
-        return []
         for stmt in self.var_args:
             for typ in self._evaluator.eval_statement(stmt):
                 if isinstance(typ, Instance) and len(typ.var_args):

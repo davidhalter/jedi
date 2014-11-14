@@ -124,8 +124,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
     @memoize_default()
     def _get_method_execution(self, func):
         func = get_instance_el(self._evaluator, self, func, True)
-        args = param.Arguments(self._evaluator, self.var_args)
-        return FunctionExecution(self._evaluator, func, args)
+        return FunctionExecution(self._evaluator, func, self.var_args)
 
     def _get_func_self_name(self, func):
         """
