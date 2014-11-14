@@ -567,7 +567,7 @@ class FunctionExecution(Executed):
 
     @memoize_default(default=())
     @recursion.execution_recursion_decorator
-    def get_return_types(self):
+    def get_return_types(self, check_yields=False):
         func = self.base
 
         if func.listeners:
@@ -579,8 +579,14 @@ class FunctionExecution(Executed):
             # inserted params, not in the actual execution of the function.
             return []
 
-        types = list(docstrings.find_return_types(self._evaluator, func))
-        for r in self.returns:
+        if check_yields:
+            types = []
+            returns = self.yields
+        else:
+            returns = self.returns
+            types = list(docstrings.find_return_types(self._evaluator, func))
+
+        for r in returns:
             check = flow_analysis.break_check(self._evaluator, self, r)
             if check is flow_analysis.UNREACHABLE:
                 debug.dbg('Return unreachable: %s', r)
@@ -660,6 +666,11 @@ class FunctionExecution(Executed):
     @memoize_default([])
     def returns(self):
         return self._copy_list(self.base.returns)
+
+    @common.safe_property
+    @memoize_default([])
+    def yields(self):
+        return self._copy_list(self.base.yields)
 
     @common.safe_property
     @memoize_default([])

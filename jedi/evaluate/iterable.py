@@ -84,7 +84,8 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
         # Directly execute it, because with a normal call to py__call__ a
         # Generator will be returned.
         from jedi.evaluate.representation import FunctionExecution
-        return FunctionExecution(self._evaluator, self.func, self.var_args).get_return_types()
+        f = FunctionExecution(self._evaluator, self.func, self.var_args)
+        return f.get_return_types(check_yields=True)
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',

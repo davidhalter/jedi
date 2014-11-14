@@ -100,12 +100,12 @@ class _RecursionNode(object):
 
 
 def execution_recursion_decorator(func):
-    def run(execution):
+    def run(execution, **kwargs):
         detector = execution._evaluator.execution_recursion_detector
         if detector.push_execution(execution):
             result = []
         else:
-            result = func(execution)
+            result = func(execution, **kwargs)
         detector.pop_execution()
         return result
 

@@ -164,6 +164,7 @@ class Evaluator(object):
         debug.dbg('eval_statement result %s', types)
         return types
 
+    @memoize_default(evaluator_is_first_arg=True)
     def eval_element(self, element):
         debug.dbg('eval_element %s', element)
         if isinstance(element, (pr.Name, pr.Literal)) or pr.is_node(element, 'atom'):
