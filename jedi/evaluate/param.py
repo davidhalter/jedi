@@ -16,7 +16,8 @@ class Arguments(pr.Base):
     def __init__(self, evaluator, argument_node, trailer=None):
         """
         The argument_node is either a parser node or a list of evaluated
-        objects.
+        objects. Those evaluated objects may be lists of evaluated objects
+        themselves (one list for the first argument, one for the second, etc).
         """
         self.argument_node = argument_node
         self._evaluator = evaluator
@@ -68,6 +69,8 @@ class Arguments(pr.Base):
             else:
                 if pr.is_node(el, 'argument'):
                     named_args.append((el.children[0].value, (el.children[2],)))
+                elif isinstance(el, (list, tuple)):
+                    yield None, el
                 else:
                     yield None, (el,)
 

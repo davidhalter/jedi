@@ -199,7 +199,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             yield self, [get_instance_el(self._evaluator, self, var, True)
                          for var in names]
 
-    def get_index_types(self, index_array):
+    def get_index_types(self, evaluator, index_array):
 
         indexes = iterable.create_indexes_or_slices(self._evaluator, index_array)
         if any([isinstance(i, iterable.Slice) for i in indexes]):
@@ -208,9 +208,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             # TODO support slices in a more general way.
             indexes = []
 
-        index = helpers.FakeStatement(indexes, parent=compiled.builtin)
         try:
-            return self.execute_subscope_by_name('__getitem__', [index])
+            return self.execute_subscope_by_name('__getitem__', [indexes])
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
             return []
