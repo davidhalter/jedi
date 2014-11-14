@@ -124,7 +124,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
     @memoize_default()
     def _get_method_execution(self, func):
         func = get_instance_el(self._evaluator, self, func, True)
-        return FunctionExecution(self._evaluator, func, self.var_args)
+        args = param.Arguments(self._evaluator, self.var_args)
+        return FunctionExecution(self._evaluator, func, args)
 
     def _get_func_self_name(self, func):
         """
@@ -200,7 +201,6 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                          for var in names]
 
     def get_index_types(self, evaluator, index_array):
-
         indexes = iterable.create_indexes_or_slices(self._evaluator, index_array)
         if any([isinstance(i, iterable.Slice) for i in indexes]):
             # Slice support in Jedi is very marginal, at the moment, so just

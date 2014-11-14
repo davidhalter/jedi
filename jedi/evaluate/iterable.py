@@ -530,6 +530,7 @@ class ArrayInstance(IterableWrapper):
         """
         items = []
         from jedi.evaluate.representation import Instance
+        return []
         for stmt in self.var_args:
             for typ in self._evaluator.eval_statement(stmt):
                 if isinstance(typ, Instance) and len(typ.var_args):
