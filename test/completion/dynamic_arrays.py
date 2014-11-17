@@ -1,3 +1,6 @@
+"""
+Checking for ``list.append`` and all the other possible array modifications.
+"""
 # -----------------
 # list.append
 # -----------------
