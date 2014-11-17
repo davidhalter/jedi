@@ -177,7 +177,7 @@ class Evaluator(object):
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
                     raise NotImplementedError
-                types = self._eval_trailer(types, trailer)
+                types = self.eval_trailer(types, trailer)
 
             return types
         elif pr.is_node(element, 'testlist_star_expr', 'testlist'):
@@ -223,13 +223,13 @@ class Evaluator(object):
                     return [iterable.Comprehension.from_atom(self, atom)]
             return [iterable.Array(self, atom)]
 
-    def _eval_trailer(self, types, trailer):
+    def eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]
         if node == ')':  # `arglist` is optional.
             node = ()
         new_types = []
         for typ in types:
-            debug.dbg('_eval_trailer: %s in scope %s', trailer, typ)
+            debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
             if trailer_op == '.':
                 new_types += self.find_types(typ, node)
             elif trailer_op == '(':

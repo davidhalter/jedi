@@ -56,6 +56,7 @@ def search_params(evaluator, param):
     """
     if not settings.dynamic_params:
         return []
+    from jedi.evaluate import representation as er
 
     def get_params_for_module(module):
         """
@@ -64,13 +65,30 @@ def search_params(evaluator, param):
         @memoize_default([], evaluator_is_first_arg=True)
         def get_posibilities(evaluator, module, func_name):
             try:
-                possible_stmts = module.used_names[func_name]
+                names = module.used_names[func_name]
             except KeyError:
                 return []
 
-            for stmt in possible_stmts:
-                if isinstance(stmt, pr.Import):
+            for name in names:
+                stmt = name.get_definition()
+                if not isinstance(stmt, pr.ExprStmt):
                     continue
+                print(stmt, stmt.start_pos, name.parent)
+                try:
+                    trailer = name.parent.children[1]
+                except IndexError:
+                    continue
+                else:
+                    types = evaluator.goto(name)
+
+                    if compare in types:
+                        # Only if we have the correct function we execute
+                        # it, otherwise just ignore it.
+                        evaluator.eval_trailer(types, trailer)
+
+                continue
+
+
                 calls = helpers.scan_statement_for_calls(stmt, func_name)
                 for c in calls:
                     # no execution means that params cannot be set
@@ -120,7 +138,7 @@ def search_params(evaluator, param):
         result = []
         for params in get_posibilities(evaluator, module, func_name):
             for p in params:
-                if str(p) == param_name:
+                if str(p) == param.name:
                     result += evaluator.eval_statement(p.get_definition())
         return result
 
@@ -131,15 +149,6 @@ def search_params(evaluator, param):
     if func_name == '__init__' and isinstance(func.parent, pr.Class):
         func_name = unicode(func.parent.name)
         compare = func.parent
-
-    # get the param name
-    if param.assignment_details:
-        # first assignment details, others would be a syntax error
-        expression_list, op = param.assignment_details[0]
-    else:
-        expression_list = param.expression_list()
-    offset = 1 if expression_list[0] in ['*', '**'] else 0
-    param_name = str(expression_list[offset].name)
 
     # add the listener
     listener = ParamListener()
