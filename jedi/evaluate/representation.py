@@ -473,7 +473,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 if trailer:
                     # Create a trailer and evaluate it.
                     trailer = pr.Node(python_symbols.trailer, trailer)
-                    dec_results = self._evaluator.eval_trailer(trailer)
+                    dec_results = self._evaluator.eval_trailer(dec_results, trailer)
 
                 if not len(dec_results):
                     debug.warning('decorator not found: %s on %s', dec, self.base_func)

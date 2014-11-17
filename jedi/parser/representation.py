@@ -548,7 +548,7 @@ class Scope(Simple, DocstringMixin):
                          if isinstance(s, (ExprStmt, Import))])
                 elif isinstance(c, (Function, Class)):
                     names.append(c.name)
-                elif isinstance(c, Flow) or is_node(c, 'suite'):
+                elif isinstance(c, Flow) or is_node(c, 'suite', 'decorated'):
                     names += scan(c.children)
             return names
 
