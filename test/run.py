@@ -276,7 +276,7 @@ def collect_file_tests(lines, lines_to_execute):
 
 def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
     for f_name in os.listdir(base_dir):
-        files_to_execute = [a for a in test_files.items() if a[0] in f_name]
+        files_to_execute = [a for a in test_files.items() if f_name.startswith(a[0])]
         lines_to_execute = reduce(lambda x, y: x + y[1], files_to_execute, [])
         if f_name.endswith(".py") and (not test_files or files_to_execute):
             skip = None
