@@ -73,11 +73,19 @@ def search_params(evaluator, param):
                 stmt = name.get_definition()
                 if not isinstance(stmt, pr.ExprStmt):
                     continue
-                try:
-                    trailer = name.parent.children[1]
-                except IndexError:
-                    continue
-                else:
+                parent = name.parent
+                if pr.is_node(parent, 'trailer'):
+                    parent = parent.parent
+
+                trailer = None
+                if pr.is_node(parent, 'power'):
+                    for t in parent.children[1:]:
+                        if t == '**':
+                            break
+                        if t.start_pos > name.start_pos and t.children[0] == '(':
+                            trailer = t
+                            break
+                if trailer is not None:
                     types = evaluator.goto_definition(name)
 
                     # TODO why not a direct comparison? functions seem to be
