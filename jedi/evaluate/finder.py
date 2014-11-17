@@ -160,8 +160,7 @@ class NameFinder(object):
                     #   current scope.
                     if isinstance(stmt, (pr.Param, pr.Import)) \
                             or isinstance(name_list_scope, (pr.Lambda, pr.ListComprehension, er.Instance, InterpreterNamespace)) \
-                            or isinstance(scope, compiled.CompiledObject) \
-                            or isinstance(stmt, pr.ExprStmt) and stmt.is_global():
+                            or isinstance(scope, compiled.CompiledObject):
                         # Always reachable.
                         names.append(name)
                     else:

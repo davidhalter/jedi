@@ -36,6 +36,7 @@ from itertools import chain
 from jedi._compatibility import use_metaclass, unicode, Python3Method
 from jedi.parser import representation as pr
 from jedi.parser.tokenize import Token
+from jedi.parser.pytree import python_symbols
 from jedi import debug
 from jedi import common
 from jedi.cache import underscore_memoization
@@ -152,7 +153,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             if sub.name.value == '__init__':
                 # ``__init__`` is special because the params need are injected
                 # this way. Therefore an execution is necessary.
-                if not sub.decorators:
+                if not sub.get_decorators():
                     # __init__ decorators should generally just be ignored,
                     # because to follow them and their self variables is too
                     # complicated.
@@ -464,9 +465,16 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
 
         # Only enter it, if has not already been processed.
         if not self.is_decorated:
-            for dec in reversed(self.base_func.decorators):
+            for dec in reversed(self.base_func.get_decorators()):
                 debug.dbg('decorator: %s %s', dec, f)
-                dec_results = self._evaluator.eval_statement(dec)
+                dec.children
+                dec_results = self._evaluator.eval_element(dec.children[1])
+                trailer = dec.children[2:-1]
+                if trailer:
+                    # Create a trailer and evaluate it.
+                    trailer = pr.Node(python_symbols.trailer, trailer)
+                    dec_results = self._evaluator.eval_trailer(trailer)
+
                 if not len(dec_results):
                     debug.warning('decorator not found: %s on %s', dec, self.base_func)
                     return None
@@ -474,6 +482,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 if dec_results:
                     debug.warning('multiple decorators found %s %s',
                                   self.base_func, dec_results)
+
                 # Create param array.
                 old_func = Function(self._evaluator, f, is_decorated=True)
 
@@ -526,7 +535,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
     def __repr__(self):
         dec_func = self._decorated_func()
         dec = ''
-        if not self.is_decorated and self.base_func.decorators:
+        if not self.is_decorated and self.base_func.get_decorators():
             dec = " is " + repr(dec_func)
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 

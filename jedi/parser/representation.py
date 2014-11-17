@@ -561,7 +561,7 @@ class Scope(Simple, DocstringMixin):
         if include_imports:
             checks += self.imports
         if self.isinstance(Function):
-            checks += self.decorators
+            checks += self.get_decorators()
             checks += [r for r in self.returns if r is not None]
         if self.isinstance(Flow):
             checks += self.inputs
@@ -699,12 +699,26 @@ class SubModule(Scope, Module):
         return False
 
 
+class Decorator(Simple):
+    pass
+
+
 class ClassOrFunc(Scope):
     __slots__ = ()
 
     @property
     def name(self):
         return self.children[1]
+
+    def get_decorators(self):
+        decorated = self.parent
+        if is_node(decorated, 'decorated'):
+            if is_node(decorated.children[0], 'decorators'):
+                return decorated.children[0].children
+            else:
+                return decorated.children[:1]
+        else:
+            return []
 
 
 class Class(ClassOrFunc):
@@ -718,11 +732,9 @@ class Class(ClassOrFunc):
     :param start_pos: The start position (line, column) of the class.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('decorators')
 
     def __init__(self, children):
         super(Class, self).__init__(children)
-        self.decorators = []
 
     def get_super_arglist(self):
         if len(self.children) == 4:  # Has no parentheses
@@ -762,11 +774,10 @@ class Function(ClassOrFunc):
     :param start_pos: The start position (line, column) the Function.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('decorators', 'listeners', 'params')
+    __slots__ = ('listeners', 'params')
 
     def __init__(self, children):
         super(Function, self).__init__(children)
-        self.decorators = []
         self.listeners = set()  # not used here, but in evaluation.
         self.params = self._params()
 

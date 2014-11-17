@@ -74,6 +74,7 @@ class Parser(object):
             'while_stmt': pr.WhileStmt,
             'try_stmt': pr.TryStmt,
             'comp_for': pr.CompFor,
+            'decorator': pr.Decorator,
         }
 
         self._ast_mapping = dict((getattr(pytree.python_symbols, k), v)
