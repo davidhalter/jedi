@@ -43,16 +43,16 @@ class ParamListener(object):
 @memoize_default([], evaluator_is_first_arg=True)
 def search_params(evaluator, param):
     """
-    This is a dynamic search for params. If you try to complete a type:
+    A dynamic search for param values. If you try to complete a type:
 
     >>> def func(foo):
     ...     foo
     >>> func(1)
     >>> func("")
 
-    It is not known what the type is, because it cannot be guessed with
-    recursive madness. Therefore one has to analyse the statements that are
-    calling the function, as well as analyzing the incoming params.
+    It is not known what the type ``foo`` without analysing the whole code. You
+    have to look for all calls to ``func`` to find out what ``foo`` possibly
+    is.
     """
     if not settings.dynamic_params:
         return []
@@ -82,7 +82,10 @@ def search_params(evaluator, param):
 
                     # TODO why not a direct comparison? functions seem to be
                     # decorated in types and not in compare...
-                    if compare.base in [t.base for t in types if hasattr(t, 'base')]:
+                    c = [getattr(escope, 'base_func', None) or escope.base
+                         for escope in types
+                         if escope.isinstance(er.Function, er.Class)]
+                    if compare in c:
                         # Only if we have the correct function we execute
                         # it, otherwise just ignore it.
                         evaluator.eval_trailer(types, trailer)
@@ -146,10 +149,11 @@ def search_params(evaluator, param):
     current_module = param.get_parent_until()
     func_name = unicode(func.name)
     compare = func
-    if func_name == '__init__' and isinstance(func.parent, pr.Class):
-        func_name = unicode(func.parent.name)
-        compare = func.parent
-    compare = er.wrap(evaluator, compare)
+    if func_name == '__init__':
+        cls = func.get_parent_scope()
+        if isinstance(cls, pr.Class):
+            func_name = unicode(cls.name)
+            compare = cls
 
     # add the listener
     listener = ParamListener()

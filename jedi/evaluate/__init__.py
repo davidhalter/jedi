@@ -246,7 +246,9 @@ class Evaluator(object):
 
     @debug.increase_indent
     def execute(self, obj, arguments=(), trailer=None):
-        arguments = param.Arguments(self, arguments, trailer)
+        if not isinstance(arguments, param.Arguments):
+            arguments = param.Arguments(self, arguments, trailer)
+
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()
 
