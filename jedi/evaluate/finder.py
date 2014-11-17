@@ -389,7 +389,9 @@ class NameFinder(object):
         if doc_params:
             return doc_params
 
-        if not isinstance(param, ExecutedParam):
+        if isinstance(param, ExecutedParam):
+            return res_new + param.eval(self._evaluator)
+        else:
             # Param owns no information itself.
             res_new += dynamic.search_params(evaluator, param)
             if not res_new:
@@ -397,11 +399,9 @@ class NameFinder(object):
                     t = 'tuple' if param.stars == 1 else 'dict'
                     typ = evaluator.find_types(compiled.builtin, t)[0]
                     res_new = evaluator.execute(typ)
-            if not param.assignment_details:
-                # this means that there are no default params,
-                # so just ignore it.
-                return res_new
-        return res_new + param.eval(self._evaluator)
+            if param.default:
+                res_new += evaluator.eval_element(param.default)
+            return res_new
 
     def _resolve_descriptors(self, types):
         """Processes descriptors"""
