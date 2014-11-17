@@ -296,21 +296,25 @@ class Array(IterableWrapper):
         return "<e%s of %s>" % (type(self).__name__, self._atom)
 
 
-class ImplicitTuple(Array):
-    def __init__(self, evaluator, testlist):
+class _FakeArray(Array):
+    def __init__(self, evaluator, container, type):
+        self.type = type
         self._evaluator = evaluator
-        self.type = pr.Array.TUPLE
+        self._atom = container
+
+
+class ImplicitTuple(_FakeArray):
+    def __init__(self, evaluator, testlist):
+        super(ImplicitTuple, self).__init__(evaluator, testlist, pr.Array.TUPLE)
         self._testlist = testlist
 
     def _items(self):
         return self._testlist.children[::2]
 
 
-class FakeSequence(Array):
+class FakeSequence(_FakeArray):
     def __init__(self, evaluator, sequence_values, type):
-        # Intentionally don't call the parent __init__.
-        self._evaluator = evaluator
-        self.type = type
+        super(FakeSequence, self).__init__(evaluator, sequence_values, type)
         self._sequence_values = sequence_values
 
     def _items(self):
@@ -321,10 +325,9 @@ class FakeSequence(Array):
                                         for v in self._sequence_values[index]))
 
 
-class FakeDict(Array):
+class FakeDict(_FakeArray):
     def __init__(self, evaluator, dct):
-        self._evaluator = evaluator
-        self.type = pr.Array.DICT
+        super(FakeDict, self).__init__(evaluator, dct, pr.Array.DICT)
         self._dct = dct
 
     def get_exact_index_types(self, index):
