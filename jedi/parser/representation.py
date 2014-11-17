@@ -500,7 +500,7 @@ class Scope(Simple, DocstringMixin):
             for element in children:
                 if isinstance(element, typ):
                     elements.append(element)
-                if is_node(element, 'suite', 'simple_stmt') \
+                if is_node(element, 'suite', 'simple_stmt', 'decorated') \
                         or isinstance(element, Flow):
                     elements += scan(element.children)
             return elements
