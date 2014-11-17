@@ -71,7 +71,7 @@ def search_params(evaluator, param):
 
             for name in names:
                 stmt = name.get_definition()
-                if not isinstance(stmt, pr.ExprStmt):
+                if not isinstance(stmt, (pr.ExprStmt, pr.CompFor)):
                     continue
                 parent = name.parent
                 if pr.is_node(parent, 'trailer'):
