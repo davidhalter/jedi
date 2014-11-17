@@ -97,6 +97,36 @@ def deep_ast_copy(obj, new_elements_default=None):
     return recursion(obj)
 
 
+def call_of_name(name):
+    """
+    Creates a "call" node that consist of all ``trailer`` and ``power``
+    objects.  E.g. if you call it with ``append``::
+
+        list([]).append(3) or None
+
+    You would get a node with the content ``list([]).append`` back.
+
+    This generates a copy of the original ast node.
+    """
+    par = name
+    if pr.is_node(par.parent, 'trailer'):
+        par = par.parent
+
+    power = par.parent
+    if pr.is_node(power, 'power') and power.children[0] != name \
+            and not (power.children[-2] == '**' and
+                     name.start_pos > power.children[-1].start_pos):
+        par = power
+        # Now the name must be part of a trailer
+        index = par.children.index(name.parent)
+        if index != len(par.children) - 1:
+            # Now we have to cut the other trailers away.
+            par = deep_ast_copy(par)
+            par.children[index + 1:] = []
+
+    return par
+
+
 def call_signature_array_for_pos(stmt, pos):
     """
     Searches for the array and position of a tuple.

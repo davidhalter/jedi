@@ -87,7 +87,7 @@ from jedi.evaluate import finder
 from jedi.evaluate import compiled
 from jedi.evaluate import precedence
 from jedi.evaluate import param
-from jedi.evaluate.helpers import FakeStatement, deep_ast_copy
+from jedi.evaluate.helpers import FakeStatement, deep_ast_copy, call_of_name
 
 
 class Evaluator(object):
@@ -423,6 +423,10 @@ class Evaluator(object):
             types = func(self, params)
             debug.dbg('execute result: %s in %s', types, obj)
             return types
+
+    def goto_definition(self, name):
+        call = call_of_name(name)
+        return self.eval_element(call)
 
     def goto(self, stmt, call_path):
         if isinstance(stmt, pr.Import):

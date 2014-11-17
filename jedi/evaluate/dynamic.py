@@ -73,22 +73,23 @@ def search_params(evaluator, param):
                 stmt = name.get_definition()
                 if not isinstance(stmt, pr.ExprStmt):
                     continue
-                print(stmt, stmt.start_pos, name.parent)
                 try:
                     trailer = name.parent.children[1]
                 except IndexError:
                     continue
                 else:
-                    types = evaluator.goto(name)
+                    types = evaluator.goto_definition(name)
 
-                    if compare in types:
+                    # TODO why not a direct comparison? functions seem to be
+                    # decorated in types and not in compare...
+                    if compare.base in [t.base for t in types if hasattr(t, 'base')]:
                         # Only if we have the correct function we execute
                         # it, otherwise just ignore it.
                         evaluator.eval_trailer(types, trailer)
 
+
+                # TODO REMOVE
                 continue
-
-
                 calls = helpers.scan_statement_for_calls(stmt, func_name)
                 for c in calls:
                     # no execution means that params cannot be set
@@ -115,7 +116,6 @@ def search_params(evaluator, param):
                     if before:
                         scopes = evaluator.eval_call_path(iter(before), c.parent, pos)
                         pos = None
-                    from jedi.evaluate import representation as er
                     for scope in scopes:
                         # Not resolving decorators is a speed hack:
                         # By ignoring them, we get the function that is
@@ -138,8 +138,8 @@ def search_params(evaluator, param):
         result = []
         for params in get_posibilities(evaluator, module, func_name):
             for p in params:
-                if str(p) == param.name:
-                    result += evaluator.eval_statement(p.get_definition())
+                if str(p) == str(param.get_name()):
+                    result += p.parent.eval(evaluator)
         return result
 
     func = param.get_parent_until(pr.Function)
@@ -149,6 +149,7 @@ def search_params(evaluator, param):
     if func_name == '__init__' and isinstance(func.parent, pr.Class):
         func_name = unicode(func.parent.name)
         compare = func.parent
+    compare = er.wrap(evaluator, compare)
 
     # add the listener
     listener = ParamListener()
