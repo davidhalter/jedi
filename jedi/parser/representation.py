@@ -1063,7 +1063,11 @@ class ForFlow(Flow):
 class Import(Simple):
     def get_defined_names(self):
         if self.children[0] == 'import':
-            return self.children[1:]
+            n = self.children[1]
+            if is_node(n, 'dotted_name'):
+                return [n.children[0]]
+            else:
+                return [n]
         else:  # from
 # <Operator: '.'>, <Name: decoder@110,6>, <Keyword: 'import'>, <Name: JSONDecoder@110,21>
             return [self.children[-1]]
@@ -1092,7 +1096,11 @@ class Import(Simple):
 
     def _paths(self):
         if self.children[0] == 'import':
-            return [self.children[1:]]
+            n = self.children[1]
+            if is_node(n, 'dotted_name'):
+                return [n.children[::2]]
+            else:
+                return [self.children[1:]]
         else:
             if is_node(self.children[1], 'dotted_name') or \
                     self.children[1].value in '...' \
@@ -1103,7 +1111,8 @@ class Import(Simple):
     def path_for_name(self, name):
         for path in self._paths():
             if name in path:
-                return path
+                return path[:path.index(name) + 1]
+        raise NotImplementedError
 
     @property
     def level(self):

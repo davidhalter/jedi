@@ -340,10 +340,21 @@ class FakeStatement(pr.ExprStmt):
 
 class FakeImport(pr.Import):
     def __init__(self, name, parent, level=0):
-        p = 0, 0
-        super(FakeImport, self).__init__(FakeSubModule, p, p, [name],
-                                         relative_count=level)
+        super(FakeImport, self).__init__([])
         self.parent = parent
+        self._level = level
+        self.name = name
+
+    @property
+    def level(self):
+        return self._level
+
+    @property
+    def start_pos(self):
+        return 0, 0
+
+    def _paths(self):
+        return [[self.name]]
 
 
 class FakeName(pr.Name):
