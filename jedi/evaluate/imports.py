@@ -513,7 +513,7 @@ class _Importer(object):
         Find a module with a path (of the module, like usb.backend.libusb10).
         """
         def follow_str(ns_path, string):
-            debug.dbg('follow_module %s %s', ns_path, string)
+            debug.dbg('follow_module %s in %s', string, ns_path)
             path = None
             if ns_path:
                 path = ns_path
@@ -523,7 +523,7 @@ class _Importer(object):
             if path is not None:
                 importing = find_module(string, [path])
             else:
-                debug.dbg('search_module %s %s', string, self.file_path)
+                debug.dbg('search_module %s in %s', string, self.file_path)
                 # Override the sys.path. It works only good that way.
                 # Injecting the path directly into `find_module` did not work.
                 sys.path, temp = sys_path, sys.path

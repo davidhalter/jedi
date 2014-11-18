@@ -1061,38 +1061,6 @@ class ForFlow(Flow):
 
 
 class Import(Simple):
-    """
-    Stores the imports of any Scopes.
-
-    :param start_pos: Position (line, column) of the Import.
-    :type start_pos: tuple(int, int)
-    :param namespace_names: The import, can be empty if a star is given
-    :type namespace_names: list of Name
-    :param alias: The alias of a namespace(valid in the current namespace).
-    :type alias: list of Name
-    :param from_names: Like the namespace, can be equally used.
-    :type from_names: list of Name
-    :param star: If a star is used -> from time import *.
-    :type star: bool
-    :param defunct: An Import is valid or not.
-    :type defunct: bool
-    """
-    def __init__old(self, module, start_pos, end_pos, namespace_names, alias=None,
-                 from_names=(), star=False, relative_count=0, defunct=False):
-        super(Import, self).__init__(module, start_pos, end_pos)
-
-        self.namespace_names = namespace_names
-        self.alias = alias
-        if self.alias:
-            alias.parent = self
-        self.from_names = from_names
-        for n in namespace_names + list(from_names):
-            n.parent = self.use_as_parent
-
-        self.star = star
-        self.relative_count = relative_count
-        self.defunct = defunct
-
     def get_defined_names(self):
         if self.children[0] == 'import':
             return self.children[1:]
@@ -1126,7 +1094,11 @@ class Import(Simple):
         if self.children[0] == 'import':
             return [self.children[1:]]
         else:
-            raise NotImplementedError
+            if is_node(self.children[1], 'dotted_name') or \
+                    self.children[1].value in '...' \
+                    or self.children[-1] == '(' or is_node(self.children[-1], 'dotted_as_names'):
+                raise NotImplementedError
+            return [[self.children[1], self.children[-1]]]
 
     def path_for_name(self, name):
         for path in self._paths():

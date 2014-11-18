@@ -95,6 +95,7 @@ class Parser(object):
         self.module = d.parse_string(source).get_parent_until()
 
         self.module.used_names = self.used_names
+        self.module.path = module_path
         self.module.set_global_names(self.global_names)
 
     def convert_node(self, grammar, type, children):
