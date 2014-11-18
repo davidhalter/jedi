@@ -88,13 +88,13 @@ def search_params(evaluator, param):
                 if trailer is not None:
                     types = evaluator.goto_definition(name)
 
-                    # TODO why not a direct comparison? functions seem to be
-                    # decorated in types and not in compare...
-                    undecorated = [escope.decorates or escope for escope in types
-                                   if escope.isinstance(er.Function, er.Class)]
-                    c = [getattr(escope, 'base_func', None) or escope.base
-                         for escope in undecorated]
-                    if compare in c:
+                    # We have to remove decorators, because they are not the
+                    # "original" functions, this way we can easily compare.
+                    # At the same time we also have to remove InstanceElements.
+                    undec = [escope.decorates or
+                             (escope.var if isinstance(escope, er.InstanceElement) else escope)
+                             for escope in types if escope.isinstance(er.Function, er.Class)]
+                    if er.wrap(evaluator, compare) in undec:
                         # Only if we have the correct function we execute
                         # it, otherwise just ignore it.
                         evaluator.eval_trailer(types, trailer)

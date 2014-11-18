@@ -504,7 +504,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 debug.dbg('decorator end %s', f)
 
         if isinstance(f, pr.Function):
-            f = Function(self._evaluator, f, True)
+            return self
         return f
 
     def get_decorated_func(self):
