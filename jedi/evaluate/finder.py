@@ -37,9 +37,9 @@ class NameFinder(object):
         self.position = position
 
     @debug.increase_indent
-    def find(self, scopes, resolve_decorator=True, search_global=False):
+    def find(self, scopes, search_global=False):
         names = self.filter_name(scopes, search_global)
-        types = self._names_to_types(names, resolve_decorator)
+        types = self._names_to_types(names)
 
         if not names and not types \
                 and not (isinstance(self.name_str, pr.Name)
@@ -274,7 +274,7 @@ class NameFinder(object):
                 return True
         return False
 
-    def _names_to_types(self, names, resolve_decorator):
+    def _names_to_types(self, names):
         types = []
         evaluator = self._evaluator
 
@@ -319,7 +319,7 @@ class NameFinder(object):
                 types = list(chain.from_iterable(
                              evaluator.execute(t) for t in exceptions))
             else:
-                if typ.isinstance(er.Function) and resolve_decorator:
+                if typ.isinstance(er.Function):
                     typ = typ.get_decorated_func()
                 types.append(typ)
 

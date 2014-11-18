@@ -100,7 +100,7 @@ class Evaluator(object):
         self.analysis = []
 
     def find_types(self, scope, name_str, position=None, search_global=False,
-                   is_goto=False, resolve_decorator=True):
+                   is_goto=False):
         """
         This is the search function. The most important part to debug.
         `remove_statements` and `filter_statements` really are the core part of
@@ -113,7 +113,7 @@ class Evaluator(object):
         scopes = f.scopes(search_global)
         if is_goto:
             return f.filter_name(scopes)
-        return f.find(scopes, resolve_decorator, search_global)
+        return f.find(scopes, search_global)
 
     @memoize_default(default=[], evaluator_is_first_arg=True)
     @recursion.recursion_decorator
