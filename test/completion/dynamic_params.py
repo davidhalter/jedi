@@ -65,6 +65,22 @@ def func(c=1):
 
 func(1.0)
 
+def tricky_decorator(func):
+    def wrapper(*args):
+        return func(1, *args)
+
+    return wrapper
+
+
+@tricky_decorator
+def func(a, b):
+    #? int()
+    a
+    #? float()
+    b
+
+func(1.0)
+
 # Needs to be here, because in this case func is an import -> shouldn't lead to
 # exceptions.
 import sys as func
