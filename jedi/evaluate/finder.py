@@ -293,6 +293,7 @@ class NameFinder(object):
 
         for name in names:
             typ = name.get_definition()
+            print(name, typ)
             if typ.isinstance(pr.ForStmt):
                 for_types = self._evaluator.eval_element(typ.children[-3])
                 for_types = iterable.get_iterator_types(for_types)

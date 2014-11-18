@@ -459,9 +459,9 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         self.decorates = None
 
     @memoize_default()
-    def _decorated_func(self):
+    def get_decorated_func(self):
         """
-        Returns the function, that is to be executed in the end.
+        Returns the function, that should to be executed in the end.
         This is also the places where the decorators are processed.
         """
         f = self.base_func
@@ -480,7 +480,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
 
                 if not len(dec_results):
                     debug.warning('decorator not found: %s on %s', dec, self.base_func)
-                    return None
+                    return self
                 decorator = dec_results.pop()
                 if dec_results:
                     debug.warning('multiple decorators found %s %s',
@@ -492,7 +492,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 wrappers = self._evaluator.execute(decorator, (old_func,))
                 if not len(wrappers):
                     debug.warning('no wrappers found %s', self.base_func)
-                    return None
+                    return self
                 if len(wrappers) > 1:
                     # TODO resolve issue with multiple wrappers -> multiple types
                     debug.warning('multiple wrappers found %s %s',
@@ -506,14 +506,6 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         if isinstance(f, pr.Function):
             return self
         return f
-
-    def get_decorated_func(self):
-        """
-        This function exists for the sole purpose of returning itself if the
-        decorator doesn't turn out to "work", that means we cannot resolve it.
-        In that case ignore the decorator.
-        """
-        return self._decorated_func() or self
 
     def get_magic_function_names(self):
         return compiled.magic_function_class.get_defined_names()
@@ -535,10 +527,9 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         return getattr(self.base_func, name)
 
     def __repr__(self):
-        dec_func = self._decorated_func()
         dec = ''
-        if not self.is_decorated and self.base_func.get_decorators():
-            dec = " is " + repr(dec_func)
+        if self.decorates is not None:
+            dec = " decorates " + repr(self.decorates)
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
