@@ -1095,18 +1095,21 @@ class Import(Simple):
         return n
 
     def _paths(self):
+        n = self.children[1]
         if self.children[0] == 'import':
-            n = self.children[1]
             if is_node(n, 'dotted_name'):
                 return [n.children[::2]]
             else:
                 return [self.children[1:]]
         else:
-            if is_node(self.children[1], 'dotted_name') or \
-                    self.children[1].value in '...' \
+            if self.children[1] in ('.', '...') \
                     or self.children[-1] == '(' or is_node(self.children[-1], 'dotted_as_names'):
                 raise NotImplementedError
-            return [[self.children[1], self.children[-1]]]
+            if is_node(n, 'dotted_name'):
+                dotted = n.children[::2]
+            else:
+                dotted = [n]
+            return [dotted + [self.children[-1]]]
 
     def path_for_name(self, name):
         for path in self._paths():

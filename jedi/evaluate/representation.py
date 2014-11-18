@@ -731,7 +731,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     @property
     @memoize_default()
     def name(self):
-        return pr.Name(self, unicode(self.base.name), self, (1, 0))
+        return helpers.FakeName(unicode(self.base.name), self)
 
     @memoize_default()
     def _sub_modules(self):

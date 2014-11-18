@@ -45,6 +45,7 @@ class ImportWrapper():
         self._name = name
 
         self._import = name.get_parent_until(pr.Import)
+        self.import_path = self._import.path_for_name(name)
 
     @memoize_default()
     def follow(self, is_goto=False):
@@ -99,8 +100,7 @@ class ImportWrapper():
                         for s in scopes))
             debug.dbg('after import: %s', scopes)
             if not scopes:
-                analysis.add(self._evaluator, 'import-error',
-                             self._importer.import_path[-1])
+                analysis.add(self._evaluator, 'import-error', importer.import_path[-1])
         finally:
             self._evaluator.recursion_detector.pop_stmt()
         return scopes
