@@ -90,9 +90,10 @@ def search_params(evaluator, param):
 
                     # TODO why not a direct comparison? functions seem to be
                     # decorated in types and not in compare...
+                    undecorated = [escope.decorates or escope for escope in types
+                                   if escope.isinstance(er.Function, er.Class)]
                     c = [getattr(escope, 'base_func', None) or escope.base
-                         for escope in types
-                         if escope.isinstance(er.Function, er.Class)]
+                         for escope in undecorated]
                     if compare in c:
                         # Only if we have the correct function we execute
                         # it, otherwise just ignore it.

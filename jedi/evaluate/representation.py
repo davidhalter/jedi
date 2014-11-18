@@ -356,6 +356,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def __init__(self, evaluator, base):
         self._evaluator = evaluator
         self.base = base
+        self.decorates = None
 
     @memoize_default(default=())
     def py__mro__(self, evaluator):
@@ -454,6 +455,8 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         self._evaluator = evaluator
         self.base = self.base_func = func
         self.is_decorated = is_decorated
+        # A property that is set by the decorator resolution.
+        self.decorates = None
 
     @memoize_default()
     def _decorated_func(self):
@@ -495,6 +498,8 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                     debug.warning('multiple wrappers found %s %s',
                                   self.base_func, wrappers)
                 f = wrappers[0]
+                if isinstance(f, (Class, Function)):
+                    f.decorates = self
 
                 debug.dbg('decorator end %s', f)
 
@@ -505,13 +510,10 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
     def get_decorated_func(self):
         """
         This function exists for the sole purpose of returning itself if the
-        decorator doesn't turn out to "work".
-
-        We just ignore the decorator here, because sometimes decorators are
-        just really complicated and Jedi cannot understand them.
+        decorator doesn't turn out to "work", that means we cannot resolve it.
+        In that case ignore the decorator.
         """
-        return self._decorated_func() \
-            or Function(self._evaluator, self.base_func, True)
+        return self._decorated_func() or self
 
     def get_magic_function_names(self):
         return compiled.magic_function_class.get_defined_names()
