@@ -97,13 +97,16 @@ def scope_from_import_variable():
 
 def scope_from_import_variable_with_parenthesis():
     from import_tree.mod2.fake import (
-        a, c
+        a, foobarbaz
     )
 
     #? 
     a
     #? 
-    c
+    foobarbaz
+    # shouldn't complete, should still list the name though.
+    #? ['foobarbaz']
+    foobarbaz
 
 # -----------------
 # std lib modules
@@ -303,6 +306,7 @@ from import_tree import recurse_class1
 #? ['a']
 recurse_class1.C.a
 # github #239 RecursionError
+# TODO UNCOMMENT!!!!!!
 ##? ['a']
 recurse_class1.C().a
 

@@ -1061,29 +1061,6 @@ class ForFlow(Flow):
 
 
 class Import(Simple):
-    def get_defined_names(self):
-        if self.children[0] == 'import':
-            n = self.children[1]
-            if is_node(n, 'dotted_name'):
-                return [n.children[0]]
-            else:
-                return [n]
-        else:  # from
-# <Operator: '.'>, <Name: decoder@110,6>, <Keyword: 'import'>, <Name: JSONDecoder@110,21>
-            return [self.children[-1]]
-
-        # TODO remove
-        if self.defunct:
-            return []
-        if self.star:
-            return [self]
-        if self.alias:
-            return [self.alias]
-        if len(self.namespace_names) > 1:
-            return [self.namespace_names[0]]
-        else:
-            return self.namespace_names
-
     def get_all_import_names(self):
         n = []
         if self.from_names:
@@ -1134,6 +1111,41 @@ class Import(Simple):
         # TODO use this check differently?
         return not self.alias and not self.from_names \
             and len(self.namespace_names) > 1
+
+    def is_star_import(self):
+        return self.children[-1] == '*'
+
+
+class ImportFrom(Import):
+    def get_defined_names(self):
+        return [alias or name for name, alias in self._as_name_tuples()]
+
+    def _as_name_tuples(self):
+        last = self.children[-1]
+        if last == ')':
+            last = self.children[-2]
+        elif last == '*':
+            return  # No names defined directly.
+
+        if is_node(last, 'import_as_names'):
+            as_names = last.children[::2]
+        else:
+            as_names = [last]
+        for as_name in as_names:
+            if isinstance(as_name, Name):
+                yield as_name, None
+            else:
+                yield as_name.children[::2]  # yields x, y -> ``x as y``
+
+
+class ImportName(Import):
+    """For ``import_name`` nodes. Covers normal imports without ``from``."""
+    def get_defined_names(self):
+        n = self.children[1]
+        if is_node(n, 'dotted_name'):
+            return [n.children[0]]
+        else:
+            return [n]
 
 
 class KeywordStatement(Simple):

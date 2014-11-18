@@ -46,6 +46,7 @@ class ImportWrapper():
 
         self._import = name.get_parent_until(pr.Import)
         self.import_path = self._import.path_for_name(name)
+        self.is_like_search = False       # TODO REMOVE
 
     @memoize_default()
     def follow(self, is_goto=False):
