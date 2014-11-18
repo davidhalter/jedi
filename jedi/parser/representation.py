@@ -1071,23 +1071,6 @@ class Import(Simple):
             n.append(self.alias)
         return n
 
-    def _paths(self):
-        n = self.children[1]
-        if self.children[0] == 'import':
-            if is_node(n, 'dotted_name'):
-                return [n.children[::2]]
-            else:
-                return [self.children[1:]]
-        else:
-            if self.children[1] in ('.', '...') \
-                    or self.children[-1] == '(' or is_node(self.children[-1], 'dotted_as_names'):
-                raise NotImplementedError
-            if is_node(n, 'dotted_name'):
-                dotted = n.children[::2]
-            else:
-                dotted = [n]
-            return [dotted + [self.children[-1]]]
-
     def path_for_name(self, name):
         for path in self._paths():
             if name in path:
@@ -1137,6 +1120,16 @@ class ImportFrom(Import):
             else:
                 yield as_name.children[::2]  # yields x, y -> ``x as y``
 
+    def _paths(self):
+        n = self.children[1]
+        if self.children[1] in ('.', '...'):
+            raise NotImplementedError
+        if is_node(n, 'dotted_name'):
+            dotted = n.children[::2]
+        else:
+            dotted = [n]
+        return [dotted + [name] for name, alias in self._as_name_tuples()]
+
 
 class ImportName(Import):
     """For ``import_name`` nodes. Covers normal imports without ``from``."""
@@ -1146,6 +1139,13 @@ class ImportName(Import):
             return [n.children[0]]
         else:
             return [n]
+
+    def _paths(self):
+        n = self.children[1]
+        if is_node(n, 'dotted_name'):
+            return [n.children[::2]]
+        else:
+            return [self.children[1:]]
 
 
 class KeywordStatement(Simple):
