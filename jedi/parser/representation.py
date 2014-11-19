@@ -414,13 +414,13 @@ class Simple(Base):
     def get_code(self):
         return "".join(c.get_code() for c in self.children)
 
-    def leaf_for_position(self, position):
+    def name_for_position(self, position):
         for c in self.children:
             if isinstance(c, Leaf):
-                if c.start_pos <= position < c.end_pos:
+                if c.start_pos <= position <= c.end_pos:
                     return c
             else:
-                result = c.leaf_for_position(position)
+                result = c.name_for_position(position)
                 if result is not None:
                     return result
         return None

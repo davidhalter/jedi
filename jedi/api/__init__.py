@@ -226,9 +226,12 @@ class Script(object):
                         current_line = self._user_context.get_position_line()
                         if not current_line.endswith('import import'):
                             continue
+                    """
                     a = s.import_stmt.alias
                     if a and a.start_pos <= self._pos <= a.end_pos:
                         continue
+                    """
+                    # TODO what to do with this?
                     names = s.get_defined_names(on_import_stmt=True)
                 else:
                     names = []

@@ -25,7 +25,7 @@ def get_on_import_stmt(evaluator, user_context, user_stmt, is_like_search=False)
     Resolve the user statement, if it is an import. Only resolve the
     parts until the user position.
     """
-    name = user_stmt.leaf_for_position(user_context.position)
+    name = user_stmt.name_for_position(user_context.position)
     if name is None:
         raise NotImplementedError
 

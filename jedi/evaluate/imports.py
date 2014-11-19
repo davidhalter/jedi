@@ -38,7 +38,7 @@ class ModuleNotFound(Exception):
         self.name_part = name_part
 
 
-class ImportWrapper():
+class ImportWrapper(pr.Base):
     GlobalNamespace = 'TODO PLEASE DELETE ME'
     def __init__(self, evaluator, name):
         self._evaluator = evaluator
@@ -47,6 +47,10 @@ class ImportWrapper():
         self._import = name.get_parent_until(pr.Import)
         self.import_path = self._import.path_for_name(name)
         self.is_like_search = False       # TODO REMOVE
+
+    def get_defined_names(self, on_import_stmt=False):
+        # TODO not sure if this method is actually necessary.
+        return []
 
     @memoize_default()
     def follow(self, is_goto=False):
