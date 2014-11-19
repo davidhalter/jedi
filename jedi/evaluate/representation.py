@@ -48,6 +48,7 @@ from jedi.evaluate import docstrings
 from jedi.evaluate import helpers
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
+from jedi.evaluate import imports
 
 
 def wrap(evaluator, element):
@@ -714,10 +715,21 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     def scope_names_generator(self, position=None):
         yield self, pr.filter_after_position(self._module.get_defined_names(), position)
         yield self, self._module_attributes()
+        for star_module in self.star_imports():
+            yield self, star_module.get_defined_names()
         yield self, self.base.global_names
         sub_modules = self._sub_modules()
         if sub_modules:
             yield self, self._sub_modules()
+
+    @underscore_memoization
+    def star_imports(self):
+        modules = []
+        for i in self.base.imports:
+            if i.is_star_import():
+                name = i.star_import_name()
+                modules += imports.ImportWrapper(self._evaluator, name).follow()
+        return modules
 
     @memoize_default()
     def _module_attributes(self):

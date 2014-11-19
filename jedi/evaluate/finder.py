@@ -569,9 +569,11 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
 
     # Add star imports.
     if star_search:
+        """
         for s in imports.remove_star_imports(evaluator, non_flow.get_parent_until()):
             for g in get_names_of_scope(evaluator, s, star_search=False):
                 yield g
+        """
 
         # Add builtins to the global scope.
         if include_builtin:

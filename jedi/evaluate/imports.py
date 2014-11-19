@@ -77,9 +77,9 @@ class ImportWrapper(pr.Base):
             else:
                 scopes = [module]
 
-            star_imports = remove_star_imports(self._evaluator, module)
-            if star_imports:
-                scopes = [StarImportModule(scopes[0], star_imports)]
+            #star_imports = remove_star_imports(self._evaluator, module)
+            #if star_imports:
+            #    scopes = [StarImportModule(scopes[0], star_imports)]
 
             # goto only accepts `Name`
             if is_goto and not rest:
@@ -616,6 +616,7 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
 
     and follow these modules.
     """
+    raise NotImplementedError
     if isinstance(scope, StarImportModule):
         return scope.star_import_modules
     modules = follow_imports(evaluator, (i for i in scope.get_imports() if i.star))

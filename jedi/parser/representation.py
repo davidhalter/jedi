@@ -483,11 +483,10 @@ class Scope(Simple, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('imports', '_doc_token', 'asserts', 'names_dict')
+    __slots__ = ('_doc_token', 'asserts', 'names_dict')
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
-        self.imports = []
         self._doc_token = None
         self.asserts = []
 
@@ -504,6 +503,10 @@ class Scope(Simple, DocstringMixin):
     @property
     def flows(self):
         return self._search_in_scope(Flow)
+
+    @property
+    def imports(self):
+        return self._search_in_scope(Import)
 
     def _search_in_scope(self, typ):
         def scan(children):
@@ -529,6 +532,8 @@ class Scope(Simple, DocstringMixin):
 
     def get_imports(self):
         """ Gets also the imports within flow statements """
+        raise NotImplementedError
+        return []
         i = [] + self.imports
         for s in self.statements:
             if isinstance(s, Scope):
@@ -700,6 +705,10 @@ class SubModule(Scope, Module):
         is a ``__future__`` import.
         """
         for imp in self.imports:
+            
+
+            # TODO implement!
+            continue
             if not imp.from_names or not imp.namespace_names:
                 continue
 
@@ -1141,6 +1150,12 @@ class ImportFrom(Import):
             else:
                 yield as_name.children[::2]  # yields x, y -> ``x as y``
 
+    def star_import_name(self):
+        """
+        The last name defined in a star import.
+        """
+        return self._paths()[-1][-1]
+
     def _paths(self):
         for n in self.children[1:]:
             if n not in ('.', '...'):
@@ -1151,6 +1166,9 @@ class ImportFrom(Import):
             dotted = []
         else:  # from x import
             dotted = [n]
+
+        if self.children[-1] == '*':
+            return [dotted]
         return [dotted + [name] for name, alias in self._as_name_tuples()]
 
 
