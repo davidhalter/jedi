@@ -211,9 +211,6 @@ from . import datetime as mod1
 #? []
 mod1.
 
-#? str()
-imp_tree.a
-
 # self import
 # this can cause recursions
 from imports import *

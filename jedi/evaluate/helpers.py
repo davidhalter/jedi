@@ -345,6 +345,9 @@ class FakeImport(pr.Import):
         self._level = level
         self.name = name
 
+    def aliases(self):
+        return {}
+
     @property
     def level(self):
         return self._level

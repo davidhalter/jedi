@@ -1145,9 +1145,11 @@ class ImportFrom(Import):
         for n in self.children[1:]:
             if n not in ('.', '...'):
                 break
-        if is_node(n, 'dotted_name'):
+        if is_node(n, 'dotted_name'):  # from x.y import
             dotted = n.children[::2]
-        else:
+        elif n == 'import':  # from . import
+            dotted = []
+        else:  # from x import
             dotted = [n]
         return [dotted + [name] for name, alias in self._as_name_tuples()]
 
