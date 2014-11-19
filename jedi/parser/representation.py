@@ -1150,22 +1150,34 @@ class ImportFrom(Import):
 class ImportName(Import):
     """For ``import_name`` nodes. Covers normal imports without ``from``."""
     def get_defined_names(self):
-        n = self.children[1]
-        if is_node(n, 'dotted_name'):
-            return [n.children[0]]
-        else:
-            return [n]
+        return [alias or path[0] for path, alias in self._dotted_as_names()]
 
     def _paths(self):
-        n = self.children[1]
-        if is_node(n, 'dotted_name'):
-            return [n.children[::2]]
+        return [path for path, alias in self._dotted_as_names()]
+
+    def _dotted_as_names(self):
+        """Generator of (list(path), alias) where alias may be None."""
+        dotted_as_names = self.children[1]
+        if is_node(dotted_as_names, 'dotted_as_names'):
+            as_names = dotted_as_names.children[::2]
         else:
-            return [self.children[1:]]
+            as_names = [dotted_as_names]
+
+        for as_name in as_names:
+            if is_node(as_name, 'dotted_as_name'):
+                alias = as_name.children[2]
+                as_name = as_name.children[0]
+            else:
+                alias = None
+            if isinstance(as_name, Name):
+                yield [as_name], alias
+            else:
+                # dotted_names
+                yield as_name.children[::2], alias
 
     def aliases(self):
-        raise NotImplementedError
-        return []
+        return dict((alias, path[-1]) for path, alias in self._dotted_as_names()
+                    if alias is not None)
 
 
 class KeywordStatement(Simple):

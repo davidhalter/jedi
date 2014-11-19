@@ -113,9 +113,12 @@ def as_imports():
     from import_tree.mod1 import a as xyz
     #? int()
     xyz
-    import import_tree.mod1 as foo
+    import not_existant, import_tree.mod1 as foo
     #? int()
     foo.a
+    import import_tree.mod1 as bar
+    #? int()
+    bar.a
 
 # -----------------
 # std lib modules
