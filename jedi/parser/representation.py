@@ -414,6 +414,17 @@ class Simple(Base):
     def get_code(self):
         return "".join(c.get_code() for c in self.children)
 
+    def leaf_for_position(self, position):
+        for c in self.children:
+            if isinstance(c, Leaf):
+                if c.start_pos <= position < c.end_pos:
+                    return c
+            else:
+                result = c.leaf_for_position(position)
+                if result is not None:
+                    return result
+        return None
+
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
         if not is_py3:
@@ -1062,20 +1073,14 @@ class ForFlow(Flow):
 
 class Import(Simple):
     def get_all_import_names(self):
-        n = []
-        if self.from_names:
-            n += self.from_names
-        if self.namespace_names:
-            n += self.namespace_names
-        if self.alias is not None:
-            n.append(self.alias)
-        return n
+        # TODO remove. do we even need this?
+        raise NotImplementedError
 
     def path_for_name(self, name):
         for path in self._paths():
             if name in path:
                 return path[:path.index(name) + 1]
-        raise NotImplementedError
+        raise ValueError('Name should be defined in the import itself')
 
     @property
     def level(self):
