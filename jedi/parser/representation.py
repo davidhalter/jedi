@@ -1077,6 +1077,12 @@ class Import(Simple):
         raise NotImplementedError
 
     def path_for_name(self, name):
+        try:
+            # The name may be an alias. If it is, just map it back to the name.
+            name = self.aliases()[name]
+        except KeyError:
+            pass
+
         for path in self._paths():
             if name in path:
                 return path[:path.index(name) + 1]
@@ -1107,6 +1113,11 @@ class Import(Simple):
 class ImportFrom(Import):
     def get_defined_names(self):
         return [alias or name for name, alias in self._as_name_tuples()]
+
+    def aliases(self):
+        """Mapping from alias to its corresponding name."""
+        return dict((alias, name) for name, alias in self._as_name_tuples()
+                    if alias is not None)
 
     def _as_name_tuples(self):
         last = self.children[-1]
@@ -1151,6 +1162,10 @@ class ImportName(Import):
             return [n.children[::2]]
         else:
             return [self.children[1:]]
+
+    def aliases(self):
+        raise NotImplementedError
+        return []
 
 
 class KeywordStatement(Simple):

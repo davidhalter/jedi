@@ -89,6 +89,7 @@ class ImportWrapper():
                     # ``os.path``, because it's a very important one in Python
                     # that is being achieved by messing with ``sys.modules`` in
                     # ``os``.
+                    raise NotImplementedError
                     scopes = self._evaluator.follow_path(iter(rest), [module], module)
             elif rest:
                 if is_goto:
@@ -97,8 +98,8 @@ class ImportWrapper():
                         for s in scopes))
                 else:
                     scopes = list(chain.from_iterable(
-                        self._evaluator.follow_path(iter(rest), [s], s)
-                        for s in scopes))
+                                  self._evaluator.find_types(s, rest[0])
+                                  for s in scopes))
             debug.dbg('after import: %s', scopes)
             if not scopes:
                 analysis.add(self._evaluator, 'import-error', importer.import_path[-1])
@@ -431,6 +432,8 @@ class _Importer(object):
         scope, rest = self.follow_file_system()
         if rest:
             # follow the rest of the import (not FS -> classes, functions)
+            raise NotImplementedError
+            # old
             return evaluator.follow_path(iter(rest), [scope], scope)
         return [scope]
 

@@ -108,6 +108,15 @@ def scope_from_import_variable_with_parenthesis():
     #? ['foobarbaz']
     foobarbaz
 
+
+def as_imports():
+    from import_tree.mod1 import a as xyz
+    #? int()
+    xyz
+    import import_tree.mod1 as foo
+    #? int()
+    foo.a
+
 # -----------------
 # std lib modules
 # -----------------
