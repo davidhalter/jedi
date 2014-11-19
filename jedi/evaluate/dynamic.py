@@ -93,7 +93,7 @@ def search_params(evaluator, param):
                     # At the same time we also have to remove InstanceElements.
                     undec = [escope.decorates or
                              (escope.var if isinstance(escope, er.InstanceElement) else escope)
-                             for escope in types if escope.isinstance(er.Function, er.Class)]
+                             for escope in types if escope.isinstance(er.Function, er.Instance)]
                     if er.wrap(evaluator, compare) in undec:
                         # Only if we have the correct function we execute
                         # it, otherwise just ignore it.
