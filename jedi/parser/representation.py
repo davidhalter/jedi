@@ -1088,12 +1088,6 @@ class Import(Simple):
                 return path[:path.index(name) + 1]
         raise ValueError('Name should be defined in the import itself')
 
-    @property
-    def level(self):
-        """The level parameter of ``__import__``."""
-        # TODO implement
-        return 0
-
     def is_nested(self):
         """
         This checks for the special case of nested imports, without aliases and
@@ -1119,6 +1113,17 @@ class ImportFrom(Import):
         return dict((alias, name) for name, alias in self._as_name_tuples()
                     if alias is not None)
 
+    @property
+    def level(self):
+        """The level parameter of ``__import__``."""
+        level = 0
+        for n in self.children[1:]:
+            if n in ('.', '...'):
+                level += len(n.value)
+            else:
+                break
+        return level
+
     def _as_name_tuples(self):
         last = self.children[-1]
         if last == ')':
@@ -1137,9 +1142,9 @@ class ImportFrom(Import):
                 yield as_name.children[::2]  # yields x, y -> ``x as y``
 
     def _paths(self):
-        n = self.children[1]
-        if self.children[1] in ('.', '...'):
-            raise NotImplementedError
+        for n in self.children[1:]:
+            if n not in ('.', '...'):
+                break
         if is_node(n, 'dotted_name'):
             dotted = n.children[::2]
         else:
@@ -1151,6 +1156,11 @@ class ImportName(Import):
     """For ``import_name`` nodes. Covers normal imports without ``from``."""
     def get_defined_names(self):
         return [alias or path[0] for path, alias in self._dotted_as_names()]
+
+    @property
+    def level(self):
+        """The level parameter of ``__import__``."""
+        return 0  # Obviously 0 for imports without from.
 
     def _paths(self):
         return [path for path, alias in self._dotted_as_names()]

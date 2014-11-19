@@ -57,7 +57,8 @@ class ImportWrapper():
         try:
             module = self._import.get_parent_until()
             import_path = self._import.path_for_name(self._name)
-            importer = get_importer(self._evaluator, tuple(import_path), module, level=0)
+            importer = get_importer(self._evaluator, tuple(import_path),
+                                    module, self._import.level)
             try:
                 module, rest = importer.follow_file_system()
             except ModuleNotFound as e:
