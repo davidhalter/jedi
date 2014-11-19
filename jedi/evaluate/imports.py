@@ -87,15 +87,18 @@ class ImportWrapper(pr.Base):
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
-                scopes = []
-                if ('os', 'path') == self.import_path[:2] \
-                        and not self._is_relative_import():
+                if ('os', 'path') == importer.str_import_path()[:2] \
+                        and self._import.level == 0:
                     # This is a huge exception, we follow a nested import
                     # ``os.path``, because it's a very important one in Python
                     # that is being achieved by messing with ``sys.modules`` in
                     # ``os``.
-                    raise NotImplementedError
-                    scopes = self._evaluator.follow_path(iter(rest), [module], module)
+                    for r in rest:
+                        scopes = list(chain.from_iterable(
+                                      self._evaluator.find_types(s, r)
+                                      for s in scopes))
+                else:
+                    scopes = []
             elif rest:
                 if is_goto:
                     scopes = list(chain.from_iterable(
