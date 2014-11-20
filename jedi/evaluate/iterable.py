@@ -240,7 +240,7 @@ class Array(IterableWrapper):
         It returns e.g. for a list: append, pop, ...
         """
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
+        scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
         from jedi.evaluate.representation import get_instance_el
         for _, names in scope.scope_names_generator():

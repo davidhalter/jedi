@@ -220,8 +220,9 @@ class Evaluator(object):
         else:
             c = atom.children
             # Parentheses without commas are not tuples.
-            if c[0] == '(' and not (pr.is_node(c[1], 'testlist_comp')
-                                    and len(c[1].children) > 1):
+            if c[0] == '(' and not len(c) == 2 \
+                    and not(pr.is_node(c[1], 'testlist_comp')
+                            and len(c[1].children) > 1):
                 return self.eval_element(c[1])
             try:
                 comp_for = c[1].children[1]
