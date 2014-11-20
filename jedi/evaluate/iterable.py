@@ -293,7 +293,7 @@ class Array(IterableWrapper):
         return iter(self._items())
 
     def __repr__(self):
-        return "<e%s of %s>" % (type(self).__name__, self._atom)
+        return "<%s of %s>" % (type(self).__name__, self._atom)
 
 
 class _FakeArray(Array):
@@ -323,6 +323,11 @@ class FakeSequence(_FakeArray):
     def get_exact_index_types(self, index):
         return list(chain.from_iterable(self._evaluator.eval_element(v)
                                         for v in self._sequence_values[index]))
+
+
+class AlreadyEvaluated(frozenset):
+    """A simple container to add already evaluated objects to an array."""
+    pass
 
 
 class FakeDict(_FakeArray):

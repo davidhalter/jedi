@@ -22,8 +22,7 @@ from textwrap import dedent
 from jedi.evaluate.cache import memoize_default
 from jedi.parser import Parser
 from jedi.common import indent_block
-from jedi.evaluate.iterable import Array
-from jedi.evaluate import helpers
+from jedi.evaluate.iterable import Array, FakeSequence, AlreadyEvaluated
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -117,7 +116,7 @@ def _strip_rst_role(type_str):
 def _evaluate_for_statement_string(evaluator, string, module):
     code = dedent("""
     def pseudo_docstring_stuff():
-        '''Create a pseudo function for docstring statements.'''
+        # Create a pseudo function for docstring statements.
     %s
     """)
     if string is None:
@@ -162,10 +161,8 @@ def _execute_array_values(evaluator, array):
         values = []
         for typ in array.values():
             objects = _execute_array_values(evaluator, typ)
-            values.append(helpers.FakeStatement(objects))
-        arr = helpers.FakeArray(values, array.parent, array.type)
-        # Wrap it, because that's what the evaluator knows.
-        return [Array(evaluator, arr)]
+            values.append([AlreadyEvaluated(objects)])
+        return [FakeSequence(evaluator, values, array.type)]
     else:
         return evaluator.execute(array)
 

@@ -543,9 +543,7 @@ class Scope(Simple, DocstringMixin):
 
     @property
     def statements(self):
-        return [s for c in self.children if is_node(c, 'simple_stmt')
-                for s in c.children if isinstance(s, (ExprStmt, Import,
-                                                      KeywordStatement))]
+        return self._search_in_scope((ExprStmt, Import, KeywordStatement))
 
     def is_scope(self):
         return True
