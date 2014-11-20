@@ -543,7 +543,7 @@ class Scope(Simple, DocstringMixin):
 
     @property
     def statements(self):
-        return self._search_in_scope((ExprStmt, Import, KeywordStatement))
+        return self._search_in_scope((ExprStmt, KeywordStatement))
 
     def is_scope(self):
         return True
