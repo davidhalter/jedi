@@ -234,7 +234,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         if self.decorates is not None:
             dec = " decorates " + repr(self.decorates)
         return "<e%s of %s(%s)%s>" % (type(self).__name__, self.base,
-                                     self.var_args.argument_node, dec)
+                                      self.var_args, dec)
 
 
 def get_instance_el(evaluator, instance, var, is_class_var=False):

@@ -18,6 +18,7 @@ from jedi.parser import Parser
 from jedi.parser import representation as pr
 from jedi import debug
 from jedi.evaluate import precedence
+from jedi.evaluate import param
 
 
 class NotInStdLib(LookupError):
@@ -148,20 +149,17 @@ def builtins_super(evaluator, types, objects, scope):
     return []
 
 
-def builtins_reversed(evaluator, obj, params):
-    objects = tuple(_follow_param(evaluator, params, 0))
-    if objects:
-        # unpack the iterator values
-        objects = tuple(iterable.get_iterator_types(objects))
-        if objects:
-            rev = reversed(objects)
-            # Repack iterator values and then run it the normal way. This is
-            # necessary, because `reversed` is a function and autocompletion
-            # would fail in certain cases like `reversed(x).__iter__` if we
-            # just returned the result directly.
-            stmts = [FakeStatement([r]) for r in rev]
-            objects = (iterable.Array(evaluator, FakeArray(stmts, objects[0].parent)),)
-    return [er.Instance(evaluator, obj, objects)]
+@argument_clinic('sequence, /', want_obj=True)
+def builtins_reversed(evaluator, sequences, obj):
+    # Unpack the iterator values
+    objects = tuple(iterable.get_iterator_types(sequences))
+    rev = [iterable.AlreadyEvaluated([o]) for o in reversed(objects)]
+    # Repack iterator values and then run it the normal way. This is
+    # necessary, because `reversed` is a function and autocompletion
+    # would fail in certain cases like `reversed(x).__iter__` if we
+    # just returned the result directly.
+    rev = iterable.FakeSequence(evaluator, rev, pr.Array.LIST)
+    return [er.Instance(evaluator, obj, param.Arguments(evaluator, [rev]))]
 
 
 @argument_clinic('obj, type, /')
