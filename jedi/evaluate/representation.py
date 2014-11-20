@@ -722,13 +722,17 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         if sub_modules:
             yield self, self._sub_modules()
 
-    @underscore_memoization
+    @memoize_default([])
     def star_imports(self):
         modules = []
         for i in self.base.imports:
             if i.is_star_import():
                 name = i.star_import_name()
-                modules += imports.ImportWrapper(self._evaluator, name).follow()
+                new = imports.ImportWrapper(self._evaluator, name).follow()
+                for module in new:
+                    if isinstance(module, pr.Module):
+                        modules += module.star_imports()
+                modules += new
         return modules
 
     @memoize_default()
