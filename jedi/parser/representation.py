@@ -95,24 +95,36 @@ class GetCodeState(object):
 class DocstringMixin(object):
     __slots__ = ()
 
-    def add_docstr(self, token):
-        """ Clean up a docstring """
-        self._doc_token = token
-
     @property
     def raw_doc(self):
         """ Returns a cleaned version of the docstring token. """
+        if isinstance(self, SubModule):
+            stmt = self.children[0]
+        else:
+            stmt = self.children[-1]
+            if is_node(stmt, 'suite'):  # Normally a suite
+                stmt = stmt.children[2]  # -> NEWLINE INDENT stmt
+        if is_node(stmt, 'simple_stmt'):
+            stmt = stmt.children[0]
+
         try:
-            # Returns a literal cleaned version of the ``Token``.
-            cleaned = cleandoc(literal_eval(self._doc_token.string))
-            # Since we want the docstr output to be always unicode, just force
-            # it.
-            if is_py3 or isinstance(cleaned, unicode):
-                return cleaned
-            else:
-                return unicode(cleaned, 'UTF-8', 'replace')
+            first = stmt.children[0]
         except AttributeError:
-            return u('')
+            pass  # Probably a pass Keyword (Leaf).
+        else:
+            if isinstance(first, String):
+                # TODO We have to check next leaves until there are no new
+                # leaves anymore that might be part of the docstring. A
+                # docstring can also look like this: ``'foo' 'bar'
+                # Returns a literal cleaned version of the ``Token``.
+                cleaned = cleandoc(literal_eval(first.value))
+                # Since we want the docstr output to be always unicode, just
+                # force it.
+                if is_py3 or isinstance(cleaned, unicode):
+                    return cleaned
+                else:
+                    return unicode(cleaned, 'UTF-8', 'replace')
+        return ''
 
 
 class Base(object):
@@ -328,6 +340,14 @@ class Literal(Leaf):
             s = self.literal.encode('ascii', 'replace')
         """
         return "<%s: %s>" % (type(self).__name__, self.value)
+
+
+class Number(Literal):
+    pass
+
+
+class String(Literal):
+    pass
 
 
 class Operator(Leaf):

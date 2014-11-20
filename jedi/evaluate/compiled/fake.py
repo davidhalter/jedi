@@ -104,7 +104,8 @@ def get_faked(module, obj, name=None):
         # Set the docstr which was previously not set (faked modules don't
         # contain it).
         doc = '''"""%s"""''' % obj.__doc__  # TODO need escapes.
-        result.add_docstr(tokenize.Token(tokenize.STRING, doc, (0, 0)))
+        # TODO We need to add the docstr in a proper way.
+        #result.add_docstr(tokenize.Token(tokenize.STRING, doc, (0, 0)))
         return result
 
 

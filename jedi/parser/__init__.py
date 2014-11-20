@@ -152,8 +152,10 @@ class Parser(object):
                 arr = self.scope_names_stack[-1].setdefault(name.value, [])
                 arr.append(name)
                 return name
-        elif type in (tokenize.STRING, tokenize.NUMBER):
-            return pr.Literal(value, start_pos, prefix)
+        elif type == tokenize.STRING:
+            return pr.String(value, start_pos, prefix)
+        elif type == tokenize.NUMBER:
+            return pr.Number(value, start_pos, prefix)
         elif type in (tokenize.NEWLINE, tokenize.ENDMARKER):
             return pr.Whitespace(value, start_pos, prefix)
         else:
