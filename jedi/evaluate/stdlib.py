@@ -115,10 +115,12 @@ def builtins_getattr(evaluator, objects, names, defaults=None):
     return types
 
 
-def builtins_type(evaluator, obj, params):
-    if len(params) == 1:
-        # otherwise it would be a metaclass... maybe someday...
-        objects = _follow_param(evaluator, params, 0)
+@argument_clinic('object[, bases, dict], /')
+def builtins_type(evaluator, objects, bases, dicts):
+    if bases or dicts:
+        # metaclass... maybe someday...
+        return []
+    else:
         return [o.base for o in objects if isinstance(o, er.Instance)]
     return []
 
