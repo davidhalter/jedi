@@ -232,10 +232,9 @@ def collections_namedtuple(evaluator, obj, params):
     return [er.Class(evaluator, generated_class)]
 
 
-def _return_first_param(evaluator, obj, params):
-    if len(params) == 1:
-        return _follow_param(evaluator, params, 0)
-    return []
+@argument_clinic('first, /')
+def _return_first_param(evaluator, firsts):
+    return firsts
 
 
 _implemented = {
