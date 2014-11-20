@@ -35,6 +35,11 @@ from jedi.cache import underscore_memoization
 from jedi.evaluate import analysis
 
 
+def unite(iterable):
+    """Turns a two dimensional array into a one dimensional."""
+    return list(chain.from_iterable(iterable))
+
+
 class IterableWrapper(pr.Base):
     def is_class(self):
         return False
@@ -212,8 +217,7 @@ class Array(IterableWrapper):
 
     @memoize_default(NO_DEFAULT)
     def values(self):
-        result = list(chain.from_iterable(self._evaluator.eval_element(v)
-                      for v in self._values()))
+        result = unite(self._evaluator.eval_element(v) for v in self._values())
         # TODO reenable
         #result += check_array_additions(self._evaluator, self)
         return result
@@ -260,6 +264,7 @@ class Array(IterableWrapper):
         return getattr(self._atom, name)
 
     def _values(self):
+        """Returns a list of a list of node."""
         if self.type == pr.Array.DICT:
             return list(chain.from_iterable(v for k, v in self._items()))
         else:
@@ -330,6 +335,10 @@ class AlreadyEvaluated(frozenset):
     pass
 
 
+class MergedNodes(frozenset):
+    pass
+
+
 class FakeDict(_FakeArray):
     def __init__(self, evaluator, dct):
         super(FakeDict, self).__init__(evaluator, dct, pr.Array.DICT)
@@ -343,9 +352,9 @@ class FakeDict(_FakeArray):
         return self._dct.items()
 
 
-class MergedArray(Array):
+class MergedArray(_FakeArray):
     def __init__(self, evaluator, arrays):
-        super(MergedArray, self).__init__(evaluator, arrays[-1]._atom)
+        super(MergedArray, self).__init__(evaluator, arrays, arrays[-1].type)
         self._arrays = arrays
 
     def get_index_types(self, evaluator, mixed_index):

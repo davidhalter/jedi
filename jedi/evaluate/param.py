@@ -246,15 +246,15 @@ def get_params(evaluator, func, var_args):
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
-            lst_values = [va_values] if va_values else []
+            lst_values = [iterable.MergedNodes(va_values)] if va_values else []
             for key, va_values in var_arg_iterator:
                 # Iterate until a key argument is found.
                 if key:
                     var_arg_iterator.push_back((key, va_values))
                     break
-                lst_values.append(va_values)
+                lst_values.append(iterable.MergedNodes(va_values))
             if lst_values:
-                values = [iterable.FakeSequence(evaluator, tuple(lst_values),
+                values = [iterable.FakeSequence(evaluator, lst_values,
                                                 pr.Array.TUPLE)]
                 #values = [helpers.stmts_to_stmt(v) for v in lst_values]
         elif param.stars == 2:
@@ -448,7 +448,7 @@ def _gen_param_name_copy(evaluator, func, var_args, param, keys=(), values=(), a
         start_pos = 0, 0
 
     # create an Array (-> needed for *args/**kwargs tuples/dicts)
-    arr = iterable.FakeSequence(evaluator, tuple(values), array_type)
+    arr = iterable.FakeSequence(evaluator, values, array_type)
     # TODO change?!
     """
     arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)

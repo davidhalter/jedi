@@ -168,6 +168,8 @@ class Evaluator(object):
     def eval_element(self, element):
         if isinstance(element, iterable.AlreadyEvaluated):
             return element
+        elif isinstance(element, iterable.MergedNodes):
+            return iterable.unite(self.eval_element(e) for e in element)
 
         debug.dbg('eval_element %s@%s', element, element.start_pos)
         if isinstance(element, (pr.Name, pr.Literal)) or pr.is_node(element, 'atom'):
