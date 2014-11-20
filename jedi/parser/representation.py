@@ -286,7 +286,7 @@ class Name(Leaf):
     def is_definition(self):
         stmt = self.get_definition()
         if isinstance(stmt, (Function, Class, Module)):
-            return True
+            return self == stmt.name
         elif isinstance(stmt, ForStmt):
             return self.start_pos < stmt.children[2].start_pos
         elif isinstance(stmt, Param):
