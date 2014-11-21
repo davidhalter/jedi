@@ -35,15 +35,14 @@ def _execute_code(module_path, code):
         exec_function(c % code, variables)
     except Exception:
         debug.warning('sys.path manipulation detected, but failed to evaluate.')
-        return None
-    try:
-        res = variables['result']
-        if isinstance(res, str):
-            return os.path.abspath(res)
-        else:
-            return None
-    except KeyError:
-        return None
+    else:
+        try:
+            res = variables['result']
+            if isinstance(res, str):
+                return [os.path.abspath(res)]
+        except KeyError:
+            pass
+    return []
 
 
 def _paths_from_assignment(evaluator, statement):
@@ -73,52 +72,48 @@ def _paths_from_assignment(evaluator, statement):
                 yield val.obj
 
 
-def _paths_from_insert(module_path, exe):
-    """ extract the inserted module path from an "sys.path.insert" statement
-    """
-    exe_type, exe.type = exe.type, pr.Array.NOARRAY
-    try:
-        exe_pop = exe.values.pop(0)
-        res = _execute_code(module_path, exe.get_code())
-    finally:
-        exe.type = exe_type
-    exe.values.insert(0, exe_pop)
-    return res
-
-
-def _paths_from_call_expression(module_path, call):
+def _paths_from_list_modifications(module_path, trailer1, trailer2):
     """ extract the path from either "sys.path.append" or "sys.path.insert" """
-    names = call.names()
-    if names[:3] != ['sys', 'path', 'append'] and names[:3] != ['sys', 'path', 'insert']:
-        return []
-    if not call.next.next.next_is_execution():
+    # Guarantee that both are trailers, the first one a name and the second one
+    # a function execution with at least one param.
+    if not (pr.is_node(trailer1, 'trailer') and trailer1.children[0] == '.'
+            and pr.is_node(trailer2, 'trailer') and trailer2.children[0] == '('
+            and len(trailer2.children) == 3):
         return []
 
-    cmd = names[2]
-    exe = call.next.next.next
-    path = None
-    if cmd == 'insert' and len(exe) == 2:
-        path = _paths_from_insert(module_path, exe)
-    elif cmd == 'append' and len(exe) == 1:
-        path = _execute_code(module_path, exe.get_code())
-    return path and [path] or []
+    name = trailer1.children[1].value
+    if name not in ['insert', 'append']:
+        return []
+
+    arg = trailer2.children[1]
+    if name == 'insert' and len(arg.children) in (3, 4):  # Possible trailing comma.
+        arg = arg.children[2]
+    return _execute_code(module_path, arg.get_code())
 
 
 def _check_module(evaluator, module):
-    try:
-        possible_stmts = module.used_names['path']
-    except KeyError:
-        return get_sys_path()
+    def get_sys_path_powers(names):
+        for power in [p.parent.parent for p in names]:
+            if pr.is_node(power, 'power'):
+                c = power.children
+                if isinstance(c[0], pr.Name) and c[0].value == 'sys' \
+                        and pr.is_node(c[1], 'trailer'):
+                    n = c[1].children[1]
+                    if isinstance(n, pr.Name) and n.value == 'path':
+                        yield power
+
     sys_path = list(get_sys_path())  # copy
-    statements = (p for p in possible_stmts if isinstance(p, pr.ExprStmt))
-    for stmt in statements:
-        expressions = stmt.expression_list()
-        if len(expressions) == 1 and isinstance(expressions[0], pr.Call):
-            sys_path.extend(
-                _paths_from_call_expression(module.path, expressions[0]) or [])
-        elif hasattr(stmt, 'assignment_details') \
-                and len(stmt.assignment_details) == 1:
-            sys_path.extend(_paths_from_assignment(evaluator, stmt))
+    try:
+        possible_names = module.used_names['path']
+    except KeyError:
+        pass
+    else:
+        for power in get_sys_path_powers(possible_names):
+            if len(power.children) >= 4:
+                sys_path.extend(_paths_from_list_modifications(module.path, *power.children[2:4]))
+            elif hasattr(power, 'assignment_details') \
+                    and len(stmt.assignment_details) == 1:
+                sys_path.extend(_paths_from_assignment(evaluator, stmt))
     return sys_path
 
 
