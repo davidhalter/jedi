@@ -442,17 +442,12 @@ class Script(object):
         user_stmt = self._parser.user_stmt()
 
         stmt = self._get_under_cursor_stmt(goto_path)
-        expression_list = stmt.expression_list()
-        if len(expression_list) == 0:
+        if stmt is None:
             return []
-        # The reverse tokenizer only generates parses call.
-        assert len(expression_list) == 1
-        call = expression_list[0]
-        if isinstance(call, pr.Call):
-            call_path = list(call.generate_call_path())
-        else:
-            # goto_assignments on Operator returns nothing.
-            return []
+
+        last_name = stmt
+        while not isinstance(last_name, pr.Name):
+            last_name = last_name.children[-1]
 
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.
@@ -476,14 +471,14 @@ class Script(object):
             # The Evaluator.goto function checks for definitions, but since we
             # use a reverse tokenizer, we have new name_part objects, so we
             # have to check the user_stmt here for positions.
-            if isinstance(user_stmt, pr.ExprStmt):
+            if     False and     isinstance(user_stmt, pr.ExprStmt):
                 for name in user_stmt.get_defined_names():
                     if name.start_pos <= self._pos <= name.end_pos \
                             and (not isinstance(name.parent, pr.Call)
                                  or name.parent.next is None):
                         return [name]
 
-            defs = self._evaluator.goto(stmt, call_path)
+            defs = self._evaluator.goto(last_name)
             definitions = follow_inexistent_imports(defs)
         return definitions
 

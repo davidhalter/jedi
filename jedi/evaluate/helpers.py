@@ -97,7 +97,7 @@ def deep_ast_copy(obj, new_elements_default=None):
     return recursion(obj)
 
 
-def call_of_name(name):
+def call_of_name(name, cut_own_trailer=False):
     """
     Creates a "call" node that consist of all ``trailer`` and ``power``
     objects.  E.g. if you call it with ``append``::
@@ -119,10 +119,14 @@ def call_of_name(name):
         par = power
         # Now the name must be part of a trailer
         index = par.children.index(name.parent)
-        if index != len(par.children) - 1:
+        if index != len(par.children) - 1 or cut_own_trailer:
             # Now we have to cut the other trailers away.
             par = deep_ast_copy(par)
-            par.children[index + 1:] = []
+            if not cut_own_trailer:
+                # Normally we would remove just the stuff after the index, but
+                # if the option is set remove the index as well. (for goto)
+                index = index + 1
+            par.children[index:] = []
 
     return par
 

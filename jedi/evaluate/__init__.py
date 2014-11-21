@@ -442,7 +442,15 @@ class Evaluator(object):
         call = call_of_name(name)
         return self.eval_element(call)
 
-    def goto(self, stmt, call_path):
+    def goto(self, name):
+        scope = name.get_parent_scope()
+        if pr.is_node(name.parent, 'trailer'):
+            call = call_of_name(name, cut_own_trailer=True)
+            types = self.eval_element(call)
+            return iterable.unite(self.find_types(typ, name, is_goto=True)
+                                  for typ in types)
+        else:
+            return self.find_types(scope, name, search_global=True, is_goto=True)
         if isinstance(stmt, pr.Import):
             # Nowhere to goto for aliases
             if stmt.alias == call_path[0]:
