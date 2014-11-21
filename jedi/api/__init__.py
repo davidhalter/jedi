@@ -471,11 +471,10 @@ class Script(object):
             # The Evaluator.goto function checks for definitions, but since we
             # use a reverse tokenizer, we have new name_part objects, so we
             # have to check the user_stmt here for positions.
-            if     False and     isinstance(user_stmt, pr.ExprStmt):
+            if isinstance(user_stmt, pr.ExprStmt) \
+                    and isinstance(last_name.parent, pr.ExprStmt):
                 for name in user_stmt.get_defined_names():
-                    if name.start_pos <= self._pos <= name.end_pos \
-                            and (not isinstance(name.parent, pr.Call)
-                                 or name.parent.next is None):
+                    if name.start_pos <= self._pos <= name.end_pos:
                         return [name]
 
             defs = self._evaluator.goto(last_name)

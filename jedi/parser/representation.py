@@ -445,6 +445,13 @@ class Simple(Base):
                     return result
         return None
 
+    def first_leaf(self):
+        try:
+            return self.children[0].first_leaf()
+        except AttributeError:
+            return self.children[0]
+
+
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
         if not is_py3:

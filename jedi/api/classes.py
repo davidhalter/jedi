@@ -591,7 +591,14 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             # only show module name
             d = 'module %s' % self.module_name
         else:
-            d = d.get_code().replace('\n', '').replace('\r', '')
+            first_leaf = d.first_leaf()
+            # Remove the prefix, because that's not what we want for get_code
+            # here.
+            old, first_leaf.prefix = first_leaf.prefix, ''
+            try:
+                d = d.get_code().replace('\n', '').replace('\r', '')
+            finally:
+                first_leaf.prefix = old
         return d
 
     @property

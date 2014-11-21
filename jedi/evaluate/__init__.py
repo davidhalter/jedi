@@ -443,6 +443,10 @@ class Evaluator(object):
         return self.eval_element(call)
 
     def goto(self, name):
+        stmt = name.parent
+        if isinstance(stmt, pr.ExprStmt) and name in stmt.get_defined_names():
+            return [name]
+
         scope = name.get_parent_scope()
         if pr.is_node(name.parent, 'trailer'):
             call = call_of_name(name, cut_own_trailer=True)
