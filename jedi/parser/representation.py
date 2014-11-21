@@ -1469,6 +1469,9 @@ class Param(Base):
     def parent_function(self):
         return self.get_parent_until(IsScope)
 
+    def get_code(self):
+        return self.tfpdef.get_code()
+
     def __init__old(self):
         kwargs.pop('names_are_set_vars', None)
         super(Param, self).__init__(*args, names_are_set_vars=True, **kwargs)

@@ -454,7 +454,8 @@ class Evaluator(object):
             return iterable.unite(self.find_types(typ, name, is_goto=True)
                                   for typ in types)
         else:
-            return self.find_types(scope, name, search_global=True, is_goto=True)
+            return self.find_types(scope, name, name.start_pos,
+                                   search_global=True, is_goto=True)
         if isinstance(stmt, pr.Import):
             # Nowhere to goto for aliases
             if stmt.alias == call_path[0]:
