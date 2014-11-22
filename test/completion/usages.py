@@ -13,15 +13,17 @@ abc
 # unicode chars shouldn't be a problem.
 x['smörbröd'].abc
 
+# With the new parser these statements are not recognized as stateents, because
+# they are not valid Python.
 if 1:
     abc = 
 else:
     (abc) = 
-
 abc = 
-
-#< (-3,0), (0,0)
+#< (-17,4), (-14,0), (-12,0), (0,0)
 abc
+
+abc = 5
 
 
 Abc = 3
@@ -48,11 +50,11 @@ Abc.d.Abc
 
 
 #< 4 (0,4), (4,1)
-def blub():
+def blubi():
 
 
 #< (-4,4), (0,1)
-@blub
+@blubi
 def a(): pass
 
 

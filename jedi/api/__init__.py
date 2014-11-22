@@ -445,9 +445,16 @@ class Script(object):
         if stmt is None:
             return []
 
-        last_name = stmt
-        while not isinstance(last_name, pr.Name):
-            last_name = last_name.children[-1]
+        if user_stmt is None:
+            last_name = None
+        else:
+            # Try to use the parser if possible.
+            last_name = user_stmt.name_for_position(self._pos)
+
+        if last_name is None:
+            last_name = stmt
+            while not isinstance(last_name, pr.Name):
+                last_name = last_name.children[-1]
 
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.

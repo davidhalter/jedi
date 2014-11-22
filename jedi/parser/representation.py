@@ -1456,6 +1456,11 @@ class Param(Base):
         return self.tfpdef.start_pos
 
     def get_name(self):
+        # TODO remove!
+        return self.name
+
+    @property
+    def name(self):
         if is_node(self.tfpdef, 'tfpdef'):
             return self.tfpdef.children[0]
         else:

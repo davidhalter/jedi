@@ -446,6 +446,8 @@ class Evaluator(object):
         stmt = name.parent
         if isinstance(stmt, pr.ExprStmt) and name in stmt.get_defined_names():
             return [name]
+        elif isinstance(stmt, (pr.Param, pr.Function, pr.Class)) and stmt.name is name:
+            return [name]
 
         scope = name.get_parent_scope()
         if pr.is_node(name.parent, 'trailer'):

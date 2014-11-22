@@ -68,7 +68,7 @@ def usages(evaluator, definition_names, mods):
         for name in check_names:
 
             result = evaluator.goto(name)
-            if [c in compare_definitions for c in compare_array(result)]:
+            if [c for c in compare_array(result) if c in compare_definitions]:
                 definitions.append(classes.Definition(evaluator, name))
 
             continue  # TODO DELETE
