@@ -6,7 +6,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import helpers
 
 
-def usages(evaluator, definitions, mods):
+def usages(evaluator, definition_names, mods):
     """
     :param definitions: list of Name
     """
@@ -56,16 +56,25 @@ def usages(evaluator, definitions, mods):
             if any(r in compare_definitions for r in compare_follow_res):
                 yield classes.Definition(evaluator, search)
 
-    search_name = unicode(list(definitions)[0])
-    compare_definitions = compare_array(definitions)
-    mods |= set([d.get_parent_until() for d in definitions])
-    names = []
+    search_name = unicode(list(definition_names)[0])
+    compare_definitions = compare_array(definition_names)
+    mods |= set([d.get_parent_until() for d in definition_names])
+    definitions = []
     for m in imports.get_modules_containing_name(mods, search_name):
         try:
-            stmts = m.used_names[search_name]
+            check_names = m.used_names[search_name]
         except KeyError:
             continue
-        for stmt in stmts:
+        for name in check_names:
+
+            result = evaluator.goto(name)
+            if [c in compare_definitions for c in compare_array(result)]:
+                definitions.append(classes.Definition(evaluator, name))
+
+            continue  # TODO DELETE
+
+
+            stmt = name.get_definition()
             if isinstance(stmt, pr.Import):
                 count = 0
                 imps = []
@@ -83,7 +92,7 @@ def usages(evaluator, definitions, mods):
             else:
                 for call in helpers.scan_statement_for_calls(stmt, search_name, assignment_details=True):
                     names += check_call_for_usage(call)
-    return names
+    return definitions
 
 
 def usages_add_import_modules(evaluator, definitions):
