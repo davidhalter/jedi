@@ -211,14 +211,14 @@ class NameFinder(object):
         # str is important, because it shouldn't be `Name`!
         name = compiled.create(self._evaluator, str(self.name_str))
         with common.ignored(KeyError):
-            result = inst.execute_subscope_by_name('__getattr__', [name])
+            result = inst.execute_subscope_by_name('__getattr__', name)
         if not result:
             # this is a little bit special. `__getattribute__` is executed
             # before anything else. But: I know no use case, where this
             # could be practical and the jedi would return wrong types. If
             # you ever have something, let me know!
             with common.ignored(KeyError):
-                result = inst.execute_subscope_by_name('__getattribute__', [name])
+                result = inst.execute_subscope_by_name('__getattribute__', name)
         return result
 
     def _is_name_break_scope(self, stmt):

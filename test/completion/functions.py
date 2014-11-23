@@ -358,11 +358,13 @@ def nested_kw(**kwargs1):
 def nested_kw2(**kwargs2):
     return nested_kw(**kwargs2)
 
-#? int()
+# invalid command, doesn't need to return anything
+#? 
 nested_kw(b=1, c=1.0, list)
 #? int()
 nested_kw(b=1)
-#? int()
+# invalid command, doesn't need to return anything
+#?  
 nested_kw(d=1.0, b=1, list)
 #? int()
 nested_kw(a=3.0, b=1)
@@ -395,10 +397,12 @@ def nested_both(*args, **kwargs):
 def nested_both2(*args, **kwargs):
     return nested_both(*args, **kwargs)
 
-#? int()
+# invalid commands, may return whatever.
+#? list
 nested_both('', b=1, c=1.0, list)
-#? int()
+#? list
 nested_both('', c=1.0, b=1, list)
+
 #? []
 nested_both('')
 

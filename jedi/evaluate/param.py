@@ -200,7 +200,7 @@ def get_params(evaluator, func, var_args):
     from jedi.evaluate.representation import InstanceElement
     if isinstance(func, InstanceElement):
         # Include self at this place.
-        unpacked_va.insert(0, (None, [func.instance]))
+        unpacked_va.insert(0, (None, [iterable.AlreadyEvaluated([func.instance])]))
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])
@@ -288,6 +288,7 @@ def get_params(evaluator, func, var_args):
             values = [] if param.default is None else [param.default]
             result.append(_gen_param_name_copy(evaluator, func, var_args,
                                                param, [], values))
+
 
             if not (non_matching_keys or had_multiple_value_error
                     or param.stars or param.default):

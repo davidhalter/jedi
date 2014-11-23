@@ -20,6 +20,7 @@ It works as follows:
 from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi import settings
+from jedi import debug
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import imports
@@ -40,6 +41,7 @@ class ParamListener(object):
         self.param_possibilities.append(params)
 
 
+@debug.increase_indent
 @memoize_default([], evaluator_is_first_arg=True)
 def search_params(evaluator, param):
     """
@@ -57,6 +59,7 @@ def search_params(evaluator, param):
     if not settings.dynamic_params:
         return []
     from jedi.evaluate import representation as er
+    debug.dbg('Dynamic param search for %s', param)
 
     def get_params_for_module(module):
         """
@@ -71,7 +74,7 @@ def search_params(evaluator, param):
 
             for name in names:
                 stmt = name.get_definition()
-                if not isinstance(stmt, (pr.ExprStmt, pr.CompFor)):
+                if not isinstance(stmt, (pr.ExprStmt, pr.CompFor, pr.ReturnStmt)):
                     continue
                 parent = name.parent
                 if pr.is_node(parent, 'trailer'):
@@ -179,4 +182,5 @@ def search_params(evaluator, param):
         # cleanup: remove the listener; important: should not stick.
         func.listeners.remove(listener)
 
+    debug.dbg('Dynamic param result %s', result)
     return result

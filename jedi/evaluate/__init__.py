@@ -256,6 +256,13 @@ class Evaluator(object):
                     new_types += get(self, node)
         return new_types
 
+    def execute_evaluated(self, obj, *args):
+        """
+        Execute a function with already executed arguments.
+        """
+        args = [iterable.AlreadyEvaluated([arg]) for arg in args]
+        return self.execute(obj, args)
+
     @debug.increase_indent
     def execute(self, obj, arguments=(), trailer=None):
         if not isinstance(arguments, param.Arguments):
