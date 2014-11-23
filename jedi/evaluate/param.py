@@ -156,10 +156,7 @@ class ExecutedParam(pr.Param):
     def eval(self, evaluator):
         types = []
         for v in self.values:
-            if isinstance(v, (pr.Simple, pr.Leaf)):
-                types += evaluator.eval_element(v)
-            else:
-                types.append(v)
+            types += evaluator.eval_element(v)
         return types
 
     @property
@@ -246,21 +243,20 @@ def get_params(evaluator, func, var_args):
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
-            lst_values = [iterable.MergedNodes(va_values)] if va_values else []
+            lst_values = [iterable.MergedNodes(va_values)]
             for key, va_values in var_arg_iterator:
                 # Iterate until a key argument is found.
                 if key:
                     var_arg_iterator.push_back((key, va_values))
                     break
                 lst_values.append(iterable.MergedNodes(va_values))
-            if lst_values:
-                values = [iterable.FakeSequence(evaluator, lst_values,
-                                                pr.Array.TUPLE)]
-                #values = [helpers.stmts_to_stmt(v) for v in lst_values]
+            seq = iterable.FakeSequence(evaluator, lst_values, pr.Array.TUPLE)
+            values = [iterable.AlreadyEvaluated([seq])]
         elif param.stars == 2:
             # **kwargs param
             array_type = pr.Array.DICT
-            values = [iterable.FakeDict(evaluator, dict(non_matching_keys))]
+            dct = iterable.FakeDict(evaluator, dict(non_matching_keys))
+            values = [iterable.AlreadyEvaluated([dct])]
             non_matching_keys = {}
         else:
             # normal param

@@ -494,7 +494,8 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 # Create param array.
                 old_func = Function(self._evaluator, f, is_decorated=True)
 
-                wrappers = self._evaluator.execute(decorator, (old_func,))
+                arg = iterable.AlreadyEvaluated([old_func])
+                wrappers = self._evaluator.execute(decorator, (arg,))
                 if not len(wrappers):
                     debug.warning('no wrappers found %s', self.base_func)
                     return self
