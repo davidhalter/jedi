@@ -1,7 +1,7 @@
 from jedi._compatibility import u, unicode
 from jedi import common
 from jedi.api import classes
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.evaluate import imports
 from jedi.evaluate import helpers
 

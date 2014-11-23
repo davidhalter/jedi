@@ -13,9 +13,8 @@ from jedi._compatibility import unicode
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
-from jedi.evaluate.helpers import FakeArray, FakeStatement
 from jedi.parser import Parser
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param

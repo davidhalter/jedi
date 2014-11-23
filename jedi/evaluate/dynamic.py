@@ -18,7 +18,7 @@ It works as follows:
 """
 
 from jedi._compatibility import unicode
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi import settings
 from jedi import debug
 from jedi.evaluate import helpers

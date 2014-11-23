@@ -72,7 +72,7 @@ import copy
 from itertools import tee, chain
 
 from jedi._compatibility import next, hasattr, unicode
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.parser.pytree import python_symbols
 from jedi.parser.tokenize import Token
 from jedi.parser import fast

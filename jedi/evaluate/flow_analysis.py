@@ -1,4 +1,4 @@
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 
 
 class Status(object):

@@ -11,7 +11,7 @@ from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize
 from jedi.evaluate.sys_path import get_sys_path
-from jedi.parser.representation import Param, SubModule, Base, Operator
+from jedi.parser.tree import Param, SubModule, Base, Operator
 from jedi.evaluate.helpers import FakeName
 from . import fake
 

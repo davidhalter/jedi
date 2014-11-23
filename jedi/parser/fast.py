@@ -9,7 +9,7 @@ from jedi._compatibility import use_metaclass, unicode
 from jedi import settings
 from jedi import common
 from jedi.parser import Parser
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.parser import tokenize
 from jedi import cache
 from jedi.parser.tokenize import (source_tokens, Token, FLOWS, NEWLINE,

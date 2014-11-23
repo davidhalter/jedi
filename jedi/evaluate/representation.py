@@ -1,5 +1,5 @@
 """
-Like described in the :mod:`jedi.parser.representation` module,
+Like described in the :mod:`jedi.parser.tree` module,
 there's a need for an ast like module to represent the states of parsed
 modules.
 
@@ -34,7 +34,7 @@ import pkgutil
 from itertools import chain
 
 from jedi._compatibility import use_metaclass, unicode, Python3Method
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.parser.tokenize import Token
 from jedi.parser.pytree import python_symbols
 from jedi import debug

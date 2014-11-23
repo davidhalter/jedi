@@ -4,7 +4,7 @@ Handles operator precedence.
 import operator
 
 from jedi._compatibility import unicode
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi import debug
 from jedi.common import PushBackIterator
 from jedi.evaluate.compiled import (CompiledObject, create, builtin,

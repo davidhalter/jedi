@@ -3,7 +3,7 @@ Module for statical analysis.
 """
 
 from jedi import debug
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.evaluate.compiled import CompiledObject
 
 

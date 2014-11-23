@@ -5,7 +5,7 @@ from itertools import chain
 from jedi._compatibility import unicode, zip_longest
 from jedi import debug
 from jedi import common
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.evaluate import iterable
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis

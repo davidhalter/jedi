@@ -2,7 +2,7 @@ import copy
 from itertools import chain
 
 from jedi._compatibility import unicode
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi import debug
 
 

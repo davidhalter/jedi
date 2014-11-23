@@ -2,7 +2,7 @@ import os
 import sys
 
 from jedi._compatibility import exec_function, unicode
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.parser import Parser
 from jedi.evaluate.cache import memoize_default
 from jedi import debug

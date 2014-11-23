@@ -10,7 +10,7 @@ import inspect
 from jedi._compatibility import is_py3, builtins, unicode
 from jedi.parser import Parser
 from jedi.parser import tokenize
-from jedi.parser.representation import Class
+from jedi.parser.tree import Class
 from jedi.evaluate.helpers import FakeName
 
 modules = {}

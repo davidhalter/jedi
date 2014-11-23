@@ -14,7 +14,7 @@ check for -> a is a string). There's big potential in these checks.
 from itertools import chain
 
 from jedi._compatibility import hasattr, unicode, u
-from jedi.parser import representation as pr, tokenize
+from jedi.parser import tree as pr, tokenize
 from jedi.parser import fast
 from jedi import debug
 from jedi import common

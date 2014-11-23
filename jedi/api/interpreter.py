@@ -7,7 +7,7 @@ from jedi.common import source_to_unicode
 from jedi.cache import underscore_memoization
 from jedi.evaluate import compiled
 from jedi.evaluate.compiled.fake import get_module
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.parser.fast import FastParser
 from jedi.evaluate import helpers
 

@@ -26,7 +26,7 @@ from jedi import common
 from jedi import debug
 from jedi import settings
 from jedi._compatibility import use_metaclass, is_py3, unicode
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import precedence

@@ -9,7 +9,7 @@ from itertools import chain
 from jedi._compatibility import next, unicode, use_metaclass
 from jedi import settings
 from jedi import common
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.evaluate.helpers import statement_elements_in_statement
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import representation as er

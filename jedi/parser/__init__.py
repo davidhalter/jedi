@@ -1,7 +1,7 @@
 """
 The ``Parser`` tries to convert the available Python code in an easy to read
 format, something like an abstract syntax tree. The classes who represent this
-tree, are sitting in the :mod:`jedi.parser.representation` module.
+tree, are sitting in the :mod:`jedi.parser.tree` module.
 
 The Python module ``tokenize`` is a very important part in the ``Parser``,
 because it splits the code into different words (tokens).  Sometimes it looks a
@@ -21,7 +21,7 @@ import logging
 from jedi._compatibility import next, unicode
 from jedi import debug
 from jedi import common
-from jedi.parser import representation as pr
+from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser import pytree
 from jedi.parser.pgen2 import Driver
@@ -52,29 +52,29 @@ class Parser(object):
             source += '\n'
 
         _ast_mapping = {
-            'expr_stmt': pr.ExprStmt,
-            'classdef': pr.Class,
-            'funcdef': pr.Function,
-            'file_input': pr.SubModule,
-            'import_name': pr.ImportName,
-            'import_from': pr.ImportFrom,
-            'break_stmt': pr.KeywordStatement,
-            'continue_stmt': pr.KeywordStatement,
-            'return_stmt': pr.ReturnStmt,
-            'raise_stmt': pr.KeywordStatement,
-            'yield_expr': pr.YieldExpr,
-            'del_stmt': pr.KeywordStatement,
-            'pass_stmt': pr.KeywordStatement,
-            'global_stmt': pr.GlobalStmt,
-            'nonlocal_stmt': pr.KeywordStatement,
-            'assert_stmt': pr.KeywordStatement,
-            'if_stmt': pr.IfStmt,
-            'with_stmt': pr.WithStmt,
-            'for_stmt': pr.ForStmt,
-            'while_stmt': pr.WhileStmt,
-            'try_stmt': pr.TryStmt,
-            'comp_for': pr.CompFor,
-            'decorator': pr.Decorator,
+            'expr_stmt': pt.ExprStmt,
+            'classdef': pt.Class,
+            'funcdef': pt.Function,
+            'file_input': pt.SubModule,
+            'import_name': pt.ImportName,
+            'import_from': pt.ImportFrom,
+            'break_stmt': pt.KeywordStatement,
+            'continue_stmt': pt.KeywordStatement,
+            'return_stmt': pt.ReturnStmt,
+            'raise_stmt': pt.KeywordStatement,
+            'yield_expr': pt.YieldExpr,
+            'del_stmt': pt.KeywordStatement,
+            'pass_stmt': pt.KeywordStatement,
+            'global_stmt': pt.GlobalStmt,
+            'nonlocal_stmt': pt.KeywordStatement,
+            'assert_stmt': pt.KeywordStatement,
+            'if_stmt': pt.IfStmt,
+            'with_stmt': pt.WithStmt,
+            'for_stmt': pt.ForStmt,
+            'while_stmt': pt.WhileStmt,
+            'try_stmt': pt.TryStmt,
+            'comp_for': pt.CompFor,
+            'decorator': pt.Decorator,
         }
 
         self._ast_mapping = dict((getattr(pytree.python_symbols, k), v)
@@ -110,26 +110,26 @@ class Parser(object):
         try:
             new_node = self._ast_mapping[type](children)
         except KeyError:
-            new_node = pr.Node(type, children)
+            new_node = pt.Node(type, children)
 
         # We need to check raw_node always, because the same node can be
         # returned by convert multiple times.
         if type == pytree.python_symbols.global_stmt:
             self.global_names += new_node.get_defined_names()
-        elif isinstance(new_node, (pr.ClassOrFunc, pr.Module)) \
+        elif isinstance(new_node, (pt.ClassOrFunc, pt.Module)) \
                 and type in (pytree.python_symbols.funcdef,
                              pytree.python_symbols.classdef,
                              pytree.python_symbols.file_input):
             # scope_name_stack handling
             scope_names = self.scope_names_stack.pop()
-            if isinstance(new_node, pr.ClassOrFunc):
+            if isinstance(new_node, pt.ClassOrFunc):
                 n = new_node.name
                 scope_names[n.value].remove(n)
                 # Set the func name of the current node
                 arr = self.scope_names_stack[-1].setdefault(n.value, [])
                 arr.append(n)
             new_node.names_dict = scope_names
-        elif isinstance(new_node, pr.CompFor):
+        elif isinstance(new_node, pt.CompFor):
             # The name definitions of comprehenions shouldn't be part of the
             # current scope. They are part of the comprehension scope.
             for n in new_node.get_defined_names():
@@ -143,9 +143,9 @@ class Parser(object):
                 if value in ('def', 'class'):
                     self.scope_names_stack.append({})
 
-                return pr.Keyword(value, start_pos, prefix)
+                return pt.Keyword(value, start_pos, prefix)
             else:
-                name = pr.Name(value, start_pos, prefix)
+                name = pt.Name(value, start_pos, prefix)
                 # Keep a listing of all used names
                 arr = self.used_names.setdefault(name.value, [])
                 arr.append(name)
@@ -153,13 +153,13 @@ class Parser(object):
                 arr.append(name)
                 return name
         elif type == tokenize.STRING:
-            return pr.String(value, start_pos, prefix)
+            return pt.String(value, start_pos, prefix)
         elif type == tokenize.NUMBER:
-            return pr.Number(value, start_pos, prefix)
+            return pt.Number(value, start_pos, prefix)
         elif type in (tokenize.NEWLINE, tokenize.ENDMARKER):
-            return pr.Whitespace(value, start_pos, prefix)
+            return pt.Whitespace(value, start_pos, prefix)
         else:
-            return pr.Operator(value, start_pos, prefix)
+            return pt.Operator(value, start_pos, prefix)
 
     def error_recovery(self, grammar, stack, type, value):
         """
@@ -185,7 +185,7 @@ class Parser(object):
                 try:
                     clear_names(c.children)
                 except AttributeError:
-                    if isinstance(c, pr.Name):
+                    if isinstance(c, pt.Name):
                         try:
                             self.scope_names_stack[-1][c.value].remove(c)
                             self.used_names[c.value].remove(c)
@@ -200,6 +200,10 @@ class Parser(object):
 
     def __init__old__(self, source, module_path=None, no_docstr=False,
                       tokenizer=None, top_module=None):
+
+        """
+        TODO REMOVE THIS
+        """
         self.no_docstr = no_docstr
 
         tokenizer = tokenizer or tokenize.source_tokens(source)
@@ -208,7 +212,7 @@ class Parser(object):
         # initialize global Scope
         start_pos = next(self._gen).start_pos
         self._gen.push_last_back()
-        self.module = pr.SubModule(module_path, start_pos, top_module)
+        self.module = pt.SubModule(module_path, start_pos, top_module)
         self._scope = self.module
         self._top_module = top_module or self.module
 
@@ -257,7 +261,7 @@ class Parser(object):
             except KeyError:
                 self.module.used_names[tok_name] = set([simple])
         self.module.temp_used_names = []
-        if isinstance(simple, pr.Statement):
+        if isinstance(simple, pt.Statement):
             for name, calls in simple.get_names_dict().items():
                 self._scope.add_name_calls(name, calls)
 

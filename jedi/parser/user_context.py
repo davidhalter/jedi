@@ -7,7 +7,7 @@ from jedi import common
 from jedi.parser import tokenize
 from jedi._compatibility import u
 from jedi.parser.fast import FastParser
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi import debug
 from jedi.common import PushBackIterator
 

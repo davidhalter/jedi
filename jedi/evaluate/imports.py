@@ -21,7 +21,7 @@ from jedi import common
 from jedi import debug
 from jedi import cache
 from jedi.parser import fast
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.evaluate.sys_path import get_sys_path, sys_path_with_modifications
 from jedi.evaluate import helpers
 from jedi import settings
