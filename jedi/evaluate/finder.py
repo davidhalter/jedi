@@ -159,7 +159,7 @@ class NameFinder(object):
                     #   might still have conditions if defined outside of the
                     #   current scope.
                     if isinstance(stmt, (pr.Param, pr.Import)) \
-                            or isinstance(name_list_scope, (pr.Lambda, pr.ListComprehension, er.Instance, InterpreterNamespace)) \
+                            or isinstance(name_list_scope, (pr.Lambda, er.Instance, InterpreterNamespace)) \
                             or isinstance(scope, compiled.CompiledObject):
                         # Always reachable.
                         names.append(name)
@@ -248,6 +248,9 @@ class NameFinder(object):
             return True
 
     def _name_is_array_assignment(self, name, stmt):
+        return False
+
+        # TODO DELETE this? or change it?
         if stmt.isinstance(pr.ExprStmt):
             def is_execution(calls):
                 for c in calls:
@@ -528,9 +531,6 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     :rtype: [(pr.Scope, [pr.Name])]
     :return: Return an generator that yields a pair of scope and names.
     """
-    if isinstance(scope, pr.ListComprehension):
-        position = scope.parent.start_pos
-
     in_func_scope = scope
     non_flow = scope.get_parent_until(pr.Flow, reverse=True)
     while scope:
@@ -554,9 +554,6 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
 
             for g in scope.scope_names_generator(position):
                 yield g
-        if scope.isinstance(pr.ListComprehension):
-            # is a list comprehension
-            yield scope, scope.get_defined_names(is_internal_call=True)
 
         scope = scope.parent
         # This is used, because subscopes (Flow scopes) would distort the

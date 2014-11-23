@@ -199,7 +199,8 @@ def search_call_signatures(user_stmt, position):
         # Now remove the part after the call. Including the array from the
         # statement.
         stmt_el = call
-        while isinstance(stmt_el, pr.StatementElement):
+        # TODO REMOVE this? or change?
+        while False and isinstance(stmt_el, pr.StatementElement):
             if stmt_el.next == arr:
                 stmt_el.next = None
                 break

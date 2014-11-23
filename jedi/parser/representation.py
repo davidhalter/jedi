@@ -1294,55 +1294,12 @@ class Statement(Simple, DocstringMixin):
     :type   start_pos: 2-tuple of int
     :param  start_pos: Position (line, column) of the Statement.
     """
-    __slots__ = ('_token_list', '_set_vars', 'as_names', '_expression_list',
-                 '_assignment_details', '_names_are_set_vars', '_doc_token')
-
-    def __init__old(self, children, parent=None,):
-        super(Statement, self).__init__(module, start_pos, end_pos, parent)
-        self._token_list = token_list
-        self._names_are_set_vars = names_are_set_vars
-        if set_name_parents:
-            for n in as_names:
-                n.parent = self.use_as_parent
-        self._doc_token = None
-        self._set_vars = None
-        self.as_names = list(as_names)
-
-        # cache
-        self._assignment_details = []
-        # For now just generate the expression list, even if its not needed.
-        # This will help to adapt a better new AST.
-        self.expression_list()
+    __slots__ = ()
 
     def get_defined_names(self):
         return list(chain.from_iterable(_defined_names(self.children[i])
                                         for i in range(0, len(self.children) - 2, 2)
                                         if '=' in self.children[i + 1].value))
-
-
-        """Get the names for the statement."""
-        if self._set_vars is None:
-
-            def search_calls(calls):
-                for call in calls:
-                    if isinstance(call, Array) and call.type != Array.DICT:
-                        for stmt in call:
-                            search_calls(stmt.expression_list())
-                    elif isinstance(call, Call):
-                        # Check if there's an execution in it, if so this is
-                        # not a set_var.
-                        if not call.next:
-                            self._set_vars.append(call.name)
-                        continue
-
-            self._set_vars = []
-            for calls, operation in self.assignment_details:
-                search_calls(calls)
-
-            if not self.assignment_details and self._names_are_set_vars:
-                # In the case of Param, it's also a defining name without ``=``
-                search_calls(self.expression_list())
-        return self._set_vars + self.as_names
 
     def get_rhs(self):
         """Returns the right-hand-side of the equals."""
@@ -1388,23 +1345,6 @@ class Statement(Simple, DocstringMixin):
         except IndexError:
             return None
 
-    @property
-    def assignment_details(self):
-        """
-        Returns an array of tuples of the elements before the assignment.
-
-        For example the following code::
-
-            x = (y, z) = 2, ''
-
-        would result in ``[(Name(x), '='), (Array([Name(y), Name(z)]), '=')]``.
-        """
-        return []
-
-    def set_expression_list(self, lst):
-        """It's necessary for some "hacks" to change the expression_list."""
-        self._expression_list = lst
-
 
 class ExprStmt(Statement):
     """
@@ -1415,14 +1355,6 @@ class ExprStmt(Statement):
     The reason for this class is purely historical. It was easier to just use
     Statement nested, than to create a new class for Test (plus Jedi's fault
     tolerant parser just makes things very complicated).
-    """
-
-
-class ArrayStmt(Statement):
-    """
-    This class exists temporarily. Like ``ExprStatement``, this exists to
-    distinguish between real statements and stuff that is defined in those
-    statements.
     """
 
 
@@ -1498,135 +1430,13 @@ class Param(Base):
         return '<%s: %s>' % (type(self).__name__, str(self.tfpdef) + default)
 
 
-class StatementElement(Simple):
-    __slots__ = ('next', 'previous')
-
-    def __init__(self, module, start_pos, end_pos, parent):
-        super(StatementElement, self).__init__(module, start_pos, end_pos, parent)
-        self.next = None
-        self.previous = None
-
-    def set_next(self, call):
-        """ Adds another part of the statement"""
-        call.parent = self.parent
-        if self.next is not None:
-            self.next.set_next(call)
-        else:
-            self.next = call
-            call.previous = self
-
-    def next_is_execution(self):
-        return Array.is_type(self.next, Array.TUPLE, Array.NOARRAY)
-
-    def generate_call_path(self):
-        """ Helps to get the order in which statements are executed. """
-        try:
-            yield self.name
-        except AttributeError:
-            yield self
-        if self.next is not None:
-            for y in self.next.generate_call_path():
-                yield y
-
-
-class Call(StatementElement):
-    __slots__ = ('name',)
-
-    def __init__(self, module, name, start_pos, end_pos, parent=None):
-        super(Call, self).__init__(module, start_pos, end_pos, parent)
-        name.parent = self
-        self.name = name
-
-    def names(self):
-        """
-        Generate an array of string names. If a call is not just names,
-        raise an error.
-        """
-        def check(call):
-            while call is not None:
-                if not isinstance(call, Call):  # Could be an Array.
-                    break
-                yield unicode(call.name)
-                call = call.next
-
-        return list(check(self))
-
-
-    def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self.name)
-
-
-class Array(StatementElement):
-    """
-    Describes the different python types for an array, but also empty
-    statements. In the Python syntax definitions this type is named 'atom'.
-    http://docs.python.org/py3k/reference/grammar.html
-    Array saves sub-arrays as well as normal operators and calls to methods.
-
-    :param array_type: The type of an array, which can be one of the constants
-        below.
-    :type array_type: int
-    """
-    __slots__ = ('type', 'end_pos', 'values', 'keys')
+class Array(object):
+    # TODO remove this. Just here because we need these names.
     NOARRAY = None  # just brackets, like `1 * (3 + 2)`
     TUPLE = 'tuple'
     LIST = 'list'
     DICT = 'dict'
     SET = 'set'
-
-    def __init__(self, module, start_pos, arr_type=NOARRAY, parent=None):
-        super(Array, self).__init__(module, start_pos, (None, None), parent)
-        self.end_pos = None, None
-        self.type = arr_type
-        self.values = []
-        self.keys = []
-
-    def add_statement(self, statement, is_key=False):
-        """Just add a new statement"""
-        statement.parent = self
-        if is_key:
-            self.type = self.DICT
-            self.keys.append(statement)
-        else:
-            self.values.append(statement)
-
-    @staticmethod
-    def is_type(instance, *types):
-        """
-        This is not only used for calls on the actual object, but for
-        ducktyping, to invoke this function with anything as `self`.
-        """
-        try:
-            if instance.type in types:
-                return True
-        except AttributeError:
-            pass
-        return False
-
-    def __len__(self):
-        return len(self.values)
-
-    def __getitem__(self, key):
-        if self.type == self.DICT:
-            raise TypeError('no dicts allowed')
-        return self.values[key]
-
-    def __iter__(self):
-        if self.type == self.DICT:
-            raise TypeError('no dicts allowed')
-        return iter(self.values)
-
-    def items(self):
-        if self.type != self.DICT:
-            raise TypeError('only dicts allowed')
-        return zip(self.keys, self.values)
-
-    def __repr__(self):
-        if self.type == self.NOARRAY:
-            typ = 'noarray'
-        else:
-            typ = self.type
-        return "<%s: %s%s>" % (type(self).__name__, typ, self.values)
 
 
 class CompFor(Simple):
@@ -1649,37 +1459,3 @@ class CompFor(Simple):
 
     def scope_names_generator(self, position):
         yield self, []
-
-
-class ListComprehension(ForFlow):
-    """ Helper class for list comprehensions """
-    def __init__(self, module, stmt, middle, input, parent):
-        self.input = input
-        nested_lc = input.expression_list()[0]
-        if isinstance(nested_lc, ListComprehension):
-            # is nested LC
-            input = nested_lc.stmt
-            nested_lc.parent = self
-
-        super(ListComprehension, self).__init__(module, [input],
-                                                stmt.start_pos, middle)
-        self.parent = parent
-        self.stmt = stmt
-        self.middle = middle
-        for s in middle, input:
-            s.parent = self
-        # The stmt always refers to the most inner list comprehension.
-        stmt.parent = self._get_most_inner_lc()
-
-    def _get_most_inner_lc(self):
-        nested_lc = self.input.expression_list()[0]
-        if isinstance(nested_lc, ListComprehension):
-            return nested_lc._get_most_inner_lc()
-        return self
-
-    @property
-    def end_pos(self):
-        return self.stmt.end_pos
-
-    def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self.get_code())
