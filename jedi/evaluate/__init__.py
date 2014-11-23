@@ -144,7 +144,8 @@ class Evaluator(object):
             name = str(stmt.get_defined_names()[0])
             parent = er.wrap(self, stmt.get_parent_scope())
             left = self.find_types(parent, name, stmt.start_pos)
-            if isinstance(stmt.parent, pr.ForFlow):
+            # TODO REMOVE or implement
+            if False          and isinstance(stmt.parent, pr.ForFlow):
                 # iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
                 # predictable.

@@ -44,12 +44,10 @@ from inspect import cleandoc
 from collections import defaultdict
 from itertools import chain
 
-from jedi._compatibility import (next, Python3Method, encoding, unicode,
-                                 is_py3, u, literal_eval, use_metaclass)
-from jedi import common
+from jedi._compatibility import (next, Python3Method, encoding, is_py3,
+                                 literal_eval, use_metaclass)
 from jedi import debug
 from jedi import cache
-from jedi.parser import tokenize
 from jedi.parser.pytree import python_symbols, type_repr
 
 
@@ -81,15 +79,6 @@ def filter_after_position(names, position):
         if n.start_pos[0] is not None and n.start_pos < position:
             names_new.append(n)
     return names_new
-
-
-class GetCodeState(object):
-    """A helper class for passing the state of get_code in a thread-safe
-    manner."""
-    __slots__ = ("last_pos",)
-
-    def __init__(self):
-        self.last_pos = (0, 0)
 
 
 class DocstringMixin(object):
@@ -141,18 +130,6 @@ class Base(object):
     def isinstance(self, *cls):
         return isinstance(self, cls)
 
-    @property
-    def newline(self):
-        """Returns the newline type for the current code."""
-        # TODO: we need newline detection
-        return "\n"
-
-    @property
-    def whitespace(self):
-        """Returns the whitespace type for the current code: tab or space."""
-        # TODO: we need tab detection
-        return " "
-
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
                          include_current=True):
@@ -183,17 +160,6 @@ class Base(object):
                 break
             scope = scope.parent
         return scope
-
-    def space(self, from_pos, to_pos):
-        """Return the space between two tokens"""
-        linecount = to_pos[0] - from_pos[0]
-        if linecount == 0:
-            return self.whitespace * (to_pos[1] - from_pos[1])
-        else:
-            return "%s%s" % (
-                self.newline * linecount,
-                self.whitespace * to_pos[1],
-            )
 
     def is_scope(self):
         # Default is not being a scope. Just inherit from Scope.
@@ -451,7 +417,6 @@ class Simple(Base):
         except AttributeError:
             return self.children[0]
 
-
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
         if not is_py3:
@@ -604,10 +569,6 @@ class Scope(Simple, DocstringMixin):
         if self.isinstance(Function):
             checks += self.get_decorators()
             checks += [r for r in self.returns if r is not None]
-        if self.isinstance(Flow):
-            checks += self.inputs
-        if self.isinstance(ForFlow) and self.set_stmt is not None:
-            checks.append(self.set_stmt)
 
         for s in checks:
             if isinstance(s, Flow):
@@ -990,121 +951,6 @@ class WithStmt(Flow):
                 return node.children[0]
 
 
-class Flow_old(Scope):
-    """
-    Used to describe programming structure - flow statements,
-    which indent code, but are not classes or functions:
-
-    - for
-    - while
-    - if
-    - try
-    - with
-
-    Therefore statements like else, except and finally are also here,
-    they are now saved in the root flow elements, but in the next variable.
-
-    :param command: The flow command, if, while, else, etc.
-    :type command: str
-    :param inputs: The initializations of a flow -> while 'statement'.
-    :type inputs: list(Statement)
-    :param start_pos: Position (line, column) of the Flow statement.
-    :type start_pos: tuple(int, int)
-    """
-    __slots__ = ('next', 'previous', 'command', 'parent', 'inputs', 'set_vars')
-
-    def __init__(self, module, command, inputs, start_pos):
-        self.next = None
-        self.previous = None
-        self.command = command
-        super(Flow, self).__init__(module, start_pos)
-        self._parent = None
-        # These have to be statements, because of with, which takes multiple.
-        self.inputs = inputs
-        for s in inputs:
-            s.parent = self.use_as_parent
-        self.set_vars = []
-
-    def add_name_calls(self, name, calls):
-        """Add a name to the names_dict."""
-        parent = self.parent
-        if isinstance(parent, Module):
-            # TODO this also looks like code smell. Look for opportunities to
-            # remove.
-            parent = self._sub_module
-        parent.add_name_calls(name, calls)
-
-    @property
-    def parent(self):
-        return self._parent
-
-    @parent.setter
-    def parent(self, value):
-        self._parent = value
-        try:
-            self.next.parent = value
-        except AttributeError:
-            return
-
-    def get_defined_names(self, is_internal_call=False):
-        """
-        Get the names for the flow. This includes also a call to the super
-        class.
-
-        :param is_internal_call: defines an option for internal files to crawl
-            through this class. Normally it will just call its superiors, to
-            generate the output.
-        """
-        if is_internal_call:
-            n = list(self.set_vars)
-            for s in self.inputs:
-                n += s.get_defined_names()
-            if self.next:
-                n += self.next.get_defined_names(is_internal_call)
-            n += super(Flow, self).get_defined_names()
-            return n
-        else:
-            return self.get_parent_until((Class, Function)).get_defined_names()
-
-    def get_imports(self):
-        i = super(Flow, self).get_imports()
-        if self.next:
-            i += self.next.get_imports()
-        return i
-
-    def set_next(self, next):
-        """Set the next element in the flow, those are else, except, etc."""
-        if self.next:
-            return self.next.set_next(next)
-        else:
-            self.next = next
-            self.next.parent = self.parent
-            self.next.previous = self
-            return next
-
-    def scope_names_generator(self, position=None):
-        # For `with` and `for`.
-        yield self, filter_after_position(self.get_defined_names(), position)
-
-
-class ForFlow(Flow):
-    """
-    Used for the for loop, because there are two statement parts.
-    """
-    def __init__(self, module, inputs, start_pos, set_stmt):
-        super(ForFlow, self).__init__(module, 'for', inputs, start_pos)
-
-        self.set_stmt = set_stmt
-
-        if set_stmt is not None:
-            set_stmt.parent = self.use_as_parent
-            self.set_vars = set_stmt.get_defined_names()
-
-            for s in self.set_vars:
-                s.parent.parent = self.use_as_parent
-                s.parent = self.use_as_parent
-
-
 class Import(Simple):
     def get_all_import_names(self):
         # TODO remove. do we even need this?
@@ -1409,17 +1255,6 @@ class Param(Base):
     def get_code(self):
         df = '' if self.default is None else '=' + self.default.get_code()
         return self.tfpdef.get_code() + df
-
-    def __init__old(self):
-        kwargs.pop('names_are_set_vars', None)
-        super(Param, self).__init__(*args, names_are_set_vars=True, **kwargs)
-
-        # this is defined by the parser later on, not at the initialization
-        # it is the position in the call (first argument, second...)
-        self.position_nr = None
-        self.is_generated = False
-        self.annotation_stmt = None
-        self.parent_function = None
 
     def add_annotation(self, annotation_stmt):
         annotation_stmt.parent = self.use_as_parent
