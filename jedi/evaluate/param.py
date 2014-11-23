@@ -58,7 +58,7 @@ class Arguments(pr.Base):
                              for a in arrays]
                 iterators = list(iterators)
                 for values in list(zip_longest(*iterators, fillvalue=())):
-                    yield None, tuple(chain.from_iterable(values))
+                    yield None, values
             elif stars == 2:
                 arrays = self._evaluator.eval_element(el)
                 dicts = [_star_star_dict(self._evaluator, a, None, None)
@@ -171,11 +171,11 @@ def _get_calling_var_args(evaluator, var_args):
     old_var_args = None
     while var_args != old_var_args:
         old_var_args = var_args
-        for argument, default, stars in reversed(list(var_args.as_tuple())):
-            if not stars or not isinstance(argument, pr.Name):
+        for name, default, stars in reversed(list(var_args.as_tuple())):
+            if not stars or not isinstance(name, pr.Name):
                 continue
 
-            names = evaluator.goto(argument, [argument.value])
+            names = evaluator.goto(name)
             if len(names) != 1:
                 break
             param = names[0].get_definition()
@@ -400,7 +400,7 @@ def _iterate_star_args(evaluator, array, expression_list, func):
             yield field_stmt
     elif isinstance(array, iterable.Generator):
         for field_stmt in array.iter_content():
-            yield helpers.FakeStatement([field_stmt])
+            yield iterable.AlreadyEvaluated([field_stmt])
     elif isinstance(array, Instance) and array.name.get_code() == 'tuple':
         debug.warning('Ignored a tuple *args input %s' % array)
     else:
