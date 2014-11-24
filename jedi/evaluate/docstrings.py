@@ -127,7 +127,7 @@ def _evaluate_for_statement_string(evaluator, string, module):
         # (e.g., 'threading' in 'threading.Thread').
         string = 'import %s\n' % element + string
 
-    p = Parser(code % indent_block(string), no_docstr=True)
+    p = Parser(evaluator.grammar, code % indent_block(string), no_docstr=True)
     pseudo_cls = p.module.subscopes[0]
     try:
         stmt = pseudo_cls.statements[-1]

@@ -15,16 +15,14 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
-import keyword
 import logging
+import os
 
-from jedi._compatibility import next, unicode
-from jedi import debug
+from jedi._compatibility import next
 from jedi import common
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser import pytree
-from jedi.parser.pgen2 import Driver
 from jedi.parser import pgen2
 
 OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
@@ -33,20 +31,33 @@ STATEMENT_KEYWORDS = 'assert', 'del', 'global', 'nonlocal', 'raise', \
     'return', 'yield', 'pass', 'continue', 'break'
 
 
+_loaded_grammars = {}
+
+
+def load_grammar(file):
+    global _loaded_grammars
+    path = os.path.join(os.path.dirname(__file__), file) + '.txt'
+    try:
+        return _loaded_grammars[path]
+    except KeyError:
+        return _loaded_grammars.setdefault(path, pgen2.load_grammar(path))
+
+
 class Parser(object):
     """
     This class is used to parse a Python file, it then divides them into a
     class structure of different scopes.
 
-    :param source: The codebase for the parser.
-    :type source: str
+    :param grammar: The grammar object of pgen2. Loaded by load_grammar.
+    :param source: The codebase for the parser. Must be unicode.
     :param module_path: The path of the module in the file system, may be None.
     :type module_path: str
-    :param no_docstr: If True, a string at the beginning is not a docstr.
     :param top_module: Use this module as a parent instead of `self.module`.
     """
-    def __init__(self, source, module_path=None, no_docstr=False,
-                 tokenizer=None, top_module=None):
+    def __init__(self, grammar, source, module_path=None, tokenizer=None):
+        """
+        This is the way I imagine a parser describing the init function
+        """
 
         if not source.endswith('\n'):
             source += '\n'
@@ -90,8 +101,8 @@ class Parser(object):
         self.used_names = {}
         self.scope_names_stack = [{}]
         logger = logging.getLogger("Jedi-Parser")
-        d = Driver(pytree.python_grammar, self.convert_node, self.convert_leaf,
-                   self.error_recovery, logger=logger)
+        d = pgen2.Driver(grammar, self.convert_node,
+                         self.convert_leaf, self.error_recovery, logger=logger)
         self.module = d.parse_string(source).get_parent_until()
 
         self.module.used_names = self.used_names

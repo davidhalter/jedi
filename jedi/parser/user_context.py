@@ -202,7 +202,8 @@ class UserContext(object):
 
 
 class UserContextParser(object):
-    def __init__(self, source, path, position, user_context):
+    def __init__(self, grammar, source, path, position, user_context):
+        self._grammar = grammar
         self._source = source
         self._path = path and os.path.abspath(path)
         self._position = position
@@ -211,7 +212,7 @@ class UserContextParser(object):
     @cache.underscore_memoization
     def _parser(self):
         cache.invalidate_star_import_cache(self._path)
-        parser = FastParser(self._source, self._path)
+        parser = FastParser(self._grammar, self._source, self._path)
         # Don't pickle that module, because the main module is changing quickly
         cache.save_parser(self._path, None, parser, pickling=False)
         return parser

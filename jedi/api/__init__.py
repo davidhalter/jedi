@@ -15,7 +15,7 @@ import sys
 from itertools import chain
 
 from jedi._compatibility import next, unicode, builtins
-from jedi.parser import Parser
+from jedi.parser import Parser, load_grammar
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import tree as pr
 from jedi.parser.user_context import UserContext, UserContextParser
@@ -100,9 +100,11 @@ class Script(object):
 
         cache.clear_time_caches()
         debug.reset_time()
+        self._grammar = load_grammar('grammar3.4')
         self._user_context = UserContext(self.source, self._pos)
-        self._parser = UserContextParser(self.source, path, self._pos, self._user_context)
-        self._evaluator = Evaluator()
+        self._parser = UserContextParser(self._grammar, self.source, path,
+                                         self._pos, self._user_context)
+        self._evaluator = Evaluator(self._grammar)
         debug.speed('init')
 
     @property
@@ -277,7 +279,7 @@ class Script(object):
 
     def _get_under_cursor_stmt(self, cursor_txt):
         tokenizer = source_tokens(cursor_txt, line_offset=self._pos[0] - 1)
-        r = Parser(cursor_txt, no_docstr=True, tokenizer=tokenizer)
+        r = Parser(self._grammar, cursor_txt, tokenizer=tokenizer)
         try:
             # Take the last statement available.
             stmt = r.module.statements[-1]
@@ -674,11 +676,10 @@ def defined_names(source, path=None, encoding='utf-8'):
 
     :rtype: list of classes.Definition
     """
-    parser = Parser(
-        common.source_to_unicode(source, encoding),
-        module_path=path,
-    )
-    return classes.defined_names(Evaluator(), parser.module)
+    grammar = load_grammar('grammar3.4')
+    parser = Parser(grammar, common.source_to_unicode(source, encoding),
+                    module_path=path)
+    return classes.defined_names(Evaluator(grammar), parser.module)
 
 
 def names(source=None, path=None, encoding='utf-8', all_scopes=False,

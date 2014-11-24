@@ -492,8 +492,8 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     the current scope is function:
 
     >>> from jedi._compatibility import u
-    >>> from jedi.parser import Parser
-    >>> parser = Parser(u('''
+    >>> from jedi.parser import Parser, load_grammar
+    >>> parser = Parser(load_grammar('python3.4'), u('''
     ... x = ['a', 'b', 'c']
     ... def func():
     ...     y = None

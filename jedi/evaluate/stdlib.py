@@ -227,7 +227,7 @@ def collections_namedtuple(evaluator, obj, params):
     )
 
     # Parse source
-    generated_class = Parser(unicode(source)).module.subscopes[0]
+    generated_class = Parser(evaluator.grammar, unicode(source)).module.subscopes[0]
     return [er.Class(evaluator, generated_class)]
 
 

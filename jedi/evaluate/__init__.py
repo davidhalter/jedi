@@ -91,7 +91,8 @@ from jedi.evaluate.helpers import FakeStatement, deep_ast_copy, call_of_name
 
 
 class Evaluator(object):
-    def __init__(self):
+    def __init__(self, grammar):
+        self._grammar = grammar
         self.memoize_cache = {}  # for memoize decorators
         self.import_cache = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `compiled.create()`

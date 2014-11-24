@@ -18,6 +18,7 @@ from . import pgen2
 
 # The grammar file
 _GRAMMAR_FILE = os.path.join(os.path.dirname(__file__), "grammar3.4.txt")
+python_grammar = pgen2.load_grammar(_GRAMMAR_FILE)
 
 
 class Symbols(object):

@@ -8,8 +8,7 @@ import os
 import inspect
 
 from jedi._compatibility import is_py3, builtins, unicode
-from jedi.parser import Parser
-from jedi.parser import tokenize
+from jedi.parser import Parser, load_grammar
 from jedi.parser.tree import Class
 from jedi.evaluate.helpers import FakeName
 
@@ -31,7 +30,8 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        module = Parser(unicode(source), module_name).module
+        grammar = load_grammar('grammar3.4')
+        module = Parser(grammar, unicode(source), module_name).module
         modules[module_name] = module
 
         if module_name == 'builtins' and not is_py3:

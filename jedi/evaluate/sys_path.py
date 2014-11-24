@@ -140,7 +140,7 @@ def sys_path_with_modifications(evaluator, module):
         except IOError:
             pass
         else:
-            p = Parser(common.source_to_unicode(source), module_path)
+            p = Parser(evaluator.grammar, common.source_to_unicode(source), module_path)
             for path in _check_module(p.module):
                 if path not in buildout_paths:
                     buildout_paths.add(path)

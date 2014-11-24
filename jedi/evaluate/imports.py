@@ -184,7 +184,7 @@ class ImportWrapper2(pr.Base):
                         rel_path = os.path.join(self._importer.get_relative_path(),
                                                 '__init__.py')
                         if os.path.exists(rel_path):
-                            m = _load_module(rel_path)
+                            m = _load_module(self.evaluator, rel_path)
                             names += m.get_defined_names()
             else:
                 # flask
@@ -590,9 +590,9 @@ class _Importer(object):
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
-            return _load_module(path, source, sys_path=sys_path), rest
+            return _load_module(self.evaluator, path, source, sys_path=sys_path), rest
         else:
-            return _load_module(name=path, sys_path=sys_path), rest
+            return _load_module(self.evaluator, name=path, sys_path=sys_path), rest
 
 
 def follow_imports(evaluator, scopes):
@@ -633,7 +633,7 @@ def remove_star_imports(evaluator, scope, ignored_modules=()):
     return set(modules)
 
 
-def _load_module(path=None, source=None, name=None, sys_path=None):
+def _load_module(evaluator, path=None, source=None, name=None, sys_path=None):
     def load(source):
         dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
         if path is not None and path.endswith('.py') \
@@ -644,7 +644,7 @@ def _load_module(path=None, source=None, name=None, sys_path=None):
         else:
             return compiled.load_module(path, name)
         p = path or name
-        p = fast.FastParser(common.source_to_unicode(source), p)
+        p = fast.FastParser(evaluator.grammar, common.source_to_unicode(source), p)
         cache.save_parser(path, name, p)
         return p.module
 
@@ -652,7 +652,7 @@ def _load_module(path=None, source=None, name=None, sys_path=None):
     return load(source) if cached is None else cached.module
 
 
-def get_modules_containing_name(mods, name):
+def get_modules_containing_name(evaluator, mods, name):
     """
     Search a name in the directories of modules.
     """
@@ -669,7 +669,7 @@ def get_modules_containing_name(mods, name):
         with open(path, 'rb') as f:
             source = source_to_unicode(f.read())
             if name in source:
-                return _load_module(path, source)
+                return _load_module(evaluator, path, source)
 
     # skip non python modules
     mods = set(m for m in mods if not isinstance(m, compiled.CompiledObject))

@@ -56,13 +56,13 @@ class Module(pr.Module, pr.Simple):
 
 class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
-    def __call__(self, source, module_path=None):
+    def __call__(self, grammar, source, module_path=None):
         if not settings.fast_parser:
-            return Parser(source, module_path)
+            return Parser(grammar, source, module_path)
 
         pi = cache.parser_cache.get(module_path, None)
         if pi is None or isinstance(pi.parser, Parser):
-            p = super(CachedFastParser, self).__call__(source, module_path)
+            p = super(CachedFastParser, self).__call__(grammar, source, module_path)
         else:
             p = pi.parser  # pi is a `cache.ParserCacheItem`
             p.update(source)
@@ -186,8 +186,9 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     _keyword_re = re.compile('^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS))
 
-    def __init__(self, code, module_path=None):
+    def __init__(self, grammar, code, module_path=None):
         # set values like `pr.Module`.
+        self._grammar = grammar
         self.module_path = module_path
 
         self.current_node = None
