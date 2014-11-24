@@ -36,7 +36,6 @@ from itertools import chain
 from jedi._compatibility import use_metaclass, unicode, Python3Method
 from jedi.parser import tree as pr
 from jedi.parser.tokenize import Token
-from jedi.parser.pytree import python_symbols
 from jedi import debug
 from jedi import common
 from jedi.cache import underscore_memoization
@@ -484,7 +483,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 trailer = dec.children[2:-1]
                 if trailer:
                     # Create a trailer and evaluate it.
-                    trailer = pr.Node(python_symbols.trailer, trailer)
+                    trailer = pr.Node('trailer', trailer)
                     dec_results = self._evaluator.eval_trailer(dec_results, trailer)
 
                 if not len(dec_results):

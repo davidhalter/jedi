@@ -73,7 +73,6 @@ from itertools import tee, chain
 
 from jedi._compatibility import next, hasattr, unicode
 from jedi.parser import tree as pr
-from jedi.parser.pytree import python_symbols
 from jedi.parser.tokenize import Token
 from jedi.parser import fast
 from jedi import debug
@@ -178,7 +177,7 @@ class Evaluator(object):
         elif isinstance(element, pr.Keyword):
             # For False/True/None
             return [compiled.builtin.get_by_name(element.value)]
-        elif element.type == python_symbols.power:
+        elif element.type == 'power':
             types = self._eval_atom(element.children[0])
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
@@ -186,19 +185,19 @@ class Evaluator(object):
                 types = self.eval_trailer(types, trailer)
 
             return types
-        elif pr.is_node(element, 'testlist_star_expr', 'testlist'):
+        elif element.type in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
             return [iterable.ImplicitTuple(self, element)]
-        elif pr.is_node(element, 'not_test') or pr.is_node(element, 'factor'):
+        elif element.type in ('not_test', 'factor'):
             types = self.eval_element(element.children[-1])
             for operator in element.children[:-1]:
                 types = list(precedence.factor_calculate(self, types, operator))
             return types
-        elif pr.is_node(element, 'test'):
+        elif element.type == 'test':
             # `x if foo else y` case.
             return (self.eval_element(element.children[0]) +
                     self.eval_element(element.children[-1]))
-        elif pr.is_node(element, 'dotted_name'):
+        elif element.type == 'dotted_name':
             types = self._eval_atom(element.children[0])
             for next_name in element.children[2::2]:
                 types = list(chain.from_iterable(self.find_types(typ, next_name)

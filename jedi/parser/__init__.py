@@ -22,7 +22,6 @@ from jedi._compatibility import next
 from jedi import common
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
-from jedi.parser import pytree
 from jedi.parser import pgen2
 
 OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
@@ -62,7 +61,7 @@ class Parser(object):
         if not source.endswith('\n'):
             source += '\n'
 
-        _ast_mapping = {
+        self._ast_mapping = {
             'expr_stmt': pt.ExprStmt,
             'classdef': pt.Class,
             'funcdef': pt.Function,
@@ -88,10 +87,15 @@ class Parser(object):
             'decorator': pt.Decorator,
         }
 
-        self._ast_mapping = dict((getattr(pytree.python_symbols, k), v)
-                                 for k, v in _ast_mapping.items())
-
         self.global_names = []
+
+        # TODO do print absolute import detection here.
+        #try:
+        #    del python_grammar_no_print_statement.keywords["print"]
+        #except KeyError:
+        #    pass  # Doesn't exist in the Python 3 grammar.
+
+
         #if self.options["print_function"]:
         #    python_grammar = pygram.python_grammar_no_print_statement
         #else:
@@ -108,6 +112,7 @@ class Parser(object):
         self.module.used_names = self.used_names
         self.module.path = module_path
         self.module.set_global_names(self.global_names)
+        self.grammar_symbols = grammar.number2symbol
 
     def convert_node(self, grammar, type, children):
         """
@@ -117,20 +122,18 @@ class Parser(object):
         grammar rule produces a new complete node, so that the tree is build
         strictly bottom-up.
         """
-        #print(type, children, pytree.type_repr(type))
+        symbol = grammar.number2symbol[type]
         try:
-            new_node = self._ast_mapping[type](children)
+            new_node = self._ast_mapping[symbol](children)
         except KeyError:
-            new_node = pt.Node(type, children)
+            new_node = pt.Node(symbol, children)
 
         # We need to check raw_node always, because the same node can be
         # returned by convert multiple times.
-        if type == pytree.python_symbols.global_stmt:
+        if symbol == 'global_stmt':
             self.global_names += new_node.get_defined_names()
         elif isinstance(new_node, (pt.ClassOrFunc, pt.Module)) \
-                and type in (pytree.python_symbols.funcdef,
-                             pytree.python_symbols.classdef,
-                             pytree.python_symbols.file_input):
+                and symbol in ('funcdef', 'classdef', 'file_input'):
             # scope_name_stack handling
             scope_names = self.scope_names_stack.pop()
             if isinstance(new_node, pt.ClassOrFunc):
@@ -180,10 +183,10 @@ class Parser(object):
         """
         # For now just discard everything that is not a suite or
         # file_input, if we detect an error.
-        for i, (dfa, state, (type, _)) in reversed(list(enumerate(stack))):
+        for i, (dfa, state, (_type, _)) in reversed(list(enumerate(stack))):
             # `suite` can sometimes be only simple_stmt, not stmt.
-            if type in (grammar.symbol2number['file_input'],
-                        grammar.symbol2number['suite']):
+            symbol = grammar.number2symbol[_type]
+            if symbol in ('file_input', 'suite'):
                 index = i
                 break
         self._stack_removal(stack, index + 1)

@@ -48,7 +48,6 @@ from jedi._compatibility import (next, Python3Method, encoding, is_py3,
                                  literal_eval, use_metaclass)
 from jedi import debug
 from jedi import cache
-from jedi.parser.pytree import python_symbols, type_repr
 
 
 SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
@@ -58,12 +57,9 @@ def is_node(node, *symbol_names):
     try:
         type = node.type
     except AttributeError:
-        pass
+        return False
     else:
-        for symbol_name in symbol_names:
-            if getattr(python_symbols, symbol_name) == type:
-                return True
-    return False
+        return type in symbol_names
 
 
 def filter_after_position(names, position):
@@ -238,7 +234,7 @@ class Name(Leaf):
         scope = self.parent
         while scope.parent is not None:
             if scope.isinstance(Node):
-                if scope.type == python_symbols.testlist_comp:
+                if scope.type == 'testlist_comp':
                     try:
                         if isinstance(scope.children[1], CompFor):
                             return scope.children[1]
@@ -441,10 +437,7 @@ class Node(Simple):
         self.type = type
 
     def __repr__(self):
-        """Return a canonical string representation."""
-        return "%s(%s, %r)" % (self.__class__.__name__,
-                               type_repr(self.type),
-                               self.children)
+        return "%s(%s, %r)" % (self.__class__.__name__, self.type, self.children)
 
 
 class IsScopeMeta(type):
