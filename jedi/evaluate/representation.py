@@ -214,10 +214,11 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             indexes = []
 
         try:
-            return self.execute_subscope_by_name('__getitem__', indexes)
+            method = self.get_subscope_by_name('__getitem__')
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
-            return []
+        else:
+            return self._evaluator.execute(method, [iterable.AlreadyEvaluated(indexes)])
 
     @property
     @underscore_memoization
