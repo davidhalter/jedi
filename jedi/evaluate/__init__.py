@@ -74,7 +74,6 @@ from itertools import tee, chain
 from jedi._compatibility import next, hasattr, unicode
 from jedi.parser import tree as pr
 from jedi.parser.tokenize import Token
-from jedi.parser import fast
 from jedi import debug
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
@@ -91,7 +90,7 @@ from jedi.evaluate.helpers import FakeStatement, deep_ast_copy, call_of_name
 
 class Evaluator(object):
     def __init__(self, grammar):
-        self._grammar = grammar
+        self.grammar = grammar
         self.memoize_cache = {}  # for memoize decorators
         self.import_cache = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `compiled.create()`

@@ -184,7 +184,7 @@ class ImportWrapper2(pr.Base):
                         rel_path = os.path.join(self._importer.get_relative_path(),
                                                 '__init__.py')
                         if os.path.exists(rel_path):
-                            m = _load_module(self.evaluator, rel_path)
+                            m = _load_module(self._evaluator, rel_path)
                             names += m.get_defined_names()
             else:
                 # flask
@@ -590,9 +590,9 @@ class _Importer(object):
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
-            return _load_module(self.evaluator, path, source, sys_path=sys_path), rest
+            return _load_module(self._evaluator, path, source, sys_path=sys_path), rest
         else:
-            return _load_module(self.evaluator, name=path, sys_path=sys_path), rest
+            return _load_module(self._evaluator, name=path, sys_path=sys_path), rest
 
 
 def follow_imports(evaluator, scopes):
