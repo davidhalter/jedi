@@ -228,8 +228,7 @@ from import_tree import recurse_class1
 #? ['a']
 recurse_class1.C.a
 # github #239 RecursionError
-# TODO UNCOMMENT!!!!!!
-##? ['a']
+#? ['a']
 recurse_class1.C().a
 
 # -----------------

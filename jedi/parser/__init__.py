@@ -104,6 +104,7 @@ class Parser(object):
         # and only if the refactor method's write parameter was True.
         self.used_names = {}
         self.scope_names_stack = [{}]
+        self.failed_statement_stacks = []
         logger = logging.getLogger("Jedi-Parser")
         d = pgen2.Driver(grammar, self.convert_node,
                          self.convert_leaf, self.error_recovery, logger=logger)
@@ -189,11 +190,10 @@ class Parser(object):
             if symbol in ('file_input', 'suite'):
                 index = i
                 break
-        self._stack_removal(stack, index + 1)
         # No success finding a transition
-        #raise ParseError("bad input", type, value, context)
+        self._stack_removal(grammar, stack, index + 1)
 
-    def _stack_removal(self, stack, start_index):
+    def _stack_removal(self, grammar, stack, start_index):
         def clear_names(children):
             for c in children:
                 try:
@@ -205,6 +205,16 @@ class Parser(object):
                             self.used_names[c.value].remove(c)
                         except ValueError:
                             pass  # This may happen with CompFor.
+
+        failed_stack = []
+        found = False
+        for dfa, state, (typ, nodes) in stack[start_index:]:
+            if nodes:
+                found = True
+            if found:
+                symbol = grammar.number2symbol[typ]
+                failed_stack.append((symbol, nodes))
+        self.failed_statement_stacks.append(failed_stack)
 
         for dfa, state, node in stack[start_index:]:
             clear_names(children=node[1])

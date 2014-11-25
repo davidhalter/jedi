@@ -4,6 +4,11 @@ def from_names():
     #? ['path']
     from os.
 
+def from_names_goto():
+    from import_tree import pkg
+    #? pkg
+    from import_tree.pkg
+
 def builtin_test():
     #? ['math']
     import math
