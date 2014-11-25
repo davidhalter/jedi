@@ -165,7 +165,7 @@ class ImportWrapper2(pr.Base):
 
     @property
     def import_path(self):
-        return self._importer.str_import_path()
+        return self._importer.str_import_path
 
     def get_defined_names(self, on_import_stmt=False):
         names = []
@@ -412,6 +412,7 @@ class _Importer(object):
         # TODO abspath
         self.file_path = os.path.dirname(path) if path is not None else None
 
+    @property
     def str_import_path(self):
         """Returns the import path as pure strings instead of `Name`."""
         return tuple(str(name_part) for name_part in self.import_path)
@@ -561,7 +562,7 @@ class _Importer(object):
                     with common.ignored(ImportError):
                         current_namespace = follow_str(rel_path, '__init__')
                 elif current_namespace[2]:  # is a package
-                    path = self.str_import_path()[:i]
+                    path = self.str_import_path[:i]
                     for n in self.namespace_packages(current_namespace[1], path):
                         try:
                             current_namespace = follow_str(n, unicode(s))
@@ -573,7 +574,7 @@ class _Importer(object):
 
                 if not _continue:
                     if current_namespace[1]:
-                        rest = self.str_import_path()[i:]
+                        rest = self.str_import_path[i:]
                         break
                     else:
                         raise ModuleNotFound(s)
@@ -638,6 +639,7 @@ class _Importer(object):
                         m = _load_module(self._evaluator, rel_path)
                         names += m.get_defined_names()
 
+        # Import Path exists.
         for scope in self.follow(evaluator):
             # flask
             if self.import_path == ('flask', 'ext'):
@@ -663,7 +665,8 @@ class _Importer(object):
             if only_modules:
                 # In the case of an import like `from x.` we don't need to
                 # add all the variables.
-                if ('os',) == self.import_path and not self._is_relative_import():
+                print(self.import_path)
+                if ('os',) == self.str_import_path and not self.level:
                     # os.path is a hardcoded exception, because it's a
                     # ``sys.modules`` modification.
                     names.append(self._generate_name('path'))
