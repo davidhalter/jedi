@@ -318,6 +318,8 @@ def statement_elements_in_statement(stmt):
 
 class FakeSubModule():
     line_offset = 0
+    parent = None
+    path = None
 
 
 class FakeArray(pr.Array):

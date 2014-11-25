@@ -620,7 +620,7 @@ class SubModule(Scope, Module):
     of a module.
     """
     __slots__ = ('path', 'global_names', 'used_names',
-                 'line_offset', 'use_as_parent')
+                 'line_offset', 'use_as_parent', 'failed_statement_stacks')
 
     def __init__(self, children):
         """

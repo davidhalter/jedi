@@ -376,6 +376,7 @@ def get_importer(evaluator, import_path, module, level=0):
     Checks the evaluator caches first, which resembles the ``sys.modules``
     cache and speeds up libraries like ``numpy``.
     """
+    import_path = tuple(import_path)  # We use it as hash in the import cache.
     if level != 0:
         # Only absolute imports should be cached. Otherwise we have a mess.
         # TODO Maybe calculate the absolute import and save it here?
@@ -593,6 +594,94 @@ class _Importer(object):
             return _load_module(self._evaluator, path, source, sys_path=sys_path), rest
         else:
             return _load_module(self._evaluator, name=path, sys_path=sys_path), rest
+
+    def _generate_name(self, name):
+        return helpers.FakeName(name, parent=FakeSubModule)
+
+    def _get_module_names(self, search_path=None):
+        """
+        Get the names of all modules in the search_path. This means file names
+        and not names defined in the files.
+        """
+
+        names = []
+        # add builtin module names
+        if search_path is None:
+            names += [self._generate_name(name) for name in sys.builtin_module_names]
+
+        if search_path is None:
+            search_path = self.sys_path_with_modifications()
+        for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
+            names.append(self._generate_name(name))
+        return names
+
+    def completion_names(self, evaluator, only_modules=False):
+        """
+        :param only_modules: Indicates wheter it's possible to import a
+            definition that is not defined in a module.
+        """
+        names = []
+        if not self.import_path:  # Empty import path=completion after import
+            if not self._is_relative_import():
+                names += self._get_module_names()
+
+            if self._importer.file_path is not None:
+                path = os.path.abspath(self._importer.file_path)
+                for i in range(self.import_stmt.relative_count - 1):
+                    path = os.path.dirname(path)
+                names += self._get_module_names([path])
+
+                if self._is_relative_import():
+                    rel_path = os.path.join(self._importer.get_relative_path(),
+                                            '__init__.py')
+                    if os.path.exists(rel_path):
+                        m = _load_module(self._evaluator, rel_path)
+                        names += m.get_defined_names()
+
+        for scope in self.follow(evaluator):
+            # flask
+            if self.import_path == ('flask', 'ext'):
+                # List Flask extensions like ``flask_foo``
+                for mod in self._get_module_names():
+                    modname = str(mod)
+                    if modname.startswith('flask_'):
+                        extname = modname[len('flask_'):]
+                        names.append(self._generate_name(extname))
+                # Now the old style: ``flaskext.foo``
+                for dir in self._importer.sys_path_with_modifications():
+                    flaskext = os.path.join(dir, 'flaskext')
+                    if os.path.isdir(flaskext):
+                        names += self._get_module_names([flaskext])
+
+            # TODO delete
+            # namespace packages
+            if isinstance(scope, pr.Module) and scope.path.endswith('__init__.py'):
+                pkg_path = os.path.dirname(scope.path)
+                paths = self.namespace_packages(pkg_path, self.import_path)
+                names += self._get_module_names([pkg_path] + paths)
+
+            if only_modules:
+                # In the case of an import like `from x.` we don't need to
+                # add all the variables.
+                if ('os',) == self.import_path and not self._is_relative_import():
+                    # os.path is a hardcoded exception, because it's a
+                    # ``sys.modules`` modification.
+                    names.append(self._generate_name('path'))
+                continue
+
+            if False and not self.import_stmt.from_names or False and self.is_partial_import:
+                    # from_names must be defined to access module
+                    # values plus a partial import means that there
+                    # is something after the import, which
+                    # automatically implies that there must not be
+                    # any non-module scope.
+                    continue
+            from jedi.evaluate import finder
+            for s, scope_names in finder.get_names_of_scope(self._evaluator,
+                                                            scope, include_builtin=False):
+                for n in scope_names:
+                    names.append(n)
+        return names
 
 
 def follow_imports(evaluator, scopes):

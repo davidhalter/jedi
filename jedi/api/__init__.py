@@ -129,6 +129,14 @@ class Script(object):
         :rtype: list of :class:`classes.Completion`
         """
         def get_completions(user_stmt, bs):
+            if user_stmt is None:
+                module = self._parser.module()
+                importer = helpers.check_error_statements(
+                    self._evaluator, module, self._pos
+                )
+                print(importer.completion_names(self._evaluator, True))
+                return [(name, module) for name in importer.completion_names(self._evaluator, True)]
+            # TODO DELETE still needed?
             if isinstance(user_stmt, pr.Import):
                 context = self._user_context.get_context()
                 next(context)  # skip the path
@@ -155,6 +163,7 @@ class Script(object):
         path, dot, like = helpers.completion_parts(path)
 
         user_stmt = self._parser.user_stmt_with_whitespace()
+
         b = compiled.builtin
         completions = get_completions(user_stmt, b)
 

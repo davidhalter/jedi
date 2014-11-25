@@ -42,6 +42,23 @@ def load_grammar(file):
         return _loaded_grammars.setdefault(path, pgen2.load_grammar(path))
 
 
+class ErrorStatement(object):
+    def __init__(self, stack, next_token, next_start_pos):
+        self.stack = stack
+        self.next_token = next_token
+        self.next_start_pos = next_start_pos
+
+    @property
+    def first_pos(self):
+        first_type, nodes = self.stack[0]
+        return nodes[0].start_pos
+
+    @property
+    def first_type(self):
+        first_type, nodes = self.stack[0]
+        return first_type
+
+
 class Parser(object):
     """
     This class is used to parse a Python file, it then divides them into a
@@ -104,7 +121,7 @@ class Parser(object):
         # and only if the refactor method's write parameter was True.
         self.used_names = {}
         self.scope_names_stack = [{}]
-        self.failed_statement_stacks = []
+        self.error_statement_stacks = []
         logger = logging.getLogger("Jedi-Parser")
         d = pgen2.Driver(grammar, self.convert_node,
                          self.convert_leaf, self.error_recovery, logger=logger)
@@ -113,6 +130,7 @@ class Parser(object):
         self.module.used_names = self.used_names
         self.module.path = module_path
         self.module.set_global_names(self.global_names)
+        self.module.error_statement_stacks = self.error_statement_stacks
         self.grammar_symbols = grammar.number2symbol
 
     def convert_node(self, grammar, type, children):
@@ -176,7 +194,7 @@ class Parser(object):
         else:
             return pt.Operator(value, start_pos, prefix)
 
-    def error_recovery(self, grammar, stack, type, value):
+    def error_recovery(self, grammar, stack, typ, value, start_pos):
         """
         This parser is written in a dynamic way, meaning that this parser
         allows using different grammars (even non-Python). However, error
@@ -191,9 +209,9 @@ class Parser(object):
                 index = i
                 break
         # No success finding a transition
-        self._stack_removal(grammar, stack, index + 1)
+        self._stack_removal(grammar, stack, index + 1, value, start_pos)
 
-    def _stack_removal(self, grammar, stack, start_index):
+    def _stack_removal(self, grammar, stack, start_index, value, start_pos):
         def clear_names(children):
             for c in children:
                 try:
@@ -214,7 +232,8 @@ class Parser(object):
             if found:
                 symbol = grammar.number2symbol[typ]
                 failed_stack.append((symbol, nodes))
-        self.failed_statement_stacks.append(failed_stack)
+        err = ErrorStatement(failed_stack, value, start_pos)
+        self.error_statement_stacks.append(err)
 
         for dfa, state, node in stack[start_index:]:
             clear_names(children=node[1])
