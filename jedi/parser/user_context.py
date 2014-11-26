@@ -127,6 +127,10 @@ class UserContext(object):
             l = first_line if x == start_pos[0] else l
             start_cursor = x, len(l) - end[1]
             string += tok_str
+            if keyword.iskeyword(tok_str[::-1]):
+                # Keywords should always stop. The path will always end with
+                # them.
+                break
             last_type = tok_type
 
         # string can still contain spaces at the end
