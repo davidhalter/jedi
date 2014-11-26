@@ -157,6 +157,7 @@ class Script(object):
             last word part. To ignore certain strange patterns with dots, just
             use regex.
             """
+
             if re.match('\d+\.\.$|\.{4}$', path):
                 return True  # check Ellipsis and float literal `1.`
 
@@ -164,8 +165,9 @@ class Script(object):
 
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
-        if not completion_possible(path):
-            return []
+        # TODO still needed with the new parser?
+        #if not completion_possible(path):
+        #    return []
         path, dot, like = helpers.completion_parts(path)
 
         user_stmt = self._parser.user_stmt_with_whitespace()

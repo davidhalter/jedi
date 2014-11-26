@@ -54,7 +54,8 @@ class ImportWrapper(pr.Base):
         module = self._import.get_parent_until()
         importer = get_importer(self._evaluator, tuple(import_path),
                                 module, self._import.level)
-        return importer.completion_names(self._evaluator)
+        only_modules = isinstance(self._import, pr.ImportName)
+        return importer.completion_names(self._evaluator, only_modules)
 
     @memoize_default()
     def follow(self, is_goto=False):
@@ -91,7 +92,7 @@ class ImportWrapper(pr.Base):
 
             # follow the rest of the import (not FS -> classes, functions)
             if len(rest) > 1 or rest and self.is_like_search:
-                if ('os', 'path') == importer.str_import_path()[:2] \
+                if ('os', 'path') == importer.str_import_path[:2] \
                         and self._import.level == 0:
                     # This is a huge exception, we follow a nested import
                     # ``os.path``, because it's a very important one in Python
@@ -443,7 +444,10 @@ class _Importer(object):
         return in_path + sys_path_with_modifications(self._evaluator, self.module)
 
     def follow(self, evaluator):
-        scope, rest = self.follow_file_system()
+        try:
+            scope, rest = self.follow_file_system()
+        except ModuleNotFound:
+            return []
         if rest:
             # follow the rest of the import (not FS -> classes, functions)
             return []
@@ -653,7 +657,6 @@ class _Importer(object):
                 if only_modules:
                     # In the case of an import like `from x.` we don't need to
                     # add all the variables.
-                    print(self.import_path)
                     if ('os',) == self.str_import_path and not self.level:
                         # os.path is a hardcoded exception, because it's a
                         # ``sys.modules`` modification.
