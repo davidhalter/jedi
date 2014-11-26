@@ -446,6 +446,7 @@ class _Importer(object):
         scope, rest = self.follow_file_system()
         if rest:
             # follow the rest of the import (not FS -> classes, functions)
+            return []
             raise NotImplementedError
             # old
             return evaluator.follow_path(iter(rest), [scope], scope)

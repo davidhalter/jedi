@@ -3,6 +3,7 @@ Helpers for the API
 """
 import re
 
+from jedi.parser import tree as pt
 from jedi.evaluate import imports
 
 
@@ -47,5 +48,12 @@ def importer_from_error_statement(evaluator, module, error_statement, pos):
     for typ, nodes in error_statement.stack:
         if typ == 'dotted_name':
             names += nodes[::2]
+        elif typ == 'import_from':
+            for node in nodes:
+                if isinstance(node, pt.Node) and node.type == 'dotted_name':
+                    names += node.children[::2]
+        print(typ, nodes)
+
+    print('x', names)
 
     return imports.get_importer(evaluator, names, module, level)

@@ -134,7 +134,7 @@ class Script(object):
                 importer = helpers.check_error_statements(
                     self._evaluator, module, self._pos
                 )
-                print(importer.completion_names(self._evaluator, True))
+                #print(importer.completion_names(self._evaluator, True))
                 return [(name, module) for name in importer.completion_names(self._evaluator, True)]
             elif isinstance(user_stmt, pr.Import):
                 # TODO this paragraph is necessary, but not sure it works.
@@ -189,7 +189,10 @@ class Script(object):
 
             if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords
-                completions += ((k, b) for k in keywords.keyword_names(all=True))
+                #completions += ((k, b) for k in keywords.keyword_names(all=True))
+                pass
+                # TODO delete? We should search for valid parser
+                # transformations.
 
         needs_dot = not dot and path
 
