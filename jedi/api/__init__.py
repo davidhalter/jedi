@@ -136,13 +136,19 @@ class Script(object):
                 )
                 print(importer.completion_names(self._evaluator, True))
                 return [(name, module) for name in importer.completion_names(self._evaluator, True)]
-            # TODO DELETE still needed?
-            if isinstance(user_stmt, pr.Import):
+            elif isinstance(user_stmt, pr.Import):
+                # TODO this paragraph is necessary, but not sure it works.
                 context = self._user_context.get_context()
                 next(context)  # skip the path
                 if next(context) == 'from':
                     # completion is just "import" if before stands from ..
                     return ((k, bs) for k in keywords.keyword_names('import'))
+
+                module = self._parser.module()
+                name = user_stmt.name_for_position(self._pos)
+                imp = imports.ImportWrapper(self._evaluator, name)
+                return [(n, module) for n in imp.get_defined_names()]
+
             return self._simple_complete(path, like)
 
         def completion_possible(path):
