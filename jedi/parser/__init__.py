@@ -33,7 +33,7 @@ STATEMENT_KEYWORDS = 'assert', 'del', 'global', 'nonlocal', 'raise', \
 _loaded_grammars = {}
 
 
-def load_grammar(file):
+def load_grammar(file='grammar3.4'):
     global _loaded_grammars
     path = os.path.join(os.path.dirname(__file__), file) + '.txt'
     try:
