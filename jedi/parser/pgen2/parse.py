@@ -97,10 +97,26 @@ class Parser(object):
         self.rootnode = None
         self.error_recovery = error_recovery
 
+    def parse(self, tokens):
+        for type, value, prefix, start_pos in tokens:
+            if self.addtoken(type, value, prefix, start_pos):
+                break
+        else:
+            # We never broke out -- EOF is too soon (how can this happen???)
+            # Hint: It probably doesn't since there's an ENDMARKER.
+            raise ParseError("incomplete input", type, value, start_pos)
+        return self.rootnode
+
     def addtoken(self, type, value, prefix, start_pos):
         """Add a token; return True iff this is the end of the program."""
         # Map from token to label
-        ilabel = self.classify(type, value, start_pos)
+        try:
+            ilabel = self.classify(type, value, start_pos)
+        except ParseError:
+            # Currently we ignore tokens like `?`.
+            print('invalid token', token.tok_name[type], value)
+            return
+
         # Loop until the token is shifted; may raise exceptions
         while True:
             dfa, state, node = self.stack[-1]

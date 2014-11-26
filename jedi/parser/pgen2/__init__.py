@@ -31,15 +31,16 @@ class Driver(object):
         self.error_recovery = error_recovery
 
     def parse_tokens(self, tokens):
+        p = parse.Parser(self.grammar, self.convert_node, self.convert_leaf, self.error_recovery)
+        return p.parse(self._tokenize(tokens))
+
+    def _tokenize(self, tokens):
         """Parse a series of tokens and return the syntax tree."""
         # XXX Move the prefix computation into a wrapper around tokenize.
-        p = parse.Parser(self.grammar, self.convert_node, self.convert_leaf, self.error_recovery)
         lineno = 1
         column = 0
-        type = value = start = end = line_text = None
         prefix = ""
-        for quintuple in tokens:
-            type, value, start, end, line_text = quintuple
+        for type, value, start, end, line_text in tokens:
             if start != (lineno, column):
                 assert (lineno, column) <= start, ((lineno, column), start)
                 s_lineno, s_column = start
@@ -60,18 +61,12 @@ class Driver(object):
             if type == token.OP:
                 type = grammar.opmap[value]
             #self.logger.debug("%s %r (prefix=%r)", token.tok_name[type], value, prefix)
-            if p.addtoken(type, value, prefix, start):
-                break
+            yield type, value, prefix, start
             prefix = ""
             lineno, column = end
             if value.endswith("\n"):
                 lineno += 1
                 column = 0
-        else:
-            # We never broke out -- EOF is too soon (how can this happen???)
-            raise parse.ParseError("incomplete input",
-                                   type, value, (prefix, start))
-        return p.rootnode
 
     def parse_string(self, text):
         """Parse a string and return the syntax tree."""
