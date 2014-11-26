@@ -135,7 +135,9 @@ class Script(object):
                     self._evaluator, module, self._pos
                 )
                 #print(importer.completion_names(self._evaluator, True))
-                return [(name, module) for name in importer.completion_names(self._evaluator, True)]
+                if importer is not None:
+                    names = importer.completion_names(self._evaluator, True)
+                    return [(name, module) for name in names]
             elif isinstance(user_stmt, pr.Import):
                 # TODO this paragraph is necessary, but not sure it works.
                 context = self._user_context.get_context()
