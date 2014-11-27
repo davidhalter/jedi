@@ -131,7 +131,7 @@ class Parser(object):
             p = pgen2.parse.Parser(grammar, self.convert_node, self.convert_leaf,
                                    self.error_recovery)
             tokenizer = tokenizer or tokenize.source_tokens(source)
-            self.module = p.parse(self._tokenize(tokenizer))
+            self.module = p.parse(p.tokenize(self._tokenize(tokenizer)))
 
         self.module.used_names = self.used_names
         self.module.path = module_path
@@ -247,6 +247,18 @@ class Parser(object):
         stack[start_index:] = []
 
     def _tokenize(self, tokenizer):
+        """
+            while first_pos[1] <= self._scope.start_pos[1] \
+                    and (token_type == tokenize.NAME or tok_str in ('(', '['))\
+                    and self._scope != self.module:
+                self._scope.end_pos = first_pos
+                self._scope = self._scope.parent
+                if isinstance(self._scope, pr.Module) \
+                        and not isinstance(self._scope, pr.SubModule):
+                    self._scope = self.module
+        """
+
+        new_scope = False
         for token in tokenizer:
             typ = token.type
             value = token.value

@@ -66,7 +66,7 @@ class Token(object):
         self.value = value
         self._start_pos_line = start_pos[0]
         self._start_pos_col = start_pos[1]
-        self.prefix = whitespace
+        self.prefix = prefix
 
     def __repr__(self):
         typ = tok_name[self.type]
@@ -228,6 +228,7 @@ def generate_tokens(readline, line_offset=0):
     numchars = '0123456789'
     contstr = ''
     contline = None
+    new_line = False
     prefix = ''  # Should never be required, but here for safety
     while True:            # loop over lines in stream
         line = readline()  # readline returns empty when finished. See StringIO
@@ -269,14 +270,19 @@ def generate_tokens(readline, line_offset=0):
             spos = (lnum, start)
             token, initial = line[start:pos], line[start]
 
+            if new_line and initial not in '\r\n#':
+                new_line = False
+
             if (initial in numchars or                      # ordinary number
                     (initial == '.' and token != '.' and token != '...')):
                 yield Token(NUMBER, token, spos, prefix)
             elif initial in '\r\n':
-                yield Token(NEWLINE, token, spos, prefix)
+                if not new_line:
+                    yield Token(NEWLINE, token, spos, prefix)
+                new_line = True
             elif initial == '#':
                 assert not token.endswith("\n")
-                yield Token(COMMENT, token, spos, prefix)
+                #yield Token(COMMENT, token, spos, prefix)
             elif token in triple_quoted:
                 endprog = endprogs[token]
                 endmatch = endprog.match(line, pos)
