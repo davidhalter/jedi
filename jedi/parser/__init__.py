@@ -123,9 +123,15 @@ class Parser(object):
         self.scope_names_stack = [{}]
         self.error_statement_stacks = []
         logger = logging.getLogger("Jedi-Parser")
-        d = pgen2.Driver(grammar, self.convert_node,
-                         self.convert_leaf, self.error_recovery, logger=logger)
-        self.module = d.parse_string(source).get_parent_until()
+        if False:
+            d = pgen2.Driver(grammar, self.convert_node,
+                             self.convert_leaf, self.error_recovery, logger=logger)
+            self.module = d.parse_string(source).get_parent_until()
+        else:
+            p = pgen2.parse.Parser(grammar, self.convert_node, self.convert_leaf,
+                                   self.error_recovery)
+            tokenizer = tokenizer or tokenize.source_tokens(source)
+            self.module = p.parse(self._tokenize(tokenizer))
 
         self.module.used_names = self.used_names
         self.module.path = module_path
@@ -239,6 +245,14 @@ class Parser(object):
             clear_names(children=node[1])
 
         stack[start_index:] = []
+
+    def _tokenize(self, tokenizer):
+        for token in tokenizer:
+            typ = token.type
+            value = token.value
+            if typ == tokenize.OP:
+                typ = pgen2.grammar.opmap[value]
+            yield typ, value, token.prefix, token.start_pos
 
 
     def __init__old__(self, source, module_path=None, no_docstr=False,
