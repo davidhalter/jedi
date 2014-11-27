@@ -73,7 +73,7 @@ class UserContext(object):
         is_first = True
         for tok in gen:
             tok_type = tok.type
-            tok_str = tok.string
+            tok_str = tok.value
             end = tok.end_pos
             self._column_temp = self._line_length - end[1]
             if is_first:
@@ -115,7 +115,7 @@ class UserContext(object):
             else:
                 if tok_str == '-':
                     next_tok = next(gen)
-                    if next_tok.string == 'e':
+                    if next_tok.value == 'e':
                         gen.push_back(next_tok)
                     else:
                         break
