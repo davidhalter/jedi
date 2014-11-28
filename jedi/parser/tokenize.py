@@ -224,6 +224,7 @@ def generate_tokens(readline, line_offset=0):
     The original stdlib Python version with minor modifications.
     Modified to not care about dedents.
     """
+    paren_level = 0  # count parentheses
     indents = [0]
     lnum = line_offset
     numchars = '0123456789'
@@ -273,18 +274,19 @@ def generate_tokens(readline, line_offset=0):
 
             if new_line and initial not in '\r\n#':
                 new_line = False
-                if start > indents[-1]:
-                    yield Token(INDENT, '', spos, '')
-                    indents.append(start)
-                while start < indents[-1]:
-                    yield Token(DEDENT, '', spos, '')
-                    indents.pop()
+                if paren_level == 0:
+                    if start > indents[-1]:
+                        yield Token(INDENT, '', spos, '')
+                        indents.append(start)
+                    while start < indents[-1]:
+                        yield Token(DEDENT, '', spos, '')
+                        indents.pop()
 
             if (initial in numchars or                      # ordinary number
                     (initial == '.' and token != '.' and token != '...')):
                 yield Token(NUMBER, token, spos, prefix)
             elif initial in '\r\n':
-                if not new_line:
+                if not new_line and paren_level == 0:
                     yield Token(NEWLINE, token, spos, prefix)
                 new_line = True
             elif initial == '#':
@@ -319,6 +321,10 @@ def generate_tokens(readline, line_offset=0):
             elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
                 continue
             else:
+                if token in '([{':
+                    paren_level += 1
+                elif token in ')]}':
+                    paren_level -= 1
                 yield Token(OP, token, spos, prefix)
 
     for indent in indents[1:]:
