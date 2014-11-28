@@ -166,8 +166,9 @@ class Parser(object):
                         # Done parsing, but another token is input
                         raise ParseError("too much input", type, value, start_pos)
                 else:
-                    self.error_recovery(self.grammar, self.stack, type, value, start_pos)
-                    break
+                    if self.error_recovery(self.grammar, self.stack, type,
+                                           value, start_pos):
+                        break
 
     def classify(self, type, value, start_pos):
         """Turn a token into a label.  (Internal)"""

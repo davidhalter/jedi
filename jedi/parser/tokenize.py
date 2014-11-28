@@ -211,6 +211,9 @@ del _compile
 
 tabsize = 8
 
+ALWAYS_BREAK_TOKEN = (';', 'import', 'from', 'class', 'def', 'try', 'except',
+                      'finally', 'while', 'return')
+
 
 def source_tokens(source, line_offset=0):
     """Generate tokens from a the source code (string)."""
@@ -318,6 +321,8 @@ def generate_tokens(readline, line_offset=0):
                     yield Token(STRING, token, spos, prefix)
             elif initial in namechars:                      # ordinary name
                 yield Token(NAME, token, spos, prefix)
+                if token in ALWAYS_BREAK_TOKEN:
+                    paren_level = 0
             elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
                 continue
             else:

@@ -216,6 +216,7 @@ class Parser(object):
         # No success finding a transition
         print('err', tokenize.tok_name[typ], repr(value), start_pos, len(stack), index)
         self._stack_removal(grammar, stack, index + 1, value, start_pos)
+        return value not in ('def', 'class')
 
     def _stack_removal(self, grammar, stack, start_index, value, start_pos):
         def clear_names(children):
