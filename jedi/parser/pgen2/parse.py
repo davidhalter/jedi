@@ -96,7 +96,6 @@ class Parser(object):
         self.stack = [stackentry]
         self.rootnode = None
         self.error_recovery = error_recovery
-        indent_errors = []  # TODO generate those.
 
     def tokenize(self, tokenizer):
         """
@@ -104,20 +103,7 @@ class Parser(object):
         parse function a normal tokenizer (e.g. the lib2to3 one). But if we use
         the parser stack we are able to do error recovery from wrong indents.
         """
-        indents = [0]
-        new_line = False
         for type, value, prefix, start_pos in tokenizer:
-            if type == token.NEWLINE:
-                new_line = True
-            elif new_line:
-                indent = start_pos[1]
-                if indent > indents[-1]:
-                    yield token.INDENT, '', '', start_pos
-                    indents.append(indent)
-                while indent < indents[-1]:
-                    yield token.DEDENT, '', '', start_pos
-                    indents.pop()
-                new_line = False
             yield type, value, prefix, start_pos
 
     def parse(self, tokenizer):

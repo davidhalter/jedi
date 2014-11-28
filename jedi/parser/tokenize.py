@@ -15,7 +15,7 @@ import string
 import re
 from io import StringIO
 from token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, NAME, OP,
-                   ERRORTOKEN, NEWLINE)
+                   ERRORTOKEN, NEWLINE, INDENT, DEDENT)
 
 from jedi._compatibility import u
 
@@ -224,6 +224,7 @@ def generate_tokens(readline, line_offset=0):
     The original stdlib Python version with minor modifications.
     Modified to not care about dedents.
     """
+    indents = [0]
     lnum = line_offset
     numchars = '0123456789'
     contstr = ''
@@ -272,6 +273,12 @@ def generate_tokens(readline, line_offset=0):
 
             if new_line and initial not in '\r\n#':
                 new_line = False
+                if start > indents[-1]:
+                    yield Token(INDENT, '', spos, '')
+                    indents.append(start)
+                while start < indents[-1]:
+                    yield Token(DEDENT, '', spos, '')
+                    indents.pop()
 
             if (initial in numchars or                      # ordinary number
                     (initial == '.' and token != '.' and token != '...')):
@@ -314,4 +321,6 @@ def generate_tokens(readline, line_offset=0):
             else:
                 yield Token(OP, token, spos, prefix)
 
+    for indent in indents[1:]:
+        yield Token(DEDENT, '', (lnum, 0), '')
     yield Token(ENDMARKER, '', (lnum, 0), prefix)
