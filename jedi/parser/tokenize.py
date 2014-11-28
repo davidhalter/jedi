@@ -320,9 +320,16 @@ def generate_tokens(readline, line_offset=0):
                 else:                                       # ordinary string
                     yield Token(STRING, token, spos, prefix)
             elif initial in namechars:                      # ordinary name
-                yield Token(NAME, token, spos, prefix)
                 if token in ALWAYS_BREAK_TOKEN:
                     paren_level = 0
+                    while True:
+                        indent = indents.pop()
+                        if indent > start:
+                            yield Token(DEDENT, '', (lnum, 0), '')
+                        else:
+                            indents.append(indent)
+                            break
+                yield Token(NAME, token, spos, prefix)
             elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
                 continue
             else:

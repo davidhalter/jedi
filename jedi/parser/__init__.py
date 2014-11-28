@@ -200,7 +200,8 @@ class Parser(object):
         else:
             return pt.Operator(value, start_pos, prefix)
 
-    def error_recovery(self, grammar, stack, typ, value, start_pos):
+    def error_recovery(self, grammar, stack, typ, value, start_pos, prefix,
+                       add_token_callback):
         """
         This parser is written in a dynamic way, meaning that this parser
         allows using different grammars (even non-Python). However, error
@@ -208,7 +209,7 @@ class Parser(object):
         """
         # For now just discard everything that is not a suite or
         # file_input, if we detect an error.
-        for index, (dfa, state, (_type, _)) in reversed(list(enumerate(stack))):
+        for index, (dfa, state, (_type, nodes)) in reversed(list(enumerate(stack))):
             # `suite` can sometimes be only simple_stmt, not stmt.
             symbol = grammar.number2symbol[_type]
             if symbol in ('file_input', 'suite'):
@@ -216,7 +217,17 @@ class Parser(object):
         # No success finding a transition
         print('err', tokenize.tok_name[typ], repr(value), start_pos, len(stack), index)
         self._stack_removal(grammar, stack, index + 1, value, start_pos)
-        return value not in ('def', 'class')
+        # Those can always be new statements.
+        if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
+            pass
+        elif typ == tokenize.DEDENT:
+            if symbol == 'suite':
+                if len(nodes) > 2:
+                    add_token_callback(typ, value, prefix, start_pos)
+                else:
+                    # If a function or anything else contains a suite that is
+                    # "empty" (just NEWLINE/INDENT), we remove it.
+                    self._stack_removal(grammar, stack, len(stack) - 2, value, start_pos)
 
     def _stack_removal(self, grammar, stack, start_index, value, start_pos):
         def clear_names(children):

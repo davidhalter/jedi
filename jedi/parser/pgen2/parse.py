@@ -104,6 +104,7 @@ class Parser(object):
         the parser stack we are able to do error recovery from wrong indents.
         """
         for type, value, prefix, start_pos in tokenizer:
+            #print(token.tok_name[type], value)
             yield type, value, prefix, start_pos
 
     def parse(self, tokenizer):
@@ -111,9 +112,12 @@ class Parser(object):
             if self.addtoken(type, value, prefix, start_pos):
                 break
         else:
-            # We never broke out -- EOF is too soon (how can this happen???)
-            # Hint: It probably doesn't since there's an ENDMARKER.
-            raise ParseError("incomplete input", type, value, start_pos)
+            # We never broke out -- EOF is too soon -- Unfinished statement.
+            self.error_recovery(self.grammar, self.stack, type, value,
+                                start_pos, prefix, self.addtoken)
+            # Add the ENDMARKER again.
+            if not self.addtoken(type, value, prefix, start_pos):
+                raise ParseError("incomplete input", type, value, start_pos)
         return self.rootnode
 
     def addtoken(self, type, value, prefix, start_pos):
@@ -166,9 +170,9 @@ class Parser(object):
                         # Done parsing, but another token is input
                         raise ParseError("too much input", type, value, start_pos)
                 else:
-                    if self.error_recovery(self.grammar, self.stack, type,
-                                           value, start_pos):
-                        break
+                    self.error_recovery(self.grammar, self.stack, type,
+                                        value, start_pos, prefix, self.addtoken)
+                    break
 
     def classify(self, type, value, start_pos):
         """Turn a token into a label.  (Internal)"""
