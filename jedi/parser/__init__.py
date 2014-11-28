@@ -215,7 +215,7 @@ class Parser(object):
             if symbol in ('file_input', 'suite'):
                 break
         # No success finding a transition
-        print('err', tokenize.tok_name[typ], repr(value), start_pos, len(stack), index)
+        #print('err', tokenize.tok_name[typ], repr(value), start_pos, len(stack), index)
         self._stack_removal(grammar, stack, index + 1, value, start_pos)
         # Those can always be new statements.
         if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
@@ -223,6 +223,7 @@ class Parser(object):
         elif typ == tokenize.DEDENT:
             if symbol == 'suite':
                 if len(nodes) > 2:
+                    # Finish the suite.
                     add_token_callback(typ, value, prefix, start_pos)
                 else:
                     # If a function or anything else contains a suite that is
@@ -250,8 +251,9 @@ class Parser(object):
             if found:
                 symbol = grammar.number2symbol[typ]
                 failed_stack.append((symbol, nodes))
-        err = ErrorStatement(failed_stack, value, start_pos)
-        self.error_statement_stacks.append(err)
+        if failed_stack:
+            err = ErrorStatement(failed_stack, value, start_pos)
+            self.error_statement_stacks.append(err)
 
         for dfa, state, node in stack[start_index:]:
             clear_names(children=node[1])
