@@ -317,7 +317,6 @@ class Script(object):
             raise NotImplementedError
             raise NotFoundError()
 
-        # TODO remove?
         user_stmt = self._parser.user_stmt()
         if user_stmt is None:
             # Set the start_pos to a pseudo position, that doesn't exist but works
@@ -326,7 +325,7 @@ class Script(object):
         else:
             pos = user_stmt.start_pos
 
-        #stmt.move(pos[0] - 1, pos[1])
+        stmt.move(0, pos[1])
         stmt.parent = self._parser.user_scope()
         return stmt
 
