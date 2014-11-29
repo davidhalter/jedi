@@ -207,13 +207,17 @@ class Parser(object):
         allows using different grammars (even non-Python). However, error
         recovery is purely written for Python.
         """
-        # For now just discard everything that is not a suite or
-        # file_input, if we detect an error.
-        for index, (dfa, state, (_type, nodes)) in reversed(list(enumerate(stack))):
-            # `suite` can sometimes be only simple_stmt, not stmt.
-            symbol = grammar.number2symbol[_type]
-            if symbol in ('file_input', 'suite'):
-                break
+        def current_suite(stack):
+            # For now just discard everything that is not a suite or
+            # file_input, if we detect an error.
+            for index, (dfa, state, (typ, nodes)) in reversed(list(enumerate(stack))):
+                # `suite` can sometimes be only simple_stmt, not stmt.
+                symbol = grammar.number2symbol[typ]
+                if symbol in ('file_input', 'suite'):
+                    break
+            return index, symbol, nodes
+
+        index, symbol, nodes = current_suite(stack)
         #print('err', tokenize.tok_name[typ], repr(value), start_pos, len(stack), index)
         self._stack_removal(grammar, stack, index + 1, value, start_pos)
         if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
@@ -221,13 +225,17 @@ class Parser(object):
             add_token_callback(typ, value, prefix, start_pos)
         elif typ == tokenize.DEDENT:
             if symbol == 'suite':
+                # If a function or anything else contains a suite that is
+                # "empty" (just NEWLINE/INDENT), we remove it. If it's not
+                # empty, we can close it.
                 if len(nodes) > 2:
                     # Finish the suite.
                     add_token_callback(typ, value, prefix, start_pos)
                 else:
-                    # If a function or anything else contains a suite that is
-                    # "empty" (just NEWLINE/INDENT), we remove it.
-                    self._stack_removal(grammar, stack, len(stack) - 2, value, start_pos)
+                    # Remove the current suite from the stack to look deeper in
+                    # the stack for a suite/file_input.
+                    index, symbol, nodes = current_suite(stack[:-1])
+                    self._stack_removal(grammar, stack, index + 1, value, start_pos)
 
     def _stack_removal(self, grammar, stack, start_index, value, start_pos):
         def clear_names(children):
