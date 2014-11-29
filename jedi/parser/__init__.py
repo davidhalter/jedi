@@ -214,12 +214,11 @@ class Parser(object):
             symbol = grammar.number2symbol[_type]
             if symbol in ('file_input', 'suite'):
                 break
-        # No success finding a transition
         #print('err', tokenize.tok_name[typ], repr(value), start_pos, len(stack), index)
         self._stack_removal(grammar, stack, index + 1, value, start_pos)
-        # Those can always be new statements.
         if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
-            pass
+            # Those can always be new statements.
+            add_token_callback(typ, value, prefix, start_pos)
         elif typ == tokenize.DEDENT:
             if symbol == 'suite':
                 if len(nodes) > 2:
