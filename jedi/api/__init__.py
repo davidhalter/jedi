@@ -32,6 +32,7 @@ from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
+from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_name_parts
 from jedi.evaluate.finder import get_names_of_scope, filter_private_variable
 from jedi.evaluate.helpers import search_call_signatures
@@ -44,6 +45,7 @@ sys.setrecursionlimit(2000)
 
 class NotFoundError(Exception):
     """A custom error to avoid catching the wrong exceptions."""
+    # TODO deprecate this.
 
 
 class Script(object):
@@ -151,7 +153,7 @@ class Script(object):
                 imp = imports.ImportWrapper(self._evaluator, name)
                 return [(n, module) for n in imp.get_defined_names()]
 
-            return self._simple_complete(path, like)
+            return self._simple_complete(path, dot, like)
 
         def completion_possible(path):
             """
@@ -226,11 +228,8 @@ class Script(object):
                                             x.name.startswith('_'),
                                             x.name.lower()))
 
-    def _simple_complete(self, path, like):
-        try:
-            scopes = list(self._prepare_goto(path, True))
-        except NotFoundError:
-            scopes = []
+    def _simple_complete(self, path, dot, like):
+        if not path and not dot:
             scope_names_generator = get_names_of_scope(self._evaluator,
                                                        self._parser.user_scope(),
                                                        self._pos)
@@ -238,7 +237,10 @@ class Script(object):
             for scope, name_list in scope_names_generator:
                 for c in name_list:
                     completions.append((c, scope))
+        elif self._get_under_cursor_stmt(path) is None:
+            return []
         else:
+            scopes = list(self._prepare_goto(path, True))
             completions = []
             debug.dbg('possible completion scopes: %s', scopes)
             for s in scopes:
@@ -286,6 +288,8 @@ class Script(object):
         else:
             # just parse one statement, take it and evaluate it
             eval_stmt = self._get_under_cursor_stmt(goto_path)
+            if eval_stmt is None:
+                return []
 
             if not is_completion:
                 # goto_definition returns definitions of its statements if the
@@ -299,6 +303,7 @@ class Script(object):
 
         return scopes
 
+    @memoize_default()
     def _get_under_cursor_stmt(self, cursor_txt):
         tokenizer = source_tokens(cursor_txt, line_offset=self._pos[0] - 1)
         r = Parser(self._grammar, cursor_txt, tokenizer=tokenizer)
@@ -306,8 +311,10 @@ class Script(object):
             # Take the last statement available.
             stmt = r.module.statements[-1]
         except IndexError:
+            return None
             raise NotFoundError()
         if not isinstance(stmt, (pr.ExprStmt, pr.KeywordStatement)):
+            raise NotImplementedError
             raise NotFoundError()
 
         # TODO remove?
@@ -647,11 +654,11 @@ class Interpreter(Script):
         # Here we add the namespaces to the current parser.
         interpreter.create(self._evaluator, namespaces[0], self._parser.module())
 
-    def _simple_complete(self, path, like):
+    def _simple_complete(self, path, dot, like):
         user_stmt = self._parser.user_stmt_with_whitespace()
         is_simple_path = not path or re.search('^[\w][\w\d.]*$', path)
         if isinstance(user_stmt, pr.Import) or not is_simple_path:
-            return super(Interpreter, self)._simple_complete(path, like)
+            return super(Interpreter, self)._simple_complete(path, dot, like)
         else:
             class NamespaceModule(object):
                 def __getattr__(_, name):
