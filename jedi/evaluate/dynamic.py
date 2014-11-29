@@ -94,9 +94,16 @@ def search_params(evaluator, param):
                     # We have to remove decorators, because they are not the
                     # "original" functions, this way we can easily compare.
                     # At the same time we also have to remove InstanceElements.
-                    undec = [escope.decorates or
-                             (escope.var if isinstance(escope, er.InstanceElement) else escope)
-                             for escope in types if escope.isinstance(er.Function, er.Instance)]
+                    undec = []
+                    for escope in types:
+                        if escope.isinstance(er.Function, er.Instance) \
+                                and escope.decorates is not None:
+                            undec.append(escope.decorates)
+                        elif isinstance(escope, er.InstanceElement):
+                            undec.append(escope.var)
+                        else:
+                            undec.append(escope)
+
                     if er.wrap(evaluator, compare) in undec:
                         # Only if we have the correct function we execute
                         # it, otherwise just ignore it.
