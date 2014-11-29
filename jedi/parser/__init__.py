@@ -213,7 +213,10 @@ class Parser(object):
             for index, (dfa, state, (typ, nodes)) in reversed(list(enumerate(stack))):
                 # `suite` can sometimes be only simple_stmt, not stmt.
                 symbol = grammar.number2symbol[typ]
-                if symbol in ('file_input', 'suite'):
+                if symbol == 'file_input':
+                    break
+                elif symbol == 'suite' and len(nodes) > 1:
+                    # suites without an indent in them get discarded.
                     break
             return index, symbol, nodes
 
