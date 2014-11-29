@@ -243,6 +243,9 @@ class Parser(object):
                         except ValueError:
                             pass  # This may happen with CompFor.
 
+        for dfa, state, node in stack[start_index:]:
+            clear_names(children=node[1])
+
         failed_stack = []
         found = False
         for dfa, state, (typ, nodes) in stack[start_index:]:
@@ -251,12 +254,11 @@ class Parser(object):
             if found:
                 symbol = grammar.number2symbol[typ]
                 failed_stack.append((symbol, nodes))
+            if nodes and nodes[0] in ('def', 'class'):
+                self.scope_names_stack.pop()
         if failed_stack:
             err = ErrorStatement(failed_stack, value, start_pos)
             self.error_statement_stacks.append(err)
-
-        for dfa, state, node in stack[start_index:]:
-            clear_names(children=node[1])
 
         stack[start_index:] = []
 
