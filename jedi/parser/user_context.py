@@ -81,14 +81,14 @@ class UserContext(object):
                     return u(''), start_cursor
                 is_first = False
 
-            # print 'tok', token_type, tok_str, force_point
+            #print('tok', tok_type, tok_str, force_point)
             if last_type == tok_type == tokenize.NAME:
                 string += ' '
 
-            if level > 0:
+            if level:
                 if tok_str in close_brackets:
                     level += 1
-                if tok_str in open_brackets:
+                elif tok_str in open_brackets:
                     level -= 1
             elif tok_str == '.':
                 force_point = False
@@ -127,10 +127,10 @@ class UserContext(object):
             l = first_line if x == start_pos[0] else l
             start_cursor = x, len(l) - end[1]
             string += tok_str
-            if keyword.iskeyword(tok_str[::-1]):
+            #if keyword.iskeyword(tok_str[::-1]):
                 # Keywords should always stop. The path will always end with
                 # them.
-                break
+            #    break
             last_type = tok_type
 
         # string can still contain spaces at the end

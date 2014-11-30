@@ -215,6 +215,8 @@ class Evaluator(object):
             # This is the first global lookup.
             stmt = atom.get_definition()
             scope = stmt.get_parent_until(pr.IsScope, include_current=True)
+            if isinstance(stmt, pr.CompFor):
+                stmt = stmt.get_parent_until((pr.ClassOrFunc, pr.ExprStmt))
             return self.find_types(scope, atom, stmt.start_pos, search_global=True)
         elif isinstance(atom, pr.Literal):
             return [compiled.create(self, atom.eval())]
