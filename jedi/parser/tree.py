@@ -880,8 +880,6 @@ class Lambda(Function):
         self.listeners = set()  # not used here, but in evaluation.
         lst = self.children[1:-2]  # After `def foo`
         self.params = _create_params(self, lst)
-        self.names_dict = dict((str(param.name), [param.name])
-                               for param in self.params)
 
     def is_generator(self):
         return False

@@ -158,6 +158,8 @@ class Parser(object):
         # returned by convert multiple times.
         if symbol == 'global_stmt':
             self.global_names += new_node.get_defined_names()
+        elif isinstance(new_node, pt.Lambda):
+            new_node.names_dict = self.scope_names_stack.pop()
         elif isinstance(new_node, (pt.ClassOrFunc, pt.Module)) \
                 and symbol in ('funcdef', 'classdef', 'file_input'):
             # scope_name_stack handling
@@ -180,7 +182,7 @@ class Parser(object):
         #print('leaf', value, pytree.type_repr(type))
         if type == tokenize.NAME:
             if value in grammar.keywords:
-                if value in ('def', 'class'):
+                if value in ('def', 'class', 'lambda'):
                     self.scope_names_stack.append({})
 
                 return pt.Keyword(value, start_pos, prefix)
@@ -265,7 +267,7 @@ class Parser(object):
             if found:
                 symbol = grammar.number2symbol[typ]
                 failed_stack.append((symbol, nodes))
-            if nodes and nodes[0] in ('def', 'class'):
+            if nodes and nodes[0] in ('def', 'class', 'lambda'):
                 self.scope_names_stack.pop()
         if failed_stack:
             err = ErrorStatement(failed_stack, value, start_pos)
