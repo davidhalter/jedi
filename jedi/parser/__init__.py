@@ -103,6 +103,7 @@ class Parser(object):
             'comp_for': pt.CompFor,
             'decorator': pt.Decorator,
             'lambdef': pt.Lambda,
+            'lambdef_nocond': pt.Lambda,
         }
 
         self.global_names = []

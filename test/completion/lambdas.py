@@ -95,3 +95,12 @@ class Test(object):
         self.a
         #? float()
         pred(1.0, 2)
+
+# -----------------
+# test_nocond in grammar (happens in list comprehensions with `if`)
+# -----------------
+# Doesn't need to do anything yet. It should just not raise an error. These
+# nocond lambdas make no sense at all.
+
+#? int()
+[a for a in [1,2] if lambda: 3][0]
