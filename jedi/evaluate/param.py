@@ -444,10 +444,10 @@ def _gen_param_name_copy(evaluator, func, var_args, param, keys=(), values=(), a
         parent = func
         start_pos = 0, 0
 
+    """
     # create an Array (-> needed for *args/**kwargs tuples/dicts)
     arr = iterable.FakeSequence(evaluator, values, array_type)
     # TODO change?!
-    """
     arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
     key_stmts = []
     for key in keys:
