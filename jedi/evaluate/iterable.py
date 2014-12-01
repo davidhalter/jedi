@@ -160,6 +160,9 @@ class Comprehension(IterableWrapper):
 
 class ListComprehension(Comprehension):
     def get_index_types(self, evaluator, index):
+        return self.iter_content()
+
+    def iter_content(self):
         return self._evaluator.eval_element(self.eval_node())
 
     @property
@@ -385,7 +388,7 @@ def get_iterator_types(inputs):
     # Take the first statement (for has always only
     # one, remember `in`). And follow it.
     for it in inputs:
-        if isinstance(it, (Generator, Array, ArrayInstance)):
+        if isinstance(it, (Generator, Array, ArrayInstance, Comprehension)):
             iterators.append(it)
         else:
             if not hasattr(it, 'execute_subscope_by_name'):
@@ -400,9 +403,8 @@ def get_iterator_types(inputs):
     from jedi.evaluate.representation import Instance
     for it in iterators:
         if isinstance(it, Array):
-            # Array is a little bit special, since this is an internal
-            # array, but there's also the list builtin, which is
-            # another thing.
+            # Array is a little bit special, since this is an internal array,
+            # but there's also the list builtin, which is another thing.
             result += it.values()
         elif isinstance(it, Instance):
             # __iter__ returned an instance.
