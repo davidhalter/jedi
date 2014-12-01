@@ -76,7 +76,7 @@ class Executed(pr.Base):
         return True
 
     def get_parent_until(self, *args, **kwargs):
-        return self.base.get_parent_until(*args, **kwargs)
+        return pr.Base.get_parent_until(self, *args, **kwargs)
 
     @common.safe_property
     def parent(self):
@@ -512,7 +512,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
 
                 debug.dbg('decorator end %s', f)
 
-        if isinstance(f, pr.Function):
+        if isinstance(f, (pr.Function, pr.Lambda)):
             return self
         return f
 
@@ -540,6 +540,10 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         if self.decorates is not None:
             dec = " decorates " + repr(self.decorates)
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
+
+
+class LambdaWrapper(Function):
+    pass
 
 
 class LazyDict(object):
@@ -587,6 +591,9 @@ class FunctionExecution(Executed):
             # execution ongoing. In this case Jedi is interested in the
             # inserted params, not in the actual execution of the function.
             return []
+
+        if isinstance(func, LambdaWrapper):
+            return self._evaluator.eval_element(self.children[-1])
 
         if check_yields:
             types = []

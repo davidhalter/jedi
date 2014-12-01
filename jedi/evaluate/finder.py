@@ -74,9 +74,12 @@ class NameFinder(object):
         except KeyError:
             return []
 
-        if isinstance(scope, pr.CompFor):
+        if isinstance(scope, (pr.CompFor, pr.Lambda)):
             return names
-        names = pr.filter_after_position(names, position)
+
+        if not (isinstance(scope, er.FunctionExecution)
+                and isinstance(scope.base, er.LambdaWrapper)):
+            names = pr.filter_after_position(names, position)
         names = [name for name in names if name.is_definition()]
 
         # Only the names defined in the last position are valid definitions.
@@ -539,6 +542,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
         if isinstance(scope, pr.SubModule) and scope.parent or not scope.is_scope():
             scope = scope.parent
             continue
+
         # `pr.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.

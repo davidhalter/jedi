@@ -102,6 +102,7 @@ class Parser(object):
             'try_stmt': pt.TryStmt,
             'comp_for': pt.CompFor,
             'decorator': pt.Decorator,
+            'lambdef': pt.Lambda,
         }
 
         self.global_names = []

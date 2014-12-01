@@ -176,6 +176,8 @@ class Evaluator(object):
         elif isinstance(element, pr.Keyword):
             # For False/True/None
             return [compiled.builtin.get_by_name(element.value)]
+        elif isinstance(element, pr.Lambda):
+            return [er.LambdaWrapper(self, element)]
         elif element.type == 'power':
             types = self._eval_atom(element.children[0])
             for trailer in element.children[1:]:

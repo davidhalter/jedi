@@ -762,6 +762,30 @@ class Class(ClassOrFunc):
         yield self, filter_after_position(self.get_defined_names(), position)
 
 
+def _create_params(function, lst):
+    if not lst:
+        return []
+    if is_node(lst[0], 'typedargslist', 'varargslist'):
+        params = []
+        iterator = iter(lst[0].children)
+        for n in iterator:
+            stars = 0
+            if n in ('*', '**'):
+                stars = len(n.value)
+                n = next(iterator)
+
+            op = next(iterator, None)
+            if op == '=':
+                default = next(iterator)
+                next(iterator, None)
+            else:
+                default = None
+            params.append(Param(n, function, default, stars))
+        return params
+    else:
+        return [Param(lst[0], function)]
+
+
 class Function(ClassOrFunc):
     """
     Used to store the parsed contents of a python function.
@@ -778,35 +802,12 @@ class Function(ClassOrFunc):
     def __init__(self, children):
         super(Function, self).__init__(children)
         self.listeners = set()  # not used here, but in evaluation.
-        self.params = self._params()
+        lst = self.children[2].children[1:-1]  # After `def foo`
+        self.params = _create_params(self, lst)
 
     @property
     def name(self):
         return self.children[1]  # First token after `def`
-
-    def _params(self):
-        node = self.children[2].children[1:-1]  # After `def foo`
-        if not node:
-            return []
-        if is_node(node[0], 'typedargslist'):
-            params = []
-            iterator = iter(node[0].children)
-            for n in iterator:
-                stars = 0
-                if n in ('*', '**'):
-                    stars = len(n.value)
-                    n = next(iterator)
-
-                op = next(iterator, None)
-                if op == '=':
-                    default = next(iterator)
-                    next(iterator, None)
-                else:
-                    default = None
-                params.append(Param(n, self, default, stars))
-            return params
-        else:
-            return [Param(node[0], self)]
 
     @property
     def yields(self):
@@ -871,13 +872,25 @@ class Function(ClassOrFunc):
 
 
 class Lambda(Function):
-    def __init__(self, module, params, start_pos, parent):
-        super(Lambda, self).__init__(module, None, params, start_pos, None)
-        self.parent = parent
+    """
+    Lambdas are basically trimmed functions, so give it the same interface.
+    """
+    def __init__(self, children):
+        super(Function, self).__init__(children)
+        self.listeners = set()  # not used here, but in evaluation.
+        lst = self.children[1:-2]  # After `def foo`
+        self.params = _create_params(self, lst)
+        self.names_dict = dict((str(param.name), [param.name])
+                               for param in self.params)
+
+    def is_generator(self):
+        return False
+
+    def yields(self):
+        return []
 
     def __repr__(self):
-        return "<%s @%s (%s-%s)>" % (type(self).__name__, self.start_pos[0],
-                                     self.start_pos[1], self.end_pos[1])
+        return "<%s@%s>" % (self.__class__.__name__, self.start_pos)
 
 
 class Flow(Simple):
