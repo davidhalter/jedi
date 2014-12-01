@@ -55,10 +55,25 @@ a = lambda: 3
 a.__closure__
 
 class C():
-    def __init__(self):
+    def __init__(self, foo=1.0):
         self.a = lambda: 1
+        self.foo = foo
+
+    def ret(self):
+        return lambda: self.foo
+
+    def with_param(self):
+        return lambda x: x + self.a()
+
 #? int()
 C().a()
+
+#? str()
+C('foo').ret()()
+
+index = C().with_param()(1)
+#? float()
+['', 1, 1.0][index]
 
 
 def xy(param):
