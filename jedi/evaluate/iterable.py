@@ -256,9 +256,8 @@ class Array(IterableWrapper):
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
-        from jedi.evaluate.representation import get_instance_el
         for _, names in scope.scope_names_generator():
-            yield self, [get_instance_el(self._evaluator, self, n) for n in names]
+            yield self, names
 
     @common.safe_property
     def parent(self):
