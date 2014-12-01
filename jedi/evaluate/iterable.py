@@ -162,6 +162,10 @@ class ListComprehension(Comprehension):
     def get_index_types(self, evaluator, index):
         return self._evaluator.eval_element(self.eval_node())
 
+    @property
+    def name(self):
+        return FakeSequence(self._evaluator, [], pr.Array.LIST).name
+
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
     def iter_content(self):
