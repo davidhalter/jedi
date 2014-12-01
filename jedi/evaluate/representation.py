@@ -54,7 +54,10 @@ def wrap(evaluator, element):
     if isinstance(element, pr.Class):
         return Class(evaluator, element)
     elif isinstance(element, pr.Function):
-        return Function(evaluator, element)
+        if isinstance(element, pr.Lambda):
+            return LambdaWrapper(evaluator, element)
+        else:
+            return Function(evaluator, element)
     elif isinstance(element, (pr.Module)) \
             and not isinstance(element, ModuleWrapper):
         return ModuleWrapper(evaluator, element)
@@ -543,7 +546,8 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
 
 
 class LambdaWrapper(Function):
-    pass
+    def get_decorated_func(self):
+        return self
 
 
 class LazyDict(object):
@@ -583,6 +587,9 @@ class FunctionExecution(Executed):
     def get_return_types(self, check_yields=False):
         func = self.base
 
+        if func.isinstance(LambdaWrapper):
+            return self._evaluator.eval_element(self.children[-1])
+
         if func.listeners:
             # Feed the listeners, with the params.
             for listener in func.listeners:
@@ -591,9 +598,6 @@ class FunctionExecution(Executed):
             # execution ongoing. In this case Jedi is interested in the
             # inserted params, not in the actual execution of the function.
             return []
-
-        if isinstance(func, LambdaWrapper):
-            return self._evaluator.eval_element(self.children[-1])
 
         if check_yields:
             types = []
