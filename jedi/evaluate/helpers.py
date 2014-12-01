@@ -69,7 +69,7 @@ def deep_ast_copy(obj, new_elements_default=None):
                     pass
             elif key in ['parent_function', 'use_as_parent', '_sub_module']:
                 continue
-            elif key == '_names_dict':
+            elif key == 'names_dict':
                 d = dict((k, sequence_recursion(v)) for k, v in value.items())
                 setattr(new_obj, key, d)
             elif isinstance(value, (list, tuple)):

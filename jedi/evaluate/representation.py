@@ -478,10 +478,14 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         This is also the places where the decorators are processed.
         """
         f = self.base_func
+        decorators = self.base_func.get_decorators()
+
+        if not decorators or self.is_decorated:
+            return self
 
         # Only enter it, if has not already been processed.
         if not self.is_decorated:
-            for dec in reversed(self.base_func.get_decorators()):
+            for dec in reversed(decorators):
                 debug.dbg('decorator: %s %s', dec, f)
                 dec.children
                 dec_results = self._evaluator.eval_element(dec.children[1])
@@ -515,9 +519,6 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                     f.decorates = self
 
                 debug.dbg('decorator end %s', f)
-
-        if isinstance(f, (pr.Function, pr.Lambda)):
-            return self
         return f
 
     def get_magic_function_names(self):
@@ -618,7 +619,7 @@ class FunctionExecution(Executed):
                 break
         return types
 
-    @property
+    @common.safe_property
     @underscore_memoization
     def names_dict(self):
         d = {}
