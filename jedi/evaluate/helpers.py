@@ -51,7 +51,7 @@ def deep_ast_copy(obj, new_elements_default=None):
             # tree in there.
             items = sorted(items, key=sort_stmt)
         else:
-            items = sorted(items, key=lambda x: x[0] != 'params')
+            items = sorted(items, key=lambda x: (x[0] != 'params', x[0] == 'names_dict'))
 
         # Actually copy and set attributes.
         new_obj = copy.copy(obj)
