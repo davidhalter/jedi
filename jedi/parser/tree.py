@@ -468,18 +468,23 @@ class Scope(Simple, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('_doc_token', 'asserts', 'names_dict')
+    __slots__ = ('_doc_token', 'names_dict')
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
         self._doc_token = None
-        self.asserts = []
 
     @property
     def returns(self):
         # Needed here for fast_parser, because the fast_parser splits and
         # returns will be in "normal" modules.
         return self._search_in_scope(ReturnStmt)
+
+    @property
+    def asserts(self):
+        # Needed here for fast_parser, because the fast_parser splits and
+        # returns will be in "normal" modules.
+        return self._search_in_scope(AssertStmt)
 
     @property
     def subscopes(self):
@@ -1095,12 +1100,17 @@ class KeywordStatement(Simple):
         return self.children[0].value
 
 
-class GlobalStmt(Simple):
+class AssertStmt(KeywordStatement):
+    def assertion(self):
+        return self.children[1]
+
+
+class GlobalStmt(KeywordStatement):
     def get_defined_names(self):
         return self.children[1::2]
 
 
-class ReturnStmt(Simple):
+class ReturnStmt(KeywordStatement):
     pass
 
 

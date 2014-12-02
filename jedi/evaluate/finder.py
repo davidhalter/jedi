@@ -439,11 +439,11 @@ def check_flow_information(evaluator, flow, search_name_part, pos):
         return None
 
     result = []
-    if False and flow.is_scope():
+    if flow.is_scope():
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
-            result = _check_isinstance_type(evaluator, ass, search_name_part)
+            result = _check_isinstance_type(evaluator, ass.assertion(), search_name_part)
             if result:
                 break
 
@@ -473,20 +473,6 @@ def _check_isinstance_type(evaluator, element, search_name):
         # Do a simple get_code comparison. They should just have the same code,
         # and everything will be all right.
         classes = lst[1][1][0]
-        """
-        assert arglist.type == 'arglist' and len(arglist.children) in (3, 4)
-        isinst = call.next.values
-        assert len(isinst) == 2  # has two params
-        obj, classes = [statement.expression_list() for statement in isinst]
-        assert len(obj) == 1
-        assert len(classes) == 1
-        assert isinstance(obj[0], pr.Call)
-
-        while prev.previous is not None:
-            prev = prev.previous
-        assert obj[0].get_code() == prev.get_code()
-        assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
-        """
         call = helpers.call_of_name(search_name)
         assert name.get_code() == call.get_code()
     except AssertionError:

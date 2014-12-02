@@ -94,7 +94,7 @@ class Parser(object):
             'pass_stmt': pt.KeywordStatement,
             'global_stmt': pt.GlobalStmt,
             'nonlocal_stmt': pt.KeywordStatement,
-            'assert_stmt': pt.KeywordStatement,
+            'assert_stmt': pt.AssertStmt,
             'if_stmt': pt.IfStmt,
             'with_stmt': pt.WithStmt,
             'for_stmt': pt.ForStmt,
