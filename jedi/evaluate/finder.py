@@ -27,6 +27,8 @@ from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
+from jedi.evaluate import param
+from jedi.evaluate import helpers
 
 
 class NameFinder(object):
@@ -445,22 +447,34 @@ def check_flow_information(evaluator, flow, search_name_part, pos):
             if result:
                 break
 
-    if isinstance(flow, pr.Flow) and not result:
-        if isinstance(flow, (pr.IfStmt, pr.WhileStmt)) and False and len(flow.inputs) == 1:
-            result = _check_isinstance_type(evaluator, flow.inputs[0], search_name_part)
+    if isinstance(flow, (pr.IfStmt, pr.WhileStmt)):
+        element = flow.children[1]
+        result = _check_isinstance_type(evaluator, element, search_name_part)
     return result
 
 
-def _check_isinstance_type(evaluator, stmt, search_name):
+def _check_isinstance_type(evaluator, element, search_name):
     try:
-        expression_list = stmt.expression_list()
+        assert element.type == 'power'
         # this might be removed if we analyze and, etc
-        assert len(expression_list) == 1
-        call = expression_list[0]
-        assert isinstance(call, pr.Call) and str(call.name) == 'isinstance'
-        assert call.next_is_execution()
+        assert len(element.children) == 2
+        first, trailer = element.children
+        assert isinstance(first, pr.Name) and first.value == 'isinstance'
+        assert trailer.type == 'trailer' and trailer.children[0] == '('
+        assert len(trailer.children) == 3
 
-        # isinstance check
+        # arglist stuff
+        arglist = trailer.children[1]
+        args = param.Arguments(evaluator, arglist, trailer)
+        lst = list(args.unpack())
+        # Disallow keyword arguments
+        assert len(lst) == 2 and lst[0][0] is None and lst[1][0] is None
+        name = lst[0][1][0]  # first argument, values, first value
+        # Do a simple get_code comparison. They should just have the same code,
+        # and everything will be all right.
+        classes = lst[1][1][0]
+        """
+        assert arglist.type == 'arglist' and len(arglist.children) in (3, 4)
         isinst = call.next.values
         assert len(isinst) == 2  # has two params
         obj, classes = [statement.expression_list() for statement in isinst]
@@ -468,19 +482,19 @@ def _check_isinstance_type(evaluator, stmt, search_name):
         assert len(classes) == 1
         assert isinstance(obj[0], pr.Call)
 
-        prev = search_name.parent
         while prev.previous is not None:
             prev = prev.previous
-        # Do a simple get_code comparison. They should just have the same code,
-        # and everything will be all right.
         assert obj[0].get_code() == prev.get_code()
         assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
+        """
+        call = helpers.call_of_name(search_name)
+        assert name.get_code() == call.get_code()
     except AssertionError:
         return []
 
     result = []
-    for c in evaluator.eval_call(classes[0]):
-        for typ in (c.values() if isinstance(c, iterable.Array) else [c]):
+    for typ in evaluator.eval_element(classes):
+        for typ in (typ.values() if isinstance(typ, iterable.Array) else [typ]):
             result += evaluator.execute(typ)
     return result
 
