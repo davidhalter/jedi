@@ -208,6 +208,7 @@ class Leaf(Base):
 
 
 class Whitespace(Leaf):
+    type = 'whitespace'
     """Contains NEWLINE and ENDMARKER tokens."""
 
 
@@ -216,10 +217,7 @@ class Name(Leaf):
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
     """
-    # Unfortunately there's no way to use slots for str (non-zero __itemsize__)
-    # -> http://utcc.utoronto.ca/~cks/space/blog/python/IntSlotsPython3k
-    # Therefore don't subclass `str`.
-
+    type = 'name'
     def __str__(self):
         return self.value
 
@@ -305,14 +303,15 @@ class Literal(Leaf):
 
 
 class Number(Literal):
-    pass
+    type = 'number'
 
 
 class String(Literal):
-    pass
+    type = 'string'
 
 
 class Operator(Leaf):
+    type = 'operator'
     def __str__(self):
         return self.value
 
@@ -335,6 +334,7 @@ class Operator(Leaf):
 
 
 class Keyword(Leaf):
+    type = 'keyword'
     def __eq__(self, other):
         """
         Make comparisons with strings easy.
@@ -704,6 +704,7 @@ class SubModule(Scope, Module):
 
 
 class Decorator(Simple):
+    type = 'decorator'
     pass
 
 
@@ -736,6 +737,7 @@ class Class(ClassOrFunc):
     :param start_pos: The start position (line, column) of the class.
     :type start_pos: tuple(int, int)
     """
+    type = 'classdef'
 
     def __init__(self, children):
         super(Class, self).__init__(children)
@@ -803,6 +805,7 @@ class Function(ClassOrFunc):
     :type start_pos: tuple(int, int)
     """
     __slots__ = ('listeners', 'params')
+    type = 'funcdef'
 
     def __init__(self, children):
         super(Function, self).__init__(children)
@@ -880,6 +883,7 @@ class Lambda(Function):
     """
     Lambdas are basically trimmed functions, so give it the same interface.
     """
+    type = 'lambda'
     def __init__(self, children):
         super(Function, self).__init__(children)
         self.listeners = set()  # not used here, but in evaluation.
@@ -901,6 +905,7 @@ class Flow(Simple):
 
 
 class IfStmt(Flow):
+    type = 'if_stmt'
     def check_nodes(self):
         """
         Returns all the `test` nodes that are defined as x, here:
@@ -932,18 +937,19 @@ class IfStmt(Flow):
 
 
 class WhileStmt(Flow):
-    pass
+    type = 'while_stmt'
 
 
 class ForStmt(Flow):
-    pass
+    type = 'for_stmt'
 
 
 class TryStmt(Flow):
-    pass
+    type = 'try_stmt'
 
 
 class WithStmt(Flow):
+    type = 'with_stmt'
     def get_defined_names(self):
         names = []
         for with_item in self.children[1:-2:2]:
@@ -994,6 +1000,7 @@ class Import(Simple):
 
 
 class ImportFrom(Import):
+    type = 'import_from'
     def get_defined_names(self):
         return [alias or name for name, alias in self._as_name_tuples()]
 
@@ -1054,6 +1061,8 @@ class ImportFrom(Import):
 
 class ImportName(Import):
     """For ``import_name`` nodes. Covers normal imports without ``from``."""
+    type = 'import_name'
+
     def get_defined_names(self):
         return [alias or path[0] for path, alias in self._dotted_as_names()]
 
@@ -1101,21 +1110,23 @@ class KeywordStatement(Simple):
 
 
 class AssertStmt(KeywordStatement):
+    type = 'assert_stmt'
     def assertion(self):
         return self.children[1]
 
 
 class GlobalStmt(KeywordStatement):
+    type = 'global_stmt'
     def get_defined_names(self):
         return self.children[1::2]
 
 
 class ReturnStmt(KeywordStatement):
-    pass
+    type = 'return_stmt'
 
 
 class YieldExpr(Simple):
-    pass
+    type = 'yield_expr'
 
 
 def _defined_names(current):
@@ -1216,6 +1227,7 @@ class ExprStmt(Statement):
     Statement nested, than to create a new class for Test (plus Jedi's fault
     tolerant parser just makes things very complicated).
     """
+    type = 'expr_stmt'
 
 
 class Param(Base):
@@ -1289,6 +1301,8 @@ class Array(object):
 
 
 class CompFor(Simple):
+    type = 'comp_for'
+
     def is_scope(self):
         return True
 
