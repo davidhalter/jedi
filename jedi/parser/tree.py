@@ -1322,3 +1322,8 @@ class CompFor(Simple):
 
     def scope_names_generator(self, position):
         yield self, []
+
+    @property
+    def asserts(self):
+        """Since it's a scope, it can be asked for asserts."""
+        return []
