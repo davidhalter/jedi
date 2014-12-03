@@ -399,7 +399,7 @@ class Simple(Base):
     def name_for_position(self, position):
         for c in self.children:
             if isinstance(c, Leaf):
-                if c.start_pos <= position <= c.end_pos:
+                if isinstance(c, Name) and c.start_pos <= position <= c.end_pos:
                     return c
             else:
                 result = c.name_for_position(position)

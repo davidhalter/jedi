@@ -69,6 +69,9 @@ def usages(evaluator, definition_names, mods):
             result = evaluator.goto(name)
             if [c for c in compare_array(result) if c in compare_definitions]:
                 definitions.append(classes.Definition(evaluator, name))
+                # Previous definitions might be imports, so include them
+                # (because goto might return that import name).
+                compare_definitions += compare_array([name])
 
             continue  # TODO DELETE
 
@@ -101,5 +104,5 @@ def usages_add_import_modules(evaluator, definitions):
         imp_or_stmt = d.get_definition()
         if isinstance(imp_or_stmt, pr.Import):
             s = imports.ImportWrapper(evaluator, d)
-            new |= s.follow(is_goto=True)
+            new |= set(s.follow(is_goto=True))
     return set(definitions) | new
