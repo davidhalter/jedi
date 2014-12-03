@@ -1,5 +1,4 @@
 from jedi._compatibility import u, unicode
-from jedi import common
 from jedi.api import classes
 from jedi.parser import tree as pr
 from jedi.evaluate import imports
@@ -101,7 +100,6 @@ def usages_add_import_modules(evaluator, definitions):
     for d in definitions:
         imp_or_stmt = d.get_definition()
         if isinstance(imp_or_stmt, pr.Import):
-            s = imports.ImportWrapper(evaluator, imp_or_stmt, nested_resolve=True)
-            with common.ignored(IndexError):
-                new.add(s.follow(is_goto=True)[0])
+            s = imports.ImportWrapper(evaluator, d)
+            new |= s.follow(is_goto=True)
     return set(definitions) | new

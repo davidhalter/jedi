@@ -49,11 +49,12 @@ class Abc():
 Abc.d.Abc
 
 
-#< 4 (0,4), (4,1)
+#< 4 (0,4), (5,1)
 def blubi():
+    pass
 
 
-#< (-4,4), (0,1)
+#< (-5,4), (0,1)
 @blubi
 def a(): pass
 

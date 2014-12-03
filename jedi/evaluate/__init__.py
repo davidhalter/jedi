@@ -85,6 +85,7 @@ from jedi.evaluate import finder
 from jedi.evaluate import compiled
 from jedi.evaluate import precedence
 from jedi.evaluate import param
+from jedi.evaluate import helpers
 from jedi.evaluate.helpers import FakeStatement, deep_ast_copy, call_of_name
 
 
@@ -455,21 +456,37 @@ class Evaluator(object):
         return self.eval_element(call)
 
     def goto(self, name):
+        def resolve_implicit_imports(names):
+            for name in names:
+                if isinstance(name, helpers.FakeName):
+                    # Those are implicit imports.
+                    s = imports.ImportWrapper(self, name)
+                    for n in s.follow(is_goto=True):
+                        yield n
+                yield name
+
+        imp = name.get_definition()
         stmt = name.parent
         if isinstance(stmt, pr.ExprStmt) and name in stmt.get_defined_names():
+            # TODO remove? I think this is never called.
             return [name]
         elif isinstance(stmt, (pr.Param, pr.Function, pr.Class)) and stmt.name is name:
             return [name]
+        elif isinstance(imp, pr.Import):
+            return imports.ImportWrapper(self, name).follow(is_goto=True)
 
         scope = name.get_parent_scope()
         if pr.is_node(name.parent, 'trailer'):
             call = call_of_name(name, cut_own_trailer=True)
             types = self.eval_element(call)
-            return iterable.unite(self.find_types(typ, name, is_goto=True)
-                                  for typ in types)
+            return resolve_implicit_imports(iterable.unite(
+                self.find_types(typ, name, is_goto=True) for typ in types
+            ))
         else:
             return self.find_types(scope, name, name.start_pos,
                                    search_global=True, is_goto=True)
+
+
         if isinstance(stmt, pr.Import):
             # Nowhere to goto for aliases
             if stmt.alias == call_path[0]:

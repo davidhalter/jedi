@@ -503,7 +503,7 @@ class Script(object):
                 import_name = user_stmt.get_defined_names()
                 # imports have only one name
                 np = import_name[0]
-                if not user_stmt.star and unicode(name_part) == unicode(np):
+                if not user_stmt.is_star_import() and unicode(name_part) == unicode(np):
                     definitions.append(np)
         else:
             # The Evaluator.goto function checks for definitions, but since we
@@ -549,12 +549,7 @@ class Script(object):
             names = usages.usages(self._evaluator, definitions, module)
 
             for d in set(definitions):
-                try:
-                    name_part = d.names[-1]
-                except AttributeError:
-                    names.append(classes.Definition(self._evaluator, d))
-                else:
-                    names.append(classes.Definition(self._evaluator, name_part))
+                names.append(classes.Definition(self._evaluator, d))
         finally:
             settings.dynamic_flow_information = temp
 
