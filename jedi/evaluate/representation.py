@@ -147,7 +147,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             return None
 
     @memoize_default([])
-    def get_self_attributes(self):
+    def get_self_attributes(self, add_mro=True):
         names = []
         # This loop adds the names of the self object, copies them and removes
         # the self.
@@ -177,10 +177,11 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                             if name.is_definition():
                                 names.append(get_instance_el(self._evaluator, self, name))
 
-        for s in self.base.py__bases__(self._evaluator):
-            if not isinstance(s, compiled.CompiledObject):
-                for inst in self._evaluator.execute(s):
-                    names += inst.get_self_attributes()
+        if add_mro:
+            for s in self.base.py__mro__(self._evaluator)[1:]:
+                if not isinstance(s, compiled.CompiledObject):
+                    for inst in self._evaluator.execute(s):
+                        names += inst.get_self_attributes(add_mro=False)
         return names
 
     def get_subscope_by_name(self, name):
