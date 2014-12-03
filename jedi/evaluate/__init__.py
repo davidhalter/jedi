@@ -458,21 +458,22 @@ class Evaluator(object):
     def goto(self, name):
         def resolve_implicit_imports(names):
             for name in names:
-                if isinstance(name, helpers.FakeName):
+                if isinstance(name.parent, helpers.FakeImport):
                     # Those are implicit imports.
                     s = imports.ImportWrapper(self, name)
                     for n in s.follow(is_goto=True):
                         yield n
                 yield name
 
-        imp = name.get_definition()
-        stmt = name.parent
-        if isinstance(stmt, pr.ExprStmt) and name in stmt.get_defined_names():
-            # TODO remove? I think this is never called.
+        stmt = name.get_definition()
+        # Only take the parent, because if it's more complicated than just a
+        # name it's something you can "goto" again.
+        par = name.parent
+        if isinstance(par, pr.ExprStmt) and name in par.get_defined_names():
             return [name]
-        elif isinstance(stmt, (pr.Param, pr.Function, pr.Class)) and stmt.name is name:
+        elif isinstance(par, (pr.Param, pr.Function, pr.Class)) and par.name is name:
             return [name]
-        elif isinstance(imp, pr.Import):
+        elif isinstance(stmt, pr.Import):
             return imports.ImportWrapper(self, name).follow(is_goto=True)
 
         scope = name.get_parent_scope()
@@ -487,17 +488,17 @@ class Evaluator(object):
                                    search_global=True, is_goto=True)
 
 
-        if isinstance(stmt, pr.Import):
+        if isinstance(par, pr.Import):
             # Nowhere to goto for aliases
-            if stmt.alias == call_path[0]:
+            if par.alias == call_path[0]:
                 return [call_path[0]]
 
-            names = stmt.get_all_import_names()
-            if stmt.alias:
+            names = par.get_all_import_names()
+            if par.alias:
                 names = names[:-1]
             # Filter names that are after our Name
             removed_names = len(names) - names.index(call_path[0]) - 1
-            i = imports.ImportWrapper(self, stmt, kill_count=removed_names,
+            i = imports.ImportWrapper(self, par, kill_count=removed_names,
                                       nested_resolve=True)
             return i.follow(is_goto=True)
 
@@ -506,17 +507,17 @@ class Evaluator(object):
         # name only. Otherwise it's a mixture between a definition and a
         # reference. In this case it's just a definition. So we stay on it.
         if len(call_path) == 1 and isinstance(call_path[0], pr.Name) \
-                and call_path[0] in stmt.get_defined_names():
+                and call_path[0] in par.get_defined_names():
             # Named params should get resolved to their param definitions.
-            if pr.Array.is_type(stmt.parent, pr.Array.TUPLE, pr.Array.NOARRAY) \
-                    and stmt.parent.previous:
-                call = deep_ast_copy(stmt.parent.previous)
+            if pr.Array.is_type(par.parent, pr.Array.TUPLE, pr.Array.NOARRAY) \
+                    and par.parent.previous:
+                call = deep_ast_copy(par.parent.previous)
                 # We have made a copy, so we're fine to change it.
                 call.next = None
                 while call.previous is not None:
                     call = call.previous
                 param_names = []
-                named_param_name = stmt.get_defined_names()[0]
+                named_param_name = par.get_defined_names()[0]
                 for typ in self.eval_call(call):
                     if isinstance(typ, er.Class):
                         params = []
@@ -530,8 +531,8 @@ class Evaluator(object):
                 return param_names
             return [call_path[0]]
 
-        scope = stmt.get_parent_scope()
-        pos = stmt.start_pos
+        scope = par.get_parent_scope()
+        pos = par.start_pos
         first_part, search_name_part = call_path[:-1], call_path[-1]
 
         if first_part:
