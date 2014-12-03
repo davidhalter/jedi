@@ -471,16 +471,18 @@ class Script(object):
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
         user_stmt = self._parser.user_stmt()
+        user_scope = self._parser.user_scope()
 
+        # TODO restructure this. stmt is not always needed.
         stmt = self._get_under_cursor_stmt(goto_path)
         if stmt is None:
             return []
 
-        if user_stmt is None:
+        if user_scope is None:
             last_name = None
         else:
             # Try to use the parser if possible.
-            last_name = user_stmt.name_for_position(self._pos)
+            last_name = user_scope.name_for_position(self._pos)
 
         if last_name is None:
             last_name = stmt

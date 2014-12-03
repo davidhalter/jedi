@@ -484,7 +484,7 @@ class Evaluator(object):
                 self.find_types(typ, name, is_goto=True) for typ in types
             ))
         else:
-            return self.find_types(scope, name, name.start_pos,
+            return self.find_types(scope, name, stmt.start_pos,
                                    search_global=True, is_goto=True)
 
 
