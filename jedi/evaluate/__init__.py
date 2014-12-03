@@ -201,6 +201,9 @@ class Evaluator(object):
             # `x if foo else y` case.
             return (self.eval_element(element.children[0]) +
                     self.eval_element(element.children[-1]))
+        elif element.type == 'operator':
+            # Must be an ellipsis, other operators are not evaluated.
+            return []  # Ignore for now.
         elif element.type == 'dotted_name':
             types = self._eval_atom(element.children[0])
             for next_name in element.children[2::2]:

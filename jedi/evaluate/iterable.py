@@ -335,8 +335,8 @@ class FakeSequence(_FakeArray):
         return self._sequence_values
 
     def get_exact_index_types(self, index):
-        return list(chain.from_iterable(self._evaluator.eval_element(v)
-                                        for v in self._sequence_values[index]))
+        value = self._sequence_values[index]
+        return self._evaluator.eval_element(value)
 
 
 class AlreadyEvaluated(frozenset):

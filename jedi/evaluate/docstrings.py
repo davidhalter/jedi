@@ -128,8 +128,8 @@ def _evaluate_for_statement_string(evaluator, string, module):
         string = 'import %s\n' % element + string
 
     p = Parser(evaluator.grammar, code % indent_block(string))
-    pseudo_cls = p.module.subscopes[0]
     try:
+        pseudo_cls = p.module.subscopes[0]
         stmt = pseudo_cls.statements[-1]
     except IndexError:
         return []
@@ -161,7 +161,7 @@ def _execute_array_values(evaluator, array):
         values = []
         for typ in array.values():
             objects = _execute_array_values(evaluator, typ)
-            values.append([AlreadyEvaluated(objects)])
+            values.append(AlreadyEvaluated(objects))
         return [FakeSequence(evaluator, values, array.type)]
     else:
         return evaluator.execute(array)
