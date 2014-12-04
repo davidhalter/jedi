@@ -109,16 +109,6 @@ b[1]
 
 
 # -----------------
-# syntax errors
-# -----------------
-
-# strange slice
-z = sorted([1], key = lambda x : x):
-#? int()
-z[0]
-
-
-# -----------------
 # undefined names
 # -----------------
 a = foobarbaz + 'hello'
