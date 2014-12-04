@@ -535,7 +535,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     :return: Return an generator that yields a pair of scope and names.
     """
     in_func_scope = scope
-    non_flow = scope.get_parent_until(pr.Flow, reverse=True)
+    origin_scope = scope
     while scope:
         # We don't want submodules to report if we have modules.
         # As well as some non-scopes, which are parents of list comprehensions.
@@ -546,10 +546,9 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
         # `pr.Class` is used, because the parent is never `Class`.
         # Ignore the Flows, because the classes and functions care for that.
         # InstanceElement of Class is ignored, if it is not the start scope.
-        if not (scope != non_flow and scope.isinstance(pr.Class)
-                or scope.isinstance(pr.Flow)
+        if not (scope != origin_scope and scope.isinstance(pr.Class)
                 or scope.isinstance(er.Instance)
-                and non_flow.isinstance(er.Function)
+                and origin_scope.isinstance(er.Function, er.FunctionExecution)
                 or isinstance(scope, compiled.CompiledObject)
                 and scope.type() == 'class' and in_func_scope != scope):
 
@@ -571,7 +570,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     # Add star imports.
     if star_search:
         """
-        for s in imports.remove_star_imports(evaluator, non_flow.get_parent_until()):
+        for s in imports.remove_star_imports(evaluator, origin_scope.get_parent_until()):
             for g in get_names_of_scope(evaluator, s, star_search=False):
                 yield g
         """
