@@ -104,7 +104,10 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
     # TODO this sucks... we need to change it.
     # DOESNT WORK
     for unfinished in unfinished_parents:
-        unfinished.parent = new_elements[unfinished.parent]
+        try:
+            unfinished.parent = new_elements[unfinished.parent]
+        except KeyError: # TODO this keyerror is useless.
+            pass
 
     return result
 
