@@ -146,7 +146,7 @@ def call_of_name(name, cut_own_trailer=False):
     return par
 
 
-def call_signature_array_for_pos(stmt, pos):
+def _call_signature_array_for_pos(stmt, pos):
     """
     Searches for the array and position of a tuple.
     Returns a tuple of (array, index-in-the-array, call).
@@ -155,12 +155,12 @@ def call_signature_array_for_pos(stmt, pos):
         accepted_types = pr.Array.TUPLE, pr.Array.NOARRAY
         if arr.type == 'dict':
             for stmt in arr.values + arr.keys:
-                tup = call_signature_array_for_pos(stmt, pos)
+                tup = _call_signature_array_for_pos(stmt, pos)
                 if tup[0] is not None:
                     return tup
         else:
             for i, stmt in enumerate(arr):
-                tup = call_signature_array_for_pos(stmt, pos)
+                tup = _call_signature_array_for_pos(stmt, pos)
                 if tup[0] is not None:
                     return tup
 
@@ -200,16 +200,34 @@ def call_signature_array_for_pos(stmt, pos):
     return tup
 
 
+def scan_node_for_call_signature(node, pos):
+    """to something with call_signatures"""
+    if node.type == 'power' and node.start_pos < pos < node.end_pos:
+        for trailer in node.children[1:]:
+            if trailer.type == 'trailer' and trailer.children[0] == '(' \
+                    and trailer.children[0].start_pos < pos \
+                    and pos <= trailer.children[-1].start_pos:
+                return node, trailer
+    for child in node.children:
+        node, trailer = scan_node_for_call_signature(child, pos)
+        if node is not None:
+            return node, trailer
+    return None, None
+
+
 def search_call_signatures(user_stmt, position):
     """
     Returns the function Call that matches the position before.
     """
     debug.speed('func_call start')
     call, arr, index = None, None, 0
+    print(user_stmt)
     if user_stmt is not None and isinstance(user_stmt, pr.ExprStmt):
         # some parts will of the statement will be removed
         user_stmt = deep_ast_copy(user_stmt)
-        arr, index, call = call_signature_array_for_pos(user_stmt, position)
+
+        print(scan_node_for_call_signature(user_stmt, position))
+        #arr, index, call = _call_signature_array_for_pos(user_stmt, position)
 
         # Now remove the part after the call. Including the array from the
         # statement.

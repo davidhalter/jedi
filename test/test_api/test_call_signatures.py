@@ -22,6 +22,9 @@ class TestCallSignatures(TestCase):
     def _run_simple(self, source, name, index=0, column=None, line=1):
         self._run(source, name, index, line, column)
 
+    def test_valid_call(self):
+        self._run('str()', 'str', column=4)
+
     def test_simple(self):
         run = self._run_simple
         s7 = "str().upper().center("
