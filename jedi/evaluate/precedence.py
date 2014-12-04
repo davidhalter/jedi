@@ -242,6 +242,7 @@ def calculate_children(evaluator, children):
         else:
             types = calculate(evaluator, types, operator,
                               evaluator.eval_element(right))
+    debug.dbg('calculate_children types %s', types)
     return types
 
 
@@ -269,10 +270,10 @@ def factor_calculate(evaluator, types, operator):
     Calculates `+`, `-`, `~` and `not` prefixes.
     """
     for typ in types:
-        if _is_number(typ):
-            if operator == '-':
+        if operator == '-':
+            if _is_number(typ):
                 yield create(evaluator, -typ.obj)
-        if operator == 'not':
+        elif operator == 'not':
             value = typ.py__bool__()
             if value is None:  # Uncertainty.
                 return
