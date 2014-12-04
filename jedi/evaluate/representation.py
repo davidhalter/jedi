@@ -584,7 +584,9 @@ class FunctionExecution(Executed):
     def __init__(self, evaluator, base, *args, **kwargs):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
         # for deep_ast_copy
-        self._copy_dict = {base.base_func: self}
+        func = base.base_func
+        self._copy_dict = {func: self, func.parent: func.parent}
+        helpers.deep_ast_copy(self.base.base_func, self._copy_dict, check_first=True)
         # We definitely want the params to be generated. Params are special,
         # because they have been altered and are not normal "children".
         self.params
@@ -624,6 +626,7 @@ class FunctionExecution(Executed):
                 break
         return types
 
+    """
     @common.safe_property
     @underscore_memoization
     def names_dict(self):
@@ -634,6 +637,7 @@ class FunctionExecution(Executed):
         return d
         self.base.names_dict
         return LazyDict(self.base.names_dict, self._copy_list)
+"""
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):
@@ -687,11 +691,6 @@ class FunctionExecution(Executed):
 
     @common.safe_property
     @memoize_default([])
-    def params(self):
-        return self._copy_list(self.base.params)
-
-    @common.safe_property
-    @memoize_default([])
     def returns(self):
         return self._copy_list(self.base.returns)
 
@@ -700,14 +699,17 @@ class FunctionExecution(Executed):
     def yields(self):
         return self._copy_list(self.base.yields)
 
+    """
     @common.safe_property
     @memoize_default([])
     def children(self):
+        helpers.deep_ast_copy(self.base.base_func, self._copy_dict, check_first=True)
         if isinstance(self.base, InstanceElement):
             children = self.base.var.children
         else:
             children = self.base.children
         return self._copy_list(children)
+    """
 
     @common.safe_property
     @memoize_default([])

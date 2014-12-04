@@ -6,7 +6,7 @@ from jedi.parser import tree as pr
 from jedi import debug
 
 
-def deep_ast_copy(obj, new_elements_default=None):
+def deep_ast_copy(obj, new_elements_default=None, check_first=False):
     """
     Much, much faster than copy.deepcopy, but just for Parser elements (Doesn't
     copy parents).
@@ -15,13 +15,18 @@ def deep_ast_copy(obj, new_elements_default=None):
         return key_value[0] not in ('_expression_list', '_assignment_details')
 
     new_elements = new_elements_default or {}
+    unfinished_parents = []
 
-    def recursion(obj):
+    def recursion(obj, check_first=False):
         # If it's already in the cache, just return it.
         try:
-            return new_elements[obj]
+            new_obj = new_elements[obj]
+            if not check_first:
+                return new_obj
         except KeyError:
-            pass
+            # Actually copy and set attributes.
+            new_obj = copy.copy(obj)
+            new_elements[obj] = new_obj
 
         if isinstance(obj, pr.Statement):
             # Need to set _set_vars, otherwise the cache is not working
@@ -51,11 +56,10 @@ def deep_ast_copy(obj, new_elements_default=None):
             # tree in there.
             items = sorted(items, key=sort_stmt)
         else:
-            items = sorted(items, key=lambda x: (x[0] != 'params', x[0] == 'names_dict'))
+            # names_dict should be the last item.
+            items = sorted(items, key=lambda x: (x[0] == 'names_dict', x[0] == 'params'))
 
-        # Actually copy and set attributes.
-        new_obj = copy.copy(obj)
-        new_elements[obj] = new_obj
+        #if hasattr(new_obj, 'parent'): print(new_obj, new_obj.parent)
 
         for key, value in items:
             # replace parent (first try _parent and then parent)
@@ -64,9 +68,10 @@ def deep_ast_copy(obj, new_elements_default=None):
                     # parent can be a property
                     continue
                 try:
-                    setattr(new_obj, key, new_elements[value])
+                    if not check_first:
+                        setattr(new_obj, key, new_elements[value])
                 except KeyError:
-                    pass
+                    unfinished_parents.append(new_obj)
             elif key in ['parent_function', 'use_as_parent', '_sub_module']:
                 continue
             elif key == 'names_dict':
@@ -94,7 +99,14 @@ def deep_ast_copy(obj, new_elements_default=None):
             return tuple(copied_array)
         return copied_array
 
-    return recursion(obj)
+    result = recursion(obj, check_first=check_first)
+
+    # TODO this sucks... we need to change it.
+    # DOESNT WORK
+    for unfinished in unfinished_parents:
+        unfinished.parent = new_elements[unfinished.parent]
+
+    return result
 
 
 def call_of_name(name, cut_own_trailer=False):
