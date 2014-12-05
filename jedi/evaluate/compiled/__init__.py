@@ -86,16 +86,18 @@ class CompiledObject(Base):
         params_str, ret = self._parse_function_doc()
         tokens = params_str.split(',')
         params = []
-        module = SubModule(self.get_parent_until().name)
+        module = self.get_parent_until()
         # it seems like start_pos/end_pos is always (0, 0) for a compiled
         # object
         start_pos, end_pos = (0, 0), (0, 0)
         for p in tokens:
             parts = [FakeName(part) for part in p.strip().split('=')]
-            if len(parts) >= 2:
-                parts.insert(1, Operator(module, '=', module, (0, 0)))
-            params.append(Param(module, parts, start_pos,
-                                end_pos, builtin))
+            name = parts[0]
+            if len(parts) > 2:
+                default = parts[2]
+            else:
+                default = None
+            params.append(Param(name, module, default))
         return params
 
     def __repr__(self):

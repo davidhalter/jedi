@@ -18,6 +18,8 @@ class Arguments(pr.Base):
         The argument_node is either a parser node or a list of evaluated
         objects. Those evaluated objects may be lists of evaluated objects
         themselves (one list for the first argument, one for the second, etc).
+
+        :param argument_node: May be an argument_node or a list of nodes.
         """
         self.argument_node = argument_node
         self._evaluator = evaluator

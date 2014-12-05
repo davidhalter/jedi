@@ -675,7 +675,7 @@ class CallSignature(Definition):
     def index(self):
         """
         The Param index of the current call.
-        Returns None if the index doesn't is not defined.
+        Returns None if the index cannot be found in the curent call.
         """
         if self._key_name is not None:
             for i, param in enumerate(self.params):

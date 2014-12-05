@@ -203,10 +203,12 @@ def _call_signature_array_for_pos(stmt, pos):
 def scan_node_for_call_signature(node, pos):
     """to something with call_signatures"""
     if node.type == 'power' and node.start_pos < pos < node.end_pos:
-        for trailer in node.children[1:]:
+        for i, trailer in enumerate(node.children[1:], 1):
             if trailer.type == 'trailer' and trailer.children[0] == '(' \
                     and trailer.children[0].start_pos < pos \
                     and pos <= trailer.children[-1].start_pos:
+                # Delete all the nodes including the current one
+                node.children[i:] = []
                 return node, trailer
     for child in node.children:
         node, trailer = scan_node_for_call_signature(child, pos)
@@ -226,7 +228,8 @@ def search_call_signatures(user_stmt, position):
         # some parts will of the statement will be removed
         user_stmt = deep_ast_copy(user_stmt)
 
-        print(scan_node_for_call_signature(user_stmt, position))
+        return scan_node_for_call_signature(user_stmt, position) + (0,)
+        print()
         #arr, index, call = _call_signature_array_for_pos(user_stmt, position)
 
         # Now remove the part after the call. Including the array from the

@@ -112,7 +112,7 @@ def cache_call_signatures(evaluator, call, source, user_pos, stmt):
 
     module_path = stmt.get_parent_until().path
     yield None if module_path is None else (module_path, before_bracket, stmt.start_pos)
-    yield evaluator.eval_call(call)
+    yield evaluator.eval_element(call)
 
 
 def underscore_memoization(func):

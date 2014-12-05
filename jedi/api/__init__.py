@@ -574,7 +574,7 @@ class Script(object):
         :rtype: list of :class:`classes.CallSignature`
         """
         user_stmt = self._parser.user_stmt_with_whitespace()
-        call, execution_arr, index = search_call_signatures(user_stmt, self._pos)
+        call, trailer, index = search_call_signatures(user_stmt, self._pos)
         if call is None:
             return []
 
@@ -585,14 +585,13 @@ class Script(object):
 
         key_name = None
         try:
-            detail = execution_arr[index].assignment_details[0]
-        except IndexError:
+            # Access the trailers arglist node.
+            argument = trailer.children[0].children[index]
+        except (IndexError, AttributeError):
             pass
         else:
-            try:
-                key_name = unicode(detail[0][0].name)
-            except (IndexError, AttributeError):
-                pass
+            if argument.children[1] == '=':
+                key_name = argument.children[0]
         return [classes.CallSignature(self._evaluator, o.name, call, index, key_name)
                 for o in origins if hasattr(o, 'py__call__')]
 
