@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from jedi._compatibility import u, is_py3
-from jedi.parser import Parser
+from jedi.parser import Parser, load_grammar
 from jedi.parser.user_context import UserContextParser
-from jedi.parser import representation as pr
+from jedi.parser import tree as pt
 from textwrap import dedent
 
 
@@ -13,15 +13,15 @@ def test_user_statement_on_import():
           "    time)")
 
     for pos in [(2, 1), (2, 4)]:
-        p = UserContextParser(s, None, pos, None).user_stmt()
-        assert isinstance(p, pr.Import)
+        p = UserContextParser(load_grammar(), s, None, pos, None).user_stmt()
+        assert isinstance(p, pt.Import)
         assert p.defunct is False
         assert [str(n) for n in p.get_defined_names()] == ['time']
 
 
 class TestCallAndName():
     def get_call(self, source):
-        stmt = Parser(u(source), no_docstr=True).module.statements[0]
+        stmt = Parser(load_grammar(), u(source)).module.statements[0]
         return stmt.expression_list()[0]
 
     def test_name_and_call_positions(self):
@@ -37,26 +37,26 @@ class TestCallAndName():
 
     def test_call_type(self):
         call = self.get_call('hello')
-        assert isinstance(call, pr.Call)
-        assert type(call.name) == pr.Name
+        assert isinstance(call, pt.Call)
+        assert type(call.name) == pt.Name
 
     def test_literal_type(self):
         literal = self.get_call('1.0')
-        assert isinstance(literal, pr.Literal)
+        assert isinstance(literal, pt.Literal)
         assert type(literal.value) == float
 
         literal = self.get_call('1')
-        assert isinstance(literal, pr.Literal)
+        assert isinstance(literal, pt.Literal)
         assert type(literal.value) == int
 
         literal = self.get_call('"hello"')
-        assert isinstance(literal, pr.Literal)
+        assert isinstance(literal, pt.Literal)
         assert literal.value == 'hello'
 
 
 class TestSubscopes():
     def get_sub(self, source):
-        return Parser(u(source)).module.subscopes[0]
+        return Parser(load_grammar(), u(source)).module.subscopes[0]
 
     def test_subscope_names(self):
         name = self.get_sub('class Foo: pass').name
@@ -72,7 +72,7 @@ class TestSubscopes():
 
 class TestImports():
     def get_import(self, source):
-        return Parser(source).module.imports[0]
+        return Parser(load_grammar(), source).module.imports[0]
 
     def test_import_names(self):
         imp = self.get_import(u('import math\n'))
@@ -87,13 +87,13 @@ class TestImports():
 
 
 def test_module():
-    module = Parser(u('asdf'), 'example.py', no_docstr=True).module
+    module = Parser(load_grammar(), u('asdf'), 'example.py').module
     name = module.name
     assert str(name) == 'example'
     assert name.start_pos == (1, 0)
     assert name.end_pos == (1, 7)
 
-    module = Parser(u('asdf'), no_docstr=True).module
+    module = Parser(load_grammar(), u('asdf')).module
     name = module.name
     assert str(name) == ''
     assert name.start_pos == (1, 0)
@@ -106,7 +106,7 @@ def test_end_pos():
                  def func():
                      y = None
                  '''))
-    parser = Parser(s)
+    parser = Parser(load_grammar(), s)
     scope = parser.module.subscopes[0]
     assert scope.start_pos == (3, 0)
     assert scope.end_pos == (5, 0)
@@ -119,13 +119,13 @@ def test_carriage_return_statements():
         # this is a namespace package
     '''))
     source = source.replace('\n', '\r\n')
-    stmt = Parser(source).module.statements[0]
+    stmt = Parser(load_grammar(), source).module.statements[0]
     assert '#' not in stmt.get_code()
 
 
 def test_incomplete_list_comprehension():
     """ Shouldn't raise an error, same bug as #418. """
-    s = Parser(u('(1 for def')).module.statements[0]
+    s = Parser(load_grammar(), u('(1 for def')).module.statements[0]
     assert s.expression_list()
 
 
@@ -138,7 +138,7 @@ def test_hex_values_in_docstring():
             return 1
         '''
 
-    doc = Parser(dedent(u(source))).module.subscopes[0].raw_doc
+    doc = Parser(load_grammar(), dedent(u(source))).module.subscopes[0].raw_doc
     if is_py3:
         assert doc == '\xff'
     else:
