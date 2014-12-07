@@ -15,43 +15,42 @@ def test_user_statement_on_import():
     for pos in [(2, 1), (2, 4)]:
         p = UserContextParser(load_grammar(), s, None, pos, None).user_stmt()
         assert isinstance(p, pt.Import)
-        assert p.defunct is False
         assert [str(n) for n in p.get_defined_names()] == ['time']
 
 
 class TestCallAndName():
     def get_call(self, source):
         stmt = Parser(load_grammar(), u(source)).module.statements[0]
-        return stmt.expression_list()[0]
+        return stmt.children[0]
 
     def test_name_and_call_positions(self):
-        call = self.get_call('name\nsomething_else')
-        assert str(call.name) == 'name'
-        assert call.name.start_pos == call.start_pos == (1, 0)
-        assert call.name.end_pos == call.end_pos == (1, 4)
+        name = self.get_call('name\nsomething_else')
+        assert str(name) == 'name'
+        assert name.start_pos == (1, 0)
+        assert name.end_pos == (1, 4)
 
-        call = self.get_call('1.0\n')
-        assert call.value == 1.0
-        assert call.start_pos == (1, 0)
-        assert call.end_pos == (1, 3)
+        leaf = self.get_call('1.0\n')
+        assert leaf.value == '1.0'
+        assert leaf.eval() == 1.0
+        assert leaf.start_pos == (1, 0)
+        assert leaf.end_pos == (1, 3)
 
     def test_call_type(self):
         call = self.get_call('hello')
-        assert isinstance(call, pt.Call)
-        assert type(call.name) == pt.Name
+        assert isinstance(call, pt.Name)
 
     def test_literal_type(self):
         literal = self.get_call('1.0')
         assert isinstance(literal, pt.Literal)
-        assert type(literal.value) == float
+        assert type(literal.eval()) == float
 
         literal = self.get_call('1')
         assert isinstance(literal, pt.Literal)
-        assert type(literal.value) == int
+        assert type(literal.eval()) == int
 
         literal = self.get_call('"hello"')
         assert isinstance(literal, pt.Literal)
-        assert literal.value == 'hello'
+        assert literal.eval() == 'hello'
 
 
 class TestSubscopes():
@@ -125,8 +124,9 @@ def test_carriage_return_statements():
 
 def test_incomplete_list_comprehension():
     """ Shouldn't raise an error, same bug as #418. """
-    s = Parser(load_grammar(), u('(1 for def')).module.statements[0]
-    assert s.expression_list()
+    # With the old parser this actually returned a statement. With the new
+    # parser only valid statements generate one.
+    assert Parser(load_grammar(), u('(1 for def')).module.statements == []
 
 
 def test_hex_values_in_docstring():
