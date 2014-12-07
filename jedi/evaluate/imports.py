@@ -460,7 +460,7 @@ class _Importer(object):
     def follow_file_system(self):
         # Handle "magic" Flask extension imports:
         # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
-        if len(self.import_path) > 2 and self.str_import_path()[:2] == ('flask', 'ext'):
+        if len(self.import_path) > 2 and self.str_import_path[:2] == ('flask', 'ext'):
             orig_path = tuple(self.import_path)
             part = orig_path[2]
             pos = (part._line, part._column)
@@ -633,7 +633,7 @@ class _Importer(object):
         if self.import_path:
             for scope in self.follow(evaluator):
                 # flask
-                if self.str_import_path() == ('flask', 'ext'):
+                if self.str_import_path == ('flask', 'ext'):
                     # List Flask extensions like ``flask_foo``
                     for mod in self._get_module_names():
                         modname = str(mod)

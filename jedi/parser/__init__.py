@@ -222,9 +222,23 @@ class Parser(object):
                 elif symbol == 'suite' and len(nodes) > 1:
                     # suites without an indent in them get discarded.
                     break
+                elif symbol == 'simple_stmt' and len(nodes) > 1:
+                    # simple_stmt can just be turned into a Node, if there are
+                    # enough statements. Ignore the rest after that.
+                    break
             return index, symbol, nodes
 
         index, symbol, nodes = current_suite(stack)
+        if symbol == 'simple_stmt':
+            index -= 1
+            (_, _, (typ, suite_nodes)) = stack[index]
+            symbol = grammar.number2symbol[typ]
+            suite_nodes.append(pt.Node(symbol, list(nodes)))
+            # Remove
+            nodes[:] = []
+            nodes = suite_nodes
+            stack[index]
+
         #print('err', tokenize.tok_name[typ], repr(value), start_pos, len(stack), index)
         self._stack_removal(grammar, stack, index + 1, value, start_pos)
         if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
