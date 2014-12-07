@@ -411,7 +411,6 @@ class Script(object):
                     scopes.update(resolve_import_paths(set(s.follow())))
             return scopes
 
-        user_stmt = self._parser.user_stmt_with_whitespace()
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
         definitions = set()
@@ -420,9 +419,8 @@ class Script(object):
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                node, _, _ = search_call_signatures(user_stmt, self._pos)
-                if node is not None:
-                    definitions = set(self._evaluator.eval_element(node))
+                definitions = set(signature._definition
+                                  for signature in self.call_signatures())
 
         if not definitions:
             if goto_path:
@@ -577,7 +575,7 @@ class Script(object):
         if call_txt is None:
             return []
 
-        print(call_txt, call_index)
+        #print(call_txt, call_index)
         stmt = self._get_under_cursor_stmt(call_txt)
         #user_stmt = self._parser.user_stmt_with_whitespace()
         #call, trailer, index = search_call_signatures(user_stmt, self._pos)
