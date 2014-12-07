@@ -50,6 +50,7 @@ def importer_from_error_statement(evaluator, module, error_statement, pos):
 
     names = []
     level = 0
+    only_modules = True
     for typ, nodes in error_statement.stack:
         if typ == 'dotted_name':
             names += check_dotted(nodes)
@@ -61,5 +62,7 @@ def importer_from_error_statement(evaluator, module, error_statement, pos):
                     level += len(node.value)
                 elif isinstance(node, pt.Name) and node.end_pos < pos:
                     names.append(node)
+                elif node == 'import' and node.end_pos < pos:
+                    only_modules = False
 
-    return imports.get_importer(evaluator, names, module, level)
+    return imports.get_importer(evaluator, names, module, level), only_modules

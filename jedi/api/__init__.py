@@ -133,12 +133,12 @@ class Script(object):
         def get_completions(user_stmt, bs):
             if user_stmt is None:
                 module = self._parser.module()
-                importer = helpers.check_error_statements(
+                importer, only_modules = helpers.check_error_statements(
                     self._evaluator, module, self._pos
                 )
                 #print(importer.completion_names(self._evaluator, True))
                 if importer is not None:
-                    names = importer.completion_names(self._evaluator, True)
+                    names = importer.completion_names(self._evaluator, only_modules)
                     return [(name, module) for name in names]
             elif isinstance(user_stmt, pr.Import):
                 # TODO this paragraph is necessary, but not sure it works.
