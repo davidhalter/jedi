@@ -99,11 +99,9 @@ def test_completion_on_complex_literals():
 
 
 def test_goto_assignments_on_non_statement():
-    with raises(api.NotFoundError):
-        api.Script('for').goto_assignments()
+    assert api.Script('for').goto_assignments() == []
 
-    with raises(api.NotFoundError):
-        api.Script('assert').goto_assignments()
+    assert api.Script('assert').goto_assignments() == []
 
 
 def test_goto_definition_not_multiple():

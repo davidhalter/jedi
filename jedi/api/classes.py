@@ -456,7 +456,7 @@ class Completion(BaseDefinition):
             return ''
         t = self.type
         if t == 'statement' or t == 'import':
-            desc = self._definition.get_code(False)
+            desc = self._definition.get_code()
         else:
             desc = '.'.join(unicode(p) for p in self._path())
 
