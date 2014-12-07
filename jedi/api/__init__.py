@@ -155,23 +155,12 @@ class Script(object):
 
             return self._simple_complete(path, dot, like)
 
-        def completion_possible(path):
-            """
-            The completion logic is kind of complicated, because we strip the
-            last word part. To ignore certain strange patterns with dots, just
-            use regex.
-            """
-
-            if re.match('\d+\.\.$|\.{4}$', path):
-                return True  # check Ellipsis and float literal `1.`
-
-            return not re.search(r'^\.|^\d\.$|\.\.$', path)
-
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
-        # TODO still needed with the new parser?
-        #if not completion_possible(path):
-        #    return []
+        # dots following an int are not the start of a completion but a float
+        # literal.
+        if re.search(r'^\d\.$', path):
+            return []
         path, dot, like = helpers.completion_parts(path)
 
         user_stmt = self._parser.user_stmt_with_whitespace()
