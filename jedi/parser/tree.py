@@ -207,9 +207,31 @@ class Leaf(Base):
         return "<%s: %s>" % (type(self).__name__, repr(self.value))
 
 
-class Whitespace(Leaf):
+class LeafWithNewLines(Leaf):
+    @property
+    def end_pos(self):
+        """
+        Literals and whitespace end_pos are more complicated than normal
+        end_pos, because the containing newlines may change the indexes.
+        """
+        end_pos_line, end_pos_col = self.start_pos
+        lines = self.value.split('\n')
+        if self.value.endswith('\n'):
+            lines = lines[:-1]
+            lines[-1] += '\n'
+        end_pos_line += len(lines) - 1
+        # Check for multiline token
+        if self.start_pos[0] == end_pos_line:
+            end_pos_col += len(lines[-1])
+        else:
+            end_pos_col = len(lines[-1])
+        return end_pos_line, end_pos_col
+
+
+class Whitespace(LeafWithNewLines):
     type = 'whitespace'
     """Contains NEWLINE and ENDMARKER tokens."""
+
 
 
 class Name(Leaf):
@@ -287,7 +309,7 @@ class Name(Leaf):
         return indexes
 
 
-class Literal(Leaf):
+class Literal(LeafWithNewLines):
     def eval(self):
         return literal_eval(self.value)
 
