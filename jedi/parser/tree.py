@@ -710,18 +710,15 @@ class SubModule(Scope, Module):
         Checks if imports in this module are explicitly absolute, i.e. there
         is a ``__future__`` import.
         """
+        # TODO this is a strange scan and not fully correct. I think Python's
+        # parser does it in a different way and scans for the first
+        # statement/import with a tokenizer (to check for syntax changes like
+        # the future print statement).
         for imp in self.imports:
-            
-
-            # TODO implement!
-            continue
-            if not imp.from_names or not imp.namespace_names:
-                continue
-
-            namespace, feature = imp.from_names[0], imp.namespace_names[0]
-            if unicode(namespace) == "__future__" and unicode(feature) == "absolute_import":
-                return True
-
+            if isinstance(imp, ImportFrom) and imp.level == 0:
+                for path in imp._paths():
+                    if [str(name) for name in path] == ['__future__', 'absolute_import']:
+                        return True
         return False
 
 
