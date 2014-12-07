@@ -39,10 +39,10 @@ def teardown_function(function):
 
 
 @pytest.mark.parametrize("script,name", [
-    ("from flask.ext import foo; foo.", "Foo"), # flask_foo.py
-    ("from flask.ext import bar; bar.", "Bar"), # flaskext/bar.py
-    ("from flask.ext import baz; baz.", "Baz"), # flask_baz/__init__.py
-    ("from flask.ext import moo; moo.", "Moo"), # flaskext/moo/__init__.py
+    ("from flask.ext import foo; foo.", "Foo"),  # flask_foo.py
+    ("from flask.ext import bar; bar.", "Bar"),  # flaskext/bar.py
+    ("from flask.ext import baz; baz.", "Baz"),  # flask_baz/__init__.py
+    ("from flask.ext import moo; moo.", "Moo"),  # flaskext/moo/__init__.py
     ("from flask.ext.", "foo"),
     ("from flask.ext.", "bar"),
     ("from flask.ext.", "baz"),
@@ -56,4 +56,3 @@ def test_flask_ext(script, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
     """
     assert name in [c.name for c in jedi.Script(script).completions()]
-

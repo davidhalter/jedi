@@ -528,7 +528,7 @@ class _Importer(object):
             options = ('declare_namespace(__name__)', 'extend_path(__path__')
             if options[0] in content or options[1] in content:
                 # It is a namespace, now try to find the rest of the modules.
-                return follow_path(iter(import_path), sys.path)
+                return follow_path((str(i) for i in import_path), sys.path)
         return []
 
     def _follow_sys_path(self, sys_path):
@@ -647,7 +647,6 @@ class _Importer(object):
                         if os.path.isdir(flaskext):
                             names += self._get_module_names([flaskext])
 
-                # TODO delete
                 # namespace packages
                 if isinstance(scope, pr.Module) and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
@@ -661,8 +660,10 @@ class _Importer(object):
                         # os.path is a hardcoded exception, because it's a
                         # ``sys.modules`` modification.
                         names.append(self._generate_name('path'))
+
                     continue
 
+                # TODO delete
                 if False and not self.import_stmt.from_names or False and self.is_partial_import:
                         # from_names must be defined to access module
                         # values plus a partial import means that there
