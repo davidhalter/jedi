@@ -420,9 +420,9 @@ class Script(object):
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                call, _, _ = search_call_signatures(user_stmt, self._pos)
-                if call is not None:
-                    definitions = set(self._evaluator.eval_call(call))
+                node, _, _ = search_call_signatures(user_stmt, self._pos)
+                if node is not None:
+                    definitions = set(self._evaluator.eval_element(node))
 
         if not definitions:
             if goto_path:
@@ -573,26 +573,33 @@ class Script(object):
 
         :rtype: list of :class:`classes.CallSignature`
         """
-        user_stmt = self._parser.user_stmt_with_whitespace()
-        call, trailer, index = search_call_signatures(user_stmt, self._pos)
-        if call is None:
+        call_txt, call_index = self._user_context.call_signature()
+        if call_txt is None:
             return []
 
+        print(call_txt, call_index)
+        stmt = self._get_under_cursor_stmt(call_txt)
+        #user_stmt = self._parser.user_stmt_with_whitespace()
+        #call, trailer, index = search_call_signatures(user_stmt, self._pos)
+        #if call is None:
+        #    return []
+
         with common.scale_speed_settings(settings.scale_call_signatures):
-            origins = cache.cache_call_signatures(self._evaluator, call, self.source,
-                                                  self._pos, user_stmt)
+            origins = cache.cache_call_signatures(self._evaluator, stmt, self.source,
+                                                  self._pos, stmt)
         debug.speed('func_call followed')
 
         key_name = None
-        try:
-            # Access the trailers arglist node.
-            argument = trailer.children[0].children[index]
-        except (IndexError, AttributeError):
-            pass
-        else:
-            if argument.children[1] == '=':
-                key_name = argument.children[0]
-        return [classes.CallSignature(self._evaluator, o.name, call, index, key_name)
+        if 0:  # Change logic.
+            try:
+                # Access the trailers arglist node.
+                argument = trailer.children[0].children[index]
+            except (IndexError, AttributeError):
+                pass
+            else:
+                if argument.children[1] == '=':
+                    key_name = argument.children[0]
+        return [classes.CallSignature(self._evaluator, o.name, stmt, call_index, key_name)
                 for o in origins if hasattr(o, 'py__call__')]
 
     def _analysis(self):

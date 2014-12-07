@@ -23,8 +23,6 @@ class UserContext(object):
         self.position = position
         self._line_cache = None
 
-        # this two are only used, because there is no nonlocal in Python 2
-        self._line_temp = None
         self._relevant_temp = None
 
     @cache.underscore_memoization
@@ -33,11 +31,9 @@ class UserContext(object):
         path, self._start_cursor_pos = self._calc_path_until_cursor(self.position)
         return path
 
-    def _calc_path_until_cursor(self, start_pos=None):
-        """
-        Something like a reverse tokenizer that tokenizes the reversed strings.
-        """
+    def _get_backwards_tokenizer(self, start_pos):
         def fetch_line():
+            # No nonlocal so use class variables.
             if self._is_first:
                 self._is_first = False
                 self._line_length = self._column_temp
@@ -59,13 +55,20 @@ class UserContext(object):
             return line[::-1]
 
         self._is_first = True
-        self._line_temp, self._column_temp = start_cursor = start_pos
+        self._line_temp, self._column_temp = start_pos
         first_line = self.get_line(self._line_temp)[:self._column_temp]
+        return tokenize.generate_tokens(fetch_line)
 
+    def _calc_path_until_cursor(self, start_pos=None):
+        """
+        Something like a reverse tokenizer that tokenizes the reversed strings.
+        """
         open_brackets = ['(', '[', '{']
         close_brackets = [')', ']', '}']
 
-        gen = PushBackIterator(tokenize.generate_tokens(fetch_line))
+        start_cursor = start_pos
+        gen = PushBackIterator(self._get_backwards_tokenizer(start_pos))
+        first_line = self.get_line(self._line_temp)[:start_pos[1]]
         string = u('')
         level = 0
         force_point = False
@@ -153,6 +156,28 @@ class UserContext(object):
         before = re.match("[^\w\s]+", line[:self.position[1]][::-1])
         return (before.group(0) if before is not None else '') \
             + (after.group(0) if after is not None else '')
+
+    def call_signature(self):
+        """
+        :return: Tuple of string of the call and the index of the cursor.
+        """
+        index = 0
+        level = 0
+        for token in self._get_backwards_tokenizer(self.position):
+            tok_str = token.value
+            if tok_str == '(':
+                level += 1
+                if level == 1:
+                    end = token.end_pos
+                    self._column_temp = self._line_length - end[1]
+                    pos = self._line_temp + 1, self._column_temp
+                    call, _ = self._calc_path_until_cursor(start_pos=pos)
+                    return call, index
+            elif tok_str == ')':
+                level -= 1
+            elif tok_str == ',':
+                index += 1
+        return None, 0
 
     def get_context(self, yield_positions=False):
         self.get_path_until_cursor()  # In case _start_cursor_pos is undefined.
