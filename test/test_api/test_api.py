@@ -79,7 +79,10 @@ def test_completion_on_number_literals():
 def test_completion_on_hex_literals():
     assert api.Script('0x1..').completions() == []
     _check_number('0x1.', 'int')  # hexdecimal
-    _check_number('0b3.', 'int')  # binary
+    # Completing binary literals doesn't work if they are not actually binary
+    # (invalid statements).
+    assert api.Script('0b2.').completions() == []
+    _check_number('0b1.', 'int')  # binary
     _check_number('0o7.', 'int')  # octal
 
     _check_number('0x2e.', 'int')
