@@ -28,16 +28,6 @@ def test_import_not_in_sys_path():
     assert a[0].name == 'str'
 
 
-def setup_function(function):
-    sys.path.append(os.path.join(
-        os.path.dirname(__file__), 'flask-site-packages'))
-
-
-def teardown_function(function):
-    path = os.path.join(os.path.dirname(__file__), 'flask-site-packages')
-    sys.path.remove(path)
-
-
 @pytest.mark.parametrize("script,name", [
     ("from flask.ext import foo; foo.", "Foo"),  # flask_foo.py
     ("from flask.ext import bar; bar.", "Bar"),  # flaskext/bar.py
@@ -55,4 +45,9 @@ def teardown_function(function):
 def test_flask_ext(script, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
     """
-    assert name in [c.name for c in jedi.Script(script).completions()]
+    path = os.path.join(os.path.dirname(__file__), 'flask-site-packages')
+    sys.path.append(path)
+    try:
+        assert name in [c.name for c in jedi.Script(script).completions()]
+    finally:
+        sys.path.remove(path)
