@@ -230,7 +230,7 @@ class Parser(object):
 
         index, symbol, nodes = current_suite(stack)
         if symbol == 'simple_stmt':
-            index -= 1
+            index -= 2
             (_, _, (typ, suite_nodes)) = stack[index]
             symbol = grammar.number2symbol[typ]
             suite_nodes.append(pt.Node(symbol, list(nodes)))
