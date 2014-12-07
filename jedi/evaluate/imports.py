@@ -462,17 +462,11 @@ class _Importer(object):
         # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
         if len(self.import_path) > 2 and self.str_import_path[:2] == ('flask', 'ext'):
             orig_path = tuple(self.import_path)
-            part = orig_path[2]
-            pos = (part._line, part._column)
             try:
-                self.import_path = (
-                    pr.Name(FakeSubModule, 'flask_' + str(part), part.parent, pos),
-                ) + orig_path[3:]
+                self.import_path = ('flask_' + str(orig_path[2]),) + orig_path[3:]
                 return self._real_follow_file_system()
             except ModuleNotFound:
-                self.import_path = (
-                    pr.Name(FakeSubModule, 'flaskext', part.parent, pos),
-                ) + orig_path[2:]
+                self.import_path = ('flaskext',) + orig_path[2:]
                 return self._real_follow_file_system()
         return self._real_follow_file_system()
 
@@ -641,7 +635,7 @@ class _Importer(object):
                             extname = modname[len('flask_'):]
                             names.append(self._generate_name(extname))
                     # Now the old style: ``flaskext.foo``
-                    for dir in self._importer.sys_path_with_modifications():
+                    for dir in self.sys_path_with_modifications():
                         flaskext = os.path.join(dir, 'flaskext')
                         if os.path.isdir(flaskext):
                             names += self._get_module_names([flaskext])
