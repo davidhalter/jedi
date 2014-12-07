@@ -32,8 +32,8 @@ asdfasdf""" + "h"
         tokens = parser.tokenize.generate_tokens(simple_docstring_io.readline)
         token_list = list(tokens)
         string_token = token_list[0]
-        self.assertEqual(string_token._preceding_whitespace, '')
-        self.assertEqual(string_token.string, '"""simple one line docstring"""')
+        self.assertEqual(string_token.prefix, '')
+        self.assertEqual(string_token.value, '"""simple one line docstring"""')
 
     def test_simple_with_whitespace(self):
         # Test a simple one line string with preceding whitespace and newline
@@ -42,11 +42,11 @@ asdfasdf""" + "h"
         tokens = parser.tokenize.generate_tokens(simple_docstring_io.readline)
         token_list = list(tokens)
         string_token = token_list[0]
-        self.assertEqual(string_token._preceding_whitespace, '  ')
-        self.assertEqual(string_token.string, '"""simple one line docstring"""')
+        self.assertEqual(string_token.prefix, '  ')
+        self.assertEqual(string_token.value, '"""simple one line docstring"""')
         self.assertEqual(string_token.type, STRING)
         newline_token = token_list[1]
-        self.assertEqual(newline_token._preceding_whitespace, ' ')
+        self.assertEqual(newline_token.prefix, ' ')
         self.assertEqual(newline_token.type, NEWLINE)
 
     def test_function_whitespace(self):
@@ -61,18 +61,18 @@ asdfasdf""" + "h"
         token_list = list(tokens)
         print(token_list)
         for t in token_list:
-            if t.string == 'test_whitespace':
-                self.assertEqual(t._preceding_whitespace, ' ')
-            if t.string == '(':
-                self.assertEqual(t._preceding_whitespace, '')
-            if t.string == '*':
-                self.assertEqual(t._preceding_whitespace, '')
-            if t.string == '**':
-                self.assertEqual(t._preceding_whitespace, ' ')
-            if t.string == 'print':
-                self.assertEqual(t._preceding_whitespace, '        ')
-            if t.string == 'if':
-                self.assertEqual(t._preceding_whitespace, '    ')
+            if t.value == 'test_whitespace':
+                self.assertEqual(t.prefix, ' ')
+            if t.value == '(':
+                self.assertEqual(t.prefix, '')
+            if t.value == '*':
+                self.assertEqual(t.prefix, '')
+            if t.value == '**':
+                self.assertEqual(t.prefix, ' ')
+            if t.value == 'print':
+                self.assertEqual(t.prefix, '        ')
+            if t.value == 'if':
+                self.assertEqual(t.prefix, '    ')
 
 
 def test_tokenizer_with_string_literal_backslash():
