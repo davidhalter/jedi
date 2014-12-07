@@ -3,6 +3,7 @@ from textwrap import dedent
 import jedi
 from jedi._compatibility import u
 from jedi import cache
+from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
 
 
@@ -54,14 +55,14 @@ def test_carriage_return_splitting():
             pass
         '''))
     source = source.replace('\n', '\r\n')
-    p = FastParser(source)
+    p = FastParser(load_grammar(), source)
     assert [str(n) for n in p.module.get_defined_names()] == ['Foo']
 
 
 def test_change_and_undo():
 
     def fp(src):
-        p = FastParser(u(src))
+        p = FastParser(load_grammar(), u(src))
         cache.save_parser(None, None, p, pickling=False)
 
         # TODO Don't change get_code, the whole thing should be the same.

@@ -39,7 +39,7 @@ def check_error_statements(evaluator, module, pos):
         if error_statement.first_type in ('import_from', 'import_name') \
                 and error_statement.first_pos < pos <= error_statement.next_start_pos:
             return importer_from_error_statement(evaluator, module, error_statement, pos)
-    return None
+    return None, False
 
 
 def importer_from_error_statement(evaluator, module, error_statement, pos):
