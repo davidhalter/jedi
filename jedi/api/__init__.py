@@ -571,7 +571,7 @@ class Script(object):
 
         :rtype: list of :class:`classes.CallSignature`
         """
-        call_txt, call_index = self._user_context.call_signature()
+        call_txt, call_index, key_name = self._user_context.call_signature()
         if call_txt is None:
             return []
 
@@ -587,7 +587,6 @@ class Script(object):
                                                   self._pos, stmt)
         debug.speed('func_call followed')
 
-        key_name = None
         if 0:  # Change logic.
             try:
                 # Access the trailers arglist node.

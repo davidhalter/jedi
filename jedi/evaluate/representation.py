@@ -28,14 +28,12 @@ py__getattribute__(evaluator, name)    Returns a list of attribute values. The
 
 __
 """
-import copy
 import os
 import pkgutil
 from itertools import chain
 
 from jedi._compatibility import use_metaclass, unicode, Python3Method
 from jedi.parser import tree as pr
-from jedi.parser.tokenize import Token
 from jedi import debug
 from jedi import common
 from jedi.cache import underscore_memoization
@@ -317,7 +315,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
                 for command in self.var.children]
 
     @property
-    @underscore_memoization
+    @memoize_default()
     def name(self):
         name = self.var.name
         return helpers.FakeName(unicode(name), self, name.start_pos)

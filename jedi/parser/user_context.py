@@ -163,21 +163,38 @@ class UserContext(object):
         """
         index = 0
         level = 0
+        next_must_be_name = False
+        next_is_key = False
+        key_name = None
         for token in self._get_backwards_tokenizer(self.position):
             tok_str = token.value
+            if next_must_be_name:
+                if token.type == tokenize.NAME:
+                    call, _ = self._calc_path_until_cursor(start_pos=pos)
+                    print(call, index, key_name)
+                    return call, index, key_name
+                index = 0
+                next_must_be_name = False
+            elif next_is_key:
+                if token.type == tokenize.NAME:
+                    key_name = tok_str[::-1]
+                next_is_key = False
+
             if tok_str == '(':
                 level += 1
                 if level == 1:
+                    next_must_be_name = True
+                    level = 0
                     end = token.end_pos
                     self._column_temp = self._line_length - end[1]
                     pos = self._line_temp + 1, self._column_temp
-                    call, _ = self._calc_path_until_cursor(start_pos=pos)
-                    return call, index
             elif tok_str == ')':
                 level -= 1
             elif tok_str == ',':
                 index += 1
-        return None, 0
+            elif tok_str == '=':
+                next_is_key=True
+        return None, 0, None
 
     def get_context(self, yield_positions=False):
         self.get_path_until_cursor()  # In case _start_cursor_pos is undefined.

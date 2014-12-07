@@ -166,7 +166,7 @@ class TestCallSignatures(TestCase):
         signatures = Script(s).call_signatures()
         assert len(signatures) == 1
         x = [p.description for p in signatures[0].params]
-        assert x == ['*args']
+        assert x == ['args']
 
     def test_additional_brackets(self):
         self._run('str((', 'str', 0)

@@ -690,6 +690,7 @@ class CallSignature(Definition):
 
             for i, param in enumerate(self.params):
                 # *args case
+                print(param)
                 if param._name.get_definition().stars == 1:
                     return i
             return None
