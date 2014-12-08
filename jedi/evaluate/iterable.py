@@ -539,14 +539,12 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
 
 def check_array_instances(evaluator, instance):
     """Used for set() and list() instances."""
-    
-    return instance.var_args
-
-
-    if not settings.dynamic_arrays_instances:
+    if not settings.dynamic_array_additions:
         return instance.var_args
+
     ai = ArrayInstance(evaluator, instance)
-    return [ai]
+    from jedi.evaluate import param
+    return param.Arguments(evaluator, [AlreadyEvaluated([ai])])
 
 
 class ArrayInstance(IterableWrapper):
@@ -567,22 +565,27 @@ class ArrayInstance(IterableWrapper):
         """
         items = []
         from jedi.evaluate.representation import Instance
-        for stmt in self.var_args:
-            for typ in self._evaluator.eval_statement(stmt):
-                if isinstance(typ, Instance) and len(typ.var_args):
-                    array = typ.var_args[0]
-                    if isinstance(array, ArrayInstance):
-                        # Certain combinations can cause recursions, see tests.
-                        if not self._evaluator.recursion_detector.push_stmt(self.var_args):
-                            items += array.iter_content()
-                            self._evaluator.recursion_detector.pop_stmt()
-                items += get_iterator_types([typ])
+        for key, nodes in self.var_args.unpack():
+            for node in nodes:
+                for typ in self._evaluator.eval_element(node):
+                    if isinstance(typ, Instance) and len(typ.var_args):
+                        array = typ.var_args[0]
+                        if isinstance(array, ArrayInstance):
+                            # Certain combinations can cause recursions, see tests.
+                            if not self._evaluator.recursion_detector.push_stmt(self.var_args):
+                                items += array.iter_content()
+                                self._evaluator.recursion_detector.pop_stmt()
+                    items += get_iterator_types([typ])
 
+
+        # TODO remove?
+        """
         # TODO check if exclusion of tuple is a problem here.
         if isinstance(self.var_args, tuple) or self.var_args.parent is None:
             return []  # generated var_args should not be checked for arrays
+"""
 
-        module = self.var_args.get_parent_until()
+        module = self.var_args.argument_node.get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self._evaluator, self.instance, module, is_list)
         return items
