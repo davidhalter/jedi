@@ -171,7 +171,6 @@ class UserContext(object):
             if next_must_be_name:
                 if token.type == tokenize.NAME:
                     call, _ = self._calc_path_until_cursor(start_pos=pos)
-                    print(call, index, key_name)
                     return call, index, key_name
                 index = 0
                 next_must_be_name = False
@@ -193,7 +192,7 @@ class UserContext(object):
             elif tok_str == ',':
                 index += 1
             elif tok_str == '=':
-                next_is_key=True
+                next_is_key = True
         return None, 0, None
 
     def get_context(self, yield_positions=False):

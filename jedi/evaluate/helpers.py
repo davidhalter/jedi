@@ -223,13 +223,11 @@ def search_call_signatures(user_stmt, position):
     """
     debug.speed('func_call start')
     call, arr, index = None, None, 0
-    print(user_stmt)
     if user_stmt is not None and isinstance(user_stmt, pr.ExprStmt):
         # some parts will of the statement will be removed
         user_stmt = deep_ast_copy(user_stmt)
 
         return scan_node_for_call_signature(user_stmt, position) + (0,)
-        print()
         #arr, index, call = _call_signature_array_for_pos(user_stmt, position)
 
         # Now remove the part after the call. Including the array from the
