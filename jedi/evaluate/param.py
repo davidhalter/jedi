@@ -43,6 +43,9 @@ class Arguments(pr.Base):
                 else:
                     yield 0, child
 
+    def get_parent_until(self, *args, **kwargs):
+        return self._trailer.get_parent_until(*args, **kwargs)
+
     def as_tuple(self):
         for stars, argument in self._split():
             if pr.is_node(argument, 'argument'):

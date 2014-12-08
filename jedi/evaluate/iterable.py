@@ -186,10 +186,10 @@ class Array(IterableWrapper):
 
     def __init__(self, evaluator, atom):
         self._evaluator = evaluator
-        self._atom = atom
+        self.atom = atom
         self.type = Array.mapping[atom.children[0]]
 
-        c = self._atom.children
+        c = self.atom.children
         array_node = c[1]
         if self.type == pr.Array.DICT and array_node != '}' \
                 and (not hasattr(array_node, 'children')
@@ -228,8 +228,7 @@ class Array(IterableWrapper):
     @memoize_default(NO_DEFAULT)
     def values(self):
         result = unite(self._evaluator.eval_element(v) for v in self._values())
-        # TODO reenable
-        #result += check_array_additions(self._evaluator, self)
+        result += check_array_additions(self._evaluator, self)
         return result
 
     def get_exact_index_types(self, mixed_index):
@@ -270,7 +269,7 @@ class Array(IterableWrapper):
         if name not in ['start_pos', 'get_only_subelement', 'parent',
                         'get_parent_until', 'items']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
-        return getattr(self._atom, name)
+        return getattr(self.atom, name)
 
     def _values(self):
         """Returns a list of a list of node."""
@@ -280,7 +279,7 @@ class Array(IterableWrapper):
             return self._items()
 
     def _items(self):
-        c = self._atom.children
+        c = self.atom.children
         array_node = c[1]
         if array_node in (']', '}', ')'):
             return []  # Direct closing bracket, doesn't contain items.
@@ -307,14 +306,14 @@ class Array(IterableWrapper):
         return iter(self._items())
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self._atom)
+        return "<%s of %s>" % (type(self).__name__, self.atom)
 
 
 class _FakeArray(Array):
     def __init__(self, evaluator, container, type):
         self.type = type
         self._evaluator = evaluator
-        self._atom = container
+        self.atom = container
 
 
 class ImplicitTuple(_FakeArray):
@@ -421,14 +420,13 @@ def get_iterator_types(inputs):
 
 def check_array_additions(evaluator, array):
     """ Just a mapper function for the internal _check_array_additions """
-    if not pr.Array.is_type(array._array, pr.Array.LIST, pr.Array.SET):
+    if array.type not in (pr.Array.LIST, pr.Array.SET):
         # TODO also check for dict updates
         return []
 
-    is_list = array._array.type == 'list'
-    current_module = array._array.get_parent_until()
-    res = _check_array_additions(evaluator, array, current_module, is_list)
-    return res
+    is_list = array.type == 'list'
+    current_module = array.atom.get_parent_until()
+    return _check_array_additions(evaluator, array, current_module, is_list)
 
 
 @memoize_default([], evaluator_is_first_arg=True)
@@ -607,6 +605,8 @@ class ArrayInstance(IterableWrapper):
         for key, nodes in self.var_args.unpack():
             for node in nodes:
                 for typ in self._evaluator.eval_element(node):
+                    # TODO remove?
+                    """
                     if isinstance(typ, Instance) and len(typ.var_args):
                         array = typ.var_args[0]
                         if isinstance(array, ArrayInstance):
@@ -614,6 +614,7 @@ class ArrayInstance(IterableWrapper):
                             if not self._evaluator.recursion_detector.push_stmt(self.var_args):
                                 items += array.iter_content()
                                 self._evaluator.recursion_detector.pop_stmt()
+                    """
                     items += get_iterator_types([typ])
 
 
@@ -624,7 +625,7 @@ class ArrayInstance(IterableWrapper):
             return []  # generated var_args should not be checked for arrays
 """
 
-        module = self.var_args.argument_node.get_parent_until()
+        module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self._evaluator, self.instance, module, is_list)
         return items
