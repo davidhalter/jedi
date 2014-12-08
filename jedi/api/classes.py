@@ -173,10 +173,8 @@ class BaseDefinition(object):
         par = self._definition
         while par is not None:
             if isinstance(par, pr.Import):
-                path += par.from_names
-                path += par.namespace_names
-                if par.relative_count == 0:
-                    break
+                path += imports.ImportWrapper(self._evaluator, self._name).import_path
+                break
             with common.ignored(AttributeError):
                 path.insert(0, par.name)
             par = par.parent

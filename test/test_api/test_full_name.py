@@ -27,16 +27,14 @@ class MixinTestFullName(object):
     def check(self, source, desired):
         script = jedi.Script(textwrap.dedent(source))
         definitions = getattr(script, type(self).operation)()
+        assert len(definitions) == 1
         self.assertEqual(definitions[0].full_name, desired)
 
     def test_os_path_join(self):
         self.check('import os; os.path.join', 'os.path.join')
 
     def test_builtin(self):
-        self.check('type', 'type')
-
-    def test_from_import(self):
-        self.check('from os import path', 'os.path')
+        self.check('TypeError', 'TypeError')
 
 
 class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
@@ -48,6 +46,9 @@ class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
         import re
         any_re = re.compile('.*')
         any_re""", 're.RegexObject')
+
+    def test_from_import(self):
+        self.check('from os import path', 'os.path')
 
 
 class TestFullNameWithCompletions(MixinTestFullName, TestCase):
