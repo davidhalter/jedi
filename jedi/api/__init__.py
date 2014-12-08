@@ -144,14 +144,15 @@ class Script(object):
                 # TODO this paragraph is necessary, but not sure it works.
                 context = self._user_context.get_context()
                 next(context)  # skip the path
-                if False and next(context) == 'from':
+                if next(context) == 'from':
                     # completion is just "import" if before stands from ..
                     completions += ((k, bs) for k in keywords.keyword_names('import'))
 
                 module = self._parser.module()
                 name = user_stmt.name_for_position(self._pos)
-                imp = imports.ImportWrapper(self._evaluator, name)
-                completions += [(n, module) for n in imp.completions()]
+                if name is not None:
+                    imp = imports.ImportWrapper(self._evaluator, name)
+                    completions += [(n, module) for n in imp.completion_names()]
 
             if importer or isinstance(user_stmt, pr.Import):
                 return completions

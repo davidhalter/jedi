@@ -57,7 +57,7 @@ def importer_from_error_statement(evaluator, module, error_statement, pos):
         elif typ == 'import_from':
             for node in nodes:
                 if isinstance(node, pt.Node) and node.type == 'dotted_name':
-                    names += check_dotted(node.children[::2])
+                    names += check_dotted(node.children)
                 elif node in ('.', '...'):
                     level += len(node.value)
                 elif isinstance(node, pt.Name) and node.end_pos < pos:

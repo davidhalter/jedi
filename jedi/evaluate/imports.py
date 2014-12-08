@@ -47,7 +47,7 @@ class ImportWrapper(pr.Base):
         self.import_path = self._import.path_for_name(name)
         self.is_like_search = False       # TODO REMOVE
 
-    def completions(self):
+    def completion_names(self):
         # The import path needs to be reduced by one, because we're completing.
         import_path = self.import_path[:-1]
         module = self._import.get_parent_until()
@@ -628,28 +628,29 @@ class _Importer(object):
         """
         names = []
         if self.import_path:
-            for scope in self.follow(evaluator):
-                # flask
-                if self.str_import_path == ('flask', 'ext'):
-                    # List Flask extensions like ``flask_foo``
-                    for mod in self._get_module_names():
-                        modname = str(mod)
-                        if modname.startswith('flask_'):
-                            extname = modname[len('flask_'):]
-                            names.append(self._generate_name(extname))
-                    # Now the old style: ``flaskext.foo``
-                    for dir in self.sys_path_with_modifications():
-                        flaskext = os.path.join(dir, 'flaskext')
-                        if os.path.isdir(flaskext):
-                            names += self._get_module_names([flaskext])
+            # flask
+            if self.str_import_path == ('flask', 'ext'):
+                # List Flask extensions like ``flask_foo``
+                for mod in self._get_module_names():
+                    modname = str(mod)
+                    if modname.startswith('flask_'):
+                        extname = modname[len('flask_'):]
+                        names.append(self._generate_name(extname))
+                # Now the old style: ``flaskext.foo``
+                for dir in self.sys_path_with_modifications():
+                    flaskext = os.path.join(dir, 'flaskext')
+                    if os.path.isdir(flaskext):
+                        names += self._get_module_names([flaskext])
 
+            from jedi.evaluate import finder, representation as er
+            for scope in self.follow(evaluator):
                 # namespace packages
                 if isinstance(scope, pr.Module) and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
                     paths = self.namespace_packages(pkg_path, self.import_path)
                     names += self._get_module_names([pkg_path] + paths)
 
-                if only_modules:
+                if only_modules or not isinstance(scope, er.ModuleWrapper):
                     # In the case of an import like `from x.` we don't need to
                     # add all the variables.
                     if ('os',) == self.str_import_path and not self.level:
@@ -659,15 +660,6 @@ class _Importer(object):
 
                     continue
 
-                # TODO delete
-                if False and not self.import_stmt.from_names or False and self.is_partial_import:
-                        # from_names must be defined to access module
-                        # values plus a partial import means that there
-                        # is something after the import, which
-                        # automatically implies that there must not be
-                        # any non-module scope.
-                        continue
-                from jedi.evaluate import finder
                 for s, scope_names in finder.get_names_of_scope(self._evaluator,
                                                                 scope, include_builtin=False):
                     for n in scope_names:
