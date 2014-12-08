@@ -132,14 +132,14 @@ class Script(object):
         """
         def get_completions(user_stmt, bs):
             module = self._parser.module()
-            importer, only_modules = helpers.check_error_statements(
-                self._evaluator, module, self._pos
-            )
+            names, level, only_modules = helpers.check_error_statements(module, self._pos)
             completions = []
             #print(importer.completion_names(self._evaluator, True))
-            if importer is not None:
-                names = importer.completion_names(self._evaluator, only_modules)
-                completions = [(name, module) for name in names]
+            if names:
+                imp_names = [n for n in names if n.end_pos < self._pos]
+                i = imports.get_importer(self._evaluator, imp_names, module, level)
+                c_names = i.completion_names(self._evaluator, only_modules)
+                completions = [(name, module) for name in c_names]
             if isinstance(user_stmt, pr.Import):
                 # TODO this paragraph is necessary, but not sure it works.
                 context = self._user_context.get_context()
@@ -154,7 +154,7 @@ class Script(object):
                     imp = imports.ImportWrapper(self._evaluator, name)
                     completions += [(n, module) for n in imp.completion_names()]
 
-            if importer or isinstance(user_stmt, pr.Import):
+            if names or isinstance(user_stmt, pr.Import):
                 return completions
             return self._simple_complete(path, dot, like)
 
@@ -283,6 +283,13 @@ class Script(object):
             eval_stmt = self._get_under_cursor_stmt(goto_path)
             if eval_stmt is None:
                 return []
+
+            module = self._parser.module()
+            names, level, _ = helpers.check_error_statements(module, self._pos)
+            if names:
+                i = imports.get_importer(self._evaluator, names, module, level)
+                return i.follow(self._evaluator)
+
 
             if not is_completion:
                 # goto_definition returns definitions of its statements if the

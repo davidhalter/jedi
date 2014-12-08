@@ -34,18 +34,18 @@ def get_on_import_stmt(evaluator, user_context, user_stmt, is_like_search=False)
     return i, name
 
 
-def check_error_statements(evaluator, module, pos):
+def check_error_statements(module, pos):
     for error_statement in module.error_statement_stacks:
         if error_statement.first_type in ('import_from', 'import_name') \
                 and error_statement.first_pos < pos <= error_statement.next_start_pos:
-            return importer_from_error_statement(evaluator, module, error_statement, pos)
-    return None, False
+            return importer_from_error_statement(error_statement, pos)
+    return [], 0, False
 
 
-def importer_from_error_statement(evaluator, module, error_statement, pos):
+def importer_from_error_statement(error_statement, pos):
     def check_dotted(children):
         for name in children[::2]:
-            if name.end_pos < pos:
+            if name.start_pos <= pos:
                 yield name
 
     names = []
@@ -60,9 +60,9 @@ def importer_from_error_statement(evaluator, module, error_statement, pos):
                     names += check_dotted(node.children)
                 elif node in ('.', '...'):
                     level += len(node.value)
-                elif isinstance(node, pt.Name) and node.end_pos < pos:
+                elif isinstance(node, pt.Name) and node.start_pos <= pos:
                     names.append(node)
-                elif node == 'import' and node.end_pos < pos:
+                elif node == 'import' and node.start_pos <= pos:
                     only_modules = False
 
-    return imports.get_importer(evaluator, names, module, level), only_modules
+    return names, level, only_modules
