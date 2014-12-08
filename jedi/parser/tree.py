@@ -1246,6 +1246,9 @@ class Param(Base):
     A helper class for functions. Read only.
     """
     __slots__ = ('tfpdef', 'default', 'stars', 'parent')
+    # Even though it's not not an official node, just give it one, because that
+    # makes checking more consistent.
+    type = 'param'
 
     def __init__(self, tfpdef, parent, default=None, stars=0):
         self.tfpdef = tfpdef  # tfpdef: see grammar.txt

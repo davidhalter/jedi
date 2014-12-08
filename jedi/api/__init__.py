@@ -188,8 +188,7 @@ class Script(object):
 
             if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords
-                #completions += ((k, b) for k in keywords.keyword_names(all=True))
-                pass
+                completions += ((k, b) for k in keywords.keyword_names(all=True))
                 # TODO delete? We should search for valid parser
                 # transformations.
 
