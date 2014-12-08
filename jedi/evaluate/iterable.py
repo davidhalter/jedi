@@ -441,13 +441,15 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     if not settings.dynamic_array_additions or isinstance(module, compiled.CompiledObject):
         return []
 
-    def check_calls(calls, add_name):
+    def check_power(power):
         """
-        Calls are processed here. The part before the call is searched and
-        compared with the original Array.
+        The power node is compared with the original Array.
         """
+        # TODO remove unused.
         result = []
-        for c in calls:
+        x = evaluator.eval_element(power)
+        #print(power, compare_array in x, x, compare_array)
+        if 0:
             call_path = list(c.generate_call_path())
             call_path_simple = [unicode(n) if isinstance(n, pr.Name) else n
                                 for n in call_path]
@@ -465,30 +467,50 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             if not compare_array in found:
                 continue
 
-            params = call_path[separate_index + 1]
-            if not params.values:
-                continue  # no params: just ignore it
-            if add_name in ['append', 'add']:
-                for param in params:
-                    result += evaluator.eval_statement(param)
-            elif add_name in ['insert']:
-                try:
-                    second_param = params[1]
-                except IndexError:
-                    continue
-                else:
-                    result += evaluator.eval_statement(second_param)
-            elif add_name in ['extend', 'update']:
-                for param in params:
-                    iterators = evaluator.eval_statement(param)
+    def get_additions(arglist, add_name):
+        params = list(param.Arguments(evaluator, arglist).unpack())
+        result = []
+        if add_name in ['insert']:
+            params = params[1:]
+        if add_name in ['append', 'add', 'insert']:
+            for key, nodes in params:
+                result += unite(evaluator.eval_element(node) for node in nodes)
+        elif add_name in ['extend', 'update']:
+            for key, nodes in params:
+                iterators = unite(evaluator.eval_element(node) for node in nodes)
                 result += get_iterator_types(iterators)
         return result
+        
+        # TODO REMOVE
+        """
+        params = call_path[separate_index + 1]
+        if not params.values:
+            #continue  # no params: just ignore it
+            pass
+        if add_name in ['append', 'add']:
+            for p in params:
+                result += evaluator.eval_statement(p)
+        elif add_name in ['insert']:
+            try:
+                second_param = params[1]
+            except IndexError:
+                #continue
+                pass
+            else:
+                result += evaluator.eval_statement(second_param)
+        elif add_name in ['extend', 'update']:
+            for p in params:
+                iterators = evaluator.eval_statement(p)
+            result += get_iterator_types(iterators)
+        return result
+        """
 
-    from jedi.evaluate import representation as er
+    from jedi.evaluate import representation as er, param
 
     def get_execution_parent(element, *stop_classes):
         """ Used to get an Instance/FunctionExecution parent """
         if isinstance(element, Array):
+            # TODO remove!
             stmt = element._array.parent
         else:
             # is an Instance with an ArrayInstance inside
@@ -497,41 +519,58 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             stop_classes = list(stop_classes) + [er.Function]
         return stmt.get_parent_until(stop_classes)
 
-    temp_param_add = settings.dynamic_params_for_other_modules
-    settings.dynamic_params_for_other_modules = False
+    temp_param_add, settings.dynamic_params_for_other_modules = \
+        settings.dynamic_params_for_other_modules, False
 
-    search_names = ['append', 'extend', 'insert'] if is_list else \
-        ['add', 'update']
-    comp_arr_parent = get_execution_parent(compare_array, er.FunctionExecution)
+    search_names = ['append', 'extend', 'insert'] if is_list else ['add', 'update']
+    #comp_arr_parent = get_execution_parent(compare_array, er.FunctionExecution)
 
-    possible_stmts = []
     res = []
-    for n in search_names:
+    for add_name in search_names:
         try:
-            possible_stmts += module.used_names[n]
+            possible_names = module.used_names[add_name]
         except KeyError:
             continue
-        for stmt in possible_stmts:
-            # Check if the original scope is an execution. If it is, one
-            # can search for the same statement, that is in the module
-            # dict. Executions are somewhat special in jedi, since they
-            # literally copy the contents of a function.
-            if isinstance(comp_arr_parent, er.FunctionExecution):
-                stmt = comp_arr_parent. \
-                    get_statement_for_position(stmt.start_pos)
-                if stmt is None:
+        else:
+            for name in possible_names:
+                # Check if the original scope is an execution. If it is, one
+                # can search for the same statement, that is in the module
+                # dict. Executions are somewhat special in jedi, since they
+                # literally copy the contents of a function.
+                """
+                if isinstance(comp_arr_parent, er.FunctionExecution):
+                    stmt = comp_arr_parent. \
+                        get_statement_for_position(stmt.start_pos)
+                    if stmt is None:
+                        continue
+                # InstanceElements are special, because they don't get copied,
+                # but have this wrapper around them.
+                if isinstance(comp_arr_parent, er.InstanceElement):
+                    stmt = er.get_instance_el(comp_arr_parent.instance, stmt)
+    """
+
+                trailer = name.parent
+                power = trailer.parent
+                trailer_pos = power.children.index(trailer)
+                try:
+                    execution_trailer = power.children[trailer_pos + 1]
+                except IndexError:
                     continue
-            # InstanceElements are special, because they don't get copied,
-            # but have this wrapper around them.
-            if isinstance(comp_arr_parent, er.InstanceElement):
-                stmt = er.get_instance_el(comp_arr_parent.instance, stmt)
+                else:
+                    if execution_trailer.type != 'trailer' \
+                            or execution_trailer.children[0] != '(' \
+                            or execution_trailer.children[1] == ')':
+                        continue
+                power = helpers.call_of_name(name, cut_own_trailer=True)
+                #if evaluator.recursion_detector.push_stmt(stmt):
+                    # check recursion
+                #    continue
+                if compare_array in evaluator.eval_element(power):
+                    # The arrays match.
+                    res += get_additions(execution_trailer.children[1], add_name)
 
-            if evaluator.recursion_detector.push_stmt(stmt):
-                # check recursion
-                continue
-
-            res += check_calls(helpers.scan_statement_for_calls(stmt, n), n)
-            evaluator.recursion_detector.pop_stmt()
+                #res += check_power(call)
+                #evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
     return res
