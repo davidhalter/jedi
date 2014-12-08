@@ -29,7 +29,6 @@ from jedi.common import source_to_unicode
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate.cache import memoize_default, NO_DEFAULT
-from jedi.evaluate.helpers import FakeSubModule
 
 
 class ModuleNotFound(Exception):
@@ -599,7 +598,7 @@ class _Importer(object):
             return _load_module(self._evaluator, name=path, sys_path=sys_path), rest
 
     def _generate_name(self, name):
-        return helpers.FakeName(name, parent=FakeSubModule)
+        return helpers.FakeName(name, parent=self.module)
 
     def _get_module_names(self, search_path=None):
         """

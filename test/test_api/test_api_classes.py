@@ -95,7 +95,7 @@ def test_function_call_signature_in_doc():
         pass
     f""").goto_definitions()
     doc = defs[0].doc
-    assert "f(x, y = 1, z = 'a')" in str(doc)
+    assert "f(x, y=1, z='a')" in str(doc)
 
 
 def test_class_call_signature():
@@ -308,4 +308,7 @@ class TestGotoAssignments(TestCase):
 
         assert nms[1].name == 'foo'
         assert nms[1].type == 'import'
-        assert [nms[1]] == nms[1].goto_assignments()
+        ass = nms[1].goto_assignments()
+        assert len(ass) == 1
+        assert ass[0].name == 'json'
+        assert ass[0].type == 'module'

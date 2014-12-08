@@ -67,7 +67,7 @@ class BaseDefinition(object):
         """
         An instance of :class:`jedi.parser.reprsentation.Name` subclass.
         """
-        self._definition = self._name.get_definition()
+        self._definition = er.wrap(evaluator, self._name.get_definition())
         self.is_keyword = isinstance(self._definition, keywords.Keyword)
 
         # generate a path to the definition
@@ -162,7 +162,6 @@ class BaseDefinition(object):
             return 'import'
 
         string = type(stripped).__name__.lower().replace('wrapper', '')
-        print(stripped, string)
         if string == 'exprstmt':
             return 'statement'
         else:
@@ -485,7 +484,7 @@ class Completion(BaseDefinition):
         """
         definition = self._definition
         if isinstance(definition, pr.Import):
-            i = imports.ImportWrapper(self._evaluator, definition)
+            i = imports.ImportWrapper(self._evaluator, self._name)
             if len(i.import_path) > 1 or not fast:
                 followed = self._follow_statements_imports()
                 if followed:
@@ -504,7 +503,7 @@ class Completion(BaseDefinition):
         description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
         """
         if isinstance(self._definition, pr.Import):
-            i = imports.ImportWrapper(self._evaluator, self._definition)
+            i = imports.ImportWrapper(self._evaluator, self._name)
             if len(i.import_path) <= 1:
                 return 'module'
 
@@ -521,14 +520,9 @@ class Completion(BaseDefinition):
         # imports completion is very complicated and needs to be treated
         # separately in Completion.
         definition = self._definition
-        if definition.isinstance(pr.Import) and definition.alias is None:
-            i = imports.ImportWrapper(self._evaluator, definition, True)
-            import_path = i.import_path + (unicode(self._name),)
-            try:
-                return imports.get_importer(self._evaluator, import_path,
-                                            i._importer.module).follow(self._evaluator)
-            except imports.ModuleNotFound:
-                pass
+        if definition.isinstance(pr.Import):
+            i = imports.ImportWrapper(self._evaluator, self._name)
+            return i.follow()
         return super(Completion, self)._follow_statements_imports()
 
     @memoize_default()
