@@ -25,6 +25,8 @@ import classes
 
 #? ['timedelta']
 from datetime import timedel
+#? 21 []
+from datetime.timedel import timedel
 
 # should not be possible, because names can only be looked up 1 level deep.
 #? []
@@ -59,7 +61,9 @@ import datetime.
 #? []
 import datetime.date
 
-#? 18 ['import']
+#? 17 ['import']
+from import_tree import pkg
+#? 18 ['import', 'pkg']
 from import_tree. import pkg
 #? 17 ['mod1', 'mod2', 'random', 'pkg', 'rename1', 'rename2', 'recurse_class1', 'recurse_class2']
 from import_tree. import pkg

@@ -131,29 +131,32 @@ class Script(object):
         :rtype: list of :class:`classes.Completion`
         """
         def get_completions(user_stmt, bs):
-            if user_stmt is None:
-                module = self._parser.module()
-                importer, only_modules = helpers.check_error_statements(
-                    self._evaluator, module, self._pos
-                )
-                #print(importer.completion_names(self._evaluator, True))
-                if importer is not None:
-                    names = importer.completion_names(self._evaluator, only_modules)
-                    return [(name, module) for name in names]
-            elif isinstance(user_stmt, pr.Import):
+            module = self._parser.module()
+            importer, only_modules = helpers.check_error_statements(
+                self._evaluator, module, self._pos
+            )
+            completions = []
+            #print(importer.completion_names(self._evaluator, True))
+            if importer is not None:
+                names = importer.completion_names(self._evaluator, only_modules)
+                completions = [(name, module) for name in names]
+            if isinstance(user_stmt, pr.Import):
                 # TODO this paragraph is necessary, but not sure it works.
                 context = self._user_context.get_context()
                 next(context)  # skip the path
-                if next(context) == 'from':
+                if False and next(context) == 'from':
                     # completion is just "import" if before stands from ..
-                    return ((k, bs) for k in keywords.keyword_names('import'))
+                    completions += ((k, bs) for k in keywords.keyword_names('import'))
 
                 module = self._parser.module()
                 name = user_stmt.name_for_position(self._pos)
                 imp = imports.ImportWrapper(self._evaluator, name)
-                return [(n, module) for n in imp.get_defined_names()]
+                completions += [(n, module) for n in imp.completions()]
 
+            if importer or isinstance(user_stmt, pr.Import):
+                return completions
             return self._simple_complete(path, dot, like)
+
 
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
