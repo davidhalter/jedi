@@ -131,6 +131,8 @@ class Script(object):
         :rtype: list of :class:`classes.Completion`
         """
         def get_completions(user_stmt, bs):
+            # TODO this closure is ugly. it also doesn't work with
+            # simple_complete (used for Interpreter), somehow redo.
             module = self._parser.module()
             names, level, only_modules = helpers.check_error_statements(module, self._pos)
             completions = []
@@ -154,10 +156,14 @@ class Script(object):
                     imp = imports.ImportWrapper(self._evaluator, name)
                     completions += [(n, module) for n in imp.completion_names()]
 
-            if names or isinstance(user_stmt, pr.Import):
-                return completions
-            return self._simple_complete(path, dot, like)
-
+            if not names and not isinstance(user_stmt, pr.Import):
+                if not path and not dot:
+                    # add keywords
+                    completions += ((k, b) for k in keywords.keyword_names(all=True))
+                    # TODO delete? We should search for valid parser
+                    # transformations.
+                completions += self._simple_complete(path, dot, like)
+            return completions
 
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
@@ -185,12 +191,6 @@ class Script(object):
                         # Name object public.
                         if p._definition.stars == 0:  # no *args/**kwargs
                             completions.append((p._name, p._name))
-
-            if not path and not isinstance(user_stmt, pr.Import):
-                # add keywords
-                completions += ((k, b) for k in keywords.keyword_names(all=True))
-                # TODO delete? We should search for valid parser
-                # transformations.
 
         needs_dot = not dot and path
 
