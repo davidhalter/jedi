@@ -414,6 +414,10 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def py__getattribute__(self, name):
         return self._evaluator.find_types(self, name)
 
+    @property
+    def params(self):
+        return self.get_subscope_by_name('__init__').params
+
     def scope_names_generator(self, position=None, add_class_vars=True):
         def in_iterable(name, iterable):
             """ checks if the name is in the variable 'iterable'. """

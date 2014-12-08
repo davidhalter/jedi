@@ -43,9 +43,10 @@ import re
 from inspect import cleandoc
 from collections import defaultdict
 from itertools import chain
+import textwrap
 
 from jedi._compatibility import (next, Python3Method, encoding, is_py3,
-                                 literal_eval, use_metaclass)
+                                 literal_eval, use_metaclass, unicode)
 from jedi import debug
 from jedi import cache
 
@@ -779,9 +780,9 @@ class Class(ClassOrFunc):
         if self._doc_token is not None:
             docstr = self.raw_doc
         for sub in self.subscopes:
-            if unicode(sub.name) == '__init__':
+            if str(sub.name) == '__init__':
                 return '%s\n\n%s' % (
-                    sub.get_call_signature(funcname=self.name), docstr)
+                    sub.get_call_signature(func_name=self.name), docstr)
         return docstr
 
     def scope_names_generator(self, position=None):
@@ -862,32 +863,20 @@ class Function(ClassOrFunc):
     def scope_names_generator(self, position=None):
         yield self, filter_after_position(self.get_defined_names(), position)
 
-    def get_call_signature(self, width=72, funcname=None):
+    def get_call_signature(self, width=72, func_name=None):
         """
         Generate call signature of this function.
 
         :param width: Fold lines if a line is longer than this value.
         :type width: int
-        :arg funcname: Override function name when given.
-        :type funcname: str
+        :arg func_name: Override function name when given.
+        :type func_name: str
 
         :rtype: str
         """
-        l = unicode(funcname or self.name) + '('
-        lines = []
-        for (i, p) in enumerate(self.params):
-            code = p.get_code(False)
-            if i != len(self.params) - 1:
-                code += ', '
-            if len(l + code) > width:
-                lines.append(l[:-1] if l[-1] == ' ' else l)
-                l = code
-            else:
-                l += code
-        if l:
-            lines.append(l)
-        lines[-1] += ')'
-        return '\n'.join(lines)
+        func_name = func_name or self.children[1]
+        code = unicode(func_name) + self.children[2].get_code()
+        return '\n'.join(textwrap.wrap(code, width))
 
     @property
     def doc(self):

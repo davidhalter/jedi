@@ -105,7 +105,7 @@ def test_class_call_signature():
             pass
     Foo""").goto_definitions()
     doc = defs[0].doc
-    assert "Foo(self, x, y = 1, z = 'a')" in str(doc)
+    assert "Foo(self, x, y=1, z='a')" in str(doc)
 
 
 def test_position_none_if_builtin():
@@ -212,7 +212,7 @@ class TestParent(TestCase):
                 def bar(): pass
             Foo().bar''')).completions()[0].parent()
         assert parent.name == 'Foo'
-        assert parent.type == 'class'
+        assert parent.type == 'instance'
 
         parent = Script('str.join').completions()[0].parent()
         assert parent.name == 'str'

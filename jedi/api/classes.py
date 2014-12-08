@@ -156,9 +156,13 @@ class BaseDefinition(object):
 
         if isinstance(stripped, compiled.CompiledObject):
             return stripped.type()
-        if isinstance(stripped, iterable.Array):
+        elif isinstance(stripped, iterable.Array):
             return 'instance'
+        elif isinstance(stripped, pr.Import):
+            return 'import'
+
         string = type(stripped).__name__.lower().replace('wrapper', '')
+        print(stripped, string)
         if string == 'exprstmt':
             return 'statement'
         else:
@@ -379,8 +383,8 @@ class BaseDefinition(object):
 
     def parent(self):
         scope = self._definition.get_parent_scope()
-        non_flow = scope.get_parent_until(pr.Flow, reverse=True)
-        return Definition(self._evaluator, non_flow.name)
+        scope = er.wrap(self._evaluator, scope)
+        return Definition(self._evaluator, scope.name)
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
