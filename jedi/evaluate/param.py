@@ -117,6 +117,7 @@ class Arguments(pr.Base):
                 # For the stdlib we always want values. If we don't get them,
                 # that's ok, maybe something is too hard to resolve, however,
                 # we will not proceed with the evaluation of that function.
+                debug.warning('argument_clinic "%s" not resolvable.', name)
                 raise ValueError
             yield values
 

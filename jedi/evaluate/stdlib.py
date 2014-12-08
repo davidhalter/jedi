@@ -63,6 +63,7 @@ def argument_clinic(string, want_obj=False, want_scope=False):
     """
     clinic_args = []
     allow_kwargs = False
+    optional = False
     while string:
         # Optional arguments have to begin with a bracket. And should always be
         # at the end of the arguments. This is therefore not a proper argument
@@ -73,9 +74,9 @@ def argument_clinic(string, want_obj=False, want_scope=False):
         if not match.group(2):  # A slash -> allow named arguments
             allow_kwargs = True
             continue
-        optional = match.group(1)
+        optional = optional or bool(match.group(1))
         word = match.group(2)
-        clinic_args.append((word, bool(optional), allow_kwargs))
+        clinic_args.append((word, optional, allow_kwargs))
 
     def f(func):
         def wrapper(evaluator, obj, arguments):
@@ -121,7 +122,6 @@ def builtins_type(evaluator, objects, bases, dicts):
         return []
     else:
         return [o.base for o in objects if isinstance(o, er.Instance)]
-    return []
 
 
 class SuperInstance(er.Instance):
