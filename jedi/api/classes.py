@@ -314,6 +314,11 @@ class BaseDefinition(object):
         return '.'.join(path if path[0] else path[1:])
 
     def goto_assignments(self):
+        defs = self._evaluator.goto(self._name)
+        return [Definition(self._evaluator, d) for d in defs]
+
+
+        # TODO REMOVE!
         def call_path_for_name_part(stmt_or_imp, name_part):
             if isinstance(stmt_or_imp, pr.Import):
                 return [name_part]
@@ -636,6 +641,10 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         Returns True, if defined as a name in a statement, function or class.
         Returns False, if it's a reference to such a definition.
         """
+        return self._name.is_definition()
+
+
+        # TODO REMOVE this.
         _def = self._name.get_parent_until((pr.ExprStmt, pr.Import,
                                             pr.Function, pr.Class, pr.Module))
         if isinstance(_def, pr.ExprStmt):

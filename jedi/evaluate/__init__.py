@@ -468,10 +468,32 @@ class Evaluator(object):
                 yield name
 
         stmt = name.get_definition()
-        # Only take the parent, because if it's more complicated than just a
-        # name it's something you can "goto" again.
         par = name.parent
-        if isinstance(par, pr.ExprStmt) and name in par.get_defined_names():
+        if par.type == 'argument' and par.children[1] == '=' and par.children[0] == name:
+            # Named param goto.
+            trailer = par.parent
+            if trailer.type == 'arglist':
+                trailer = trailer.parent
+            if trailer.type != 'classdef':
+                for i, t in enumerate(trailer.parent.children):
+                    if t == trailer:
+                        to_evaluate = trailer.parent.children[:i]
+                types = self.eval_element(to_evaluate[0])
+                for trailer in to_evaluate[1:]:
+                    types = self.eval_trailer(types, trailer)
+                param_names = []
+                for typ in types:
+                    try:
+                        params = typ.params
+                    except AttributeError:
+                        pass
+                    else:
+                        param_names += [param.name for param in params
+                                        if param.name.value == name.value]
+                return param_names
+        elif isinstance(par, pr.ExprStmt) and name in par.get_defined_names():
+            # Only take the parent, because if it's more complicated than just
+            # a name it's something you can "goto" again.
             return [name]
         elif isinstance(par, (pr.Param, pr.Function, pr.Class)) and par.name is name:
             return [name]
