@@ -771,7 +771,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         def parent_callback():
             return self._evaluator.execute(compiled.create(self._evaluator, str))[0]
 
-        names = ['__file__', '__package__', '__doc__', '__name__', '__version__']
+        names = ['__file__', '__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
         return [helpers.LazyName(n, parent_callback) for n in names]
 
