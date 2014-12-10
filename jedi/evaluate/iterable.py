@@ -522,7 +522,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     search_names = ['append', 'extend', 'insert'] if is_list else ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array)
 
-    res = []
+    added_types = []
     for add_name in search_names:
         try:
             possible_names = module.used_names[add_name]
@@ -561,18 +561,18 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                             or execution_trailer.children[1] == ')':
                         continue
                 power = helpers.call_of_name(name, cut_own_trailer=True)
-                #if evaluator.recursion_detector.push_stmt(stmt):
-                    # check recursion
-                #    continue
+                if evaluator.recursion_detector.push_stmt(power):
+                    # Check for recursion. Possible by using 'extend' in
+                    # combination with function calls.
+                    continue
                 if compare_array in evaluator.eval_element(power):
-                    # The arrays match.
-                    res += get_additions(execution_trailer.children[1], add_name)
+                    # The arrays match. Now add the results
+                    added_types += get_additions(execution_trailer.children[1], add_name)
 
-                #res += check_power(call)
-                #evaluator.recursion_detector.pop_stmt()
+                evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
-    return res
+    return added_types
 
 
 def check_array_instances(evaluator, instance):
