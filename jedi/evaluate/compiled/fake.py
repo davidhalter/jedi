@@ -9,7 +9,7 @@ import inspect
 
 from jedi._compatibility import is_py3, builtins, unicode
 from jedi.parser import Parser, load_grammar
-from jedi.parser.tree import Class
+from jedi.parser import tree as pt
 from jedi.evaluate.helpers import FakeName
 
 modules = {}
@@ -100,12 +100,16 @@ def _faked(module, obj, name):
 def get_faked(module, obj, name=None):
     obj = obj.__class__ if is_class_instance(obj) else obj
     result = _faked(module, obj, name)
-    if not isinstance(result, Class) and result is not None:
+    # TODO may this ever happen? result None? if so, document!
+    if not isinstance(result, pt.Class) and result is not None:
         # Set the docstr which was previously not set (faked modules don't
         # contain it).
-        doc = '''"""%s"""''' % obj.__doc__  # TODO need escapes.
-        # TODO We need to add the docstr in a proper way.
-        #result.add_docstr(tokenize.Token(tokenize.STRING, doc, (0, 0)))
+        doc = '"""%s"""' % obj.__doc__  # TODO need escapes.
+        suite = result.children[-1]
+        expr_stmt = pt.ExprStmt([pt.String(doc, (0, 0), '')])
+        new_line = pt.Whitespace('\n', (0, 0), '')
+        docstr_node = pt.Node('simple_stmt', [expr_stmt, new_line])
+        suite.children.insert(2, docstr_node)
         return result
 
 
