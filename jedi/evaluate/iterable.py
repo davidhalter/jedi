@@ -425,7 +425,13 @@ def check_array_additions(evaluator, array):
         return []
 
     is_list = array.type == 'list'
-    current_module = array.atom.get_parent_until()
+    try:
+        current_module = array.atom.get_parent_until()
+    except AttributeError:
+        # If there's no get_parent_until, it's a FakeSequence or another Fake
+        # type. Those fake types are used inside Jedi's engine. No values may
+        # be added to those after their creation.
+        return []
     return _check_array_additions(evaluator, array, current_module, is_list)
 
 
