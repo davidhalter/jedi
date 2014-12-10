@@ -31,7 +31,7 @@ class TestDefinedNames(TestCase):
         self.check_defined_names("""
         x = Class()
         x.y.z = None
-        """, ['x'])
+        """, ['x', 'z'])  # TODO is this behavior what we want?
 
     def test_multiple_assignment(self):
         self.check_defined_names("""
