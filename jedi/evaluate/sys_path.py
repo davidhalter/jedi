@@ -45,7 +45,7 @@ def _execute_code(module_path, code):
     return []
 
 
-def _paths_from_assignment(evaluator, statement):
+def _paths_from_assignment(evaluator, expr_stmt):
     """
     Extracts the assigned strings from an assignment that looks as follows::
 
@@ -56,18 +56,31 @@ def _paths_from_assignment(evaluator, statement):
     because it will only affect Jedi in very random situations and by adding
     more paths than necessary, it usually benefits the general user.
     """
-    for exp_list, operator in statement.assignment_details:
-        if len(exp_list) != 1 or not isinstance(exp_list[0], pr.Call):
+    for assignee, operator in zip(expr_stmt.children[::2], expr_stmt.children[1::2]):
+        try:
+            assert operator in ['=', '+=']
+            assert pr.is_node(assignee, 'power') and len(assignee.children) > 1
+            c = assignee.children
+            assert c[0].type == 'name' and c[0].value == 'sys'
+            trailer = c[1]
+            assert trailer.children[0] == '.' and trailer.children[1].value == 'path'
+            # TODO Essentially we're not checking details on sys.path
+            # manipulation. Both assigment of the sys.path and changing/adding
+            # parts of the sys.path are the same: They get added to the current
+            # sys.path.
+            """
+            execution = c[2]
+            assert execution.children[0] == '['
+            subscript = execution.children[1]
+            assert subscript.type == 'subscript'
+            assert ':' in subscript.children
+            """
+        except AssertionError:
             continue
-        if exp_list[0].names() != ['sys', 'path']:
-            continue
-        # TODO at this point we ignore all ways what could be assigned to
-        # sys.path or an execution of it. Here we could do way more
-        # complicated checks.
 
         from jedi.evaluate.iterable import get_iterator_types
         from jedi.evaluate.precedence import is_string
-        for val in get_iterator_types(evaluator.eval_statement(statement)):
+        for val in get_iterator_types(evaluator.eval_statement(expr_stmt)):
             if is_string(val):
                 yield val.obj
 
@@ -93,14 +106,15 @@ def _paths_from_list_modifications(module_path, trailer1, trailer2):
 
 def _check_module(evaluator, module):
     def get_sys_path_powers(names):
-        for power in [p.parent.parent for p in names]:
+        for name in names:
+            power = name.parent.parent
             if pr.is_node(power, 'power'):
                 c = power.children
                 if isinstance(c[0], pr.Name) and c[0].value == 'sys' \
                         and pr.is_node(c[1], 'trailer'):
                     n = c[1].children[1]
                     if isinstance(n, pr.Name) and n.value == 'path':
-                        yield power
+                        yield name, power
 
     sys_path = list(get_sys_path())  # copy
     try:
@@ -108,11 +122,11 @@ def _check_module(evaluator, module):
     except KeyError:
         pass
     else:
-        for power in get_sys_path_powers(possible_names):
+        for name, power in get_sys_path_powers(possible_names):
+            stmt = name.get_definition()
             if len(power.children) >= 4:
                 sys_path.extend(_paths_from_list_modifications(module.path, *power.children[2:4]))
-            elif hasattr(power, 'assignment_details') \
-                    and len(stmt.assignment_details) == 1:
+            elif name.get_definition().type == 'expr_stmt':
                 sys_path.extend(_paths_from_assignment(evaluator, stmt))
     return sys_path
 
