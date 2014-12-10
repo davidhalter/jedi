@@ -283,12 +283,16 @@ def scan_statement_for_calls(stmt, search_name, assignment_details=False):
     return result
 
 
-def get_module_name_parts(module):
+def get_module_names(module, all_scopes):
     """
     Returns a dictionary with name parts as keys and their call paths as
     values.
     """
-    return chain.from_iterable(module.used_names.values())
+    if all_scopes:
+        dct = module.used_names
+    else:
+        dct = module.names_dict
+    return chain.from_iterable(dct.values())
 
 
 def statement_elements_in_statement(stmt):

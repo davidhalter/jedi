@@ -10,10 +10,10 @@ from ..helpers import TestCase
 
 class TestDefinedNames(TestCase):
     def assert_definition_names(self, definitions, names):
-        self.assertEqual([d.name for d in definitions], names)
+        assert [d.name for d in definitions] == names
 
     def check_defined_names(self, source, names):
-        definitions = api.defined_names(textwrap.dedent(source))
+        definitions = api.names(textwrap.dedent(source))
         self.assert_definition_names(definitions, names)
         return definitions
 
