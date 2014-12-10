@@ -513,7 +513,9 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             # Is an Instance with an
             # Arguments([AlreadyEvaluated([ArrayInstance])]) inside
             # Yeah... I know... It's complicated ;-)
-            node = list(element.var_args.argument_node[0])[0].var_args
+            node = list(element.var_args.argument_node[0])[0].var_args.trailer
+        if isinstance(node, er.InstanceElement):
+            return node
         return node.get_parent_until(er.FunctionExecution)
 
     temp_param_add, settings.dynamic_params_for_other_modules = \
@@ -543,11 +545,6 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                         # improves Jedi's speed for array lookups, since we
                         # don't have to check the whole source tree anymore.
                         continue
-                # InstanceElements are special, because they don't get copied,
-                # but have this wrapper around them.
-                if isinstance(comp_arr_parent, er.InstanceElement):
-                    stmt = er.get_instance_el(comp_arr_parent.instance, stmt)
-
                 trailer = name.parent
                 power = trailer.parent
                 trailer_pos = power.children.index(trailer)
@@ -561,6 +558,11 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                             or execution_trailer.children[1] == ')':
                         continue
                 power = helpers.call_of_name(name, cut_own_trailer=True)
+                # InstanceElements are special, because they don't get copied,
+                # but have this wrapper around them.
+                if isinstance(comp_arr_parent, er.InstanceElement):
+                    power = er.get_instance_el(evaluator, comp_arr_parent.instance, power)
+
                 if evaluator.recursion_detector.push_stmt(power):
                     # Check for recursion. Possible by using 'extend' in
                     # combination with function calls.

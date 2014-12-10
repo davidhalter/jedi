@@ -242,12 +242,19 @@ class C():
         a[0]
         return a
 
-    def class_arr(self, el):
+    def literal_arr(self, el):
         self.a = []
         self.a.append(el)
         #? int()
         self.a[0]
         return self.a
+
+    def list_arr(self, el):
+        self.b = list([])
+        self.b.append(el)
+        #? float()
+        self.b[0]
+        return self.b
 
 #? int()
 C().blub(1)[0]
@@ -257,7 +264,12 @@ C().blub2(1)[0]
 #? int()
 C().a[0]
 #? int()
-C().class_arr(1)[0]
+C().literal_arr(1)[0]
+
+#? float()
+C().b[0]
+#? float()
+C().list_arr(1.0)[0]
 
 # -----------------
 # array recursions

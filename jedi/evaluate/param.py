@@ -23,7 +23,7 @@ class Arguments(pr.Base):
         """
         self.argument_node = argument_node
         self._evaluator = evaluator
-        self._trailer = trailer  # Can be None, e.g. in a class definition.
+        self.trailer = trailer  # Can be None, e.g. in a class definition.
 
     def _split(self):
         if isinstance(self.argument_node, (tuple, list)):
@@ -44,7 +44,7 @@ class Arguments(pr.Base):
                     yield 0, child
 
     def get_parent_until(self, *args, **kwargs):
-        return self._trailer.get_parent_until(*args, **kwargs)
+        return self.trailer.get_parent_until(*args, **kwargs)
 
     def as_tuple(self):
         for stars, argument in self._split():
@@ -126,7 +126,7 @@ class Arguments(pr.Base):
 
     def scope(self):
         # Returns the scope in which the arguments are used.
-        return (self._trailer or self.argument_node).get_parent_until(pr.IsScope)
+        return (self.trailer or self.argument_node).get_parent_until(pr.IsScope)
 
     def eval_args(self):
         # TODO this method doesn't work with named args and a lot of other
