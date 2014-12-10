@@ -505,23 +505,22 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
 
     from jedi.evaluate import representation as er, param
 
-    def get_execution_parent(element, *stop_classes):
+    def get_execution_parent(element):
         """ Used to get an Instance/FunctionExecution parent """
         if isinstance(element, Array):
-            # TODO remove!
-            stmt = element._array.parent
+            node = element.atom
         else:
-            # is an Instance with an ArrayInstance inside
-            stmt = element.var_args[0].var_args.parent
-        if isinstance(stmt, er.InstanceElement):
-            stop_classes = list(stop_classes) + [er.Function]
-        return stmt.get_parent_until(stop_classes)
+            # Is an Instance with an
+            # Arguments([AlreadyEvaluated([ArrayInstance])]) inside
+            # Yeah... I know... It's complicated ;-)
+            node = list(element.var_args.argument_node[0])[0].var_args
+        return node.get_parent_until(er.FunctionExecution)
 
     temp_param_add, settings.dynamic_params_for_other_modules = \
         settings.dynamic_params_for_other_modules, False
 
     search_names = ['append', 'extend', 'insert'] if is_list else ['add', 'update']
-    #comp_arr_parent = get_execution_parent(compare_array, er.FunctionExecution)
+    comp_arr_parent = get_execution_parent(compare_array)
 
     res = []
     for add_name in search_names:
@@ -535,17 +534,19 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                 # can search for the same statement, that is in the module
                 # dict. Executions are somewhat special in jedi, since they
                 # literally copy the contents of a function.
-                """
                 if isinstance(comp_arr_parent, er.FunctionExecution):
-                    stmt = comp_arr_parent. \
-                        get_statement_for_position(stmt.start_pos)
-                    if stmt is None:
+                    if comp_arr_parent.start_pos < name.start_pos < comp_arr_parent.end_pos:
+                        name = comp_arr_parent.name_for_position(name.start_pos)
+                    else:
+                        # Don't check definitions that are not defined in the
+                        # same function. This is not "proper" anyway. It also
+                        # improves Jedi's speed for array lookups, since we
+                        # don't have to check the whole source tree anymore.
                         continue
                 # InstanceElements are special, because they don't get copied,
                 # but have this wrapper around them.
                 if isinstance(comp_arr_parent, er.InstanceElement):
                     stmt = er.get_instance_el(comp_arr_parent.instance, stmt)
-    """
 
                 trailer = name.parent
                 power = trailer.parent

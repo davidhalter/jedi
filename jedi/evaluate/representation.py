@@ -654,6 +654,9 @@ class FunctionExecution(Executed):
     def param_by_name(self, name):
         return [n for n in self._get_params() if str(n) == name][0]
 
+    def name_for_position(self, position):
+        return pr.Function.name_for_position(self, position)
+
     def get_defined_names(self):
         """
         Call the default method with the own instance (self implements all
