@@ -347,7 +347,7 @@ class BaseDefinition(object):
         if self._definition.isinstance(pr.ExprStmt):
             return self._evaluator.eval_statement(self._definition)
         elif self._definition.isinstance(pr.Import):
-            return imports.follow_imports(self._evaluator, [self._definition])
+            return imports.ImportWrapper(self._evaluator, self._name).follow()
         else:
             return [self._definition]
 

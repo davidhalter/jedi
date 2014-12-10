@@ -684,10 +684,10 @@ class _Importer(object):
         return names
 
 
-def follow_imports(evaluator, scopes):
+def follow_imports(evaluator, types):
     """
     Here we strip the imports - they don't get resolved necessarily.
-    Really used anymore? Merge with remove_star_imports?
+    TODO Really used anymore? Merge with remove_star_imports?
     """
     result = []
     for s in scopes:
