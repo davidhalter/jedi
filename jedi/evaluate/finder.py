@@ -29,6 +29,7 @@ from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
+from jedi.evaluate.cache import memoize_default
 
 
 class NameFinder(object):
@@ -284,7 +285,6 @@ class NameFinder(object):
 
     def _names_to_types(self, names):
         types = []
-        evaluator = self._evaluator
 
         # Add isinstance and other if/assert knowledge.
         if isinstance(self.name_str, pr.Name):
@@ -293,122 +293,19 @@ class NameFinder(object):
             until = flow_scope.get_parent_until(er.FunctionExecution)
             while flow_scope and not isinstance(until, er.FunctionExecution):
                 # TODO check if result is in scope -> no evaluation necessary
-                n = check_flow_information(evaluator, flow_scope,
+                n = check_flow_information(self._evaluator, flow_scope,
                                            self.name_str, self.position)
                 if n:
                     return n
                 flow_scope = flow_scope.parent
 
         for name in names:
-            typ = name.get_definition()
-            if typ.isinstance(pr.ForStmt):
-                for_types = self._evaluator.eval_element(typ.children[-3])
-                for_types = iterable.get_iterator_types(for_types)
-                types += check_tuple_assignments(for_types, name)
-            elif typ.isinstance(pr.CompFor):
-                for_types = self._evaluator.eval_element(typ.children[3])
-                for_types = iterable.get_iterator_types(for_types)
-                types += check_tuple_assignments(for_types, name)
-            elif isinstance(typ, pr.Param):
-                types += self._eval_param(typ)
-            elif typ.isinstance(pr.ExprStmt):
-                types += self._remove_statements(typ, name)
-            elif typ.isinstance(pr.WithStmt):
-                types += evaluator.eval_element(typ.node_from_name(name))
-            elif isinstance(typ, pr.Import):
-                types += imports.ImportWrapper(self._evaluator, name).follow()
-            elif isinstance(typ, pr.GlobalStmt):
-                types += evaluator.find_types(typ.get_parent_scope(), str(name))
-            elif isinstance(typ, pr.TryStmt):
-                # TODO an exception can also be a tuple. Check for those.
-                # TODO check for types that are not classes and add it to
-                # the static analysis report.
-                exceptions = evaluator.eval_element(name.prev_sibling().prev_sibling())
-                types = list(chain.from_iterable(
-                             evaluator.execute(t) for t in exceptions))
-            else:
-                if typ.isinstance(er.Function):
-                    typ = typ.get_decorated_func()
-                types.append(typ)
-
+            types += _name_to_types(self._evaluator, name, self.scope)
         if not names and isinstance(self.scope, er.Instance):
             # handling __getattr__ / __getattribute__
             types = self._check_getattr(self.scope)
 
         return types
-
-    def _remove_statements(self, stmt, name):
-        """
-        This is the part where statements are being stripped.
-
-        Due to lazy evaluation, statements like a = func; b = a; b() have to be
-        evaluated.
-        """
-        evaluator = self._evaluator
-        types = []
-        # Remove the statement docstr stuff for now, that has to be
-        # implemented with the evaluator class.
-        #if stmt.docstr:
-            #res_new.append(stmt)
-
-        check_instance = None
-        if isinstance(stmt, er.InstanceElement) and stmt.is_class_var:
-            check_instance = stmt.instance
-            stmt = stmt.var
-
-        types += evaluator.eval_statement(stmt, seek_name=name)
-
-        if check_instance is not None:
-            # class renames
-            types = [er.get_instance_el(evaluator, check_instance, a, True)
-                     if isinstance(a, (er.Function, pr.Function))
-                     else a for a in types]
-        return types
-
-    def _eval_param(self, param):
-        evaluator = self._evaluator
-        res_new = []
-        func = param.parent
-
-        cls = func.parent.get_parent_until((pr.Class, pr.Function))
-
-        from jedi.evaluate.param import ExecutedParam, Arguments
-        if isinstance(cls, pr.Class) and param.position_nr == 0 \
-                and not isinstance(param, ExecutedParam):
-            # This is where we add self - if it has never been
-            # instantiated.
-            if isinstance(self.scope, er.InstanceElement):
-                res_new.append(self.scope.instance)
-            else:
-                inst = er.Instance(evaluator, er.wrap(evaluator, cls),
-                                   Arguments(evaluator, ()), is_generated=True)
-                res_new.append(inst)
-            return res_new
-
-        # Instances are typically faked, if the instance is not called from
-        # outside. Here we check it for __init__ functions and return.
-        if isinstance(func, er.InstanceElement) \
-                and func.instance.is_generated and str(func.name) == '__init__':
-            param = func.var.params[param.position_nr]
-
-        # Add docstring knowledge.
-        doc_params = docstrings.follow_param(evaluator, param)
-        if doc_params:
-            return doc_params
-
-        if isinstance(param, ExecutedParam):
-            return res_new + param.eval(self._evaluator)
-        else:
-            # Param owns no information itself.
-            res_new += dynamic.search_params(evaluator, param)
-            if not res_new:
-                if param.stars:
-                    t = 'tuple' if param.stars == 1 else 'dict'
-                    typ = evaluator.find_types(compiled.builtin, t)[0]
-                    res_new = evaluator.execute(typ)
-            if param.default:
-                res_new += evaluator.eval_element(param.default)
-            return res_new
 
     def _resolve_descriptors(self, types):
         """Processes descriptors"""
@@ -424,6 +321,115 @@ class NameFinder(object):
                     continue
             result.append(r)
         return result
+
+
+@memoize_default(evaluator_is_first_arg=True)
+def _name_to_types(evaluator, name, scope):
+    types = []
+    typ = name.get_definition()
+    if typ.isinstance(pr.ForStmt):
+        for_types = evaluator.eval_element(typ.children[-3])
+        for_types = iterable.get_iterator_types(for_types)
+        types += check_tuple_assignments(for_types, name)
+    elif typ.isinstance(pr.CompFor):
+        for_types = evaluator.eval_element(typ.children[3])
+        for_types = iterable.get_iterator_types(for_types)
+        types += check_tuple_assignments(for_types, name)
+    elif isinstance(typ, pr.Param):
+        types += _eval_param(evaluator, typ, scope)
+    elif typ.isinstance(pr.ExprStmt):
+        types += _remove_statements(evaluator, typ, name)
+    elif typ.isinstance(pr.WithStmt):
+        types += evaluator.eval_element(typ.node_from_name(name))
+    elif isinstance(typ, pr.Import):
+        types += imports.ImportWrapper(evaluator, name).follow()
+    elif isinstance(typ, pr.GlobalStmt):
+        types += evaluator.find_types(typ.get_parent_scope(), str(name))
+    elif isinstance(typ, pr.TryStmt):
+        # TODO an exception can also be a tuple. Check for those.
+        # TODO check for types that are not classes and add it to
+        # the static analysis report.
+        exceptions = evaluator.eval_element(name.prev_sibling().prev_sibling())
+        types = list(chain.from_iterable(
+                     evaluator.execute(t) for t in exceptions))
+    else:
+        if typ.isinstance(er.Function):
+            typ = typ.get_decorated_func()
+        types.append(typ)
+    return types
+
+
+def _remove_statements(evaluator, stmt, name):
+    """
+    This is the part where statements are being stripped.
+
+    Due to lazy evaluation, statements like a = func; b = a; b() have to be
+    evaluated.
+    """
+    types = []
+    # Remove the statement docstr stuff for now, that has to be
+    # implemented with the evaluator class.
+    #if stmt.docstr:
+        #res_new.append(stmt)
+
+    check_instance = None
+    if isinstance(stmt, er.InstanceElement) and stmt.is_class_var:
+        check_instance = stmt.instance
+        stmt = stmt.var
+
+    types += evaluator.eval_statement(stmt, seek_name=name)
+
+    if check_instance is not None:
+        # class renames
+        types = [er.get_instance_el(evaluator, check_instance, a, True)
+                 if isinstance(a, (er.Function, pr.Function))
+                 else a for a in types]
+    return types
+
+
+def _eval_param(evaluator, param, scope):
+    res_new = []
+    func = param.parent
+
+    cls = func.parent.get_parent_until((pr.Class, pr.Function))
+
+    from jedi.evaluate.param import ExecutedParam, Arguments
+    if isinstance(cls, pr.Class) and param.position_nr == 0 \
+            and not isinstance(param, ExecutedParam):
+        # This is where we add self - if it has never been
+        # instantiated.
+        if isinstance(scope, er.InstanceElement):
+            res_new.append(scope.instance)
+        else:
+            inst = er.Instance(evaluator, er.wrap(evaluator, cls),
+                               Arguments(evaluator, ()), is_generated=True)
+            res_new.append(inst)
+        return res_new
+
+    # Instances are typically faked, if the instance is not called from
+    # outside. Here we check it for __init__ functions and return.
+    if isinstance(func, er.InstanceElement) \
+            and func.instance.is_generated and str(func.name) == '__init__':
+        param = func.var.params[param.position_nr]
+
+    # Add docstring knowledge.
+    doc_params = docstrings.follow_param(evaluator, param)
+    if doc_params:
+        return doc_params
+
+    if isinstance(param, ExecutedParam):
+        return res_new + param.eval(evaluator)
+    else:
+        # Param owns no information itself.
+        res_new += dynamic.search_params(evaluator, param)
+        if not res_new:
+            if param.stars:
+                t = 'tuple' if param.stars == 1 else 'dict'
+                typ = evaluator.find_types(compiled.builtin, t)[0]
+                res_new = evaluator.execute(typ)
+        if param.default:
+            res_new += evaluator.eval_element(param.default)
+        return res_new
 
 
 def check_flow_information(evaluator, flow, search_name_part, pos):
