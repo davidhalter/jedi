@@ -618,9 +618,8 @@ class Script(object):
             if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
                 analysis.add(self._evaluator, 'import-error', i.namespace_names[-1])
         for stmt in sorted(stmts, key=lambda obj: obj.start_pos):
-            if not (isinstance(stmt.parent, pr.ForFlow)
-                    and stmt.parent.set_stmt == stmt):
-                self._evaluator.eval_statement(stmt)
+            #if not (isinstance(stmt.parent, pr.ForFlow) and stmt.parent.set_stmt == stmt):
+            self._evaluator.eval_statement(stmt)
 
         ana = [a for a in self._evaluator.analysis if self.path == a.path]
         return sorted(set(ana), key=lambda x: x.line)

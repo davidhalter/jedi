@@ -74,7 +74,7 @@ class Warning(Error):
 
 def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
     exception = CODES[name][1]
-    if True or _check_for_exception_catch(evaluator, jedi_obj, exception, payload):
+    if _check_for_exception_catch(evaluator, jedi_obj, exception, payload):
         return
 
     module_path = jedi_obj.get_parent_until().path
@@ -208,14 +208,6 @@ def get_module_statements(module):
                 if stmt is None:
                     continue
 
-            for expression in stmt.expression_list():
-                if isinstance(expression, pr.Array):
-                    new |= add_stmts(expression.values)
-
-                if isinstance(expression, pr.StatementElement):
-                    for element in expression.generate_call_path():
-                        if isinstance(element, pr.Array):
-                            new |= add_stmts(element.values)
             new.add(stmt)
         return new
 
