@@ -94,20 +94,7 @@ class ImportWrapper(pr.Base):
                 scopes = [s.name for s in scopes]
 
             # follow the rest of the import (not FS -> classes, functions)
-            if len(rest) > 1 or rest and self.is_like_search:
-                if ('os', 'path') == importer.str_import_path[:2] \
-                        and self._import.level == 0:
-                    # This is a huge exception, we follow a nested import
-                    # ``os.path``, because it's a very important one in Python
-                    # that is being achieved by messing with ``sys.modules`` in
-                    # ``os``.
-                    for r in rest:
-                        scopes = list(chain.from_iterable(
-                                      self._evaluator.find_types(s, r)
-                                      for s in scopes))
-                else:
-                    scopes = []
-            elif rest:
+            if rest:
                 if is_goto:
                     scopes = list(chain.from_iterable(
                         self._evaluator.find_types(s, rest[0], is_goto=True)
@@ -471,7 +458,23 @@ class _Importer(object):
             except ModuleNotFound:
                 self.import_path = ('flaskext',) + orig_path[2:]
                 return self._real_follow_file_system()
-        return self._real_follow_file_system()
+
+        obj, rest = self._real_follow_file_system()
+
+        # os.path handling
+        if len(self.str_import_path) < 4 \
+                and ('os', 'path') == self.str_import_path[:2] and self.level == 0:
+            # This is a huge exception, we follow a nested import
+            # ``os.path``, because it's a very important one in Python
+            # that is being achieved by messing with ``sys.modules`` in
+            # ``os``.
+            scopes = [obj]
+            for r in rest:
+                scopes = list(chain.from_iterable(
+                              self._evaluator.find_types(s, r)
+                              for s in scopes))
+            return scopes[0], []
+        return obj, rest
 
     def _real_follow_file_system(self):
         if self.file_path:
@@ -642,7 +645,7 @@ class _Importer(object):
                     if os.path.isdir(flaskext):
                         names += self._get_module_names([flaskext])
 
-            from jedi.evaluate import finder, representation as er
+            from jedi.evaluate import finder
             for scope in self.follow(evaluator):
                 # namespace packages
                 if isinstance(scope, pr.Module) and scope.path.endswith('__init__.py'):
@@ -650,7 +653,7 @@ class _Importer(object):
                     paths = self.namespace_packages(pkg_path, self.import_path)
                     names += self._get_module_names([pkg_path] + paths)
 
-                if only_modules or not isinstance(scope, er.ModuleWrapper):
+                if only_modules:
                     # In the case of an import like `from x.` we don't need to
                     # add all the variables.
                     if ('os',) == self.str_import_path and not self.level:

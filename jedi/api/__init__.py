@@ -136,7 +136,7 @@ class Script(object):
             names, level, only_modules = helpers.check_error_statements(module, self._pos)
             completions = []
             #print(importer.completion_names(self._evaluator, True))
-            if names:
+            if names is not None:
                 imp_names = [n for n in names if n.end_pos < self._pos]
                 i = imports.get_importer(self._evaluator, imp_names, module, level)
                 c_names = i.completion_names(self._evaluator, only_modules)
@@ -155,7 +155,7 @@ class Script(object):
                     imp = imports.ImportWrapper(self._evaluator, name)
                     completions += [(n, module) for n in imp.completion_names()]
 
-            if not names and not isinstance(user_stmt, pr.Import):
+            if names is None and not isinstance(user_stmt, pr.Import):
                 if not path and not dot:
                     # add keywords
                     completions += ((k, b) for k in keywords.keyword_names(all=True))
