@@ -220,16 +220,6 @@ def get_module_statements(module):
     def add_stmts(stmts):
         new = set()
         for stmt in stmts:
-            if isinstance(stmt, pr.Flow):
-                while stmt is not None:
-                    new |= add_stmts(stmt.inputs)
-                    stmt = stmt.next
-                continue
-
-                stmt = stmt.stmt
-                if stmt is None:
-                    continue
-
             if stmt.type == 'expr_stmt':
                 new.add(stmt)
 
@@ -249,6 +239,10 @@ def get_module_statements(module):
                 import_names |= set(path[-1] for path in imp.paths())
         nodes |= add_stmts(scope.statements)
         nodes |= add_stmts(r for r in scope.returns if r is not None)
+
+        for flow in scope.flows:
+            if flow.type == 'for_stmt':
+                nodes.add(flow.children[3])
 
         try:
             decorators = scope.get_decorators()

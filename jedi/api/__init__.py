@@ -632,7 +632,7 @@ class Script(object):
             if node.type == 'expr_stmt':
                 check_types(self._evaluator.eval_statement(node))
             else:
-                self._evaluator.eval_element(node)
+                check_types(self._evaluator.eval_element(node))
 
         for dec_func in decorated_funcs:
             er.Function(self._evaluator, dec_func).get_decorated_func()
