@@ -54,6 +54,9 @@ def importer_from_error_statement(error_statement, pos):
     for typ, nodes in error_statement.stack:
         if typ == 'dotted_name':
             names += check_dotted(nodes)
+        elif typ == 'import_name':
+            if nodes[0].start_pos <= pos <= nodes[0].end_pos:
+                return None, 0, False
         elif typ == 'import_from':
             for node in nodes:
                 if isinstance(node, pt.Node) and node.type == 'dotted_name':

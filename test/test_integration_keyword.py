@@ -3,7 +3,6 @@ Test of keywords and ``jedi.keywords``
 """
 import jedi
 from jedi import Script, common
-import pytest
 
 
 def test_goto_assignments_keyword():
@@ -20,11 +19,8 @@ def test_keyword():
     defs = Script("print").goto_definitions()
     assert [d.doc for d in defs]
 
-    with pytest.raises(jedi.NotFoundError):
-        Script("import").goto_assignments()
+    assert Script("import").goto_assignments() == []
 
     completions = Script("import", 1, 1).completions()
-    assert len(completions) == 0
-    with common.ignored(jedi.NotFoundError):  # TODO shouldn't throw that.
-        defs = Script("assert").goto_definitions()
-        assert len(defs) == 1
+    assert len(completions) > 10 and 'if' in [c.name for c in completions]
+    assert Script("assert").goto_definitions() == []
