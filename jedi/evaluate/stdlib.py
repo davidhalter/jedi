@@ -47,14 +47,11 @@ def execute(evaluator, obj, params):
 
 def _follow_param(evaluator, params, index):
     try:
-        stmt = params[index]
+        key, values = list(params.unpack())[index]
     except IndexError:
         return []
     else:
-        if isinstance(stmt, pr.Statement):
-            return evaluator.eval_statement(stmt)
-        else:
-            return [stmt]  # just some arbitrary object
+        return iterable.unite(evaluator.eval_element(v) for v in values)
 
 
 def argument_clinic(string, want_obj=False, want_scope=False):
