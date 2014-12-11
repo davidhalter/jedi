@@ -15,7 +15,7 @@ from jedi._compatibility import u
 from jedi import Script
 from jedi import api
 from jedi.evaluate import imports
-from jedi.parser import Parser
+from jedi.parser import Parser, load_grammar
 
 #jedi.set_debug_function()
 
@@ -55,7 +55,7 @@ class TestRegression(TestCase):
 
         assert should2 == diff_line
 
-        self.assertRaises(jedi.NotFoundError, get_def, cls)
+        assert get_def(cls) == []
 
     @pytest.mark.skipif('True', reason='Skip for now, test case is not really supported.')
     @cwd_at('jedi')
@@ -98,13 +98,12 @@ class TestRegression(TestCase):
         self.assertEqual([d.description for d in defs],
                          ['def f', 'class C'])
 
-    def test_end_pos(self):
+    def test_end_pos_line(self):
         # jedi issue #150
         s = u("x()\nx( )\nx(  )\nx (  )")
-        parser = Parser(s)
-        for i, s in enumerate(parser.module.statements, 3):
-            for c in s.expression_list():
-                self.assertEqual(c.next.end_pos[1], i)
+        parser = Parser(load_grammar(), s)
+        for i, s in enumerate(parser.module.statements):
+            assert s.end_pos == (i + 1, i + 3)
 
     def check_definition_by_marker(self, source, after_cursor, names):
         r"""
