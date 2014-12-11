@@ -7,25 +7,41 @@ from jedi.common import source_to_unicode
 from jedi.cache import underscore_memoization
 from jedi.evaluate import compiled
 from jedi.evaluate.compiled.fake import get_module
-from jedi.parser import tree as pr
+from jedi.parser import tree as pt
+from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
 from jedi.evaluate import helpers
+from jedi.evaluate import iterable
 
 
-class InterpreterNamespace(pr.Module):
+class InterpreterNamespace(pt.Module):
     def __init__(self, evaluator, namespace, parser_module):
         self.namespace = namespace
         self.parser_module = parser_module
         self._evaluator = evaluator
 
+        for key, value in self.namespace.items():
+            arr = self.parser_module.names_dict.setdefault(key, [])
+            arr.append(LazyName(self._evaluator, parser_module, key, value))
+
     @underscore_memoization
     def get_defined_names(self):
+        raise NotImplementedError
+        for name in self.parser_module.get_defined_names():
+            yield name
+        for key, value in self.namespace.items():
+            yield LazyName(self._evaluator, key, value)
+
+    @underscore_memoization
+    def used_names(self):
+        raise NotImplementedError
         for name in self.parser_module.get_defined_names():
             yield name
         for key, value in self.namespace.items():
             yield LazyName(self._evaluator, key, value)
 
     def scope_names_generator(self, position=None):
+        raise NotImplementedError
         yield self, list(self.get_defined_names())
 
     def __getattr__(self, name):
@@ -33,11 +49,15 @@ class InterpreterNamespace(pr.Module):
 
 
 class LazyName(helpers.FakeName):
-    def __init__(self, evaluator, name, value):
+    def __init__(self, evaluator, module, name, value):
         super(LazyName, self).__init__(name)
+        self._module = module
         self._evaluator = evaluator
         self._value = value
         self._name = name
+
+    def is_definition(self):
+        return True
 
     @property
     @underscore_memoization
@@ -47,7 +67,7 @@ class LazyName(helpers.FakeName):
         if inspect.ismodule(obj):
             module = obj
         else:
-            class FakeParent(pr.Base):
+            class FakeParent(pt.Base):
                 parent = compiled.builtin
 
             names = []
@@ -79,12 +99,17 @@ class LazyName(helpers.FakeName):
                 # cut the `c` from `.pyc`
                 with open(path) as f:
                     source = source_to_unicode(f.read())
-                mod = FastParser(source, path[:-1]).module
+                mod = FastParser(load_grammar(), source, path[:-1]).module
                 if not parser_path:
                     return mod
-                found = self._evaluator.eval_call_path(iter(parser_path), mod, None)
+                assert len(parser_path) == 1
+                found = self._evaluator.find_types(mod, parser_path[0], search_global=True)
+                #found = self._evaluator.eval_call_path(iter(parser_path), mod, None)
                 if found:
-                    return found[0]
+                    content = iterable.AlreadyEvaluated(found)
+                    s = pt.ExprStmt([self, pt.Operator('=', (0, 0), ''), content])
+                    s.parent = self._module
+                    return s
                 debug.warning('Interpreter lookup for Python code failed %s',
                               mod)
 
@@ -101,6 +126,6 @@ class LazyName(helpers.FakeName):
 
 def create(evaluator, namespace, parser_module):
     ns = InterpreterNamespace(evaluator, namespace, parser_module)
-    for attr_name in pr.SCOPE_CONTENTS:
-        for something in getattr(parser_module, attr_name):
-            something.parent = ns
+    #for attr_name in pt.SCOPE_CONTENTS:
+    #    for something in getattr(parser_module, attr_name):
+    #        something.parent = ns
