@@ -12,6 +12,7 @@ from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
 from jedi.evaluate import helpers
 from jedi.evaluate import iterable
+from jedi.evaluate import representation as er
 
 
 class InterpreterNamespace(pt.Module):
@@ -67,9 +68,6 @@ class LazyName(helpers.FakeName):
         if inspect.ismodule(obj):
             module = obj
         else:
-            class FakeParent(pt.Base):
-                parent = compiled.builtin
-
             names = []
             try:
                 o = obj.__objclass__
@@ -85,10 +83,12 @@ class LazyName(helpers.FakeName):
                 # Unfortunately in some cases like `int` there's no __module__
                 module = builtins
             else:
+                # TODO this import is wrong. Yields x for x.y.z instead of z
                 module = __import__(module_name)
-            parser_path = [helpers.FakeName(n, FakeParent()) for n in names]
+            parser_path = names
         raw_module = get_module(self._value)
 
+        found = []
         try:
             path = module.__file__
         except AttributeError:
@@ -100,24 +100,27 @@ class LazyName(helpers.FakeName):
                 with open(path) as f:
                     source = source_to_unicode(f.read())
                 mod = FastParser(load_grammar(), source, path[:-1]).module
-                if not parser_path:
-                    return mod
-                assert len(parser_path) == 1
-                found = self._evaluator.find_types(mod, parser_path[0], search_global=True)
-                #found = self._evaluator.eval_call_path(iter(parser_path), mod, None)
-                if found:
-                    content = iterable.AlreadyEvaluated(found)
-                    s = pt.ExprStmt([self, pt.Operator('=', (0, 0), ''), content])
-                    s.parent = self._module
-                    return s
-                debug.warning('Interpreter lookup for Python code failed %s',
-                              mod)
+                if parser_path:
+                    assert len(parser_path) == 1
+                    found = self._evaluator.find_types(mod, parser_path[0], search_global=True)
+                else:
+                    found = [er.wrap(self._evaluator, mod)]
 
-        module = compiled.CompiledObject(raw_module)
-        if raw_module == builtins:
-            # The builtins module is special and always cached.
-            module = compiled.builtin
-        return compiled.create(self._evaluator, self._value, module, module)
+                if not found:
+                    debug.warning('Possibly an interpreter lookup for Python code failed %s',
+                                  parser_path)
+
+        if not found:
+            evaluated = compiled.CompiledObject(obj)
+            if evaluated == builtins:
+                # The builtins module is special and always cached.
+                evaluated = compiled.builtin
+            found = [evaluated]
+
+        content = iterable.AlreadyEvaluated(found)
+        stmt = pt.ExprStmt([self, pt.Operator('=', (0, 0), ''), content])
+        stmt.parent = self._module
+        return stmt
 
     @parent.setter
     def parent(self, value):

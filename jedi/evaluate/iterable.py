@@ -340,7 +340,9 @@ class FakeSequence(_FakeArray):
 
 class AlreadyEvaluated(frozenset):
     """A simple container to add already evaluated objects to an array."""
-    pass
+    def get_code(self):
+        # For debugging purposes.
+        return str(self)
 
 
 class MergedNodes(frozenset):
@@ -658,7 +660,7 @@ class Slice(object):
             if element is None:
                 return None
 
-            result = precedence.process_precedence_element(self._evaluator, element)
+            result = self._evaluator.eval_element(element)
             if len(result) != 1:
                 # We want slices to be clear defined with just one type.
                 # Otherwise we will return an empty slice object.
@@ -679,13 +681,14 @@ def create_indexes_or_slices(evaluator, index):
         start, stop, step = None, None, None
         result = []
         for el in index.children:
-            if el == ':' and not result:
-                result.append(None)
+            if el == ':':
+                if not result:
+                    result.append(None)
             elif pr.is_node(el, 'sliceop'):
                 if len(el.children) == 2:
                     result.append(el.children[1])
             else:
-                result.append(result)
+                result.append(el)
         result += [None] * (3 - len(result))
 
         return (Slice(evaluator, *result),)
