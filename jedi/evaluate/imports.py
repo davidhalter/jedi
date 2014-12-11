@@ -128,7 +128,8 @@ class ImportWrapper(pr.Base):
                         for s in scopes))
                 else:
                     print(self._import, scopes, rest)
-                    if self._import.type == 'import_from':
+                    if self._import.type == 'import_from' \
+                            or importer.str_import_path == ('os', 'path'):
                         scopes = importer.follow_rest(scopes[0], rest)
                     else:
                         scopes = []

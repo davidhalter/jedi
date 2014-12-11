@@ -717,7 +717,7 @@ class SubModule(Scope, Module):
         # the future print statement).
         for imp in self.imports:
             if isinstance(imp, ImportFrom) and imp.level == 0:
-                for path in imp._paths():
+                for path in imp.paths():
                     if [str(name) for name in path] == ['__future__', 'absolute_import']:
                         return True
         return False
@@ -986,7 +986,7 @@ class Import(Simple):
         except KeyError:
             pass
 
-        for path in self._paths():
+        for path in self.paths():
             if name in path:
                 return path[:path.index(name) + 1]
         raise ValueError('Name should be defined in the import itself')
@@ -1040,9 +1040,13 @@ class ImportFrom(Import):
         """
         The last name defined in a star import.
         """
-        return self._paths()[-1][-1]
+        return self.paths()[-1][-1]
 
-    def _paths(self):
+    def paths(self):
+        """
+        The import paths defined in an import statement. Typically an array
+        like this: ``[<Name: datetime>, <Name: date>]``.
+        """
         for n in self.children[1:]:
             if n not in ('.', '...'):
                 break
@@ -1070,7 +1074,7 @@ class ImportName(Import):
         """The level parameter of ``__import__``."""
         return 0  # Obviously 0 for imports without from.
 
-    def _paths(self):
+    def paths(self):
         return [path for path, alias in self._dotted_as_names()]
 
     def _dotted_as_names(self):

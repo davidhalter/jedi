@@ -216,6 +216,8 @@ def get_module_statements(module):
     for scope in module.walk():
         for imp in set(scope.imports):
             import_names |= set(imp.get_defined_names())
+            if imp.is_nested():
+                import_names |= set(path[-1] for path in imp.paths())
         stmts |= add_stmts(scope.statements)
         stmts |= add_stmts(r for r in scope.returns if r is not None)
 
