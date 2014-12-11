@@ -420,9 +420,17 @@ class Script(object):
                 definitions = set(signature._definition
                                   for signature in self.call_signatures())
 
-        if not definitions:
-            if goto_path:
-                definitions = set(self._prepare_goto(goto_path))
+        if re.match('\w[\w\d_]*$', goto_path) and not definitions:
+            user_stmt = self._parser.user_stmt()
+            if user_stmt is not None and user_stmt.type == 'expr_stmt':
+                for name in user_stmt.get_defined_names():
+                    if name.start_pos <= self._pos <= name.end_pos:
+                        # TODO scaning for a name and then using it should be
+                        # the default.
+                        definitions = set(self._evaluator.goto_definition(name))
+
+        if not definitions and goto_path:
+            definitions = set(self._prepare_goto(goto_path))
 
         definitions = resolve_import_paths(definitions)
         names = [s.name for s in definitions

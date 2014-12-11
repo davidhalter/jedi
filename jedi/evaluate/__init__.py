@@ -454,6 +454,9 @@ class Evaluator(object):
             return types
 
     def goto_definition(self, name):
+        def_ = name.get_definition()
+        if def_.type == 'expr_stmt' and name in def_.get_defined_names():
+            return self.eval_statement(def_, name)
         call = call_of_name(name)
         return self.eval_element(call)
 
