@@ -502,7 +502,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
 
     >>> from jedi._compatibility import u
     >>> from jedi.parser import Parser, load_grammar
-    >>> parser = Parser(load_grammar('python3.4'), u('''
+    >>> parser = Parser(load_grammar(), u('''
     ... x = ['a', 'b', 'c']
     ... def func():
     ...     y = None
@@ -515,7 +515,7 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
     scope.
 
     >>> from jedi.evaluate import Evaluator
-    >>> pairs = list(get_names_of_scope(Evaluator(), scope))
+    >>> pairs = list(get_names_of_scope(Evaluator(load_grammar()), scope))
     >>> pairs[0]
     (<Function: func@3-5>, [<Name: y@4,4>])
 

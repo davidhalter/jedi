@@ -236,7 +236,7 @@ class BaseDefinition(object):
         >>> script = Script(source, 1, len('def f'), 'example.py')
         >>> doc = script.goto_definitions()[0].docstring()
         >>> print(doc)
-        f(a, b = 1)
+        f(a, b=1)
         <BLANKLINE>
         Document for function f.
 

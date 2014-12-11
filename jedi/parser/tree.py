@@ -19,18 +19,18 @@ The easiest way to play with this module is to use :class:`parsing.Parser`.
 :attr:`parsing.Parser.module` holds an instance of :class:`SubModule`:
 
 >>> from jedi._compatibility import u
->>> from jedi.parser import Parser
->>> parser = Parser(u('import os'), 'example.py')
+>>> from jedi.parser import Parser, load_grammar
+>>> parser = Parser(load_grammar(), u('import os'), 'example.py')
 >>> submodule = parser.module
 >>> submodule
-<SubModule: example.py@1-1>
+<SubModule: example.py@1-2>
 
 Any subclasses of :class:`Scope`, including :class:`SubModule` has
 attribute :attr:`imports <Scope.imports>`.  This attribute has import
 statements in this scope.  Check this out:
 
 >>> submodule.imports
-[<Import: import os @1,0>]
+[<ImportName: import os@1,0>]
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 
@@ -557,8 +557,8 @@ class Scope(Simple, DocstringMixin):
         Get all defined names in this scope. Useful for autocompletion.
 
         >>> from jedi._compatibility import u
-        >>> from jedi.parser import Parser
-        >>> parser = Parser(u('''
+        >>> from jedi.parser import Parser, load_grammar
+        >>> parser = Parser(load_grammar(), u('''
         ... a = x
         ... b = y
         ... b.c = z

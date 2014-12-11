@@ -748,7 +748,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         yield self, self._module_attributes()
         for star_module in self.star_imports():
             yield self, star_module.get_defined_names()
-        yield self, self.base.global_names
+        if self.base.global_names:
+            yield self, self.base.global_names
         sub_modules = self._sub_modules()
         if sub_modules:
             yield self, self._sub_modules()
