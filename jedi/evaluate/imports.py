@@ -37,6 +37,33 @@ class ModuleNotFound(Exception):
         self.name_part = name_part
 
 
+def completion_names(evaluator, imp, pos):
+    name = imp.name_for_position(pos)
+    module = imp.get_parent_until()
+    if name is None:
+        level = 0
+        for node in imp.children:
+            if node.end_pos <= pos:
+                if node in ('.', '...'):
+                    level += len(node.value)
+            print(node, level)
+        import_path = []
+    else:
+        # Completion on an existing name.
+
+        # The import path needs to be reduced by one, because we're completing.
+        import_path = imp.path_for_name(name)[:-1]
+        level = imp.level
+
+    importer = get_importer(evaluator, tuple(import_path), module, level)
+    if isinstance(imp, pr.ImportFrom):
+        c = imp.children
+        only_modules = c[c.index('import')].start_pos >= pos
+    else:
+        only_modules = True
+    return importer.completion_names(evaluator, only_modules)
+
+
 class ImportWrapper(pr.Base):
     GlobalNamespace = 'TODO PLEASE DELETE ME'
     def __init__(self, evaluator, name):

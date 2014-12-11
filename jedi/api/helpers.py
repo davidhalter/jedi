@@ -59,13 +59,15 @@ def importer_from_error_statement(error_statement, pos):
                 return None, 0, False
         elif typ == 'import_from':
             for node in nodes:
-                if isinstance(node, pt.Node) and node.type == 'dotted_name':
+                if node.start_pos >= pos:
+                    break
+                elif isinstance(node, pt.Node) and node.type == 'dotted_name':
                     names += check_dotted(node.children)
                 elif node in ('.', '...'):
                     level += len(node.value)
-                elif isinstance(node, pt.Name) and node.start_pos <= pos:
+                elif isinstance(node, pt.Name):
                     names.append(node)
-                elif node == 'import' and node.start_pos <= pos:
+                elif node == 'import':
                     only_modules = False
 
     return names, level, only_modules

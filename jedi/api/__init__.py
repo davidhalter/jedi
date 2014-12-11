@@ -141,19 +141,22 @@ class Script(object):
                 i = imports.get_importer(self._evaluator, imp_names, module, level)
                 c_names = i.completion_names(self._evaluator, only_modules)
                 completions = [(name, module) for name in c_names]
-            if isinstance(user_stmt, pr.Import):
-                # TODO this paragraph is necessary, but not sure it works.
-                context = self._user_context.get_context()
-                next(context)  # skip the path
+
+            # TODO this paragraph is necessary, but not sure it works.
+            context = self._user_context.get_context()
+            
+            print(next(self._user_context.get_context()), 'x')
+            if not next(context).startswith('.'):  # skip the path
                 if next(context) == 'from':
                     # completion is just "import" if before stands from ..
                     completions += ((k, bs) for k in keywords.keyword_names('import'))
+                    return completions
 
+            if isinstance(user_stmt, pr.Import):
                 module = self._parser.module()
-                name = user_stmt.name_for_position(self._pos)
-                if name is not None:
-                    imp = imports.ImportWrapper(self._evaluator, name)
-                    completions += [(n, module) for n in imp.completion_names()]
+                completion_names = imports.completion_names(self._evaluator,
+                                                            user_stmt, self._pos)
+                return completions + [(n, module) for n in completion_names]
 
             if names is None and not isinstance(user_stmt, pr.Import):
                 if not path and not dot:
