@@ -32,9 +32,9 @@ from jedi.evaluate.cache import memoize_default, NO_DEFAULT
 
 
 class ModuleNotFound(Exception):
-    def __init__(self, name_part):
+    def __init__(self, name):
         super(ModuleNotFound, self).__init__()
-        self.name_part = name_part
+        self.name = name
 
 
 def completion_names(evaluator, imp, pos):
@@ -101,16 +101,16 @@ class ImportWrapper(pr.Base):
             try:
                 module, rest = importer.follow_file_system()
             except ModuleNotFound as e:
-                analysis.add(self._evaluator, 'import-error', e.name_part)
+                analysis.add(self._evaluator, 'import-error', e.name)
                 return []
 
             if module is None:
                 return []
 
-            if self._import.is_nested() and not self.nested_resolve:
-                scopes = [NestedImportModule(module, self._import)]
-            else:
-                scopes = [module]
+            #if self._import.is_nested() and not self.nested_resolve:
+            #    scopes = [NestedImportModule(module, self._import)]
+            #else:
+            scopes = [module]
 
             #star_imports = remove_star_imports(self._evaluator, module)
             #if star_imports:
@@ -127,13 +127,18 @@ class ImportWrapper(pr.Base):
                         self._evaluator.find_types(s, rest[0], is_goto=True)
                         for s in scopes))
                 else:
-                    scopes = importer.follow_rest(scopes[0], rest)
+                    print(self._import, scopes, rest)
+                    if self._import.type == 'import_from':
+                        scopes = importer.follow_rest(scopes[0], rest)
+                    else:
+                        scopes = []
             debug.dbg('after import: %s', scopes)
             if not scopes:
                 analysis.add(self._evaluator, 'import-error', importer.import_path[-1])
         finally:
             self._evaluator.recursion_detector.pop_stmt()
         return scopes
+
 
 class ImportWrapper2(pr.Base):
     """
@@ -284,7 +289,7 @@ class ImportWrapper2(pr.Base):
                 try:
                     module, rest = self._importer.follow_file_system()
                 except ModuleNotFound as e:
-                    analysis.add(self._evaluator, 'import-error', e.name_part)
+                    analysis.add(self._evaluator, 'import-error', e.name)
                     return []
 
                 if module is None:
@@ -346,7 +351,7 @@ class NestedImportModule(pr.Module):
         # This is not an existing Import statement. Therefore, set position to
         # 0 (0 is not a valid line number).
         zero = (0, 0)
-        names = [unicode(name_part) for name_part in i.namespace_names[1:]]
+        names = [unicode(name) for name in i.namespace_names[1:]]
         name = helpers.FakeName(names, self._nested_import)
         new = pr.Import(i._sub_module, zero, zero, name)
         new.parent = self._module
@@ -435,7 +440,7 @@ class _Importer(object):
     @property
     def str_import_path(self):
         """Returns the import path as pure strings instead of `Name`."""
-        return tuple(str(name_part) for name_part in self.import_path)
+        return tuple(str(name) for name in self.import_path)
 
     def get_relative_path(self):
         path = self.file_path

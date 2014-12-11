@@ -212,9 +212,10 @@ def get_module_statements(module):
         return new
 
     stmts = set()
-    imports = set()
+    import_names = set()
     for scope in module.walk():
-        imports |= set(scope.imports)
+        for imp in set(scope.imports):
+            import_names |= set(imp.get_defined_names())
         stmts |= add_stmts(scope.statements)
         stmts |= add_stmts(r for r in scope.returns if r is not None)
 
@@ -224,4 +225,4 @@ def get_module_statements(module):
             pass
         else:
             stmts |= add_stmts(decorators)
-    return stmts, imports
+    return stmts, import_names

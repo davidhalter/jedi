@@ -610,11 +610,11 @@ class Script(object):
 
     def _analysis(self):
         #statements = set(chain(*self._parser.module().used_names.values()))
-        stmts, imps = analysis.get_module_statements(self._parser.module())
+        stmts, imp_names = analysis.get_module_statements(self._parser.module())
         # Sort the statements so that the results are reproducible.
-        for i in imps:
-            iw = imports.ImportWrapper(self._evaluator, i,
-                                       nested_resolve=True).follow()
+        for n in imp_names:
+            iw = imports.ImportWrapper(self._evaluator, n).follow()
+            i = n.get_definition()
             if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
                 analysis.add(self._evaluator, 'import-error', i.namespace_names[-1])
         for stmt in sorted(stmts, key=lambda obj: obj.start_pos):

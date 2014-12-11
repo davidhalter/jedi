@@ -992,16 +992,7 @@ class Import(Simple):
         raise ValueError('Name should be defined in the import itself')
 
     def is_nested(self):
-        """
-        This checks for the special case of nested imports, without aliases and
-        from statement::
-
-            import foo.bar
-        """
-        return False
-        # TODO use this check differently?
-        return not self.alias and not self.from_names \
-            and len(self.namespace_names) > 1
+        return False  # By default, sub classes may overwrite this behavior
 
     def is_star_import(self):
         return self.children[-1] == '*'
@@ -1101,6 +1092,16 @@ class ImportName(Import):
             else:
                 # dotted_names
                 yield as_name.children[::2], alias
+
+    def is_nested(self):
+        """
+        This checks for the special case of nested imports, without aliases and
+        from statement::
+
+            import foo.bar
+        """
+        return [1 for path, alias in self._dotted_as_names()
+                if alias is None and len(path) > 1]
 
     def aliases(self):
         return dict((alias, path[-1]) for path, alias in self._dotted_as_names()
