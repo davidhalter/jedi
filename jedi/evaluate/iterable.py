@@ -248,6 +248,9 @@ class Array(IterableWrapper):
         # Can raise an IndexError
         return self._evaluator.eval_element(self._items()[mixed_index])
 
+    def iter_content(self):
+        return self.values()
+
     def scope_names_generator(self, position=None):
         """
         It returns e.g. for a list: append, pop, ...

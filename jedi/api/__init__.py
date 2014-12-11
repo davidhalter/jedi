@@ -609,17 +609,33 @@ class Script(object):
                 for o in origins if hasattr(o, 'py__call__')]
 
     def _analysis(self):
+        def check_types(types):
+            for typ in types:
+                try:
+                    f = typ.iter_content
+                except AttributeError:
+                    pass
+                else:
+                    check_types(f())
+
         #statements = set(chain(*self._parser.module().used_names.values()))
-        stmts, imp_names = analysis.get_module_statements(self._parser.module())
+        nodes, imp_names, decorated_funcs = \
+            analysis.get_module_statements(self._parser.module())
         # Sort the statements so that the results are reproducible.
         for n in imp_names:
             iw = imports.ImportWrapper(self._evaluator, n).follow()
             i = n.get_definition()
             if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
                 analysis.add(self._evaluator, 'import-error', i.namespace_names[-1])
-        for stmt in sorted(stmts, key=lambda obj: obj.start_pos):
+        for node in sorted(nodes, key=lambda obj: obj.start_pos):
             #if not (isinstance(stmt.parent, pr.ForFlow) and stmt.parent.set_stmt == stmt):
-            self._evaluator.eval_statement(stmt)
+            if node.type == 'expr_stmt':
+                check_types(self._evaluator.eval_statement(node))
+            else:
+                self._evaluator.eval_element(node)
+
+        for dec_func in decorated_funcs:
+            er.Function(self._evaluator, dec_func).get_decorated_func()
 
         ana = [a for a in self._evaluator.analysis if self.path == a.path]
         return sorted(set(ana), key=lambda x: x.line)

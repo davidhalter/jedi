@@ -64,8 +64,8 @@ class Error(object):
 
     def __repr__(self):
         return '<%s %s: %s@%s,%s>' % (self.__class__.__name__,
-                                     self.name, self.path,
-                                     self._start_pos[0], self._start_pos[1])
+                                      self.name, self.path,
+                                      self._start_pos[0], self._start_pos[1])
 
 
 class Warning(Error):
@@ -195,6 +195,28 @@ def get_module_statements(module):
     Returns the statements used in a module. All these statements should be
     evaluated to check for potential exceptions.
     """
+    def check_children(node):
+        try:
+            children = node.children
+        except AttributeError:
+            return []
+        else:
+            nodes = []
+            for child in children:
+                nodes += check_children(child)
+                if child.type == 'trailer':
+                    c = child.children
+                    if c[0] == '(' and c[1] != ')':
+                        if c[1].type != 'arglist':
+                            nodes.append(c[1])
+                        else:
+                            for argument in c[1].children:
+                                if argument.type == 'argument':
+                                    nodes.append(argument.children[-1])
+                                elif argument.type != 'operator':
+                                    nodes.append(argument)
+            return nodes
+
     def add_stmts(stmts):
         new = set()
         for stmt in stmts:
@@ -203,28 +225,36 @@ def get_module_statements(module):
                     new |= add_stmts(stmt.inputs)
                     stmt = stmt.next
                 continue
-            if isinstance(stmt, pr.KeywordStatement):
+
                 stmt = stmt.stmt
                 if stmt is None:
                     continue
 
-            new.add(stmt)
+            if stmt.type == 'expr_stmt':
+                new.add(stmt)
+
+            for node in stmt.children:
+                new.update(check_children(node))
+                if node.type != 'keyword' and stmt.type != 'expr_stmt':
+                    new.add(node)
         return new
 
-    stmts = set()
+    nodes = set()
     import_names = set()
+    decorated_funcs = []
     for scope in module.walk():
         for imp in set(scope.imports):
             import_names |= set(imp.get_defined_names())
             if imp.is_nested():
                 import_names |= set(path[-1] for path in imp.paths())
-        stmts |= add_stmts(scope.statements)
-        stmts |= add_stmts(r for r in scope.returns if r is not None)
+        nodes |= add_stmts(scope.statements)
+        nodes |= add_stmts(r for r in scope.returns if r is not None)
 
         try:
-            decorators = scope.decorators
+            decorators = scope.get_decorators()
         except AttributeError:
             pass
         else:
-            stmts |= add_stmts(decorators)
-    return stmts, import_names
+            if decorators:
+                decorated_funcs.append(scope)
+    return nodes, import_names, decorated_funcs

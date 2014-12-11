@@ -375,7 +375,7 @@ class FakeImport(pr.Import):
     def start_pos(self):
         return 0, 0
 
-    def _paths(self):
+    def paths(self):
         return [[self.name]]
 
 

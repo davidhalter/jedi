@@ -159,7 +159,7 @@ class CompiledObject(Base):
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
-    def get_index_types(self, evaluator, index_array):
+    def get_index_types(self, evaluator, index_array=()):
         # If the object doesn't have `__getitem__`, just raise the
         # AttributeError.
         if not hasattr(self.obj, '__getitem__'):
