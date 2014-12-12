@@ -223,7 +223,10 @@ def get_module_statements(module):
                     c = child.children
                     if c[0] == '(' and c[1] != ')':
                         if c[1].type != 'arglist':
-                            nodes.append(c[1])
+                            if c[1].type == 'argument':
+                                nodes.append(c[1].children[-1])
+                            else:
+                                nodes.append(c[1])
                         else:
                             for argument in c[1].children:
                                 if argument.type == 'argument':
