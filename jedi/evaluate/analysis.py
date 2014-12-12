@@ -160,8 +160,9 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
                         if check_match(cls, exception):
                             return True
 
-    def check_hasattr(node):
+    def check_hasattr(node, suite):
         try:
+            assert suite.start_pos <= jedi_obj.start_pos < suite.end_pos
             assert node.type == 'power'
             base = node.children[0]
             assert base.type == 'name' and base.value == 'hasattr'
@@ -175,14 +176,16 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
             assert len(args) == 2
 
             # Check name
-            assert len(args[1]) == 1
-            names = evaluator.eval_element(args[1][0])
+            key, values = args[1]
+            assert len(values) == 1
+            names = evaluator.eval_element(values[0])
             assert len(names) == 1 and isinstance(names[0], CompiledObject)
             assert names[0].obj == str(payload[1])
 
             # Check objects
-            assert len(args[0]) == 1
-            objects = evaluator.eval_element(args[0][0])
+            key, values = args[0]
+            assert len(values) == 1
+            objects = evaluator.eval_element(values[0])
             return payload[0] in objects
         except AssertionError:
             return False
@@ -195,7 +198,7 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
                 return True
             # hasattr check
             if exception == AttributeError and obj.isinstance(pr.IfStmt, pr.WhileStmt):
-                if check_hasattr(obj.children[1]):
+                if check_hasattr(obj.children[1], obj.children[3]):
                     return True
         obj = obj.parent
 
