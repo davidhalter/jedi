@@ -955,6 +955,17 @@ class ForStmt(Flow):
 class TryStmt(Flow):
     type = 'try_stmt'
 
+    def except_clauses(self):
+        """
+        Returns the ``test`` nodes found in ``except_clause`` nodes.
+        Returns ``[None]`` for except clauses without an exception given.
+        """
+        for node in self.children:
+            if node.type == 'except_clause':
+                yield node.children[1]
+            elif node == 'except':
+                yield None
+
 
 class WithStmt(Flow):
     type = 'with_stmt'

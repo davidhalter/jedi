@@ -1,6 +1,7 @@
 """
 Module for statical analysis.
 """
+from itertools import chain
 
 from jedi import debug
 from jedi.parser import tree as pr
@@ -127,59 +128,70 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
     it.
     Returns True if the exception was catched.
     """
-    def check_match(cls):
+    def check_match(cls, exception):
         try:
             return isinstance(cls, CompiledObject) and issubclass(exception, cls.obj)
         except TypeError:
             return False
 
-    def check_try_for_except(obj):
-        while obj.next is not None:
-            obj = obj.next
-            if not obj.inputs:
-                # No import implies a `except:` catch, which catches
-                # everything.
-                return True
+    def check_try_for_except(obj, exception):
+        # Only nodes in try
+        iterator = iter(obj.children)
+        for branch_type in iterator:
+            colon = next(iterator)
+            suite = next(iterator)
+            if branch_type == 'try' \
+                    and not (branch_type.start_pos < jedi_obj.start_pos <= suite.end_pos):
+                return False
 
-            for i in obj.inputs:
-                except_classes = evaluator.eval_statement(i)
+        for node in obj.except_clauses():
+            if node is None:
+                return True  # An exception block that catches everything.
+            else:
+                except_classes = evaluator.eval_element(node)
                 for cls in except_classes:
                     from jedi.evaluate import iterable
                     if isinstance(cls, iterable.Array) and cls.type == 'tuple':
                         # multiple exceptions
                         for c in cls.values():
-                            if check_match(c):
+                            if check_match(c, exception):
                                 return True
                     else:
-                        if check_match(cls):
+                        if check_match(cls, exception):
                             return True
-        return False
 
     def check_hasattr(node):
         try:
-            assert len(expression_list) == 1
-            call = expression_list[0]
-            assert isinstance(call, pr.Call) and str(call.name) == 'hasattr'
-            assert call.next_is_execution()
-            execution = call.next
-            assert execution and len(execution) == 2
+            assert node.type == 'power'
+            base = node.children[0]
+            assert base.type == 'name' and base.value == 'hasattr'
+            trailer = node.children[1]
+            assert trailer.type == 'trailer'
+            arglist = trailer.children[1]
+            assert arglist.type == 'arglist'
+            from jedi.evaluate.param import Arguments
+            args = list(Arguments(evaluator, arglist).unpack())
+            # Arguments should be very simple
+            assert len(args) == 2
 
-            # check if the names match
-            names = evaluator.eval_statement(execution[1])
+            # Check name
+            assert len(args[1]) == 1
+            names = evaluator.eval_element(args[1][0])
             assert len(names) == 1 and isinstance(names[0], CompiledObject)
             assert names[0].obj == str(payload[1])
 
-            objects = evaluator.eval_statement(execution[0])
+            # Check objects
+            assert len(args[0]) == 1
+            objects = evaluator.eval_element(args[0][0])
             return payload[0] in objects
         except AssertionError:
-            pass
-        return False
+            return False
 
     obj = jedi_obj
     while obj is not None and not obj.isinstance(pr.Function, pr.Class):
         if obj.isinstance(pr.Flow):
             # try/except catch check
-            if obj.isinstance(pr.TryStmt) and check_try_for_except(obj):
+            if obj.isinstance(pr.TryStmt) and check_try_for_except(obj, exception):
                 return True
             # hasattr check
             if exception == AttributeError and obj.isinstance(pr.IfStmt, pr.WhileStmt):
@@ -243,6 +255,8 @@ def get_module_statements(module):
         for flow in scope.flows:
             if flow.type == 'for_stmt':
                 nodes.add(flow.children[3])
+            elif flow.type == 'try_stmt':
+                nodes.update(e for e in flow.except_clauses() if e is not None)
 
         try:
             decorators = scope.get_decorators()
