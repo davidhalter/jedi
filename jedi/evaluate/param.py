@@ -62,8 +62,8 @@ class Arguments(pr.Base):
                 iterators = [_iterate_star_args(self._evaluator, a, None, None)
                              for a in arrays]
                 iterators = list(iterators)
-                for values in list(zip_longest(*iterators, fillvalue=())):
-                    yield None, values
+                for values in list(zip_longest(*iterators)):
+                    yield None, [v for v in values if v is not None]
             elif stars == 2:
                 arrays = self._evaluator.eval_element(el)
                 dicts = [_star_star_dict(self._evaluator, a, None, None)
