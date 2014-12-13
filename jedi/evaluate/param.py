@@ -136,6 +136,13 @@ class Arguments(pr.Base):
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.argument_node)
 
+    def get_calling_var_args(self):
+        if pr.is_node(self.argument_node, 'arglist', 'argument') \
+                or self.argument_node == () and self.trailer is not None:
+            return _get_calling_var_args(self._evaluator, self)
+        else:
+            return None
+
 
 class ExecutedParam(pr.Param):
     def __init__(self, values):
@@ -192,7 +199,7 @@ def _get_calling_var_args(evaluator, var_args):
             # now, we can change it later, if we need to.
             if isinstance(param.var_args, pr.Array):
                 var_args = param.var_args
-    return var_args
+    return var_args.argument_node or var_args.trailer
 
 
 def get_params(evaluator, func, var_args):
@@ -238,7 +245,7 @@ def get_params(evaluator, func, var_args):
                 calling_va = _get_calling_var_args(evaluator, var_args)
                 if calling_va is not None:
                     analysis.add(evaluator, 'type-error-multiple-values',
-                                 calling_va.argument_node, message=m)
+                                 calling_va, message=m)
             else:
                 keys_used.add(k)
             key, va_values = next(var_arg_iterator, (None, ()))
@@ -271,8 +278,8 @@ def get_params(evaluator, func, var_args):
             else:
                 # No value: Return an empty container
                 values = []
-                if not keys_only and isinstance(var_args, pr.Array):
-                    calling_va = _get_calling_var_args(evaluator, var_args)
+                if not keys_only:
+                    calling_va = var_args.get_calling_var_args()
                     if calling_va is not None:
                         m = _error_argument_count(func, len(unpacked_va))
                         analysis.add(evaluator, 'type-error-too-few-arguments',
@@ -295,7 +302,6 @@ def get_params(evaluator, func, var_args):
             result.append(_gen_param_name_copy(evaluator, func, var_args,
                                                param, [], values))
 
-
             if not (non_matching_keys or had_multiple_value_error
                     or param.stars or param.default):
                 # add a warning only if there's not another one.
@@ -309,14 +315,21 @@ def get_params(evaluator, func, var_args):
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
             % (func.name, key)
         for value in va_values:
-            analysis.add(evaluator, 'type-error-keyword-argument', value, message=m)
+            analysis.add(evaluator, 'type-error-keyword-argument', value.parent, message=m)
 
     remaining_params = list(var_arg_iterator)
     if remaining_params:
         m = _error_argument_count(func, len(unpacked_va))
-        for p in remaining_params[0][1]:
+        # Just report an error for the first param that is not needed (like
+        # cPython).
+        first_key, first_values = remaining_params[0]
+        for v in first_values:
+            if first_key is not None:
+                # Is a keyword argument, return the whole thing instead of just
+                # the value node.
+                v = v.parent
             analysis.add(evaluator, 'type-error-too-many-arguments',
-                         p, message=m)
+                         v, message=m)
     return result
 
 
