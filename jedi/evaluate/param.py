@@ -197,7 +197,7 @@ def _get_calling_var_args(evaluator, var_args):
                 break
             # We never want var_args to be a tuple. This should be enough for
             # now, we can change it later, if we need to.
-            if isinstance(param.var_args, pr.Array):
+            if isinstance(param.var_args, Arguments):
                 var_args = param.var_args
     return var_args.argument_node or var_args.trailer
 
@@ -256,13 +256,14 @@ def get_params(evaluator, func, var_args):
         if param.stars == 1:
             # *args param
             array_type = pr.Array.TUPLE
-            lst_values = [iterable.MergedNodes(va_values)]
+            lst_values = [iterable.MergedNodes(va_values)] if va_values else []
             for key, va_values in var_arg_iterator:
                 # Iterate until a key argument is found.
                 if key:
                     var_arg_iterator.push_back((key, va_values))
                     break
-                lst_values.append(iterable.MergedNodes(va_values))
+                if va_values:
+                    lst_values.append(iterable.MergedNodes(va_values))
             seq = iterable.FakeSequence(evaluator, lst_values, pr.Array.TUPLE)
             values = [iterable.AlreadyEvaluated([seq])]
         elif param.stars == 2:
@@ -306,10 +307,10 @@ def get_params(evaluator, func, var_args):
                     or param.stars or param.default):
                 # add a warning only if there's not another one.
                 calling_va = _get_calling_var_args(evaluator, var_args)
-                if calling_va.argument_node is not None:
+                if calling_va is not None:
                     m = _error_argument_count(func, len(unpacked_va))
                     analysis.add(evaluator, 'type-error-too-few-arguments',
-                                 calling_va.argument_node, message=m)
+                                 calling_va, message=m)
 
     for key, va_values in non_matching_keys.items():
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \

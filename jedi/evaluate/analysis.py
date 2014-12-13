@@ -74,6 +74,13 @@ class Warning(Error):
 
 
 def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
+    from jedi.evaluate.iterable import MergedNodes
+    while isinstance(jedi_obj, MergedNodes):
+        if len(jedi_obj) != 1:
+            # TODO is this kosher?
+            return
+        jedi_obj = list(jedi_obj)[0]
+
     exception = CODES[name][1]
     if _check_for_exception_catch(evaluator, jedi_obj, exception, payload):
         return
