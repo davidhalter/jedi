@@ -59,14 +59,14 @@ class Arguments(pr.Base):
         for stars, el in self._split():
             if stars == 1:
                 arrays = self._evaluator.eval_element(el)
-                iterators = [_iterate_star_args(self._evaluator, a, None, None)
+                iterators = [_iterate_star_args(self._evaluator, a, el, func)
                              for a in arrays]
                 iterators = list(iterators)
                 for values in list(zip_longest(*iterators)):
                     yield None, [v for v in values if v is not None]
             elif stars == 2:
                 arrays = self._evaluator.eval_element(el)
-                dicts = [_star_star_dict(self._evaluator, a, func, el)
+                dicts = [_star_star_dict(self._evaluator, a, el, func)
                          for a in arrays]
                 for dct in dicts:
                     for key, values in dct.items():
@@ -410,7 +410,7 @@ def _unpack_var_args(evaluator, var_args, func):
     return argument_list
 
 
-def _iterate_star_args(evaluator, array, expression_list, func):
+def _iterate_star_args(evaluator, array, input_node, func=None):
     from jedi.evaluate.representation import Instance
     if isinstance(array, iterable.Array):
         for field_stmt in array:  # yield from plz!
@@ -421,14 +421,13 @@ def _iterate_star_args(evaluator, array, expression_list, func):
     elif isinstance(array, Instance) and array.name.get_code() == 'tuple':
         debug.warning('Ignored a tuple *args input %s' % array)
     else:
-        if expression_list:
+        if func is not None:
             m = "TypeError: %s() argument after * must be a sequence, not %s" \
-                % (func.name.get_code(), array)
-            analysis.add(evaluator, 'type-error-star',
-                         expression_list[0], message=m)
+                % (func.name.value, array)
+            analysis.add(evaluator, 'type-error-star', input_node, message=m)
 
 
-def _star_star_dict(evaluator, array, func, input_node):
+def _star_star_dict(evaluator, array, input_node, func):
     dct = defaultdict(lambda: [])
     from jedi.evaluate.representation import Instance
     if isinstance(array, Instance) and array.name.get_code() == 'dict':
