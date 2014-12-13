@@ -108,6 +108,11 @@ mixed2(3, b=5)
 
 #! 12 type-error-star-star
 simple(1, **[])
+#! 12 type-error-star-star
+simple(1, **1)
+class A(): pass
+#! 12 type-error-star-star
+simple(1, **A())
 
 #! 11 type-error-star
 simple(1, *1)

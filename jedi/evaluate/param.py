@@ -54,7 +54,7 @@ class Arguments(pr.Base):
                 default = None
             yield argument, default, stars
 
-    def unpack(self):
+    def unpack(self, func=None):
         named_args = []
         for stars, el in self._split():
             if stars == 1:
@@ -66,7 +66,7 @@ class Arguments(pr.Base):
                     yield None, [v for v in values if v is not None]
             elif stars == 2:
                 arrays = self._evaluator.eval_element(el)
-                dicts = [_star_star_dict(self._evaluator, a, None, None)
+                dicts = [_star_star_dict(self._evaluator, a, func, el)
                          for a in arrays]
                 for dct in dicts:
                     for key, values in dct.items():
@@ -209,7 +209,7 @@ def get_params(evaluator, func, var_args):
         param_dict[str(param.get_name())] = param
     # There may be calls, which don't fit all the params, this just ignores it.
     #unpacked_va = _unpack_var_args(evaluator, var_args, func)
-    unpacked_va = list(var_args.unpack())
+    unpacked_va = list(var_args.unpack(func))
     from jedi.evaluate.representation import InstanceElement
     if isinstance(func, InstanceElement):
         # Include self at this place.
@@ -428,7 +428,7 @@ def _iterate_star_args(evaluator, array, expression_list, func):
                          expression_list[0], message=m)
 
 
-def _star_star_dict(evaluator, array, expression_list, func):
+def _star_star_dict(evaluator, array, func, input_node):
     dct = defaultdict(lambda: [])
     from jedi.evaluate.representation import Instance
     if isinstance(array, Instance) and array.name.get_code() == 'dict':
@@ -439,17 +439,17 @@ def _star_star_dict(evaluator, array, expression_list, func):
     if isinstance(array, iterable.FakeDict):
         return array._dct
     elif isinstance(array, iterable.Array) and array.type == pr.Array.DICT:
+        # TODO bad call to non-public API
         for key_node, values in array._items():
             for key in evaluator.eval_element(key_node):
                 if precedence.is_string(key):
                     dct[key.obj] += values
 
     else:
-        if expression_list:
+        if func is not None:
             m = "TypeError: %s argument after ** must be a mapping, not %s" \
-                % (func.name.get_code(), array)
-            analysis.add(evaluator, 'type-error-star-star',
-                         expression_list[0], message=m)
+                % (func.name.value, array)
+            analysis.add(evaluator, 'type-error-star-star', input_node, message=m)
     return dict(dct)
 
 
