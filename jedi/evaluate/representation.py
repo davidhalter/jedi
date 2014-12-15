@@ -392,21 +392,6 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def py__bases__(self, evaluator):
         args = param.Arguments(self._evaluator, self.base.get_super_arglist() or ())
         return list(chain.from_iterable(args.eval_args()))
-        
-        # TODO remove
-        supers = []
-        for s in self.base.supers:
-            # Super classes are statements.
-            for cls in self._evaluator.eval_statement(s):
-                if not isinstance(cls, (Class, compiled.CompiledObject)):
-                    debug.warning('Received non class as a super class.')
-                    continue  # Just ignore other stuff (user input error).
-                supers.append(cls)
-
-        if not supers:
-            # Add `object` to classes (implicit in Python 3.)
-            supers.append(compiled.object_obj)
-        return supers
 
     def py__call__(self, evaluator, params):
         return [Instance(evaluator, self, params)]
