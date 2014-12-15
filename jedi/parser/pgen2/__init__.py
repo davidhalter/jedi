@@ -5,73 +5,15 @@
 # Copyright 2006 Google, Inc. All Rights Reserved.
 # Licensed to PSF under a Contributor Agreement.
 
-__all__ = ["Driver", "load_grammar"]
+__all__ = ["load_grammar"]
 
 
 import os
 import sys
 import logging
-import io
 
 from . import pgen
 from . import grammar
-from . import parse
-from . import token
-from . import tokenize
-
-
-class Driver(object):
-    def __init__(self, grammar, convert_node, convert_leaf, error_recovery, logger=None):
-        self.grammar = grammar
-        if logger is None:
-            logger = logging.getLogger()
-        self.logger = logger
-        self.convert_node = convert_node
-        self.convert_leaf = convert_leaf
-        self.error_recovery = error_recovery
-
-    def parse_tokens(self, tokens):
-        p = parse.Parser(self.grammar, self.convert_node, self.convert_leaf, self.error_recovery)
-        return p.parse(self._tokenize(tokens))
-
-    def _tokenize(self, tokens):
-        """Parse a series of tokens and return the syntax tree."""
-        # XXX Move the prefix computation into a wrapper around tokenize.
-        lineno = 1
-        column = 0
-        prefix = ""
-        for type, value, start, end, line_text in tokens:
-            if start != (lineno, column):
-                assert (lineno, column) <= start, ((lineno, column), start)
-                s_lineno, s_column = start
-                if lineno < s_lineno:
-                    prefix += "\n" * (s_lineno - lineno)
-                    lineno = s_lineno
-                    column = 0
-                if column < s_column:
-                    prefix += line_text[column:s_column]
-                    column = s_column
-            if type in (tokenize.COMMENT, tokenize.NL):  # NL != NEWLINE
-                prefix += value
-                lineno, column = end
-                if value.endswith("\n"):
-                    lineno += 1
-                    column = 0
-                continue
-            if type == token.OP:
-                type = grammar.opmap[value]
-            #self.logger.debug("%s %r (prefix=%r)", token.tok_name[type], value, prefix)
-            yield type, value, prefix, start
-            prefix = ""
-            lineno, column = end
-            if value.endswith("\n"):
-                lineno += 1
-                column = 0
-
-    def parse_string(self, text):
-        """Parse a string and return the syntax tree."""
-        tokens = tokenize.generate_tokens(io.StringIO(text).readline)
-        return self.parse_tokens(tokens)
 
 
 def load_grammar(grammar_path="grammar.txt", pickle_path=None,

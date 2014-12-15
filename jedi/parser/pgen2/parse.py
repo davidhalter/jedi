@@ -26,7 +26,7 @@ class ParseError(Exception):
         self.start_pos = start_pos
 
 
-class Parser(object):
+class PgenParser(object):
     """Parser engine.
 
     The proper usage sequence is:

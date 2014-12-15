@@ -17,10 +17,10 @@ complexity of the ``Parser`` (there's another parser sitting inside
 """
 import os
 
-from jedi._compatibility import next
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser import pgen2
+from jedi.parser.pgen2.parse import PgenParser
 
 OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
 # Not used yet. In the future I intend to add something like KeywordStatement
@@ -118,8 +118,8 @@ class Parser(object):
         self.used_names = {}
         self.scope_names_stack = [{}]
         self.error_statement_stacks = []
-        p = pgen2.parse.Parser(grammar, self.convert_node, self.convert_leaf,
-                               self.error_recovery)
+        p = PgenParser(grammar, self.convert_node, self.convert_leaf,
+                       self.error_recovery)
         tokenizer = tokenizer or tokenize.source_tokens(source)
         self.module = p.parse(p.tokenize(self._tokenize(tokenizer)))
 
