@@ -46,8 +46,8 @@ def memoize_default(default=None, evaluator_is_first_arg=False, second_arg_is_ev
 class CachedMetaClass(type):
     """
     This is basically almost the same than the decorator above, it just caches
-    class initializations. I haven't found any other way, so I'm doing it with
-    meta classes.
+    class initializations. Either you do it this way or with decorators, but
+    with decorators you lose class access (isinstance, etc).
     """
     @memoize_default(None, second_arg_is_evaluator=True)
     def __call__(self, *args, **kwargs):
