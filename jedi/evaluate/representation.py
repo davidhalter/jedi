@@ -36,7 +36,7 @@ from jedi._compatibility import use_metaclass, unicode, Python3Method
 from jedi.parser import tree as pr
 from jedi import debug
 from jedi import common
-from jedi.cache import underscore_memoization
+from jedi.cache import underscore_memoization, cache_star_import
 from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT
 from jedi.evaluate import compiled
 from jedi.evaluate import recursion
@@ -754,6 +754,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         if sub_modules:
             yield self, self._sub_modules()
 
+    @cache_star_import
     @memoize_default([])
     def star_imports(self):
         modules = []

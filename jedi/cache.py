@@ -166,9 +166,9 @@ def memoize(func):
 
 def cache_star_import(func):
     @time_cache("star_import_cache_validity")
-    def wrapper(evaluator, scope, *args, **kwargs):
-        yield scope  # The cache key
-        yield func(evaluator, scope, *args, **kwargs)
+    def wrapper(self):
+        yield self.base  # The cache key
+        yield func(self)
     return wrapper
 
 

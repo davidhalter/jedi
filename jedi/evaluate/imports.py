@@ -46,7 +46,6 @@ def completion_names(evaluator, imp, pos):
             if node.end_pos <= pos:
                 if node in ('.', '...'):
                     level += len(node.value)
-            print(node, level)
         import_path = []
     else:
         # Completion on an existing name.
@@ -127,7 +126,6 @@ class ImportWrapper(pr.Base):
                         self._evaluator.find_types(s, rest[0], is_goto=True)
                         for s in scopes))
                 else:
-                    print(self._import, scopes, rest)
                     if self._import.type == 'import_from' \
                             or importer.str_import_path == ('os', 'path'):
                         scopes = importer.follow_rest(scopes[0], rest)

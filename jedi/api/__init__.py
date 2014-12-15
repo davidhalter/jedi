@@ -145,7 +145,7 @@ class Script(object):
             # TODO this paragraph is necessary, but not sure it works.
             context = self._user_context.get_context()
             
-            print(next(self._user_context.get_context()), 'x')
+           # print(next(self._user_context.get_context()), 'x')
             if not next(context).startswith('.'):  # skip the path
                 if next(context) == 'from':
                     # completion is just "import" if before stands from ..
