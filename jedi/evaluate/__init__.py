@@ -1,8 +1,9 @@
 """
 Evaluation of Python code in |jedi| is based on three assumptions:
 
-* Code is recursive (to weaken this assumption, the
-  :mod:`jedi.evaluate.dynamic` module exists).
+* The code uses as least side effects as possible. Jedi understands certain
+  list/tuple/set modifications, but there's no guarantee that Jedi detects
+  everything (list.append in different modules for example).
 * No magic is being used:
 
   - metaclasses
@@ -11,11 +12,12 @@ Evaluation of Python code in |jedi| is based on three assumptions:
 * The programmer is not a total dick, e.g. like `this
   <https://github.com/davidhalter/jedi/issues/24>`_ :-)
 
-That said, there's mainly one entry point in this script: ``eval_statement``.
-This is where autocompletion starts. Everything you want to complete is either
-a ``Statement`` or some special name like ``class``, which is easy to complete.
+The actual algorithm is based on a principle called lazy evaluation. If you
+don't know about it, google it.  That said, the typical entry point for static
+analysis is calling ``eval_statement``. There's separate logic for
+autocompletion in the API, the evaluator is all about evaluating an expression.
 
-Therefore you need to understand what follows after ``eval_statement``. Let's
+Now you need to understand what follows after ``eval_statement``. Let's
 make an example::
 
     import datetime
@@ -23,51 +25,41 @@ make an example::
 
 First of all, this module doesn't care about completion. It really just cares
 about ``datetime.date``. At the end of the procedure ``eval_statement`` will
-return the ``datetime`` class.
+return the ``date`` class.
 
 To *visualize* this (simplified):
 
-- ``eval_statement`` - ``<Statement: datetime.date>``
+- ``Evaluator.eval_statement`` doesn't do much, because there's no assignment.
+- ``Evaluator.eval_element`` cares for resolving the dotted path
+- ``Evaluator.find_types`` searches for global definitions of datetime, which
+  it finds in the definition of an import, by scanning the syntax tree.
+- Using the import logic, the datetime module is found.
+- Now ``find_types`` is called again by ``eval_element`` to find ``date``
+  inside the datetime module.
 
-    - Unpacking of the statement into ``[[<Call: datetime.date>]]``
-- ``eval_expression_list``, calls ``eval_call`` with ``<Call: datetime.date>``
-- ``eval_call`` - searches the ``datetime`` name within the module.
+Now what would happen if we wanted ``datetime.date.foo.bar``? Two more
+calls to ``find_types``. However the second call would be ignored, because the
+first one would return nothing (there's no foo attribute in ``date``).
 
-This is exactly where it starts to get complicated. Now recursions start to
-kick in. The statement has not been resolved fully, but now we need to resolve
-the datetime import. So it continues
-
-- follow import, which happens in the :mod:`jedi.evaluate.imports` module.
-- now the same ``eval_call`` as above calls ``follow_path`` to follow the
-  second part of the statement ``date``.
-- After ``follow_path`` returns with the desired ``datetime.date`` class, the
-  result is being returned and the recursion finishes.
-
-Now what would happen if we wanted ``datetime.date.foo.bar``? Just two more
-calls to ``follow_path`` (which calls itself with a recursion). What if the
-import would contain another Statement like this::
+What if the import would contain another ``ExprStmt`` like this::
 
     from foo import bar
     Date = bar.baz
 
 Well... You get it. Just another ``eval_statement`` recursion. It's really
-easy. Just that Python is not that easy sometimes. To understand tuple
-assignments and different class scopes, a lot more code had to be written.  Yet
-we're still not talking about Descriptors and Nested List Comprehensions, just
-the simple stuff.
+easy. Python can obviously get way more complicated then this. To understand
+tuple assignments, list comprehensions and everything else, a lot more code had
+to be written.
 
-So if you want to change something, write a test and then just change what you
-want. This module has been tested by about 600 tests. Don't be afraid to break
-something. The tests are good enough.
+Jedi has been tested very well, so you can just start modifying code. It's best
+to write your own test first for your "new" feature. Don't be scared of
+breaking stuff. As long as the tests pass, you're most likely to be fine.
 
-I need to mention now that this recursive approach is really good because it
+I need to mention now that lazy evaluation is really good because it
 only *evaluates* what needs to be *evaluated*. All the statements and modules
-that are not used are just being ignored. It's a little bit similar to the
-backtracking algorithm.
-
-
-.. todo:: nonlocal statement, needed or can be ignored? (py3k)
+that are not used are just being ignored.
 """
+
 import copy
 from itertools import chain
 
