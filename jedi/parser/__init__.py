@@ -122,7 +122,7 @@ class Parser(object):
         p = PgenParser(grammar, self.convert_node, self.convert_leaf,
                        self.error_recovery)
         tokenizer = tokenizer or tokenize.source_tokens(source)
-        self.module = p.parse(p.tokenize(self._tokenize(tokenizer)))
+        self.module = p.parse(self._tokenize(tokenizer))
 
         self.module.used_names = self.used_names
         self.module.path = module_path

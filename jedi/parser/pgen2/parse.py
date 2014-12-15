@@ -101,16 +101,6 @@ class PgenParser(object):
         self.rootnode = None
         self.error_recovery = error_recovery
 
-    def tokenize(self, tokenizer):
-        """
-        This is not a real tokenizer, but it adds indents. You could hand the
-        parse function a normal tokenizer (e.g. the lib2to3 one). But if we use
-        the parser stack we are able to do error recovery from wrong indents.
-        """
-        for type, value, prefix, start_pos in tokenizer:
-            #print(token.tok_name[type], value)
-            yield type, value, prefix, start_pos
-
     def parse(self, tokenizer):
         for type, value, prefix, start_pos in tokenizer:
             if self.addtoken(type, value, prefix, start_pos):
