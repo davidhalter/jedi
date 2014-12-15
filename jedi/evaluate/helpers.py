@@ -28,7 +28,7 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
             new_obj = copy.copy(obj)
             new_elements[obj] = new_obj
 
-        if isinstance(obj, pr.Statement):
+        if isinstance(obj, pr.ExprStmt):
             # Need to set _set_vars, otherwise the cache is not working
             # correctly, don't know exactly why.
             obj.get_defined_names()
@@ -50,7 +50,7 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
             except AttributeError:
                 pass
 
-        if isinstance(obj, pr.Statement):
+        if isinstance(obj, pr.ExprStmt):
             # We need to process something with priority for statements,
             # because there are several references that don't walk the whole
             # tree in there.

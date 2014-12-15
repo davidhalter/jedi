@@ -41,7 +41,6 @@ See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 import os
 import re
 from inspect import cleandoc
-from collections import defaultdict
 from itertools import chain
 import textwrap
 
@@ -234,13 +233,13 @@ class Whitespace(LeafWithNewLines):
     """Contains NEWLINE and ENDMARKER tokens."""
 
 
-
 class Name(Leaf):
     """
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
     """
     type = 'name'
+
     def __str__(self):
         return self.value
 
@@ -335,6 +334,7 @@ class String(Literal):
 
 class Operator(Leaf):
     type = 'operator'
+
     def __str__(self):
         return self.value
 
@@ -358,6 +358,7 @@ class Operator(Leaf):
 
 class Keyword(Leaf):
     type = 'keyword'
+
     def __eq__(self, other):
         """
         Make comparisons with strings easy.
@@ -892,6 +893,7 @@ class Lambda(Function):
     Lambdas are basically trimmed functions, so give it the same interface.
     """
     type = 'lambda'
+
     def __init__(self, children):
         super(Function, self).__init__(children)
         self.listeners = set()  # not used here, but in evaluation.
@@ -914,6 +916,7 @@ class Flow(Simple):
 
 class IfStmt(Flow):
     type = 'if_stmt'
+
     def check_nodes(self):
         """
         Returns all the `test` nodes that are defined as x, here:
@@ -969,6 +972,7 @@ class TryStmt(Flow):
 
 class WithStmt(Flow):
     type = 'with_stmt'
+
     def get_defined_names(self):
         names = []
         for with_item in self.children[1:-2:2]:
@@ -1011,6 +1015,7 @@ class Import(Simple):
 
 class ImportFrom(Import):
     type = 'import_from'
+
     def get_defined_names(self):
         return [alias or name for name, alias in self._as_name_tuples()]
 
@@ -1135,12 +1140,14 @@ class KeywordStatement(Simple):
 
 class AssertStmt(KeywordStatement):
     type = 'assert_stmt'
+
     def assertion(self):
         return self.children[1]
 
 
 class GlobalStmt(KeywordStatement):
     type = 'global_stmt'
+
     def get_defined_names(self):
         return self.children[1::2]
 
@@ -1174,22 +1181,8 @@ def _defined_names(current):
     return names
 
 
-class Statement(Simple, DocstringMixin):
-    """
-    This is the class for all the possible statements. Which means, this class
-    stores pretty much all the Python code, except functions, classes, imports,
-    and flow functions like if, for, etc.
-
-    :type  token_list: list
-    :param token_list:
-        List of tokens or names.  Each element is either an instance
-        of :class:`Name` or a tuple of token type value (e.g.,
-        :data:`tokenize.NUMBER`), token string (e.g., ``'='``), and
-        start position (e.g., ``(1, 0)``).
-    :type   start_pos: 2-tuple of int
-    :param  start_pos: Position (line, column) of the Statement.
-    """
-    __slots__ = ()
+class ExprStmt(Simple, DocstringMixin):
+    type = 'expr_stmt'
 
     def get_defined_names(self):
         return list(chain.from_iterable(_defined_names(self.children[i])
@@ -1200,37 +1193,6 @@ class Statement(Simple, DocstringMixin):
         """Returns the right-hand-side of the equals."""
         return self.children[-1]
 
-    def get_names_dict(self):
-        """The future of name resolution. Returns a dict(str -> Call)."""
-        dct = defaultdict(lambda: [])
-
-        def search_calls(calls):
-            for call in calls:
-                if isinstance(call, Array) and call.type != Array.DICT:
-                    for stmt in call:
-                        search_calls(stmt.expression_list())
-                elif isinstance(call, Call):
-                    c = call
-                    # Check if there's an execution in it, if so this is
-                    # not a set_var.
-                    while True:
-                        if c.next is None or isinstance(c.next, Array):
-                            break
-                        c = c.next
-                    dct[unicode(c.name)].append(call)
-
-        for calls, operation in self.assignment_details:
-            search_calls(calls)
-
-        if not self.assignment_details and self._names_are_set_vars:
-            # In the case of Param, it's also a defining name without ``=``
-            search_calls(self.expression_list())
-
-        for as_name in self.as_names:
-            dct[unicode(as_name)].append(Call(self._sub_module, as_name,
-                                         as_name.start_pos, as_name.end_pos, self))
-        return dct
-
     def first_operation(self):
         """
         Returns `+=`, `=`, etc or None if there is no operation.
@@ -1239,19 +1201,6 @@ class Statement(Simple, DocstringMixin):
             return self.children[1]
         except IndexError:
             return None
-
-
-class ExprStmt(Statement):
-    """
-    This class exists temporarily, to be able to distinguish real statements
-    (``small_stmt`` in Python grammar) from the so called ``test`` parts, that
-    may be used to defined part of an array, but are never a whole statement.
-
-    The reason for this class is purely historical. It was easier to just use
-    Statement nested, than to create a new class for Test (plus Jedi's fault
-    tolerant parser just makes things very complicated).
-    """
-    type = 'expr_stmt'
 
 
 class Param(Base):

@@ -334,7 +334,7 @@ class BaseDefinition(object):
             # Functions, classes and modules are already fixed definitions, we
             # cannot follow them anymore.
             return [self]
-        stmt_or_imp = self._name.get_parent_until((pr.Statement, pr.Import))
+        stmt_or_imp = self._name.get_parent_until((pr.ExprStmt, pr.Import))
         call_path = call_path_for_name_part(stmt_or_imp, self._name)
         names = self._evaluator.goto(stmt_or_imp, call_path)
         return [Definition(self._evaluator, n) for n in names]

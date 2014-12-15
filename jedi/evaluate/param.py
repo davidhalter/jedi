@@ -90,7 +90,7 @@ class Arguments(pr.Base):
         named_index = None
         new_args = []
         for i, stmt in enumerate(var_args):
-            if isinstance(stmt, pr.Statement):
+            if isinstance(stmt, pr.ExprStmt):
                 if named_index is None and stmt.assignment_details:
                     named_index = i
 
@@ -362,7 +362,7 @@ def _unpack_var_args(evaluator, var_args, func):
 
     # `var_args` is typically an Array, and not a list.
     for stmt in _reorder_var_args(var_args.iterate()):
-        if not isinstance(stmt, pr.Statement):
+        if not isinstance(stmt, pr.ExprStmt):
             if stmt is None:
                 argument_list.append((None, []))
                 # TODO generate warning?

@@ -367,6 +367,8 @@ class Parser(object):
         return "<%s: %s>" % (type(self).__name__, self.module)
 
     def _check_user_stmt(self, simple):
+        # TODO REMOVE (not used and called)
+
         # this is not user checking, just update the used_names
         for tok_name in self.module.temp_used_names:
             try:
@@ -374,7 +376,7 @@ class Parser(object):
             except KeyError:
                 self.module.used_names[tok_name] = set([simple])
         self.module.temp_used_names = []
-        if isinstance(simple, pt.Statement):
+        if isinstance(simple, pt.ExprStmt):
             for name, calls in simple.get_names_dict().items():
                 self._scope.add_name_calls(name, calls)
 
