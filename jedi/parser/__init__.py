@@ -15,11 +15,9 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
-import logging
 import os
 
 from jedi._compatibility import next
-from jedi import common
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser import pgen2
@@ -114,26 +112,16 @@ class Parser(object):
         #except KeyError:
         #    pass  # Doesn't exist in the Python 3 grammar.
 
-
         #if self.options["print_function"]:
         #    python_grammar = pygram.python_grammar_no_print_statement
         #else:
-        # When this is True, the refactor*() methods will call write_file() for
-        # files processed even if they were not changed during refactoring. If
-        # and only if the refactor method's write parameter was True.
         self.used_names = {}
         self.scope_names_stack = [{}]
         self.error_statement_stacks = []
-        logger = logging.getLogger("Jedi-Parser")
-        if False:
-            d = pgen2.Driver(grammar, self.convert_node,
-                             self.convert_leaf, self.error_recovery, logger=logger)
-            self.module = d.parse_string(source).get_parent_until()
-        else:
-            p = pgen2.parse.Parser(grammar, self.convert_node, self.convert_leaf,
-                                   self.error_recovery)
-            tokenizer = tokenizer or tokenize.source_tokens(source)
-            self.module = p.parse(p.tokenize(self._tokenize(tokenizer)))
+        p = pgen2.parse.Parser(grammar, self.convert_node, self.convert_leaf,
+                               self.error_recovery)
+        tokenizer = tokenizer or tokenize.source_tokens(source)
+        self.module = p.parse(p.tokenize(self._tokenize(tokenizer)))
 
         self.module.used_names = self.used_names
         self.module.path = module_path
@@ -310,98 +298,5 @@ class Parser(object):
                 typ = pgen2.grammar.opmap[value]
             yield typ, value, token.prefix, token.start_pos
 
-
-    def __init__old__(self, source, module_path=None, no_docstr=False,
-                      tokenizer=None, top_module=None):
-
-        """
-        TODO REMOVE THIS
-        """
-        self.no_docstr = no_docstr
-
-        tokenizer = tokenizer or tokenize.source_tokens(source)
-        self._gen = PushBackTokenizer(tokenizer)
-
-        # initialize global Scope
-        start_pos = next(self._gen).start_pos
-        self._gen.push_last_back()
-        self.module = pt.SubModule(module_path, start_pos, top_module)
-        self._scope = self.module
-        self._top_module = top_module or self.module
-
-        try:
-            self._parse()
-        except (common.MultiLevelStopIteration, StopIteration):
-            # StopIteration needs to be added as well, because python 2 has a
-            # strange way of handling StopIterations.
-            # sometimes StopIteration isn't catched. Just ignore it.
-
-            # on finish, set end_pos correctly
-            pass
-        s = self._scope
-        while s is not None:
-            s.end_pos = self._gen.current.end_pos
-            s = s.parent
-
-        # clean up unused decorators
-        for d in self._decorators:
-            # set a parent for unused decorators, avoid NullPointerException
-            # because of `self.module.used_names`.
-            d.parent = self.module
-
-        self.module.end_pos = self._gen.current.end_pos
-        if self._gen.current.type == tokenize.NEWLINE:
-            # This case is only relevant with the FastTokenizer, because
-            # otherwise there's always an ENDMARKER.
-            # we added a newline before, so we need to "remove" it again.
-            #
-            # NOTE: It should be keep end_pos as-is if the last token of
-            # a source is a NEWLINE, otherwise the newline at the end of
-            # a source is not included in a ParserNode.code.
-            if self._gen.previous.type != tokenize.NEWLINE:
-                self.module.end_pos = self._gen.previous.end_pos
-
-        del self._gen
-
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
-
-    def _check_user_stmt(self, simple):
-        # TODO REMOVE (not used and called)
-
-        # this is not user checking, just update the used_names
-        for tok_name in self.module.temp_used_names:
-            try:
-                self.module.used_names[tok_name].add(simple)
-            except KeyError:
-                self.module.used_names[tok_name] = set([simple])
-        self.module.temp_used_names = []
-        if isinstance(simple, pt.ExprStmt):
-            for name, calls in simple.get_names_dict().items():
-                self._scope.add_name_calls(name, calls)
-
-
-class PushBackTokenizer(object):
-    def __init__(self, tokenizer):
-        self._tokenizer = tokenizer
-        self._push_backs = []
-        self.current = self.previous = tokenize.Token(None, '', (0, 0))
-
-    def push_last_back(self):
-        self._push_backs.append(self.current)
-
-    def next(self):
-        """ Python 2 Compatibility """
-        return self.__next__()
-
-    def __next__(self):
-        if self._push_backs:
-            return self._push_backs.pop(0)
-
-        previous = self.current
-        self.current = next(self._tokenizer)
-        self.previous = previous
-        return self.current
-
-    def __iter__(self):
-        return self
