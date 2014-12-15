@@ -64,7 +64,6 @@ def completion_names(evaluator, imp, pos):
 
 
 class ImportWrapper(pr.Base):
-    GlobalNamespace = 'TODO PLEASE DELETE ME'
     def __init__(self, evaluator, name):
         self._evaluator = evaluator
         self._name = name
@@ -108,12 +107,7 @@ class ImportWrapper(pr.Base):
 
             #if self._import.is_nested() and not self.nested_resolve:
             #    scopes = [NestedImportModule(module, self._import)]
-            #else:
             scopes = [module]
-
-            #star_imports = remove_star_imports(self._evaluator, module)
-            #if star_imports:
-            #    scopes = [StarImportModule(scopes[0], star_imports)]
 
             # goto only accepts `Name`
             if is_goto and not rest:
@@ -139,205 +133,11 @@ class ImportWrapper(pr.Base):
         return scopes
 
 
-class ImportWrapper2(pr.Base):
-    """
-    An ImportWrapper is the path of a `pr.Import` object.
-    """
-    class GlobalNamespace(object):
-        def __init__(self):
-            self.line_offset = 0
-
-    GlobalNamespace = GlobalNamespace()
-
-    def __init__(self, evaluator, import_stmt, is_like_search=False, kill_count=0,
-                 nested_resolve=False, is_just_from=False):
-        """
-        :param is_like_search: If the wrapper is used for autocompletion.
-        :param kill_count: Placement of the import, sometimes we only want to
-            resole a part of the import.
-        :param nested_resolve: Resolves nested imports fully.
-        :param is_just_from: Bool if the second part is missing.
-        """
-        self._evaluator = evaluator
-        self.import_stmt = import_stmt
-        self.is_like_search = is_like_search
-        self.nested_resolve = nested_resolve
-        self.is_just_from = is_just_from
-
-        self.is_partial_import = bool(max(0, kill_count))
-
-        # rest is import_path resolution
-        import_path = []
-        if import_stmt.from_names:
-            import_path += import_stmt.from_names
-        if import_stmt.namespace_names:
-            if self.import_stmt.is_nested() and not nested_resolve:
-                import_path.append(import_stmt.namespace_names[0])
-            else:
-                import_path += import_stmt.namespace_names
-
-        for i in range(kill_count + int(is_like_search)):
-            if import_path:
-                import_path.pop()
-
-        module = import_stmt.get_parent_until()
-        self._importer = get_importer(self._evaluator, tuple(import_path), module,
-                                      import_stmt.relative_count)
-
-    def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self.import_stmt)
-
-    @property
-    def import_path(self):
-        return self._importer.str_import_path
-
-    def get_defined_names(self, on_import_stmt=False):
-        names = []
-        for scope in self.follow():
-            if scope is ImportWrapper.GlobalNamespace:
-                if not self._is_relative_import():
-                    names += self._get_module_names()
-
-                if self._importer.file_path is not None:
-                    path = os.path.abspath(self._importer.file_path)
-                    for i in range(self.import_stmt.relative_count - 1):
-                        path = os.path.dirname(path)
-                    names += self._get_module_names([path])
-
-                    if self._is_relative_import():
-                        rel_path = os.path.join(self._importer.get_relative_path(),
-                                                '__init__.py')
-                        if os.path.exists(rel_path):
-                            m = _load_module(self._evaluator, rel_path)
-                            names += m.get_defined_names()
-            else:
-                # flask
-                if self.import_path == ('flask', 'ext'):
-                    # List Flask extensions like ``flask_foo``
-                    for mod in self._get_module_names():
-                        modname = str(mod)
-                        if modname.startswith('flask_'):
-                            extname = modname[len('flask_'):]
-                            names.append(self._generate_name(extname))
-                    # Now the old style: ``flaskext.foo``
-                    for dir in self._importer.sys_path_with_modifications():
-                        flaskext = os.path.join(dir, 'flaskext')
-                        if os.path.isdir(flaskext):
-                            names += self._get_module_names([flaskext])
-
-                # namespace packages
-                if on_import_stmt and isinstance(scope, pr.Module) \
-                        and scope.path.endswith('__init__.py'):
-                    pkg_path = os.path.dirname(scope.path)
-                    paths = self._importer.namespace_packages(pkg_path,
-                                                              self.import_path)
-                    names += self._get_module_names([pkg_path] + paths)
-                if self.is_just_from:
-                    # In the case of an import like `from x.` we don't need to
-                    # add all the variables.
-                    if ('os',) == self.import_path and not self._is_relative_import():
-                        # os.path is a hardcoded exception, because it's a
-                        # ``sys.modules`` modification.
-                        names.append(self._generate_name('path'))
-                    continue
-
-                if not self.import_stmt.from_names or self.is_partial_import:
-                        # from_names must be defined to access module
-                        # values plus a partial import means that there
-                        # is something after the import, which
-                        # automatically implies that there must not be
-                        # any non-module scope.
-                        continue
-                from jedi.evaluate import finder
-                for s, scope_names in finder.get_names_of_scope(self._evaluator,
-                                                                scope, include_builtin=False):
-                    for n in scope_names:
-                        names.append(n)
-        return names
-
-    def _generate_name(self, name):
-        return helpers.FakeName(name, parent=self.import_stmt)
-
-    def _get_module_names(self, search_path=None):
-        """
-        Get the names of all modules in the search_path. This means file names
-        and not names defined in the files.
-        """
-
-        names = []
-        # add builtin module names
-        if search_path is None:
-            names += [self._generate_name(name) for name in sys.builtin_module_names]
-
-        if search_path is None:
-            search_path = self._importer.sys_path_with_modifications()
-        for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
-            names.append(self._generate_name(name))
-        return names
-
-    def _is_relative_import(self):
-        return bool(self.import_stmt.relative_count)
-
-    def follow(self, is_goto=False):
-        if self._evaluator.recursion_detector.push_stmt(self.import_stmt):
-            # check recursion
-            return []
-
-        try:
-            if self.import_path:
-                try:
-                    module, rest = self._importer.follow_file_system()
-                except ModuleNotFound as e:
-                    analysis.add(self._evaluator, 'import-error', e.name)
-                    return []
-
-                if module is None:
-                    return []
-
-                if self.import_stmt.is_nested() and not self.nested_resolve:
-                    scopes = [NestedImportModule(module, self.import_stmt)]
-                else:
-                    scopes = [module]
-
-                star_imports = remove_star_imports(self._evaluator, module)
-                if star_imports:
-                    scopes = [StarImportModule(scopes[0], star_imports)]
-
-                # goto only accepts `Name`
-                if is_goto and not rest:
-                    scopes = [s.name for s in scopes]
-
-                # follow the rest of the import (not FS -> classes, functions)
-                if len(rest) > 1 or rest and self.is_like_search:
-                    scopes = []
-                    if ('os', 'path') == self.import_path[:2] \
-                            and not self._is_relative_import():
-                        # This is a huge exception, we follow a nested import
-                        # ``os.path``, because it's a very important one in Python
-                        # that is being achieved by messing with ``sys.modules`` in
-                        # ``os``.
-                        scopes = self._evaluator.follow_path(iter(rest), [module], module)
-                elif rest:
-                    if is_goto:
-                        scopes = list(chain.from_iterable(
-                            self._evaluator.find_types(s, rest[0], is_goto=True)
-                            for s in scopes))
-                    else:
-                        scopes = list(chain.from_iterable(
-                            self._evaluator.follow_path(iter(rest), [s], s)
-                            for s in scopes))
-            else:
-                scopes = [ImportWrapper.GlobalNamespace]
-            debug.dbg('after import: %s', scopes)
-            if not scopes:
-                analysis.add(self._evaluator, 'import-error',
-                             self._importer.import_path[-1])
-        finally:
-            self._evaluator.recursion_detector.pop_stmt()
-        return scopes
-
-
 class NestedImportModule(pr.Module):
+    """
+    TODO while there's no use case for nested import module right now, we might
+        be able to use them for static analysis checks later on.
+    """
     def __init__(self, module, nested_import):
         self._module = module
         self._nested_import = nested_import
@@ -372,27 +172,6 @@ class NestedImportModule(pr.Module):
     def __repr__(self):
         return "<%s: %s of %s>" % (self.__class__.__name__, self._module,
                                    self._nested_import)
-
-
-class StarImportModule(pr.Module):
-    """
-    Used if a module contains star imports.
-    """
-    def __init__(self, module, star_import_modules):
-        self._module = module
-        self.star_import_modules = star_import_modules
-
-    def scope_names_generator(self, position=None):
-        for module, names in self._module.scope_names_generator(position):
-            yield module, names
-        for s in self.star_import_modules:
-            yield s, s.get_defined_names()
-
-    def __getattr__(self, name):
-        return getattr(self._module, name)
-
-    def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self._module)
 
 
 def get_importer(evaluator, import_path, module, level=0):
@@ -718,44 +497,6 @@ class _Importer(object):
                         m = _load_module(self._evaluator, rel_path)
                         names += m.get_defined_names()
         return names
-
-
-def follow_imports(evaluator, types):
-    """
-    Here we strip the imports - they don't get resolved necessarily.
-    TODO Really used anymore? Merge with remove_star_imports?
-    """
-    result = []
-    for s in scopes:
-        if isinstance(s, pr.Import):
-            for r in ImportWrapper(evaluator, s).follow():
-                result.append(r)
-        else:
-            result.append(s)
-    return result
-
-
-@cache.cache_star_import
-def remove_star_imports(evaluator, scope, ignored_modules=()):
-    """
-    Check a module for star imports::
-
-        from module import *
-
-    and follow these modules.
-    """
-    raise NotImplementedError
-    if isinstance(scope, StarImportModule):
-        return scope.star_import_modules
-    modules = follow_imports(evaluator, (i for i in scope.get_imports() if i.star))
-    new = []
-    for m in modules:
-        if m not in ignored_modules:
-            new += remove_star_imports(evaluator, m, modules)
-    modules += new
-
-    # Filter duplicate modules.
-    return set(modules)
 
 
 def _load_module(evaluator, path=None, source=None, name=None, sys_path=None):

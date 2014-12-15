@@ -436,8 +436,7 @@ class Script(object):
             definitions = set(self._prepare_goto(goto_path))
 
         definitions = resolve_import_paths(definitions)
-        names = [s.name for s in definitions
-                 if s is not imports.ImportWrapper.GlobalNamespace]
+        names = [s.name for s in definitions]
         defs = [classes.Definition(self._evaluator, name) for name in names]
         return helpers.sorted_definitions(set(defs))
 
@@ -451,8 +450,7 @@ class Script(object):
         :rtype: list of :class:`classes.Definition`
         """
         results = self._goto()
-        d = [classes.Definition(self._evaluator, d) for d in set(results)
-             if d is not imports.ImportWrapper.GlobalNamespace]
+        d = [classes.Definition(self._evaluator, d) for d in set(results)]
         return helpers.sorted_definitions(d)
 
     def _goto(self, add_import_name=False):
