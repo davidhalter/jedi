@@ -19,7 +19,8 @@ import os
 
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
-from jedi.parser import pgen2
+from jedi.parser.pgen2 import grammar
+from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser
 
 OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
@@ -37,7 +38,7 @@ def load_grammar(file='grammar3.4'):
     try:
         return _loaded_grammars[path]
     except KeyError:
-        return _loaded_grammars.setdefault(path, pgen2.load_grammar(path))
+        return _loaded_grammars.setdefault(path, generate_grammar(path))
 
 
 class ErrorStatement(object):
@@ -295,7 +296,7 @@ class Parser(object):
             typ = token.type
             value = token.value
             if typ == tokenize.OP:
-                typ = pgen2.grammar.opmap[value]
+                typ = grammar.opmap[value]
             yield typ, value, token.prefix, token.start_pos
 
     def __repr__(self):
