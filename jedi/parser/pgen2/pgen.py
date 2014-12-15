@@ -6,7 +6,7 @@
 # Modifications are dual-licensed: MIT and PSF.
 
 # Pgen imports
-from . import grammar, token, tokenize
+from . import grammar, tokenize
 
 
 class ParserGenerator(object):
@@ -74,9 +74,9 @@ class ParserGenerator(object):
                     return ilabel
             else:
                 # A named token (NAME, NUMBER, STRING)
-                itoken = getattr(token, label, None)
+                itoken = getattr(tokenize, label, None)
                 assert isinstance(itoken, int), label
-                assert itoken in token.tok_name, label
+                assert itoken in tokenize.tok_name, label
                 if itoken in c.tokens:
                     return c.tokens[itoken]
                 else:
@@ -92,7 +92,7 @@ class ParserGenerator(object):
                 if value in c.keywords:
                     return c.keywords[value]
                 else:
-                    c.labels.append((token.NAME, value))
+                    c.labels.append((tokenize.NAME, value))
                     c.keywords[value] = ilabel
                     return ilabel
             else:
@@ -147,14 +147,14 @@ class ParserGenerator(object):
         dfas = {}
         startsymbol = None
         # MSTART: (NEWLINE | RULE)* ENDMARKER
-        while self.type != token.ENDMARKER:
-            while self.type == token.NEWLINE:
+        while self.type != tokenize.ENDMARKER:
+            while self.type == tokenize.NEWLINE:
                 self.gettoken()
             # RULE: NAME ':' RHS NEWLINE
-            name = self.expect(token.NAME)
-            self.expect(token.OP, ":")
+            name = self.expect(tokenize.NAME)
+            self.expect(tokenize.OP, ":")
             a, z = self.parse_rhs()
-            self.expect(token.NEWLINE)
+            self.expect(tokenize.NEWLINE)
             #self.dump_nfa(name, a, z)
             dfa = self.make_dfa(a, z)
             #self.dump_dfa(name, dfa)
@@ -271,7 +271,7 @@ class ParserGenerator(object):
         # ALT: ITEM+
         a, b = self.parse_item()
         while (self.value in ("(", "[") or
-               self.type in (token.NAME, token.STRING)):
+               self.type in (tokenize.NAME, tokenize.STRING)):
             c, d = self.parse_item()
             b.addarc(c)
             b = d
@@ -282,7 +282,7 @@ class ParserGenerator(object):
         if self.value == "[":
             self.gettoken()
             a, z = self.parse_rhs()
-            self.expect(token.OP, "]")
+            self.expect(tokenize.OP, "]")
             a.addarc(z)
             return a, z
         else:
@@ -302,9 +302,9 @@ class ParserGenerator(object):
         if self.value == "(":
             self.gettoken()
             a, z = self.parse_rhs()
-            self.expect(token.OP, ")")
+            self.expect(tokenize.OP, ")")
             return a, z
-        elif self.type in (token.NAME, token.STRING):
+        elif self.type in (tokenize.NAME, tokenize.STRING):
             a = NFAState()
             z = NFAState()
             a.addarc(z, self.value)
@@ -327,7 +327,7 @@ class ParserGenerator(object):
         while tup[0] in (tokenize.COMMENT, tokenize.NL):
             tup = next(self.generator)
         self.type, self.value, self.begin, self.end, self.line = tup
-        #print token.tok_name[self.type], repr(self.value)
+        #print tokenize.tok_name[self.type], repr(self.value)
 
     def raise_error(self, msg, *args):
         if args:

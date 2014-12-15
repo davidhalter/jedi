@@ -15,7 +15,7 @@ how this parsing engine works.
 """
 
 # Local imports
-from . import token
+from jedi.parser import tokenize
 
 
 class ParseError(Exception):
@@ -131,7 +131,7 @@ class PgenParser(object):
             ilabel = self.classify(type, value, start_pos)
         except ParseError:
             # Currently we ignore tokens like `?`.
-            print('invalid token', token.tok_name[type], value)
+            print('invalid token', tokenize.tok_name[type], value)
             return
 
         # Loop until the token is shifted; may raise exceptions
@@ -180,7 +180,7 @@ class PgenParser(object):
 
     def classify(self, type, value, start_pos):
         """Turn a token into a label.  (Internal)"""
-        if type == token.NAME:
+        if type == tokenize.NAME:
             # Check for reserved words
             ilabel = self.grammar.keywords.get(value)
             if ilabel is not None:
