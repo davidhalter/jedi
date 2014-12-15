@@ -6,6 +6,7 @@ from jedi._compatibility import unicode, zip_longest
 from jedi import debug
 from jedi import common
 from jedi.parser import tree as pr
+from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import iterable
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
@@ -217,7 +218,7 @@ def get_params(evaluator, func, var_args):
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])
-    keys_used = set()
+    keys_used = {}
     keys_only = False
     had_multiple_value_error = False
     for param in func.params:
@@ -247,7 +248,11 @@ def get_params(evaluator, func, var_args):
                     analysis.add(evaluator, 'type-error-multiple-values',
                                  calling_va, message=m)
             else:
-                keys_used.add(k)
+                try:
+                    keys_used[k] = result[-1]
+                except IndexError:
+                    # TODO this is wrong stupid and whatever.
+                    pass
             key, va_values = next(var_arg_iterator, (None, ()))
 
         keys = []
@@ -288,16 +293,16 @@ def get_params(evaluator, func, var_args):
 
         # Now add to result if it's not one of the previously covered cases.
         if (not keys_only or param.stars == 2):
-            keys_used.add(unicode(param.get_name()))
             result.append(_gen_param_name_copy(evaluator, func, var_args, param,
                                                keys=keys, values=values,
                                                array_type=array_type))
+            keys_used[unicode(param.get_name())] = result[-1]
 
     if keys_only:
         # All arguments should be handed over to the next function. It's not
         # about the values inside, it's about the names. Jedi needs to now that
         # there's nothing to find for certain names.
-        for k in set(param_dict) - keys_used:
+        for k in set(param_dict) - set(keys_used):
             param = param_dict[k]
             values = [] if param.default is None else [param.default]
             result.append(_gen_param_name_copy(evaluator, func, var_args,
@@ -329,6 +334,17 @@ def get_params(evaluator, func, var_args):
                 # Is a keyword argument, return the whole thing instead of just
                 # the value node.
                 v = v.parent
+                try:
+                    non_kw_param = keys_used[first_key]
+                except KeyError:
+                    pass
+                else:
+                    origin_args = non_kw_param.parent.var_args.argument_node
+                    # TODO  calculate the var_args tree and check if it's in
+                    # the tree (if not continue).
+                    # print('\t\tnonkw', non_kw_param.parent.var_args.argument_node, )
+                    if origin_args not in [f.parent.parent for f in first_values]:
+                        continue
             analysis.add(evaluator, 'type-error-too-many-arguments',
                          v, message=m)
     return result

@@ -1,8 +1,6 @@
 """
 Module for statical analysis.
 """
-from itertools import chain
-
 from jedi import debug
 from jedi.parser import tree as pr
 from jedi.evaluate.compiled import CompiledObject
