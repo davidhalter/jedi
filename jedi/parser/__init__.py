@@ -291,13 +291,10 @@ class Parser(object):
                     self._scope = self.module
         """
 
-        new_scope = False
-        for token in tokenizer:
-            typ = token.type
-            value = token.value
+        for typ, value, start_pos, prefix in tokenizer:
             if typ == tokenize.OP:
                 typ = grammar.opmap[value]
-            yield typ, value, token.prefix, token.start_pos
+            yield typ, value, prefix, start_pos
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)

@@ -17,8 +17,6 @@ from io import StringIO
 from token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, NAME, OP,
                    ERRORTOKEN, NEWLINE, INDENT, DEDENT)
 
-from jedi._compatibility import u
-
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
 
@@ -32,82 +30,6 @@ namechars = string.ascii_letters + '_'
 
 COMMENT = N_TOKENS
 tok_name[COMMENT] = 'COMMENT'
-
-
-class Token(object):
-    """
-    The token object is an efficient representation of the structure
-    (type, token, (start_pos_line, start_pos_col, prefix)). It has indexer
-    methods that maintain compatibility to existing code that expects the above
-    structure.
-
-    >>> repr(Token(1, "test", (1, 1, '')))
-    "<Token: ('NAME', 'test', (1, 1, ''))>"
-    >>> Token(1, 'bar', (3, 4, '')).__getstate__()
-    (1, 'bar', 3, 4, '')
-    >>> a = Token(0, 'baz', (0, 0, ''))
-    >>> a.__setstate__((1, 'foo', 3, 4, ''))
-    >>> a
-    <Token: ('NAME', 'foo', (3, 4, ''))>
-    >>> a.start_pos
-    (3, 4)
-    >>> a.value
-    'foo'
-    >>> a._start_pos_col
-    4
-    >>> Token(1, u("😷"), (1 ,1, '')).value + "p" == u("😷p")
-    True
-    """
-    __slots__ = ("type", "value", "_start_pos_line", "_start_pos_col",
-                 "prefix")
-
-    def __init__(self, type, value, start_pos, prefix=''):
-        self.type = type
-        self.value = value
-        self._start_pos_line = start_pos[0]
-        self._start_pos_col = start_pos[1]
-        self.prefix = prefix
-
-    def __repr__(self):
-        typ = tok_name[self.type]
-        content = typ, self.value,\
-            (self._start_pos_line, self._start_pos_col, self.prefix)
-        return "<%s: %s>" % (type(self).__name__, content)
-
-    @property
-    def start_pos(self):
-        return self._start_pos_line, self._start_pos_col
-
-    @property
-    def end_pos(self):
-        """Returns end position respecting multiline tokens."""
-        end_pos_line = self._start_pos_line
-        lines = self.value.split('\n')
-        if self.value.endswith('\n'):
-            lines = lines[:-1]
-            lines[-1] += '\n'
-        end_pos_line += len(lines) - 1
-        end_pos_col = self._start_pos_col
-        # Check for multiline token
-        if self._start_pos_line == end_pos_line:
-            end_pos_col += len(lines[-1])
-        else:
-            end_pos_col = len(lines[-1])
-        return (end_pos_line, end_pos_col)
-
-    # Make cache footprint smaller for faster unpickling
-    def __getstate__(self):
-        return (self.type, self.value,
-                self._start_pos_line, self._start_pos_col,
-                self.prefix)
-
-    # TODO DELETE this is not needed anymore, I guess. It should not get pickled.
-    def __setstate__(self, state):
-        self.type = state[0]
-        self.value = state[1]
-        self._start_pos_line = state[2]
-        self._start_pos_col = state[3]
-        self.prefix = state[4]
 
 
 def group(*choices):
@@ -239,7 +161,7 @@ def generate_tokens(readline, line_offset=0):
         line = readline()  # readline returns empty when finished. See StringIO
         if not line:
             if contstr:
-                yield Token(ERRORTOKEN, contstr, contstr_start, prefix)
+                yield ERRORTOKEN, contstr, contstr_start, prefix
             break
 
         lnum += 1
@@ -249,8 +171,7 @@ def generate_tokens(readline, line_offset=0):
             endmatch = endprog.match(line)
             if endmatch:
                 pos = endmatch.end(0)
-                yield Token(STRING, contstr + line[:pos],
-                            contstr_start, prefix)
+                yield STRING, contstr + line[:pos], contstr_start, prefix
                 contstr = ''
                 contline = None
             else:
@@ -266,7 +187,7 @@ def generate_tokens(readline, line_offset=0):
                     # If a literal starts but doesn't end the whole rest of the
                     # line is an error token.
                     txt = line[pos:]
-                yield Token(ERRORTOKEN, txt, (lnum, pos))
+                yield ERRORTOKEN, txt, (lnum, pos), prefix
                 pos += 1
                 continue
 
@@ -279,18 +200,18 @@ def generate_tokens(readline, line_offset=0):
                 new_line = False
                 if paren_level == 0:
                     if start > indents[-1]:
-                        yield Token(INDENT, '', spos, '')
+                        yield INDENT, '', spos, ''
                         indents.append(start)
                     while start < indents[-1]:
-                        yield Token(DEDENT, '', spos, '')
+                        yield DEDENT, '', spos, ''
                         indents.pop()
 
             if (initial in numchars or                      # ordinary number
                     (initial == '.' and token != '.' and token != '...')):
-                yield Token(NUMBER, token, spos, prefix)
+                yield NUMBER, token, spos, prefix
             elif initial in '\r\n':
                 if not new_line and paren_level == 0:
-                    yield Token(NEWLINE, token, spos, prefix)
+                    yield NEWLINE, token, spos, prefix
                 new_line = True
             elif initial == '#':
                 assert not token.endswith("\n")
@@ -301,7 +222,7 @@ def generate_tokens(readline, line_offset=0):
                 if endmatch:                                # all on one line
                     pos = endmatch.end(0)
                     token = line[start:pos]
-                    yield Token(STRING, token, spos, prefix)
+                    yield STRING, token, spos, prefix
                 else:
                     contstr_start = (lnum, start)           # multiple lines
                     contstr = line[start:]
@@ -318,18 +239,18 @@ def generate_tokens(readline, line_offset=0):
                     contline = line
                     break
                 else:                                       # ordinary string
-                    yield Token(STRING, token, spos, prefix)
+                    yield STRING, token, spos, prefix
             elif initial in namechars:                      # ordinary name
                 if token in ALWAYS_BREAK_TOKEN:
                     paren_level = 0
                     while True:
                         indent = indents.pop()
                         if indent > start:
-                            yield Token(DEDENT, '', (lnum, 0), '')
+                            yield DEDENT, '', (lnum, 0), ''
                         else:
                             indents.append(indent)
                             break
-                yield Token(NAME, token, spos, prefix)
+                yield NAME, token, spos, prefix
             elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
                 continue
             else:
@@ -337,8 +258,8 @@ def generate_tokens(readline, line_offset=0):
                     paren_level += 1
                 elif token in ')]}':
                     paren_level -= 1
-                yield Token(OP, token, spos, prefix)
+                yield OP, token, spos, prefix
 
     for indent in indents[1:]:
-        yield Token(DEDENT, '', (lnum, 0), '')
-    yield Token(ENDMARKER, '', (lnum, 0), prefix)
+        yield DEDENT, '', (lnum, 0), ''
+    yield ENDMARKER, '', (lnum, 0), prefix

@@ -74,13 +74,12 @@ class UserContext(object):
         force_point = False
         last_type = None
         is_first = True
-        for tok in gen:
-            tok_type = tok.type
-            tok_str = tok.value
-            end = tok.end_pos
+        for tok_type, tok_str, tok_start_pos, prefix in gen:
+            # TODO end is not correct, doesn't take new lines in consideration.
+            end = tok_start_pos[0], tok_start_pos[-1] + len(tok_str)
             self._column_temp = self._line_length - end[1]
             if is_first:
-                if tok.start_pos != (1, 0):  # whitespace is not a path
+                if tok_start_pos != (1, 0):  # whitespace is not a path
                     return u(''), start_cursor
                 is_first = False
 
@@ -118,7 +117,7 @@ class UserContext(object):
             else:
                 if tok_str == '-':
                     next_tok = next(gen)
-                    if next_tok.value == 'e':
+                    if next_tok[1] == 'e':
                         gen.push_back(next_tok)
                     else:
                         break
@@ -166,16 +165,15 @@ class UserContext(object):
         next_must_be_name = False
         next_is_key = False
         key_name = None
-        for token in self._get_backwards_tokenizer(self.position):
-            tok_str = token.value
+        for tok_type, tok_str, start_pos, prefix in self._get_backwards_tokenizer(self.position):
             if next_must_be_name:
-                if token.type == tokenize.NAME:
+                if tok_type == tokenize.NAME:
                     call, _ = self._calc_path_until_cursor(start_pos=pos)
                     return call, index, key_name
                 index = 0
                 next_must_be_name = False
             elif next_is_key:
-                if token.type == tokenize.NAME:
+                if tok_type == tokenize.NAME:
                     key_name = tok_str[::-1]
                 next_is_key = False
 
@@ -184,7 +182,7 @@ class UserContext(object):
                 if level == 1:
                     next_must_be_name = True
                     level = 0
-                    end = token.end_pos
+                    end = start_pos[0], start_pos[1] + 1
                     self._column_temp = self._line_length - end[1]
                     pos = self._line_temp + 1, self._column_temp
             elif tok_str == ')':

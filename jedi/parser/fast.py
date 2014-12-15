@@ -12,8 +12,7 @@ from jedi.parser import Parser
 from jedi.parser import tree as pr
 from jedi.parser import tokenize
 from jedi import cache
-from jedi.parser.tokenize import (source_tokens, Token, FLOWS, NEWLINE,
-                                  COMMENT, ENDMARKER)
+from jedi.parser.tokenize import source_tokens, FLOWS, NEWLINE, COMMENT, ENDMARKER
 
 
 class Module(pr.Module, pr.Simple):
@@ -387,7 +386,7 @@ class FastTokenizer(object):
         self.closed = False
 
         # fast parser options
-        self.current = self.previous = Token(None, '', (0, 0))
+        self.current = self.previous = None, '', (0, 0)
         self.in_flow = False
         self.new_indent = False
         self.parser_indent = self.old_parser_indent = 0
