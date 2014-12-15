@@ -1,6 +1,10 @@
 # Copyright 2004-2005 Elemental Security, Inc. All Rights Reserved.
 # Licensed to PSF under a Contributor Agreement.
 
+# Modifications:
+# Copyright 2014 David Halter. Integration into Jedi.
+# Modifications are dual-licensed: MIT and PSF.
+
 """This module defines the data structures used to represent a grammar.
 
 These are a bit arcane because they are derived from the data
