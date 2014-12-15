@@ -16,6 +16,7 @@ It works as follows:
 - search for function calls named ``foo``
 - execute these calls and check the input. This work with a ``ParamListener``.
 """
+from itertools import chain
 
 from jedi._compatibility import unicode
 from jedi.parser import tree as pr
@@ -38,11 +39,10 @@ class ParamListener(object):
         self.param_possibilities = []
 
     def execute(self, params):
-        self.param_possibilities.append(params)
+        self.param_possibilities += params
 
 
 @debug.increase_indent
-@memoize_default([], evaluator_is_first_arg=True)
 def search_params(evaluator, param):
     """
     A dynamic search for param values. If you try to complete a type:
@@ -58,8 +58,30 @@ def search_params(evaluator, param):
     """
     if not settings.dynamic_params:
         return []
-    from jedi.evaluate import representation as er
     debug.dbg('Dynamic param search for %s', param)
+
+    func = param.get_parent_until(pr.Function)
+    """
+        for params in get_posibilities(evaluator, module, func_name):
+            for p in params:
+                if str(p) == str(param.get_name()):
+                    result += p.parent.eval(evaluator)
+                    """
+    # Compare the param names.
+    names = [n for n in search_function_call(evaluator, func)
+             if n.value == param.name.value]
+    # Evaluate the ExecutedParams to types.
+    result = list(chain.from_iterable(n.parent.eval(evaluator) for n in names))
+    debug.dbg('Dynamic param result %s', result)
+    return result
+
+
+@memoize_default([], evaluator_is_first_arg=True)
+def search_function_call(evaluator, func):
+    """
+    Returns a list of param names.
+    """
+    from jedi.evaluate import representation as er
 
     def get_params_for_module(module):
         """
@@ -156,16 +178,9 @@ def search_params(evaluator, param):
                             # it, otherwise just ignore it.
                             evaluator.follow_path(iter(after), s, scope)
             return listener.param_possibilities
+        return get_posibilities(evaluator, module, func_name)
 
-        result = []
-        for params in get_posibilities(evaluator, module, func_name):
-            for p in params:
-                if str(p) == str(param.get_name()):
-                    result += p.parent.eval(evaluator)
-        return result
-
-    func = param.get_parent_until(pr.Function)
-    current_module = param.get_parent_until()
+    current_module = func.get_parent_until()
     func_name = unicode(func.name)
     compare = func
     if func_name == '__init__':
@@ -189,5 +204,4 @@ def search_params(evaluator, param):
         # cleanup: remove the listener; important: should not stick.
         func.listeners.remove(listener)
 
-    debug.dbg('Dynamic param result %s', result)
     return result
