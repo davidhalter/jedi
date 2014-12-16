@@ -317,27 +317,6 @@ class BaseDefinition(object):
         defs = self._evaluator.goto(self._name)
         return [Definition(self._evaluator, d) for d in defs]
 
-
-        # TODO REMOVE!
-        def call_path_for_name_part(stmt_or_imp, name_part):
-            if isinstance(stmt_or_imp, pr.Import):
-                return [name_part]
-            else:
-                for stmt_el in statement_elements_in_statement(stmt_or_imp):
-                    call_path = list(stmt_el.generate_call_path())
-                    for i, element in enumerate(call_path):
-                        if element is name_part:
-                            return call_path[:i + 1]
-
-        if self.type not in ('statement', 'import'):
-            # Functions, classes and modules are already fixed definitions, we
-            # cannot follow them anymore.
-            return [self]
-        stmt_or_imp = self._name.get_parent_until((pr.ExprStmt, pr.Import))
-        call_path = call_path_for_name_part(stmt_or_imp, self._name)
-        names = self._evaluator.goto(stmt_or_imp, call_path)
-        return [Definition(self._evaluator, n) for n in names]
-
     @memoize_default()
     def _follow_statements_imports(self):
         """
@@ -637,18 +616,6 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         Returns False, if it's a reference to such a definition.
         """
         return self._name.is_definition()
-
-
-        # TODO REMOVE this.
-        _def = self._name.get_parent_until((pr.ExprStmt, pr.Import,
-                                            pr.Function, pr.Class, pr.Module))
-        if isinstance(_def, pr.ExprStmt):
-            exp_list = _def.expression_list()
-            return not exp_list or self._name.start_pos < exp_list[0].start_pos
-        elif isinstance(_def, pr.Import):
-            return self._name in _def.get_defined_names()
-        else:
-            return True
 
     def __eq__(self, other):
         return self._name.start_pos == other._name.start_pos \
