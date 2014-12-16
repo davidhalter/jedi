@@ -38,9 +38,9 @@ def _load_faked_module(module):
             # There are two implementations of `open` for either python 2/3.
             # -> Rename the python2 version (`look at fake/builtins.pym`).
             open_func = search_scope(module, 'open')
-            open_func.name = FakeName('open_python3')
+            open_func.children[1] = FakeName('open_python3')
             open_func = search_scope(module, 'open_python2')
-            open_func.name = FakeName('open')
+            open_func.children[1] = FakeName('open')
         return module
 
 

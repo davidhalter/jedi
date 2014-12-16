@@ -16,9 +16,7 @@ import re
 from io import StringIO
 from token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, NAME, OP,
                    ERRORTOKEN, NEWLINE, INDENT, DEDENT)
-import token
 
-from jedi._compatibility import is_py3
 
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
