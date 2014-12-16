@@ -26,8 +26,7 @@ def defined_names(evaluator, scope):
     :type scope: Scope
     :rtype: list of Definition
     """
-    # Calling get_names_of_scope doesn't make sense always. It might include
-    # star imports or inherited stuff. Wanted?
+    # It might include inherited stuff. Wanted?
     # TODO discuss!
     if isinstance(scope, pr.Module):
         pair = scope, scope.get_defined_names()

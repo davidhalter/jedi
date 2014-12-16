@@ -6,9 +6,7 @@ from jedi._compatibility import unicode, zip_longest
 from jedi import debug
 from jedi import common
 from jedi.parser import tree as pr
-from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import iterable
-from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 from jedi.evaluate import precedence
 
@@ -83,7 +81,6 @@ class Arguments(pr.Base):
         # Reordering var_args is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.
         for key_arg in named_args:
-            # TODO its always only one value?
             yield key_arg
 
     def _reorder_var_args(var_args):
@@ -208,8 +205,6 @@ def get_params(evaluator, func, var_args):
     param_dict = {}
     for param in func.params:
         param_dict[str(param.get_name())] = param
-    # There may be calls, which don't fit all the params, this just ignores it.
-    #unpacked_va = _unpack_var_args(evaluator, var_args, func)
     unpacked_va = list(var_args.unpack(func))
     from jedi.evaluate.representation import InstanceElement
     if isinstance(func, InstanceElement):
@@ -350,82 +345,6 @@ def get_params(evaluator, func, var_args):
     return result
 
 
-def _unpack_var_args(evaluator, var_args, func):
-    """
-    Yields a key/value pair, the key is None, if its not a named arg.
-    """
-    argument_list = []
-    from jedi.evaluate.representation import InstanceElement
-    if isinstance(func, InstanceElement):
-        # Include self at this place.
-        argument_list.append((None, [helpers.FakeStatement([func.instance])]))
-
-    # `var_args` is typically an Array, and not a list.
-    for stmt in _reorder_var_args(var_args.iterate()):
-        if not isinstance(stmt, pr.ExprStmt):
-            if stmt is None:
-                argument_list.append((None, []))
-                # TODO generate warning?
-                continue
-            old = stmt
-            # generate a statement if it's not already one.
-            stmt = helpers.FakeStatement([old])
-
-        expression_list = stmt.expression_list()
-        if not len(expression_list):
-            continue
-        # *args
-        if expression_list[0] == '*':
-            arrays = evaluator.eval_expression_list(expression_list[1:])
-            iterators = [_iterate_star_args(evaluator, a, func)
-                         for a in arrays]
-            for values in list(zip_longest(*iterators)):
-                argument_list.append((None, [v for v in values if v is not None]))
-        # **kwargs
-        elif expression_list[0] == '**':
-            dct = {}
-            for array in evaluator.eval_expression_list(expression_list[1:]):
-                # Merge multiple kwargs dictionaries, if used with dynamic
-                # parameters.
-                s = _star_star_dict(evaluator, array, expression_list[1:], func)
-                for name, (key, value) in s.items():
-                    try:
-                        dct[name][1].add(value)
-                    except KeyError:
-                        dct[name] = key, set([value])
-
-            for key, values in dct.values():
-                # merge **kwargs/*args also for dynamic parameters
-                for i, p in enumerate(func.params):
-                    if str(p.get_name()) == str(key) and not p.stars:
-                        try:
-                            k, vs = argument_list[i]
-                        except IndexError:
-                            pass
-                        else:
-                            if k is None:  # k would imply a named argument
-                                # Don't merge if they orginate at the same
-                                # place. -> type-error-multiple-values
-                                if [v.parent for v in values] != [v.parent for v in vs]:
-                                    vs.extend(values)
-                                    break
-                else:
-                    # default is to merge
-                    argument_list.append((key, values))
-        # Normal arguments (including key arguments).
-        else:
-            if stmt.assignment_details:
-                key_arr, op = stmt.assignment_details[0]
-                # Filter error tokens
-                key_arr = [x for x in key_arr if isinstance(x, pr.Call)]
-                # named parameter
-                if key_arr and isinstance(key_arr[0], pr.Call):
-                    argument_list.append((key_arr[0].name, [stmt]))
-            else:
-                argument_list.append((None, [stmt]))
-    return argument_list
-
-
 def _iterate_star_args(evaluator, array, input_node, func=None):
     from jedi.evaluate.representation import Instance
     if isinstance(array, iterable.Array):
@@ -472,28 +391,7 @@ def _gen_param_name_copy(evaluator, func, var_args, param, keys=(), values=(), a
     """
     Create a param with the original scope (of varargs) as parent.
     """
-    if isinstance(var_args, pr.Array):
-        parent = var_args.parent
-        start_pos = var_args.start_pos
-    else:
-        parent = func
-        start_pos = 0, 0
-
-    """
-    # create an Array (-> needed for *args/**kwargs tuples/dicts)
-    arr = iterable.FakeSequence(evaluator, values, array_type)
-    # TODO change?!
-    arr = pr.Array(helpers.FakeSubModule, start_pos, array_type, parent)
-    key_stmts = []
-    for key in keys:
-        key_stmts.append(helpers.FakeStatement([key], start_pos))
-    arr.keys = key_stmts
-    arr.type = array_type
-    """
-
-    new_param = ExecutedParam.from_param(values, param, parent, var_args)
-
-
+    new_param = ExecutedParam.from_param(values, param, func, var_args)
     name = copy.copy(param.get_name())
     name.parent = new_param
     return name
