@@ -19,7 +19,7 @@ import os
 
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
-from jedi.parser.pgen2 import grammar
+from jedi.parser import token
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser
 
@@ -184,11 +184,11 @@ class Parser(object):
                 arr = self.scope_names_stack[-1].setdefault(name.value, [])
                 arr.append(name)
                 return name
-        elif type == tokenize.STRING:
+        elif type == token.STRING:
             return pt.String(value, start_pos, prefix)
-        elif type == tokenize.NUMBER:
+        elif type == token.NUMBER:
             return pt.Number(value, start_pos, prefix)
-        elif type in (tokenize.NEWLINE, tokenize.ENDMARKER):
+        elif type in (token.NEWLINE, token.ENDMARKER):
             return pt.Whitespace(value, start_pos, prefix)
         else:
             return pt.Operator(value, start_pos, prefix)
@@ -228,12 +228,12 @@ class Parser(object):
             nodes = suite_nodes
             stack[index]
 
-        #print('err', tokenize.tok_name[typ], repr(value), start_pos, len(stack), index)
+        #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
         self._stack_removal(grammar, stack, index + 1, value, start_pos)
         if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
             # Those can always be new statements.
             add_token_callback(typ, value, prefix, start_pos)
-        elif typ == tokenize.DEDENT:
+        elif typ == token.DEDENT:
             if symbol == 'suite':
                 # If a function or anything else contains a suite that is
                 # "empty" (just NEWLINE/INDENT), we remove it. If it's not
@@ -282,7 +282,7 @@ class Parser(object):
     def _tokenize(self, tokenizer):
         """
             while first_pos[1] <= self._scope.start_pos[1] \
-                    and (token_type == tokenize.NAME or tok_str in ('(', '['))\
+                    and (token_type == token.NAME or tok_str in ('(', '['))\
                     and self._scope != self.module:
                 self._scope.end_pos = first_pos
                 self._scope = self._scope.parent
@@ -292,8 +292,8 @@ class Parser(object):
         """
 
         for typ, value, start_pos, prefix in tokenizer:
-            if typ == tokenize.OP:
-                typ = grammar.opmap[value]
+            if typ == token.OP:
+                typ = token.opmap[value]
             yield typ, value, prefix, start_pos
 
     def __repr__(self):

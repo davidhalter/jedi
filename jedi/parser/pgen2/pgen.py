@@ -6,7 +6,9 @@
 # Modifications are dual-licensed: MIT and PSF.
 
 # Pgen imports
-from . import grammar, tokenize
+from . import grammar
+from jedi.parser import token
+from jedi.parser import tokenize
 
 
 class ParserGenerator(object):
@@ -74,9 +76,9 @@ class ParserGenerator(object):
                     return ilabel
             else:
                 # A named token (NAME, NUMBER, STRING)
-                itoken = getattr(tokenize, label, None)
+                itoken = getattr(token, label, None)
                 assert isinstance(itoken, int), label
-                assert itoken in tokenize.tok_name, label
+                assert itoken in token.tok_name, label
                 if itoken in c.tokens:
                     return c.tokens[itoken]
                 else:
@@ -92,12 +94,12 @@ class ParserGenerator(object):
                 if value in c.keywords:
                     return c.keywords[value]
                 else:
-                    c.labels.append((tokenize.NAME, value))
+                    c.labels.append((token.NAME, value))
                     c.keywords[value] = ilabel
                     return ilabel
             else:
                 # An operator (any non-numeric token)
-                itoken = grammar.opmap[value]  # Fails if unknown token
+                itoken = token.opmap[value]  # Fails if unknown token
                 if itoken in c.tokens:
                     return c.tokens[itoken]
                 else:
@@ -147,14 +149,14 @@ class ParserGenerator(object):
         dfas = {}
         startsymbol = None
         # MSTART: (NEWLINE | RULE)* ENDMARKER
-        while self.type != tokenize.ENDMARKER:
-            while self.type == tokenize.NEWLINE:
+        while self.type != token.ENDMARKER:
+            while self.type == token.NEWLINE:
                 self.gettoken()
             # RULE: NAME ':' RHS NEWLINE
-            name = self.expect(tokenize.NAME)
-            self.expect(tokenize.OP, ":")
+            name = self.expect(token.NAME)
+            self.expect(token.OP, ":")
             a, z = self.parse_rhs()
-            self.expect(tokenize.NEWLINE)
+            self.expect(token.NEWLINE)
             #self.dump_nfa(name, a, z)
             dfa = self.make_dfa(a, z)
             #self.dump_dfa(name, dfa)
@@ -271,7 +273,7 @@ class ParserGenerator(object):
         # ALT: ITEM+
         a, b = self.parse_item()
         while (self.value in ("(", "[") or
-               self.type in (tokenize.NAME, tokenize.STRING)):
+               self.type in (token.NAME, token.STRING)):
             c, d = self.parse_item()
             b.addarc(c)
             b = d
@@ -282,7 +284,7 @@ class ParserGenerator(object):
         if self.value == "[":
             self.gettoken()
             a, z = self.parse_rhs()
-            self.expect(tokenize.OP, "]")
+            self.expect(token.OP, "]")
             a.addarc(z)
             return a, z
         else:
@@ -302,9 +304,9 @@ class ParserGenerator(object):
         if self.value == "(":
             self.gettoken()
             a, z = self.parse_rhs()
-            self.expect(tokenize.OP, ")")
+            self.expect(token.OP, ")")
             return a, z
-        elif self.type in (tokenize.NAME, tokenize.STRING):
+        elif self.type in (token.NAME, token.STRING):
             a = NFAState()
             z = NFAState()
             a.addarc(z, self.value)
@@ -324,9 +326,9 @@ class ParserGenerator(object):
 
     def gettoken(self):
         tup = next(self.generator)
-        while tup[0] in (tokenize.COMMENT, tokenize.NL):
+        while tup[0] in (token.COMMENT, token.NL):
             tup = next(self.generator)
-        self.type, self.value, self.begin, self.end, self.line = tup
+        self.type, self.value, self.begin, prefix = tup
         #print tokenize.tok_name[self.type], repr(self.value)
 
     def raise_error(self, msg, *args):
@@ -335,8 +337,9 @@ class ParserGenerator(object):
                 msg = msg % args
             except:
                 msg = " ".join([msg] + list(map(str, args)))
-        raise SyntaxError(msg, (self.filename, self.end[0],
-                                self.end[1], self.line))
+        line = open(self.filename).readlines()[self.begin[0]]
+        raise SyntaxError(msg, (self.filename, self.begin[0],
+                                self.begin[1], line))
 
 
 class NFAState(object):

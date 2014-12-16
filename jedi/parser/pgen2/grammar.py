@@ -19,9 +19,6 @@ fallback token code OP, but the parser needs the actual token code.
 # Python imports
 import pickle
 
-# Local imports
-from . import token
-
 
 class Grammar(object):
     """Pgen parsing tables conversion class.
@@ -126,62 +123,3 @@ class Grammar(object):
         print("labels")
         pprint(self.labels)
         print("start", self.start)
-
-
-# Map from operator to number (since tokenize doesn't do this)
-
-opmap_raw = """
-( LPAR
-) RPAR
-[ LSQB
-] RSQB
-: COLON
-, COMMA
-; SEMI
-+ PLUS
-- MINUS
-* STAR
-/ SLASH
-| VBAR
-& AMPER
-< LESS
-> GREATER
-= EQUAL
-. DOT
-% PERCENT
-` BACKQUOTE
-{ LBRACE
-} RBRACE
-@ AT
-== EQEQUAL
-!= NOTEQUAL
-<> NOTEQUAL
-<= LESSEQUAL
->= GREATEREQUAL
-~ TILDE
-^ CIRCUMFLEX
-<< LEFTSHIFT
->> RIGHTSHIFT
-** DOUBLESTAR
-+= PLUSEQUAL
--= MINEQUAL
-*= STAREQUAL
-/= SLASHEQUAL
-%= PERCENTEQUAL
-&= AMPEREQUAL
-|= VBAREQUAL
-^= CIRCUMFLEXEQUAL
-<<= LEFTSHIFTEQUAL
->>= RIGHTSHIFTEQUAL
-**= DOUBLESTAREQUAL
-// DOUBLESLASH
-//= DOUBLESLASHEQUAL
--> RARROW
-... ELLIPSIS
-"""
-
-opmap = {}
-for line in opmap_raw.splitlines():
-    if line:
-        op, name = line.split()
-        opmap[op] = getattr(token, name)
