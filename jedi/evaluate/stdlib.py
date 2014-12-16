@@ -95,7 +95,6 @@ def argument_clinic(string, want_obj=False, want_scope=False):
 
 @argument_clinic('object, name[, default], /')
 def builtins_getattr(evaluator, objects, names, defaults=None):
-    # TODO rename to types
     types = []
     # follow the first param
     for obj in objects:
