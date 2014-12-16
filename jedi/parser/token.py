@@ -20,7 +20,7 @@ if is_py3:
 
 # Map from operator to number (since tokenize doesn't do this)
 
-opmap_raw = """
+opmap_raw = """\
 ( LPAR
 ) RPAR
 [ LSQB
@@ -72,8 +72,7 @@ opmap_raw = """
 
 opmap = {}
 for line in opmap_raw.splitlines():
-    if line:
-        op, name = line.split()
-        if is_py3 and name == 'BACKQUOTE':
-            continue
-        opmap[op] = globals()[name]
+    op, name = line.split()
+    if is_py3 and name == 'BACKQUOTE':
+        continue
+    opmap[op] = globals()[name]
