@@ -14,7 +14,7 @@ check for -> a is a string). There's big potential in these checks.
 from itertools import chain
 
 from jedi._compatibility import hasattr, unicode, u
-from jedi.parser import tree as pr, tokenize
+from jedi.parser import tree as pr
 from jedi.parser import fast
 from jedi import debug
 from jedi import common
@@ -157,27 +157,25 @@ class NameFinder(object):
                 #    filter_private_variable(name_list_scope, scope, name.value):
                 #    continue
 
-                # Exclude `arr[1] =` from the result set.
-                if not self._name_is_array_assignment(name, stmt):
-                    # TODO we ignore a lot of elements here that should not be
-                    #   ignored. But then again flow_analysis also stops when the
-                    #   input scope is reached. This is not correct: variables
-                    #   might still have conditions if defined outside of the
-                    #   current scope.
-                    if isinstance(stmt, (pr.Param, pr.Import)) \
-                            or isinstance(name_list_scope, (pr.Lambda, er.Instance, InterpreterNamespace)) \
-                            or isinstance(scope, compiled.CompiledObject):
-                        # Always reachable.
+                # TODO we ignore a lot of elements here that should not be
+                #   ignored. But then again flow_analysis also stops when the
+                #   input scope is reached. This is not correct: variables
+                #   might still have conditions if defined outside of the
+                #   current scope.
+                if isinstance(stmt, (pr.Param, pr.Import)) \
+                        or isinstance(name_list_scope, (pr.Lambda, er.Instance, InterpreterNamespace)) \
+                        or isinstance(scope, compiled.CompiledObject):
+                    # Always reachable.
+                    names.append(name)
+                else:
+                    check = flow_analysis.break_check(self._evaluator,
+                                                      name_list_scope,
+                                                      stmt,
+                                                      self.scope)
+                    if check is not flow_analysis.UNREACHABLE:
                         names.append(name)
-                    else:
-                        check = flow_analysis.break_check(self._evaluator,
-                                                          name_list_scope,
-                                                          stmt,
-                                                          self.scope)
-                        if check is not flow_analysis.UNREACHABLE:
-                            names.append(name)
-                        if check is flow_analysis.REACHABLE:
-                            break
+                    if check is flow_analysis.REACHABLE:
+                        break
 
                 if names and self._is_name_break_scope(stmt):
                     if self._does_scope_break_immediately(scope, name_list_scope):
@@ -252,36 +250,6 @@ class NameFinder(object):
             return scope == name_list_scope
         else:
             return True
-
-    def _name_is_array_assignment(self, name, stmt):
-        return False
-
-        # TODO DELETE this? or change it?
-        if stmt.isinstance(pr.ExprStmt):
-            def is_execution(calls):
-                for c in calls:
-                    if isinstance(c, (unicode, str, tokenize.Token)):
-                        continue
-                    if c.isinstance(pr.Array):
-                        if is_execution(c):
-                            return True
-                    elif c.isinstance(pr.Call):
-                        # Compare start_pos, because names may be different
-                        # because of executions.
-                        if c.name.start_pos == name.start_pos \
-                                and isinstance(c.next, pr.Array):
-                            return True
-                return False
-
-            is_exe = False
-            for assignee, op in stmt.assignment_details:
-                is_exe |= is_execution(assignee)
-
-            if is_exe:
-                # filter array[3] = ...
-                # TODO check executions for dict contents
-                return True
-        return False
 
     def _names_to_types(self, names):
         types = []
@@ -573,82 +541,9 @@ def get_names_of_scope(evaluator, scope, position=None, star_search=True, includ
                 and isinstance(in_func_scope, (pr.Function, er.FunctionExecution)):
             position = None
 
-    # Add star imports.
-    if star_search:
-        """
-        for s in imports.remove_star_imports(evaluator, origin_scope.get_parent_until()):
-            for g in get_names_of_scope(evaluator, s, star_search=False):
-                yield g
-        """
-
-        # Add builtins to the global scope.
-        if include_builtin:
-            yield compiled.builtin, compiled.builtin.get_defined_names()
-
-
-def _assign_tuples(tup, results, seek_name):
-    """
-    This is a normal assignment checker. In python functions and other things
-    can return tuples:
-    >>> a, b = 1, ""
-    >>> a, (b, c) = 1, ("", 1.0)
-
-    Here, if `seek_name` is "a", the number type will be returned.
-    The first part (before `=`) is the param tuples, the second one result.
-
-    :type tup: pr.Array
-    """
-    def eval_results(index):
-        types = []
-        for r in results:
-            try:
-                func = r.get_exact_index_types
-            except AttributeError:
-                debug.warning("invalid tuple lookup %s of result %s in %s",
-                              tup, results, seek_name)
-            else:
-                with common.ignored(IndexError):
-                    types += func(index)
-        return types
-
-    result = []
-    for i, stmt in enumerate(tup):
-        # Used in assignments. There is just one call and no other things,
-        # therefore we can just assume, that the first part is important.
-        command = stmt.expression_list()[0]
-
-        if tup.type == pr.Array.NOARRAY:
-
-                # unnessecary braces -> just remove.
-            r = results
-        else:
-            r = eval_results(i)
-
-        # LHS of tuples can be nested, so resolve it recursively
-        result += find_assignments(command, r, seek_name)
-    return result
-
-
-def find_assignments(lhs, results, seek_name):
-    """
-    Check if `seek_name` is in the left hand side `lhs` of assignment.
-
-    `lhs` can simply be a variable (`pr.Call`) or a tuple/list (`pr.Array`)
-    representing the following cases::
-
-        a = 1        # lhs is pr.Call
-        (a, b) = 2   # lhs is pr.Array
-
-    :type lhs: pr.Call
-    :type results: list
-    :type seek_name: str
-    """
-    if isinstance(lhs, pr.Array):
-        return _assign_tuples(lhs, results, seek_name)
-    elif unicode(lhs.name) == seek_name:
-        return results
-    else:
-        return []
+    # Add builtins to the global scope.
+    if include_builtin:
+        yield compiled.builtin, compiled.builtin.get_defined_names()
 
 
 def check_tuple_assignments(types, name):
