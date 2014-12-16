@@ -16,6 +16,14 @@ if is_py3:
     BACKQUOTE = N_TOKENS
     tok_name[BACKQUOTE] = 'BACKQUOTE'
     N_TOKENS += 1
+else:
+    RARROW = N_TOKENS
+    tok_name[RARROW] = 'RARROW'
+    N_TOKENS += 1
+    ELLIPSIS = N_TOKENS
+    tok_name[ELLIPSIS] = 'ELLIPSIS'
+    N_TOKENS += 1
+
 
 
 # Map from operator to number (since tokenize doesn't do this)
@@ -73,6 +81,4 @@ opmap_raw = """\
 opmap = {}
 for line in opmap_raw.splitlines():
     op, name = line.split()
-    if is_py3 and name == 'BACKQUOTE':
-        continue
     opmap[op] = globals()[name]
