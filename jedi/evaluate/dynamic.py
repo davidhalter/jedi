@@ -22,13 +22,8 @@ from jedi._compatibility import unicode
 from jedi.parser import tree as pr
 from jedi import settings
 from jedi import debug
-from jedi.evaluate import helpers
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import imports
-
-# This is something like the sys.path, but only for searching params. It means
-# that this is the order in which Jedi searches params.
-search_param_modules = ['.']
 
 
 class ParamListener(object):
@@ -130,53 +125,6 @@ def search_function_call(evaluator, func):
                         # Only if we have the correct function we execute
                         # it, otherwise just ignore it.
                         evaluator.eval_trailer(types, trailer)
-
-
-                # TODO REMOVE
-                continue
-                calls = helpers.scan_statement_for_calls(stmt, func_name)
-                for c in calls:
-                    # no execution means that params cannot be set
-                    call_path = list(c.generate_call_path())
-                    pos = c.start_pos
-                    scope = stmt.parent
-
-                    # This whole stuff is just to not execute certain parts
-                    # (speed improvement), basically we could just call
-                    # ``eval_call_path`` on the call_path and it would also
-                    # work.
-                    def listRightIndex(lst, value):
-                        return len(lst) - lst[-1::-1].index(value) - 1
-
-                    # Need to take right index, because there could be a
-                    # func usage before.
-                    call_path_simple = [unicode(d) if isinstance(d, pr.Name)
-                                        else d for d in call_path]
-                    i = listRightIndex(call_path_simple, func_name)
-                    before, after = call_path[:i], call_path[i + 1:]
-                    if not after and not call_path_simple.index(func_name) != i:
-                        continue
-                    scopes = [scope]
-                    if before:
-                        scopes = evaluator.eval_call_path(iter(before), c.parent, pos)
-                        pos = None
-                    for scope in scopes:
-                        # Not resolving decorators is a speed hack:
-                        # By ignoring them, we get the function that is
-                        # probably called really fast. If it's not called, it
-                        # doesn't matter. But this is a way to get potential
-                        # candidates for calling that function really quick!
-                        s = evaluator.find_types(scope, func_name, position=pos,
-                                                 search_global=not before,
-                                                 resolve_decorator=False)
-
-                        c = [getattr(escope, 'base_func', None) or escope.base
-                             for escope in s
-                             if escope.isinstance(er.Function, er.Class)]
-                        if compare in c:
-                            # only if we have the correct function we execute
-                            # it, otherwise just ignore it.
-                            evaluator.follow_path(iter(after), s, scope)
             return listener.param_possibilities
         return get_posibilities(evaluator, module, func_name)
 
