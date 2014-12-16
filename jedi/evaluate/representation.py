@@ -626,6 +626,7 @@ class FunctionExecution(Executed):
         return LazyDict(self.base.names_dict, self._copy_list)
 """
 
+
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):
         """

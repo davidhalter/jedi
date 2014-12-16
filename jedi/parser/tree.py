@@ -1,19 +1,14 @@
 """
-If you know what an abstract syntax tree (ast) is, you'll see that this module
-is pretty much that. The classes represent syntax elements: ``Import``,
-``Function``.
+If you know what an abstract syntax tree (AST) is, you'll see that this module
+is pretty much that. The classes represent syntax elements like functions and
+imports.
 
-A very central class is ``Scope``. It is not used directly by the parser, but
-inherited. It's used by ``Function``, ``Class``, ``Flow``, etc. A ``Scope`` may
-have ``subscopes``, ``imports`` and ``statements``. The entire parser is based
-on scopes, because they also stand for indentation.
+This is the "business logic" part of the parser. There's a lot of logic here
+that makes it easier for Jedi (and other libraries to deal with a Python syntax
+tree.
 
-One special thing:
-
-``Array`` values are statements. But if you think about it, this makes sense.
-``[1, 2+33]`` for example would be an Array with two ``Statement`` inside. This
-is the easiest way to write a parser. The same behaviour applies to ``Param``,
-which is being used in a function definition.
+By using `get_code` on a module, you can get back the 1-to-1 representation of
+the input given to the parser. This is important if you are using refactoring.
 
 The easiest way to play with this module is to use :class:`parsing.Parser`.
 :attr:`parsing.Parser.module` holds an instance of :class:`SubModule`:
