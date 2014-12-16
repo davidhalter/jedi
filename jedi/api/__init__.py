@@ -291,15 +291,6 @@ class Script(object):
                 i = imports.get_importer(self._evaluator, names, module, level)
                 return i.follow(self._evaluator)
 
-
-            if not is_completion:
-                # goto_definition returns definitions of its statements if the
-                # cursor is on the assignee. By changing the start_pos of our
-                # "pseudo" statement, the Jedi evaluator can find the assignees.
-                
-                # TODO remove?
-                if False and user_stmt is not None:
-                    eval_stmt.start_pos = user_stmt.end_pos
             scopes = self._evaluator.eval_statement(eval_stmt)
 
         return scopes
