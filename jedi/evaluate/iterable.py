@@ -29,7 +29,6 @@ from jedi._compatibility import use_metaclass, is_py3, unicode
 from jedi.parser import tree as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
-from jedi.evaluate import precedence
 from jedi.evaluate.cache import CachedMetaClass, memoize_default, NO_DEFAULT
 from jedi.cache import underscore_memoization
 from jedi.evaluate import analysis
@@ -450,33 +449,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     if not settings.dynamic_array_additions or isinstance(module, compiled.CompiledObject):
         return []
 
-    def check_power(power):
-        """
-        The power node is compared with the original Array.
-        """
-        # TODO remove unused.
-        result = []
-        x = evaluator.eval_element(power)
-        #print(power, compare_array in x, x, compare_array)
-        if 0:
-            call_path = list(c.generate_call_path())
-            call_path_simple = [unicode(n) if isinstance(n, pr.Name) else n
-                                for n in call_path]
-            separate_index = call_path_simple.index(add_name)
-            if add_name == call_path_simple[-1] or separate_index == 0:
-                # this means that there is no execution -> [].append
-                # or the keyword is at the start -> append()
-                continue
-            backtrack_path = iter(call_path[:separate_index])
-
-            position = c.start_pos
-            scope = c.get_parent_scope()
-
-            found = evaluator.eval_call_path(backtrack_path, scope, position)
-            if not compare_array in found:
-                continue
-
-    def get_additions(arglist, add_name):
+    def check_additions(arglist, add_name):
         params = list(param.Arguments(evaluator, arglist).unpack())
         result = []
         if add_name in ['insert']:
@@ -489,30 +462,6 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                 iterators = unite(evaluator.eval_element(node) for node in nodes)
                 result += get_iterator_types(iterators)
         return result
-        
-        # TODO REMOVE
-        """
-        params = call_path[separate_index + 1]
-        if not params.values:
-            #continue  # no params: just ignore it
-            pass
-        if add_name in ['append', 'add']:
-            for p in params:
-                result += evaluator.eval_statement(p)
-        elif add_name in ['insert']:
-            try:
-                second_param = params[1]
-            except IndexError:
-                #continue
-                pass
-            else:
-                result += evaluator.eval_statement(second_param)
-        elif add_name in ['extend', 'update']:
-            for p in params:
-                iterators = evaluator.eval_statement(p)
-            result += get_iterator_types(iterators)
-        return result
-        """
 
     from jedi.evaluate import representation as er, param
 
@@ -580,7 +529,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                     continue
                 if compare_array in evaluator.eval_element(power):
                     # The arrays match. Now add the results
-                    added_types += get_additions(execution_trailer.children[1], add_name)
+                    added_types += check_additions(execution_trailer.children[1], add_name)
 
                 evaluator.recursion_detector.pop_stmt()
     # reset settings
@@ -615,29 +564,10 @@ class ArrayInstance(IterableWrapper):
         lists/sets are too complicated too handle that.
         """
         items = []
-        from jedi.evaluate.representation import Instance
         for key, nodes in self.var_args.unpack():
             for node in nodes:
                 for typ in self._evaluator.eval_element(node):
-                    # TODO remove?
-                    """
-                    if isinstance(typ, Instance) and len(typ.var_args):
-                        array = typ.var_args[0]
-                        if isinstance(array, ArrayInstance):
-                            # Certain combinations can cause recursions, see tests.
-                            if not self._evaluator.recursion_detector.push_stmt(self.var_args):
-                                items += array.iter_content()
-                                self._evaluator.recursion_detector.pop_stmt()
-                    """
                     items += get_iterator_types([typ])
-
-
-        # TODO remove?
-        """
-        # TODO check if exclusion of tuple is a problem here.
-        if isinstance(self.var_args, tuple) or self.var_args.parent is None:
-            return []  # generated var_args should not be checked for arrays
-"""
 
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
@@ -696,25 +626,3 @@ def create_indexes_or_slices(evaluator, index):
 
         return (Slice(evaluator, *result),)
     return evaluator.eval_element(index)
-    # TODO delete the rest?
-
-
-    # Just take the first part of the "array", because this is Python stdlib
-    # behavior. Numpy et al. perform differently, but Jedi won't understand
-    # that anyway.
-    expression_list = index[0].expression_list()
-    prec = precedence.create_precedence(expression_list)
-
-    # check for slices
-    if isinstance(prec, precedence.Precedence) and prec.operator == ':':
-        start = prec.left
-        if isinstance(start, precedence.Precedence) and start.operator == ':':
-            stop = start.right
-            start = start.left
-            step = prec.right
-        else:
-            stop = prec.right
-            step = None
-        return (Slice(evaluator, start, stop, step),)
-    else:
-        return tuple(precedence.process_precedence_element(evaluator, prec))
