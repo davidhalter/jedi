@@ -1,3 +1,6 @@
+"""
+TODO This whole module is crap (especially since the new parser) and needs to be rewritten.
+""" #
 import inspect
 import re
 
