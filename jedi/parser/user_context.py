@@ -55,7 +55,9 @@ class UserContext(object):
                 column = start_pos[1] - tok_start_pos[1]
             else:
                 column = len(line) - tok_start_pos[1]
-            column -= len(tok_str)
+            # Multi-line docstrings must be accounted for.
+            first_line = (tok_str.splitlines() or [''])[0]
+            column -= len(first_line)
             # Reverse the token again, so that it is in normal order again.
             yield typ, tok_str[::-1], (self._line_temp, column), prefix
 
