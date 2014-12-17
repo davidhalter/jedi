@@ -36,18 +36,13 @@ class UserContext(object):
         first_line = self.get_line(self._line_temp)[:self._column_temp]
 
         self._line_length = self._column_temp
-        yield first_line[::-1]
+        yield first_line[::-1] + '\n'
 
         while True:
             self._line_temp -= 1
             line = self.get_line(self._line_temp)
-            if False and last_line and last_line[-1] == '\\':
-                # Add lines with a backslash at the end.
-                line = last_line[:-1] + ' ' + line
-                self._line_length = len(last_line)
-            else:
-                self._line_length = len(line)
-                yield '\n' + line[::-1]
+            self._line_length = len(line)
+            yield line[::-1] + '\n'
 
     def _get_backwards_tokenizer(self, start_pos):
         gen = self._backwards_line_generator(start_pos)
@@ -159,6 +154,8 @@ class UserContext(object):
         next_is_key = False
         key_name = None
         for tok_type, tok_str, start_pos, prefix in self._get_backwards_tokenizer(self.position):
+            # TODO improve the speed by not tokenizing everything.
+            #     def/class/import stops the process.
             if next_must_be_name:
                 if tok_type == tokenize.NAME:
                     call, _ = self._calc_path_until_cursor(start_pos=pos)
