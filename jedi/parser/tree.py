@@ -203,6 +203,8 @@ class Leaf(Base):
 
 
 class LeafWithNewLines(Leaf):
+    __slots__ = ()
+
     @property
     def end_pos(self):
         """
@@ -224,8 +226,9 @@ class LeafWithNewLines(Leaf):
 
 
 class Whitespace(LeafWithNewLines):
-    type = 'whitespace'
     """Contains NEWLINE and ENDMARKER tokens."""
+    __slots__ = ()
+    type = 'whitespace'
 
 
 class Name(Leaf):
@@ -234,6 +237,7 @@ class Name(Leaf):
     or not.
     """
     type = 'name'
+    __slots__ = ()
 
     def __str__(self):
         return self.value
@@ -305,6 +309,8 @@ class Name(Leaf):
 
 
 class Literal(LeafWithNewLines):
+    __slots__ = ()
+
     def eval(self):
         return literal_eval(self.value)
 
@@ -321,14 +327,17 @@ class Literal(LeafWithNewLines):
 
 class Number(Literal):
     type = 'number'
+    __slots__ = ()
 
 
 class String(Literal):
     type = 'string'
+    __slots__ = ()
 
 
 class Operator(Leaf):
     type = 'operator'
+    __slots__ = ()
 
     def __str__(self):
         return self.value
@@ -353,6 +362,7 @@ class Operator(Leaf):
 
 class Keyword(Leaf):
     type = 'keyword'
+    __slots__ = ()
 
     def __eq__(self, other):
         """
@@ -442,6 +452,7 @@ class Simple(Base):
 
 class Node(Simple):
     """Concrete implementation for interior nodes."""
+    __slots__ = ('type',)
 
     def __init__(self, type, children):
         """
@@ -487,11 +498,10 @@ class Scope(Simple, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('_doc_token', 'names_dict')
+    __slots__ = ('names_dict',)
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
-        self._doc_token = None
 
     @property
     def returns(self):
@@ -633,6 +643,8 @@ class Module(Base):
     """
     For isinstance checks. fast_parser.Module also inherits from this.
     """
+    __slots__ = ()
+
     def is_scope(self):
         return True
 
@@ -643,8 +655,8 @@ class SubModule(Scope, Module):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    __slots__ = ('path', 'global_names', 'used_names',
-                 'line_offset', 'use_as_parent', 'failed_statement_stacks')
+    __slots__ = ('path', 'global_names', 'used_names', '_name',
+                 'line_offset', 'use_as_parent', 'error_statement_stacks')
 
     def __init__(self, children):
         """
@@ -721,7 +733,7 @@ class SubModule(Scope, Module):
 
 class Decorator(Simple):
     type = 'decorator'
-    pass
+    __slots__ = ()
 
 
 class ClassOrFunc(Scope):
@@ -754,6 +766,7 @@ class Class(ClassOrFunc):
     :type start_pos: tuple(int, int)
     """
     type = 'classdef'
+    __slots__ = ()
 
     def __init__(self, children):
         super(Class, self).__init__(children)
@@ -772,9 +785,7 @@ class Class(ClassOrFunc):
         """
         Return a document string including call signature of __init__.
         """
-        docstr = ""
-        if self._doc_token is not None:
-            docstr = self.raw_doc
+        docstr = self.raw_doc
         for sub in self.subscopes:
             if str(sub.name) == '__init__':
                 return '%s\n\n%s' % (
@@ -877,9 +888,7 @@ class Function(ClassOrFunc):
     @property
     def doc(self):
         """ Return a document string including call signature. """
-        docstr = ""
-        if self._doc_token is not None:
-            docstr = self.raw_doc
+        docstr = self.raw_doc
         return '%s\n\n%s' % (self.get_call_signature(), docstr)
 
 
@@ -888,6 +897,7 @@ class Lambda(Function):
     Lambdas are basically trimmed functions, so give it the same interface.
     """
     type = 'lambda'
+    __slots__ = ()
 
     def __init__(self, children):
         super(Function, self).__init__(children)
@@ -906,11 +916,12 @@ class Lambda(Function):
 
 
 class Flow(Simple):
-    pass
+    __slots__ = ()
 
 
 class IfStmt(Flow):
     type = 'if_stmt'
+    __slots__ = ()
 
     def check_nodes(self):
         """
@@ -944,14 +955,17 @@ class IfStmt(Flow):
 
 class WhileStmt(Flow):
     type = 'while_stmt'
+    __slots__ = ()
 
 
 class ForStmt(Flow):
     type = 'for_stmt'
+    __slots__ = ()
 
 
 class TryStmt(Flow):
     type = 'try_stmt'
+    __slots__ = ()
 
     def except_clauses(self):
         """
@@ -967,6 +981,7 @@ class TryStmt(Flow):
 
 class WithStmt(Flow):
     type = 'with_stmt'
+    __slots__ = ()
 
     def get_defined_names(self):
         names = []
@@ -985,6 +1000,7 @@ class WithStmt(Flow):
 
 
 class Import(Simple):
+    __slots__ = ()
     def get_all_import_names(self):
         # TODO remove. do we even need this?
         raise NotImplementedError
@@ -1010,6 +1026,7 @@ class Import(Simple):
 
 class ImportFrom(Import):
     type = 'import_from'
+    __slots__ = ()
 
     def get_defined_names(self):
         return [alias or name for name, alias in self._as_name_tuples()]
@@ -1076,6 +1093,7 @@ class ImportFrom(Import):
 class ImportName(Import):
     """For ``import_name`` nodes. Covers normal imports without ``from``."""
     type = 'import_name'
+    __slots__ = ()
 
     def get_defined_names(self):
         return [alias or path[0] for path, alias in self._dotted_as_names()]
@@ -1128,6 +1146,7 @@ class KeywordStatement(Simple):
     For the following statements: `assert`, `del`, `global`, `nonlocal`,
     `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
     """
+    __slots__ = ()
     @property
     def keyword(self):
         return self.children[0].value
@@ -1135,6 +1154,7 @@ class KeywordStatement(Simple):
 
 class AssertStmt(KeywordStatement):
     type = 'assert_stmt'
+    __slots__ = ()
 
     def assertion(self):
         return self.children[1]
@@ -1142,6 +1162,7 @@ class AssertStmt(KeywordStatement):
 
 class GlobalStmt(KeywordStatement):
     type = 'global_stmt'
+    __slots__ = ()
 
     def get_defined_names(self):
         return self.children[1::2]
@@ -1149,10 +1170,12 @@ class GlobalStmt(KeywordStatement):
 
 class ReturnStmt(KeywordStatement):
     type = 'return_stmt'
+    __slots__ = ()
 
 
 class YieldExpr(Simple):
     type = 'yield_expr'
+    __slots__ = ()
 
 
 def _defined_names(current):
@@ -1178,6 +1201,7 @@ def _defined_names(current):
 
 class ExprStmt(Simple, DocstringMixin):
     type = 'expr_stmt'
+    __slots__ = ()
 
     def get_defined_names(self):
         return list(chain.from_iterable(_defined_names(self.children[i])
@@ -1273,6 +1297,7 @@ class Array(object):
 
 class CompFor(Simple):
     type = 'comp_for'
+    __slots__ = ()
 
     def is_scope(self):
         return True
