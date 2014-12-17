@@ -59,7 +59,7 @@ class UserContext(object):
             first_line = (tok_str.splitlines() or [''])[0]
             column -= len(first_line)
             # Reverse the token again, so that it is in normal order again.
-            yield typ, tok_str[::-1], (self._line_temp, column), prefix
+            yield typ, tok_str[::-1], (self._line_temp, column), prefix[::-1]
 
     def _calc_path_until_cursor(self, start_pos):
         """
@@ -122,7 +122,7 @@ class UserContext(object):
                     break
 
             start_cursor = tok_start_pos
-            string = tok_str + string
+            string = tok_str + prefix + string
             last_type = tok_type
 
         # Don't need whitespace around a statement.

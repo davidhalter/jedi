@@ -5,6 +5,7 @@ the interesting information about completion and goto operations.
 """
 import warnings
 from itertools import chain
+import re
 
 from jedi._compatibility import next, unicode, use_metaclass
 from jedi import settings
@@ -579,7 +580,10 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
                 d = d.get_code()
             finally:
                 first_leaf.prefix = old
-        return d.replace('\n', '').replace('\r', '')
+        # Delete comments:
+        d = re.sub('#[^\n]+\n', ' ', d)
+        # Delete multi spaces/newlines
+        return re.sub('\s+', ' ', d).strip()
 
     @property
     def desc_with_module(self):

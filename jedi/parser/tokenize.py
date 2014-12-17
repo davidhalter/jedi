@@ -14,8 +14,8 @@ from __future__ import absolute_import
 import string
 import re
 from io import StringIO
-from token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, NAME, OP,
-                   ERRORTOKEN, NEWLINE, INDENT, DEDENT)
+from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER,
+                               NAME, OP, ERRORTOKEN, NEWLINE, INDENT, DEDENT)
 
 
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
@@ -147,8 +147,11 @@ def source_tokens(source, line_offset=0):
 
 def generate_tokens(readline, line_offset=0):
     """
-    The original stdlib Python version with minor modifications.
-    Modified to not care about dedents.
+    A heavily modified Python standard library tokenizer.
+
+    Additionally to the default information, yields also the prefix of each
+    token. This idea comes from lib2to3. The prefix contains all information
+    that is irrelevant for the parser like newlines in parentheses or comments.
     """
     paren_level = 0  # count parentheses
     indents = [0]
@@ -158,6 +161,7 @@ def generate_tokens(readline, line_offset=0):
     contline = None
     new_line = False
     prefix = ''  # Should never be required, but here for safety
+    additional_prefix = ''
     while True:            # loop over lines in stream
         line = readline()  # readline returns empty when finished. See StringIO
         if not line:
@@ -192,7 +196,8 @@ def generate_tokens(readline, line_offset=0):
                 pos += 1
                 continue
 
-            prefix = pseudomatch.group(1)
+            prefix = pseudomatch.group(1) + additional_prefix
+            additional_prefix = ''
             start, pos = pseudomatch.span(2)
             spos = (lnum, start)
             token, initial = line[start:pos], line[start]
@@ -213,10 +218,12 @@ def generate_tokens(readline, line_offset=0):
             elif initial in '\r\n':
                 if not new_line and paren_level == 0:
                     yield NEWLINE, token, spos, prefix
+                else:
+                    additional_prefix = prefix + token
                 new_line = True
-            elif initial == '#':
+            elif initial == '#':  # Comments
                 assert not token.endswith("\n")
-                #yield Token(COMMENT, token, spos, prefix)
+                additional_prefix = prefix + token
             elif token in triple_quoted:
                 endprog = endprogs[token]
                 endmatch = endprog.match(line, pos)
