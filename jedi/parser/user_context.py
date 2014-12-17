@@ -33,7 +33,7 @@ class UserContext(object):
 
     def _backwards_line_generator(self, start_pos):
         self._line_temp, self._column_temp = start_pos
-        first_line = self.get_line(self._line_temp)[:self._column_temp]
+        first_line = self.get_line(start_pos[0])[:self._column_temp]
 
         self._line_length = self._column_temp
         yield first_line[::-1] + '\n'
@@ -45,8 +45,19 @@ class UserContext(object):
             yield line[::-1] + '\n'
 
     def _get_backwards_tokenizer(self, start_pos):
-        gen = self._backwards_line_generator(start_pos)
-        return tokenize.generate_tokens(lambda: next(gen))
+        line_gen = self._backwards_line_generator(start_pos)
+        token_gen = tokenize.generate_tokens(lambda: next(line_gen))
+        for typ, tok_str, tok_start_pos, prefix in token_gen:
+            line = self.get_line(self._line_temp)
+            # Calculate the real start_pos of the token.
+            if tok_start_pos[0] == 1:
+                # We are in the first checked line
+                column = start_pos[1] - tok_start_pos[1]
+            else:
+                column = len(line) - tok_start_pos[1]
+            column -= len(tok_str)
+            # Reverse the token again, so that it is in normal order again.
+            yield typ, tok_str[::-1], (self._line_temp, column), prefix
 
     def _calc_path_until_cursor(self, start_pos):
         """
@@ -57,23 +68,19 @@ class UserContext(object):
 
         start_cursor = start_pos
         gen = PushBackIterator(self._get_backwards_tokenizer(start_pos))
-        first_line = self.get_line(start_pos[0])[:start_pos[1]]
         string = u('')
         level = 0
         force_point = False
         last_type = None
         is_first = True
         for tok_type, tok_str, tok_start_pos, prefix in gen:
-            # TODO end is not correct, doesn't take new lines in consideration.
-            end = tok_start_pos[0], tok_start_pos[-1] + len(tok_str)
-            self._column_temp = self._line_length - end[1]
             if is_first:
-                if tok_start_pos != (1, 0):  # whitespace is not a path
+                if prefix:  # whitespace is not a path
                     return u(''), start_cursor
                 is_first = False
 
             if last_type == tok_type == tokenize.NAME:
-                string += ' '
+                string = ' ' + string
 
             if level:
                 if tok_str in close_brackets:
@@ -87,7 +94,7 @@ class UserContext(object):
                 # floating point number.
                 # The same is true for string prefixes -> represented as a
                 # combination of string and name.
-                if tok_type == tokenize.NUMBER and tok_str[0] == '.' \
+                if tok_type == tokenize.NUMBER and tok_str[-1] == '.' \
                         or tok_type == tokenize.NAME and last_type == tokenize.STRING:
                     force_point = False
                 else:
@@ -95,7 +102,7 @@ class UserContext(object):
             elif tok_str in close_brackets:
                 level += 1
             elif tok_type in [tokenize.NAME, tokenize.STRING]:
-                if keyword.iskeyword(tok_str[::-1]) and string:
+                if keyword.iskeyword(tok_str) and string:
                     # If there's already something in the string, a keyword
                     # never adds any meaning to the current statement.
                     break
@@ -112,19 +119,12 @@ class UserContext(object):
                 else:
                     break
 
-            x = start_pos[0] - end[0] + 1
-            l = self.get_line(x)
-            l = first_line if x == start_pos[0] else l
-            start_cursor = x, len(l) - end[1]
-            string += tok_str
-            #if keyword.iskeyword(tok_str[::-1]):
-                # Keywords should always stop. The path will always end with
-                # them.
-            #    break
+            start_cursor = tok_start_pos
+            string = tok_str + string
             last_type = tok_type
 
-        # string can still contain spaces at the end
-        return string[::-1].strip(), start_cursor
+        # Don't need whitespace around a statement.
+        return string.strip(), start_cursor
 
     def get_path_under_cursor(self):
         """
@@ -164,7 +164,7 @@ class UserContext(object):
                 next_must_be_name = False
             elif next_is_key:
                 if tok_type == tokenize.NAME:
-                    key_name = tok_str[::-1]
+                    key_name = tok_str
                 next_is_key = False
 
             if tok_str == '(':
@@ -172,9 +172,7 @@ class UserContext(object):
                 if level == 1:
                     next_must_be_name = True
                     level = 0
-                    end = start_pos[0], start_pos[1] + 1
-                    self._column_temp = self._line_length - end[1]
-                    pos = self._line_temp, self._column_temp
+                    pos = start_pos
             elif tok_str == ')':
                 level -= 1
             elif tok_str == ',':
