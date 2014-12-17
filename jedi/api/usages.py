@@ -2,7 +2,6 @@ from jedi._compatibility import u, unicode
 from jedi.api import classes
 from jedi.parser import tree as pr
 from jedi.evaluate import imports
-from jedi.evaluate import helpers
 
 
 def usages(evaluator, definition_names, mods):
@@ -72,28 +71,6 @@ def usages(evaluator, definition_names, mods):
                 # Previous definitions might be imports, so include them
                 # (because goto might return that import name).
                 compare_definitions += compare_array([name])
-
-            continue  # TODO DELETE
-
-
-            stmt = name.get_definition()
-            if isinstance(stmt, pr.Import):
-                count = 0
-                imps = []
-                for name in stmt.get_all_import_names():
-                    count += 1
-                    if unicode(name) == search_name:
-                        imps.append((count, name))
-
-                for used_count, name_part in imps:
-                    i = imports.ImportWrapper(evaluator, stmt, kill_count=count - used_count,
-                                              nested_resolve=True)
-                    f = i.follow(is_goto=True)
-                    if set(f) & set(definitions):
-                        names.append(classes.Definition(evaluator, name_part))
-            else:
-                for call in helpers.scan_statement_for_calls(stmt, search_name, assignment_details=True):
-                    names += check_call_for_usage(call)
     return definitions
 
 
