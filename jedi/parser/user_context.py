@@ -31,35 +31,29 @@ class UserContext(object):
         path, self._start_cursor_pos = self._calc_path_until_cursor(self.position)
         return path
 
-    def _get_backwards_tokenizer(self, start_pos):
-        def fetch_line():
-            # No nonlocal so use class variables.
-            if self._is_first:
-                self._is_first = False
-                self._line_length = self._column_temp
-                line = first_line
-            else:
-                line = self.get_line(self._line_temp)
-                self._line_length = len(line)
-            line = '\n' + line
-
-            # add lines with a backslash at the end
-            while True:
-                self._line_temp -= 1
-                last_line = self.get_line(self._line_temp)
-                if last_line and last_line[-1] == '\\':
-                    line = last_line[:-1] + ' ' + line
-                    self._line_length = len(last_line)
-                else:
-                    break
-            return line[::-1]
-
-        self._is_first = True
+    def _backwards_line_generator(self, start_pos):
         self._line_temp, self._column_temp = start_pos
         first_line = self.get_line(self._line_temp)[:self._column_temp]
-        return tokenize.generate_tokens(fetch_line)
 
-    def _calc_path_until_cursor(self, start_pos=None):
+        self._line_length = self._column_temp
+        yield first_line[::-1]
+
+        while True:
+            self._line_temp -= 1
+            line = self.get_line(self._line_temp)
+            if False and last_line and last_line[-1] == '\\':
+                # Add lines with a backslash at the end.
+                line = last_line[:-1] + ' ' + line
+                self._line_length = len(last_line)
+            else:
+                self._line_length = len(line)
+                yield '\n' + line[::-1]
+
+    def _get_backwards_tokenizer(self, start_pos):
+        gen = self._backwards_line_generator(start_pos)
+        return tokenize.generate_tokens(lambda: next(gen))
+
+    def _calc_path_until_cursor(self, start_pos):
         """
         Something like a reverse tokenizer that tokenizes the reversed strings.
         """
@@ -68,7 +62,7 @@ class UserContext(object):
 
         start_cursor = start_pos
         gen = PushBackIterator(self._get_backwards_tokenizer(start_pos))
-        first_line = self.get_line(self._line_temp)[:start_pos[1]]
+        first_line = self.get_line(start_pos[0])[:start_pos[1]]
         string = u('')
         level = 0
         force_point = False
@@ -83,7 +77,6 @@ class UserContext(object):
                     return u(''), start_cursor
                 is_first = False
 
-            #print('tok', tok_type, tok_str, force_point)
             if last_type == tok_type == tokenize.NAME:
                 string += ' '
 
@@ -184,7 +177,7 @@ class UserContext(object):
                     level = 0
                     end = start_pos[0], start_pos[1] + 1
                     self._column_temp = self._line_length - end[1]
-                    pos = self._line_temp + 1, self._column_temp
+                    pos = self._line_temp, self._column_temp
             elif tok_str == ')':
                 level -= 1
             elif tok_str == ',':
