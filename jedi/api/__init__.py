@@ -133,7 +133,8 @@ class Script(object):
             # TODO this closure is ugly. it also doesn't work with
             # simple_complete (used for Interpreter), somehow redo.
             module = self._parser.module()
-            names, level, only_modules = helpers.check_error_statements(module, self._pos)
+            names, level, only_modules, unfinished_dotted = \
+                helpers.check_error_statements(module, self._pos)
             completions = []
             #print(importer.completion_names(self._evaluator, True))
             if names is not None:
@@ -144,13 +145,14 @@ class Script(object):
 
             # TODO this paragraph is necessary, but not sure it works.
             context = self._user_context.get_context()
-            
-           # print(next(self._user_context.get_context()), 'x')
+
             if not next(context).startswith('.'):  # skip the path
                 if next(context) == 'from':
                     # completion is just "import" if before stands from ..
-                    completions += ((k, bs) for k in keywords.keyword_names('import'))
-                    return completions
+                    if unfinished_dotted:
+                        return completions
+                    else:
+                        return [(k, bs) for k in keywords.keyword_names('import')]
 
             if isinstance(user_stmt, pr.Import):
                 module = self._parser.module()
@@ -286,7 +288,7 @@ class Script(object):
                 return []
 
             module = self._parser.module()
-            names, level, _ = helpers.check_error_statements(module, self._pos)
+            names, level, _, _ = helpers.check_error_statements(module, self._pos)
             if names:
                 i = imports.get_importer(self._evaluator, names, module, level)
                 return i.follow(self._evaluator)

@@ -39,7 +39,7 @@ def check_error_statements(module, pos):
         if error_statement.first_type in ('import_from', 'import_name') \
                 and error_statement.first_pos < pos <= error_statement.next_start_pos:
             return importer_from_error_statement(error_statement, pos)
-    return None, 0, False
+    return None, 0, False, False
 
 
 def importer_from_error_statement(error_statement, pos):
@@ -51,12 +51,17 @@ def importer_from_error_statement(error_statement, pos):
     names = []
     level = 0
     only_modules = True
+    unfinished_dotted = False
     for typ, nodes in error_statement.stack:
         if typ == 'dotted_name':
             names += check_dotted(nodes)
+            if nodes[-1] == '.':
+                # An unfinished dotted_name
+                unfinished_dotted = True
         elif typ == 'import_name':
             if nodes[0].start_pos <= pos <= nodes[0].end_pos:
-                return None, 0, False
+                # We are on the import.
+                return None, 0, False, False
         elif typ == 'import_from':
             for node in nodes:
                 if node.start_pos >= pos:
@@ -70,4 +75,4 @@ def importer_from_error_statement(error_statement, pos):
                 elif node == 'import':
                     only_modules = False
 
-    return names, level, only_modules
+    return names, level, only_modules, unfinished_dotted
