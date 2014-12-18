@@ -1,4 +1,4 @@
-from jedi._compatibility import u, unicode
+from jedi._compatibility import unicode
 from jedi.api import classes
 from jedi.parser import tree as pr
 from jedi.evaluate import imports
@@ -17,42 +17,6 @@ def usages(evaluator, definition_names, mods):
             module = d.get_parent_until()
             result.append((module, d.start_pos))
         return result
-
-    def check_call_for_usage(call):
-        stmt = call.parent
-        while not stmt.parent.is_scope():
-            stmt = stmt.parent
-        # New definition, call cannot be a part of stmt
-        if call.next is None and call.name in stmt.get_defined_names():
-            # Class params are not definitions (like function params). They
-            # are super classes, that need to be resolved.
-            if not (isinstance(stmt, pr.Param) and isinstance(stmt.parent, pr.Class)):
-                return
-
-        follow = []  # There might be multiple search_name's in one call_path
-        call_path = list(call.generate_call_path())
-        for i, name in enumerate(call_path):
-            # name is `pr.Name`.
-            if u(name) == search_name:
-                follow.append(call_path[:i + 1])
-
-        for call_path in follow:
-            follow_res = evaluator.goto(call.parent, call_path)
-            search = call_path[-1]
-            # names can change (getattr stuff), therefore filter names that
-            # don't match `search`.
-
-            # TODO add something like that in the future - for now usages are
-            # completely broken anyway.
-            #follow_res = [r for r in follow_res if str(r) == search]
-            #print search.start_pos,search_name.start_pos
-            #print follow_res, search, search_name, [(r, r.start_pos) for r in follow_res]
-            follow_res = usages_add_import_modules(evaluator, follow_res)
-
-            compare_follow_res = compare_array(follow_res)
-            # compare to see if they match
-            if any(r in compare_definitions for r in compare_follow_res):
-                yield classes.Definition(evaluator, search)
 
     search_name = unicode(list(definition_names)[0])
     compare_definitions = compare_array(definition_names)

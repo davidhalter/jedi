@@ -71,19 +71,6 @@ class ImportWrapper(pr.Base):
         self._import = name.get_parent_until(pr.Import)
         self.import_path = self._import.path_for_name(name)
 
-    def completion_names(self):
-        # The import path needs to be reduced by one, because we're completing.
-        import_path = self.import_path[:-1]
-        module = self._import.get_parent_until()
-        importer = get_importer(self._evaluator, tuple(import_path),
-                                module, self._import.level)
-        if isinstance(self._import, pr.ImportFrom):
-            c = self._import.children
-            only_modules = c[c.index('import')].start_pos >= self._name.start_pos
-        else:
-            only_modules = True
-        return importer.completion_names(self._evaluator, only_modules)
-
     @memoize_default()
     def follow(self, is_goto=False):
         if self._evaluator.recursion_detector.push_stmt(self._import):
