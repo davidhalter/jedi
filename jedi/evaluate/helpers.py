@@ -162,22 +162,6 @@ class FakeSubModule():
     path = None
 
 
-class FakeStatement(pr.ExprStmt):
-    def __init__(self, values, start_pos=(0, 0), parent=None):
-        self._start_pos = start_pos
-        super(FakeStatement, self).__init__([])
-        self.values = values
-        self.parent = parent
-
-    @property
-    def start_pos(self):
-        """Overwriting the original start_pos property."""
-        return self._start_pos
-
-    def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self.values)
-
-
 class FakeImport(pr.Import):
     def __init__(self, name, parent, level=0):
         super(FakeImport, self).__init__([])

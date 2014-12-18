@@ -76,7 +76,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import helpers
-from jedi.evaluate.helpers import FakeStatement, call_of_name
+from jedi.evaluate.helpers import call_of_name
 
 
 class Evaluator(object):
@@ -118,9 +118,6 @@ class Evaluator(object):
         :param stmt: A `pr.ExprStmt`.
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
-        if isinstance(stmt, FakeStatement):
-            return stmt.children  # Already contains the results.
-
         types = self.eval_element(stmt.get_rhs())
 
         if seek_name:
