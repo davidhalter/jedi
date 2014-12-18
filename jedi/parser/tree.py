@@ -20,18 +20,13 @@ The easiest way to play with this module is to use :class:`parsing.Parser`.
 >>> submodule
 <SubModule: example.py@1-2>
 
-Any subclasses of :class:`Scope`, including :class:`SubModule` has
-attribute :attr:`imports <Scope.imports>`.  This attribute has import
-statements in this scope.  Check this out:
+Any subclasses of :class:`Scope`, including :class:`SubModule` has an attribute
+:attr:`imports <Scope.imports>`:
 
 >>> submodule.imports
 [<ImportName: import os@1,0>]
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
-
-
-# TODO New docstring
-
 """
 import os
 import re
@@ -415,10 +410,6 @@ class Simple(Base):
         return self.children[0].start_pos
 
     @property
-    def _sub_module(self):
-        return self.get_parent_until()
-
-    @property
     def end_pos(self):
         return self.children[-1].end_pos
 
@@ -477,14 +468,6 @@ class IsScopeMeta(type):
 
 class IsScope(use_metaclass(IsScopeMeta)):
     pass
-
-
-def _return_empty_list():
-    """
-    Necessary for pickling. It needs to be reachable for pickle, cannot
-    be a lambda or a closure.
-    """
-    return []
 
 
 class Scope(Simple, DocstringMixin):
@@ -547,16 +530,6 @@ class Scope(Simple, DocstringMixin):
     def is_scope(self):
         return True
 
-    def get_imports(self):
-        """ Gets also the imports within flow statements """
-        raise NotImplementedError
-        return []
-        i = [] + self.imports
-        for s in self.statements:
-            if isinstance(s, Scope):
-                i += s.get_imports()
-        return i
-
     @Python3Method
     def get_defined_names(self):
         """
@@ -598,14 +571,7 @@ class Scope(Simple, DocstringMixin):
             checks += [r for r in self.returns if r is not None]
 
         for s in checks:
-            if isinstance(s, Flow):
-                p = s.get_statement_for_position(pos, include_imports)
-                while s.next and not p:
-                    s = s.next
-                    p = s.get_statement_for_position(pos, include_imports)
-                if p:
-                    return p
-            elif s.start_pos <= pos <= s.end_pos:
+            if s.start_pos <= pos <= s.end_pos:
                 return s
 
         for s in self.subscopes:
@@ -685,10 +651,6 @@ class SubModule(Scope, Module):
         :type names: list of Name
         """
         self.global_names = names
-
-    def add_global(self, name):
-        # set no parent here, because globals are not defined in this scope.
-        self.global_vars.append(name)
 
     def get_defined_names(self):
         n = super(SubModule, self).get_defined_names()
@@ -1277,10 +1239,6 @@ class Param(Base):
         df = '' if self.default is None else '=' + self.default.get_code()
         return self.tfpdef.get_code() + df
 
-    def add_annotation(self, annotation_stmt):
-        annotation_stmt.parent = self.use_as_parent
-        self.annotation_stmt = annotation_stmt
-
     def __repr__(self):
         default = '' if self.default is None else '=%s' % self.default
         return '<%s: %s>' % (type(self).__name__, str(self.tfpdef) + default)
@@ -1309,9 +1267,6 @@ class CompFor(Simple):
             arr = dct.setdefault(name.value, [])
             arr.append(name)
         return dct
-
-    def get_rhs(self):
-        return self.children[3]
 
     def get_defined_names(self):
         return _defined_names(self.children[1])
