@@ -183,6 +183,7 @@ class Array(IterableWrapper):
         self._evaluator = evaluator
         self.atom = atom
         self.type = Array.mapping[atom.children[0]]
+        """The builtin name of the array (list, set, tuple or dict)."""
 
         c = self.atom.children
         array_node = c[1]
