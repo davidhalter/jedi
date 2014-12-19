@@ -255,7 +255,7 @@ def get_params(evaluator, func, var_args):
         array_type = None
         if param.stars == 1:
             # *args param
-            array_type = pr.Array.TUPLE
+            array_type = 'tuple'
             lst_values = [iterable.MergedNodes(va_values)] if va_values else []
             for key, va_values in var_arg_iterator:
                 # Iterate until a key argument is found.
@@ -264,11 +264,11 @@ def get_params(evaluator, func, var_args):
                     break
                 if va_values:
                     lst_values.append(iterable.MergedNodes(va_values))
-            seq = iterable.FakeSequence(evaluator, lst_values, pr.Array.TUPLE)
+            seq = iterable.FakeSequence(evaluator, lst_values, 'tuple')
             values = [iterable.AlreadyEvaluated([seq])]
         elif param.stars == 2:
             # **kwargs param
-            array_type = pr.Array.DICT
+            array_type = 'dict'
             dct = iterable.FakeDict(evaluator, dict(non_matching_keys))
             values = [iterable.AlreadyEvaluated([dct])]
             non_matching_keys = {}
@@ -372,7 +372,7 @@ def _star_star_dict(evaluator, array, input_node, func):
 
     if isinstance(array, iterable.FakeDict):
         return array._dct
-    elif isinstance(array, iterable.Array) and array.type == pr.Array.DICT:
+    elif isinstance(array, iterable.Array) and array.type == 'dict':
         # TODO bad call to non-public API
         for key_node, values in array._items():
             for key in evaluator.eval_element(key_node):

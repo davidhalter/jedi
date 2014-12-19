@@ -115,12 +115,12 @@ def is_literal(obj):
 
 def _is_tuple(obj):
     from jedi.evaluate import iterable
-    return isinstance(obj, iterable.Array) and obj.type == pr.Array.TUPLE
+    return isinstance(obj, iterable.Array) and obj.type == 'tuple'
 
 
 def _is_list(obj):
     from jedi.evaluate import iterable
-    return isinstance(obj, iterable.Array) and obj.type == pr.Array.LIST
+    return isinstance(obj, iterable.Array) and obj.type == 'list'
 
 
 def _element_calculate(evaluator, left, operator, right):

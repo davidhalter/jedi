@@ -156,7 +156,7 @@ def builtins_reversed(evaluator, sequences, obj):
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
     rev = iterable.AlreadyEvaluated(
-        [iterable.FakeSequence(evaluator, rev, pr.Array.LIST)]
+        [iterable.FakeSequence(evaluator, rev, 'list')]
     )
     return [er.Instance(evaluator, obj, param.Arguments(evaluator, [rev]))]
 

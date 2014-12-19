@@ -66,7 +66,7 @@ def wrap(evaluator, element):
 class Executed(pr.Base):
     """
     An instance is also an executable - because __init__ is called
-    :param var_args: The param input array, consist of `pr.Array` or list.
+    :param var_args: The param input array, consist of a parser node or a list.
     """
     def __init__(self, evaluator, base, var_args=()):
         self._evaluator = evaluator

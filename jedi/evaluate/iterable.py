@@ -166,7 +166,7 @@ class ListComprehension(Comprehension):
 
     @property
     def name(self):
-        return FakeSequence(self._evaluator, [], pr.Array.LIST).name
+        return FakeSequence(self._evaluator, [], 'list').name
 
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
@@ -175,13 +175,9 @@ class GeneratorComprehension(Comprehension, GeneratorMixin):
 
 
 class Array(IterableWrapper):
-    """
-    Used as a mirror to pr.Array, if needed. It defines some getter
-    methods which are important in this module.
-    """
-    mapping = {'(': pr.Array.TUPLE,
-               '[': pr.Array.LIST,
-               '{': pr.Array.DICT}
+    mapping = {'(': 'tuple',
+               '[': 'list',
+               '{': 'dict'}
 
     def __init__(self, evaluator, atom):
         self._evaluator = evaluator
@@ -190,10 +186,10 @@ class Array(IterableWrapper):
 
         c = self.atom.children
         array_node = c[1]
-        if self.type == pr.Array.DICT and array_node != '}' \
+        if self.type == 'dict' and array_node != '}' \
                 and (not hasattr(array_node, 'children')
                      or ':' not in array_node.children):
-            self.type = pr.Array.SET
+            self.type = 'set'
 
     @property
     def name(self):
@@ -232,7 +228,7 @@ class Array(IterableWrapper):
 
     def get_exact_index_types(self, mixed_index):
         """ Here the index is an int/str. Raises IndexError/KeyError """
-        if self.type == pr.Array.DICT:
+        if self.type == 'dict':
             for key, values in self._items():
                 # Because we only want the key to be a string.
                 keys = self._evaluator.eval_element(key)
@@ -275,7 +271,7 @@ class Array(IterableWrapper):
 
     def _values(self):
         """Returns a list of a list of node."""
-        if self.type == pr.Array.DICT:
+        if self.type == 'dict':
             return list(chain.from_iterable(v for k, v in self._items()))
         else:
             return self._items()
@@ -320,7 +316,7 @@ class _FakeArray(Array):
 
 class ImplicitTuple(_FakeArray):
     def __init__(self, evaluator, testlist):
-        super(ImplicitTuple, self).__init__(evaluator, testlist, pr.Array.TUPLE)
+        super(ImplicitTuple, self).__init__(evaluator, testlist, 'tuple')
         self._testlist = testlist
 
     def _items(self):
@@ -353,7 +349,7 @@ class MergedNodes(frozenset):
 
 class FakeDict(_FakeArray):
     def __init__(self, evaluator, dct):
-        super(FakeDict, self).__init__(evaluator, dct, pr.Array.DICT)
+        super(FakeDict, self).__init__(evaluator, dct, 'dict')
         self._dct = dct
 
     def get_exact_index_types(self, index):
@@ -424,7 +420,7 @@ def get_iterator_types(inputs):
 
 def check_array_additions(evaluator, array):
     """ Just a mapper function for the internal _check_array_additions """
-    if array.type not in (pr.Array.LIST, pr.Array.SET):
+    if array.type not in ('list', 'set'):
         # TODO also check for dict updates
         return []
 
@@ -442,7 +438,8 @@ def check_array_additions(evaluator, array):
 @memoize_default([], evaluator_is_first_arg=True)
 def _check_array_additions(evaluator, compare_array, module, is_list):
     """
-    Checks if a `pr.Array` has "add" statements:
+    Checks if a `Array` has "add" (append, insert, extend) statements:
+
     >>> a = [""]
     >>> a.append(1)
     """

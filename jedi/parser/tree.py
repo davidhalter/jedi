@@ -1244,15 +1244,6 @@ class Param(Base):
         return '<%s: %s>' % (type(self).__name__, str(self.tfpdef) + default)
 
 
-class Array(object):
-    # TODO remove this. Just here because we need these names.
-    NOARRAY = None  # just brackets, like `1 * (3 + 2)`
-    TUPLE = 'tuple'
-    LIST = 'list'
-    DICT = 'dict'
-    SET = 'set'
-
-
 class CompFor(Simple):
     type = 'comp_for'
     __slots__ = ()
