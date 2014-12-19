@@ -250,12 +250,9 @@ def get_params(evaluator, func, var_args):
                     pass
             key, va_values = next(var_arg_iterator, (None, ()))
 
-        keys = []
         values = []
-        array_type = None
         if param.stars == 1:
             # *args param
-            array_type = 'tuple'
             lst_values = [iterable.MergedNodes(va_values)] if va_values else []
             for key, va_values in var_arg_iterator:
                 # Iterate until a key argument is found.
@@ -268,7 +265,6 @@ def get_params(evaluator, func, var_args):
             values = [iterable.AlreadyEvaluated([seq])]
         elif param.stars == 2:
             # **kwargs param
-            array_type = 'dict'
             dct = iterable.FakeDict(evaluator, dict(non_matching_keys))
             values = [iterable.AlreadyEvaluated([dct])]
             non_matching_keys = {}
@@ -289,8 +285,7 @@ def get_params(evaluator, func, var_args):
         # Now add to result if it's not one of the previously covered cases.
         if (not keys_only or param.stars == 2):
             result.append(_gen_param_name_copy(evaluator, func, var_args, param,
-                                               keys=keys, values=values,
-                                               array_type=array_type))
+                                               values=values))
             keys_used[unicode(param.get_name())] = result[-1]
 
     if keys_only:
@@ -301,7 +296,7 @@ def get_params(evaluator, func, var_args):
             param = param_dict[k]
             values = [] if param.default is None else [param.default]
             result.append(_gen_param_name_copy(evaluator, func, var_args,
-                                               param, [], values))
+                                               param, values))
 
             if not (non_matching_keys or had_multiple_value_error
                     or param.stars or param.default):
@@ -387,7 +382,7 @@ def _star_star_dict(evaluator, array, input_node, func):
     return dict(dct)
 
 
-def _gen_param_name_copy(evaluator, func, var_args, param, keys=(), values=(), array_type=None):
+def _gen_param_name_copy(evaluator, func, var_args, param, values=()):
     """
     Create a param with the original scope (of varargs) as parent.
     """
