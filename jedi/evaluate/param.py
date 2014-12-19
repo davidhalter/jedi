@@ -144,31 +144,24 @@ class Arguments(pr.Base):
 
 class ExecutedParam(pr.Param):
     """Fake a param and give it values."""
-    def __init__(self, values):
-        self.values = values
-
-    @classmethod
-    def from_param(cls, values, param, parent, var_args):
-        instance = cls(values)
-
-        instance.original_param = param
-        instance.parent = parent
-        instance.var_args = var_args
-        return instance
+    def __init__(self, original_param, var_args, values):
+        self._original_param = original_param
+        self.var_args = var_args
+        self._values = values
 
     def eval(self, evaluator):
         types = []
-        for v in self.values:
+        for v in self._values:
             types += evaluator.eval_element(v)
         return types
 
     @property
     def position_nr(self):
         # Need to use the original logic here, because it uses the parent.
-        return self.original_param.position_nr
+        return self._original_param.position_nr
 
     def __getattr__(self, name):
-        return getattr(self.original_param, name)
+        return getattr(self._original_param, name)
 
 
 def _get_calling_var_args(evaluator, var_args):
@@ -227,8 +220,8 @@ def get_params(evaluator, func, var_args):
             except KeyError:
                 non_matching_keys[key] += va_values
             else:
-                result.append(_gen_param_name_copy(evaluator, func, var_args,
-                                                   key_param, values=va_values))
+                result.append(_gen_param_name_copy(evaluator, key_param, var_args,
+                                                   va_values))
 
             if k in keys_used:
                 had_multiple_value_error = True
@@ -280,8 +273,8 @@ def get_params(evaluator, func, var_args):
 
         # Now add to result if it's not one of the previously covered cases.
         if (not keys_only or param.stars == 2):
-            result.append(_gen_param_name_copy(evaluator, func, var_args, param,
-                                               values=values))
+            result.append(_gen_param_name_copy(evaluator, param, var_args,
+                                               values))
             keys_used[unicode(param.get_name())] = result[-1]
 
     if keys_only:
@@ -291,8 +284,7 @@ def get_params(evaluator, func, var_args):
         for k in set(param_dict) - set(keys_used):
             param = param_dict[k]
             values = [] if param.default is None else [param.default]
-            result.append(_gen_param_name_copy(evaluator, func, var_args,
-                                               param, values))
+            result.append(_gen_param_name_copy(evaluator, param, var_args, values))
 
             if not (non_matching_keys or had_multiple_value_error
                     or param.stars or param.default):
@@ -378,11 +370,11 @@ def _star_star_dict(evaluator, array, input_node, func):
     return dict(dct)
 
 
-def _gen_param_name_copy(evaluator, func, var_args, param, values=()):
+def _gen_param_name_copy(evaluator, param, var_args, values):
     """
     Create a param with the original scope (of varargs) as parent.
     """
-    new_param = ExecutedParam.from_param(values, param, func, var_args)
+    new_param = ExecutedParam(param, var_args, values)
     name = copy.copy(param.get_name())
     name.parent = new_param
     return name

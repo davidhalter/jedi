@@ -99,7 +99,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                 and compiled.builtin == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = iterable.check_array_instances(evaluator, self)
-        else:
+        elif not is_generated:
             # Need to execute the __init__ function, because the dynamic param
             # searching needs it.
             try:
@@ -157,7 +157,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             if self_name is None:
                 continue
 
-            if sub.name.value == '__init__':
+            if sub.name.value == '__init__' and not self.is_generated:
                 # ``__init__`` is special because the params need are injected
                 # this way. Therefore an execution is necessary.
                 if not sub.get_decorators():
