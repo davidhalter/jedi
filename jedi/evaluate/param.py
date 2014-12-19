@@ -1,4 +1,3 @@
-import copy
 from collections import defaultdict
 from itertools import chain
 
@@ -9,6 +8,8 @@ from jedi.parser import tree as pr
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import precedence
+from jedi.evaluate.helpers import FakeName
+from jedi.cache import underscore_memoization
 
 
 class Arguments(pr.Base):
@@ -160,6 +161,11 @@ class ExecutedParam(pr.Param):
         # Need to use the original logic here, because it uses the parent.
         return self._original_param.position_nr
 
+    @property
+    @underscore_memoization
+    def name(self):
+        return FakeName(str(self._original_param.name), self, self.start_pos)
+
     def __getattr__(self, name):
         return getattr(self._original_param, name)
 
@@ -190,7 +196,7 @@ def _get_calling_var_args(evaluator, var_args):
 
 
 def get_params(evaluator, func, var_args):
-    result = []
+    param_names = []
     param_dict = {}
     for param in func.params:
         param_dict[str(param.get_name())] = param
@@ -220,8 +226,7 @@ def get_params(evaluator, func, var_args):
             except KeyError:
                 non_matching_keys[key] += va_values
             else:
-                result.append(_gen_param_name_copy(evaluator, key_param, var_args,
-                                                   va_values))
+                param_names.append(ExecutedParam(key_param, var_args, va_values).name)
 
             if k in keys_used:
                 had_multiple_value_error = True
@@ -233,7 +238,7 @@ def get_params(evaluator, func, var_args):
                                  calling_va, message=m)
             else:
                 try:
-                    keys_used[k] = result[-1]
+                    keys_used[k] = param_names[-1]
                 except IndexError:
                     # TODO this is wrong stupid and whatever.
                     pass
@@ -273,9 +278,8 @@ def get_params(evaluator, func, var_args):
 
         # Now add to result if it's not one of the previously covered cases.
         if (not keys_only or param.stars == 2):
-            result.append(_gen_param_name_copy(evaluator, param, var_args,
-                                               values))
-            keys_used[unicode(param.get_name())] = result[-1]
+            param_names.append(ExecutedParam(param, var_args, values).name)
+            keys_used[unicode(param.get_name())] = param_names[-1]
 
     if keys_only:
         # All arguments should be handed over to the next function. It's not
@@ -284,7 +288,7 @@ def get_params(evaluator, func, var_args):
         for k in set(param_dict) - set(keys_used):
             param = param_dict[k]
             values = [] if param.default is None else [param.default]
-            result.append(_gen_param_name_copy(evaluator, param, var_args, values))
+            param_names.append(ExecutedParam(param, var_args, values).name)
 
             if not (non_matching_keys or had_multiple_value_error
                     or param.stars or param.default):
@@ -325,7 +329,7 @@ def get_params(evaluator, func, var_args):
                         continue
             analysis.add(evaluator, 'type-error-too-many-arguments',
                          v, message=m)
-    return result
+    return param_names
 
 
 def _iterate_star_args(evaluator, array, input_node, func=None):
@@ -368,16 +372,6 @@ def _star_star_dict(evaluator, array, input_node, func):
                 % (func.name.value, array)
             analysis.add(evaluator, 'type-error-star-star', input_node, message=m)
     return dict(dct)
-
-
-def _gen_param_name_copy(evaluator, param, var_args, values):
-    """
-    Create a param with the original scope (of varargs) as parent.
-    """
-    new_param = ExecutedParam(param, var_args, values)
-    name = copy.copy(param.get_name())
-    name.parent = new_param
-    return name
 
 
 def _error_argument_count(func, actual_count):
