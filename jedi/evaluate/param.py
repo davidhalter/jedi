@@ -143,21 +143,13 @@ class Arguments(pr.Base):
 
 
 class ExecutedParam(pr.Param):
+    """Fake a param and give it values."""
     def __init__(self, values):
-        """Don't use this method, it's just here to overwrite the old one."""
         self.values = values
 
     @classmethod
     def from_param(cls, values, param, parent, var_args):
         instance = cls(values)
-        before = ()
-        for cls in param.__class__.__mro__:
-            with common.ignored(AttributeError):
-                if before == cls.__slots__:
-                    continue
-                before = cls.__slots__
-                for name in before:
-                    setattr(instance, name, getattr(param, name))
 
         instance.original_param = param
         instance.parent = parent
@@ -172,7 +164,11 @@ class ExecutedParam(pr.Param):
 
     @property
     def position_nr(self):
+        # Need to use the original logic here, because it uses the parent.
         return self.original_param.position_nr
+
+    def __getattr__(self, name):
+        return getattr(self.original_param, name)
 
 
 def _get_calling_var_args(evaluator, var_args):
