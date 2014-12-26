@@ -149,16 +149,15 @@ def underscore_memoization(func):
     return wrapper
 
 
-def memoize(func):
+def memoize_method(method):
     """A normal memoize function."""
-    dct = {}
-
-    def wrapper(*args, **kwargs):
+    def wrapper(self, *args, **kwargs):
+        dct = self.__dict__.setdefault('_memoize_method_dct', {})
         key = (args, frozenset(kwargs.items()))
         try:
             return dct[key]
         except KeyError:
-            result = func(*args, **kwargs)
+            result = method(self, *args, **kwargs)
             dct[key] = result
             return result
     return wrapper

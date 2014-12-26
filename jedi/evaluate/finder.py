@@ -88,14 +88,18 @@ class NameFinder(object):
         # Only the names defined in the last position are valid definitions.
         last_names = []
         for name in reversed(sorted(names, key=lambda name: name.start_pos)):
+            if isinstance(name, compiled.CompiledName):
+                last_names.append(name)
+                continue
+
             if isinstance(self.name_str, pr.Name):
                 origin_scope = self.name_str.get_definition().parent
             else:
                 origin_scope = None
-            check = flow_analysis.break_check(self._evaluator,
-                                              scope,
-                                              name.get_definition(),
-                                              origin_scope)
+            stmt = name.get_definition()
+            if isinstance(stmt.parent, compiled.CompiledObject):
+                continue
+            check = flow_analysis.break_check(self._evaluator, scope, stmt, origin_scope)
             if check is not flow_analysis.UNREACHABLE:
                 last_names.append(name)
             if check is flow_analysis.REACHABLE:
@@ -166,8 +170,10 @@ class NameFinder(object):
                         or isinstance(name_list_scope, (pr.Lambda, er.Instance, InterpreterNamespace)) \
                         or isinstance(scope, compiled.CompiledObject):
                     # Always reachable.
+                    print('nons', scope)
                     names.append(name)
                 else:
+                    print('yess', scope)
                     check = flow_analysis.break_check(self._evaluator,
                                                       name_list_scope,
                                                       stmt,

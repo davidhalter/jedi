@@ -6,12 +6,13 @@ import re
 import sys
 import os
 from functools import partial
+from itertools import chain
 
 from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
-from jedi.cache import underscore_memoization, memoize
+from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.sys_path import get_sys_path
-from jedi.parser.tree import Param, SubModule, Base, Operator
+from jedi.parser.tree import Param, Base
 from jedi.evaluate.helpers import FakeName
 from . import fake
 
@@ -137,10 +138,18 @@ class CompiledObject(Base):
         return self
 
     def get_defined_names(self):
+        return list(chain.from_iterable(self.names_dict.values()))
+
+        # TODO still used?
         if inspect.ismodule(self.obj):
             return self.instance_names()
         else:
             return type_names + self.instance_names()
+
+    @property
+    @underscore_memoization
+    def names_dict(self):
+        return LazyNamesDict(self._cls())
 
     def scope_names_generator(self, position=None, add_class_vars=True):
         yield self, self.get_defined_names()
@@ -237,6 +246,38 @@ class CompiledObject(Base):
         return []  # Builtins don't have imports
 
 
+class LazyNamesDict(object):
+    """
+    A names_dict instance for compiled objects, resembles the parser.tree.
+    """
+    def __init__(self, compiled_obj):
+        self._compiled_obj = compiled_obj
+
+    @memoize_method
+    def __getitem__(self, name):
+        try:
+            getattr(self._compiled_obj.obj, name)
+        except AttributeError:
+            raise KeyError('%s in %s not found.' % (name, self._compiled_obj))
+        return [CompiledName(self._compiled_obj, name)]
+
+    def values(self):
+        obj = self._compiled_obj.obj
+        names = dir(obj)
+
+        values = []
+        for name in names:
+            try:
+                values.append(self[name])
+            except KeyError:
+                # The dir function can be wrong.
+                pass
+
+        if not inspect.ismodule(obj):
+            values.append(type_names)
+        return values
+
+
 class CompiledName(FakeName):
     def __init__(self, obj, name):
         super(CompiledName, self).__init__(name)
@@ -249,6 +290,9 @@ class CompiledName(FakeName):
         except AttributeError:
             name = None
         return '<%s: (%s).%s>' % (type(self).__name__, name, self.name)
+
+    def is_definition(self):
+        return True
 
     @property
     @underscore_memoization
@@ -408,14 +452,10 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-class Builtin(CompiledObject, Base):
-    @memoize
+class Builtin(CompiledObject):
+    @memoize_method
     def get_by_name(self, name):
-        item = [n for n in self.get_defined_names() if n.get_code() == name][0]
-        return item.parent
-
-    def is_scope(self):
-        return True
+        return self.names_dict[name][0].parent
 
 
 def _a_generator(foo):
