@@ -151,6 +151,9 @@ class CompiledObject(Base):
     def names_dict(self):
         return LazyNamesDict(self._cls())
 
+    def names_dicts(self):
+        yield self.names_dict
+
     def scope_names_generator(self, position=None, add_class_vars=True):
         yield self, self.get_defined_names()
 

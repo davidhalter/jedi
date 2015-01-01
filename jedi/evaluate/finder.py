@@ -35,7 +35,8 @@ from jedi.evaluate.cache import memoize_default
 class NameFinder(object):
     def __init__(self, evaluator, scope, name_str, position=None):
         self._evaluator = evaluator
-        self.scope = scope
+        # Make sure that it's not just a syntax tree node.
+        self.scope = er.wrap(evaluator, scope)
         self.name_str = name_str
         self.position = position
 
@@ -62,21 +63,24 @@ class NameFinder(object):
 
     def scopes(self, search_global=False):
         if search_global:
-            return get_names_of_scope(self._evaluator, self.scope, self.position)
+            return global_names_dict_generator(self._evaluator, self.scope, self.position)
         else:
-            return self.scope.scope_names_generator(self.position)
+            return ((n, None) for n in self.scope.names_dicts())
 
-    def names_dict_lookup(self, scope, position):
+    def names_dict_lookup(self, names_dict, position):
         def get_param(el):
             if isinstance(el.parent, pr.Param) or isinstance(el.parent.parent, pr.Param):
                 return scope.param_by_name(str(el))
             return el
 
         try:
-            names = scope.names_dict[str(self.name_str)]
+            names = names_dict[str(self.name_str)]
         except KeyError:
             return []
 
+        #print(names[0].parent, names[0].get_definition().get_parent_scope())
+        # Just calculate the scope from the first
+        scope = er.wrap(self._evaluator, names[0].get_definition().get_parent_scope())
         if isinstance(scope, (pr.CompFor, pr.Lambda)):
             return names
 
@@ -110,10 +114,10 @@ class NameFinder(object):
             return [get_param(n) for n in last_names]
         return last_names
 
-    def filter_name(self, scope_names_generator, search_global=False):
+    def filter_name(self, names_dicts, search_global=False):
         """
-        Filters all variables of a scope (which are defined in the
-        `scope_names_generator`), until the name fits.
+        Searches names that are defined in a scope (the different
+        `names_dicts`), until a name fits.
         """
         # TODO Now this import is really ugly. Try to remove it.
         # It's possibly the only api dependency.
@@ -123,6 +127,16 @@ class NameFinder(object):
         if not search_global and self.scope.isinstance(er.Function):
             return [n for n in self.scope.get_magic_function_names()
                     if str(n) == str(self.name_str)]
+
+        scope_names_generator = []
+        name_list_scope = None  # TODO delete
+        for names_dict, position in names_dicts:
+            #scope = parent
+            names = self.names_dict_lookup(names_dict, position)
+            if names:
+                break
+            #if isinstance(scope, (pr.Function, er.FunctionExecution)):
+                #position = None
 
         # Need checked for now for the whole names_dict approach. That only
         # works on the first name_list_scope, the second one may be the same
@@ -170,7 +184,7 @@ class NameFinder(object):
                         or isinstance(name_list_scope, (pr.Lambda, er.Instance, InterpreterNamespace)) \
                         or isinstance(scope, compiled.CompiledObject):
                     # Always reachable.
-                    print('nons', scope)
+                    print('nons', name.get_parent_scope(), self.scope)
                     names.append(name)
                 else:
                     print('yess', scope)
@@ -463,6 +477,23 @@ def _check_isinstance_type(evaluator, element, search_name):
         for typ in (typ.values() if isinstance(typ, iterable.Array) else [typ]):
             result += evaluator.execute(typ)
     return result
+
+
+def global_names_dict_generator(evaluator, scope, position):
+    """
+    For global lookups.
+    """
+    while scope is not None:
+        for names_dict in scope.names_dicts():
+            yield names_dict, position
+        if scope.type == 'funcdef':
+            # The position should be reset if the current scope is a function.
+            position = None
+        scope = er.wrap(evaluator, scope.get_parent_scope())
+
+    # Add builtins to the global scope.
+    for names_dict in compiled.builtin.names_dicts():
+        yield names_dict, None
 
 
 def get_names_of_scope(evaluator, scope, position=None, star_search=True, include_builtin=True):

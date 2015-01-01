@@ -139,7 +139,7 @@ class Base(object):
         Returns the underlying scope.
         """
         scope = self.parent
-        while scope.parent is not None:
+        while scope is not None:
             if include_flows and isinstance(scope, Flow):
                 return scope
             if scope.is_scope():
@@ -623,6 +623,7 @@ class SubModule(Scope, Module):
     """
     __slots__ = ('path', 'global_names', 'used_names', '_name',
                  'line_offset', 'use_as_parent', 'error_statement_stacks')
+    type = 'file_input'
 
     def __init__(self, children):
         """
@@ -1258,6 +1259,9 @@ class CompFor(Simple):
             arr = dct.setdefault(name.value, [])
             arr.append(name)
         return dct
+
+    def names_dicts(self):
+        yield self.names_dict
 
     def get_defined_names(self):
         return _defined_names(self.children[1])

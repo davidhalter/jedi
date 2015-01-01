@@ -231,7 +231,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         return helpers.FakeName(unicode(name), self, name.start_pos)
 
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'get_imports',
+        if name not in ['start_pos', 'end_pos', 'get_imports', 'type',
                         'doc', 'raw_doc', 'asserts']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                  % (self, name))
@@ -355,6 +355,9 @@ class Wrapper(pr.Base):
     def is_class(self):
         return False
 
+    def names_dicts(self):
+        yield self.names_dict
+
     @property
     @underscore_memoization
     def name(self):
@@ -440,7 +443,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'asserts', 'raw_doc',
                         'doc', 'get_imports', 'get_parent_until', 'get_code',
-                        'subscopes', 'names_dict']:
+                        'subscopes', 'names_dict', 'type']:
             raise AttributeError("Don't touch this: %s of %s !" % (name, self))
         return getattr(self.base, name)
 
@@ -625,7 +628,11 @@ class FunctionExecution(Executed):
         self.base.names_dict
         return LazyDict(self.base.names_dict, self._copy_list)
 """
-
+    
+    def names_dicts(self):
+        self.children
+        yield dict((k, [self._copy_dict[v] for v in values])
+                   for k, values in self.base.names_dict.items())
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):
@@ -669,7 +676,7 @@ class FunctionExecution(Executed):
         return objects
 
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'imports', '_sub_module']:
+        if name not in ['start_pos', 'end_pos', 'imports', '_sub_module', 'type']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
@@ -740,6 +747,16 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         if sub_modules:
             yield self, self._sub_modules()
 
+    def names_dicts(self):
+        yield self.base.names_dict
+        yield self._module_attributes_dict()
+
+        for star_module in self.star_imports():
+            yield star_module.names_dict
+
+        yield dict((str(n), [n]) for n in self.base.global_names)
+        yield self._sub_modules_dict()
+
     @cache_star_import
     @memoize_default([])
     def star_imports(self):
@@ -753,6 +770,15 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
                         modules += module.star_imports()
                 modules += new
         return modules
+
+    @memoize_default()
+    def _module_attributes_dict(self):
+        def parent_callback():
+            return self._evaluator.execute(compiled.create(self._evaluator, str))[0]
+
+        names = ['__file__', '__package__', '__doc__', '__name__']
+        # All the additional module attributes are strings.
+        return dict((n, [helpers.LazyName(n, parent_callback)]) for n in names)
 
     @memoize_default()
     def _module_attributes(self):
@@ -784,6 +810,32 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
                 imp = helpers.FakeImport(name, self, level=1)
                 name.parent = imp
                 names.append(name)
+
+        # TODO add something like this in the future, its cleaner than the
+        #   import hacks.
+        # ``os.path`` is a hardcoded exception, because it's a
+        # ``sys.modules`` modification.
+        #if str(self.name) == 'os':
+        #    names.append(helpers.FakeName('path', parent=self))
+
+        return names
+
+    @memoize_default()
+    def _sub_modules_dict(self):
+        """
+        Lists modules in the directory of this module (if this module is a
+        package).
+        """
+        path = self._module.path
+        names = {}
+        if path is not None and path.endswith(os.path.sep + '__init__.py'):
+            mods = pkgutil.iter_modules([os.path.dirname(path)])
+            for module_loader, name, is_pkg in mods:
+                fake_n = helpers.FakeName(name)
+                # It's obviously a relative import to the current module.
+                imp = helpers.FakeImport(fake_n, self, level=1)
+                fake_n.parent = imp
+                names[name] = fake_n
 
         # TODO add something like this in the future, its cleaner than the
         #   import hacks.

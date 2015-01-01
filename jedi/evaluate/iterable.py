@@ -257,6 +257,13 @@ class Array(IterableWrapper):
         for _, names in scope.scope_names_generator():
             yield self, names
 
+    @underscore_memoization
+    def names_dicts(self):
+        # `array.type` is a string with the type, e.g. 'list'.
+        scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
+        scope = self._evaluator.execute(scope)[0]  # builtins only have one class
+        return scope.names_dicts()
+
     @common.safe_property
     def parent(self):
         return compiled.builtin
