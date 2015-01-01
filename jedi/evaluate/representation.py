@@ -182,6 +182,44 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                         names += inst.get_self_attributes(add_mro=False)
         return names
 
+    def _self_names_dict(self, add_mro=True):
+        names = {}
+        # This loop adds the names of the self object, copies them and removes
+        # the self.
+        for sub in self.base.subscopes:
+            if isinstance(sub, pr.Class):
+                continue
+            # Get the self name, if there's one.
+            self_name = self._get_func_self_name(sub)
+            if self_name is None:
+                continue
+
+            if sub.name.value == '__init__' and not self.is_generated:
+                # ``__init__`` is special because the params need are injected
+                # this way. Therefore an execution is necessary.
+                if not sub.get_decorators():
+                    # __init__ decorators should generally just be ignored,
+                    # because to follow them and their self variables is too
+                    # complicated.
+                    sub = self._get_method_execution(sub)
+            for name_list in sub.names_dict.values():
+                for name in name_list:
+                    if name.value == self_name and name.prev_sibling() is None:
+                        trailer = name.next_sibling()
+                        if pr.is_node(trailer, 'trailer') \
+                                and len(trailer.children) == 2:
+                            name = trailer.children[1]  # After dot.
+                            if name.is_definition():
+                                arr = names.setdefault(name.value, [])
+                                arr.append(get_instance_el(self._evaluator, self, name))
+
+        if add_mro and False:   # TODO ADD!!!!
+            for s in self.base.py__mro__(self._evaluator)[1:]:
+                if not isinstance(s, compiled.CompiledObject):
+                    for inst in self._evaluator.execute(s):
+                        names += inst.get_self_attributes(add_mro=False)
+        return names
+
     def get_subscope_by_name(self, name):
         sub = self.base.get_subscope_by_name(name)
         return get_instance_el(self._evaluator, self, sub, True)
@@ -196,6 +234,13 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         # `method` is the new parent of the array, don't know if that's good.
         args = [obj, obj.base] if isinstance(obj, Instance) else [compiled.none_obj, obj]
         return self.execute_subscope_by_name('__get__', *args)
+
+    @memoize_default([])
+    def names_dicts(self):
+        yield self._self_names_dict()
+
+        for names_dict in self.base.names_dicts():
+            yield LazyInstanceDict(self._evaluator, self, names_dict)
 
     def scope_names_generator(self, position=None):
         """
@@ -245,6 +290,27 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                                       self.var_args, dec)
 
 
+class LazyInstanceDict(object):
+    def __init__(self, evaluator, instance, dct):
+        self._evaluator = evaluator
+        self._instance = instance
+        self._dct = dct
+
+    def __getitem__(self, name):
+        return [get_instance_el(self._evaluator, self._instance, var, True)
+                for var in self._dct[name]]
+
+
+class InstanceName(pr.Name):
+    def __init__(self, origin_name, parent):
+        super(InstanceName, self).__init__(origin_name.value, origin_name.start_pos)
+        self._origin_name = origin_name
+        self.parent = parent
+
+    def is_definition(self):
+        return self._origin_name.is_definition()
+
+
 def get_instance_el(evaluator, instance, var, is_class_var=False):
     """
     Returns an InstanceElement if it makes sense, otherwise leaves the object
@@ -255,10 +321,8 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
         if isinstance(var, pr.Name):
             # TODO temp solution, remove later, Name should never get
             #     here?
-            par = get_instance_el(evaluator, instance, var.parent, is_class_var)
-            name = pr.Name(unicode(var), var.start_pos)
-            name.parent = par
-            return name
+            parent = get_instance_el(evaluator, instance, var.parent)
+            return InstanceName(var, parent)
         return var
 
     var = wrap(evaluator, var)
@@ -307,6 +371,9 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def get_rhs(self):
         return get_instance_el(self._evaluator, self.instance,
                                self.var.get_rhs(), self.is_class_var)
+
+    def is_definition(self):
+        return self.var.is_definition()
 
     @property
     def children(self):
