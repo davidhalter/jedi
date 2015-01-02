@@ -235,7 +235,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         args = [obj, obj.base] if isinstance(obj, Instance) else [compiled.none_obj, obj]
         return self.execute_subscope_by_name('__get__', *args)
 
-    @memoize_default([])
+    @underscore_memoization
     def names_dicts(self):
         yield self._self_names_dict()
 
@@ -321,7 +321,7 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
         if isinstance(var, pr.Name):
             # TODO temp solution, remove later, Name should never get
             #     here?
-            parent = get_instance_el(evaluator, instance, var.parent)
+            parent = get_instance_el(evaluator, instance, var.parent, is_class_var)
             return InstanceName(var, parent)
         return var
 

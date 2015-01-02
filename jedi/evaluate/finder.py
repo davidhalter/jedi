@@ -92,7 +92,8 @@ class NameFinder(object):
         # Only the names defined in the last position are valid definitions.
         last_names = []
         for name in reversed(sorted(names, key=lambda name: name.start_pos)):
-            if isinstance(name, compiled.CompiledName):
+            if isinstance(name, compiled.CompiledName) \
+                    or isinstance(name, er.InstanceName) and isinstance(name._origin_name, compiled.CompiledName):
                 last_names.append(name)
                 continue
 
@@ -102,6 +103,7 @@ class NameFinder(object):
                 origin_scope = None
             stmt = name.get_definition()
             if isinstance(stmt.parent, compiled.CompiledObject):
+                # TODO seriously? this is stupid.
                 continue
             check = flow_analysis.break_check(self._evaluator, scope, stmt, origin_scope)
             if check is not flow_analysis.UNREACHABLE:
