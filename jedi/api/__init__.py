@@ -205,7 +205,7 @@ class Script(object):
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
-                if not filter_private_variable(s, user_stmt or self._parser.user_scope(), n):
+                if True: # TODO reinstate! not filter_private_variable(s, user_stmt or self._parser.user_scope(), n):
                     if isinstance(c.parent, (pr.Function, pr.Class)):
                         # TODO I think this is a hack. It should be an
                         #   er.Function/er.Class before that.

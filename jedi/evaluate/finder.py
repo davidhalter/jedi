@@ -73,8 +73,9 @@ class NameFinder(object):
                 return scope.param_by_name(str(el))
             return el
 
+        search_str = str(self.name_str)
         try:
-            names = names_dict[str(self.name_str)]
+            names = names_dict[search_str]
         except KeyError:
             return []
 
@@ -83,6 +84,13 @@ class NameFinder(object):
         scope = er.wrap(self._evaluator, names[0].get_definition().get_parent_scope())
         if isinstance(scope, (pr.CompFor, pr.Lambda)):
             return names
+
+        # Private name mangling (compile.c) disallows access on names
+        # preceeded by two underscores `__` if used outside of the class. Names
+        # that also end with two underscores (e.g. __id__) are not affected.
+        if search_str.startswith('__') and not search_str.endswith('__'):
+            if filter_private_variable(scope, self.name_str):
+                return []
 
         if not (isinstance(scope, er.FunctionExecution)
                 and isinstance(scope.base, er.LambdaWrapper)):
@@ -485,12 +493,17 @@ def global_names_dict_generator(evaluator, scope, position):
     """
     For global lookups.
     """
+    in_func = False
     while scope is not None:
-        for names_dict in scope.names_dicts():
-            yield names_dict, position
-        if scope.type == 'funcdef':
-            # The position should be reset if the current scope is a function.
-            position = None
+        if not (scope.type == 'classdef' and in_func):
+            # Names in methods cannot be resolved within the class.
+
+            for names_dict in scope.names_dicts():
+                yield names_dict, position
+            if scope.type == 'funcdef':
+                # The position should be reset if the current scope is a function.
+                in_func = True
+                position = None
         scope = er.wrap(evaluator, scope.get_parent_scope())
 
     # Add builtins to the global scope.
@@ -606,15 +619,11 @@ def check_tuple_assignments(types, name):
     return types
 
 
-def filter_private_variable(scope, call_scope, var_name):
-    """private variables begin with a double underline `__`"""
-    if isinstance(scope, er.Instance) and var_name.startswith('__') and not var_name.endswith('__'):
-        s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.CompiledObject))
-        if s != scope:
-            if isinstance(scope.base, compiled.CompiledObject):
-                if s != scope.base:
-                    return True
-            else:
-                if s != scope.base.base:
-                    return True
-    return False
+def filter_private_variable(scope, search_name):
+    """Check if a variable is defined inside the same class or outside."""
+    instance = scope.get_parent_scope()
+    coming_from = search_name
+    while coming_from is not None and not isinstance(coming_from, pr.Class):
+        coming_from = coming_from.get_parent_scope()
+
+    return isinstance(instance, er.Instance) and instance.base.base != coming_from
