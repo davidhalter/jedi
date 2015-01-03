@@ -228,12 +228,15 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         method = self.get_subscope_by_name(name)
         return self._evaluator.execute_evaluated(method, *args)
 
-    def get_descriptor_return(self, obj):
+    def get_descriptor_returns(self, obj):
         """ Throws a KeyError if there's no method. """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
         args = [obj, obj.base] if isinstance(obj, Instance) else [compiled.none_obj, obj]
-        return self.execute_subscope_by_name('__get__', *args)
+        try:
+            return self.execute_subscope_by_name('__get__', *args)
+        except KeyError:
+            return [self]
 
     @underscore_memoization
     def names_dicts(self):

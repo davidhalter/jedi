@@ -59,7 +59,10 @@ class NameFinder(object):
                                                  self.scope, self.name_str)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, types)
-        return self._resolve_descriptors(types)
+        if isinstance(self.scope, (er.Class, er.Instance)) and not search_global:
+            return self._resolve_descriptors(types)
+        else:
+            return types
 
     def scopes(self, search_global=False):
         if search_global:
@@ -81,7 +84,7 @@ class NameFinder(object):
 
         #print(names[0].parent, names[0].get_definition().get_parent_scope())
         # Just calculate the scope from the first
-        scope = er.wrap(self._evaluator, names[0].get_definition().get_parent_scope())
+        scope = names[0].get_definition().get_parent_scope()
         if isinstance(scope, (pr.CompFor, pr.Lambda)):
             return names
 
@@ -100,6 +103,15 @@ class NameFinder(object):
         # Only the names defined in the last position are valid definitions.
         last_names = []
         for name in reversed(sorted(names, key=lambda name: name.start_pos)):
+            stmt = name.get_definition()
+            name_scope = er.wrap(self._evaluator, stmt.get_parent_scope())
+
+            if isinstance(self.scope, er.Instance) and not isinstance(name_scope, er.Instance):
+                # Instances should not be checked for positioning, because we
+                # don't know in which order the functions are called.
+                last_names.append(name)
+                continue
+
             if isinstance(name, compiled.CompiledName) \
                     or isinstance(name, er.InstanceName) and isinstance(name._origin_name, compiled.CompiledName):
                 last_names.append(name)
@@ -109,11 +121,11 @@ class NameFinder(object):
                 origin_scope = self.name_str.get_definition().parent
             else:
                 origin_scope = None
-            stmt = name.get_definition()
             if isinstance(stmt.parent, compiled.CompiledObject):
                 # TODO seriously? this is stupid.
                 continue
-            check = flow_analysis.break_check(self._evaluator, scope, stmt, origin_scope)
+            check = flow_analysis.break_check(self._evaluator, name_scope,
+                                              stmt, origin_scope)
             if check is not flow_analysis.UNREACHABLE:
                 last_names.append(name)
             if check is flow_analysis.REACHABLE:
@@ -307,15 +319,24 @@ class NameFinder(object):
 
     def _resolve_descriptors(self, types):
         """Processes descriptors"""
-        if not self.maybe_descriptor:
-            return types
+        #if not self.maybe_descriptor:
+        #    return types
         result = []
         for r in types:
+            try:
+                desc_return = r.get_descriptor_returns
+            except AttributeError:
+                result.append(r)
+            else:
+                result += desc_return(self.scope)
+
+
+            continue  # TODO DELETE WHAT FOLLOWS
             if isinstance(self.scope, (er.Instance, er.Class)) \
-                    and hasattr(r, 'get_descriptor_return'):
+                    and hasattr(r, 'get_descriptor_returns'):
                 # handle descriptors
                 with common.ignored(KeyError):
-                    result += r.get_descriptor_return(self.scope)
+                    result += r.get_descriptor_returns(self.scope)
                     continue
             result.append(r)
         return result
