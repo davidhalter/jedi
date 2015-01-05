@@ -86,8 +86,9 @@ class NameFinder(object):
 
         #print(names[0].parent, names[0].get_definition().get_parent_scope())
         # Just calculate the scope from the first
-        scope = names[0].get_definition().get_parent_scope()
-        if isinstance(scope, (pr.CompFor, pr.Lambda)):
+        stmt = names[0].get_definition()
+        scope = stmt.get_parent_scope()
+        if isinstance(stmt, (pr.CompFor, pr.Lambda)):
             return names
 
         # Private name mangling (compile.c) disallows access on names
@@ -161,7 +162,6 @@ class NameFinder(object):
         scope_names_generator = []
         name_list_scope = None  # TODO delete
         for names_dict, position in names_dicts:
-            #scope = parent
             names = self.names_dict_lookup(names_dict, position)
             if names:
                 break
