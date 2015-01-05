@@ -79,6 +79,8 @@ class NameFinder(object):
         search_str = str(self.name_str)
         try:
             names = names_dict[search_str]
+            if not names:  # There must be something in there otherwise stop.
+                return []
         except KeyError:
             return []
 
@@ -348,7 +350,7 @@ class NameFinder(object):
         return result
 
 
-@memoize_default(evaluator_is_first_arg=True)
+@memoize_default([], evaluator_is_first_arg=True)
 def _name_to_types(evaluator, name, scope):
     types = []
     typ = name.get_definition()

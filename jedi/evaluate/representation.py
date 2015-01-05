@@ -905,7 +905,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
                 # It's obviously a relative import to the current module.
                 imp = helpers.FakeImport(fake_n, self, level=1)
                 fake_n.parent = imp
-                names[name] = fake_n
+                names[name] = [fake_n]
 
         # TODO add something like this in the future, its cleaner than the
         #   import hacks.

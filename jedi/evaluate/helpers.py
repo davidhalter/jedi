@@ -169,6 +169,9 @@ class FakeImport(pr.Import):
         self._level = level
         self.name = name
 
+    def get_defined_names(self):
+        return [self.name]
+
     def aliases(self):
         return {}
 
@@ -182,6 +185,9 @@ class FakeImport(pr.Import):
 
     def paths(self):
         return [[self.name]]
+
+    def is_definition(self):
+        return True
 
 
 class FakeName(pr.Name):
