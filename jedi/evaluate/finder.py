@@ -79,7 +79,7 @@ class NameFinder(object):
         search_str = str(self.name_str)
         try:
             names = names_dict[search_str]
-            if not names:  # There must be something in there otherwise stop.
+            if not names:  # We want names, otherwise stop.
                 return []
         except KeyError:
             return []
