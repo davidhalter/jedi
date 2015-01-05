@@ -62,6 +62,18 @@ class GeneratorMixin(object):
     def scope_names_generator(self, position=None):
         yield self, self._get_defined_names()
 
+    @underscore_memoization
+    def names_dicts(self):
+        dct = {}
+        executes_generator = '__next__', 'send', 'next'
+        for name in compiled.generator_obj.get_defined_names():
+            if name.value in executes_generator:
+                parent = GeneratorMethod(self, name.parent)
+                dct[name.value] = [helpers.FakeName(name.name, parent, is_definition=True)]
+            else:
+                dct[name.value] = [name]
+        yield dct
+
     def get_index_types(self, evaluator, index_array):
         #debug.warning('Tried to get array access on a generator: %s', self)
         analysis.add(self._evaluator, 'type-error-generator', index_array)

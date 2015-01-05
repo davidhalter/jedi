@@ -112,6 +112,12 @@ class NameFinder(object):
                 last_names.append(name)
                 continue
 
+            if isinstance(name_scope, compiled.CompiledObject):
+                # Let's test this. TODO need comment. shouldn't this be
+                # filtered before?
+                last_names.append(name)
+                continue
+
             if isinstance(name, compiled.CompiledName) \
                     or isinstance(name, er.InstanceName) and isinstance(name._origin_name, compiled.CompiledName):
                 last_names.append(name)
@@ -516,7 +522,8 @@ def global_names_dict_generator(evaluator, scope, position):
     """
     in_func = False
     while scope is not None:
-        if not (scope.type == 'classdef' and in_func):
+        if not((scope.type == 'classdef' or isinstance(scope,
+                compiled.CompiledObject) and scope.type() == 'class') and in_func):
             # Names in methods cannot be resolved within the class.
 
             for names_dict in scope.names_dicts():
