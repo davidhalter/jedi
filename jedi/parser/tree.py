@@ -1260,7 +1260,7 @@ class CompFor(Simple):
             arr.append(name)
         return dct
 
-    def names_dicts(self):
+    def names_dicts(self, search_global):
         yield self.names_dict
 
     def get_defined_names(self):

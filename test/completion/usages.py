@@ -164,7 +164,7 @@ class Super(object):
     def base_method(self):
         #< 13 (0,13), (20,13)
         self.base_var = 1
-        #< 13 (0,13), (24,13), (29,13)
+        #< 13 (0,13),
         self.instance_var = 1
 
     #< 8 (0,8),
@@ -188,12 +188,12 @@ class TestClass(Super):
         TestClass.base_var
 
 
-        #< 13 (5,13), (0,13), (-24,13)
+        #< 13 (5,13), (0,13)
         self.instance_var = 3
 
     #< 9 (0,8), 
     def just_a_method(self):
-        #< (-5,13), (0,13), (-29,13)
+        #< (-5,13), (0,13)
         self.instance_var
 
 

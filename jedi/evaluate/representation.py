@@ -242,6 +242,12 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
     def names_dicts(self, search_global):
         yield self._self_names_dict()
 
+        for s in self.base.py__mro__(self._evaluator)[1:]:
+            if not isinstance(s, compiled.CompiledObject):
+                # Compiled objects don't have `self.` names.
+                for inst in self._evaluator.execute(s):
+                    yield inst._self_names_dict(add_mro=False)
+
         for names_dict in self.base.names_dicts(search_global=False):
             yield LazyInstanceDict(self._evaluator, self, names_dict)
 
