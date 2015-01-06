@@ -68,7 +68,7 @@ class NameFinder(object):
         if search_global:
             return global_names_dict_generator(self._evaluator, self.scope, self.position)
         else:
-            return ((n, None) for n in self.scope.names_dicts())
+            return ((n, None) for n in self.scope.names_dicts(search_global))
 
     def names_dict_lookup(self, names_dict, position):
         def get_param(el):
@@ -528,7 +528,7 @@ def global_names_dict_generator(evaluator, scope, position):
                 compiled.CompiledObject) and scope.type() == 'class') and in_func):
             # Names in methods cannot be resolved within the class.
 
-            for names_dict in scope.names_dicts():
+            for names_dict in scope.names_dicts(True):
                 yield names_dict, position
             if scope.type == 'funcdef':
                 # The position should be reset if the current scope is a function.
@@ -537,7 +537,7 @@ def global_names_dict_generator(evaluator, scope, position):
         scope = er.wrap(evaluator, scope.get_parent_scope())
 
     # Add builtins to the global scope.
-    for names_dict in compiled.builtin.names_dicts():
+    for names_dict in compiled.builtin.names_dicts(True):
         yield names_dict, None
 
 

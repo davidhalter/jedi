@@ -238,11 +238,11 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         except KeyError:
             return [self]
 
-    @underscore_memoization
-    def names_dicts(self):
+    @memoize_default()
+    def names_dicts(self, search_global):
         yield self._self_names_dict()
 
-        for names_dict in self.base.names_dicts():
+        for names_dict in self.base.names_dicts(search_global=False):
             yield LazyInstanceDict(self._evaluator, self, names_dict)
 
     def scope_names_generator(self, position=None):
@@ -425,9 +425,6 @@ class Wrapper(pr.Base):
     def is_class(self):
         return False
 
-    def names_dicts(self):
-        yield self.names_dict
-
     @property
     @underscore_memoization
     def name(self):
@@ -499,6 +496,13 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
             yield cls, names
         if add_class_vars:
             yield self, compiled.type_names
+
+    def names_dicts(self, search_global):
+        if search_global:
+            yield self.names_dict
+        else:
+            for scope in self.py__mro__(self._evaluator):
+                yield scope.names_dict
 
     def is_class(self):
         return True
@@ -585,6 +589,12 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
 
                 debug.dbg('decorator end %s', f)
         return f
+
+    def names_dicts(self, search_global):
+        if search_global:
+            yield self.names_dict
+        else:
+            raise NotImplementedError
 
     def get_magic_function_names(self):
         return compiled.magic_function_class.get_defined_names()
@@ -699,7 +709,7 @@ class FunctionExecution(Executed):
         return LazyDict(self.base.names_dict, self._copy_list)
 """
     
-    def names_dicts(self):
+    def names_dicts(self, search_global):
         self.children
         yield dict((k, [self._copy_dict[v] for v in values])
                    for k, values in self.base.names_dict.items())
@@ -817,7 +827,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         if sub_modules:
             yield self, self._sub_modules()
 
-    def names_dicts(self):
+    def names_dicts(self, search_global):
         yield self.base.names_dict
         yield self._module_attributes_dict()
 

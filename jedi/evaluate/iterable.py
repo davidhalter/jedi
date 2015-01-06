@@ -62,8 +62,8 @@ class GeneratorMixin(object):
     def scope_names_generator(self, position=None):
         yield self, self._get_defined_names()
 
-    @underscore_memoization
-    def names_dicts(self):
+    @memoize_default()
+    def names_dicts(self, search_global=False):  # is always False
         dct = {}
         executes_generator = '__next__', 'send', 'next'
         for name in compiled.generator_obj.get_defined_names():
@@ -269,12 +269,12 @@ class Array(IterableWrapper):
         for _, names in scope.scope_names_generator():
             yield self, names
 
-    @underscore_memoization
-    def names_dicts(self):
+    @memoize_default()
+    def names_dicts(self, search_global=False):  # Always False.
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
         scope = self._evaluator.execute(scope)[0]  # builtins only have one class
-        return scope.names_dicts()
+        return scope.names_dicts(search_global)
 
     @common.safe_property
     def parent(self):
