@@ -211,8 +211,8 @@ class FakeName(pr.Name):
 
 
 class LazyName(FakeName):
-    def __init__(self, name, parent_callback):
-        super(LazyName, self).__init__(name)
+    def __init__(self, name, parent_callback, is_definition=None):
+        super(LazyName, self).__init__(name, is_definition=is_definition)
         self._parent_callback = parent_callback
 
     @property

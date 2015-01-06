@@ -848,7 +848,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
 
         names = ['__file__', '__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
-        return dict((n, [helpers.LazyName(n, parent_callback)]) for n in names)
+        return dict((n, [helpers.LazyName(n, parent_callback, is_definition=True)])
+                    for n in names)
 
     @memoize_default()
     def _module_attributes(self):

@@ -88,7 +88,7 @@ class NameFinder(object):
         # Just calculate the scope from the first
         stmt = names[0].get_definition()
         scope = stmt.get_parent_scope()
-        if isinstance(stmt, (pr.CompFor, pr.Lambda)):
+        if isinstance(stmt, (pr.CompFor, pr.Lambda, pr.GlobalStmt)):
             return names
 
         # Private name mangling (compile.c) disallows access on names
