@@ -130,7 +130,7 @@ class Evaluator(object):
             operator.value = operator.value[:-1]
             name = str(stmt.get_defined_names()[0])
             parent = er.wrap(self, stmt.get_parent_scope())
-            left = self.find_types(parent, name, stmt.start_pos)
+            left = self.find_types(parent, name, stmt.start_pos, search_global=True)
             if isinstance(stmt.get_parent_until(pr.ForStmt), pr.ForStmt):
                 # Iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
