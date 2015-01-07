@@ -34,7 +34,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_names
-from jedi.evaluate.finder import get_names_of_scope, filter_definition_names
+from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
 from jedi.evaluate import analysis
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -226,13 +226,19 @@ class Script(object):
 
     def _simple_complete(self, path, dot, like):
         if not path and not dot:
-            scope_names_generator = get_names_of_scope(self._evaluator,
-                                                       self._parser.user_scope(),
-                                                       self._pos)
+            names_dicts = global_names_dict_generator(
+                self._evaluator,
+                er.wrap(self._evaluator, self._parser.user_scope()),
+                self._pos
+            )
             completions = []
-            for scope, name_list in scope_names_generator:
-                for c in name_list:
-                    completions.append((c, scope))
+            for names_dict, pos in names_dicts:
+                names = list(chain.from_iterable(names_dict.values()))
+                if not names:
+                    continue
+                names = filter_definition_names(names, self._parser.user_stmt(), pos)
+                for name in names:
+                    completions.append((name, self._parser.user_scope()))
         elif self._get_under_cursor_stmt(path) is None:
             return []
         else:

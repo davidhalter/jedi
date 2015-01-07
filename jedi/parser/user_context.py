@@ -293,7 +293,7 @@ class UserContextParser(object):
 
             return scan(self.module()) or self.module()
         else:
-            return user_stmt.parent
+            return user_stmt.get_parent_scope(include_flows=True)
 
     def module(self):
         return self._parser().module
