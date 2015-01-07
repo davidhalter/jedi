@@ -32,7 +32,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate.cache import memoize_default
 
 
-def filter_definition_names(names, position=None):
+def filter_definition_names(names, origin, position=None):
     # Just calculate the scope from the first
     stmt = names[0].get_definition()
     scope = stmt.get_parent_scope()
@@ -45,7 +45,7 @@ def filter_definition_names(names, position=None):
     names = list(names)
     for name in names:
         if name.value.startswith('__') and not name.value.endswith('__'):
-            if filter_private_variable(scope, name):
+            if filter_private_variable(scope, origin):
                 names.remove(name)
 
     if not (isinstance(scope, er.FunctionExecution)
@@ -106,7 +106,7 @@ class NameFinder(object):
         except KeyError:
             return []
 
-        names = filter_definition_names(names, position)
+        names = filter_definition_names(names, self.name_str, position)
 
         name_scope = None
         # Only the names defined in the last position are valid definitions.

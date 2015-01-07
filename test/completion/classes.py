@@ -388,6 +388,8 @@ class PrivateVar():
         self.__var = 1
         #? int()
         self.__var
+        #? ['__var']
+        self.__var
 #? []
 PrivateVar().__var
 #?

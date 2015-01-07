@@ -247,7 +247,7 @@ class Script(object):
                     for names_dict in s.names_dicts(search_global=False):
                         names += chain.from_iterable(names_dict.values())
 
-                    names = filter_definition_names(names)
+                    names = filter_definition_names(names, self._parser.user_stmt())
                 for c in names:
                     completions.append((c, s))
         return completions
