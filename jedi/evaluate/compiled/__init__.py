@@ -256,6 +256,9 @@ class LazyNamesDict(object):
     def __init__(self, compiled_obj):
         self._compiled_obj = compiled_obj
 
+    def __iter__(self):
+        return (v[0].value for v in self.values())
+
     @memoize_method
     def __getitem__(self, name):
         try:
@@ -266,10 +269,9 @@ class LazyNamesDict(object):
 
     def values(self):
         obj = self._compiled_obj.obj
-        names = dir(obj)
 
         values = []
-        for name in names:
+        for name in dir(obj):
             try:
                 values.append(self[name])
             except KeyError:
@@ -487,7 +489,7 @@ def _create_from_name(module, parent, name):
 builtin = Builtin(_builtins)
 magic_function_class = CompiledObject(type(load_module), parent=builtin)
 generator_obj = CompiledObject(_a_generator(1.0))
-type_names = []  # Need this, because it's return in get_defined_names.
+type_names = []  # Need this, because its part of the result of get_defined_names.
 type_names = builtin.get_by_name('type').get_defined_names()
 none_obj = builtin.get_by_name('None')
 false_obj = builtin.get_by_name('False')

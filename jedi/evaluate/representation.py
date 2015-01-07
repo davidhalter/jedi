@@ -309,6 +309,9 @@ class LazyInstanceDict(object):
         return [get_instance_el(self._evaluator, self._instance, var, True)
                 for var in self._dct[name]]
 
+    def values(self):
+        return [self[key] for key in self._dct]
+
 
 class InstanceName(pr.Name):
     def __init__(self, origin_name, parent):
@@ -466,8 +469,12 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
 
     @memoize_default(default=())
     def py__bases__(self, evaluator):
-        args = param.Arguments(self._evaluator, self.base.get_super_arglist() or ())
-        return list(chain.from_iterable(args.eval_args()))
+        arglist = self.base.get_super_arglist()
+        if arglist:
+            args = param.Arguments(self._evaluator, arglist)
+            return list(chain.from_iterable(args.eval_args()))
+        else:
+            return [compiled.object_obj]
 
     def py__call__(self, evaluator, params):
         return [Instance(evaluator, self, params)]
@@ -508,6 +515,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
             yield self.names_dict
         else:
             for scope in self.py__mro__(self._evaluator):
+                print(scope)
                 yield scope.names_dict
 
     def is_class(self):
