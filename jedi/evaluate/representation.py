@@ -515,7 +515,6 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
             yield self.names_dict
         else:
             for scope in self.py__mro__(self._evaluator):
-                print(scope)
                 yield scope.names_dict
 
     def is_class(self):

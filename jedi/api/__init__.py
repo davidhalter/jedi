@@ -34,7 +34,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_names
-from jedi.evaluate.finder import get_names_of_scope, filter_private_variable
+from jedi.evaluate.finder import get_names_of_scope, filter_definition_names
 from jedi.evaluate import analysis
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -247,6 +247,7 @@ class Script(object):
                     for names_dict in s.names_dicts(search_global=False):
                         names += chain.from_iterable(names_dict.values())
 
+                    names = filter_definition_names(names)
                 for c in names:
                     completions.append((c, s))
         return completions

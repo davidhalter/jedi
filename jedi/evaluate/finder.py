@@ -32,6 +32,28 @@ from jedi.evaluate import helpers
 from jedi.evaluate.cache import memoize_default
 
 
+def filter_definition_names(names, position=None):
+    # Just calculate the scope from the first
+    stmt = names[0].get_definition()
+    scope = stmt.get_parent_scope()
+    if isinstance(stmt, (pr.CompFor, pr.Lambda, pr.GlobalStmt)):
+        return names
+
+    # Private name mangling (compile.c) disallows access on names
+    # preceeded by two underscores `__` if used outside of the class. Names
+    # that also end with two underscores (e.g. __id__) are not affected.
+    names = list(names)
+    for name in names:
+        if name.value.startswith('__') and not name.value.endswith('__'):
+            if filter_private_variable(scope, name):
+                names.remove(name)
+
+    if not (isinstance(scope, er.FunctionExecution)
+            and isinstance(scope.base, er.LambdaWrapper)):
+        names = pr.filter_after_position(names, position)
+    return [name for name in names if name.is_definition()]
+
+
 class NameFinder(object):
     def __init__(self, evaluator, scope, name_str, position=None):
         self._evaluator = evaluator
@@ -71,7 +93,7 @@ class NameFinder(object):
             return ((n, None) for n in self.scope.names_dicts(search_global))
 
     def names_dict_lookup(self, names_dict, position):
-        def get_param(el):
+        def get_param(scope, el):
             if isinstance(el.parent, pr.Param) or isinstance(el.parent.parent, pr.Param):
                 return scope.param_by_name(str(el))
             return el
@@ -84,25 +106,9 @@ class NameFinder(object):
         except KeyError:
             return []
 
-        #print(names[0].parent, names[0].get_definition().get_parent_scope())
-        # Just calculate the scope from the first
-        stmt = names[0].get_definition()
-        scope = stmt.get_parent_scope()
-        if isinstance(stmt, (pr.CompFor, pr.Lambda, pr.GlobalStmt)):
-            return names
+        names = filter_definition_names(names, position)
 
-        # Private name mangling (compile.c) disallows access on names
-        # preceeded by two underscores `__` if used outside of the class. Names
-        # that also end with two underscores (e.g. __id__) are not affected.
-        if search_str.startswith('__') and not search_str.endswith('__'):
-            if filter_private_variable(scope, self.name_str):
-                return []
-
-        if not (isinstance(scope, er.FunctionExecution)
-                and isinstance(scope.base, er.LambdaWrapper)):
-            names = pr.filter_after_position(names, position)
-        names = [name for name in names if name.is_definition()]
-
+        name_scope = None
         # Only the names defined in the last position are valid definitions.
         last_names = []
         for name in reversed(sorted(names, key=lambda name: name.start_pos)):
@@ -140,9 +146,9 @@ class NameFinder(object):
             if check is flow_analysis.REACHABLE:
                 break
 
-        if isinstance(scope, er.FunctionExecution):
+        if isinstance(name_scope, er.FunctionExecution):
             # Replace params
-            return [get_param(n) for n in last_names]
+            return [get_param(name_scope, n) for n in last_names]
         return last_names
 
     def filter_name(self, names_dicts, search_global=False):
@@ -651,6 +657,7 @@ def check_tuple_assignments(types, name):
 
 def filter_private_variable(scope, search_name):
     """Check if a variable is defined inside the same class or outside."""
+    # TODO integrate this in the function that checks this.
     instance = scope.get_parent_scope()
     coming_from = search_name
     while coming_from is not None and not isinstance(coming_from, pr.Class):
