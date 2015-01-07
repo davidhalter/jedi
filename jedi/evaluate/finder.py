@@ -39,19 +39,19 @@ def filter_definition_names(names, origin, position=None):
     if isinstance(stmt, (pr.CompFor, pr.Lambda, pr.GlobalStmt)):
         return names
 
-    # Private name mangling (compile.c) disallows access on names
-    # preceeded by two underscores `__` if used outside of the class. Names
-    # that also end with two underscores (e.g. __id__) are not affected.
-    names = list(names)
-    for name in names:
-        if name.value.startswith('__') and not name.value.endswith('__'):
-            if filter_private_variable(scope, origin):
-                names.remove(name)
-
     if not (isinstance(scope, er.FunctionExecution)
             and isinstance(scope.base, er.LambdaWrapper)):
         names = pr.filter_after_position(names, position)
-    return [name for name in names if name.is_definition()]
+    names = [name for name in names if name.is_definition()]
+
+    # Private name mangling (compile.c) disallows access on names
+    # preceeded by two underscores `__` if used outside of the class. Names
+    # that also end with two underscores (e.g. __id__) are not affected.
+    for name in list(names):
+        if name.value.startswith('__') and not name.value.endswith('__'):
+            if filter_private_variable(scope, origin):
+                names.remove(name)
+    return names
 
 
 class NameFinder(object):
@@ -655,12 +655,17 @@ def check_tuple_assignments(types, name):
     return types
 
 
-def filter_private_variable(scope, search_name):
+def filter_private_variable(scope, origin_node):
     """Check if a variable is defined inside the same class or outside."""
-    # TODO integrate this in the function that checks this.
     instance = scope.get_parent_scope()
-    coming_from = search_name
-    while coming_from is not None and not isinstance(coming_from, pr.Class):
+    coming_from = origin_node
+    while coming_from is not None \
+            and not isinstance(coming_from, (pr.Class, compiled.CompiledObject)):
         coming_from = coming_from.get_parent_scope()
 
-    return isinstance(instance, er.Instance) and instance.base.base != coming_from
+    # CompiledObjects don't have double underscore attributes, but Jedi abuses
+    # those for fakes (builtins.pym -> list).
+    if isinstance(instance, compiled.CompiledObject):
+        return instance != coming_from
+    else:
+        return isinstance(instance, er.Instance) and instance.base.base != coming_from
