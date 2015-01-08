@@ -18,34 +18,13 @@ from jedi.evaluate import iterable
 from jedi.evaluate import representation as er
 
 
-class InterpreterNamespace(pt.Module):
-    def __init__(self, evaluator, namespace, parser_module):
-        self.namespace = namespace
-        self.parser_module = parser_module
-        self._evaluator = evaluator
-
-        for key, value in self.namespace.items():
-            arr = self.parser_module.names_dict.setdefault(key, [])
-            arr.append(LazyName(self._evaluator, parser_module, key, value))
-
-    @underscore_memoization
-    def get_defined_names(self):
-        raise NotImplementedError
-        for name in self.parser_module.get_defined_names():
-            yield name
-        for key, value in self.namespace.items():
-            yield LazyName(self._evaluator, key, value)
-
-    @underscore_memoization
-    def used_names(self):
-        raise NotImplementedError
-        for name in self.parser_module.get_defined_names():
-            yield name
-        for key, value in self.namespace.items():
-            yield LazyName(self._evaluator, key, value)
-
-    def __getattr__(self, name):
-        return getattr(self.parser_module, name)
+def add_namespaces_to_parser(evaluator, namespaces, parser_module):
+    for namespace in namespaces:
+        for key, value in namespace.items():
+            # Name lookups in an ast tree work by checking names_dict.
+            # Therefore we just add fake names to that and we're done.
+            arr = parser_module.names_dict.setdefault(key, [])
+            arr.append(LazyName(evaluator, parser_module, key, value))
 
 
 class LazyName(helpers.FakeName):
@@ -124,10 +103,3 @@ class LazyName(helpers.FakeName):
     @parent.setter
     def parent(self, value):
         """Needed because of the ``representation.Simple`` super class."""
-
-
-def create(evaluator, namespace, parser_module):
-    ns = InterpreterNamespace(evaluator, namespace, parser_module)
-    #for attr_name in pt.SCOPE_CONTENTS:
-    #    for something in getattr(parser_module, attr_name):
-    #        something.parent = ns
