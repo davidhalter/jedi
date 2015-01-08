@@ -674,19 +674,6 @@ class FunctionExecution(Executed):
                 break
         return types
 
-    """
-    @common.safe_property
-    @underscore_memoization
-    def names_dict(self):
-        self.children
-        d = {}
-        for key, values in self.base.names_dict.items():
-            d[key] = self._copy_list(values)
-        return d
-        self.base.names_dict
-        return LazyDict(self.base.names_dict, self._copy_list)
-"""
-    
     def names_dicts(self, search_global):
         self.children
         yield dict((k, [self._copy_dict[v] for v in values])
@@ -707,13 +694,6 @@ class FunctionExecution(Executed):
 
     def name_for_position(self, position):
         return pr.Function.name_for_position(self, position)
-
-    def get_defined_names(self):
-        """
-        Call the default method with the own instance (self implements all
-        the necessary functions). Add also the params.
-        """
-        return self._get_params() + pr.Scope.get_defined_names(self)
 
     def _copy_list(self, lst):
         """

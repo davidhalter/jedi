@@ -143,15 +143,6 @@ class NestedImportModule(pr.Module):
         debug.dbg('Generated a nested import: %s', new)
         return helpers.FakeName(str(i.namespace_names[1]), new)
 
-    def _get_defined_names(self):
-        """
-        NesteImportModule don't seem to be actively used, right now.
-        However, they might in the future. If we do more sophisticated static
-        analysis checks.
-        """
-        nested = self._get_nested_import_name()
-        return self._module.get_defined_names() + [nested]
-
     def __getattr__(self, name):
         return getattr(self._module, name)
 

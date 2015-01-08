@@ -30,7 +30,6 @@ from jedi.parser import tree as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default, NO_DEFAULT
-from jedi.cache import underscore_memoization
 from jedi.evaluate import analysis
 
 
@@ -45,20 +44,6 @@ class IterableWrapper(pr.Base):
 
 
 class GeneratorMixin(object):
-    @underscore_memoization
-    def _get_defined_names(self):
-        """
-        Returns a list of names that define a generator, which can return the
-        content of a generator.
-        """
-        executes_generator = '__next__', 'send', 'next'
-        for name in compiled.generator_obj.get_defined_names():
-            if name.name in executes_generator:
-                parent = GeneratorMethod(self, name.parent)
-                yield helpers.FakeName(name.name, parent)
-            else:
-                yield name
-
     @memoize_default()
     def names_dicts(self, search_global=False):  # is always False
         dct = {}
