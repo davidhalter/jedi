@@ -15,7 +15,6 @@ from itertools import chain
 
 from jedi._compatibility import unicode, u
 from jedi.parser import tree as pr
-from jedi.parser import fast
 from jedi import debug
 from jedi import common
 from jedi import settings
@@ -64,7 +63,7 @@ class NameFinder(object):
 
     @debug.increase_indent
     def find(self, scopes, search_global=False):
-        names = self.filter_name(scopes, search_global)
+        names = self.filter_name(scopes)
         types = self._names_to_types(names, search_global)
 
         if not names and not types \
@@ -148,17 +147,12 @@ class NameFinder(object):
             return [get_param(name_scope, n) for n in last_names]
         return last_names
 
-    def filter_name(self, names_dicts, search_global=False):
+    def filter_name(self, names_dicts):
         """
         Searches names that are defined in a scope (the different
         `names_dicts`), until a name fits.
         """
         names = []
-        self.maybe_descriptor = isinstance(self.scope, er.Class)
-        if not search_global and self.scope.isinstance(er.Function):
-            return [n for n in self.scope.get_magic_function_names()
-                    if str(n) == str(self.name_str)]
-
         for names_dict, position in names_dicts:
             names = self.names_dict_lookup(names_dict, position)
             if names:

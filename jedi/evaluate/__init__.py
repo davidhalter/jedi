@@ -102,7 +102,7 @@ class Evaluator(object):
         f = finder.NameFinder(self, scope, name_str, position)
         scopes = f.scopes(search_global)
         if is_goto:
-            return f.filter_name(scopes, search_global)
+            return f.filter_name(scopes)
         return f.find(scopes, search_global)
 
     @memoize_default(default=[], evaluator_is_first_arg=True)

@@ -572,7 +572,8 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         if search_global:
             yield self.names_dict
         else:
-            raise NotImplementedError
+            for names_dict in compiled.magic_function_class.names_dicts(False):
+                yield names_dict
 
     def get_magic_function_names(self):
         return compiled.magic_function_class.get_defined_names()
