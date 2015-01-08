@@ -205,18 +205,17 @@ class Script(object):
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
-                if True: # TODO reinstate! not filter_private_variable(s, user_stmt or self._parser.user_scope(), n):
-                    if isinstance(c.parent, (pr.Function, pr.Class)):
-                        # TODO I think this is a hack. It should be an
-                        #   er.Function/er.Class before that.
-                        c = er.wrap(self._evaluator, c.parent).name
-                    new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
-                    k = (new.name, new.complete)  # key
-                    if k in comp_dct and settings.no_completion_duplicates:
-                        comp_dct[k]._same_name_completions.append(new)
-                    else:
-                        comp_dct[k] = new
-                        comps.append(new)
+                if isinstance(c.parent, (pr.Function, pr.Class)):
+                    # TODO I think this is a hack. It should be an
+                    #   er.Function/er.Class before that.
+                    c = er.wrap(self._evaluator, c.parent).name
+                new = classes.Completion(self._evaluator, c, needs_dot, len(like))
+                k = (new.name, new.complete)  # key
+                if k in comp_dct and settings.no_completion_duplicates:
+                    comp_dct[k]._same_name_completions.append(new)
+                else:
+                    comp_dct[k] = new
+                    comps.append(new)
 
         debug.speed('completions end')
 

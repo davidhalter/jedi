@@ -365,12 +365,11 @@ class Completion(BaseDefinition):
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
-    def __init__(self, evaluator, name, needs_dot, like_name_length, base):
+    def __init__(self, evaluator, name, needs_dot, like_name_length):
         super(Completion, self).__init__(evaluator, name)
 
         self._needs_dot = needs_dot
         self._like_name_length = like_name_length
-        self._base = base
 
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
@@ -384,9 +383,9 @@ class Completion(BaseDefinition):
             append = '('
 
         if settings.add_dot_after_module:
-            if isinstance(self._base, pr.Module):
+            if isinstance(self._definition, pr.Module):
                 append += '.'
-        if isinstance(self._base, pr.Param):
+        if isinstance(self._definition, pr.Param):
             append += '='
 
         name = str(self._name)
