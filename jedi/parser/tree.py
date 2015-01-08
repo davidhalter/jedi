@@ -36,7 +36,6 @@ import textwrap
 
 from jedi._compatibility import (next, Python3Method, encoding, is_py3,
                                  literal_eval, use_metaclass, unicode)
-from jedi import debug
 from jedi import cache
 
 
@@ -531,37 +530,6 @@ class Scope(Simple, DocstringMixin):
         return True
 
     @Python3Method
-    def get_defined_names(self):
-        """
-        Get all defined names in this scope. Useful for autocompletion.
-
-        >>> from jedi._compatibility import u
-        >>> from jedi.parser import Parser, load_grammar
-        >>> parser = Parser(load_grammar(), u('''
-        ... a = x
-        ... b = y
-        ... b.c = z
-        ... '''))
-        >>> parser.module.get_defined_names()
-        [<Name: a@2,0>, <Name: b@3,0>, <Name: b.c@4,0>]
-        """
-        def scan(children):
-            names = []
-            for c in children:
-                if is_node(c, 'simple_stmt'):
-                    names += chain.from_iterable(
-                        [s.get_defined_names() for s in c.children
-                         if isinstance(s, (ExprStmt, Import))])
-                elif isinstance(c, (Function, Class)):
-                    names.append(c.name)
-                elif isinstance(c, Flow) or is_node(c, 'suite', 'decorated'):
-                    names += scan(c.children)
-            return names
-
-        children = self.children
-        return scan(children)
-
-    @Python3Method
     def get_statement_for_position(self, pos, include_imports=False):
         checks = self.statements + self.asserts
         if include_imports:
@@ -652,12 +620,6 @@ class SubModule(Scope, Module):
         :type names: list of Name
         """
         self.global_names = names
-
-    def get_defined_names(self):
-        n = super(SubModule, self).get_defined_names()
-        # TODO uncomment
-        #n += self.global_names
-        return n
 
     @property
     @cache.underscore_memoization
@@ -818,15 +780,6 @@ class Function(ClassOrFunc):
         except IndexError:
             return None
 
-    def get_defined_names(self):
-        n = super(Function, self).get_defined_names()
-        for p in self.params:
-            try:
-                n.append(p.get_name())
-            except IndexError:
-                debug.warning("multiple names in param %s", n)
-        return n
-
     def get_call_signature(self, width=72, func_name=None):
         """
         Generate call signature of this function.
@@ -958,9 +911,6 @@ class WithStmt(Flow):
 
 class Import(Simple):
     __slots__ = ()
-    def get_all_import_names(self):
-        # TODO remove. do we even need this?
-        raise NotImplementedError
 
     def path_for_name(self, name):
         try:
@@ -1104,6 +1054,7 @@ class KeywordStatement(Simple):
     `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
     """
     __slots__ = ()
+
     @property
     def keyword(self):
         return self.children[0].value

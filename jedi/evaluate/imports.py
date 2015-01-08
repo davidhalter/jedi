@@ -422,6 +422,7 @@ class _Importer(object):
         :param only_modules: Indicates wheter it's possible to import a
             definition that is not defined in a module.
         """
+        from jedi.evaluate import finder, representation as er
         names = []
         if self.import_path:
             # flask
@@ -438,7 +439,6 @@ class _Importer(object):
                     if os.path.isdir(flaskext):
                         names += self._get_module_names([flaskext])
 
-            from jedi.evaluate import finder, representation as er
             for scope in self.follow(evaluator):
                 # Non-modules are not completable.
                 if not isinstance(scope, er.ModuleWrapper) and not (isinstance(scope,
@@ -482,8 +482,10 @@ class _Importer(object):
                     rel_path = os.path.join(self.get_relative_path(),
                                             '__init__.py')
                     if os.path.exists(rel_path):
-                        m = _load_module(self._evaluator, rel_path)
-                        names += m.get_defined_names()
+                        module = _load_module(self._evaluator, rel_path)
+                        module = er.wrap(self._evaluator, module)
+                        for names_dict in module.names_dicts(search_global=False):
+                            names += chain.from_iterable(names_dict.values())
         return names
 
 

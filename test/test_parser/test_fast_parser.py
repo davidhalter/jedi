@@ -56,7 +56,7 @@ def test_carriage_return_splitting():
         '''))
     source = source.replace('\n', '\r\n')
     p = FastParser(load_grammar(), source)
-    assert [str(n) for n in p.module.get_defined_names()] == ['Foo']
+    assert [n.value for lst in p.module.names_dict.values() for n in lst] == ['Foo']
 
 
 def test_change_and_undo():
