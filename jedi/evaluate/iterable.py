@@ -48,12 +48,13 @@ class GeneratorMixin(object):
     def names_dicts(self, search_global=False):  # is always False
         dct = {}
         executes_generator = '__next__', 'send', 'next'
-        for name in compiled.generator_obj.get_defined_names():
-            if name.value in executes_generator:
-                parent = GeneratorMethod(self, name.parent)
-                dct[name.value] = [helpers.FakeName(name.name, parent, is_definition=True)]
-            else:
-                dct[name.value] = [name]
+        for names in compiled.generator_obj.names_dict.values():
+            for name in names:
+                if name.value in executes_generator:
+                    parent = GeneratorMethod(self, name.parent)
+                    dct[name.value] = [helpers.FakeName(name.name, parent, is_definition=True)]
+                else:
+                    dct[name.value] = [name]
         yield dct
 
     def get_index_types(self, evaluator, index_array):

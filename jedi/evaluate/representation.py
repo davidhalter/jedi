@@ -248,7 +248,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                 for inst in self._evaluator.execute(s):
                     yield inst._self_names_dict(add_mro=False)
 
-        for names_dict in self.base.names_dicts(search_global=False):
+        for names_dict in self.base.names_dicts(search_global=False, is_instance=True):
             yield LazyInstanceDict(self._evaluator, self, names_dict)
 
     def get_index_types(self, evaluator, index_array):
@@ -475,12 +475,15 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def params(self):
         return self.get_subscope_by_name('__init__').params
 
-    def names_dicts(self, search_global):
+    def names_dicts(self, search_global, is_instance=False):
         if search_global:
             yield self.names_dict
         else:
             for scope in self.py__mro__(self._evaluator):
-                yield scope.names_dict
+                if isinstance(scope, compiled.CompiledObject):
+                    yield scope.names_dicts(False, is_instance)[0]
+                else:
+                    yield scope.names_dict
 
     def is_class(self):
         return True

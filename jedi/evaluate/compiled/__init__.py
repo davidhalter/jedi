@@ -6,7 +6,6 @@ import re
 import sys
 import os
 from functools import partial
-from itertools import chain
 
 from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
@@ -137,30 +136,21 @@ class CompiledObject(Base):
             return CompiledObject(c, self.parent)
         return self
 
-    def get_defined_names(self):
-        return list(chain.from_iterable(self.names_dict.values()))
-
-        # TODO still used?
-        if inspect.ismodule(self.obj):
-            return self.instance_names()
-        else:
-            return type_names + self.instance_names()
-
     @property
-    @underscore_memoization
     def names_dict(self):
-        return LazyNamesDict(self._cls())
+        # For compatibility with `representation.Class`.
+        return self.names_dicts(False)[0]
 
-    def names_dicts(self, search_global):
-        yield self.names_dict
+    def names_dicts(self, search_global, is_instance=False):
+        return self._names_dict_ensure_one_dict(is_instance)
 
-    @underscore_memoization
-    def instance_names(self):
-        names = []
-        cls = self._cls()
-        for name in dir(cls.obj):
-            names.append(CompiledName(cls, name))
-        return names
+    @memoize_method
+    def _names_dict_ensure_one_dict(self, is_instance):
+        """
+        search_global shouldn't change the fact that there's one dict, this way
+        there's only one `object`.
+        """
+        return [LazyNamesDict(self._cls(), is_instance)]
 
     def get_subscope_by_name(self, name):
         if name in dir(self._cls().obj):
@@ -250,8 +240,9 @@ class LazyNamesDict(object):
     """
     A names_dict instance for compiled objects, resembles the parser.tree.
     """
-    def __init__(self, compiled_obj):
+    def __init__(self, compiled_obj, is_instance):
         self._compiled_obj = compiled_obj
+        self._is_instance = is_instance
 
     def __iter__(self):
         return (v[0].value for v in self.values())
@@ -275,8 +266,9 @@ class LazyNamesDict(object):
                 # The dir function can be wrong.
                 pass
 
-        if not inspect.ismodule(obj):
-            values.append(type_names)
+        # dir doesn't include the type names.
+        if not inspect.ismodule(obj) and obj != type and not self._is_instance:
+            values += _type_names_dict.values()
         return values
 
 
@@ -486,8 +478,7 @@ def _create_from_name(module, parent, name):
 builtin = Builtin(_builtins)
 magic_function_class = CompiledObject(type(load_module), parent=builtin)
 generator_obj = CompiledObject(_a_generator(1.0))
-type_names = []  # Need this, because its part of the result of get_defined_names.
-type_names = builtin.get_by_name('type').get_defined_names()
+_type_names_dict = builtin.get_by_name('type').names_dict
 none_obj = builtin.get_by_name('None')
 false_obj = builtin.get_by_name('False')
 true_obj = builtin.get_by_name('True')
