@@ -249,14 +249,12 @@ class Script(object):
             completions = []
             debug.dbg('possible completion scopes: %s', scopes)
             for s in scopes:
-                if s.isinstance(er.Function):
-                    names = s.get_magic_function_names()
-                else:
-                    names = []
-                    for names_dict in s.names_dicts(search_global=False):
-                        names += chain.from_iterable(names_dict.values())
+                names = []
+                for names_dict in s.names_dicts(search_global=False):
+                    names += chain.from_iterable(names_dict.values())
 
-                    names = filter_definition_names(names, self._parser.user_stmt())
+                names = filter_definition_names(names, self._parser.user_stmt())
+
                 for c in names:
                     completions.append((c, s))
         return completions

@@ -575,12 +575,6 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
             for names_dict in compiled.magic_function_class.names_dicts(False):
                 yield names_dict
 
-    def get_magic_function_names(self):
-        return compiled.magic_function_class.get_defined_names()
-
-    def get_magic_function_scope(self):
-        return compiled.magic_function_class
-
     @Python3Method
     def py__call__(self, evaluator, params):
         if self.base.is_generator():
