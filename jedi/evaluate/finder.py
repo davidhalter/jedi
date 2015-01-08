@@ -197,32 +197,6 @@ class NameFinder(object):
                 result = inst.execute_subscope_by_name('__getattribute__', name)
         return result
 
-    def _is_name_break_scope(self, stmt):
-        """
-        Returns True except for nested imports and instance variables.
-        """
-        if stmt.isinstance(pr.ExprStmt):
-            if isinstance(stmt, er.InstanceElement) and not stmt.is_class_var:
-                return False
-        elif isinstance(stmt, pr.Import) and stmt.is_nested():
-            return False
-        return True
-
-    def _does_scope_break_immediately(self, scope, name_list_scope):
-        """
-        In comparison to everthing else, if/while/etc doesn't break directly,
-        because there are multiple different places in which a variable can be
-        defined.
-        """
-        if isinstance(scope, pr.Flow) \
-                or isinstance(scope, pr.GlobalStmt):
-
-            if isinstance(name_list_scope, er.Class):
-                name_list_scope = name_list_scope.base
-            return scope == name_list_scope
-        else:
-            return True
-
     def _names_to_types(self, names, search_global):
         types = []
 
@@ -252,7 +226,6 @@ class NameFinder(object):
         return types
 
     def _resolve_descriptors(self, name, types):
-        """Processes descriptors"""
         # The name must not be in the dictionary, but part of the class
         # definition. __get__ is only called if the descriptor is defined in
         # the class dictionary.
