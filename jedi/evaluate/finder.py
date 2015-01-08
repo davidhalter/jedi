@@ -13,7 +13,7 @@ check for -> a is a string). There's big potential in these checks.
 """
 from itertools import chain
 
-from jedi._compatibility import hasattr, unicode, u
+from jedi._compatibility import unicode, u
 from jedi.parser import tree as pr
 from jedi.parser import fast
 from jedi import debug
@@ -420,7 +420,56 @@ def _check_isinstance_type(evaluator, element, search_name):
 
 def global_names_dict_generator(evaluator, scope, position):
     """
-    For global lookups.
+    For global name lookups. Yields tuples of (names_dict, position). If the
+    position is None, the position does not matter anymore in that scope.
+
+    This function is used to include names from outer scopes. For example, when
+    the current scope is function:
+
+    >>> from jedi._compatibility import u
+    >>> from jedi.parser import Parser, load_grammar
+    >>> parser = Parser(load_grammar(), u('''
+    ... x = ['a', 'b', 'c']
+    ... def func():
+    ...     y = None
+    ... '''))
+    >>> scope = parser.module.subscopes[0]
+    >>> scope
+    <Function: func@3-5>
+
+    `global_names_dict_generator` is a generator.  First it yields names from
+    most inner scope.
+
+    >>> from pprint import pprint
+    >>> from jedi.evaluate import Evaluator
+    >>> evaluator = Evaluator(load_grammar())
+    >>> scope = er.wrap(evaluator, scope)
+    >>> pairs = list(global_names_dict_generator(evaluator, scope, (4, 0)))
+    >>> pprint(pairs[0])
+    ({'func': [], 'y': [<Name: y@4,4>]}, (4, 0))
+
+    Then it yields the names from one level "lower". In this example, this
+    is the most outer scope. As you can see, the position in the tuple is now
+    None, because typically the whole module is loaded before the function is
+    called.
+
+    >>> pprint(pairs[1])
+    ({'func': [<Name: func@3,4>], 'x': [<Name: x@2,0>]}, None)
+
+    After that we have a few underscore names that are part of the module.
+
+    >>> sorted(pairs[2][0].keys())
+    ['__doc__', '__file__', '__name__', '__package__']
+    >>> pairs[3]  # global names -> there are none in our example.
+    ({}, None)
+    >>> pairs[4]  # package modules -> Also none.
+    ({}, None)
+
+    Finally, it yields names from builtin, if `include_builtin` is
+    true (default).
+
+    >>> pairs[5][0].values()                              #doctest: +ELLIPSIS
+    [[<CompiledName: ...>], ...]
     """
     in_func = False
     while scope is not None:
@@ -439,93 +488,6 @@ def global_names_dict_generator(evaluator, scope, position):
     # Add builtins to the global scope.
     for names_dict in compiled.builtin.names_dicts(True):
         yield names_dict, None
-
-
-def get_names_of_scope(evaluator, scope, position=None, star_search=True, include_builtin=True):
-    """
-    Get all completions (names) possible for the current scope. The star search
-    option is only here to provide an optimization. Otherwise the whole thing
-    would probably start a little recursive madness.
-
-    This function is used to include names from outer scopes. For example, when
-    the current scope is function:
-
-    >>> from jedi._compatibility import u
-    >>> from jedi.parser import Parser, load_grammar
-    >>> parser = Parser(load_grammar(), u('''
-    ... x = ['a', 'b', 'c']
-    ... def func():
-    ...     y = None
-    ... '''))
-    >>> scope = parser.module.subscopes[0]
-    >>> scope
-    <Function: func@3-5>
-
-    `get_names_of_scope` is a generator.  First it yields names from most inner
-    scope.
-
-    >>> from jedi.evaluate import Evaluator
-    >>> pairs = list(get_names_of_scope(Evaluator(load_grammar()), scope))
-    >>> pairs[0]
-    (<Function: func@3-5>, [<Name: y@4,4>])
-
-    Then it yield the names from one level outer scope. For this example, this
-    is the most outer scope.
-
-    >>> pairs[1]
-    (<ModuleWrapper: <SubModule: None@1-5>>, [<Name: x@2,0>, <Name: func@3,4>])
-
-    After that we have a few underscore names that have been defined
-
-    >>> pairs[2]
-    (<ModuleWrapper: <SubModule: None@1-5>>, [<LazyName: __file__@0,0>, ...])
-
-
-    Finally, it yields names from builtin, if `include_builtin` is
-    true (default).
-
-    >>> pairs[3]                                        #doctest: +ELLIPSIS
-    (<Builtin: ...builtin...>, [<CompiledName: ...>, ...])
-
-    :rtype: [(pr.Scope, [pr.Name])]
-    :return: Return an generator that yields a pair of scope and names.
-    """
-    in_func_scope = scope
-    origin_scope = scope
-    while scope:
-        # We don't want submodules to report if we have modules.
-        # As well as some non-scopes, which are parents of list comprehensions.
-        if isinstance(scope, pr.SubModule) and scope.parent or not scope.is_scope():
-            scope = scope.parent
-            continue
-
-        # `pr.Class` is used, because the parent is never `Class`.
-        # Ignore the Flows, because the classes and functions care for that.
-        # InstanceElement of Class is ignored, if it is not the start scope.
-        if not (scope != origin_scope and scope.isinstance(pr.Class)
-                or scope.isinstance(er.Instance)
-                and origin_scope.isinstance(er.Function, er.FunctionExecution)
-                or isinstance(scope, compiled.CompiledObject)
-                and scope.type() == 'class' and in_func_scope != scope):
-
-            if isinstance(scope, (pr.SubModule, fast.Module)):
-                scope = er.ModuleWrapper(evaluator, scope)
-
-            for g in scope.scope_names_generator(position):
-                yield g
-
-        scope = scope.parent
-        # This is used, because subscopes (Flow scopes) would distort the
-        # results.
-        if scope and scope.isinstance(er.Function, pr.Function, er.FunctionExecution):
-            in_func_scope = scope
-        if in_func_scope != scope \
-                and isinstance(in_func_scope, (pr.Function, er.FunctionExecution)):
-            position = None
-
-    # Add builtins to the global scope.
-    if include_builtin:
-        yield compiled.builtin, compiled.builtin.get_defined_names()
 
 
 def check_tuple_assignments(types, name):
