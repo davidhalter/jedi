@@ -1,6 +1,6 @@
 """
-TODO This whole module is crap (especially since the new parser) and needs to be rewritten.
-""" #
+TODO Some parts of this module are still not well documented.
+"""
 import inspect
 import re
 
@@ -41,6 +41,9 @@ class LazyName(helpers.FakeName):
     @property
     @underscore_memoization
     def parent(self):
+        """
+        Creating fake statements for the interpreter.
+        """
         obj = self._value
         parser_path = []
         if inspect.ismodule(obj):
@@ -102,4 +105,4 @@ class LazyName(helpers.FakeName):
 
     @parent.setter
     def parent(self, value):
-        """Needed because of the ``representation.Simple`` super class."""
+        """Needed because the super class tries to set parent."""
