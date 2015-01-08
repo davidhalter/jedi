@@ -153,100 +153,19 @@ class NameFinder(object):
         Searches names that are defined in a scope (the different
         `names_dicts`), until a name fits.
         """
-        # TODO Now this import is really ugly. Try to remove it.
-        # It's possibly the only api dependency.
-        from jedi.api.interpreter import InterpreterNamespace
         names = []
         self.maybe_descriptor = isinstance(self.scope, er.Class)
         if not search_global and self.scope.isinstance(er.Function):
             return [n for n in self.scope.get_magic_function_names()
                     if str(n) == str(self.name_str)]
 
-        scope_names_generator = []
-        name_list_scope = None  # TODO delete
         for names_dict, position in names_dicts:
             names = self.names_dict_lookup(names_dict, position)
             if names:
                 break
-            #if isinstance(scope, (pr.Function, er.FunctionExecution)):
-                #position = None
 
-        # Need checked for now for the whole names_dict approach. That only
-        # works on the first name_list_scope, the second one may be the same
-        # with a different name set (e.g. ModuleWrapper yields the module
-        # names first and after that it yields the properties that all modules
-        # have like `__file__`, etc).
-        checked = set()
-        for name_list_scope, name_list in scope_names_generator:
-            if name_list_scope not in checked and hasattr(name_list_scope, 'names_dict'):
-                checked.add(name_list_scope)
-                names = self.names_dict_lookup(name_list_scope, self.position)
-                if names:
-                    break
-                if isinstance(name_list_scope, (pr.Function, er.FunctionExecution)):
-                    self.position = None
-                continue
-
-            break_scopes = []
-            if not isinstance(name_list_scope, compiled.CompiledObject):
-                # Here is the position stuff happening (sorting of variables).
-                # Compiled objects don't need that, because there's only one
-                # reference.
-                name_list = sorted(name_list, key=lambda n: n.start_pos, reverse=True)
-
-            for name in name_list:
-                if unicode(self.name_str) != unicode(name):
-                    continue
-
-                stmt = name.get_definition()
-                scope = stmt.parent
-                if scope in break_scopes:
-                    continue
-                # TODO create a working version for filtering private
-                # variables.
-                #if not search_global and filter_private_variable(self.scope, scope, name.value):
-                #    filter_private_variable(name_list_scope, scope, name.value):
-                #    continue
-
-                # TODO we ignore a lot of elements here that should not be
-                #   ignored. But then again flow_analysis also stops when the
-                #   input scope is reached. This is not correct: variables
-                #   might still have conditions if defined outside of the
-                #   current scope.
-                if isinstance(stmt, (pr.Param, pr.Import)) \
-                        or isinstance(name_list_scope, (pr.Lambda, er.Instance, InterpreterNamespace)) \
-                        or isinstance(scope, compiled.CompiledObject):
-                    # Always reachable.
-                    print('nons', name.get_parent_scope(), self.scope)
-                    names.append(name)
-                else:
-                    print('yess', scope)
-                    check = flow_analysis.break_check(self._evaluator,
-                                                      name_list_scope,
-                                                      stmt,
-                                                      self.scope)
-                    if check is not flow_analysis.UNREACHABLE:
-                        names.append(name)
-                    if check is flow_analysis.REACHABLE:
-                        break
-
-                if names and self._is_name_break_scope(stmt):
-                    if self._does_scope_break_immediately(scope, name_list_scope):
-                        break
-                    else:
-                        break_scopes.append(scope)
-            if names:
-                break
-
-            if isinstance(self.scope, er.Instance):
-                # After checking the dictionary of an instance (self
-                # attributes), an attribute maybe a descriptor.
-                self.maybe_descriptor = True
-
-        scope_txt = (self.scope if self.scope == name_list_scope
-                     else '%s-%s' % (self.scope, name_list_scope))
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
-                  scope_txt, u(names), self.position)
+                  self.scope, u(names), self.position)
         return list(self._clean_names(names))
 
     def _clean_names(self, names):
@@ -349,16 +268,6 @@ class NameFinder(object):
                 result.append(r)
             else:
                 result += desc_return(self.scope)
-
-
-            continue  # TODO DELETE WHAT FOLLOWS
-            if isinstance(self.scope, (er.Instance, er.Class)) \
-                    and hasattr(r, 'get_descriptor_returns'):
-                # handle descriptors
-                with common.ignored(KeyError):
-                    result += r.get_descriptor_returns(self.scope)
-                    continue
-            result.append(r)
         return result
 
 
