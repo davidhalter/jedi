@@ -193,16 +193,6 @@ class BaseDefinition(object):
         return isinstance(self._module, compiled.CompiledObject)
 
     @property
-    def line_nr(self):
-        """
-        .. deprecated:: 0.5.0
-           Use :attr:`.line` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use line instead.", DeprecationWarning)
-        return self.line
-
-    @property
     def line(self):
         """The line where the definition occurs (starting with 1)."""
         if self.in_builtin_module():
@@ -416,16 +406,6 @@ class Completion(BaseDefinition):
         would return ``.append`` and others (which means it adds a dot).
         """
         return self._complete(False)
-
-    @property
-    def word(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.name` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use name instead.", DeprecationWarning)
-        return self.name
 
     @property
     def description(self):

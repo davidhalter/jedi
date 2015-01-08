@@ -308,69 +308,6 @@ class Script(object):
         stmt.parent = self._parser.user_scope()
         return stmt
 
-    def complete(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.completions` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use completions instead.", DeprecationWarning)
-        return self.completions()
-
-    def goto(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.goto_assignments` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use goto_assignments instead.", DeprecationWarning)
-        return self.goto_assignments()
-
-    def definition(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.goto_definitions` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use goto_definitions instead.", DeprecationWarning)
-        return self.goto_definitions()
-
-    def get_definition(self):
-        """
-        .. deprecated:: 0.5.0
-           Use :attr:`.goto_definitions` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use goto_definitions instead.", DeprecationWarning)
-        return self.goto_definitions()
-
-    def related_names(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.usages` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use usages instead.", DeprecationWarning)
-        return self.usages()
-
-    def get_in_function_call(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.call_signatures` instead.
-        .. todo:: Remove!
-        """
-        return self.function_definition()
-
-    def function_definition(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.call_signatures` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use call_signatures instead.", DeprecationWarning)
-        sig = self.call_signatures()
-        return sig[0] if sig else None
-
     def goto_definitions(self):
         """
         Return the definitions of a the path under the cursor.  goto function!
