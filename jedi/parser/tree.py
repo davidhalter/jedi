@@ -1128,6 +1128,9 @@ class GlobalStmt(KeywordStatement):
     __slots__ = ()
 
     def get_defined_names(self):
+        return []
+
+    def get_global_names(self):
         return self.children[1::2]
 
 

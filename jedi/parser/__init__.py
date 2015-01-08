@@ -147,7 +147,7 @@ class Parser(object):
         # We need to check raw_node always, because the same node can be
         # returned by convert multiple times.
         if symbol == 'global_stmt':
-            self.global_names += new_node.get_defined_names()
+            self.global_names += new_node.get_global_names()
         elif isinstance(new_node, pt.Lambda):
             new_node.names_dict = self.scope_names_stack.pop()
         elif isinstance(new_node, (pt.ClassOrFunc, pt.Module)) \

@@ -36,7 +36,7 @@ def filter_definition_names(names, origin, position=None):
     # Just calculate the scope from the first
     stmt = names[0].get_definition()
     scope = stmt.get_parent_scope()
-    if isinstance(stmt, (pr.CompFor, pr.Lambda, pr.GlobalStmt)):
+    if isinstance(stmt, (pr.CompFor, pr.Lambda)):
         return names
 
     if not (isinstance(scope, er.FunctionExecution)
@@ -377,7 +377,13 @@ def _name_to_types(evaluator, name, scope):
     elif isinstance(typ, pr.Import):
         types += imports.ImportWrapper(evaluator, name).follow()
     elif isinstance(typ, pr.GlobalStmt):
-        types += evaluator.find_types(typ.get_parent_scope(), str(name))
+        # TODO theoretically we shouldn't be using search_global here, it
+        # doesn't make sense, because it's a local search (for that name)!
+        # However, globals are not that important and resolving them doesn't
+        # guarantee correctness in any way, because we don't check for when
+        # something is executed.
+        types += evaluator.find_types(typ.get_parent_scope(), str(name),
+                                      search_global=True)
     elif isinstance(typ, pr.TryStmt):
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to

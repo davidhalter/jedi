@@ -824,6 +824,16 @@ class FunctionExecution(Executed):
         return "<%s of %s>" % (type(self).__name__, self.base)
 
 
+class GlobalName(helpers.FakeName):
+    def __init__(self, name):
+        """
+        We need to mark global names somehow. Otherwise they are just normal
+        names that are not definitions.
+        """
+        super(GlobalName, self).__init__(name.value, name.parent,
+                                         name.start_pos, is_definition=True)
+
+
 class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     def __init__(self, evaluator, module):
         self._evaluator = evaluator
@@ -847,7 +857,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         for star_module in self.star_imports():
             yield star_module.names_dict
 
-        yield dict((str(n), [n]) for n in self.base.global_names)
+        yield dict((str(n), [GlobalName(n)]) for n in self.base.global_names)
         yield self._sub_modules_dict()
 
     @cache_star_import

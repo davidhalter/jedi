@@ -226,9 +226,12 @@ class Script(object):
 
     def _simple_complete(self, path, dot, like):
         if not path and not dot:
+            scope = self._parser.user_scope()
+            if not scope.is_scope():  # Might be a flow (if/while/etc).
+                scope = scope.get_parent_scope()
             names_dicts = global_names_dict_generator(
                 self._evaluator,
-                er.wrap(self._evaluator, self._parser.user_scope()),
+                er.wrap(self._evaluator, scope),
                 self._pos
             )
             completions = []
