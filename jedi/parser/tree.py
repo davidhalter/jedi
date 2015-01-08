@@ -755,9 +755,6 @@ class Class(ClassOrFunc):
                     sub.get_call_signature(func_name=self.name), docstr)
         return docstr
 
-    def scope_names_generator(self, position=None):
-        yield self, filter_after_position(self.get_defined_names(), position)
-
 
 def _create_params(function, lst):
     if not lst:
@@ -829,9 +826,6 @@ class Function(ClassOrFunc):
             except IndexError:
                 debug.warning("multiple names in param %s", n)
         return n
-
-    def scope_names_generator(self, position=None):
-        yield self, filter_after_position(self.get_defined_names(), position)
 
     def get_call_signature(self, width=72, func_name=None):
         """
@@ -1268,9 +1262,6 @@ class CompFor(Simple):
 
     def get_defined_names(self):
         return _defined_names(self.children[1])
-
-    def scope_names_generator(self, position):
-        yield self, []
 
     @property
     def asserts(self):

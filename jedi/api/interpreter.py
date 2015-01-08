@@ -44,10 +44,6 @@ class InterpreterNamespace(pt.Module):
         for key, value in self.namespace.items():
             yield LazyName(self._evaluator, key, value)
 
-    def scope_names_generator(self, position=None):
-        raise NotImplementedError
-        yield self, list(self.get_defined_names())
-
     def __getattr__(self, name):
         return getattr(self.parser_module, name)
 

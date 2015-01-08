@@ -59,9 +59,6 @@ class GeneratorMixin(object):
             else:
                 yield name
 
-    def scope_names_generator(self, position=None):
-        yield self, self._get_defined_names()
-
     @memoize_default()
     def names_dicts(self, search_global=False):  # is always False
         dct = {}
@@ -258,16 +255,6 @@ class Array(IterableWrapper):
 
     def iter_content(self):
         return self.values()
-
-    def scope_names_generator(self, position=None):
-        """
-        It returns e.g. for a list: append, pop, ...
-        """
-        # `array.type` is a string with the type, e.g. 'list'.
-        scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
-        scope = self._evaluator.execute(scope)[0]  # builtins only have one class
-        for _, names in scope.scope_names_generator():
-            yield self, names
 
     @memoize_default()
     def names_dicts(self, search_global=False):  # Always False.

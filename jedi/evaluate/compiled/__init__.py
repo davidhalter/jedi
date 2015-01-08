@@ -154,9 +154,6 @@ class CompiledObject(Base):
     def names_dicts(self, search_global):
         yield self.names_dict
 
-    def scope_names_generator(self, position=None, add_class_vars=True):
-        yield self, self.get_defined_names()
-
     @underscore_memoization
     def instance_names(self):
         names = []

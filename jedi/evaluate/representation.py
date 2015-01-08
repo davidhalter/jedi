@@ -251,17 +251,6 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         for names_dict in self.base.names_dicts(search_global=False):
             yield LazyInstanceDict(self._evaluator, self, names_dict)
 
-    def scope_names_generator(self, position=None):
-        """
-        An Instance has two scopes: The scope with self names and the class
-        scope. Instance variables have priority over the class scope.
-        """
-        yield self, self.get_self_attributes()
-
-        for scope, names in self.base.scope_names_generator(add_class_vars=False):
-            yield self, [get_instance_el(self._evaluator, self, var, True)
-                         for var in names]
-
     def get_index_types(self, evaluator, index_array):
         indexes = iterable.create_indexes_or_slices(self._evaluator, index_array)
         if any([isinstance(i, iterable.Slice) for i in indexes]):
@@ -485,30 +474,6 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     @property
     def params(self):
         return self.get_subscope_by_name('__init__').params
-
-    def scope_names_generator(self, position=None, add_class_vars=True):
-        def in_iterable(name, iterable):
-            """ checks if the name is in the variable 'iterable'. """
-            for i in iterable:
-                # Only the last name is important, because these names have a
-                # maximal length of 2, with the first one being `self`.
-                if unicode(i.names[-1]) == unicode(name.names[-1]):
-                    return True
-            return False
-
-        all_names = []
-        for cls in self.py__mro__(self._evaluator):
-            names = []
-            if isinstance(cls, compiled.CompiledObject):
-                x = cls.instance_names()
-            else:
-                x = reversed(cls.base.get_defined_names())
-            for n in x:
-                if not in_iterable(n, all_names):
-                    names.append(n)
-            yield cls, names
-        if add_class_vars:
-            yield self, compiled.type_names
 
     def names_dicts(self, search_global):
         if search_global:
@@ -750,10 +715,6 @@ class FunctionExecution(Executed):
         """
         return self._get_params() + pr.Scope.get_defined_names(self)
 
-    def scope_names_generator(self, position=None):
-        names = pr.filter_after_position(pr.Scope.get_defined_names(self), position)
-        yield self, self._get_params() + names
-
     def _copy_list(self, lst):
         """
         Copies a list attribute of a parser Function. Copying is very
@@ -838,17 +799,6 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     def __init__(self, evaluator, module):
         self._evaluator = evaluator
         self.base = self._module = module
-
-    def scope_names_generator(self, position=None):
-        yield self, pr.filter_after_position(self._module.get_defined_names(), position)
-        yield self, self._module_attributes()
-        for star_module in self.star_imports():
-            yield self, star_module.get_defined_names()
-        if self.base.global_names:
-            yield self, self.base.global_names
-        sub_modules = self._sub_modules()
-        if sub_modules:
-            yield self, self._sub_modules()
 
     def names_dicts(self, search_global):
         yield self.base.names_dict
