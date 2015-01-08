@@ -461,10 +461,12 @@ class _Importer(object):
 
                     continue
 
-                for s, scope_names in finder.get_names_of_scope(self._evaluator,
-                                                                scope, include_builtin=False):
-                    for n in scope_names:
-                        names.append(n)
+                for names_dict in scope.names_dicts(search_global=False):
+                    _names = list(chain.from_iterable(names_dict.values()))
+                    if not _names:
+                        continue
+                    _names = finder.filter_definition_names(_names, scope)
+                    names += _names
         else:
             # Empty import path=completion after import
             if not self.level:

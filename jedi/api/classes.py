@@ -7,7 +7,7 @@ import warnings
 from itertools import chain
 import re
 
-from jedi._compatibility import next, unicode, use_metaclass
+from jedi._compatibility import unicode, use_metaclass
 from jedi import settings
 from jedi import common
 from jedi.parser import tree as pr
@@ -17,7 +17,7 @@ from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.api import keywords
-from jedi.evaluate.finder import get_names_of_scope
+from jedi.evaluate.finder import filter_definition_names
 
 
 def defined_names(evaluator, scope):
@@ -27,14 +27,9 @@ def defined_names(evaluator, scope):
     :type scope: Scope
     :rtype: list of Definition
     """
-    # It might include inherited stuff. Wanted?
-    # TODO discuss!
-    if isinstance(scope, pr.Module):
-        pair = scope, scope.get_defined_names()
-    else:
-        pair = next(get_names_of_scope(evaluator, scope, star_search=False,
-                                       include_builtin=False), None)
-    names = pair[1] if pair else []
+    dct = scope.names_dict
+    names = list(chain.from_iterable(dct.values()))
+    names = filter_definition_names(names, scope)
     return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
