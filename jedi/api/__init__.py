@@ -2,9 +2,7 @@
 The API basically only provides one class. You can create a :class:`Script` and
 use its methods.
 
-Additionally you can add a debug function with :func:`set_debug_function` and
-catch :exc:`NotFoundError` which is being raised if your completion is not
-possible.
+Additionally you can add a debug function with :func:`set_debug_function`.
 
 .. warning:: Please, note that Jedi is **not thread safe**.
 """
@@ -43,8 +41,13 @@ sys.setrecursionlimit(2000)
 
 
 class NotFoundError(Exception):
-    """A custom error to avoid catching the wrong exceptions."""
-    # TODO deprecate this.
+    """A custom error to avoid catching the wrong exceptions.
+
+    .. deprecated:: 0.9.0
+       Not in use anymore, Jedi just returns no goto result if you're not on a
+       valid name.
+    .. todo:: Remove!
+    """
 
 
 class Script(object):
@@ -135,13 +138,11 @@ class Script(object):
             module = self._parser.module()
             names, level, only_modules, unfinished_dotted = \
                 helpers.check_error_statements(module, self._pos)
-            completions = []
-            #print(importer.completion_names(self._evaluator, True))
+            completion_names = []
             if names is not None:
                 imp_names = [n for n in names if n.end_pos < self._pos]
                 i = imports.get_importer(self._evaluator, imp_names, module, level)
-                c_names = i.completion_names(self._evaluator, only_modules)
-                completions = [(name, module) for name in c_names]
+                completion_names = i.completion_names(self._evaluator, only_modules)
 
             # TODO this paragraph is necessary, but not sure it works.
             context = self._user_context.get_context()
@@ -150,24 +151,24 @@ class Script(object):
                 if next(context) == 'from':
                     # completion is just "import" if before stands from ..
                     if unfinished_dotted:
-                        return completions
+                        return completion_names
                     else:
-                        return [(k, bs) for k in keywords.keyword_names('import')]
+                        return keywords.keyword_names('import')
 
             if isinstance(user_stmt, pr.Import):
                 module = self._parser.module()
-                completion_names = imports.completion_names(self._evaluator,
-                                                            user_stmt, self._pos)
-                return completions + [(n, module) for n in completion_names]
+                completion_names += imports.completion_names(self._evaluator,
+                                                             user_stmt, self._pos)
+                return completion_names
 
             if names is None and not isinstance(user_stmt, pr.Import):
                 if not path and not dot:
                     # add keywords
-                    completions += ((k, b) for k in keywords.keyword_names(all=True))
+                    completion_names += keywords.keyword_names(all=True)
                     # TODO delete? We should search for valid parser
                     # transformations.
-                completions += self._simple_complete(path, dot, like)
-            return completions
+                completion_names += self._simple_complete(path, dot, like)
+            return completion_names
 
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
@@ -180,7 +181,7 @@ class Script(object):
         user_stmt = self._parser.user_stmt_with_whitespace()
 
         b = compiled.builtin
-        completions = get_completions(user_stmt, b)
+        completion_names = get_completions(user_stmt, b)
 
         if not dot:
             # add named params
@@ -194,13 +195,13 @@ class Script(object):
                         # public API and we don't want to make the internal
                         # Name object public.
                         if p._definition.stars == 0:  # no *args/**kwargs
-                            completions.append((p._name, p._name))
+                            completion_names.append(p._name)
 
         needs_dot = not dot and path
 
         comps = []
         comp_dct = {}
-        for c, s in set(completions):
+        for c in set(completion_names):
             n = str(c)
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
@@ -233,30 +234,25 @@ class Script(object):
                 er.wrap(self._evaluator, scope),
                 self._pos
             )
-            completions = []
+            completion_names = []
             for names_dict, pos in names_dicts:
                 names = list(chain.from_iterable(names_dict.values()))
                 if not names:
                     continue
-                names = filter_definition_names(names, self._parser.user_stmt(), pos)
-                for name in names:
-                    completions.append((name, self._parser.user_scope()))
+                completion_names += filter_definition_names(names, self._parser.user_stmt(), pos)
         elif self._get_under_cursor_stmt(path) is None:
             return []
         else:
             scopes = list(self._prepare_goto(path, True))
-            completions = []
+            completion_names = []
             debug.dbg('possible completion scopes: %s', scopes)
             for s in scopes:
                 names = []
                 for names_dict in s.names_dicts(search_global=False):
                     names += chain.from_iterable(names_dict.values())
 
-                names = filter_definition_names(names, self._parser.user_stmt())
-
-                for c in names:
-                    completions.append((c, s))
-        return completions
+                completion_names += filter_definition_names(names, self._parser.user_stmt())
+        return completion_names
 
     def _prepare_goto(self, goto_path, is_completion=False):
         """
@@ -300,10 +296,6 @@ class Script(object):
             stmt = r.module.statements[-1]
         except IndexError:
             return None
-            raise NotFoundError()
-        if not isinstance(stmt, (pr.ExprStmt, pr.KeywordStatement)):
-            raise NotImplementedError
-            raise NotFoundError()
 
         user_stmt = self._parser.user_stmt()
         if user_stmt is None:
@@ -692,14 +684,14 @@ class Interpreter(Script):
                     except AttributeError:
                         pass
 
-            completions = []
+            completion_names = []
             for namespace in namespaces:
                 for name in dir(namespace):
                     if name.lower().startswith(like.lower()):
                         scope = self._parser.module()
                         n = FakeName(name, scope)
-                        completions.append((n, scope))
-            return completions
+                        completion_names.append(n)
+            return completion_names
 
 
 def defined_names(source, path=None, encoding='utf-8'):
