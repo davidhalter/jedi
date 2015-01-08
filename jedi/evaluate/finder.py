@@ -65,7 +65,7 @@ class NameFinder(object):
     @debug.increase_indent
     def find(self, scopes, search_global=False):
         names = self.filter_name(scopes, search_global)
-        types = self._names_to_types(names)
+        types = self._names_to_types(names, search_global)
 
         if not names and not types \
                 and not (isinstance(self.name_str, pr.Name)
@@ -81,10 +81,7 @@ class NameFinder(object):
                                                  self.scope, self.name_str)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, types)
-        if isinstance(self.scope, (er.Class, er.Instance)) and not search_global:
-            return self._resolve_descriptors(types)
-        else:
-            return types
+        return types
 
     def scopes(self, search_global=False):
         if search_global:
@@ -307,7 +304,7 @@ class NameFinder(object):
         else:
             return True
 
-    def _names_to_types(self, names):
+    def _names_to_types(self, names, search_global):
         types = []
 
         # Add isinstance and other if/assert knowledge.
@@ -324,17 +321,26 @@ class NameFinder(object):
                 flow_scope = flow_scope.parent
 
         for name in names:
-            types += _name_to_types(self._evaluator, name, self.scope)
+            new_types = _name_to_types(self._evaluator, name, self.scope)
+            if isinstance(self.scope, (er.Class, er.Instance)) and not search_global:
+                types += self._resolve_descriptors(name, new_types)
+            else:
+                types += new_types
         if not names and isinstance(self.scope, er.Instance):
             # handling __getattr__ / __getattribute__
             types = self._check_getattr(self.scope)
 
         return types
 
-    def _resolve_descriptors(self, types):
+    def _resolve_descriptors(self, name, types):
         """Processes descriptors"""
-        #if not self.maybe_descriptor:
-        #    return types
+        # The name must not be in the dictionary, but part of the class
+        # definition. __get__ is only called if the descriptor is defined in
+        # the class dictionary.
+        name_scope = name.get_definition().get_parent_scope()
+        if not isinstance(name_scope, (er.Instance, pr.Class)):
+            return types
+
         result = []
         for r in types:
             try:
