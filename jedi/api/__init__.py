@@ -146,7 +146,6 @@ class Script(object):
 
             # TODO this paragraph is necessary, but not sure it works.
             context = self._user_context.get_context()
-
             if not next(context).startswith('.'):  # skip the path
                 if next(context) == 'from':
                     # completion is just "import" if before stands from ..
@@ -561,12 +560,7 @@ class Script(object):
         if call_txt is None:
             return []
 
-        #print(call_txt, call_index)
         stmt = self._get_under_cursor_stmt(call_txt)
-        #user_stmt = self._parser.user_stmt_with_whitespace()
-        #call, trailer, index = search_call_signatures(user_stmt, self._pos)
-        #if call is None:
-        #    return []
 
         with common.scale_speed_settings(settings.scale_call_signatures):
             origins = cache.cache_call_signatures(self._evaluator, stmt, self.source,
