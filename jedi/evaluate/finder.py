@@ -467,8 +467,7 @@ def global_names_dict_generator(evaluator, scope, position):
     """
     in_func = False
     while scope is not None:
-        if not((scope.type == 'classdef' or isinstance(scope,
-                compiled.CompiledObject) and scope.type() == 'class') and in_func):
+        if not (scope.type == 'classdef' and in_func):
             # Names in methods cannot be resolved within the class.
 
             for names_dict in scope.names_dicts(True):

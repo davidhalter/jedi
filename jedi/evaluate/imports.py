@@ -432,8 +432,7 @@ class _Importer(object):
 
             for scope in self.follow(evaluator):
                 # Non-modules are not completable.
-                if not isinstance(scope, er.ModuleWrapper) and not (isinstance(scope,
-                    compiled.CompiledObject) and scope.type() == 'module'):
+                if not scope.type == 'file_input':  # not a module
                     continue
 
                 # namespace packages

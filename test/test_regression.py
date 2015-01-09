@@ -169,4 +169,4 @@ def test_loading_unicode_files_with_bad_global_charset(monkeypatch, tmpdir):
         f.write(data)
     s = Script("from test1 import foo\nfoo.",
                line=2, column=4, path=filename2)
-    s.complete()
+    s.completions()

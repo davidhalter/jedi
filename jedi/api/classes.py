@@ -149,7 +149,7 @@ class BaseDefinition(object):
             stripped = stripped.var
 
         if isinstance(stripped, compiled.CompiledObject):
-            return stripped.type()
+            return stripped.api_type()
         elif isinstance(stripped, iterable.Array):
             return 'instance'
         elif isinstance(stripped, pr.Import):
@@ -530,7 +530,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             d = d.var
 
         if isinstance(d, compiled.CompiledObject):
-            typ = d.type()
+            typ = d.api_type()
             if typ == 'instance':
                 typ = 'class'  # The description should be similar to Py objects.
             d = typ + ' ' + d.name.get_code()

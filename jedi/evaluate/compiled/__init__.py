@@ -110,7 +110,7 @@ class CompiledObject(Base):
 
         return _parse_function_doc(self.doc)
 
-    def type(self):
+    def api_type(self):
         if fake.is_class_instance(self.obj):
             return 'instance'
 
@@ -122,6 +122,18 @@ class CompiledObject(Base):
         elif inspect.isbuiltin(cls) or inspect.ismethod(cls) \
                 or inspect.ismethoddescriptor(cls):
             return 'function'
+
+    @property
+    def type(self):
+        """Imitate the tree.Node.type values."""
+        cls = self._cls().obj
+        if inspect.isclass(cls):
+            return 'classdef'
+        elif inspect.ismodule(cls):
+            return 'file_input'
+        elif inspect.isbuiltin(cls) or inspect.ismethod(cls) \
+                or inspect.ismethoddescriptor(cls):
+            return 'funcdef'
 
     @underscore_memoization
     def _cls(self):
@@ -195,7 +207,7 @@ class CompiledObject(Base):
         return FakeName(self._cls().obj.__name__, self)
 
     def _execute_function(self, evaluator, params):
-        if self.type() != 'function':
+        if self.type != 'funcdef':
             return
 
         for name in self._parse_function_doc()[1].split():
