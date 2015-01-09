@@ -144,44 +144,6 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         except IndexError:
             return None
 
-    @memoize_default([])
-    def get_self_attributes(self, add_mro=True):
-        names = []
-        # This loop adds the names of the self object, copies them and removes
-        # the self.
-        for sub in self.base.subscopes:
-            if isinstance(sub, pr.Class):
-                continue
-            # Get the self name, if there's one.
-            self_name = self._get_func_self_name(sub)
-            if self_name is None:
-                continue
-
-            if sub.name.value == '__init__' and not self.is_generated:
-                # ``__init__`` is special because the params need are injected
-                # this way. Therefore an execution is necessary.
-                if not sub.get_decorators():
-                    # __init__ decorators should generally just be ignored,
-                    # because to follow them and their self variables is too
-                    # complicated.
-                    sub = self._get_method_execution(sub)
-            for name_list in sub.names_dict.values():
-                for name in name_list:
-                    if name.value == self_name and name.prev_sibling() is None:
-                        trailer = name.next_sibling()
-                        if pr.is_node(trailer, 'trailer') \
-                                and len(trailer.children) == 2:
-                            name = trailer.children[1]  # After dot.
-                            if name.is_definition():
-                                names.append(get_instance_el(self._evaluator, self, name))
-
-        if add_mro:
-            for s in self.base.py__mro__(self._evaluator)[1:]:
-                if not isinstance(s, compiled.CompiledObject):
-                    for inst in self._evaluator.execute(s):
-                        names += inst.get_self_attributes(add_mro=False)
-        return names
-
     def _self_names_dict(self, add_mro=True):
         names = {}
         # This loop adds the names of the self object, copies them and removes
@@ -212,12 +174,6 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                             if name.is_definition():
                                 arr = names.setdefault(name.value, [])
                                 arr.append(get_instance_el(self._evaluator, self, name))
-
-        if add_mro and False:   # TODO ADD!!!!
-            for s in self.base.py__mro__(self._evaluator)[1:]:
-                if not isinstance(s, compiled.CompiledObject):
-                    for inst in self._evaluator.execute(s):
-                        names += inst.get_self_attributes(add_mro=False)
         return names
 
     def get_subscope_by_name(self, name):
@@ -603,21 +559,6 @@ class LambdaWrapper(Function):
         return self
 
 
-class LazyDict(object):
-    def __init__(self, old_dct, copy_func):
-        self._copy_func = copy_func
-        self._old_dct = old_dct
-
-    def __getitem__(self, key):
-        return self._copy_func(self._old_dct[key])
-
-    @underscore_memoization
-    def values(self):
-        # TODO REMOVE this. Not necessary with correct name lookups.
-        for calls in self._old_dct.values():
-            yield self._copy_func(calls)
-
-
 class FunctionExecution(Executed):
     """
     This class is used to evaluate functions and their returns.
@@ -812,45 +753,10 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         return dict((n, [helpers.LazyName(n, parent_callback, is_definition=True)])
                     for n in names)
 
-    @memoize_default()
-    def _module_attributes(self):
-        def parent_callback():
-            return self._evaluator.execute(compiled.create(self._evaluator, str))[0]
-
-        names = ['__file__', '__package__', '__doc__', '__name__']
-        # All the additional module attributes are strings.
-        return [helpers.LazyName(n, parent_callback) for n in names]
-
     @property
     @memoize_default()
     def name(self):
         return helpers.FakeName(unicode(self.base.name), self, (1, 0))
-
-    @memoize_default()
-    def _sub_modules(self):
-        """
-        Lists modules in the directory of this module (if this module is a
-        package).
-        """
-        path = self._module.path
-        names = []
-        if path is not None and path.endswith(os.path.sep + '__init__.py'):
-            mods = pkgutil.iter_modules([os.path.dirname(path)])
-            for module_loader, name, is_pkg in mods:
-                name = helpers.FakeName(name)
-                # It's obviously a relative import to the current module.
-                imp = helpers.FakeImport(name, self, level=1)
-                name.parent = imp
-                names.append(name)
-
-        # TODO add something like this in the future, its cleaner than the
-        #   import hacks.
-        # ``os.path`` is a hardcoded exception, because it's a
-        # ``sys.modules`` modification.
-        #if str(self.name) == 'os':
-        #    names.append(helpers.FakeName('path', parent=self))
-
-        return names
 
     @memoize_default()
     def _sub_modules_dict(self):
