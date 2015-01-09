@@ -51,21 +51,6 @@ def is_node(node, *symbol_names):
         return type in symbol_names
 
 
-def filter_after_position(names, position):
-    """
-    Removes all names after a certain position. If position is None, just
-    returns the names list.
-    """
-    if position is None:
-        return names
-
-    names_new = []
-    for n in names:
-        if n.start_pos[0] is not None and n.start_pos < position:
-            names_new.append(n)
-    return names_new
-
-
 class DocstringMixin(object):
     __slots__ = ()
 

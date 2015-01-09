@@ -31,7 +31,26 @@ from jedi.evaluate import helpers
 from jedi.evaluate.cache import memoize_default
 
 
+def filter_after_position(names, position):
+    """
+    Removes all names after a certain position. If position is None, just
+    returns the names list.
+    """
+    if position is None:
+        return names
+
+    names_new = []
+    for n in names:
+        if n.start_pos[0] is not None and n.start_pos < position:
+            names_new.append(n)
+    return names_new
+
+
 def filter_definition_names(names, origin, position=None):
+    """
+    Filter names that are actual definitions in a scope. Names that are just
+    used will be ignored.
+    """
     # Just calculate the scope from the first
     stmt = names[0].get_definition()
     scope = stmt.get_parent_scope()
@@ -40,7 +59,7 @@ def filter_definition_names(names, origin, position=None):
 
     if not (isinstance(scope, er.FunctionExecution)
             and isinstance(scope.base, er.LambdaWrapper)):
-        names = pr.filter_after_position(names, position)
+        names = filter_after_position(names, position)
     names = [name for name in names if name.is_definition()]
 
     # Private name mangling (compile.c) disallows access on names
