@@ -273,13 +273,11 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
     Returns an InstanceElement if it makes sense, otherwise leaves the object
     untouched.
     """
-    if isinstance(var, (Instance, compiled.CompiledObject, pr.Leaf,
-                        pr.Module, FunctionExecution, pr.Name)):
-        if isinstance(var, pr.Name):
-            # TODO temp solution, remove later, Name should never get
-            #     here?
-            parent = get_instance_el(evaluator, instance, var.parent, is_class_var)
-            return InstanceName(var, parent)
+    if isinstance(var, pr.Name):
+        parent = get_instance_el(evaluator, instance, var.parent, is_class_var)
+        return InstanceName(var, parent)
+    elif isinstance(var, (Instance, compiled.CompiledObject, pr.Leaf,
+                          pr.Module, FunctionExecution)):
         return var
 
     var = wrap(evaluator, var)
@@ -311,9 +309,6 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return par
 
     def get_parent_until(self, *args, **kwargs):
-        if isinstance(self.var, pr.Name):
-            # TODO Name should never even be InstanceElements
-            return pr.Simple.get_parent_until(self.parent, *args, **kwargs)
         return pr.Simple.get_parent_until(self, *args, **kwargs)
 
     def get_definition(self):
@@ -669,18 +664,6 @@ class FunctionExecution(Executed):
     @memoize_default([])
     def yields(self):
         return self._copy_list(self.base.yields)
-
-    """
-    @common.safe_property
-    @memoize_default([])
-    def children(self):
-        helpers.deep_ast_copy(self.base.base_func, self._copy_dict, check_first=True)
-        if isinstance(self.base, InstanceElement):
-            children = self.base.var.children
-        else:
-            children = self.base.children
-        return self._copy_list(children)
-    """
 
     @common.safe_property
     @memoize_default([])
