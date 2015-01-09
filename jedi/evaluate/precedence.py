@@ -157,6 +157,8 @@ def _element_calculate(evaluator, left, operator, right):
         except TypeError:
             # Could be True or False.
             return [true_obj, false_obj]
+    elif operator == 'in':
+        return []
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""

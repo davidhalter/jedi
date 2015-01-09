@@ -400,6 +400,7 @@ class Simple(Base):
     def get_code(self):
         return "".join(c.get_code() for c in self.children)
 
+    @Python3Method
     def name_for_position(self, position):
         for c in self.children:
             if isinstance(c, Leaf):

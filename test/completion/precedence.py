@@ -69,6 +69,19 @@ i += 1
 x[i]
 
 # -----------------
+# in
+# -----------------
+
+if 'X' in 'Y':
+    a = 3
+else:
+    a = ''
+# For now don't really check for truth values. So in should return both
+# results.
+#? str() int()
+a
+
+# -----------------
 # for flow assignments
 # -----------------
 
