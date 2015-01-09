@@ -186,3 +186,28 @@ invalid
 invalid = ,call
 #?
 invalid
+
+
+# -----------------
+# classes
+# -----------------
+
+class BrokenPartsOfClass():
+    def foo(self):
+        # This construct contains two places where Jedi with Python 3 can fail.
+        # It should just ignore those constructs and still execute `bar`.
+        pass
+        if 2:
+            try:
+                pass
+            except ValueError, e:
+                raise TypeError, e
+        else:
+            pass
+
+    def bar(self):
+        self.x = 3
+        return ''
+
+#? str()
+BrokenPartsOfClass().bar()
