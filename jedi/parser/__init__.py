@@ -33,6 +33,13 @@ _loaded_grammars = {}
 
 
 def load_grammar(file='grammar3.4'):
+    # For now we only support two different Python syntax versions: The latest
+    # Python 3 and Python 2. This may change.
+    if file.startswith('grammar3'):
+        file = 'grammar3.4'
+    else:
+        file = 'grammar2.7'
+
     global _loaded_grammars
     path = os.path.join(os.path.dirname(__file__), file) + '.txt'
     try:
