@@ -107,6 +107,7 @@ class Parser(object):
 
         self.global_names = []
 
+        print('start')
         # TODO do print absolute import detection here.
         #try:
         #    del python_grammar_no_print_statement.keywords["print"]
@@ -233,19 +234,17 @@ class Parser(object):
         if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
             # Those can always be new statements.
             add_token_callback(typ, value, prefix, start_pos)
-        elif typ == token.DEDENT:
-            if symbol == 'suite':
-                # If a function or anything else contains a suite that is
-                # "empty" (just NEWLINE/INDENT), we remove it. If it's not
-                # empty, we can close it.
-                if len(nodes) > 2:
-                    # Finish the suite.
-                    add_token_callback(typ, value, prefix, start_pos)
-                else:
-                    # Remove the current suite from the stack to look deeper in
-                    # the stack for a suite/file_input.
-                    index, symbol, nodes = current_suite(stack[:-1])
-                    self._stack_removal(grammar, stack, index + 1, value, start_pos)
+        elif typ == token.DEDENT and symbol == 'suite':
+            # Close the current suite, with DEDENT.
+            # Note that this may cause some suites to not contain any
+            # statements at all. This is contrary to valid Python syntax. We
+            # keep incomplete suites in Jedi to be able to complete param names
+            # or `with ... as foo` names. If we want to use this parser for
+            # syntax checks, we have to check in a separate turn if suites
+            # contain statements or not. However, a second check is necessary
+            # anyway (compile.c does that for Python), because Python's grammar
+            # doesn't stop you from defining `continue` in a module, etc.
+            add_token_callback(typ, value, prefix, start_pos)
 
     def _stack_removal(self, grammar, stack, start_index, value, start_pos):
         def clear_names(children):
@@ -280,17 +279,6 @@ class Parser(object):
         stack[start_index:] = []
 
     def _tokenize(self, tokenizer):
-        """
-            while first_pos[1] <= self._scope.start_pos[1] \
-                    and (token_type == token.NAME or tok_str in ('(', '['))\
-                    and self._scope != self.module:
-                self._scope.end_pos = first_pos
-                self._scope = self._scope.parent
-                if isinstance(self._scope, pr.Module) \
-                        and not isinstance(self._scope, pr.SubModule):
-                    self._scope = self.module
-        """
-
         for typ, value, start_pos, prefix in tokenizer:
             if typ == token.OP:
                 typ = token.opmap[value]
