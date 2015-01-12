@@ -31,8 +31,7 @@ def wrong_indents():
     asdf = 3
      asdf
     asdf(
-    # doesn't work because of the indent issues.
-    #? str()
+    #? int()
     asdf
 def openbrace():
     asdf = 3
@@ -104,6 +103,7 @@ try:
         #? str()
         ""
 
+def break(): pass
 # wrong ternary expression
 a = ''
 a = 1 if

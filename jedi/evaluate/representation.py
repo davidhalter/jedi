@@ -431,7 +431,6 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
             yield self.names_dict
         else:
             for scope in self.py__mro__(self._evaluator):
-                print(scope.names_dict)
                 if isinstance(scope, compiled.CompiledObject):
                     yield scope.names_dicts(False, is_instance)[0]
                 else:

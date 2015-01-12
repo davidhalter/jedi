@@ -106,8 +106,8 @@ class Parser(object):
         }
 
         self.global_names = []
+        self._omit_dedent = 0
 
-        print('start')
         # TODO do print absolute import detection here.
         #try:
         #    del python_grammar_no_print_statement.keywords["print"]
@@ -231,6 +231,11 @@ class Parser(object):
 
         #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
         self._stack_removal(grammar, stack, index + 1, value, start_pos)
+        if typ == token.INDENT:
+            # For every deleted INDENT we got to delete a DEDENT as well.
+            # Otherwise the parser will get into trouble and DEDENT too early.
+            self._omit_dedent += 1
+
         if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
             # Those can always be new statements.
             add_token_callback(typ, value, prefix, start_pos)
@@ -280,6 +285,10 @@ class Parser(object):
 
     def _tokenize(self, tokenizer):
         for typ, value, start_pos, prefix in tokenizer:
+            if self._omit_dedent and typ == token.DEDENT:
+                self._omit_dedent -= 1
+                continue
+
             if typ == token.OP:
                 typ = token.opmap[value]
             yield typ, value, prefix, start_pos
