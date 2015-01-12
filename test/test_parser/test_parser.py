@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import jedi
 from jedi._compatibility import u, is_py3
 from jedi.parser import Parser, load_grammar
 from jedi.parser.user_context import UserContextParser
@@ -143,3 +144,14 @@ def test_hex_values_in_docstring():
         assert doc == '\xff'
     else:
         assert doc == u('�')
+
+
+def test_error_correction_with():
+    source = """
+    with open() as f:
+        try:
+            f."""
+    comps = jedi.Script(source).completions()
+    assert len(comps) > 40
+    # `open` completions have a closed attribute.
+    assert [1 for c in comps if c.name == 'closed']
