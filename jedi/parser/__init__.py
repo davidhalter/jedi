@@ -109,6 +109,7 @@ class Parser(object):
             'comp_for': pt.CompFor,
             'decorator': pt.Decorator,
             'lambdef': pt.Lambda,
+            'old_lambdef': pt.Lambda,
             'lambdef_nocond': pt.Lambda,
         }
 

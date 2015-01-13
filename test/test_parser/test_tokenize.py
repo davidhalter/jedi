@@ -27,7 +27,7 @@ asdfasdf""" + "h"
 
     def test_simple_no_whitespace(self):
         # Test a simple one line string, no preceding whitespace
-        simple_docstring = '"""simple one line docstring"""'
+        simple_docstring = u'"""simple one line docstring"""'
         simple_docstring_io = StringIO(simple_docstring)
         tokens = parser.tokenize.generate_tokens(simple_docstring_io.readline)
         token_list = list(tokens)

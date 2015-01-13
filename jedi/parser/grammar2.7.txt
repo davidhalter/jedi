@@ -122,13 +122,13 @@ arith_expr: term (('+'|'-') term)*
 term: factor (('*'|'/'|'%'|'//') factor)*
 factor: ('+'|'-'|'~') factor | power
 power: atom trailer* ['**' factor]
-atom: ('(' [yield_expr|testlist_gexp] ')' |
-       '[' [listmaker] ']' |
-       '{' [dictsetmaker] '}' |
+atom: ('(' [yield_expr|testlist_comp] ')' |
+       '[' [testlist_comp] ']' |
+       '{' [dictorsetmaker] '}' |
        '`' testlist1 '`' |
        NAME | NUMBER | STRING+ | '.' '.' '.')
-listmaker: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
-testlist_gexp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
+# Modification by David Halter, remove `testlist_gexp` and `listmaker`
+testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 lambdef: 'lambda' [varargslist] ':' test
 trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
 subscriptlist: subscript (',' subscript)* [',']
@@ -136,7 +136,9 @@ subscript: test | [test] ':' [test] [sliceop]
 sliceop: ':' [test]
 exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
 testlist: test (',' test)* [',']
-dictsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
+# Modification by David Halter, dictsetmaker -> dictorsetmaker (so that it's
+# the same as in the 3.4 grammar).
+dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
                 (test (comp_for | (',' test)* [','])) )
 
 classdef: 'class' NAME ['(' [arglist] ')'] ':' suite

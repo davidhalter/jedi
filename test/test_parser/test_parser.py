@@ -152,6 +152,6 @@ def test_error_correction_with():
         try:
             f."""
     comps = jedi.Script(source).completions()
-    assert len(comps) > 40
+    assert len(comps) > 30
     # `open` completions have a closed attribute.
     assert [1 for c in comps if c.name == 'closed']
