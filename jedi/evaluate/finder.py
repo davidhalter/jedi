@@ -439,7 +439,7 @@ def global_names_dict_generator(evaluator, scope, position):
     This function is used to include names from outer scopes. For example, when
     the current scope is function:
 
-    >>> from jedi._compatibility import u
+    >>> from jedi._compatibility import u, no_unicode_pprint
     >>> from jedi.parser import Parser, load_grammar
     >>> parser = Parser(load_grammar(), u('''
     ... x = ['a', 'b', 'c']
@@ -453,12 +453,11 @@ def global_names_dict_generator(evaluator, scope, position):
     `global_names_dict_generator` is a generator.  First it yields names from
     most inner scope.
 
-    >>> from pprint import pprint
     >>> from jedi.evaluate import Evaluator
     >>> evaluator = Evaluator(load_grammar())
     >>> scope = er.wrap(evaluator, scope)
     >>> pairs = list(global_names_dict_generator(evaluator, scope, (4, 0)))
-    >>> pprint(pairs[0])
+    >>> no_unicode_pprint(pairs[0])
     ({'func': [], 'y': [<Name: y@4,4>]}, (4, 0))
 
     Then it yields the names from one level "lower". In this example, this
@@ -466,7 +465,7 @@ def global_names_dict_generator(evaluator, scope, position):
     None, because typically the whole module is loaded before the function is
     called.
 
-    >>> pprint(pairs[1])
+    >>> no_unicode_pprint(pairs[1])
     ({'func': [<Name: func@3,4>], 'x': [<Name: x@2,0>]}, None)
 
     After that we have a few underscore names that are part of the module.

@@ -1,8 +1,8 @@
 """
 Test of keywords and ``jedi.keywords``
 """
-import jedi
-from jedi import Script, common
+from jedi._compatibility import is_py3
+from jedi import Script
 
 
 def test_goto_assignments_keyword():
@@ -17,7 +17,10 @@ def test_goto_assignments_keyword():
 def test_keyword():
     """ github jedi-vim issue #44 """
     defs = Script("print").goto_definitions()
-    assert [d.doc for d in defs]
+    if is_py3:
+        assert [d.doc for d in defs]
+    else:
+        assert defs == []
 
     assert Script("import").goto_assignments() == []
 

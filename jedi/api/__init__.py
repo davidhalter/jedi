@@ -533,8 +533,6 @@ class Script(object):
         for n in imp_names:
             iw = imports.ImportWrapper(self._evaluator, n).follow()
             i = n.get_definition()
-            if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
-                analysis.add(self._evaluator, 'import-error', i.namespace_names[-1])
         for node in sorted(nodes, key=lambda obj: obj.start_pos):
             #if not (isinstance(stmt.parent, pr.ForFlow) and stmt.parent.set_stmt == stmt):
             if node.type == 'expr_stmt':

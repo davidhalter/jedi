@@ -197,3 +197,15 @@ try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest  # Python 2
+
+
+def no_unicode_pprint(dct):
+    """
+    Python 2/3 dict __repr__ may be different, because of unicode differens
+    (with or without a `u` prefix). Normally in doctests we could use `pprint`
+    to sort dicts and check for equality, but here we have to write a separate
+    function to do that.
+    """
+    import pprint
+    s = pprint.pformat(dct)
+    print(re.sub("u'", "'", s))

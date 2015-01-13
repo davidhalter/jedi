@@ -27,8 +27,8 @@ class MixinTestFullName(object):
     def check(self, source, desired):
         script = jedi.Script(textwrap.dedent(source))
         definitions = getattr(script, type(self).operation)()
-        assert len(definitions) == 1
-        self.assertEqual(definitions[0].full_name, desired)
+        for d in definitions:
+            self.assertEqual(d.full_name, desired)
 
     def test_os_path_join(self):
         self.check('import os; os.path.join', 'os.path.join')

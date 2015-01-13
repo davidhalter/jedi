@@ -27,7 +27,7 @@ asdfasdf""" + "h"
 
     def test_simple_no_whitespace(self):
         # Test a simple one line string, no preceding whitespace
-        simple_docstring = u'"""simple one line docstring"""'
+        simple_docstring = u('"""simple one line docstring"""')
         simple_docstring_io = StringIO(simple_docstring)
         tokens = parser.tokenize.generate_tokens(simple_docstring_io.readline)
         token_list = list(tokens)
@@ -37,7 +37,7 @@ asdfasdf""" + "h"
 
     def test_simple_with_whitespace(self):
         # Test a simple one line string with preceding whitespace and newline
-        simple_docstring = '  """simple one line docstring""" \r\n'
+        simple_docstring = u('  """simple one line docstring""" \r\n')
         simple_docstring_io = StringIO(simple_docstring)
         tokens = parser.tokenize.generate_tokens(simple_docstring_io.readline)
         token_list = list(tokens)
@@ -51,11 +51,11 @@ asdfasdf""" + "h"
 
     def test_function_whitespace(self):
         # Test function definition whitespace identification
-        fundef = '''def test_whitespace(*args, **kwargs):
+        fundef = u('''def test_whitespace(*args, **kwargs):
     x = 1
     if x > 0:
         print(True)
-'''
+''')
         fundef_io = StringIO(fundef)
         tokens = parser.tokenize.generate_tokens(fundef_io.readline)
         token_list = list(tokens)
