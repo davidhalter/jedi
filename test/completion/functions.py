@@ -441,23 +441,6 @@ nested_def2('', c=1.0, b=1)[1]
 nested_def2('')[1]
 
 # -----------------
-# function annotations (should be ignored at the moment)
-# -----------------
-def annot(a:3, *args:3):
-    return a, args[0]
-
-#? str()
-annot('', 1.0)[0]
-#? float()
-annot('', 1.0)[1]
-
-def annot_ret(a:3) -> 3:
-    return a
-
-#? str()
-annot_ret('')
-
-# -----------------
 # magic methods
 # -----------------
 def a(): pass
