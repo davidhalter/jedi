@@ -20,14 +20,14 @@ from itertools import chain
 from textwrap import dedent
 
 from jedi.evaluate.cache import memoize_default
-from jedi.parser import Parser
+from jedi.parser import Parser, load_grammar
 from jedi.common import indent_block
 from jedi.evaluate.iterable import Array, FakeSequence, AlreadyEvaluated
 
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
-    r'\s*:param\s+(\w+)\s+%s:[^\n]+', # Sphinx param with type
+    r'\s*:param\s+(\w+)\s+%s:[^\n]+',  # Sphinx param with type
     r'\s*@type\s+%s:\s*([^\n]+)',  # Epydoc
 ]
 
@@ -127,7 +127,10 @@ def _evaluate_for_statement_string(evaluator, string, module):
         # (e.g., 'threading' in 'threading.Thread').
         string = 'import %s\n' % element + string
 
-    p = Parser(evaluator.grammar, code % indent_block(string))
+    # Take the default grammar here, if we load the Python 2.7 grammar here, it
+    # will be impossible to use `...` (Ellipsis) as a token. Docstring types
+    # don't need to conform with the current grammar.
+    p = Parser(load_grammar(), code % indent_block(string))
     try:
         pseudo_cls = p.module.subscopes[0]
         stmt = pseudo_cls.statements[-1]
