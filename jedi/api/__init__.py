@@ -504,15 +504,6 @@ class Script(object):
                                                   self._pos, stmt)
         debug.speed('func_call followed')
 
-        if 0:  # Change logic.
-            try:
-                # Access the trailers arglist node.
-                argument = trailer.children[0].children[index]
-            except (IndexError, AttributeError):
-                pass
-            else:
-                if argument.children[1] == '=':
-                    key_name = argument.children[0]
         return [classes.CallSignature(self._evaluator, o.name, stmt, call_index, key_name)
                 for o in origins if hasattr(o, 'py__call__')]
 
@@ -531,8 +522,7 @@ class Script(object):
             analysis.get_module_statements(self._parser.module())
         # Sort the statements so that the results are reproducible.
         for n in imp_names:
-            iw = imports.ImportWrapper(self._evaluator, n).follow()
-            i = n.get_definition()
+            imports.ImportWrapper(self._evaluator, n).follow()
         for node in sorted(nodes, key=lambda obj: obj.start_pos):
             #if not (isinstance(stmt.parent, pr.ForFlow) and stmt.parent.set_stmt == stmt):
             if node.type == 'expr_stmt':
