@@ -158,8 +158,6 @@ def get_module_names(module, all_scopes):
 
 class FakeSubModule():
     line_offset = 0
-    parent = None
-    path = None
 
 
 class FakeImport(pr.Import):
@@ -196,7 +194,7 @@ class FakeName(pr.Name):
         In case is_definition is defined (not None), that bool value will be
         returned.
         """
-        super(FakeName, self).__init__(name_str, start_pos)
+        super(FakeName, self).__init__(pr.zero_position_modifier, name_str, start_pos)
         self.parent = parent
         self._is_definition = is_definition
 

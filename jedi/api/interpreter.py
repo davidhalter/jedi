@@ -99,7 +99,8 @@ class LazyName(helpers.FakeName):
             found = [evaluated]
 
         content = iterable.AlreadyEvaluated(found)
-        stmt = pt.ExprStmt([self, pt.Operator('=', (0, 0), ''), content])
+        stmt = pt.ExprStmt([self, pt.Operator(pt.zero_position_modifier,
+                                              '=', (0, 0), ''), content])
         stmt.parent = self._module
         return stmt
 

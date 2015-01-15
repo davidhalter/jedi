@@ -260,7 +260,9 @@ class LazyInstanceDict(object):
 
 class InstanceName(pr.Name):
     def __init__(self, origin_name, parent):
-        super(InstanceName, self).__init__(origin_name.value, origin_name.start_pos)
+        super(InstanceName, self).__init__(origin_name.position_modifier,
+                                           origin_name.value,
+                                           origin_name.start_pos)
         self._origin_name = origin_name
         self.parent = parent
 

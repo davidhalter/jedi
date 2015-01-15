@@ -128,6 +128,8 @@ class Parser(object):
         self.used_names = {}
         self.scope_names_stack = [{}]
         self.error_statement_stacks = []
+        # For fast parser
+        self.position_modifier = pt.PositionModifier()
         p = PgenParser(grammar, self.convert_node, self.convert_leaf,
                        self.error_recovery)
         tokenizer = tokenizer or tokenize.source_tokens(source)
@@ -184,9 +186,9 @@ class Parser(object):
                 if value in ('def', 'class', 'lambda'):
                     self.scope_names_stack.append({})
 
-                return pt.Keyword(value, start_pos, prefix)
+                return pt.Keyword(self.position_modifier, value, start_pos, prefix)
             else:
-                name = pt.Name(value, start_pos, prefix)
+                name = pt.Name(self.position_modifier, value, start_pos, prefix)
                 # Keep a listing of all used names
                 arr = self.used_names.setdefault(name.value, [])
                 arr.append(name)
@@ -194,13 +196,13 @@ class Parser(object):
                 arr.append(name)
                 return name
         elif type == token.STRING:
-            return pt.String(value, start_pos, prefix)
+            return pt.String(self.position_modifier, value, start_pos, prefix)
         elif type == token.NUMBER:
-            return pt.Number(value, start_pos, prefix)
+            return pt.Number(self.position_modifier, value, start_pos, prefix)
         elif type in (token.NEWLINE, token.ENDMARKER):
-            return pt.Whitespace(value, start_pos, prefix)
+            return pt.Whitespace(self.position_modifier, value, start_pos, prefix)
         else:
-            return pt.Operator(value, start_pos, prefix)
+            return pt.Operator(self.position_modifier, value, start_pos, prefix)
 
     def error_recovery(self, grammar, stack, typ, value, start_pos, prefix,
                        add_token_callback):

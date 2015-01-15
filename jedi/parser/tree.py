@@ -51,6 +51,15 @@ def is_node(node, *symbol_names):
         return type in symbol_names
 
 
+class PositionModifier(object):
+    """A start_pos modifier for the fast parser."""
+    def __init__(self):
+        self.line = 0
+
+
+zero_position_modifier = PositionModifier()
+
+
 class DocstringMixin(object):
     __slots__ = ()
 
@@ -137,9 +146,10 @@ class Base(object):
 
 
 class Leaf(Base):
-    __slots__ = ('value', 'parent', 'start_pos', 'prefix')
+    __slots__ = ('position_modifier', 'value', 'parent', 'start_pos', 'prefix')
 
-    def __init__(self, value, start_pos, prefix=''):
+    def __init__(self, position_modifier, value, start_pos, prefix=''):
+        self.position_modifier = position_modifier
         self.value = value
         self.start_pos = start_pos
         self.prefix = prefix
@@ -620,7 +630,7 @@ class SubModule(Scope, Module):
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # Positions are not real, but a module starts at (1, 0)
         p = (1, 0)
-        name = Name(string, p)
+        name = Name(zero_position_modifier, string, p)
         name.parent = self
         return name
 
