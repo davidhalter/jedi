@@ -146,18 +146,27 @@ class Base(object):
 
 
 class Leaf(Base):
-    __slots__ = ('position_modifier', 'value', 'parent', 'start_pos', 'prefix')
+    __slots__ = ('position_modifier', 'value', 'parent', '_start_pos', 'prefix')
 
     def __init__(self, position_modifier, value, start_pos, prefix=''):
         self.position_modifier = position_modifier
         self.value = value
-        self.start_pos = start_pos
+        self._start_pos = start_pos
         self.prefix = prefix
         self.parent = None
 
     @property
+    def start_pos(self):
+        return self._start_pos[0] + self.position_modifier.line, self._start_pos[1]
+
+    @start_pos.setter
+    def start_pos(self, value):
+        self._start_pos = value
+
+    @property
     def end_pos(self):
-        return self.start_pos[0], self.start_pos[1] + len(self.value)
+        return (self._start_pos[0] + self.position_modifier.line,
+                self._start_pos[1] + len(self.value))
 
     def get_code(self):
         return self.prefix + self.value
