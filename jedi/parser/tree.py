@@ -39,9 +39,6 @@ from jedi._compatibility import (next, Python3Method, encoding, is_py3,
 from jedi import cache
 
 
-SCOPE_CONTENTS = 'asserts', 'subscopes', 'imports', 'statements', 'returns'
-
-
 def is_node(node, *symbol_names):
     try:
         type = node.type

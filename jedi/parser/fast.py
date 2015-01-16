@@ -4,6 +4,7 @@ anything changes, it only reparses the changed parts. But because it's not
 finished (and still not working as I want), I won't document it any further.
 """
 import re
+from itertools import chain
 
 from jedi._compatibility import use_metaclass, unicode
 from jedi import settings
@@ -15,14 +16,13 @@ from jedi import cache
 from jedi.parser.tokenize import source_tokens, FLOWS, NEWLINE, COMMENT, ENDMARKER
 
 
-class Module(pr.Module, pr.Simple):
+class FastModule(pr.Module, pr.Simple):
+    type = 'file_input'
+
     def __init__(self, parsers):
-        super(Module, self).__init__(self, (1, 0))
+        super(FastModule, self).__init__([])
         self.parsers = parsers
         self.reset_caches()
-
-        self.start_pos = 1, 0
-        self.end_pos = None, None
 
     def reset_caches(self):
         """ This module does a whole lot of caching, because it uses different
@@ -69,45 +69,53 @@ class CachedFastParser(type):
 
 
 class ParserNode(object):
-    def __init__(self, parser, code, parent=None):
+    def __init__(self, fast_module, parser, code, parent=None):
+        self._fast_module = fast_module
         self.parent = parent
 
-        self.children = []
+        self.parser_children = []
         # must be created before new things are added to it.
         self.save_contents(parser, code)
 
     def save_contents(self, parser, code):
+        print('SAVE')
         self.code = code
         self.hash = hash(code)
         self.parser = parser
 
         try:
-            # with fast_parser we have either 1 subscope or only statements.
+            # With fast_parser we have either 1 subscope or only statements.
             self.content_scope = parser.module.subscopes[0]
         except IndexError:
-            self.content_scope = parser.module
+            self.content_scope = self._fast_module
 
+        """
         scope = self.content_scope
         self._contents = {}
         for c in pr.SCOPE_CONTENTS:
             self._contents[c] = list(getattr(scope, c))
         self._is_generator = scope.is_generator
+        """
 
-        self.old_children = self.children
-        self.children = []
+        self.old_children = self.parser_children
+        self.parser_children = []
 
     def reset_contents(self):
+        """
         scope = self.content_scope
         for key, c in self._contents.items():
             setattr(scope, key, list(c))
         scope.is_generator = self._is_generator
+        """
 
+        """
         if self.parent is None:
             # Global vars of the first one can be deleted, in the global scope
             # they make no sense.
             self.parser.module.global_vars = []
+        """
 
-        for c in self.children:
+        for c in self.parser_children:
             c.reset_contents()
 
     def parent_until_indent(self, indent=None):
@@ -140,34 +148,35 @@ class ParserNode(object):
     def _set_items(self, parser, set_parent=False):
         # insert parser objects into current structure
         scope = self.content_scope
-        for c in pr.SCOPE_CONTENTS:
-            content = getattr(scope, c)
-            items = getattr(parser.module, c)
-            if set_parent:
-                for i in items:
-                    if i is None:
-                        continue  # happens with empty returns
-                    i.parent = scope.use_as_parent
-                    if isinstance(i, (pr.Function, pr.Class)):
-                        for d in i.decorators:
-                            d.parent = scope.use_as_parent
-            content += items
-
-        # global_vars
+        if set_parent:
+            for child in parser.module.children:
+                child.parent = scope
+                scope.children.append(child)
+                print('\t\t', scope, child)
+                """
+                if isinstance(i, (pr.Function, pr.Class)):
+                    for d in i.decorators:
+                        d.parent = scope
+                """
+        # TODO global_vars ? is_generator ?
+        """
         cur = self
         while cur.parent is not None:
             cur = cur.parent
         cur.parser.module.global_vars += parser.module.global_vars
 
         scope.is_generator |= parser.module.is_generator
+        """
 
     def add_node(self, node, set_parent=False):
         """Adding a node means adding a node that was already added earlier"""
-        self.children.append(node)
+        print('ADD')
+        self.parser_children.append(node)
         self._set_items(node.parser, set_parent=set_parent)
-        node.old_children = node.children  # TODO potential memory leak?
-        node.children = []
+        node.old_children = node.parser_children  # TODO potential memory leak?
+        node.parser_children = []
 
+        """
         scope = self.content_scope
         while scope is not None:
             #print('x',scope)
@@ -175,10 +184,12 @@ class ParserNode(object):
                 # TODO This seems like a strange thing. Check again.
                 scope.end_pos = node.content_scope.end_pos
             scope = scope.parent
+        """
         return node
 
     def add_parser(self, parser, code):
-        return self.add_node(ParserNode(parser, code, self), True)
+        print('add parser')
+        return self.add_node(ParserNode(self._fast_module, parser, code, self), True)
 
 
 class FastParser(use_metaclass(CachedFastParser)):
@@ -189,10 +200,11 @@ class FastParser(use_metaclass(CachedFastParser)):
         # set values like `pr.Module`.
         self._grammar = grammar
         self.module_path = module_path
+        print(module_path)
 
         self.current_node = None
         self.parsers = []
-        self.module = Module(self.parsers)
+        self.module = FastModule(self.parsers)
         self.reset_caches()
 
         try:
@@ -285,6 +297,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         p = None
         is_first = True
         for code_part in self._split_parts(code):
+            print(repr(code_part))
             if is_first or line_offset >= p.module.end_pos[0]:
                 indent = len(code_part) - len(code_part.lstrip('\t '))
                 if is_first and self.current_node is not None:
@@ -308,11 +321,12 @@ class FastParser(use_metaclass(CachedFastParser)):
                 code_part_actually_used = '\n'.join(used_lines)
 
                 if is_first and p.module.subscopes:
+                    print('NOXXXX')
                     # special case, we cannot use a function subscope as a
                     # base scope, subscopes would save all the other contents
                     new = empty_parser()
                     if self.current_node is None:
-                        self.current_node = ParserNode(new, '')
+                        self.current_node = ParserNode(self.module, new, '')
                     else:
                         self.current_node.save_contents(new, '')
                     self.parsers.append(new)
@@ -320,7 +334,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 if is_first:
                     if self.current_node is None:
-                        self.current_node = ParserNode(p, code_part_actually_used)
+                        self.current_node = ParserNode(self.module, p, code_part_actually_used)
                     else:
                         self.current_node.save_contents(p, code_part_actually_used)
                 else:
@@ -344,28 +358,28 @@ class FastParser(use_metaclass(CachedFastParser)):
         else:
             self.parsers.append(empty_parser())
 
+        """ TODO used?
         self.module.end_pos = self.parsers[-1].module.end_pos
+        """
 
         # print(self.parsers[0].module.get_code())
 
     def _get_parser(self, code, parser_code, line_offset, nodes, no_docstr):
         h = hash(code)
         for index, node in enumerate(nodes):
-            if node.hash != h or node.code != code:
-                continue
-
-            if node != self.current_node:
-                offset = int(nodes[0] == self.current_node)
-                self.current_node.old_children.pop(index - offset)
-            p = node.parser
-            m = p.module
-            m.line_offset += line_offset + 1 - m.start_pos[0]
-            break
+            if node.hash == h and node.code == code:
+                if node != self.current_node:
+                    offset = int(nodes[0] == self.current_node)
+                    self.current_node.old_children.pop(index - offset)
+                p = node.parser
+                m = p.module
+                m.line_offset += line_offset + 1 - m.start_pos[0]
+                break
         else:
             tokenizer = FastTokenizer(parser_code, line_offset)
-            p = Parser(parser_code, self.module_path, tokenizer=tokenizer,
-                       top_module=self.module, no_docstr=no_docstr)
-            p.module.parent = self.module
+            p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
+            #p.module.parent = self.module  # With the new parser this is not
+                                            # necessary anymore?
             node = None
 
         return p, node
@@ -392,7 +406,11 @@ class FastTokenizer(object):
         self.parser_indent = self.old_parser_indent = 0
         self.is_decorator = False
         self.first_stmt = True
+        self._add_end_marker = False
         self.parentheses_level = 0
+
+    def __iter__(self):
+        return self
 
     def next(self):
         """ Python 2 Compatibility """
@@ -400,13 +418,15 @@ class FastTokenizer(object):
 
     def __next__(self):
         if self.closed:
-            raise common.MultiLevelStopIteration()
+            if self._add_end_marker:
+                self._add_end_marker = False
+                start_pos = self.current[2]
+                return tokenize.ENDMARKER, '', start_pos, ''
+            raise StopIteration
 
-        current = next(self.gen)
-        tok_type = current.type
-        tok_str = current.string
-        if tok_type == ENDMARKER:
-            raise common.MultiLevelStopIteration()
+        typ, value, start_pos, prefix = current = next(self.gen)
+        if typ == ENDMARKER:
+            self.closed = True
 
         self.previous = self.current
         self.current = current
@@ -417,14 +437,14 @@ class FastTokenizer(object):
 
         def close():
             if not self.first_stmt:
+                self._add_end_marker = True
                 self.closed = True
-                raise common.MultiLevelStopIteration()
 
         # Ignore comments/newlines, irrelevant for indentation.
-        if self.previous.type in (None, NEWLINE) \
-                and tok_type not in (COMMENT, NEWLINE):
+        if self.previous[0] in (None, NEWLINE) \
+                and typ not in (COMMENT, NEWLINE):
             # print c, tok_name[c[0]]
-            indent = current.start_pos[1]
+            indent = start_pos[1]
             if self.parentheses_level:
                 # parentheses ignore the indentation rules.
                 pass
@@ -440,18 +460,18 @@ class FastTokenizer(object):
                 self.new_indent = False
 
             if not self.in_flow:
-                if tok_str in FLOWS or tok_str in breaks:
-                    self.in_flow = tok_str in FLOWS
+                if value in FLOWS or value in breaks:
+                    self.in_flow = value in FLOWS
                     if not self.is_decorator and not self.in_flow:
                         close()
 
-                    self.is_decorator = '@' == tok_str
+                    self.is_decorator = '@' == value
                     if not self.is_decorator:
                         self.old_parser_indent = self.parser_indent
                         self.parser_indent += 1  # new scope: must be higher
                         self.new_indent = True
 
-            if tok_str != '@':
+            if value != '@':
                 if self.first_stmt and not self.new_indent:
                     self.parser_indent = indent
                 self.first_stmt = False
@@ -459,8 +479,8 @@ class FastTokenizer(object):
         # Ignore closing parentheses, because they are all
         # irrelevant for the indentation.
 
-        if tok_str in '([{':
+        if value in '([{':
             self.parentheses_level += 1
-        elif tok_str in ')]}':
+        elif value in ')]}':
             self.parentheses_level = max(self.parentheses_level - 1, 0)
         return current

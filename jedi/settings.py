@@ -136,7 +136,7 @@ On Linux, if environment variable ``$XDG_CACHE_HOME`` is set,
 # parser
 # ----------------
 
-fast_parser = False
+fast_parser = True
 """
 Use the fast parser. This means that reparsing is only being done if
 something has been changed e.g. to a function. If this happens, only the
