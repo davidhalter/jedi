@@ -53,6 +53,20 @@ class FastModule(pr.Module, pr.Simple):
                                         self.start_pos[0], self.end_pos[0])
 
 
+class MergedNamesDict(object):
+    def __init__(self, dicts):
+        self._dicts = dicts
+
+    def __getitem__(self, value):
+        return list(chain.from_iterable(dct[value] for dct in self._dcts))
+
+    def values(self):
+        lst = []
+        for dct in self._dicts:
+            lst.append(dct.values())
+        return lst
+
+
 class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
     def __call__(self, grammar, source, module_path=None):
