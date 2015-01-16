@@ -30,7 +30,7 @@ def 我あφ():
         if is_py3:
             parsed = parser.Parser(code)
             funcname = parsed.module.get_defined_names()[0]
-            self.assertEqual('我あφ', funcname.names[0]._string)
+            self.assertEqual('我あφ', funcname._string)
         else:
             # Invalid identifiers seem to be silently ignored.
             # Leave it as-is for now.
