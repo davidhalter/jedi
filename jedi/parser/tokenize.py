@@ -16,6 +16,7 @@ import re
 from io import StringIO
 from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER,
                                NAME, OP, ERRORTOKEN, NEWLINE, INDENT, DEDENT)
+from jedi._compatibility import is_py3
 
 
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
@@ -26,7 +27,12 @@ cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally']
 
 
-namechars = string.ascii_letters + '_'
+if is_py3:
+    # Python 3 has str.isidentifier() to check if a char is a valid identifier
+    is_identifier = str.isidentifier
+else:
+    namechars = string.ascii_letters + '_'
+    is_identifier = lambda s: s in namechars
 
 
 COMMENT = N_TOKENS
@@ -248,7 +254,7 @@ def generate_tokens(readline, line_offset=0):
                     break
                 else:                                       # ordinary string
                     yield STRING, token, spos, prefix
-            elif initial in namechars:                      # ordinary name
+            elif is_identifier(initial):                      # ordinary name
                 if token in ALWAYS_BREAK_TOKEN:
                     paren_level = 0
                     while True:
