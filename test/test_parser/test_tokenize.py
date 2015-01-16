@@ -1,3 +1,4 @@
+# -*- coding: utf-8    # This file contains Unicode characters.
 from jedi._compatibility import u, is_py3
 from jedi import parser
 
