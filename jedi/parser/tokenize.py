@@ -17,7 +17,7 @@ from io import StringIO
 from token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, NAME, OP,
                    ERRORTOKEN, NEWLINE)
 
-from jedi._compatibility import u
+from jedi._compatibility import u, is_py3
 
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
@@ -27,7 +27,12 @@ cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally']
 
 
-namechars = string.ascii_letters + '_'
+# Python 2 identifier
+if is_py3:
+    isidentifier = str.isidentifier
+else:
+    namechars = string.ascii_letters + '_'
+    isidentifier = lambda s: s in namechars
 
 
 COMMENT = N_TOKENS
@@ -289,7 +294,7 @@ def generate_tokens(readline, line_offset=0):
                     break
                 else:                                       # ordinary string
                     yield Token(STRING, token, spos)
-            elif initial in namechars:                      # ordinary name
+            elif isidentifier(initial):                      # ordinary name
                 yield Token(NAME, token, spos)
             elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
                 continue

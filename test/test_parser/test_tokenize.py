@@ -1,4 +1,5 @@
-from jedi._compatibility import u
+# -*- coding: utf-8    # This file contains Unicode characters.
+from jedi._compatibility import u, is_py3
 from jedi import parser
 
 from ..helpers import unittest
@@ -21,6 +22,22 @@ asdfasdf""" + "h"
 '''))
         tok = parsed.module.subscopes[0].statements[0]._token_list[2]
         self.assertEqual(tok.end_pos, (4, 11))
+
+    def test_identifier_starts_with_unicode(self):
+        code = u('''
+def 我あφ():
+    pass
+''')
+        if is_py3:
+            parsed = parser.Parser(code)
+            funcname = parsed.module.get_defined_names()[0]
+            self.assertEqual('我あφ', funcname._string)
+        else:
+            # Invalid identifiers seem to be silently ignored.
+            # Leave it as-is for now.
+            parsed = parser.Parser(code)
+            self.assertEqual(parsed.module.get_defined_names(), [])
+
 
 
 def test_tokenizer_with_string_literal_backslash():
