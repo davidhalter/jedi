@@ -30,18 +30,20 @@ System-wide installation via a package manager
 Arch Linux
 ~~~~~~~~~~
 
-You can install |jedi| directly from official AUR packages:
+You can install |jedi| directly from official Arch Linux packages:
 
-- `python-jedi <https://aur.archlinux.org/packages/python-jedi/>`__ (Python 3)
-- `python2-jedi <https://aur.archlinux.org/packages/python2-jedi/>`__ (Python 2)
+- `python-jedi <https://www.archlinux.org/packages/community/any/python-jedi/>`__
+  (Python 3)
+- `python2-jedi <https://www.archlinux.org/packages/community/any/python2-jedi/>`__
+  (Python 2)
 
 The specified Python version just refers to the *runtime environment* for
 |jedi|. Use the Python 2 version if you're running vim (or whatever editor you
 use) under Python 2. Otherwise, use the Python 3 version. But whatever version
 you choose, both are able to complete both Python 2 and 3 *code*.
 
-(There is also a packaged version of the vim plugin available: `vim-jedi at AUR
-<https://aur.archlinux.org/packages/vim-jedi/>`__.)
+(There is also a packaged version of the vim plugin available: `vim-jedi at
+Arch Linux<https://www.archlinux.org/packages/community/any/vim-jedi/>`__.)
 
 Debian
 ~~~~~~
