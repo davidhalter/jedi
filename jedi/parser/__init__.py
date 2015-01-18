@@ -301,6 +301,7 @@ class Parser(object):
 
             if typ == token.OP:
                 typ = token.opmap[value]
+            #print(start_pos, tokenize.tok_name[typ], repr(value))
             yield typ, value, prefix, start_pos
 
     def __repr__(self):
