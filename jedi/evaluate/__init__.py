@@ -70,7 +70,7 @@ backtracking algorithm.
 """
 import itertools
 
-from jedi._compatibility import next, hasattr, unicode
+from jedi._compatibility import unicode
 from jedi.parser import representation as pr
 from jedi.parser.tokenize import Token
 from jedi.parser import fast
@@ -88,6 +88,7 @@ from jedi.evaluate.helpers import FakeStatement
 
 
 class Evaluator(object):
+
     def __init__(self):
         self.memoize_cache = {}  # for memoize decorators
         self.import_cache = {}  # like `sys.modules`.
@@ -132,7 +133,8 @@ class Evaluator(object):
         result = self.eval_expression_list(expression_list)
 
         ass_details = stmt.assignment_details
-        if ass_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
+        # TODO don't check for this.
+        if ass_details and ass_details[0][1] != '=' and not isinstance(stmt, er.InstanceElement):
             expr_list, operator = ass_details[0]
             # `=` is always the last character in aug assignments -> -1
             operator = operator[:-1]
@@ -155,7 +157,8 @@ class Evaluator(object):
             # multiple variables.
             new_result = []
             for ass_expression_list, op in ass_details:
-                new_result += finder.find_assignments(ass_expression_list[0], result, seek_name)
+                new_result += finder.find_assignments(
+                    ass_expression_list[0], result, seek_name)
             result = new_result
         return result
 
@@ -292,11 +295,13 @@ class Evaluator(object):
                     else:
                         result = typ.get_index_types(current)
             elif current.type not in [pr.Array.DICT]:
-                # Scope must be a class or func - make an instance or execution.
+                # Scope must be a class or func - make an instance or
+                # execution.
                 result = self.execute(typ, current)
             else:
                 # Curly braces are not allowed, because they make no sense.
-                debug.warning('strange function call with {} %s %s', current, typ)
+                debug.warning(
+                    'strange function call with {} %s %s', current, typ)
         else:
             # The function must not be decorated with something else.
             if typ.isinstance(er.Function):
@@ -333,11 +338,13 @@ class Evaluator(object):
         else:
             stmts = []
             if obj.isinstance(er.Function):
-                stmts = er.FunctionExecution(self, obj, params).get_return_types(evaluate_generator)
+                stmts = er.FunctionExecution(
+                    self, obj, params).get_return_types(evaluate_generator)
             else:
                 if hasattr(obj, 'execute_subscope_by_name'):
                     try:
-                        stmts = obj.execute_subscope_by_name('__call__', params)
+                        stmts = obj.execute_subscope_by_name(
+                            '__call__', params)
                     except KeyError:
                         debug.warning("no __call__ func available %s", obj)
                 else:
@@ -371,7 +378,8 @@ def filter_private_variable(scope, call_scope, var_name):
     var_name = str(var_name)  # var_name could be a NamePart
     if isinstance(var_name, (str, unicode)) and isinstance(scope, er.Instance)\
             and var_name.startswith('__') and not var_name.endswith('__'):
-        s = call_scope.get_parent_until((pr.Class, er.Instance, compiled.CompiledObject))
+        s = call_scope.get_parent_until(
+            (pr.Class, er.Instance, compiled.CompiledObject))
         if s != scope:
             if isinstance(scope.base, compiled.CompiledObject):
                 if s != scope.base:

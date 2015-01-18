@@ -65,24 +65,6 @@ or the name of the module if it is a builtin one and a boolean indicating
 if the module is contained in a package.
 """
 
-# next was defined in python 2.6, in python 3 obj.next won't be possible
-# anymore
-try:
-    next = next
-except NameError:
-    _raiseStopIteration = object()
-
-    def next(iterator, default=_raiseStopIteration):
-        if not hasattr(iterator, 'next'):
-            raise TypeError("not an iterator")
-        try:
-            return iterator.next()
-        except StopIteration:
-            if default is _raiseStopIteration:
-                raise
-            else:
-                return default
-
 # unicode function
 try:
     unicode = unicode
@@ -125,19 +107,9 @@ Usage::
 
 """
 
-# hasattr function used because python
-if is_py3:
-    hasattr = hasattr
-else:
-    def hasattr(obj, name):
-        try:
-            getattr(obj, name)
-            return True
-        except AttributeError:
-            return False
-
 
 class Python3Method(object):
+
     def __init__(self, func):
         self.func = func
 

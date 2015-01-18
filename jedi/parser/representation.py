@@ -38,8 +38,8 @@ import os
 import re
 from inspect import cleandoc
 
-from jedi._compatibility import (next, Python3Method, encoding, unicode,
-                                 is_py3, u, literal_eval)
+from jedi._compatibility import (Python3Method, encoding, unicode, is_py3,
+                                 u, literal_eval)
 from jedi import common
 from jedi import debug
 from jedi import cache
@@ -65,6 +65,7 @@ def filter_after_position(names, position):
 
 
 class GetCodeState(object):
+
     """A helper class for passing the state of get_code in a thread-safe
     manner."""
     __slots__ = ("last_pos",)
@@ -97,6 +98,7 @@ class DocstringMixin(object):
 
 
 class Base(object):
+
     """
     This is just here to have an isinstance check, which is also used on
     evaluate classes. But since they have sometimes a special type of
@@ -113,13 +115,13 @@ class Base(object):
     @property
     def newline(self):
         """Returns the newline type for the current code."""
-        #TODO: we need newline detection
+        # TODO: we need newline detection
         return "\n"
 
     @property
     def whitespace(self):
         """Returns the whitespace type for the current code: tab or space."""
-        #TODO: we need tab detection
+        # TODO: we need tab detection
         return " "
 
     @Python3Method
@@ -159,6 +161,7 @@ class Base(object):
 
 
 class Simple(Base):
+
     """
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
@@ -224,6 +227,7 @@ class IsScope(Base):
 
 
 class Scope(IsScope, Simple, DocstringMixin):
+
     """
     Super class for the parser tree, which represents the state of a python
     text file.
@@ -392,12 +396,14 @@ class Scope(IsScope, Simple, DocstringMixin):
 
 
 class Module(IsScope):
+
     """
     For isinstance checks. fast_parser.Module also inherits from this.
     """
 
 
 class SubModule(Scope, Module):
+
     """
     The top scope, which is always a module.
     Depending on the underlying parser this may be a full module or just a part
@@ -450,7 +456,8 @@ class SubModule(Scope, Module):
             string = ''  # no path -> empty name
         else:
             sep = (re.escape(os.path.sep),) * 2
-            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self.path)
+            r = re.search(
+                r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self.path)
             # remove PEP 3149 names
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # positions are not real therefore choose (0, 0)
@@ -475,6 +482,7 @@ class SubModule(Scope, Module):
 
 
 class Class(Scope):
+
     """
     Used to store the parsed contents of a python class.
 
@@ -525,6 +533,7 @@ class Class(Scope):
 
 
 class Function(Scope):
+
     """
     Used to store the parsed contents of a python function.
 
@@ -609,6 +618,7 @@ class Function(Scope):
 
 
 class Lambda(Function):
+
     def __init__(self, module, params, start_pos, parent):
         super(Lambda, self).__init__(module, None, params, start_pos, None)
         self.parent = parent
@@ -624,6 +634,7 @@ class Lambda(Function):
 
 
 class Flow(Scope):
+
     """
     Used to describe programming structure - flow statements,
     which indent code, but are not classes or functions:
@@ -721,9 +732,11 @@ class Flow(Scope):
 
 
 class ForFlow(Flow):
+
     """
     Used for the for loop, because there are two statement parts.
     """
+
     def __init__(self, module, inputs, start_pos, set_stmt):
         super(ForFlow, self).__init__(module, 'for', inputs, start_pos)
 
@@ -748,6 +761,7 @@ class ForFlow(Flow):
 
 
 class Import(Simple):
+
     """
     Stores the imports of any Scopes.
 
@@ -764,6 +778,7 @@ class Import(Simple):
     :param defunct: An Import is valid or not.
     :type defunct: bool
     """
+
     def __init__(self, module, start_pos, end_pos, namespace, alias=None,
                  from_ns=None, star=False, relative_count=0, defunct=False):
         super(Import, self).__init__(module, start_pos, end_pos)
@@ -836,6 +851,7 @@ class Import(Simple):
 
 
 class KeywordStatement(Base):
+
     """
     For the following statements: `assert`, `del`, `global`, `nonlocal`,
     `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
@@ -875,6 +891,7 @@ class KeywordStatement(Base):
 
 
 class Statement(Simple, DocstringMixin):
+
     """
     This is the class for all the possible statements. Which means, this class
     stores pretty much all the Python code, except functions, classes, imports,
@@ -918,7 +935,7 @@ class Statement(Simple, DocstringMixin):
     def get_code(self, new_line=True):
         def assemble(command_list, assignment=None):
             pieces = [c.get_code() if isinstance(c, Simple) else c.string if
-isinstance(c, tokenize.Token) else unicode(c)
+                      isinstance(c, tokenize.Token) else unicode(c)
                       for c in command_list]
             if assignment is None:
                 return ''.join(pieces)
@@ -1017,7 +1034,8 @@ isinstance(c, tokenize.Token) else unicode(c)
                 else:
                     if break_tok == ',':
                         is_array = True
-                    arr.add_statement(stmt, is_key=maybe_dict and break_tok == ':')
+                    arr.add_statement(
+                        stmt, is_key=maybe_dict and break_tok == ':')
                     if break_tok in closing_brackets \
                             or is_assignment(break_tok):
                         break
@@ -1132,7 +1150,8 @@ isinstance(c, tokenize.Token) else unicode(c)
 
             middle, tok = parse_stmt_or_arr(token_iterator, ['in'], True)
             if tok != 'in' or middle is None:
-                debug.warning('list comprehension middle %s@%s', tok, start_pos)
+                debug.warning(
+                    'list comprehension middle %s@%s', tok, start_pos)
                 return None, tok
 
             in_clause, tok = parse_stmt_or_arr(token_iterator)
@@ -1180,7 +1199,8 @@ isinstance(c, tokenize.Token) else unicode(c)
             if isinstance(tok_str, Name) or is_literal:
                 cls = Literal if is_literal else Call
 
-                call = cls(self._sub_module, tok_str, tok.start_pos, tok.end_pos, self)
+                call = cls(
+                    self._sub_module, tok_str, tok.start_pos, tok.end_pos, self)
                 if is_chain:
                     result[-1].set_next(call)
                 else:
@@ -1223,6 +1243,7 @@ isinstance(c, tokenize.Token) else unicode(c)
 
 
 class Param(Statement):
+
     """
     The class which shows definitions of params of classes and functions.
     But this is not to define function calls.
@@ -1350,6 +1371,7 @@ class Literal(StatementElement):
 
 
 class Array(StatementElement):
+
     """
     Describes the different python types for an array, but also empty
     statements. In the Python syntax definitions this type is named 'atom'.
@@ -1443,6 +1465,7 @@ class Array(StatementElement):
 
 
 class NamePart(object):
+
     """
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
@@ -1487,6 +1510,7 @@ class NamePart(object):
 
 
 class Name(Simple):
+
     """
     Used to define names in python.
     Which means the whole namespace/class/function stuff.
@@ -1527,7 +1551,9 @@ class Name(Simple):
 
 
 class ListComprehension(ForFlow):
+
     """ Helper class for list comprehensions """
+
     def __init__(self, module, stmt, middle, input, parent):
         self.input = input
         nested_lc = input.expression_list()[0]

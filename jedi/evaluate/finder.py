@@ -13,7 +13,7 @@ check for -> a is a string). There's big potential in these checks.
 """
 from itertools import chain
 
-from jedi._compatibility import hasattr, unicode, u
+from jedi._compatibility import unicode, u
 from jedi.parser import representation as pr, tokenize
 from jedi.parser import fast
 from jedi import debug
@@ -30,6 +30,7 @@ from jedi.evaluate import precedence
 
 
 class NameFinder(object):
+
     def __init__(self, evaluator, scope, name_str, position=None):
         self._evaluator = evaluator
         self.scope = scope
@@ -80,7 +81,8 @@ class NameFinder(object):
                 # Here is the position stuff happening (sorting of variables).
                 # Compiled objects don't need that, because there's only one
                 # reference.
-                name_list = sorted(name_list, key=lambda n: n.start_pos, reverse=True)
+                name_list = sorted(
+                    name_list, key=lambda n: n.start_pos, reverse=True)
 
             for name in name_list:
                 if unicode(self.name_str) != name.get_code():
@@ -121,7 +123,8 @@ class NameFinder(object):
             # could be practical and the jedi would return wrong types. If
             # you ever have something, let me know!
             with common.ignored(KeyError):
-                result = inst.execute_subscope_by_name('__getattribute__', [name])
+                result = inst.execute_subscope_by_name(
+                    '__getattribute__', [name])
         return result
 
     def _is_name_break_scope(self, name):
@@ -249,15 +252,16 @@ class NameFinder(object):
         types = []
         # Remove the statement docstr stuff for now, that has to be
         # implemented with the evaluator class.
-        #if stmt.docstr:
-            #res_new.append(stmt)
+        # if stmt.docstr:
+        # res_new.append(stmt)
 
         check_instance = None
         if isinstance(stmt, er.InstanceElement) and stmt.is_class_var:
             check_instance = stmt.instance
             stmt = stmt.var
 
-        types += evaluator.eval_statement(stmt, seek_name=unicode(self.name_str))
+        types += evaluator.eval_statement(stmt,
+                                          seek_name=unicode(self.name_str))
 
         # check for `except X as y` usages, because y needs to be instantiated.
         p = stmt.parent
@@ -325,11 +329,13 @@ class NameFinder(object):
         # Take the first statement (for has always only one`in`).
         if not loop.inputs:
             return []
-        result = iterable.get_iterator_types(self._evaluator.eval_statement(loop.inputs[0]))
+        result = iterable.get_iterator_types(
+            self._evaluator.eval_statement(loop.inputs[0]))
         if len(loop.set_vars) > 1:
             expression_list = loop.set_stmt.expression_list()
             # loops with loop.set_vars > 0 only have one command
-            result = _assign_tuples(expression_list[0], result, unicode(self.name_str))
+            result = _assign_tuples(
+                expression_list[0], result, unicode(self.name_str))
         return result
 
     def _resolve_descriptors(self, types):
@@ -369,7 +375,8 @@ def check_flow_information(evaluator, flow, search_name_part, pos):
 
     if isinstance(flow, pr.Flow) and not result:
         if flow.command in ['if', 'while'] and len(flow.inputs) == 1:
-            result = _check_isinstance_type(evaluator, flow.inputs[0], search_name_part)
+            result = _check_isinstance_type(
+                evaluator, flow.inputs[0], search_name_part)
     return result
 
 
@@ -392,7 +399,8 @@ def _check_isinstance_type(evaluator, stmt, search_name_part):
 
         # names fit?
         assert unicode(obj[0].name) == unicode(search_name_part)
-        assert isinstance(classes[0], pr.StatementElement)  # can be type or tuple
+        # can be type or tuple
+        assert isinstance(classes[0], pr.StatementElement)
     except AssertionError:
         return []
 

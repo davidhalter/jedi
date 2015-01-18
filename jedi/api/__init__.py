@@ -14,7 +14,7 @@ import warnings
 import sys
 from itertools import chain
 
-from jedi._compatibility import next, unicode, builtins
+from jedi._compatibility import unicode, builtins
 from jedi.parser import Parser
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import representation as pr
@@ -43,10 +43,12 @@ sys.setrecursionlimit(2000)
 
 
 class NotFoundError(Exception):
+
     """A custom error to avoid catching the wrong exceptions."""
 
 
 class Script(object):
+
     """
     A Script is the base for completions, goto or whatever you want to do with
     |jedi|.
@@ -70,13 +72,16 @@ class Script(object):
         ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
     """
+
     def __init__(self, source=None, line=None, column=None, path=None,
                  encoding='utf-8', source_path=None, source_encoding=None):
         if source_path is not None:
-            warnings.warn("Use path instead of source_path.", DeprecationWarning)
+            warnings.warn(
+                "Use path instead of source_path.", DeprecationWarning)
             path = source_path
         if source_encoding is not None:
-            warnings.warn("Use encoding instead of source_encoding.", DeprecationWarning)
+            warnings.warn(
+                "Use encoding instead of source_encoding.", DeprecationWarning)
             encoding = source_encoding
 
         self._orig_path = path
@@ -101,7 +106,8 @@ class Script(object):
         cache.clear_caches()
         debug.reset_time()
         self._user_context = UserContext(self.source, self._pos)
-        self._parser = UserContextParser(self.source, path, self._pos, self._user_context)
+        self._parser = UserContextParser(
+            self.source, path, self._pos, self._user_context)
         self._evaluator = Evaluator()
         debug.speed('init')
 
@@ -172,7 +178,8 @@ class Script(object):
 
             if not path and not isinstance(user_stmt, pr.Import):
                 # add keywords
-                completions += ((k, b) for k in keywords.keyword_names(all=True))
+                completions += ((k, b)
+                                for k in keywords.keyword_names(all=True))
 
         needs_dot = not dot and path
 
@@ -184,7 +191,8 @@ class Script(object):
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
                 if not filter_private_variable(s, user_stmt or self._parser.user_scope(), n):
-                    new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
+                    new = classes.Completion(
+                        self._evaluator, c, needs_dot, len(like), s)
                     k = (new.name, new.complete)  # key
                     if k in comp_dct and settings.no_completion_duplicates:
                         comp_dct[k]._same_name_completions.append(new)
@@ -281,7 +289,8 @@ class Script(object):
         user_stmt = self._parser.user_stmt()
         if user_stmt is None:
             # Set the start_pos to a pseudo position, that doesn't exist but works
-            # perfectly well (for both completions in docstrings and statements).
+            # perfectly well (for both completions in docstrings and
+            # statements).
             stmt.start_pos = self._pos
         else:
             stmt.start_pos = user_stmt.start_pos
@@ -428,7 +437,8 @@ class Script(object):
             for d in defs:
                 if isinstance(d.parent, pr.Import) \
                         and d.start_pos == (0, 0):
-                    i = imports.ImportWrapper(self._evaluator, d.parent).follow(is_goto=True)
+                    i = imports.ImportWrapper(
+                        self._evaluator, d.parent).follow(is_goto=True)
                     definitions.remove(d)
                     definitions |= follow_inexistent_imports(i)
             return definitions
@@ -476,7 +486,8 @@ class Script(object):
                 if len(expression_list) == 0:
                     return [], ''
                 # Only the first command is important, the rest should basically not
-                # happen except in broken code (e.g. docstrings that aren't code).
+                # happen except in broken code (e.g. docstrings that aren't
+                # code).
                 call = expression_list[0]
                 if isinstance(call, pr.Call):
                     call_path = list(call.generate_call_path())
@@ -521,11 +532,13 @@ class Script(object):
                                if unicode(v.names[-1]) == search_name]
         if not isinstance(user_stmt, pr.Import):
             # import case is looked at with add_import_name option
-            definitions = usages.usages_add_import_modules(self._evaluator, definitions, search_name)
+            definitions = usages.usages_add_import_modules(
+                self._evaluator, definitions, search_name)
 
         module = set([d.get_parent_until() for d in definitions])
         module.add(self._parser.module())
-        names = usages.usages(self._evaluator, definitions, search_name, module)
+        names = usages.usages(
+            self._evaluator, definitions, search_name, module)
 
         for d in set(definitions):
             try:
@@ -595,7 +608,8 @@ class Script(object):
             iw = imports.ImportWrapper(self._evaluator, i,
                                        nested_resolve=True).follow()
             if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
-                analysis.add(self._evaluator, 'import-error', i.namespace.names[-1])
+                analysis.add(
+                    self._evaluator, 'import-error', i.namespace.names[-1])
         for stmt in sorted(stmts, key=lambda obj: obj.start_pos):
             if not (isinstance(stmt.parent, pr.ForFlow)
                     and stmt.parent.set_stmt == stmt):
@@ -606,6 +620,7 @@ class Script(object):
 
 
 class Interpreter(Script):
+
     """
     Jedi API for Python REPLs.
 
@@ -643,7 +658,8 @@ class Interpreter(Script):
         self.namespaces = namespaces
 
         # Here we add the namespaces to the current parser.
-        interpreter.create(self._evaluator, namespaces[0], self._parser.module())
+        interpreter.create(
+            self._evaluator, namespaces[0], self._parser.module())
 
     def _simple_complete(self, path, like):
         user_stmt = self._parser.user_stmt_with_whitespace()
@@ -652,6 +668,7 @@ class Interpreter(Script):
             return super(Interpreter, self)._simple_complete(path, like)
         else:
             class NamespaceModule(object):
+
                 def __getattr__(_, name):
                     for n in self.namespaces:
                         try:

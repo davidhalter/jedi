@@ -17,7 +17,7 @@ complexity of the ``Parser`` (there's another parser sitting inside
 """
 import keyword
 
-from jedi._compatibility import next, unicode
+from jedi._compatibility import unicode
 from jedi import debug
 from jedi import common
 from jedi.parser import representation as pr
@@ -30,6 +30,7 @@ STATEMENT_KEYWORDS = 'assert', 'del', 'global', 'nonlocal', 'raise', \
 
 
 class Parser(object):
+
     """
     This class is used to parse a Python file, it then divides them into a
     class structure of different scopes.
@@ -41,6 +42,7 @@ class Parser(object):
     :param no_docstr: If True, a string at the beginning is not a docstr.
     :param top_module: Use this module as a parent instead of `self.module`.
     """
+
     def __init__(self, source, module_path=None, no_docstr=False,
                  tokenizer=None, top_module=None):
         self.no_docstr = no_docstr
@@ -156,7 +158,8 @@ class Parser(object):
         while True:
             defunct = False
             tok = next(self._gen)
-            if tok.string == '(':  # python allows only one `(` in the statement.
+            # python allows only one `(` in the statement.
+            if tok.string == '(':
                 brackets = True
                 tok = next(self._gen)
             if brackets and tok.type == tokenize.NEWLINE:
@@ -326,7 +329,8 @@ class Parser(object):
                 is_kw = tok.string in OPERATOR_KEYWORDS
                 if tok.type == tokenize.OP or is_kw:
                     tok_list.append(
-                        pr.Operator(self.module, tok.string, self._scope, tok.start_pos)
+                        pr.Operator(
+                            self.module, tok.string, self._scope, tok.start_pos)
                     )
                 else:
                     tok_list.append(tok)
@@ -454,7 +458,8 @@ class Parser(object):
                 imports = self._parse_import_list()
                 for count, (m, alias, defunct) in enumerate(imports):
                     e = (alias or m or self._gen.previous).end_pos
-                    end_pos = self._gen.previous.end_pos if count + 1 == len(imports) else e
+                    end_pos = self._gen.previous.end_pos if count + \
+                        1 == len(imports) else e
                     i = pr.Import(self.module, first_pos, end_pos, m,
                                   alias, defunct=defunct)
                     self._check_user_stmt(i)
@@ -491,7 +496,8 @@ class Parser(object):
                     if star:
                         name = None
                     e = (alias or name or self._gen.previous).end_pos
-                    end_pos = self._gen.previous.end_pos if count + 1 == len(names) else e
+                    end_pos = self._gen.previous.end_pos if count + \
+                        1 == len(names) else e
                     i = pr.Import(self.module, first_pos, end_pos, name,
                                   alias, mod, star, relative_count,
                                   defunct=defunct or defunct2)
@@ -503,7 +509,8 @@ class Parser(object):
                 set_stmt, tok = self._parse_statement(added_breaks=['in'],
                                                       names_are_set_vars=True)
                 if tok.string != 'in':
-                    debug.warning('syntax err, for flow incomplete @%s', tok.start_pos[0])
+                    debug.warning(
+                        'syntax err, for flow incomplete @%s', tok.start_pos[0])
 
                 try:
                     statement, tok = self._parse_statement()
@@ -513,7 +520,8 @@ class Parser(object):
                 f = pr.ForFlow(self.module, s, first_pos, set_stmt)
                 self._scope = self._scope.add_statement(f)
                 if tok is None or tok.string != ':':
-                    debug.warning('syntax err, for flow started @%s', first_pos[0])
+                    debug.warning(
+                        'syntax err, for flow started @%s', first_pos[0])
             elif tok_str in ['if', 'while', 'try', 'with'] + extended_flow:
                 added_breaks = []
                 command = tok_str
@@ -550,7 +558,8 @@ class Parser(object):
                     s = self._scope.add_statement(f)
                 self._scope = s
                 if tok.string != ':':
-                    debug.warning('syntax err, flow started @%s', tok.start_pos[0])
+                    debug.warning(
+                        'syntax err, flow started @%s', tok.start_pos[0])
             # returns
             elif tok_str in ('return', 'yield'):
                 s = tok.start_pos
@@ -565,7 +574,7 @@ class Parser(object):
                     stmt.parent = use_as_parent_scope
                 try:
                     func.statements.append(pr.KeywordStatement(tok_str, s,
-                                           use_as_parent_scope, stmt))
+                                                               use_as_parent_scope, stmt))
                     func.returns.append(stmt)
                     # start_pos is the one of the return statement
                     stmt.start_pos = s
@@ -585,7 +594,8 @@ class Parser(object):
                 if stmt is not None and tok_str == 'global':
                     for t in stmt._token_list:
                         if isinstance(t, pr.Name):
-                            # Add the global to the top module, it counts there.
+                            # Add the global to the top module, it counts
+                            # there.
                             self.module.add_global(t)
             # decorator
             elif tok_str == '@':
@@ -614,6 +624,7 @@ class Parser(object):
 
 
 class PushBackTokenizer(object):
+
     def __init__(self, tokenizer):
         self._tokenizer = tokenizer
         self._push_backs = []

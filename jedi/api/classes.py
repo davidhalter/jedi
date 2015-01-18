@@ -6,7 +6,7 @@ the interesting information about completion and goto operations.
 import warnings
 from itertools import chain
 
-from jedi._compatibility import next, unicode, use_metaclass
+from jedi._compatibility import unicode, use_metaclass
 from jedi import settings
 from jedi import common
 from jedi.parser import representation as pr
@@ -358,7 +358,8 @@ class BaseDefinition(object):
         if isinstance(self._definition, compiled.CompiledObject):
             non_flow = self._definition.parent
         else:
-            scope = self._definition.get_parent_until(pr.IsScope, include_current=False)
+            scope = self._definition.get_parent_until(
+                pr.IsScope, include_current=False)
             non_flow = scope.get_parent_until(pr.Flow, reverse=True)
         return Definition(self._evaluator, non_flow)
 
@@ -367,12 +368,15 @@ class BaseDefinition(object):
 
 
 class Completion(BaseDefinition):
+
     """
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
+
     def __init__(self, evaluator, name, needs_dot, like_name_length, base):
-        super(Completion, self).__init__(evaluator, name.parent, name.start_pos)
+        super(Completion, self).__init__(
+            evaluator, name.parent, name.start_pos)
 
         self._name = name
         self._needs_dot = needs_dot
@@ -479,7 +483,8 @@ class Completion(BaseDefinition):
             if len(i.import_path) > 1 or not fast:
                 followed = self._follow_statements_imports()
                 if followed:
-                    # TODO: Use all of the followed objects as input to Documentation.
+                    # TODO: Use all of the followed objects as input to
+                    # Documentation.
                     definition = followed[0]
 
         if raw:
@@ -535,12 +540,15 @@ class Completion(BaseDefinition):
 
 
 class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
+
     """
     *Definition* objects are returned from :meth:`api.Script.goto_assignments`
     or :meth:`api.Script.goto_definitions`.
     """
+
     def __init__(self, evaluator, definition):
-        super(Definition, self).__init__(evaluator, definition, definition.start_pos)
+        super(Definition, self).__init__(
+            evaluator, definition, definition.start_pos)
 
     @property
     @underscore_memoization
@@ -660,7 +668,8 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         """
         defs = self._follow_statements_imports()
         # For now we don't want base classes or evaluate decorators.
-        defs = [d.base if isinstance(d, (er.Class, er.Function)) else d for d in defs]
+        defs = [d.base if isinstance(
+            d, (er.Class, er.Function)) else d for d in defs]
         iterable = (defined_names(self._evaluator, d) for d in defs)
         iterable = list(iterable)
         return list(chain.from_iterable(iterable))
@@ -679,11 +688,13 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
 
 
 class CallSignature(Definition):
+
     """
     `CallSignature` objects is the return value of `Script.function_definition`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
+
     def __init__(self, evaluator, executable, call, index, key_name):
         super(CallSignature, self).__init__(evaluator, executable)
         self._index = index
@@ -752,9 +763,11 @@ class CallSignature(Definition):
 
 
 class _Param(Definition):
+
     """
     Just here for backwards compatibility.
     """
+
     def get_code(self):
         """
         .. deprecated:: 0.8.0
@@ -768,10 +781,12 @@ class _Param(Definition):
 
 
 class _Help(object):
+
     """
     Temporary implementation, will be used as `Script.help() or something in
     the future.
     """
+
     def __init__(self, definition):
         self._definition = definition
 
