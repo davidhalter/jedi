@@ -1,3 +1,4 @@
+import glob
 import os
 import sys
 
@@ -16,16 +17,25 @@ def get_sys_path():
         if not venv:
             return
         venv = os.path.abspath(venv)
-        if os.name == 'nt':
-            p = os.path.join(venv, 'lib', 'site-packages')
-        else:
-            p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
-                             'site-packages')
+        p = _get_venv_sitepackages(venv)
         if p not in sys_path:
             sys_path.insert(0, p)
 
+        # Add all egg-links from the virtualenv.
+        for egg_link in glob.glob(os.path.join(p, '*.egg-link')):
+            with open(egg_link) as fd:
+                sys_path.insert(0, fd.readline().rstrip())
+
     check_virtual_env(sys.path)
     return [p for p in sys.path if p != ""]
+
+def _get_venv_sitepackages(venv):
+    if os.name == 'nt':
+        p = os.path.join(venv, 'lib', 'site-packages')
+    else:
+        p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
+                         'site-packages')
+    return p
 
 
 def _execute_code(module_path, code):
