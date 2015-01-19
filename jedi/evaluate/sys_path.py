@@ -1,3 +1,4 @@
+import glob
 import os
 import sys
 
@@ -23,6 +24,10 @@ def get_sys_path():
                              'site-packages')
         if p not in sys_path:
             sys_path.insert(0, p)
+
+        # Add all egg-links from the virtualenv.
+        for egg_link in glob.glob(os.path.join(p, '*.egg-link')):
+            sys_path.insert(0, open(egg_link).readline().rstrip())
 
     check_virtual_env(sys.path)
     return [p for p in sys.path if p != ""]
