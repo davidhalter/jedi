@@ -95,6 +95,7 @@ class ParserNode(object):
         self.code = None
         self.hash = None
         self.parser = None
+        self._content_scope = self._fast_module
 
     def __repr__(self):
         if self.parser is None:
@@ -147,13 +148,16 @@ class ParserNode(object):
         nodes should be added anymore.
         """
         print('CLOSE NODE', self.parent, self.node_children)
-        print(self.parser.module.names_dict, [p.parser.module.names_dict for p in
-        self.node_children])
+        if self.parser: print(self.parser.module.names_dict, [p.parser.module.names_dict for p in
+    self.node_children])
         # We only need to replace the dict if multiple dictionaries are used:
         if self.node_children:
             dcts = [n.parser.module.names_dict for n in self.node_children]
-            dct = MergedNamesDict([self._names_dict_scope.names_dict] + dcts)
-            self._content_scope.names_dict = dct
+            if self.parser is not None:
+                # The first Parser node contains all the others and is
+                # typically empty.
+                dcts.insert(0, self._names_dict_scope.names_dict)
+            self._content_scope.names_dict = MergedNamesDict(dcts)
 
     def parent_until_indent(self, indent=None):
         if indent is None or self._indent >= indent and self.parent:
@@ -183,18 +187,6 @@ class ParserNode(object):
         return el.start_pos[1]
 
     def _set_items(self, parser, set_parent=False):
-        # insert parser objects into current structure
-        scope = self._content_scope
-        if set_parent:
-            for child in parser.module.children:
-                child.parent = scope
-                scope.children.append(child)
-                print('\t\t', scope, child)
-                """
-                if isinstance(i, (pr.Function, pr.Class)):
-                    for d in i.decorators:
-                        d.parent = scope
-                """
         # TODO global_vars ? is_generator ?
         """
         cur = self
@@ -212,10 +204,24 @@ class ParserNode(object):
         # fit, all the start_pos values will be wrong.
         m = node.parser.module
         m.line_offset += line_offset + 1 - m.start_pos[0]
+        self._fast_module.modules.append(m)
 
-        self.node_children.append(node)
-        self._set_items(node.parser, set_parent=node.parent == self)
         node.node_children = []
+        self.node_children.append(node)
+
+        # Insert parser objects into current structure. We only need to set the
+        # parents in a good way.
+        if True or node.parent != self:  # TODO remove true
+            scope = self._content_scope
+            for child in m.children:
+                child.parent = scope
+                scope.children.append(child)
+                #print('\t\t', scope, child)
+                """
+                if isinstance(i, (pr.Function, pr.Class)):
+                    for d in i.decorators:
+                        d.parent = scope
+                """
 
         """
         scope = self.content_scope
@@ -252,22 +258,14 @@ class FastParser(use_metaclass(CachedFastParser)):
         # set values like `pr.Module`.
         self._grammar = grammar
         self.module_path = module_path
-
-        self._reset_caches()
-
-        try:
-            self._parse(code)
-        except:
-            # FastParser is cached, be careful with exceptions
-            self._reset_caches()
-            raise
+        self.update(code)
 
     def _reset_caches(self):
         self.module = FastModule()
         self.current_node = ParserNode(self.module)
 
     def update(self, code):
-        self.reset_caches()
+        self._reset_caches()
 
         try:
             self._parse(code)
@@ -343,12 +341,11 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         line_offset = 0
         start = 0
-        p = None
         is_first = True
         nodes = self.current_node.all_nodes()
 
         for code_part in self._split_parts(code):
-            if is_first or line_offset + 1 == p.module.end_pos[0]:
+            if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
                 print(repr(code_part))
 
                 indent = len(code_part) - len(code_part.lstrip('\t '))
@@ -395,12 +392,16 @@ class FastParser(use_metaclass(CachedFastParser)):
             start += len(code_part) + 1  # +1 for newline
 
         # Now that the for loop is finished, we still want to close all nodes.
+        self.current_node = self.current_node.parent_until_indent()
+        self.current_node.close()
+        """
         if self.parsers:
             self.current_node = self.current_node.parent_until_indent()
             self.current_node.close()
         else:
             raise NotImplementedError
             self.parsers.append(empty_parser_node())
+"""
 
         """ TODO used?
         self.module.end_pos = self.parsers[-1].module.end_pos
