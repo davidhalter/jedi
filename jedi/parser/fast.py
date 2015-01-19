@@ -20,9 +20,9 @@ from jedi.parser.tokenize import (source_tokens, FLOWS, NEWLINE, COMMENT,
 class FastModule(pr.Module, pr.Simple):
     type = 'file_input'
 
-    def __init__(self, parsers):
+    def __init__(self):
         super(FastModule, self).__init__([])
-        self.parsers = parsers
+        self.modules = []
         self.reset_caches()
 
     def reset_caches(self):
@@ -35,21 +35,21 @@ class FastModule(pr.Module, pr.Simple):
         if name.startswith('__'):
             raise AttributeError('Not available!')
         else:
-            return getattr(self.parsers[0].module, name)
+            return getattr(self.modules[0], name)
 
     @property
     @cache.underscore_memoization
     def used_names(self):
         """
         used_names = {}
-        for p in self.parsers:
-            for k, statement_set in p.module.used_names.items():
+        for m in self.modules:
+            for k, statement_set in m.used_names.items():
                 if k in used_names:
                     used_names[k] |= statement_set
                 else:
                     used_names[k] = set(statement_set)
         """
-        return MergedNamesDict([p.module.used_names for p in self.parsers])
+        return MergedNamesDict([m.used_names for m in self.modules])
 
     def __repr__(self):
         return "<fast.%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -87,16 +87,23 @@ class CachedFastParser(type):
 
 
 class ParserNode(object):
-    def __init__(self, fast_module, parser, code, parent=None):
+    def __init__(self, fast_module, parent=None):
         self._fast_module = fast_module
         self.parent = parent
 
-        self.parser_children = []
-        # must be created before new things are added to it.
-        self.save_contents(parser, code)
+        self.node_children = []
+        self.code = None
+        self.hash = None
+        self.parser = None
 
-    def save_contents(self, parser, code):
-        print('SAVE')
+    def __repr__(self):
+        if self.parser is None:
+            return '<%s: empty>' % type(self).__name__
+
+        module = self.parser.module
+        return '<%s: %s-%s>' % (type(self).__name__, module.start_pos, module.end_pos)
+
+    def set_parser(self, parser, code):
         self.code = code
         self.hash = hash(code)
         self.parser = parser
@@ -116,8 +123,7 @@ class ParserNode(object):
         self._is_generator = scope.is_generator
         """
 
-        self.old_children = self.parser_children
-        self.parser_children = []
+        self.node_children = []
 
     def reset_contents(self):
         """
@@ -133,34 +139,31 @@ class ParserNode(object):
             # they make no sense.
             self.parser.module.global_vars = []
         """
-
-        for c in self.parser_children:
-            c.reset_contents()
+        # TODO REMOVE
 
     def close(self):
         """
         Closes the current parser node. This means that after this no further
         nodes should be added anymore.
         """
-        print('CLOSE NODE', self.parent, self.parser_children)
+        print('CLOSE NODE', self.parent, self.node_children)
         print(self.parser.module.names_dict, [p.parser.module.names_dict for p in
-        self.parser_children])
+        self.node_children])
         # We only need to replace the dict if multiple dictionaries are used:
-        if self.parser_children:
-            dcts = [n.parser.module.names_dict for n in self.parser_children]
+        if self.node_children:
+            dcts = [n.parser.module.names_dict for n in self.node_children]
             dct = MergedNamesDict([self._names_dict_scope.names_dict] + dcts)
             self._content_scope.names_dict = dct
 
     def parent_until_indent(self, indent=None):
-        if indent is None or self.indent >= indent and self.parent:
-            self.old_children = []
+        if indent is None or self._indent >= indent and self.parent:
             if self.parent is not None:
                 self.close()
                 return self.parent.parent_until_indent(indent)
         return self
 
     @property
-    def indent(self):
+    def _indent(self):
         if not self.parent:
             return 0
         module = self.parser.module
@@ -202,13 +205,17 @@ class ParserNode(object):
         scope.is_generator |= parser.module.is_generator
         """
 
-    def add_node(self, node, set_parent=False):
+    def add_node(self, node, line_offset):
         """Adding a node means adding a node that was already added earlier"""
         print('ADD')
-        self.parser_children.append(node)
-        self._set_items(node.parser, set_parent=set_parent)
-        node.old_children = node.parser_children  # TODO potential memory leak?
-        node.parser_children = []
+        # Changing the line offsets is very important, because if they don't
+        # fit, all the start_pos values will be wrong.
+        m = node.parser.module
+        m.line_offset += line_offset + 1 - m.start_pos[0]
+
+        self.node_children.append(node)
+        self._set_items(node.parser, set_parent=node.parent == self)
+        node.node_children = []
 
         """
         scope = self.content_scope
@@ -222,8 +229,19 @@ class ParserNode(object):
         return node
 
     def add_parser(self, parser, code):
+        # TODO REMOVE
+        raise NotImplementedError
         print('add parser')
         return self.add_node(ParserNode(self._fast_module, parser, code, self), True)
+
+    def all_nodes(self):
+        """
+        Returns all nodes including nested ones.
+        """
+        yield self
+        for n in self.node_children:
+            for y in n.all_nodes():
+                yield y
 
 
 class FastParser(use_metaclass(CachedFastParser)):
@@ -234,19 +252,19 @@ class FastParser(use_metaclass(CachedFastParser)):
         # set values like `pr.Module`.
         self._grammar = grammar
         self.module_path = module_path
-        print(module_path)
 
-        self.current_node = None
-        self.parsers = []
-        self.module = FastModule(self.parsers)
-        self.reset_caches()
+        self._reset_caches()
 
         try:
             self._parse(code)
         except:
             # FastParser is cached, be careful with exceptions
-            del self.parsers[:]
+            self._reset_caches()
             raise
+
+    def _reset_caches(self):
+        self.module = FastModule()
+        self.current_node = ParserNode(self.module)
 
     def update(self, code):
         self.reset_caches()
@@ -255,7 +273,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             self._parse(code)
         except:
             # FastParser is cached, be careful with exceptions
-            del self.parsers[:]
+            self._reset_caches()
             raise
 
     def _split_parts(self, code):
@@ -320,57 +338,45 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def _parse(self, code):
         """ :type code: str """
-        def empty_parser():
-            new, temp = self._get_parser(unicode(''), unicode(''), 0, [], False)
-            return new
-
-        del self.parsers[:]
+        def empty_parser_node():
+            return self._get_node(unicode(''), unicode(''), 0, [], False)
 
         line_offset = 0
         start = 0
         p = None
         is_first = True
+        nodes = self.current_node.all_nodes()
+
         for code_part in self._split_parts(code):
             if is_first or line_offset + 1 == p.module.end_pos[0]:
                 print(repr(code_part))
+
                 indent = len(code_part) - len(code_part.lstrip('\t '))
-                if is_first and self.current_node is not None:
-                    nodes = [self.current_node]
-                else:
-                    nodes = []
-                if self.current_node is not None:
-                    self.current_node = self.current_node.parent_until_indent(indent)
-                    nodes += self.current_node.old_children
+                self.current_node = self.current_node.parent_until_indent(indent)
 
                 # check if code_part has already been parsed
                 # print '#'*45,line_offset, p and p.module.end_pos, '\n', code_part
-                p, node = self._get_parser(code_part, code[start:],
-                                           line_offset, nodes, not is_first)
-                print('HmmmmA', p.module.names_dict)
+                self.current_node = self._get_node(code_part, code[start:],
+                                                   line_offset, nodes, not is_first)
+                print('HmmmmA', self.current_node.parser.module.names_dict)
 
-                # The actual used code_part is different from the given code
-                # part, because of docstrings for example there's a chance that
-                # splits are wrong.
-                used_lines = self._lines[line_offset:p.module.end_pos[0]]
-                code_part_actually_used = '\n'.join(used_lines)
-
-                if is_first and p.module.subscopes:
+                if is_first and self.current_node.parser.module.subscopes:
                     print('NOXXXX')
-                    # special case, we cannot use a function subscope as a
+                    raise NotImplementedError
+                    # Special case, we cannot use a function subscope as a
                     # base scope, subscopes would save all the other contents
-                    new = empty_parser()
-                    if self.current_node is None:
-                        self.current_node = ParserNode(self.module, new, '')
-                    else:
-                        self.current_node.save_contents(new, '')
+                    new = empty_parser_node()  # TODO should be node = 
+                    self.current_node.set_parser(new, '')
                     self.parsers.append(new)
                     is_first = False
 
+
+                """
                 if is_first:
                     if self.current_node is None:
                         self.current_node = ParserNode(self.module, p, code_part_actually_used)
                     else:
-                        self.current_node.save_contents(p, code_part_actually_used)
+                        pass
                 else:
                     if node is None:
                         self.current_node = \
@@ -379,6 +385,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                         self.current_node = self.current_node.add_node(node)
 
                 self.parsers.append(p)
+                """
 
                 is_first = False
             #else:
@@ -387,11 +394,13 @@ class FastParser(use_metaclass(CachedFastParser)):
             line_offset += code_part.count('\n') + 1
             start += len(code_part) + 1  # +1 for newline
 
+        # Now that the for loop is finished, we still want to close all nodes.
         if self.parsers:
             self.current_node = self.current_node.parent_until_indent()
             self.current_node.close()
         else:
-            self.parsers.append(empty_parser())
+            raise NotImplementedError
+            self.parsers.append(empty_parser_node())
 
         """ TODO used?
         self.module.end_pos = self.parsers[-1].module.end_pos
@@ -399,30 +408,33 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         # print(self.parsers[0].module.get_code())
 
-    def _get_parser(self, code, parser_code, line_offset, nodes, no_docstr):
+    def _get_node(self, code, parser_code, line_offset, nodes, no_docstr):
+        """
+        Side effect: Alters the list of nodes.
+        """
         h = hash(code)
-        for index, node in enumerate(nodes):
+        for index, node in enumerate(list(nodes)):
+            print('EQ', node, repr(node.code), repr(code))
             if node.hash == h and node.code == code:
-                if node != self.current_node:
-                    offset = int(nodes[0] == self.current_node)
-                    self.current_node.old_children.pop(index - offset)
-                p = node.parser
-                m = p.module
-                m.line_offset += line_offset + 1 - m.start_pos[0]
+                nodes.remove(node)
                 break
         else:
+            print('ACTUALLY PARSING')
             tokenizer = FastTokenizer(parser_code, line_offset)
             p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
             #p.module.parent = self.module  # With the new parser this is not
                                             # necessary anymore?
-            node = None
+            node = ParserNode(self.module, self.current_node)
 
-        return p, node
+            # The actual used code_part is different from the given code
+            # part, because of docstrings for example there's a chance that
+            # splits are wrong.
+            used_lines = self._lines[line_offset:p.module.end_pos[0] - 1]
+            code_part_actually_used = '\n'.join(used_lines)
+            node.set_parser(p, code_part_actually_used)
 
-    def reset_caches(self):
-        self.module.reset_caches()
-        if self.current_node is not None:
-            self.current_node.reset_contents()
+        self.current_node.add_node(node, line_offset)
+        return node
 
 
 class FastTokenizer(object):

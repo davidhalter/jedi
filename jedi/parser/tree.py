@@ -609,9 +609,6 @@ class SubModule(Scope, Module):
         # this may be changed depending on fast_parser
         self.line_offset = 0
 
-        if 0:
-            self.use_as_parent = top_module or self
-
     def set_global_names(self, names):
         """
         Global means in these context a function (subscope) which has a global
