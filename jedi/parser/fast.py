@@ -26,10 +26,7 @@ class FastModule(pr.Module, pr.Simple):
         self.reset_caches()
 
     def reset_caches(self):
-        """ This module does a whole lot of caching, because it uses different
-        parsers. """
-        with common.ignored(AttributeError):
-            del self._used_names
+        self.modules = []
 
     def __getattr__(self, name):
         if name.startswith('__'):
@@ -58,15 +55,15 @@ class FastModule(pr.Module, pr.Simple):
 
 class MergedNamesDict(object):
     def __init__(self, dicts):
-        self._dicts = dicts
+        self.dicts = dicts
 
     def __getitem__(self, value):
-        print(value, self._dicts)
-        return list(chain.from_iterable(dct.get(value, []) for dct in self._dicts))
+        print(value, self.dicts)
+        return list(chain.from_iterable(dct.get(value, []) for dct in self.dicts))
 
     def values(self):
         lst = []
-        for dct in self._dicts:
+        for dct in self.dicts:
             lst.append(dct.values())
         return lst
 
@@ -126,7 +123,22 @@ class ParserNode(object):
 
         self.node_children = []
 
+    def reset_node(self):
+        """
+        Removes changes that were applied in this class.
+        """
+        nd_scope = self._names_dict_scope
+        try:
+            # This works if it's a MergedNamesDict.
+            # We are correcting it, because the MergedNamesDicts are artificial
+            # and can change after closing a node.
+            print('module.names_dict', nd_scope.names_dict)
+            nd_scope.names_dict = nd_scope.names_dict.dicts[0]
+        except AttributeError:
+            pass
+
     def reset_contents(self):
+        raise NotImplementedError
         """
         scope = self._content_scope
         for key, c in self._contents.items():
@@ -157,6 +169,7 @@ class ParserNode(object):
                 # The first Parser node contains all the others and is
                 # typically empty.
                 dcts.insert(0, self._names_dict_scope.names_dict)
+            print('DCTS', dcts)
             self._content_scope.names_dict = MergedNamesDict(dcts)
 
     def parent_until_indent(self, indent=None):
@@ -258,6 +271,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         # set values like `pr.Module`.
         self._grammar = grammar
         self.module_path = module_path
+        self._reset_caches()
         self.update(code)
 
     def _reset_caches(self):
@@ -265,8 +279,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.current_node = ParserNode(self.module)
 
     def update(self, code):
-        self._reset_caches()
-
+        self.module.reset_caches()
         try:
             self._parse(code)
         except:
@@ -342,7 +355,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         line_offset = 0
         start = 0
         is_first = True
-        nodes = self.current_node.all_nodes()
+        nodes = list(self.current_node.all_nodes())
 
         for code_part in self._split_parts(code):
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
@@ -417,20 +430,25 @@ class FastParser(use_metaclass(CachedFastParser)):
         for index, node in enumerate(list(nodes)):
             print('EQ', node, repr(node.code), repr(code))
             if node.hash == h and node.code == code:
+                node.reset_node()
                 nodes.remove(node)
                 break
         else:
-            print('ACTUALLY PARSING')
             tokenizer = FastTokenizer(parser_code, line_offset)
             p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
             #p.module.parent = self.module  # With the new parser this is not
                                             # necessary anymore?
             node = ParserNode(self.module, self.current_node)
 
-            # The actual used code_part is different from the given code
-            # part, because of docstrings for example there's a chance that
-            # splits are wrong.
-            used_lines = self._lines[line_offset:p.module.end_pos[0] - 1]
+            end = p.module.end_pos[0]
+            print('\nACTUALLY PARSING\n', end, len(self._lines))
+            if len(self._lines) != end:
+                # The actual used code_part is different from the given code
+                # part, because of docstrings for example there's a chance that
+                # splits are wrong. Somehow it's different for the end
+                # position.
+                end -= 1
+            used_lines = self._lines[line_offset:end]
             code_part_actually_used = '\n'.join(used_lines)
             node.set_parser(p, code_part_actually_used)
 
