@@ -8,7 +8,6 @@ from itertools import chain
 
 from jedi._compatibility import use_metaclass, unicode
 from jedi import settings
-from jedi import common
 from jedi.parser import Parser
 from jedi.parser import tree as pr
 from jedi.parser import tokenize
@@ -24,6 +23,7 @@ class FastModule(pr.Module, pr.Simple):
         super(FastModule, self).__init__([])
         self.modules = []
         self.reset_caches()
+        self.names_dict = {}
 
     def reset_caches(self):
         self.modules = []
@@ -64,7 +64,7 @@ class MergedNamesDict(object):
     def values(self):
         lst = []
         for dct in self.dicts:
-            lst.append(dct.values())
+            lst += dct.values()
         return lst
 
 
@@ -113,6 +113,9 @@ class ParserNode(object):
             self._content_scope = self._fast_module
             self._names_dict_scope = parser.module
 
+        # We need to be able to reset the original children of a parser.
+        self._old_children = list(self._content_scope.children)
+
         """
         scope = self._content_scope
         self._contents = {}
@@ -128,6 +131,7 @@ class ParserNode(object):
         Removes changes that were applied in this class.
         """
         nd_scope = self._names_dict_scope
+        self._content_scope.children = list(self._old_children)
         try:
             # This works if it's a MergedNamesDict.
             # We are correcting it, because the MergedNamesDicts are artificial
@@ -223,18 +227,17 @@ class ParserNode(object):
         self.node_children.append(node)
 
         # Insert parser objects into current structure. We only need to set the
-        # parents in a good way.
-        if True or node.parent != self:  # TODO remove true
-            scope = self._content_scope
-            for child in m.children:
-                child.parent = scope
-                scope.children.append(child)
-                #print('\t\t', scope, child)
-                """
-                if isinstance(i, (pr.Function, pr.Class)):
-                    for d in i.decorators:
-                        d.parent = scope
-                """
+        # parents and children in a good way.
+        scope = self._content_scope
+        for child in m.children:
+            child.parent = scope
+            scope.children.append(child)
+            #print('\t\t', scope, child)
+            """
+            if isinstance(i, (pr.Function, pr.Class)):
+                for d in i.decorators:
+                    d.parent = scope
+            """
 
         """
         scope = self.content_scope
@@ -253,13 +256,13 @@ class ParserNode(object):
         print('add parser')
         return self.add_node(ParserNode(self._fast_module, parser, code, self), True)
 
-    def all_nodes(self):
+    def all_sub_nodes(self):
         """
         Returns all nodes including nested ones.
         """
-        yield self
         for n in self.node_children:
-            for y in n.all_nodes():
+            yield n
+            for y in n.all_sub_nodes():
                 yield y
 
 
@@ -277,9 +280,11 @@ class FastParser(use_metaclass(CachedFastParser)):
     def _reset_caches(self):
         self.module = FastModule()
         self.current_node = ParserNode(self.module)
+        self.current_node.set_parser(self, '')
 
     def update(self, code):
         self.module.reset_caches()
+        self.current_node.reset_node()
         try:
             self._parse(code)
         except:
@@ -355,7 +360,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         line_offset = 0
         start = 0
         is_first = True
-        nodes = list(self.current_node.all_nodes())
+        nodes = list(self.current_node.all_sub_nodes())
 
         for code_part in self._split_parts(code):
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
@@ -370,7 +375,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                                                    line_offset, nodes, not is_first)
                 print('HmmmmA', self.current_node.parser.module.names_dict)
 
-                if is_first and self.current_node.parser.module.subscopes:
+                if False and is_first and self.current_node.parser.module.subscopes:
                     print('NOXXXX')
                     raise NotImplementedError
                     # Special case, we cannot use a function subscope as a
