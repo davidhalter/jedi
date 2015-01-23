@@ -78,7 +78,9 @@ with_stmt: 'with' with_item (',' with_item)*  ':' suite
 with_item: test ['as' expr]
 # NB compile.c makes sure that the default except clause is last
 except_clause: 'except' [test ['as' NAME]]
-suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
+# Edit by David Halter: The stmt is now optional. This reflects how Jedi allows
+# classes and functions to be empty, which is beneficial for autocompletion.
+suite: simple_stmt | NEWLINE INDENT stmt* DEDENT
 
 test: or_test ['if' or_test 'else' test] | lambdef
 test_nocond: or_test | lambdef_nocond

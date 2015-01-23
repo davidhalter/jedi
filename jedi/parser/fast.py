@@ -12,7 +12,7 @@ from jedi.parser import Parser
 from jedi.parser import tree as pr
 from jedi.parser import tokenize
 from jedi import cache
-from jedi.parser.tokenize import (source_tokens, FLOWS, NEWLINE, COMMENT,
+from jedi.parser.tokenize import (source_tokens, FLOWS, NEWLINE,
                                   ENDMARKER, INDENT, DEDENT)
 
 
@@ -48,6 +48,13 @@ class FastModule(pr.Module, pr.Simple):
         """
         return MergedNamesDict([m.used_names for m in self.modules])
 
+    def _search_in_scope(self, typ):
+        return pr.Scope._search_in_scope(self, typ)
+
+    @property
+    def subscopes(self):
+        return self._search_in_scope(pr.Scope)
+
     def __repr__(self):
         return "<fast.%s: %s@%s-%s>" % (type(self).__name__, self.name,
                                         self.start_pos[0], self.end_pos[0])
@@ -57,8 +64,10 @@ class MergedNamesDict(object):
     def __init__(self, dicts):
         self.dicts = dicts
 
+    def __iter__(self):
+        return iter(set(key for dct in self.dicts for key in dct))
+
     def __getitem__(self, value):
-        print(value, self.dicts)
         return list(chain.from_iterable(dct.get(value, []) for dct in self.dicts))
 
     def values(self):
@@ -88,7 +97,7 @@ class ParserNode(object):
         self._fast_module = fast_module
         self.parent = parent
 
-        self.node_children = []
+        self._node_children = []
         self.code = None
         self.hash = None
         self.parser = None
@@ -124,20 +133,20 @@ class ParserNode(object):
         self._is_generator = scope.is_generator
         """
 
-        self.node_children = []
+        self._node_children = []
 
     def reset_node(self):
         """
         Removes changes that were applied in this class.
         """
-        nd_scope = self._names_dict_scope
-        self._content_scope.children = list(self._old_children)
+        self._node_children = []
+        scope = self._content_scope
+        scope.children = list(self._old_children)
         try:
             # This works if it's a MergedNamesDict.
             # We are correcting it, because the MergedNamesDicts are artificial
             # and can change after closing a node.
-            print('module.names_dict', nd_scope.names_dict)
-            nd_scope.names_dict = nd_scope.names_dict.dicts[0]
+            scope.names_dict = scope.names_dict.dicts[0]
         except AttributeError:
             pass
 
@@ -163,17 +172,17 @@ class ParserNode(object):
         Closes the current parser node. This means that after this no further
         nodes should be added anymore.
         """
-        print('CLOSE NODE', self.parent, self.node_children)
+        print('CLOSE NODE', self.parent, self._node_children)
         if self.parser: print(self.parser.module.names_dict, [p.parser.module.names_dict for p in
-    self.node_children])
+    self._node_children])
         # We only need to replace the dict if multiple dictionaries are used:
-        if self.node_children:
-            dcts = [n.parser.module.names_dict for n in self.node_children]
+        if self._node_children:
+            dcts = [n.parser.module.names_dict for n in self._node_children]
             if self.parser is not None:
                 # The first Parser node contains all the others and is
                 # typically empty.
                 dcts.insert(0, self._names_dict_scope.names_dict)
-            print('DCTS', dcts)
+            print('DCTS', self.parser, dcts, self._node_children)
             self._content_scope.names_dict = MergedNamesDict(dcts)
 
     def parent_until_indent(self, indent=None):
@@ -200,7 +209,7 @@ class ParserNode(object):
                     try:
                         el = [r for r in module.returns if r is not None][0]
                     except IndexError:
-                        return self.parent.indent + 1
+                        el = module.children[0]
         return el.start_pos[1]
 
     def _set_items(self, parser, set_parent=False):
@@ -216,15 +225,13 @@ class ParserNode(object):
 
     def add_node(self, node, line_offset):
         """Adding a node means adding a node that was already added earlier"""
-        print('ADD')
         # Changing the line offsets is very important, because if they don't
         # fit, all the start_pos values will be wrong.
         m = node.parser.module
         m.line_offset += line_offset + 1 - m.start_pos[0]
         self._fast_module.modules.append(m)
 
-        node.node_children = []
-        self.node_children.append(node)
+        self._node_children.append(node)
 
         # Insert parser objects into current structure. We only need to set the
         # parents and children in a good way.
@@ -260,7 +267,7 @@ class ParserNode(object):
         """
         Returns all nodes including nested ones.
         """
-        for n in self.node_children:
+        for n in self._node_children:
             yield n
             for y in n.all_sub_nodes():
                 yield y
@@ -373,7 +380,6 @@ class FastParser(use_metaclass(CachedFastParser)):
                 # print '#'*45,line_offset, p and p.module.end_pos, '\n', code_part
                 self.current_node = self._get_node(code_part, code[start:],
                                                    line_offset, nodes, not is_first)
-                print('HmmmmA', self.current_node.parser.module.names_dict)
 
                 if False and is_first and self.current_node.parser.module.subscopes:
                     print('NOXXXX')
@@ -446,7 +452,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             node = ParserNode(self.module, self.current_node)
 
             end = p.module.end_pos[0]
-            print('\nACTUALLY PARSING\n', end, len(self._lines))
+            print('\nACTUALLY PARSING', end, len(self._lines))
             if len(self._lines) != end:
                 # The actual used code_part is different from the given code
                 # part, because of docstrings for example there's a chance that
@@ -482,7 +488,6 @@ class FastTokenizer(object):
         self._returned_endmarker = False
 
     def __iter__(self):
-        print('NEW')
         return self
 
     def next(self):
@@ -497,6 +502,7 @@ class FastTokenizer(object):
         if typ == ENDMARKER:
             self._closed = True
             self._returned_endmarker = True
+            return current
 
         self.previous = self.current
         self.current = current
@@ -511,19 +517,22 @@ class FastTokenizer(object):
             self._indent_counter -= 1
             return current
 
-        # Check for NEWLINE with a valid token here, which symbolizes the
-        # indent.
-        # Ignore comments/newlines, irrelevant for indentation.
-        if self.previous[0] in (None, NEWLINE, DEDENT) \
-                and typ not in (COMMENT, NEWLINE):
-            # print c, tok_name[c[0]]
+        if self.previous[0] == DEDENT and not self._in_flow:
+            print('w', self.current, self.previous, self._first_stmt)
+            self._first_stmt = False
+            return self._close()
+        elif self.previous[0] in (None, NEWLINE, INDENT):
+            # Check for NEWLINE, which symbolizes the indent.
+            print('X', repr(value), tokenize.tok_name[typ])
             indent = start_pos[1]
+            print(indent, self._parser_indent)
             if self._parentheses_level:
                 # parentheses ignore the indentation rules.
                 pass
             elif indent < self._parser_indent:  # -> dedent
                 self._parser_indent = indent
                 self._new_indent = False
+                print(self._in_flow, indent, self._old_parser_indent)
                 if not self._in_flow or indent < self._old_parser_indent:
                     return self._close()
 
@@ -562,7 +571,7 @@ class FastTokenizer(object):
         if self._first_stmt:
             # Continue like nothing has happened, because we want to enter
             # the first class/function.
-            self._first_stmt = True
+            self._first_stmt = False
             print('NOOO', self.current)
             return self.current
         else:
@@ -577,6 +586,7 @@ class FastTokenizer(object):
             return tokenize.DEDENT, '', start_pos, ''
         elif not self._returned_endmarker:
             self._returned_endmarker = True
-            return tokenize.ENDMARKER, '', start_pos, ''
+            print('end')
+            return ENDMARKER, '', start_pos, ''
         else:
             raise StopIteration

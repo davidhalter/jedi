@@ -254,7 +254,7 @@ def generate_tokens(readline, line_offset=0):
                     while True:
                         indent = indents.pop()
                         if indent > start:
-                            yield DEDENT, '', (lnum, 0), ''
+                            yield DEDENT, '', spos, ''
                         else:
                             indents.append(indent)
                             break
@@ -269,5 +269,5 @@ def generate_tokens(readline, line_offset=0):
                 yield OP, token, spos, prefix
 
     for indent in indents[1:]:
-        yield DEDENT, '', (lnum, 0), ''
-    yield ENDMARKER, '', (lnum, 0), prefix
+        yield DEDENT, '', spos, ''
+    yield ENDMARKER, '', spos, prefix

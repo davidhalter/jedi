@@ -74,8 +74,8 @@ def test_change_and_undo():
     fp(func_before + 'a')
     fp(func_before + 'b')
     fp(func_before + 'a')
+    fp(func_before + 'a')
 
-    cache.parser_cache.pop(None, None)
     fp('a')
     fp('b')
     fp('a')

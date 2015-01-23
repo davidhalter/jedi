@@ -23,7 +23,7 @@ class ParseError(Exception):
 
     def __init__(self, msg, type, value, start_pos):
         Exception.__init__(self, "%s: type=%r, value=%r, start_pos=%r" %
-                           (msg, type, value, start_pos))
+                           (msg, tokenize.tok_name[type], value, start_pos))
         self.msg = msg
         self.type = type
         self.value = value
