@@ -93,9 +93,9 @@ class CachedFastParser(type):
 
 
 class ParserNode(object):
-    def __init__(self, fast_module, parent=None):
+    def __init__(self, fast_module):
         self._fast_module = fast_module
-        self.parent = parent
+        self.parent = None
 
         self._node_children = []
         self.code = None
@@ -104,11 +104,12 @@ class ParserNode(object):
         self._content_scope = self._fast_module
 
     def __repr__(self):
-        if self.parser is None:
-            return '<%s: empty>' % type(self).__name__
-
         module = self.parser.module
-        return '<%s: %s-%s>' % (type(self).__name__, module.start_pos, module.end_pos)
+        try:
+            return '<%s: %s-%s>' % (type(self).__name__, module.start_pos, module.end_pos)
+        except IndexError:
+            # There's no module yet.
+            return '<%s: empty>' % type(self).__name__
 
     def set_parser(self, parser, code):
         self.code = code
@@ -119,7 +120,7 @@ class ParserNode(object):
             # With fast_parser we have either 1 subscope or only statements.
             self._content_scope = self._names_dict_scope = parser.module.subscopes[0]
         except IndexError:
-            self._content_scope = self._fast_module
+            self._content_scope = parser.module
             self._names_dict_scope = parser.module
 
         # We need to be able to reset the original children of a parser.
@@ -142,6 +143,7 @@ class ParserNode(object):
         self._node_children = []
         scope = self._content_scope
         scope.children = list(self._old_children)
+        print('reset', scope.children)
         try:
             # This works if it's a MergedNamesDict.
             # We are correcting it, because the MergedNamesDicts are artificial
@@ -172,7 +174,7 @@ class ParserNode(object):
         Closes the current parser node. This means that after this no further
         nodes should be added anymore.
         """
-        print('CLOSE NODE', self.parent, self._node_children)
+        print('CLOSE NODE', id(self), self.parent, self._node_children)
         if self.parser: print(self.parser.module.names_dict, [p.parser.module.names_dict for p in
     self._node_children])
         # We only need to replace the dict if multiple dictionaries are used:
@@ -188,6 +190,7 @@ class ParserNode(object):
     def parent_until_indent(self, indent=None):
         if indent is None or self._indent >= indent and self.parent:
             if self.parent is not None:
+                print('until_indent')
                 self.close()
                 return self.parent.parent_until_indent(indent)
         return self
@@ -230,6 +233,7 @@ class ParserNode(object):
         m = node.parser.module
         m.line_offset += line_offset + 1 - m.start_pos[0]
         self._fast_module.modules.append(m)
+        node.parent = self
 
         self._node_children.append(node)
 
@@ -290,8 +294,8 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.current_node.set_parser(self, '')
 
     def update(self, code):
+        self.number_parsers_used = 0
         self.module.reset_caches()
-        self.current_node.reset_node()
         try:
             self._parse(code)
         except:
@@ -368,6 +372,8 @@ class FastParser(use_metaclass(CachedFastParser)):
         start = 0
         is_first = True
         nodes = list(self.current_node.all_sub_nodes())
+        # Now we can reset the node, because we have all the old nodes.
+        self.current_node.reset_node()
 
         for code_part in self._split_parts(code):
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
@@ -376,6 +382,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 indent = len(code_part) - len(code_part.lstrip('\t '))
                 self.current_node = self.current_node.parent_until_indent(indent)
 
+                print('cur', id(self.current_node))
                 # check if code_part has already been parsed
                 # print '#'*45,line_offset, p and p.module.end_pos, '\n', code_part
                 self.current_node = self._get_node(code_part, code[start:],
@@ -438,22 +445,23 @@ class FastParser(use_metaclass(CachedFastParser)):
         Side effect: Alters the list of nodes.
         """
         h = hash(code)
-        for index, node in enumerate(list(nodes)):
-            print('EQ', node, repr(node.code), repr(code))
+        for index, node in enumerate(nodes):
+            print('EQ', node, repr(node.code), repr(code), id(node))
             if node.hash == h and node.code == code:
                 node.reset_node()
                 nodes.remove(node)
                 break
         else:
             tokenizer = FastTokenizer(parser_code, line_offset)
+            self.number_parsers_used += 1
             p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
             #p.module.parent = self.module  # With the new parser this is not
                                             # necessary anymore?
-            node = ParserNode(self.module, self.current_node)
+            node = ParserNode(self.module)
 
             end = p.module.end_pos[0]
-            print('\nACTUALLY PARSING', end, len(self._lines))
-            if len(self._lines) != end:
+            print('\nACTUALLY PARSING', p.module.end_pos, repr(code), len(self._lines))
+            if not (len(self._lines) == end and p.module.end_pos[1] > 0):
                 # The actual used code_part is different from the given code
                 # part, because of docstrings for example there's a chance that
                 # splits are wrong. Somehow it's different for the end
@@ -463,6 +471,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             code_part_actually_used = '\n'.join(used_lines)
             node.set_parser(p, code_part_actually_used)
 
+        print('add', id(node))
         self.current_node.add_node(node, line_offset)
         return node
 
@@ -523,9 +532,9 @@ class FastTokenizer(object):
             return self._close()
         elif self.previous[0] in (None, NEWLINE, INDENT):
             # Check for NEWLINE, which symbolizes the indent.
-            print('X', repr(value), tokenize.tok_name[typ])
+            #print('X', repr(value), tokenize.tok_name[typ])
             indent = start_pos[1]
-            print(indent, self._parser_indent)
+            #print(indent, self._parser_indent)
             if self._parentheses_level:
                 # parentheses ignore the indentation rules.
                 pass
@@ -572,7 +581,6 @@ class FastTokenizer(object):
             # Continue like nothing has happened, because we want to enter
             # the first class/function.
             self._first_stmt = False
-            print('NOOO', self.current)
             return self.current
         else:
             self._closed = True
