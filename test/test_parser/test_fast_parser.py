@@ -59,34 +59,51 @@ def test_carriage_return_splitting():
     assert [n.value for lst in p.module.names_dict.values() for n in lst] == ['Foo']
 
 
+def check_fp(src, number_parsers_used):
+    p = FastParser(load_grammar(), u(src))
+    cache.save_parser(None, None, p, pickling=False)
+
+    # TODO Don't change get_code, the whole thing should be the same.
+    # -> Need to refactor the parser first, though.
+    assert src == p.module.get_code()[:-1]
+    assert p.number_parsers_used == number_parsers_used
+    return p.module
+
+
 def test_change_and_undo():
-
-    def fp(src, number_parsers_used):
-        p = FastParser(load_grammar(), u(src))
-        cache.save_parser(None, None, p, pickling=False)
-
-        # TODO Don't change get_code, the whole thing should be the same.
-        # -> Need to refactor the parser first, though.
-        assert src == p.module.get_code()[:-1]
-        assert p.number_parsers_used == number_parsers_used
-
+    # Empty the parser cache for the path None.
     cache.parser_cache.pop(None, None)
     func_before = 'def func():\n    pass\n'
     # Parse the function and a.
-    fp(func_before + 'a', 2)
+    check_fp(func_before + 'a', 2)
     # Parse just b.
-    fp(func_before + 'b', 1)
+    check_fp(func_before + 'b', 1)
     # b has changed to a again, so parse that.
-    fp(func_before + 'a', 1)
+    check_fp(func_before + 'a', 1)
     # Same as before no parsers should be used.
-    fp(func_before + 'a', 0)
+    check_fp(func_before + 'a', 0)
 
     # Getting rid of an old parser: Still no parsers used.
-    fp('a', 0)
+    check_fp('a', 0)
     # Now the file has completely change and we need to parse.
-    fp('b', 1)
+    check_fp('b', 1)
     # And again.
-    fp('a', 1)
+    check_fp('a', 1)
+
+
+def test_positions():
+    # Empty the parser cache for the path None.
+    cache.parser_cache.pop(None, None)
+
+    func_before = 'class A:\n pass\n'
+    m = check_fp(func_before + 'a', 2)
+    assert m.start_pos == (1, 0)
+    assert m.end_pos == (3, 1)
+
+    m = check_fp('a', 0)
+    assert m.start_pos == (1, 0)
+    assert m.end_pos == (1, 1)
+
 
 
 def test_incomplete_function():

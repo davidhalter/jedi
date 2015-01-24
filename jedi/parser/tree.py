@@ -158,6 +158,8 @@ class Leaf(Base):
 
     @start_pos.setter
     def start_pos(self, value):
+        # TODO I think this is wrong, because the position_modifier.line needs
+        # to be looked at as well. Probably it needs to be substracted.
         self._start_pos = value
 
     @property
@@ -593,7 +595,7 @@ class SubModule(Scope, Module):
     of a module.
     """
     __slots__ = ('path', 'global_names', 'used_names', '_name',
-                 'line_offset', 'use_as_parent', 'error_statement_stacks')
+                 'use_as_parent', 'error_statement_stacks')
     type = 'file_input'
 
     def __init__(self, children):
@@ -608,7 +610,6 @@ class SubModule(Scope, Module):
         super(SubModule, self).__init__(children)
         self.path = None  # Set later.
         # this may be changed depending on fast_parser
-        self.line_offset = 0
 
     def set_global_names(self, names):
         """
