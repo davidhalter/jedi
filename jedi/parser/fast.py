@@ -98,7 +98,7 @@ class ParserNode(object):
         self.parent = None
 
         self._node_children = []
-        self.code = None
+        self.source = None
         self.hash = None
         self.parser = None
         self._content_scope = self._fast_module
@@ -111,9 +111,9 @@ class ParserNode(object):
             # There's no module yet.
             return '<%s: empty>' % type(self).__name__
 
-    def set_parser(self, parser, code):
-        self.code = code
-        self.hash = hash(code)
+    def set_parser(self, parser, source):
+        self.source = source
+        self.hash = hash(source)
         self.parser = parser
 
         try:
@@ -278,35 +278,35 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     _keyword_re = re.compile('^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS))
 
-    def __init__(self, grammar, code, module_path=None):
+    def __init__(self, grammar, source, module_path=None):
         # set values like `pr.Module`.
         self._grammar = grammar
         self.module_path = module_path
         self._reset_caches()
-        self.update(code)
+        self.update(source)
 
     def _reset_caches(self):
         self.module = FastModule()
         self.current_node = ParserNode(self.module)
         self.current_node.set_parser(self, '')
 
-    def update(self, code):
+    def update(self, source):
         # For testing purposes: It is important that the number of parsers used
         # can be minimized. With this variable we can test it.
         self.number_parsers_used = 0
         self.module.reset_caches()
         try:
-            self._parse(code)
+            self._parse(source)
         except:
             # FastParser is cached, be careful with exceptions.
             self._reset_caches()
             raise
 
-    def _split_parts(self, code):
+    def _split_parts(self, source):
         """
-        Split the code into different parts. This makes it possible to parse
-        each part seperately and therefore cache parts of the file and not
-        everything.
+        Split the source code into different parts. This makes it possible to
+        parse each part seperately and therefore cache parts of the file and
+        not everything.
         """
         def gen_part():
             text = '\n'.join(current_lines)
@@ -315,7 +315,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         # Split only new lines. Distinction between \r\n is the tokenizer's
         # job.
-        self._lines = code.split('\n')
+        self._lines = source.split('\n')
         current_lines = []
         is_decorator = False
         current_indent = 0
@@ -362,11 +362,19 @@ class FastParser(use_metaclass(CachedFastParser)):
         if current_lines:
             yield gen_part()
 
-    def _parse(self, code):
-        """ :type code: str """
+    def _parse(self, source):
+        """ :type source: str """
         def empty_parser_node():
             return self._get_node(unicode(''), unicode(''), 0, [], False)
 
+        added_newline = False
+        if source[-1] != '\n':
+            # To be compatible with Pythons grammar, we need a newline at the
+            # end. The parser would handle it, but since the fast parser abuses
+            # the normal parser in various ways, we need to care for this
+            # ourselves.
+            source += '\n'
+            added_newline = True
         line_offset = 0
         start = 0
         is_first = True
@@ -374,7 +382,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         # Now we can reset the node, because we have all the old nodes.
         self.current_node.reset_node()
 
-        for code_part in self._split_parts(code):
+        for code_part in self._split_parts(source):
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
                 print(repr(code_part))
 
@@ -384,7 +392,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 print('cur', id(self.current_node))
                 # check if code_part has already been parsed
                 # print '#'*45,line_offset, p and p.module.end_pos, '\n', code_part
-                self.current_node = self._get_node(code_part, code[start:],
+                self.current_node = self._get_node(code_part, source[start:],
                                                    line_offset, nodes, not is_first)
 
                 if False and is_first and self.current_node.parser.module.subscopes:
@@ -421,6 +429,9 @@ class FastParser(use_metaclass(CachedFastParser)):
             line_offset += code_part.count('\n') + 1
             start += len(code_part) + 1  # +1 for newline
 
+        if added_newline:
+            self.current_node.parser.remove_last_newline()
+
         # Now that the for loop is finished, we still want to close all nodes.
         self.current_node = self.current_node.parent_until_indent()
         self.current_node.close()
@@ -439,14 +450,14 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         # print(self.parsers[0].module.get_code())
 
-    def _get_node(self, code, parser_code, line_offset, nodes, no_docstr):
+    def _get_node(self, source, parser_code, line_offset, nodes, no_docstr):
         """
         Side effect: Alters the list of nodes.
         """
-        h = hash(code)
+        h = hash(source)
         for index, node in enumerate(nodes):
-            print('EQ', node, repr(node.code), repr(code))
-            if node.hash == h and node.code == code:
+            print('EQ', node, repr(node.source), repr(source))
+            if node.hash == h and node.source == source:
                 node.reset_node()
                 nodes.remove(node)
                 break
@@ -459,7 +470,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             node = ParserNode(self.module)
 
             end = p.module.end_pos[0]
-            print('\nACTUALLY PARSING', p.module.end_pos, repr(code), len(self._lines))
+            print('\nACTUALLY PARSING', p.module.end_pos, repr(source), len(self._lines))
             if not (len(self._lines) == end and p.module.end_pos[1] > 0):
                 # The actual used code_part is different from the given code
                 # part, because of docstrings for example there's a chance that
