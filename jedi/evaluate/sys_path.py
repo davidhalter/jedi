@@ -24,6 +24,18 @@ def get_sys_path():
         if p not in sys_path:
             sys_path.insert(0, p)
 
+    # HACK: add sys.path from python3 and vice versa.
+    import subprocess
+    other_python = 'python%d' % (22 if sys.version_info.major == 3 else 3,)
+    try:
+        other_sys_path = subprocess.check_output(
+            [other_python, '-c', 'import sys; print(sys.path)']).decode('utf-8')
+    except OSError:
+        pass
+    else:
+        other_sys_path = other_sys_path[2:-3].split("', '")
+        sys.path += other_sys_path
+
     check_virtual_env(sys.path)
     return [p for p in sys.path if p != ""]
 
