@@ -65,7 +65,7 @@ def check_fp(src, number_parsers_used):
 
     # TODO Don't change get_code, the whole thing should be the same.
     # -> Need to refactor the parser first, though.
-    assert src == p.module.get_code()[:-1]
+    assert src == p.module.get_code()
     assert p.number_parsers_used == number_parsers_used
     return p.module
 
@@ -104,6 +104,23 @@ def test_positions():
     assert m.start_pos == (1, 0)
     assert m.end_pos == (1, 1)
 
+
+def test_if():
+    # Empty the parser cache for the path None.
+    cache.parser_cache.pop(None, None)
+    src = dedent('''\
+    def func():
+        x = 3
+        if x:
+            def y():
+                x
+        x = 3
+
+    pass
+    ''')
+
+    # Two parsers needed, one for pass and one for the function.
+    m = check_fp(src, 2)
 
 
 def test_incomplete_function():

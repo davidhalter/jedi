@@ -3,7 +3,7 @@ import difflib
 import pytest
 
 from jedi._compatibility import u
-from jedi.parser import Parser
+from jedi.parser import Parser, load_grammar
 
 code_basic_features = u('''
 """A mod docstring"""
@@ -85,3 +85,19 @@ def method_with_docstring():
     pass
 ''')
     assert Parser(s).module.get_code() == s
+
+
+def test_end_newlines():
+    """
+    The Python grammar explicitly needs a newline at the end. Jedi though still
+    wants to be able, to return the exact same code without the additional new
+    line the parser needs.
+    """
+    def test(source):
+        assert Parser(load_grammar(), source).module.get_code() == source
+
+    test('a')
+    test('a\nb')
+    test('a\n')
+    test('a\n\n')
+    test('a\n#comment')

@@ -77,13 +77,6 @@ class Parser(object):
     :param top_module: Use this module as a parent instead of `self.module`.
     """
     def __init__(self, grammar, source, module_path=None, tokenizer=None):
-        """
-        This is the way I imagine a parser describing the init function
-        """
-
-        if not source.endswith('\n'):
-            source += '\n'
-
         self._ast_mapping = {
             'expr_stmt': pt.ExprStmt,
             'classdef': pt.Class,
@@ -128,13 +121,22 @@ class Parser(object):
         self.used_names = {}
         self.scope_names_stack = [{}]
         self.error_statement_stacks = []
-        # For fast parser
+
+        added_newline = False
+        # The Python grammar needs a newline at the end of each statement.
+        if not source.endswith('\n'):
+            source += '\n'
+            added_newline = True
+
+        # For the fast parser.
         self.position_modifier = pt.PositionModifier()
         p = PgenParser(grammar, self.convert_node, self.convert_leaf,
                        self.error_recovery)
         tokenizer = tokenizer or tokenize.source_tokens(source)
         self.module = p.parse(self._tokenize(tokenizer))
 
+        if added_newline:
+            self._remove_last_newline(source)
         self.module.used_names = self.used_names
         self.module.path = module_path
         self.module.set_global_names(self.global_names)
@@ -306,3 +308,14 @@ class Parser(object):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
+
+    def _remove_last_newline(self, source):
+        endmarker = self.module.children[-1]
+        print('ENDNL', self.module.children, repr(endmarker.prefix))
+        # The newline is either in the endmarker as a prefix or the previous
+        # leaf as a newline token.
+        if endmarker.prefix.endswith('\n'):
+            endmarker.prefix = endmarker.prefix[:-1]
+        else:
+            newline = endmarker.get_previous()
+            newline.value = ''
