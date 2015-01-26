@@ -156,6 +156,28 @@ class Leaf(Base):
     def start_pos(self):
         return self._start_pos[0] + self.position_modifier.line, self._start_pos[1]
 
+    def get_previous(self):
+        """
+        Returns the previous leaf in the parser tree.
+        """
+        node = self
+        while True:
+            c = node.parent.children
+            i = c.index(self)
+            if i == 0:
+                node = node.parent
+                if node.parent is None:
+                    raise IndexError('Cannot access the previous element of the first one.')
+            else:
+                node = c[i - 1]
+                break
+
+        while True:
+            try:
+                node = node.children[-1]
+            except AttributeError:  # A Leaf doesn't have children.
+                return node
+
     @start_pos.setter
     def start_pos(self, value):
         # TODO I think this is wrong, because the position_modifier.line needs
@@ -185,8 +207,9 @@ class Leaf(Base):
 
     def prev_sibling(self):
         """
-        The node immediately preceding the invocant in their parent's children
-        list. If the invocant does not have a previous sibling, it is None.
+        The node/leaf immediately preceding the invocant in their parent's
+        children list. If the invocant does not have a previous sibling, it is
+        None.
         """
         # Can't use index(); we need to test by identity
         for i, child in enumerate(self.parent.children):
