@@ -16,6 +16,7 @@ complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
 import os
+import re
 
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
@@ -136,7 +137,7 @@ class Parser(object):
         self.module = p.parse(self._tokenize(tokenizer))
 
         if added_newline:
-            self._remove_last_newline(source)
+            self.remove_last_newline()
         self.module.used_names = self.used_names
         self.module.path = module_path
         self.module.set_global_names(self.global_names)
@@ -309,13 +310,15 @@ class Parser(object):
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
 
-    def _remove_last_newline(self, source):
+    def remove_last_newline(self):
         endmarker = self.module.children[-1]
         print('ENDNL', self.module.children, repr(endmarker.prefix))
         # The newline is either in the endmarker as a prefix or the previous
         # leaf as a newline token.
         if endmarker.prefix.endswith('\n'):
             endmarker.prefix = endmarker.prefix[:-1]
+            last_line = re.sub('.*\n', '', endmarker.prefix)
+            endmarker.start_pos = endmarker.start_pos[0] - 1, len(last_line)
         else:
             newline = endmarker.get_previous()
             while True:
@@ -325,4 +328,5 @@ class Parser(object):
                 else:
                     assert newline.value == '\n'
                     newline.value = ''
+                    endmarker.start_pos = newline.start_pos
                     break

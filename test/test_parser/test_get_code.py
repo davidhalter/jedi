@@ -93,12 +93,15 @@ def test_end_newlines():
     wants to be able, to return the exact same code without the additional new
     line the parser needs.
     """
-    def test(source):
-        assert Parser(load_grammar(), source).module.get_code() == source
+    def test(source, end_pos):
+        module = Parser(load_grammar(), source).module
+        assert module.get_code() == source
+        assert module.end_pos == end_pos
 
-    test('a')
-    test('a\nb')
-    test('a\n')
-    test('a\n\n')
-    test('a\n#comment')
-    test('def a():\n pass')
+    test('a', (1, 1))
+    test('a\n', (2, 0))
+    test('a\nb', (2, 1))
+    test('a\n#comment\n', (3, 0))
+    test('a\n#comment', (2, 8))
+    test('a#comment', (1, 9))
+    test('def a():\n pass', (2, 5))
