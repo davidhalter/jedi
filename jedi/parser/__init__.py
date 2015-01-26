@@ -318,4 +318,11 @@ class Parser(object):
             endmarker.prefix = endmarker.prefix[:-1]
         else:
             newline = endmarker.get_previous()
-            newline.value = ''
+            while True:
+                if newline.value == '':
+                    # Must be a DEDENT, just continue.
+                    newline = newline.get_previous()
+                else:
+                    assert newline.value == '\n'
+                    newline.value = ''
+                    break
