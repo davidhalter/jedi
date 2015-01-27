@@ -273,6 +273,10 @@ class ParserNode(object):
             for y in n.all_sub_nodes():
                 yield y
 
+    @cache.underscore_memoization  # Should only happen once!
+    def remove_last_newline(self):
+        self.parser.remove_last_newline()
+
 
 class FastParser(use_metaclass(CachedFastParser)):
 
@@ -383,6 +387,10 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.current_node.reset_node()
 
         for code_part in self._split_parts(source):
+            if not is_first:
+                print('OFF', line_offset + 2,
+            self.current_node.parser.module.end_pos[0])
+                #import pdb; pdb.set_trace()
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
                 print(repr(code_part))
 
@@ -430,7 +438,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             start += len(code_part) + 1  # +1 for newline
 
         if added_newline:
-            self.current_node.parser.remove_last_newline()
+            self.current_node.remove_last_newline()
 
         # Now that the for loop is finished, we still want to close all nodes.
         self.current_node = self.current_node.parent_until_indent()
@@ -471,11 +479,10 @@ class FastParser(use_metaclass(CachedFastParser)):
 
             end = p.module.end_pos[0]
             print('\nACTUALLY PARSING', p.module.end_pos, repr(source), len(self._lines))
-            if not (len(self._lines) == end and p.module.end_pos[1] > 0):
-                # The actual used code_part is different from the given code
-                # part, because of docstrings for example there's a chance that
-                # splits are wrong. Somehow it's different for the end
-                # position.
+            if not (len(self._lines) == end):
+                # We don't keep the last line, except if were done. A newline
+                # ends on the next line, which is part of the next parser. But
+                # the last parser includes the last new line.
                 end -= 1
             used_lines = self._lines[line_offset:end]
             code_part_actually_used = '\n'.join(used_lines)
