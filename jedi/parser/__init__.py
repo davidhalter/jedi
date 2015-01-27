@@ -312,7 +312,6 @@ class Parser(object):
 
     def remove_last_newline(self):
         endmarker = self.module.children[-1]
-        print('ENDNL', self.module.children, repr(endmarker.prefix))
         # The newline is either in the endmarker as a prefix or the previous
         # leaf as a newline token.
         if endmarker.prefix.endswith('\n'):
@@ -320,7 +319,10 @@ class Parser(object):
             last_line = re.sub('.*\n', '', endmarker.prefix)
             endmarker.start_pos = endmarker.start_pos[0] - 1, len(last_line)
         else:
-            newline = endmarker.get_previous()
+            try:
+                newline = endmarker.get_previous()
+            except IndexError:
+                return  # This means that the parser is empty.
             while True:
                 if newline.value == '':
                     # Must be a DEDENT, just continue.

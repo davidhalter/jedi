@@ -233,9 +233,6 @@ class LeafWithNewLines(Leaf):
         """
         end_pos_line, end_pos_col = self.start_pos
         lines = self.value.split('\n')
-        if self.value.endswith('\n'):
-            lines = lines[:-1]
-            lines[-1] += '\n'
         end_pos_line += len(lines) - 1
         # Check for multiline token
         if self.start_pos[0] == end_pos_line:

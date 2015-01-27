@@ -155,3 +155,11 @@ def test_error_correction_with():
     assert len(comps) > 30
     # `open` completions have a closed attribute.
     assert [1 for c in comps if c.name == 'closed']
+
+
+def test_newline_positions():
+    endmarker = Parser(load_grammar(), 'a\n').module.children[-1]
+    assert endmarker.end_pos == (2, 0)
+    new_line = endmarker.get_previous()
+    assert new_line.start_pos == (1, 1)
+    assert new_line.end_pos == (2, 0)
