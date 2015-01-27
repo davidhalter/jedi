@@ -109,6 +109,7 @@ class Parser(object):
 
         self.global_names = []
         self._omit_dedent = 0
+        self._last_failed_start_pos = (0, 0)
 
         # TODO do print absolute import detection here.
         #try:
@@ -294,6 +295,8 @@ class Parser(object):
             err = ErrorStatement(failed_stack, value, start_pos)
             self.error_statement_stacks.append(err)
 
+        self._last_failed_start_pos = start_pos
+
         stack[start_index:] = []
 
     def _tokenize(self, tokenizer):
@@ -319,6 +322,7 @@ class Parser(object):
             last_line = re.sub('.*\n', '', endmarker.prefix)
             endmarker.start_pos = endmarker.start_pos[0] - 1, len(last_line)
         else:
+            print(self.error_statement_stacks)
             try:
                 newline = endmarker.get_previous()
             except IndexError:
@@ -330,5 +334,12 @@ class Parser(object):
                 else:
                     assert newline.value == '\n'
                     newline.value = ''
-                    endmarker.start_pos = newline.start_pos
+                    if self._last_failed_start_pos > newline.start_pos:
+                        # It may be the case that there was a syntax error in a
+                        # function. In that case error correction removes the
+                        # right newline. So we use the previously assigned
+                        # _last_failed_start_pos variable to account for that.
+                        endmarker.start_pos = self._last_failed_start_pos
+                    else:
+                        endmarker.start_pos = newline.start_pos
                     break

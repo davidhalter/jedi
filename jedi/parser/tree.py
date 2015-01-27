@@ -156,6 +156,17 @@ class Leaf(Base):
     def start_pos(self):
         return self._start_pos[0] + self.position_modifier.line, self._start_pos[1]
 
+    @start_pos.setter
+    def start_pos(self, value):
+        # TODO I think this is wrong, because the position_modifier.line needs
+        # to be looked at as well. Probably it needs to be substracted.
+        self._start_pos = value
+
+    @property
+    def end_pos(self):
+        return (self._start_pos[0] + self.position_modifier.line,
+                self._start_pos[1] + len(self.value))
+
     def get_previous(self):
         """
         Returns the previous leaf in the parser tree.
@@ -177,17 +188,6 @@ class Leaf(Base):
                 node = node.children[-1]
             except AttributeError:  # A Leaf doesn't have children.
                 return node
-
-    @start_pos.setter
-    def start_pos(self, value):
-        # TODO I think this is wrong, because the position_modifier.line needs
-        # to be looked at as well. Probably it needs to be substracted.
-        self._start_pos = value
-
-    @property
-    def end_pos(self):
-        return (self._start_pos[0] + self.position_modifier.line,
-                self._start_pos[1] + len(self.value))
 
     def get_code(self):
         return self.prefix + self.value

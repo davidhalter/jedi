@@ -287,7 +287,7 @@ class UserContextParser(object):
                 print(scope, scope.subscopes)
                 for s in scope.subscopes + list(reversed(scope.flows)):
                     if isinstance(s, (pr.Scope, pr.Flow)):
-                        print(s, self._position, s.end_pos, s.children,
+                        print(s, self._position, 'X', s.start_pos, s.end_pos, s.children,
                                 s.children[-2])
                         if s.start_pos <= self._position <= s.end_pos:
                             if isinstance(s, pr.Flow):
