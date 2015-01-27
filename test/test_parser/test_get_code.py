@@ -44,21 +44,19 @@ def diff_code_assert(a, b, n=4):
 def test_basic_parsing():
     """Validate the parsing features"""
 
-    prs = Parser(code_basic_features)
+    prs = Parser(load_grammar(), code_basic_features)
     diff_code_assert(
         code_basic_features,
-        prs.module.get_code2()
+        prs.module.get_code()
     )
 
 
-@pytest.mark.skipif('True', reason='Not yet working.')
 def test_operators():
     src = u('5  * 3')
-    prs = Parser(src)
+    prs = Parser(load_grammar(), src)
     diff_code_assert(src, prs.module.get_code())
 
 
-@pytest.mark.skipif('True', reason='Broke get_code support for yield/return statements.')
 def test_get_code():
     """Use the same code that the parser also generates, to compare"""
     s = u('''"""a docstring"""
@@ -84,7 +82,7 @@ def method_with_docstring():
     """class docstr"""
     pass
 ''')
-    assert Parser(s).module.get_code() == s
+    assert Parser(load_grammar(), s).module.get_code() == s
 
 
 def test_end_newlines():
