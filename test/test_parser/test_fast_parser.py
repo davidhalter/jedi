@@ -120,7 +120,7 @@ def test_if():
     ''')
 
     # Two parsers needed, one for pass and one for the function.
-    m = check_fp(src, 2)
+    check_fp(src, 2)
 
 
 def test_incomplete_function():

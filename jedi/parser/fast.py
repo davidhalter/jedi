@@ -502,7 +502,7 @@ class FastTokenizer(object):
         self._closed = False
 
         # fast parser options
-        self.current = self.previous = None, '', (0, 0)
+        self.current = self.previous = NEWLINE, '', (0, 0)
         self._in_flow = False
         self._new_indent = False
         self._parser_indent = self._old_parser_indent = 0
@@ -510,6 +510,7 @@ class FastTokenizer(object):
         self._first_stmt = True
         self._parentheses_level = 0
         self._indent_counter = 0
+        self._flow_indent_counter = 0
         self._returned_endmarker = False
 
     def __iter__(self):
@@ -540,20 +541,23 @@ class FastTokenizer(object):
             self._indent_counter += 1
         elif typ == DEDENT:
             self._indent_counter -= 1
+            if self._in_flow and self._indent_counter == self._flow_indent_counter:
+                self._in_flow = False
             return current
 
-        if self.previous[0] == DEDENT and not self._in_flow:
+        if self.previous[0] == DEDENT and self._indent_counter == 0:
             self._first_stmt = False
             return self._close()
-        elif self.previous[0] in (None, NEWLINE, INDENT):
+        elif self.previous[0] in (NEWLINE, INDENT):
             # Check for NEWLINE, which symbolizes the indent.
             #print('X', repr(value), tokenize.tok_name[typ])
             indent = start_pos[1]
             #print(indent, self._parser_indent)
             if self._parentheses_level:
-                # parentheses ignore the indentation rules.
+                # Parentheses ignore the indentation rules.
                 pass
             elif indent < self._parser_indent:  # -> dedent
+                raise NotImplementedError
                 self._parser_indent = indent
                 self._new_indent = False
                 print(self._in_flow, indent, self._old_parser_indent)
@@ -566,9 +570,15 @@ class FastTokenizer(object):
                 self._new_indent = False
 
             if not self._in_flow:
-                if value in FLOWS or value in breaks:
-                    self._in_flow = value in FLOWS
-                    if not self._is_decorator and not self._in_flow:
+                self._in_flow = value in FLOWS
+                if self._in_flow:
+                    print('INFLOW', self._indent_counter)
+                    self._flow_indent_counter = self._indent_counter
+                    self._old_parser_indent = self._parser_indent
+                    self._parser_indent += 1  # new scope: must be higher
+                    self._new_indent = True
+                elif value in breaks:
+                    if not self._is_decorator:
                         return self._close()
 
                     self._is_decorator = '@' == value
@@ -609,6 +619,8 @@ class FastTokenizer(object):
             return tokenize.DEDENT, '', start_pos, ''
         elif not self._returned_endmarker:
             self._returned_endmarker = True
-            return ENDMARKER, '', start_pos, ''
+            # We're using the current prefix for the endmarker to not loose any
+            # information.
+            return ENDMARKER, '', start_pos, self.current[3]
         else:
             raise StopIteration
