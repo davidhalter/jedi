@@ -19,20 +19,19 @@ from jedi.parser.tokenize import (source_tokens, FLOWS, NEWLINE,
 class FastModule(pr.SubModule):
     type = 'file_input'
 
-    def __init__(self):
+    def __init__(self, module_path):
         super(FastModule, self).__init__([])
         self.modules = []
         self.reset_caches()
         self.names_dict = {}
+        self.path = module_path
 
     def reset_caches(self):
         self.modules = []
-
-    def __getattr__(self, name):
-        if name.startswith('__'):
-            raise AttributeError('Not available!')
-        else:
-            return getattr(self.modules[0], name)
+        try:
+            del self._used_names  # Remove the used names cache.
+        except AttributeError:
+            pass  # It was never used.
 
     @property
     @cache.underscore_memoization
@@ -47,6 +46,14 @@ class FastModule(pr.SubModule):
                     used_names[k] = set(statement_set)
         """
         return MergedNamesDict([m.used_names for m in self.modules])
+
+    @property
+    def global_names(self):
+        return [name for m in self.modules for name in m.global_names]
+
+    @property
+    def error_statement_stacks(self):
+        return [e for m in self.modules for e in m.error_statement_stacks]
 
     def __repr__(self):
         return "<fast.%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -283,7 +290,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.update(source)
 
     def _reset_caches(self):
-        self.module = FastModule()
+        self.module = FastModule(self.module_path)
         self.current_node = ParserNode(self.module)
         self.current_node.set_parser(self, '')
 
