@@ -174,15 +174,13 @@ class ParserNode(object):
         nodes should be added anymore.
         """
         print('CLOSE NODE', id(self), self.parent, self._node_children)
-        if self.parser: print(self.parser.module.names_dict, [p.parser.module.names_dict for p in
+        print(self.parser.module.names_dict, [p.parser.module.names_dict for p in
     self._node_children])
         # We only need to replace the dict if multiple dictionaries are used:
         if self._node_children:
             dcts = [n.parser.module.names_dict for n in self._node_children]
-            if self.parser is not None:
-                # The first Parser node contains all the others and is
-                # typically empty.
-                dcts.insert(0, self._content_scope.names_dict)
+            # Need to insert the own node as well.
+            dcts.insert(0, self._content_scope.names_dict)
             print('DCTS', self.parser, dcts, self._node_children)
             self._content_scope.names_dict = MergedNamesDict(dcts)
 
@@ -512,6 +510,7 @@ class FastTokenizer(object):
         self._indent_counter = 0
         self._flow_indent_counter = 0
         self._returned_endmarker = False
+        self._next_dedent_noclose = False
 
     def __iter__(self):
         return self
@@ -541,14 +540,19 @@ class FastTokenizer(object):
             self._indent_counter += 1
         elif typ == DEDENT:
             self._indent_counter -= 1
+            print(self._flow_indent_counter)
             if self._in_flow and self._indent_counter == self._flow_indent_counter:
                 self._in_flow = False
+                self._next_dedent_noclose = True
             return current
 
-        if self.previous[0] == DEDENT and self._indent_counter == 0:
-            self._first_stmt = False
-            return self._close()
-        elif self.previous[0] in (NEWLINE, INDENT):
+        if self.previous[0] in (NEWLINE, INDENT, DEDENT):
+            if self.previous[0] == DEDENT:
+                if not self._next_dedent_noclose:
+                    self._first_stmt = False
+                    return self._close()
+                if not self._in_flow:
+                    self._next_dedent_noclose = False
             # Check for NEWLINE, which symbolizes the indent.
             #print('X', repr(value), tokenize.tok_name[typ])
             indent = start_pos[1]

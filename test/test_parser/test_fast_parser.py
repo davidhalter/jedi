@@ -106,8 +106,6 @@ def test_positions():
 
 
 def test_if():
-    # Empty the parser cache for the path None.
-    cache.parser_cache.pop(None, None)
     src = dedent('''\
     def func():
         x = 3
@@ -122,6 +120,15 @@ def test_if():
     # Two parsers needed, one for pass and one for the function.
     check_fp(src, 2)
     assert [d.name for d in jedi.Script(src, 8, 6).goto_definitions()] == ['int']
+
+
+def test_if_simple():
+    src = dedent('''\
+    if 1:
+        a = 3
+    ''')
+    check_fp(src + 'a', 1)
+    check_fp(src + "else:\n    a = ''\na", 1)
 
 
 def test_incomplete_function():
