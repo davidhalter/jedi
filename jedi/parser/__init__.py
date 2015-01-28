@@ -141,7 +141,7 @@ class Parser(object):
             self.remove_last_newline()
         self.module.used_names = self.used_names
         self.module.path = module_path
-        self.module.set_global_names(self.global_names)
+        self.module.global_names = self.global_names
         self.module.error_statement_stacks = self.error_statement_stacks
         self.grammar_symbols = grammar.number2symbol
 

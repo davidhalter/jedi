@@ -630,17 +630,6 @@ class SubModule(Scope, Module):
         self.path = None  # Set later.
         # this may be changed depending on fast_parser
 
-    def set_global_names(self, names):
-        """
-        Global means in these context a function (subscope) which has a global
-        statement.
-        This is only relevant for the top scope.
-
-        :param names: names of the global.
-        :type names: list of Name
-        """
-        self.global_names = names
-
     @property
     @cache.underscore_memoization
     def name(self):
