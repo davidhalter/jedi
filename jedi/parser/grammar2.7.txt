@@ -97,7 +97,9 @@ with_item: test ['as' expr]
 with_var: 'as' expr
 # NB compile.c makes sure that the default except clause is last
 except_clause: 'except' [test [(',' | 'as') test]]
-suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
+# Edit by David Halter: The stmt is now optional. This reflects how Jedi allows
+# classes and functions to be empty, which is beneficial for autocompletion.
+suite: simple_stmt | NEWLINE INDENT stmt* DEDENT
 
 # Backward compatibility cruft to support:
 # [ x for x in lambda: True, lambda: False if x() ]

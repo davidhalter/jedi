@@ -113,14 +113,15 @@ def test_if():
         x = 3
         if x:
             def y():
-                x
-        x = 3
+                return x
+        return y()
 
-    pass
+    func()
     ''')
 
     # Two parsers needed, one for pass and one for the function.
     check_fp(src, 2)
+    assert [d.name for d in jedi.Script(src, 8, 6).goto_definitions()] == ['int']
 
 
 def test_incomplete_function():

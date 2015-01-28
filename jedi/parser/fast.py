@@ -16,7 +16,7 @@ from jedi.parser.tokenize import (source_tokens, FLOWS, NEWLINE,
                                   ENDMARKER, INDENT, DEDENT)
 
 
-class FastModule(pr.Module, pr.Simple):
+class FastModule(pr.SubModule):
     type = 'file_input'
 
     def __init__(self):
@@ -47,13 +47,6 @@ class FastModule(pr.Module, pr.Simple):
                     used_names[k] = set(statement_set)
         """
         return MergedNamesDict([m.used_names for m in self.modules])
-
-    def _search_in_scope(self, typ):
-        return pr.Scope._search_in_scope(self, typ)
-
-    @property
-    def subscopes(self):
-        return self._search_in_scope(pr.Scope)
 
     def __repr__(self):
         return "<fast.%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -556,7 +549,7 @@ class FastTokenizer(object):
             if self._parentheses_level:
                 # Parentheses ignore the indentation rules.
                 pass
-            elif indent < self._parser_indent:  # -> dedent
+            elif False and indent < self._parser_indent:  # -> dedent
                 raise NotImplementedError
                 self._parser_indent = indent
                 self._new_indent = False
@@ -574,18 +567,18 @@ class FastTokenizer(object):
                 if self._in_flow:
                     print('INFLOW', self._indent_counter)
                     self._flow_indent_counter = self._indent_counter
-                    self._old_parser_indent = self._parser_indent
-                    self._parser_indent += 1  # new scope: must be higher
-                    self._new_indent = True
+                    #self._old_parser_indent = self._parser_indent
+                    #self._parser_indent += 1  # new scope: must be higher
+                    #self._new_indent = True
                 elif value in breaks:
                     if not self._is_decorator:
                         return self._close()
 
                     self._is_decorator = '@' == value
-                    if not self._is_decorator:
-                        self._old_parser_indent = self._parser_indent
-                        self._parser_indent += 1  # new scope: must be higher
-                        self._new_indent = True
+                    #if not self._is_decorator:
+                        #self._old_parser_indent = self._parser_indent
+                        #self._parser_indent += 1  # new scope: must be higher
+                        #self._new_indent = True
 
             if value != '@':
                 if self._first_stmt and not self._new_indent:
