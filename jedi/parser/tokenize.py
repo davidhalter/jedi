@@ -195,7 +195,7 @@ def generate_tokens(readline, line_offset=0):
                 pos += 1
                 continue
 
-            prefix = pseudomatch.group(1) + additional_prefix
+            prefix = additional_prefix + pseudomatch.group(1)
             additional_prefix = ''
             start, pos = pseudomatch.span(2)
             spos = (lnum, start)
