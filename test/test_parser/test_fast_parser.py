@@ -180,6 +180,20 @@ def test_nested_funcs():
     check_fp(src, 3)
 
 
+def test_func_with_for_and_comment():
+    # The first newline is important, leave it.
+    src = dedent("""\
+
+    def func():
+        pass
+
+    for a in [1]:
+        # COMMENT
+        a""")
+    check_fp(src, 2, 3)
+    check_fp('a\n' + src, 1, 3)
+
+
 def test_incomplete_function():
     source = '''return ImportErr'''
 

@@ -240,7 +240,7 @@ class ParserNode(object):
         # Changing the line offsets is very important, because if they don't
         # fit, all the start_pos values will be wrong.
         m = node.parser.module
-        node.parser.position_modifier.line = line_offset + 1 - m.start_pos[0]
+        node.parser.position_modifier.line = line_offset
         self._fast_module.modules.append(m)
         node.parent = self
 
@@ -401,8 +401,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         for code_part in self._split_parts(source):
             if not is_first:
-                print('OFF', line_offset + 2,
-            self.current_node.parser.module.end_pos[0])
+                print('OFF', line_offset + 1, self.current_node.parser.module.end_pos)
                 #import pdb; pdb.set_trace()
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
                 print(repr(code_part))
@@ -483,15 +482,16 @@ class FastParser(use_metaclass(CachedFastParser)):
                 nodes.remove(node)
                 break
         else:
-            tokenizer = FastTokenizer(parser_code, line_offset)
+            tokenizer = FastTokenizer(parser_code, 0)
             self.number_parsers_used += 1
             p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
             #p.module.parent = self.module  # With the new parser this is not
                                             # necessary anymore?
             node = ParserNode(self.module)
 
-            end = p.module.end_pos[0]
-            print('\nACTUALLY PARSING', p.module.end_pos, repr(source), len(self._lines))
+            end = line_offset + p.module.end_pos[0]
+            print('\nACTUALLY PARSING', p.module.end_pos, repr(source),
+        len(self._lines), line_offset)
             if not (len(self._lines) == end):
                 # We don't keep the last line, except if were done. A newline
                 # ends on the next line, which is part of the next parser. But
@@ -510,6 +510,7 @@ class FastTokenizer(object):
     Breaks when certain conditions are met, i.e. a new function or class opens.
     """
     def __init__(self, source, line_offset=0):
+        # TODO remove the whole line_offset stuff, it's not used anymore.
         self.source = source
         self._gen = source_tokens(source, line_offset)
         self._closed = False

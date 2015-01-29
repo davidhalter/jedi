@@ -307,22 +307,27 @@ class Parser(object):
 
             if typ == token.OP:
                 typ = token.opmap[value]
-            #print(token.tok_name[typ], repr(value), start_pos)
+            print(token.tok_name[typ], repr(value), start_pos, repr(prefix))
             yield typ, value, prefix, start_pos
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
 
     def remove_last_newline(self):
+        """
+        In all of this we need to work with _start_pos, because if we worked
+        with start_pos, we would need to check the position_modifier as well
+        (which is accounted for in the start_pos property).
+        """
         endmarker = self.module.children[-1]
         # The newline is either in the endmarker as a prefix or the previous
         # leaf as a newline token.
+        print('REMOVE', endmarker.start_pos)
         if endmarker.prefix.endswith('\n'):
             endmarker.prefix = endmarker.prefix[:-1]
             last_line = re.sub('.*\n', '', endmarker.prefix)
-            endmarker.start_pos = endmarker.start_pos[0] - 1, len(last_line)
+            endmarker._start_pos = endmarker._start_pos[0] - 1, len(last_line)
         else:
-            print(self.error_statement_stacks)
             try:
                 newline = endmarker.get_previous()
             except IndexError:
@@ -334,12 +339,12 @@ class Parser(object):
                 else:
                     assert newline.value == '\n'
                     newline.value = ''
-                    if self._last_failed_start_pos > newline.start_pos:
+                    if self._last_failed_start_pos > newline._start_pos:
                         # It may be the case that there was a syntax error in a
                         # function. In that case error correction removes the
                         # right newline. So we use the previously assigned
                         # _last_failed_start_pos variable to account for that.
-                        endmarker.start_pos = self._last_failed_start_pos
+                        endmarker._start_pos = self._last_failed_start_pos
                     else:
-                        endmarker.start_pos = newline.start_pos
+                        endmarker._start_pos = newline._start_pos
                     break
