@@ -154,7 +154,11 @@ def generate_tokens(readline, line_offset=0):
     numchars = '0123456789'
     contstr = ''
     contline = None
-    new_line = False
+    # We start with a newline. This makes indent at the first position
+    # possible. It's not valid Python, but still better than an INDENT in the
+    # second line (and not in the first). This makes quite a few things in
+    # Jedi's fast parser possible.
+    new_line = True
     prefix = ''  # Should never be required, but here for safety
     additional_prefix = ''
     while True:            # loop over lines in stream

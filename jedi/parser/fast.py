@@ -298,6 +298,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         # For testing purposes: It is important that the number of parsers used
         # can be minimized. With this variable we can test it.
         self.number_parsers_used = 0
+        self.number_of_splits = 0
         self.module.reset_caches()
         try:
             self._parse(source)
@@ -315,6 +316,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         def gen_part():
             text = '\n'.join(current_lines)
             del current_lines[:]
+            self.number_of_splits += 1
             return text
 
         # Split only new lines. Distinction between \r\n is the tokenizer's
@@ -594,17 +596,11 @@ class FastTokenizer(object):
                         #self._parser_indent += 1  # new scope: must be higher
                         #self._new_indent = True
 
-            if value != '@':
-                if self._first_stmt and not self._new_indent:
-                    self._parser_indent = indent
-                self._first_stmt = False
-
-        # Ignore closing parentheses, because they are all
-        # irrelevant for the indentation.
-
         if value in '([{' and value:
             self._parentheses_level += 1
         elif value in ')]}' and value:
+            # Ignore closing parentheses, because they are all
+            # irrelevant for the indentation.
             self._parentheses_level = max(self._parentheses_level - 1, 0)
         return current
 
@@ -612,7 +608,10 @@ class FastTokenizer(object):
         if self._first_stmt:
             # Continue like nothing has happened, because we want to enter
             # the first class/function.
-            self._first_stmt = False
+            if self.current[1] != '@':
+                #if self._first_stmt and not self._new_indent:
+                    #self._parser_indent = indent
+                self._first_stmt = False
             return self.current
         else:
             self._closed = True
@@ -627,7 +626,10 @@ class FastTokenizer(object):
         elif not self._returned_endmarker:
             self._returned_endmarker = True
             # We're using the current prefix for the endmarker to not loose any
-            # information.
-            return ENDMARKER, '', start_pos, self.current[3]
+            # information. However we care about "lost" lines. The prefix of
+            # the current line (indent) will always be included in the current
+            # line.
+            prefix = re.sub('[^\n]+$', '', self.current[3])
+            return ENDMARKER, '', start_pos, prefix
         else:
             raise StopIteration

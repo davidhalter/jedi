@@ -59,13 +59,17 @@ def test_carriage_return_splitting():
     assert [n.value for lst in p.module.names_dict.values() for n in lst] == ['Foo']
 
 
-def check_fp(src, number_parsers_used):
+def check_fp(src, number_parsers_used, number_of_splits=None):
+    if number_of_splits is None:
+        number_of_splits = number_parsers_used
+
     p = FastParser(load_grammar(), u(src))
     cache.save_parser(None, None, p, pickling=False)
 
     # TODO Don't change get_code, the whole thing should be the same.
     # -> Need to refactor the parser first, though.
     assert src == p.module.get_code()
+    assert p.number_of_splits == number_of_splits
     assert p.number_parsers_used == number_parsers_used
     return p.module
 
@@ -77,18 +81,18 @@ def test_change_and_undo():
     # Parse the function and a.
     check_fp(func_before + 'a', 2)
     # Parse just b.
-    check_fp(func_before + 'b', 1)
+    check_fp(func_before + 'b', 1, 2)
     # b has changed to a again, so parse that.
-    check_fp(func_before + 'a', 1)
+    check_fp(func_before + 'a', 1, 2)
     # Same as before no parsers should be used.
-    check_fp(func_before + 'a', 0)
+    check_fp(func_before + 'a', 0, 2)
 
     # Getting rid of an old parser: Still no parsers used.
-    check_fp('a', 0)
+    check_fp('a', 0, 1)
     # Now the file has completely change and we need to parse.
-    check_fp('b', 1)
+    check_fp('b', 1, 1)
     # And again.
-    check_fp('a', 1)
+    check_fp('a', 1, 1)
 
 
 def test_positions():
@@ -100,7 +104,7 @@ def test_positions():
     assert m.start_pos == (1, 0)
     assert m.end_pos == (3, 1)
 
-    m = check_fp('a', 0)
+    m = check_fp('a', 0, 1)
     assert m.start_pos == (1, 0)
     assert m.end_pos == (1, 1)
 
@@ -154,6 +158,26 @@ def test_func_with_if():
                 return a
     """)
     check_fp(src, 1)
+
+
+def test_decorator():
+    src = dedent("""\
+    class Decorator():
+        @memoize
+        def dec(self, a):
+            return a
+    """)
+    check_fp(src, 2)
+
+
+def test_nested_funcs():
+    src = dedent("""\
+    def memoize(func):
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+    """)
+    check_fp(src, 3)
 
 
 def test_incomplete_function():
