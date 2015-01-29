@@ -542,6 +542,7 @@ class FastTokenizer(object):
             self._indent_counter += 1
         elif typ == DEDENT:
             self._indent_counter -= 1
+            print('DEDENT', self._flow_indent_counter, start_pos, self._indent_counter)
             if self._in_flow and self._indent_counter == self._flow_indent_counter:
                 self._in_flow = False
                 self._next_dedent_noclose = True
@@ -549,10 +550,11 @@ class FastTokenizer(object):
 
         if self.previous[0] in (NEWLINE, INDENT, DEDENT):
             if self.previous[0] == DEDENT:
-                if not self._next_dedent_noclose:
-                    self._first_stmt = False
-                    return self._close()
                 if not self._in_flow:
+                    if not self._next_dedent_noclose:
+                        self._first_stmt = False
+                        return self._close()
+
                     self._next_dedent_noclose = False
             # Check for NEWLINE, which symbolizes the indent.
             #print('X', repr(value), tokenize.tok_name[typ])

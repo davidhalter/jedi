@@ -142,6 +142,20 @@ def test_for():
     check_fp(src, 1)
 
 
+def test_func_with_if():
+    src = dedent("""\
+    def recursion(a):
+        if foo:
+            return recursion(a)
+        else:
+            if bar:
+                return inexistent
+            else:
+                return a
+    """)
+    check_fp(src, 1)
+
+
 def test_incomplete_function():
     source = '''return ImportErr'''
 
