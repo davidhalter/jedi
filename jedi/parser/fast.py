@@ -72,6 +72,17 @@ class MergedNamesDict(object):
     def __getitem__(self, value):
         return list(chain.from_iterable(dct.get(value, []) for dct in self.dicts))
 
+    def items(self):
+        dct = {}
+        for d in self.dicts:
+            for key, values in d.items():
+                try:
+                    dct_values = dct[key]
+                    dct_values += values
+                except KeyError:
+                    dct[key] = list(values)
+        return dct.items()
+
     def values(self):
         lst = []
         for dct in self.dicts:
