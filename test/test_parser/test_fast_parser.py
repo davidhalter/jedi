@@ -131,6 +131,17 @@ def test_if_simple():
     check_fp(src + "else:\n    a = ''\na", 1)
 
 
+def test_for():
+    src = dedent("""\
+    for a in [1,2]:
+        a
+
+    for a1 in 1,"":
+        a1
+    """)
+    check_fp(src, 1)
+
+
 def test_incomplete_function():
     source = '''return ImportErr'''
 

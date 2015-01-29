@@ -12,8 +12,10 @@ from jedi.parser import Parser
 from jedi.parser import tree as pr
 from jedi.parser import tokenize
 from jedi import cache
-from jedi.parser.tokenize import (source_tokens, FLOWS, NEWLINE,
+from jedi.parser.tokenize import (source_tokens, NEWLINE,
                                   ENDMARKER, INDENT, DEDENT)
+
+FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally', 'for']
 
 
 class FastModule(pr.SubModule):
@@ -278,7 +280,7 @@ class ParserNode(object):
 
 class FastParser(use_metaclass(CachedFastParser)):
 
-    _keyword_re = re.compile('^[ \t]*(def|class|@|%s)' % '|'.join(tokenize.FLOWS))
+    _keyword_re = re.compile('^[ \t]*(def|class|@|%s)' % '|'.join(FLOWS))
 
     def __init__(self, grammar, source, module_path=None):
         # set values like `pr.Module`.
@@ -348,7 +350,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             if not in_flow:
                 m = self._keyword_re.match(l)
                 if m:
-                    in_flow = m.group(1) in tokenize.FLOWS
+                    in_flow = m.group(1) in FLOWS
                     if not is_decorator and not in_flow:
                         if current_lines:
                             yield gen_part()
@@ -540,7 +542,6 @@ class FastTokenizer(object):
             self._indent_counter += 1
         elif typ == DEDENT:
             self._indent_counter -= 1
-            print(self._flow_indent_counter)
             if self._in_flow and self._indent_counter == self._flow_indent_counter:
                 self._in_flow = False
                 self._next_dedent_noclose = True

@@ -21,11 +21,6 @@ from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER,
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
 
-# From here on we have custom stuff (everything before was originally Python
-# internal code).
-FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally']
-
-
 namechars = string.ascii_letters + '_'
 
 
