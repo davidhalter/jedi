@@ -181,7 +181,8 @@ def test_nested_funcs():
 
 
 def test_func_with_for_and_comment():
-    # The first newline is important, leave it.
+    # The first newline is important, leave it. It should not trigger another
+    # parser split.
     src = dedent("""\
 
     def func():
@@ -190,7 +191,7 @@ def test_func_with_for_and_comment():
     for a in [1]:
         # COMMENT
         a""")
-    check_fp(src, 2, 3)
+    check_fp(src, 2)
     check_fp('a\n' + src, 1, 3)
 
 

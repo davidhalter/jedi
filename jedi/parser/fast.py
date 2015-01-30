@@ -330,6 +330,13 @@ class FastParser(use_metaclass(CachedFastParser)):
             self.number_of_splits += 1
             return text
 
+        def just_newlines(current_lines):
+            for line in current_lines:
+                line = line.lstrip('\t ')
+                if line and line[0] not in ('#', '\r'):
+                    return False
+            return True
+
         # Split only new lines. Distinction between \r\n is the tokenizer's
         # job.
         self._lines = source.split('\n')
@@ -365,7 +372,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 if m:
                     in_flow = m.group(1) in FLOWS
                     if not is_decorator and not in_flow:
-                        if current_lines:
+                        if not just_newlines(current_lines):
                             yield gen_part()
                     is_decorator = '@' == m.group(1)
                     if not is_decorator:
