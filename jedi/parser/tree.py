@@ -706,7 +706,7 @@ class Class(ClassOrFunc):
         super(Class, self).__init__(children)
 
     def get_super_arglist(self):
-        if len(self.children) == 4:  # Has no parentheses
+        if self.children[2] != '(':  # Has no parentheses
             return None
         else:
             if self.children[3] == ')':  # Empty parentheses

@@ -301,13 +301,13 @@ class Parser(object):
 
     def _tokenize(self, tokenizer):
         for typ, value, start_pos, prefix in tokenizer:
+           # print(token.tok_name[typ], repr(value), start_pos, repr(prefix))
             if self._omit_dedent and typ == token.DEDENT:
                 self._omit_dedent -= 1
                 continue
 
             if typ == token.OP:
                 typ = token.opmap[value]
-            print(token.tok_name[typ], repr(value), start_pos, repr(prefix))
             yield typ, value, prefix, start_pos
 
     def __repr__(self):
@@ -322,7 +322,6 @@ class Parser(object):
         endmarker = self.module.children[-1]
         # The newline is either in the endmarker as a prefix or the previous
         # leaf as a newline token.
-        print('REMOVE', endmarker.start_pos)
         if endmarker.prefix.endswith('\n'):
             endmarker.prefix = endmarker.prefix[:-1]
             last_line = re.sub('.*\n', '', endmarker.prefix)

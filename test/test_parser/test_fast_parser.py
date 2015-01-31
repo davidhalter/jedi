@@ -180,6 +180,24 @@ def test_nested_funcs():
     check_fp(src, 3)
 
 
+def test_class_and_if():
+    src = dedent("""\
+    class V:
+        def __init__(self):
+            pass
+
+        if 1:
+            c = 3
+
+    def a_func():
+        return 1
+
+    # COMMENT
+    a_func()""")
+    check_fp(src, 5, 5)
+    assert [d.name for d in jedi.Script(src).goto_definitions()] == ['int']
+
+
 def test_func_with_for_and_comment():
     # The first newline is important, leave it. It should not trigger another
     # parser split.
