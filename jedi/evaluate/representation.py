@@ -177,7 +177,6 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         return names
 
     def get_subscope_by_name(self, name):
-        print(name)
         sub = self.base.get_subscope_by_name(name)
         return get_instance_el(self._evaluator, self, sub, True)
 

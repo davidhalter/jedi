@@ -186,7 +186,7 @@ class ParserNode(object):
         Closes the current parser node. This means that after this no further
         nodes should be added anymore.
         """
-        print('CLOSE NODE', id(self), self.parent, self._node_children)
+        #print('CLOSE NODE', id(self), self.parent, self._node_children)
         # We only need to replace the dict if multiple dictionaries are used:
         if self._node_children:
             dcts = [n.parser.module.names_dict for n in self._node_children]
@@ -405,8 +405,9 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         for code_part in self._split_parts(source):
             if not is_first:
-                print('OFF', line_offset + 1, self.current_node.parser.module.end_pos)
+                #print('OFF', line_offset + 1, self.current_node.parser.module.end_pos)
                 #import pdb; pdb.set_trace()
+             pass
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
                 indent = len(code_part) - len(code_part.lstrip('\t '))
                 self.current_node = self.current_node.parent_until_indent(indent)
@@ -493,7 +494,6 @@ class FastParser(use_metaclass(CachedFastParser)):
             node = ParserNode(self.module)
 
             end = line_offset + p.module.end_pos[0]
-            print('\nACTUALLY PARSING', p.module.end_pos, repr(source), len(self._lines), line_offset)
             if not (len(self._lines) == end):
                 # We don't keep the last line, except if were done. A newline
                 # ends on the next line, which is part of the next parser. But
@@ -551,7 +551,6 @@ class FastTokenizer(object):
             self._indent_counter += 1
         elif typ == DEDENT:
             self._indent_counter -= 1
-            print(self._in_flow, self._indent_counter, self._flow_indent_counter)
             if self._in_flow and self._indent_counter == self._flow_indent_counter:
                 self._in_flow = False
             elif not self._in_flow:
