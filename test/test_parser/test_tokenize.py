@@ -1,8 +1,12 @@
+# -*- coding: utf-8    # This file contains Unicode characters.
+
 from io import StringIO
 from token import NEWLINE, STRING
 
-from jedi._compatibility import u
+from jedi._compatibility import u, is_py3
+from jedi.parser.token import NAME
 from jedi import parser
+
 
 from ..helpers import unittest
 
@@ -72,6 +76,24 @@ asdfasdf""" + "h"
                 self.assertEqual(prefix, '        ')
             if value == 'if':
                 self.assertEqual(prefix, '    ')
+
+    def test_identifier_contains_unicode(self):
+        fundef = u('''
+def 我あφ():
+    pass
+''')
+        fundef_io = StringIO(fundef)
+        if is_py3:
+            tokens = parser.tokenize.generate_tokens(fundef_io.readline)
+            token_list = list(tokens)
+            identifier_token = next(
+                (token for token in token_list if token[1] == '我あφ'),
+                None
+            )
+            self.assertIsNotNone(identifier_token)
+            self.assertEqual(identifier_token[0], NAME)
+        else:
+            pass
 
 
 def test_tokenizer_with_string_literal_backslash():
