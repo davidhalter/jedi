@@ -614,7 +614,7 @@ class SubModule(Scope, Module):
     of a module.
     """
     __slots__ = ('path', 'global_names', 'used_names', '_name',
-                 'use_as_parent', 'error_statement_stacks')
+                 'error_statement_stacks')
     type = 'file_input'
 
     def __init__(self, children):
@@ -628,7 +628,6 @@ class SubModule(Scope, Module):
         """
         super(SubModule, self).__init__(children)
         self.path = None  # Set later.
-        # this may be changed depending on fast_parser
 
     @property
     @cache.underscore_memoization

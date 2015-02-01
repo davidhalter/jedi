@@ -62,6 +62,21 @@ class FastModule(pr.SubModule):
         return "<fast.%s: %s@%s-%s>" % (type(self).__name__, self.name,
                                         self.start_pos[0], self.end_pos[0])
 
+    # To avoid issues with with the `parser.Parser`, we need setters that do
+    # nothing, because if pickle comes along and sets those values.
+    @global_names.setter
+    def global_names(self, value):
+        pass
+
+    @error_statement_stacks.setter
+    def error_statement_stacks(self, value):
+        pass
+
+    @used_names.setter
+    def used_names(self, value):
+        pass
+
+
 
 class MergedNamesDict(object):
     def __init__(self, dicts):
