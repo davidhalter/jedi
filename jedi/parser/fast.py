@@ -541,6 +541,7 @@ class FastTokenizer(object):
         self._indent_counter = 0
         self._flow_indent_counter = 0
         self._returned_endmarker = False
+        self._expect_indent = False
 
     def __iter__(self):
         return self
@@ -562,8 +563,14 @@ class FastTokenizer(object):
         self.previous = self.current
         self.current = current
 
+        print(self.current, self._expect_indent, self.previous)
         if typ == INDENT:
             self._indent_counter += 1
+            if not self._expect_indent and not self._first_stmt:
+                # This does not mean that there is an actual flow, but it means
+                # that the INDENT is either syntactically wrong or a flow.
+                self._in_flow = True
+            self._expect_indent = False
         elif typ == DEDENT:
             self._indent_counter -= 1
             if self._in_flow and self._indent_counter == self._flow_indent_counter:
@@ -575,9 +582,9 @@ class FastTokenizer(object):
         # Parentheses ignore the indentation rules. The other three stand for
         # new lines.
         if self.previous[0] in (NEWLINE, INDENT, DEDENT) \
-                and not self._parentheses_level:
+                and not self._parentheses_level and typ != INDENT:
             # Check for NEWLINE, which symbolizes the indent.
-            #print('X', repr(value), tokenize.tok_name[typ])
+            print('X', repr(value), tokenize.tok_name[typ])
             if not self._in_flow:
                 self._in_flow = value in FLOWS
                 if self._in_flow:
@@ -586,10 +593,18 @@ class FastTokenizer(object):
                     # The values here are exactly the same check as in
                     # _split_parts, but this time with tokenize and therefore
                     # precise.
-                    if not self._is_decorator:
+                    if not self._first_stmt and not self._is_decorator:
                         return self._close()
 
                     self._is_decorator = '@' == value
+                    if not self._is_decorator:
+                        self._first_stmt = False
+                        self._expect_indent = True
+                elif self._expect_indent:
+                    print('EXP', self._first_stmt)
+                    return self._close()
+                else:
+                    self._first_stmt = False
 
         if value in '([{' and value:
             self._parentheses_level += 1

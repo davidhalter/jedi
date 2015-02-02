@@ -213,6 +213,27 @@ def test_func_with_for_and_comment():
     check_fp('a\n' + src, 1, 3)
 
 
+def test_one_statement_func():
+    src = dedent("""\
+    first
+    def func(): a
+    """)
+    check_fp(src + 'second', 3)
+    # Empty the parser cache, because we're not interested in modifications
+    # here.
+    cache.parser_cache.pop(None, None)
+    check_fp(src + 'def second():\n a', 3)
+
+def test_wrong_indentation():
+    src = dedent("""\
+    def func():
+        a
+         b
+        a
+    """)
+    check_fp(src, 1)
+
+
 def test_incomplete_function():
     source = '''return ImportErr'''
 
