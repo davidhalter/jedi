@@ -158,9 +158,7 @@ class Leaf(Base):
 
     @start_pos.setter
     def start_pos(self, value):
-        # TODO I think this is wrong, because the position_modifier.line needs
-        # to be looked at as well. Probably it needs to be substracted.
-        self._start_pos = value
+        self._start_pos = value[0] - self.position_modifier.line, value[1]
 
     @property
     def end_pos(self):
