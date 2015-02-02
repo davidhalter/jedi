@@ -404,7 +404,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             return self._get_node(unicode(''), unicode(''), 0, [], False)
 
         added_newline = False
-        if source[-1] != '\n':
+        if not source or source[-1] != '\n':
             # To be compatible with Pythons grammar, we need a newline at the
             # end. The parser would handle it, but since the fast parser abuses
             # the normal parser in various ways, we need to care for this

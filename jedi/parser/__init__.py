@@ -50,10 +50,16 @@ def load_grammar(file='grammar3.4'):
 
 
 class ErrorStatement(object):
-    def __init__(self, stack, next_token, next_start_pos):
+    def __init__(self, stack, next_token, position_modifier, next_start_pos):
         self.stack = stack
+        self._position_modifier = position_modifier
         self.next_token = next_token
-        self.next_start_pos = next_start_pos
+        self._next_start_pos = next_start_pos
+
+    @property
+    def next_start_pos(self):
+        s = self._next_start_pos
+        return s[0] + self._position_modifier.line, s[1]
 
     @property
     def first_pos(self):
@@ -292,7 +298,7 @@ class Parser(object):
             if nodes and nodes[0] in ('def', 'class', 'lambda'):
                 self.scope_names_stack.pop()
         if failed_stack:
-            err = ErrorStatement(failed_stack, value, start_pos)
+            err = ErrorStatement(failed_stack, value, self.position_modifier, start_pos)
             self.error_statement_stacks.append(err)
 
         self._last_failed_start_pos = start_pos
