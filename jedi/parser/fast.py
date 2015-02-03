@@ -337,24 +337,21 @@ class FastParser(use_metaclass(CachedFastParser)):
         not everything.
         """
         def gen_part():
-            text = '\n'.join(current_lines)
+            text = ''.join(current_lines)
             del current_lines[:]
             self.number_of_splits += 1
-            if i == len(self._lines) - 1:
-                return text
-            else:
-                return text + '\n'
+            return text
 
         def just_newlines(current_lines):
             for line in current_lines:
-                line = line.lstrip('\t ')
-                if line and line[0] not in ('#', '\r'):
+                line = line.lstrip('\t \n\r')
+                if line and line[0] != '#':
                     return False
             return True
 
         # Split only new lines. Distinction between \r\n is the tokenizer's
         # job.
-        self._lines = source.split('\n')
+        self._lines = source.splitlines(keepends=True)
         current_lines = []
         is_decorator = False
         current_indent = 0
@@ -364,9 +361,9 @@ class FastParser(use_metaclass(CachedFastParser)):
         # All things within flows are simply being ignored.
         for i, l in enumerate(self._lines):
             # check for dedents
-            s = l.lstrip('\t ')
+            s = l.lstrip('\t \n\r')
             indent = len(l) - len(s)
-            if not s or s[0] in ('#', '\r'):
+            if not s or s[0] == '#':
                 current_lines.append(l)  # just ignore comments and blank lines
                 continue
 
@@ -388,7 +385,6 @@ class FastParser(use_metaclass(CachedFastParser)):
                     in_flow = m.group(1) in FLOWS
                     if not is_decorator and not in_flow:
                         if not just_newlines(current_lines):
-                            print('GEN', current_lines)
                             yield gen_part()
                     is_decorator = '@' == m.group(1)
                     if not is_decorator:
@@ -424,7 +420,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         for code_part in self._split_parts(source):
             if not is_first:
-                print('OFF', line_offset, self.current_node.parser.module.end_pos)
+                #print('OFF', line_offset, self.current_node.parser.module.end_pos)
                 #import pdb; pdb.set_trace()
                 pass # TODO remove
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
@@ -470,7 +466,6 @@ class FastParser(use_metaclass(CachedFastParser)):
             start += len(code_part)
 
         if added_newline:
-            print('REMOVE NL', self.current_node)
             self.current_node.remove_last_newline()
 
         # Now that the for loop is finished, we still want to close all nodes.
@@ -498,10 +493,9 @@ class FastParser(use_metaclass(CachedFastParser)):
         """
         Side effect: Alters the list of nodes.
         """
-        print('r', repr(source))
         h = hash(source)
         for index, node in enumerate(nodes):
-            print('EQ', node, repr(node.source), repr(source))
+            #print('EQ', node, repr(node.source), repr(source))
             if node.hash == h and node.source == source:
                 node.reset_node()
                 nodes.remove(node)
@@ -509,19 +503,13 @@ class FastParser(use_metaclass(CachedFastParser)):
         else:
             tokenizer = FastTokenizer(parser_code, 0)
             self.number_parsers_used += 1
-            print('CODE', repr(source))
+            #print('CODE', repr(source))
             p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
             node = ParserNode(self.module)
 
             end = line_offset + p.module.end_pos[0]
-            if not (len(self._lines) == end):
-                # We don't keep the last line, except if were done. A newline
-                # ends on the next line, which is part of the next parser. But
-                # the last parser includes the last new line.
-                end -= 1
-            print(line_offset, end)
-            used_lines = self._lines[line_offset:end]
-            code_part_actually_used = '\n'.join(used_lines)
+            used_lines = self._lines[line_offset:end - 1]
+            code_part_actually_used = ''.join(used_lines)
             node.set_parser(p, code_part_actually_used)
 
         self.current_node.add_node(node, line_offset)
@@ -589,7 +577,7 @@ class FastTokenizer(object):
         if self.previous[0] in (NEWLINE, INDENT, DEDENT) \
                 and not self._parentheses_level and typ != INDENT:
             # Check for NEWLINE, which symbolizes the indent.
-            print('X', repr(value), tokenize.tok_name[typ])
+           # print('X', repr(value), tokenize.tok_name[typ])
             if not self._in_flow:
                 self._in_flow = value in FLOWS
                 if self._in_flow:
@@ -606,7 +594,6 @@ class FastTokenizer(object):
                         self._first_stmt = False
                         self._expect_indent = True
                 elif self._expect_indent:
-                    print('EXP', self._first_stmt)
                     return self._close()
                 else:
                     self._first_stmt = False
