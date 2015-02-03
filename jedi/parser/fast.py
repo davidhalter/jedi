@@ -340,7 +340,10 @@ class FastParser(use_metaclass(CachedFastParser)):
             text = '\n'.join(current_lines)
             del current_lines[:]
             self.number_of_splits += 1
-            return text
+            if i == len(self._lines) - 1:
+                return text
+            else:
+                return text + '\n'
 
         def just_newlines(current_lines):
             for line in current_lines:
@@ -359,7 +362,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         new_indent = False
         in_flow = False
         # All things within flows are simply being ignored.
-        for l in self._lines:
+        for i, l in enumerate(self._lines):
             # check for dedents
             s = l.lstrip('\t ')
             indent = len(l) - len(s)
@@ -385,6 +388,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     in_flow = m.group(1) in FLOWS
                     if not is_decorator and not in_flow:
                         if not just_newlines(current_lines):
+                            print('GEN', current_lines)
                             yield gen_part()
                     is_decorator = '@' == m.group(1)
                     if not is_decorator:
@@ -420,9 +424,9 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         for code_part in self._split_parts(source):
             if not is_first:
-                #print('OFF', line_offset + 1, self.current_node.parser.module.end_pos)
+                print('OFF', line_offset, self.current_node.parser.module.end_pos)
                 #import pdb; pdb.set_trace()
-             pass
+                pass # TODO remove
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
                 indent = len(code_part) - len(code_part.lstrip('\t '))
                 self.current_node = self.current_node.parent_until_indent(indent)
@@ -462,10 +466,11 @@ class FastParser(use_metaclass(CachedFastParser)):
             #else:
                 #print '#'*45, line_offset, p.module.end_pos, 'theheck\n', repr(code_part)
 
-            line_offset += code_part.count('\n') + 1
-            start += len(code_part) + 1  # +1 for newline
+            line_offset += code_part.count('\n')
+            start += len(code_part)
 
         if added_newline:
+            print('REMOVE NL', self.current_node)
             self.current_node.remove_last_newline()
 
         # Now that the for loop is finished, we still want to close all nodes.
@@ -493,9 +498,10 @@ class FastParser(use_metaclass(CachedFastParser)):
         """
         Side effect: Alters the list of nodes.
         """
+        print('r', repr(source))
         h = hash(source)
         for index, node in enumerate(nodes):
-            #print('EQ', node, repr(node.source), repr(source))
+            print('EQ', node, repr(node.source), repr(source))
             if node.hash == h and node.source == source:
                 node.reset_node()
                 nodes.remove(node)
@@ -503,9 +509,8 @@ class FastParser(use_metaclass(CachedFastParser)):
         else:
             tokenizer = FastTokenizer(parser_code, 0)
             self.number_parsers_used += 1
+            print('CODE', repr(source))
             p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
-            #p.module.parent = self.module  # With the new parser this is not
-                                            # necessary anymore?
             node = ParserNode(self.module)
 
             end = line_offset + p.module.end_pos[0]
@@ -514,6 +519,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 # ends on the next line, which is part of the next parser. But
                 # the last parser includes the last new line.
                 end -= 1
+            print(line_offset, end)
             used_lines = self._lines[line_offset:end]
             code_part_actually_used = '\n'.join(used_lines)
             node.set_parser(p, code_part_actually_used)
@@ -563,7 +569,6 @@ class FastTokenizer(object):
         self.previous = self.current
         self.current = current
 
-        print(self.current, self._expect_indent, self.previous)
         if typ == INDENT:
             self._indent_counter += 1
             if not self._expect_indent and not self._first_stmt:
@@ -628,17 +633,20 @@ class FastTokenizer(object):
     def _finish_dedents(self):
         if self._indent_counter:
             self._indent_counter -= 1
-            return tokenize.DEDENT, '', self.current[2], ''
+            return DEDENT, '', self.current[2], ''
         elif not self._returned_endmarker:
             self._returned_endmarker = True
             # We're using the current prefix for the endmarker to not loose any
             # information. However we care about "lost" lines. The prefix of
             # the current line (indent) will always be included in the current
             # line.
-            t, _, start_pos, prefix = next(self._gen)
+            if self.current[0] == DEDENT:
+                prefix = next(self._gen)[3]
+            else:
+                prefix = self.current[3]
             # \Z for the end of the string. $ is bugged, because it has the
             # same behavior with or without re.MULTILINE.
             prefix = re.sub(r'[^\n]+\Z', '', prefix)
-            return ENDMARKER, '', start_pos, prefix
+            return ENDMARKER, '', self.current[2], prefix
         else:
             raise StopIteration

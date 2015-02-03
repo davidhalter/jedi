@@ -59,6 +59,21 @@ def test_carriage_return_splitting():
     assert [n.value for lst in p.module.names_dict.values() for n in lst] == ['Foo']
 
 
+def test_split_parts():
+    def splits(source):
+        class Obj(object):
+            _keyword_re = FastParser._keyword_re
+            number_of_splits = True
+
+        return tuple(FastParser._split_parts(Obj(), source))
+
+    def test(*parts):
+        assert splits(''.join(parts)) == parts
+
+    test('a\n\n', 'def b(): pass\n', 'c\n')
+    test('a\n', 'def b():\n pass\n', 'c\n')
+
+
 def check_fp(src, number_parsers_used, number_of_splits=None):
     if number_of_splits is None:
         number_of_splits = number_parsers_used
@@ -206,11 +221,14 @@ def test_func_with_for_and_comment():
     def func():
         pass
 
+
     for a in [1]:
         # COMMENT
         a""")
     check_fp(src, 2)
-    check_fp('a\n' + src, 1, 3)
+    # We don't need to parse the for loop, but we need to parse the other two,
+    # because the split is in a different place.
+    check_fp('a\n' + src, 2, 3)
 
 
 def test_one_statement_func():
