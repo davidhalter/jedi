@@ -113,8 +113,9 @@ class Parser(object):
             'lambdef_nocond': pt.Lambda,
         }
 
-        self.global_names = []
-        self._omit_dedent = 0
+        self._global_names = []
+        self._omit_dedent_list = []
+        self._indent_counter = 0
         self._last_failed_start_pos = (0, 0)
 
         # TODO do print absolute import detection here.
@@ -126,9 +127,9 @@ class Parser(object):
         #if self.options["print_function"]:
         #    python_grammar = pygram.python_grammar_no_print_statement
         #else:
-        self.used_names = {}
-        self.scope_names_stack = [{}]
-        self.error_statement_stacks = []
+        self._used_names = {}
+        self._scope_names_stack = [{}]
+        self._error_statement_stacks = []
 
         added_newline = False
         # The Python grammar needs a newline at the end of each statement.
@@ -145,11 +146,10 @@ class Parser(object):
 
         if added_newline:
             self.remove_last_newline()
-        self.module.used_names = self.used_names
+        self.module.used_names = self._used_names
         self.module.path = module_path
-        self.module.global_names = self.global_names
-        self.module.error_statement_stacks = self.error_statement_stacks
-        self.grammar_symbols = grammar.number2symbol
+        self.module.global_names = self._global_names
+        self.module.error_statement_stacks = self._error_statement_stacks
 
     def convert_node(self, grammar, type, children):
         """
@@ -168,25 +168,25 @@ class Parser(object):
         # We need to check raw_node always, because the same node can be
         # returned by convert multiple times.
         if symbol == 'global_stmt':
-            self.global_names += new_node.get_global_names()
+            self._global_names += new_node.get_global_names()
         elif isinstance(new_node, pt.Lambda):
-            new_node.names_dict = self.scope_names_stack.pop()
+            new_node.names_dict = self._scope_names_stack.pop()
         elif isinstance(new_node, (pt.ClassOrFunc, pt.Module)) \
                 and symbol in ('funcdef', 'classdef', 'file_input'):
             # scope_name_stack handling
-            scope_names = self.scope_names_stack.pop()
+            scope_names = self._scope_names_stack.pop()
             if isinstance(new_node, pt.ClassOrFunc):
                 n = new_node.name
                 scope_names[n.value].remove(n)
                 # Set the func name of the current node
-                arr = self.scope_names_stack[-1].setdefault(n.value, [])
+                arr = self._scope_names_stack[-1].setdefault(n.value, [])
                 arr.append(n)
             new_node.names_dict = scope_names
         elif isinstance(new_node, pt.CompFor):
             # The name definitions of comprehenions shouldn't be part of the
             # current scope. They are part of the comprehension scope.
             for n in new_node.get_defined_names():
-                self.scope_names_stack[-1][n.value].remove(n)
+                self._scope_names_stack[-1][n.value].remove(n)
         return new_node
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
@@ -194,15 +194,15 @@ class Parser(object):
         if type == tokenize.NAME:
             if value in grammar.keywords:
                 if value in ('def', 'class', 'lambda'):
-                    self.scope_names_stack.append({})
+                    self._scope_names_stack.append({})
 
                 return pt.Keyword(self.position_modifier, value, start_pos, prefix)
             else:
                 name = pt.Name(self.position_modifier, value, start_pos, prefix)
                 # Keep a listing of all used names
-                arr = self.used_names.setdefault(name.value, [])
+                arr = self._used_names.setdefault(name.value, [])
                 arr.append(name)
-                arr = self.scope_names_stack[-1].setdefault(name.value, [])
+                arr = self._scope_names_stack[-1].setdefault(name.value, [])
                 arr.append(name)
                 return name
         elif type == token.STRING:
@@ -254,7 +254,7 @@ class Parser(object):
         if typ == token.INDENT:
             # For every deleted INDENT we have to delete a DEDENT as well.
             # Otherwise the parser will get into trouble and DEDENT too early.
-            self._omit_dedent += 1
+            self._omit_dedent_list.append(self._indent_counter)
 
         if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
             # Those can always be new statements.
@@ -279,8 +279,8 @@ class Parser(object):
                 except AttributeError:
                     if isinstance(c, pt.Name):
                         try:
-                            self.scope_names_stack[-1][c.value].remove(c)
-                            self.used_names[c.value].remove(c)
+                            self._scope_names_stack[-1][c.value].remove(c)
+                            self._used_names[c.value].remove(c)
                         except ValueError:
                             pass  # This may happen with CompFor.
 
@@ -296,10 +296,10 @@ class Parser(object):
                 symbol = grammar.number2symbol[typ]
                 failed_stack.append((symbol, nodes))
             if nodes and nodes[0] in ('def', 'class', 'lambda'):
-                self.scope_names_stack.pop()
+                self._scope_names_stack.pop()
         if failed_stack:
             err = ErrorStatement(failed_stack, value, self.position_modifier, start_pos)
-            self.error_statement_stacks.append(err)
+            self._error_statement_stacks.append(err)
 
         self._last_failed_start_pos = start_pos
 
@@ -308,9 +308,17 @@ class Parser(object):
     def _tokenize(self, tokenizer):
         for typ, value, start_pos, prefix in tokenizer:
             #print(token.tok_name[typ], repr(value), start_pos, repr(prefix))
-            if self._omit_dedent and typ == token.DEDENT:
-                self._omit_dedent -= 1
-                continue
+            if typ == token.DEDENT:
+                # We need to count indents, because if we just omit any DEDENT,
+                # we might omit them in the wrong place.
+                o = self._omit_dedent_list
+                if o and o[-1] == self._indent_counter:
+                    o.pop()
+                    continue
+
+                self._indent_counter -= 1
+            elif typ == token.INDENT:
+                self._indent_counter += 1
 
             if typ == token.OP:
                 typ = token.opmap[value]

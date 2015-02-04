@@ -242,6 +242,21 @@ def test_one_statement_func():
     cache.parser_cache.pop(None, None)
     check_fp(src + 'def second():\n a', 3)
 
+
+def test_class_func_if():
+    src = dedent("""\
+    class Class:
+        def func(self):
+            if 1:
+                a
+            else:
+                b
+
+    pass
+    """)
+    check_fp(src, 3)
+
+
 def test_wrong_indentation():
     src = dedent("""\
     def func():

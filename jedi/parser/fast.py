@@ -627,10 +627,11 @@ class FastTokenizer(object):
             # information. However we care about "lost" lines. The prefix of
             # the current line (indent) will always be included in the current
             # line.
-            if self.current[0] == DEDENT:
-                prefix = next(self._gen)[3]
-            else:
-                prefix = self.current[3]
+            cur = self.current
+            while cur[0] == DEDENT:
+                cur = next(self._gen)
+            prefix = cur[3]
+
             # \Z for the end of the string. $ is bugged, because it has the
             # same behavior with or without re.MULTILINE.
             prefix = re.sub(r'[^\n]+\Z', '', prefix)
