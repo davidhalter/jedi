@@ -21,6 +21,8 @@ import re
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser import token
+from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
+                               STRING, OP)
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser
 
@@ -205,11 +207,11 @@ class Parser(object):
                 arr = self._scope_names_stack[-1].setdefault(name.value, [])
                 arr.append(name)
                 return name
-        elif type == token.STRING:
+        elif type == STRING:
             return pt.String(self.position_modifier, value, start_pos, prefix)
-        elif type == token.NUMBER:
+        elif type == NUMBER:
             return pt.Number(self.position_modifier, value, start_pos, prefix)
-        elif type in (token.NEWLINE, token.ENDMARKER):
+        elif type in (NEWLINE, ENDMARKER):
             return pt.Whitespace(self.position_modifier, value, start_pos, prefix)
         else:
             return pt.Operator(self.position_modifier, value, start_pos, prefix)
@@ -251,7 +253,7 @@ class Parser(object):
 
         #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
         self._stack_removal(grammar, stack, index + 1, value, start_pos)
-        if typ == token.INDENT:
+        if typ == INDENT:
             # For every deleted INDENT we have to delete a DEDENT as well.
             # Otherwise the parser will get into trouble and DEDENT too early.
             self._omit_dedent_list.append(self._indent_counter)
@@ -259,7 +261,7 @@ class Parser(object):
         if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
             # Those can always be new statements.
             add_token_callback(typ, value, prefix, start_pos)
-        elif typ == token.DEDENT and symbol == 'suite':
+        elif typ == DEDENT and symbol == 'suite':
             # Close the current suite, with DEDENT.
             # Note that this may cause some suites to not contain any
             # statements at all. This is contrary to valid Python syntax. We
@@ -307,8 +309,8 @@ class Parser(object):
 
     def _tokenize(self, tokenizer):
         for typ, value, start_pos, prefix in tokenizer:
-            #print(token.tok_name[typ], repr(value), start_pos, repr(prefix))
-            if typ == token.DEDENT:
+            #print(tokenize.tok_name[typ], repr(value), start_pos, repr(prefix))
+            if typ == DEDENT:
                 # We need to count indents, because if we just omit any DEDENT,
                 # we might omit them in the wrong place.
                 o = self._omit_dedent_list
@@ -317,10 +319,10 @@ class Parser(object):
                     continue
 
                 self._indent_counter -= 1
-            elif typ == token.INDENT:
+            elif typ == INDENT:
                 self._indent_counter += 1
 
-            if typ == token.OP:
+            if typ == OP:
                 typ = token.opmap[value]
             yield typ, value, prefix, start_pos
 
