@@ -351,7 +351,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         # Split only new lines. Distinction between \r\n is the tokenizer's
         # job.
-        self._lines = source.splitlines(keepends=True)
+        self._lines = source.splitlines(True)
         current_lines = []
         is_decorator = False
         current_indent = 0
