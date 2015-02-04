@@ -570,6 +570,13 @@ class Interpreter(Script):
         super(Interpreter, self).__init__(source, **kwds)
         self.namespaces = namespaces
 
+        # Don't use the fast parser, because it does crazy stuff that we don't
+        # need in our very simple and small code here (that is always
+        # changing).
+        self._parser = UserContextParser(self._grammar, self.source,
+                                         self._orig_path, self._pos,
+                                         self._user_context,
+                                         use_fast_parser=False)
         interpreter.add_namespaces_to_parser(self._evaluator, namespaces,
                                              self._parser.module())
 

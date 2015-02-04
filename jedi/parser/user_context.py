@@ -4,7 +4,7 @@ import keyword
 
 from jedi import cache
 from jedi import common
-from jedi.parser import tokenize
+from jedi.parser import tokenize, Parser
 from jedi._compatibility import u
 from jedi.parser.fast import FastParser
 from jedi.parser import tree as pr
@@ -235,19 +235,24 @@ class UserContext(object):
 
 
 class UserContextParser(object):
-    def __init__(self, grammar, source, path, position, user_context):
+    def __init__(self, grammar, source, path, position, user_context,
+                 use_fast_parser=True):
         self._grammar = grammar
         self._source = source
         self._path = path and os.path.abspath(path)
         self._position = position
         self._user_context = user_context
+        self._use_fast_parser = use_fast_parser
 
     @cache.underscore_memoization
     def _parser(self):
         cache.invalidate_star_import_cache(self._path)
-        parser = FastParser(self._grammar, self._source, self._path)
-        # Don't pickle that module, because the main module is changing quickly
-        cache.save_parser(self._path, None, parser, pickling=False)
+        if self._use_fast_parser:
+            parser = FastParser(self._grammar, self._source, self._path)
+            # Don't pickle that module, because the main module is changing quickly
+            cache.save_parser(self._path, None, parser, pickling=False)
+        else:
+            parser = Parser(self._grammar, self._source, self._path)
         return parser
 
     @cache.underscore_memoization
