@@ -18,7 +18,7 @@ def testit():
     a = "huhu"
 '''))
         tok = parsed.module.subscopes[0].statements[0].children[2]
-        self.assertEqual(tok.end_pos, (3, 14))
+        assert tok.end_pos == (3, 14)
 
     def test_end_pos_multi_line(self):
         parsed = parser.Parser(parser.load_grammar(), u('''
@@ -27,7 +27,7 @@ def testit():
 asdfasdf""" + "h"
 '''))
         tok = parsed.module.subscopes[0].statements[0].children[2].children[0]
-        self.assertEqual(tok.end_pos, (4, 11))
+        assert tok.end_pos == (4, 11)
 
     def test_simple_no_whitespace(self):
         # Test a simple one line string, no preceding whitespace
@@ -36,8 +36,8 @@ asdfasdf""" + "h"
         tokens = parser.tokenize.generate_tokens(simple_docstring_io.readline)
         token_list = list(tokens)
         _, value, _, prefix = token_list[0]
-        self.assertEqual(prefix, '')
-        self.assertEqual(value, '"""simple one line docstring"""')
+        assert prefix == ''
+        assert value == '"""simple one line docstring"""'
 
     def test_simple_with_whitespace(self):
         # Test a simple one line string with preceding whitespace and newline
@@ -66,17 +66,17 @@ asdfasdf""" + "h"
         token_list = list(tokens)
         for _, value, _, prefix in token_list:
             if value == 'test_whitespace':
-                self.assertEqual(prefix, ' ')
+                assert prefix == ' '
             if value == '(':
-                self.assertEqual(prefix, '')
+                assert prefix == ''
             if value == '*':
-                self.assertEqual(prefix, '')
+                assert prefix == ''
             if value == '**':
-                self.assertEqual(prefix, ' ')
+                assert prefix == ' '
             if value == 'print':
-                self.assertEqual(prefix, '        ')
+                assert prefix == '        '
             if value == 'if':
-                self.assertEqual(prefix, '    ')
+                assert prefix == '    '
 
     def test_identifier_contains_unicode(self):
         fundef = u('''
@@ -92,7 +92,7 @@ def 我あφ():
                 None
             )
             self.assertIsNotNone(identifier_token)
-            self.assertEqual(identifier_token[0], NAME)
+            assert identifier_token[0] == NAME
         else:
             pass
 
