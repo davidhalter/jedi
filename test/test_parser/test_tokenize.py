@@ -1,7 +1,7 @@
 # -*- coding: utf-8    # This file contains Unicode characters.
 
 from io import StringIO
-from token import NEWLINE, STRING
+from token import NEWLINE, STRING, INDENT
 
 from jedi._compatibility import u, is_py3
 from jedi.parser.token import NAME
@@ -45,13 +45,14 @@ asdfasdf""" + "h"
         simple_docstring_io = StringIO(simple_docstring)
         tokens = parser.tokenize.generate_tokens(simple_docstring_io.readline)
         token_list = list(tokens)
-        typ, value, start_pos, prefix = token_list[0]
-        self.assertEqual(prefix, '  ')
-        self.assertEqual(value, '"""simple one line docstring"""')
-        self.assertEqual(typ, STRING)
+        assert token_list[0][0] == INDENT
         typ, value, start_pos, prefix = token_list[1]
-        self.assertEqual(prefix, ' ')
-        self.assertEqual(typ, NEWLINE)
+        assert prefix == '  '
+        assert value == '"""simple one line docstring"""'
+        assert typ == STRING
+        typ, value, start_pos, prefix = token_list[2]
+        assert prefix == ' '
+        assert typ == NEWLINE
 
     def test_function_whitespace(self):
         # Test function definition whitespace identification
