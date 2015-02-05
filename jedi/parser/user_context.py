@@ -289,12 +289,14 @@ class UserContextParser(object):
         user_stmt = self.user_stmt()
         if user_stmt is None:
             def scan(scope):
-                for s in scope.subscopes + list(reversed(scope.flows)):
-                    if isinstance(s, (pr.Scope, pr.Flow)):
-                        if s.start_pos <= self._position <= s.end_pos:
-                            if isinstance(s, pr.Flow):
-                                return s
-                            return scan(s) or s
+                for s in scope.children:
+                    if s.start_pos <= self._position <= s.end_pos:
+                        if isinstance(s, (pr.Scope, pr.Flow)):
+                                if isinstance(s, pr.Flow):
+                                    return s
+                                return scan(s) or s
+                        elif s.type in ('suite', 'decorated'):
+                            return scan(s)
 
             return scan(self.module()) or self.module()
         else:
