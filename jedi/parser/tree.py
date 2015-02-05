@@ -552,10 +552,8 @@ class Scope(Simple, DocstringMixin):
         return True
 
     @Python3Method
-    def get_statement_for_position(self, pos, include_imports=False):
-        checks = self.statements + self.asserts
-        if include_imports:
-            checks += self.imports
+    def get_statement_for_position(self, pos):
+        checks = self.statements + self.asserts + self.imports
         if self.isinstance(Function):
             checks += self.get_decorators()
             checks += [r for r in self.returns if r is not None]
@@ -566,7 +564,7 @@ class Scope(Simple, DocstringMixin):
 
         for s in self.subscopes:
             if s.start_pos <= pos <= s.end_pos:
-                p = s.get_statement_for_position(pos, include_imports)
+                p = s.get_statement_for_position(pos)
                 if p:
                     return p
 

@@ -682,9 +682,6 @@ class FunctionExecution(Executed):
     def subscopes(self):
         return self._copy_list(self.base.subscopes)
 
-    def get_statement_for_position(self, pos):
-        return pr.Scope.get_statement_for_position(self, pos)
-
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.base)
 

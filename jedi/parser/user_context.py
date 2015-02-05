@@ -259,7 +259,7 @@ class UserContextParser(object):
     def user_stmt(self):
         module = self.module()
         debug.speed('parsed')
-        return module.get_statement_for_position(self._position, include_imports=True)
+        return module.get_statement_for_position(self._position)
 
     @cache.underscore_memoization
     def user_stmt_with_whitespace(self):
@@ -278,7 +278,7 @@ class UserContextParser(object):
                 debug.warning('No statement under the cursor.')
                 return
             pos = next(self._user_context.get_context(yield_positions=True))
-            user_stmt = self.module().get_statement_for_position(pos, include_imports=True)
+            user_stmt = self.module().get_statement_for_position(pos)
         return user_stmt
 
     @cache.underscore_memoization
