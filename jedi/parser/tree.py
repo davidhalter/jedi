@@ -448,6 +448,19 @@ class Simple(Base):
                     return result
         return None
 
+    @Python3Method
+    def get_statement_for_position(self, pos):
+        for c in self.children:
+            if c.start_pos <= pos <= c.end_pos:
+                if isinstance(c, (ExprStmt, Import)):
+                    return c
+                else:
+                    try:
+                        return c.get_statement_for_position(pos)
+                    except AttributeError:
+                        pass  # Must be a non-scope
+        return None
+
     def first_leaf(self):
         try:
             return self.children[0].first_leaf()
@@ -550,23 +563,6 @@ class Scope(Simple, DocstringMixin):
 
     def is_scope(self):
         return True
-
-    @Python3Method
-    def get_statement_for_position(self, pos):
-        checks = self.statements + self.asserts + self.imports
-        if self.isinstance(Function):
-            checks += self.get_decorators()
-            checks += [r for r in self.returns if r is not None]
-
-        for s in checks:
-            if s.start_pos <= pos <= s.end_pos:
-                return s
-
-        for s in self.subscopes:
-            if s.start_pos <= pos <= s.end_pos:
-                p = s.get_statement_for_position(pos)
-                if p:
-                    return p
 
     def __repr__(self):
         try:
