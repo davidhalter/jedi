@@ -88,7 +88,7 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
-                        'asserts', 'doc', 'docstr', 'get_parent_until',
+                        'doc', 'docstr', 'get_parent_until',
                         'get_code', 'subscopes']:
             raise AttributeError("Accessing %s of %s is not allowed."
                                  % (self, name))

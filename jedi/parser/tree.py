@@ -527,12 +527,6 @@ class Scope(BaseNode, DocstringMixin):
         return self._search_in_scope(ReturnStmt)
 
     @property
-    def asserts(self):
-        # Needed here for fast_parser, because the fast_parser splits and
-        # returns will be in "normal" modules.
-        return self._search_in_scope(AssertStmt)
-
-    @property
     def subscopes(self):
         return self._search_in_scope(Scope)
 
@@ -1203,8 +1197,3 @@ class CompFor(BaseNode):
 
     def get_defined_names(self):
         return _defined_names(self.children[1])
-
-    @property
-    def asserts(self):
-        """Since it's a scope, it can be asked for asserts."""
-        return []

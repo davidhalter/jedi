@@ -39,7 +39,6 @@ class CheckAttribute(object):
 class CompiledObject(Base):
     # comply with the parser
     start_pos = 0, 0
-    asserts = []
     path = None  # modules have this attribute - set it to None.
 
     def __init__(self, obj, parent=None):

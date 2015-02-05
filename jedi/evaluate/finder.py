@@ -388,12 +388,18 @@ def check_flow_information(evaluator, flow, search_name, pos):
 
     result = []
     if flow.is_scope():
-        for ass in reversed(flow.asserts):
-            if pos is None or ass.start_pos > pos:
-                continue
-            result = _check_isinstance_type(evaluator, ass.assertion(), search_name)
-            if result:
-                break
+        # Check for asserts.
+        try:
+            names = reversed(flow.names_dict[search_name.value])
+        except (KeyError, AttributeError):
+            names = []
+
+        for name in names:
+            ass = name.get_parent_until(pr.AssertStmt)
+            if isinstance(ass, pr.AssertStmt) and pos is not None and ass.start_pos < pos:
+                result = _check_isinstance_type(evaluator, ass.assertion(), search_name)
+                if result:
+                    break
 
     if isinstance(flow, (pr.IfStmt, pr.WhileStmt)):
         element = flow.children[1]

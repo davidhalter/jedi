@@ -231,7 +231,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'get_imports', 'type',
-                        'doc', 'raw_doc', 'asserts']:
+                        'doc', 'raw_doc']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                  % (self, name))
         return getattr(self.base, name)
@@ -449,7 +449,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         raise KeyError("Couldn't find subscope.")
 
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'parent', 'asserts', 'raw_doc',
+        if name not in ['start_pos', 'end_pos', 'parent', 'raw_doc',
                         'doc', 'get_imports', 'get_parent_until', 'get_code',
                         'subscopes', 'names_dict', 'type']:
             raise AttributeError("Don't touch this: %s of %s !" % (name, self))
@@ -666,11 +666,6 @@ class FunctionExecution(Executed):
     @memoize_default([])
     def yields(self):
         return self._copy_list(self.base.yields)
-
-    @common.safe_property
-    @memoize_default([])
-    def asserts(self):
-        return self._copy_list(self.base.asserts)
 
     @common.safe_property
     @memoize_default([])
