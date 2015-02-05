@@ -215,16 +215,18 @@ class NameFinder(object):
 
         # Add isinstance and other if/assert knowledge.
         if isinstance(self.name_str, pr.Name):
-            flow_scope = self.name_str.parent.parent
             # Ignore FunctionExecution parents for now.
+            flow_scope = self.name_str
             until = flow_scope.get_parent_until(er.FunctionExecution)
-            while flow_scope and not isinstance(until, er.FunctionExecution):
+            while not isinstance(until, er.FunctionExecution):
+                flow_scope = flow_scope.get_parent_scope(include_flows=True)
+                if flow_scope is None:
+                    break
                 # TODO check if result is in scope -> no evaluation necessary
                 n = check_flow_information(self._evaluator, flow_scope,
                                            self.name_str, self.position)
                 if n:
                     return n
-                flow_scope = flow_scope.parent
 
         for name in names:
             new_types = _name_to_types(self._evaluator, name, self.scope)
@@ -372,7 +374,7 @@ def _eval_param(evaluator, param, scope):
         return res_new
 
 
-def check_flow_information(evaluator, flow, search_name_part, pos):
+def check_flow_information(evaluator, flow, search_name, pos):
     """ Try to find out the type of a variable just with the information that
     is given by the flows: e.g. It is also responsible for assert checks.::
 
@@ -389,13 +391,13 @@ def check_flow_information(evaluator, flow, search_name_part, pos):
         for ass in reversed(flow.asserts):
             if pos is None or ass.start_pos > pos:
                 continue
-            result = _check_isinstance_type(evaluator, ass.assertion(), search_name_part)
+            result = _check_isinstance_type(evaluator, ass.assertion(), search_name)
             if result:
                 break
 
     if isinstance(flow, (pr.IfStmt, pr.WhileStmt)):
         element = flow.children[1]
-        result = _check_isinstance_type(evaluator, element, search_name_part)
+        result = _check_isinstance_type(evaluator, element, search_name)
     return result
 
 
