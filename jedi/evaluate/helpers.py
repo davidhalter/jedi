@@ -77,7 +77,7 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
                 setattr(new_obj, key, d)
             elif isinstance(value, (list, tuple)):
                 setattr(new_obj, key, sequence_recursion(value))
-            elif isinstance(value, (pr.Simple, pr.Name)):
+            elif isinstance(value, (pr.BaseNode, pr.Name)):
                 setattr(new_obj, key, recursion(value))
 
         return new_obj

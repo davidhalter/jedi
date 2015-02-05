@@ -311,7 +311,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return par
 
     def get_parent_until(self, *args, **kwargs):
-        return pr.Simple.get_parent_until(self, *args, **kwargs)
+        return pr.BaseNode.get_parent_until(self, *args, **kwargs)
 
     def get_definition(self):
         return self.get_parent_until((pr.ExprStmt, pr.IsScope, pr.Import))

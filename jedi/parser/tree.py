@@ -396,7 +396,7 @@ class Keyword(Leaf):
         return hash(self.value)
 
 
-class Simple(Base):
+class BaseNode(Base):
     """
     The super class for Scope, Import, Name and Statement. Every object in
     the parser tree inherits from this class.
@@ -405,7 +405,7 @@ class Simple(Base):
 
     def __init__(self, children):
         """
-        Initialize :class:`Simple`.
+        Initialize :class:`BaseNode`.
 
         :param children: The module in which this Python object locates.
         """
@@ -475,7 +475,7 @@ class Simple(Base):
             (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
 
 
-class Node(Simple):
+class Node(BaseNode):
     """Concrete implementation for interior nodes."""
     __slots__ = ('type',)
 
@@ -504,7 +504,7 @@ class IsScope(use_metaclass(IsScopeMeta)):
     pass
 
 
-class Scope(Simple, DocstringMixin):
+class Scope(BaseNode, DocstringMixin):
     """
     Super class for the parser tree, which represents the state of a python
     text file.
@@ -646,7 +646,7 @@ class Module(Scope):
         return False
 
 
-class Decorator(Simple):
+class Decorator(BaseNode):
     type = 'decorator'
     __slots__ = ()
 
@@ -815,7 +815,7 @@ class Lambda(Function):
         return "<%s@%s>" % (self.__class__.__name__, self.start_pos)
 
 
-class Flow(Simple):
+class Flow(BaseNode):
     __slots__ = ()
 
 
@@ -899,7 +899,7 @@ class WithStmt(Flow):
                 return node.children[0]
 
 
-class Import(Simple):
+class Import(BaseNode):
     __slots__ = ()
 
     def path_for_name(self, name):
@@ -1038,7 +1038,7 @@ class ImportName(Import):
                     if alias is not None)
 
 
-class KeywordStatement(Simple):
+class KeywordStatement(BaseNode):
     """
     For the following statements: `assert`, `del`, `global`, `nonlocal`,
     `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
@@ -1074,7 +1074,7 @@ class ReturnStmt(KeywordStatement):
     __slots__ = ()
 
 
-class YieldExpr(Simple):
+class YieldExpr(BaseNode):
     type = 'yield_expr'
     __slots__ = ()
 
@@ -1100,7 +1100,7 @@ def _defined_names(current):
     return names
 
 
-class ExprStmt(Simple, DocstringMixin):
+class ExprStmt(BaseNode, DocstringMixin):
     type = 'expr_stmt'
     __slots__ = ()
 
@@ -1183,7 +1183,7 @@ class Param(Base):
         return '<%s: %s>' % (type(self).__name__, str(self.tfpdef) + default)
 
 
-class CompFor(Simple):
+class CompFor(BaseNode):
     type = 'comp_for'
     __slots__ = ()
 
