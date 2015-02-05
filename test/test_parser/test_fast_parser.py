@@ -60,12 +60,14 @@ def test_carriage_return_splitting():
 
 
 def test_split_parts():
-    def splits(source):
-        class Obj(object):
-            _keyword_re = FastParser._keyword_re
-            number_of_splits = True
+    cache.parser_cache.pop(None, None)
 
-        return tuple(FastParser._split_parts(Obj(), source))
+    def splits(source):
+        class Mock(FastParser):
+            def __init__(self, *args):
+                self.number_of_splits = 0
+
+        return tuple(FastParser._split_parts(Mock(None, None), source))
 
     def test(*parts):
         assert splits(''.join(parts)) == parts
