@@ -139,14 +139,14 @@ ALWAYS_BREAK_TOKEN = (';', 'import', 'from', 'class', 'def', 'try', 'except',
                       'finally', 'while', 'return')
 
 
-def source_tokens(source, line_offset=0):
+def source_tokens(source):
     """Generate tokens from a the source code (string)."""
     source = source + '\n'  # end with \n, because the parser needs it
     readline = StringIO(source).readline
-    return generate_tokens(readline, line_offset)
+    return generate_tokens(readline)
 
 
-def generate_tokens(readline, line_offset=0):
+def generate_tokens(readline):
     """
     A heavily modified Python standard library tokenizer.
 
@@ -156,7 +156,7 @@ def generate_tokens(readline, line_offset=0):
     """
     paren_level = 0  # count parentheses
     indents = [0]
-    lnum = line_offset
+    lnum = 0
     numchars = '0123456789'
     contstr = ''
     contline = None

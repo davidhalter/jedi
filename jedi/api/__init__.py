@@ -288,7 +288,7 @@ class Script(object):
 
     @memoize_default()
     def _get_under_cursor_stmt(self, cursor_txt):
-        tokenizer = source_tokens(cursor_txt, line_offset=self._pos[0] - 1)
+        tokenizer = source_tokens(cursor_txt)
         r = Parser(self._grammar, cursor_txt, tokenizer=tokenizer)
         try:
             # Take the last statement available.
@@ -304,7 +304,7 @@ class Script(object):
         else:
             pos = user_stmt.start_pos
 
-        stmt.move(0, pos[1])
+        stmt.move(pos[0] - 1, pos[1])  # Moving the offset.
         stmt.parent = self._parser.user_scope()
         return stmt
 

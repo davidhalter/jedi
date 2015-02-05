@@ -391,7 +391,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 nodes.remove(node)
                 break
         else:
-            tokenizer = FastTokenizer(parser_code, 0)
+            tokenizer = FastTokenizer(parser_code)
             self.number_parsers_used += 1
             #print('CODE', repr(source))
             p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
@@ -410,10 +410,9 @@ class FastTokenizer(object):
     """
     Breaks when certain conditions are met, i.e. a new function or class opens.
     """
-    def __init__(self, source, line_offset=0):
-        # TODO remove the whole line_offset stuff, it's not used anymore.
+    def __init__(self, source):
         self.source = source
-        self._gen = source_tokens(source, line_offset)
+        self._gen = source_tokens(source)
         self._closed = False
 
         # fast parser options
