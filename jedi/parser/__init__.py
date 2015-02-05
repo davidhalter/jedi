@@ -90,7 +90,7 @@ class Parser(object):
             'expr_stmt': pt.ExprStmt,
             'classdef': pt.Class,
             'funcdef': pt.Function,
-            'file_input': pt.SubModule,
+            'file_input': pt.Module,
             'import_name': pt.ImportName,
             'import_from': pt.ImportFrom,
             'break_stmt': pt.KeywordStatement,

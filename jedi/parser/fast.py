@@ -10,7 +10,6 @@ from jedi._compatibility import use_metaclass, unicode
 from jedi import settings
 from jedi.parser import Parser
 from jedi.parser import tree as pr
-from jedi.parser import tokenize
 from jedi import cache
 from jedi import debug
 from jedi.parser.tokenize import (source_tokens, NEWLINE,
@@ -19,7 +18,7 @@ from jedi.parser.tokenize import (source_tokens, NEWLINE,
 FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally', 'for']
 
 
-class FastModule(pr.SubModule):
+class FastModule(pr.Module):
     type = 'file_input'
 
     def __init__(self, module_path):

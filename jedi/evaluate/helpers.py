@@ -156,10 +156,6 @@ def get_module_names(module, all_scopes):
     return chain.from_iterable(dct.values())
 
 
-class FakeSubModule():
-    line_offset = 0
-
-
 class FakeImport(pr.Import):
     def __init__(self, name, parent, level=0):
         super(FakeImport, self).__init__([])

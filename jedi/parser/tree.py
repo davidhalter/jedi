@@ -11,16 +11,16 @@ By using `get_code` on a module, you can get back the 1-to-1 representation of
 the input given to the parser. This is important if you are using refactoring.
 
 The easiest way to play with this module is to use :class:`parsing.Parser`.
-:attr:`parsing.Parser.module` holds an instance of :class:`SubModule`:
+:attr:`parsing.Parser.module` holds an instance of :class:`Module`:
 
 >>> from jedi._compatibility import u
 >>> from jedi.parser import Parser, load_grammar
 >>> parser = Parser(load_grammar(), u('import os'), 'example.py')
 >>> submodule = parser.module
 >>> submodule
-<SubModule: example.py@1-1>
+<Module: example.py@1-1>
 
-Any subclasses of :class:`Scope`, including :class:`SubModule` has an attribute
+Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 :attr:`imports <Scope.imports>`:
 
 >>> submodule.imports
@@ -63,7 +63,7 @@ class DocstringMixin(object):
     @property
     def raw_doc(self):
         """ Returns a cleaned version of the docstring token. """
-        if isinstance(self, SubModule):
+        if isinstance(self, Module):
             stmt = self.children[0]
         else:
             stmt = self.children[self.children.index(':') + 1]
@@ -589,17 +589,7 @@ class Scope(Simple, DocstringMixin):
                 r = r.next
 
 
-class Module(Base):
-    """
-    For isinstance checks. fast_parser.Module also inherits from this.
-    """
-    __slots__ = ()
-
-    def is_scope(self):
-        return True
-
-
-class SubModule(Scope, Module):
+class Module(Scope):
     """
     The top scope, which is always a module.
     Depending on the underlying parser this may be a full module or just a part
@@ -611,14 +601,14 @@ class SubModule(Scope, Module):
 
     def __init__(self, children):
         """
-        Initialize :class:`SubModule`.
+        Initialize :class:`Module`.
 
         :type path: str
         :arg  path: File path to this module.
 
         .. todo:: Document `top_module`.
         """
-        super(SubModule, self).__init__(children)
+        super(Module, self).__init__(children)
         self.path = None  # Set later.
 
     @property
