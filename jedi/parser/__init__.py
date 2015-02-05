@@ -351,8 +351,11 @@ class Parser(object):
                 if newline.value == '':
                     # Must be a DEDENT, just continue.
                     newline = newline.get_previous()
+                elif newline.value != '\n':
+                    # This may happen if error correction strikes and removes
+                    # a whole statement including '\n'.
+                    break
                 else:
-                    assert newline.value == '\n'
                     newline.value = ''
                     if self._last_failed_start_pos > newline._start_pos:
                         # It may be the case that there was a syntax error in a
