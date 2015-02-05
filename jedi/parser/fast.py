@@ -6,7 +6,7 @@ finished (and still not working as I want), I won't document it any further.
 import re
 from itertools import chain
 
-from jedi._compatibility import use_metaclass, unicode
+from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.parser import Parser
 from jedi.parser import tree as pr
@@ -65,7 +65,6 @@ class FastModule(pr.Module):
     @used_names.setter
     def used_names(self, value):
         pass
-
 
 
 class MergedNamesDict(object):
@@ -174,31 +173,17 @@ class ParserNode(object):
             self._content_scope.names_dict = MergedNamesDict(dcts)
 
     def parent_until_indent(self, indent=None):
-        if indent is None or self._indent >= indent and self.parent:
-            if self.parent is not None:
-                self.close()
-                return self.parent.parent_until_indent(indent)
+        if (indent is None or self._indent >= indent) and self.parent is not None:
+            self.close()
+            return self.parent.parent_until_indent(indent)
         return self
 
     @property
     def _indent(self):
         if not self.parent:
             return 0
-        module = self.parser.module
-        try:
-            el = module.subscopes[0]
-        except IndexError:
-            try:
-                el = module.statements[0]
-            except IndexError:
-                try:
-                    el = module.imports[0]
-                except IndexError:
-                    try:
-                        el = [r for r in module.returns if r is not None][0]
-                    except IndexError:
-                        el = module.children[0]
-        return el.start_pos[1]
+
+        return self.parser.module.children[0].start_pos[1]
 
     def add_node(self, node, line_offset):
         """Adding a node means adding a node that was already added earlier"""
