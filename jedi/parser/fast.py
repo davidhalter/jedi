@@ -39,15 +39,6 @@ class FastModule(pr.SubModule):
     @property
     @cache.underscore_memoization
     def used_names(self):
-        """
-        used_names = {}
-        for m in self.modules:
-            for k, statement_set in m.used_names.items():
-                if k in used_names:
-                    used_names[k] |= statement_set
-                else:
-                    used_names[k] = set(statement_set)
-        """
         return MergedNamesDict([m.used_names for m in self.modules])
 
     @property
@@ -153,15 +144,6 @@ class ParserNode(object):
 
         # We need to be able to reset the original children of a parser.
         self._old_children = list(self._content_scope.children)
-
-        """
-        scope = self._content_scope
-        self._contents = {}
-        for c in pr.SCOPE_CONTENTS:
-            self._contents[c] = list(getattr(scope, c))
-        self._is_generator = scope.is_generator
-        """
-
         self._node_children = []
 
     def reset_node(self):
@@ -178,23 +160,6 @@ class ParserNode(object):
             scope.names_dict = scope.names_dict.dicts[0]
         except AttributeError:
             pass
-
-    def reset_contents(self):
-        raise NotImplementedError
-        """
-        scope = self._content_scope
-        for key, c in self._contents.items():
-            setattr(scope, key, list(c))
-        scope.is_generator = self._is_generator
-        """
-
-        """
-        if self.parent is None:
-            # Global vars of the first one can be deleted, in the global scope
-            # they make no sense.
-            self.parser.module.global_vars = []
-        """
-        # TODO REMOVE
 
     def close(self):
         """
@@ -236,17 +201,6 @@ class ParserNode(object):
                         el = module.children[0]
         return el.start_pos[1]
 
-    def _set_items(self, parser, set_parent=False):
-        # TODO global_vars ? is_generator ?
-        """
-        cur = self
-        while cur.parent is not None:
-            cur = cur.parent
-        cur.parser.module.global_vars += parser.module.global_vars
-
-        scope.is_generator |= parser.module.is_generator
-        """
-
     def add_node(self, node, line_offset):
         """Adding a node means adding a node that was already added earlier"""
         # Changing the line offsets is very important, because if they don't
@@ -264,28 +218,8 @@ class ParserNode(object):
         for child in m.children:
             child.parent = scope
             scope.children.append(child)
-            #print('\t\t', scope, child)
-            """
-            if isinstance(i, (pr.Function, pr.Class)):
-                for d in i.decorators:
-                    d.parent = scope
-            """
 
-        """
-        scope = self.content_scope
-        while scope is not None:
-            #print('x',scope)
-            if not isinstance(scope, pr.SubModule):
-                # TODO This seems like a strange thing. Check again.
-                scope.end_pos = node.content_scope.end_pos
-            scope = scope.parent
-        """
         return node
-
-    def add_parser(self, parser, code):
-        # TODO REMOVE
-        raise NotImplementedError
-        return self.add_node(ParserNode(self._fast_module, parser, code, self), True)
 
     def all_sub_nodes(self):
         """
@@ -400,9 +334,6 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def _parse(self, source):
         """ :type source: str """
-        def empty_parser_node():
-            return self._get_node(unicode(''), unicode(''), 0, [], False)
-
         added_newline = False
         if not source or source[-1] != '\n':
             # To be compatible with Pythons grammar, we need a newline at the
@@ -411,6 +342,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             # ourselves.
             source += '\n'
             added_newline = True
+
         line_offset = 0
         start = 0
         is_first = True
@@ -419,48 +351,17 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.current_node.reset_node()
 
         for code_part in self._split_parts(source):
-            if not is_first:
-                #print('OFF', line_offset, self.current_node.parser.module.end_pos)
-                #import pdb; pdb.set_trace()
-                pass # TODO remove
+            # If the last code part parsed isn't equal to the current end_pos,
+            # we know that the parser went further (`def` start in a
+            # docstring). So just parse the next part.
             if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
                 indent = len(code_part) - len(code_part.lstrip('\t '))
                 self.current_node = self.current_node.parent_until_indent(indent)
 
-                # print '#'*45,line_offset, p.module.end_pos, '\n', code_part
                 # check if code_part has already been parsed
                 self.current_node = self._get_node(code_part, source[start:],
                                                    line_offset, nodes, not is_first)
-
-                if False and is_first and self.current_node.parser.module.subscopes:
-                    raise NotImplementedError
-                    # Special case, we cannot use a function subscope as a
-                    # base scope, subscopes would save all the other contents
-                    new = empty_parser_node()  # TODO should be node = 
-                    self.current_node.set_parser(new, '')
-                    self.parsers.append(new)
-                    is_first = False
-
-
-                """
-                if is_first:
-                    if self.current_node is None:
-                        self.current_node = ParserNode(self.module, p, code_part_actually_used)
-                    else:
-                        pass
-                else:
-                    if node is None:
-                        self.current_node = \
-                            self.current_node.add_parser(p, code_part_actually_used)
-                    else:
-                        self.current_node = self.current_node.add_node(node)
-
-                self.parsers.append(p)
-                """
-
                 is_first = False
-            #else:
-                #print '#'*45, line_offset, p.module.end_pos, 'theheck\n', repr(code_part)
 
             line_offset += code_part.count('\n')
             start += len(code_part)
@@ -471,19 +372,8 @@ class FastParser(use_metaclass(CachedFastParser)):
         # Now that the for loop is finished, we still want to close all nodes.
         self.current_node = self.current_node.parent_until_indent()
         self.current_node.close()
-        """
-        if self.parsers:
-            self.current_node = self.current_node.parent_until_indent()
-            self.current_node.close()
-        else:
-            raise NotImplementedError
-            self.parsers.append(empty_parser_node())
-"""
 
-        """ TODO used?
-        self.module.end_pos = self.parsers[-1].module.end_pos
-        """
-        debug.dbg('Parsed %s, with %s parsers in %s splits.' 
+        debug.dbg('Parsed %s, with %s parsers in %s splits.'
                   % (self.module_path, self.number_parsers_used,
                      self.number_of_splits))
 
