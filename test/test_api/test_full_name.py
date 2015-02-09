@@ -45,7 +45,7 @@ class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
         self.check("""
         import re
         any_re = re.compile('.*')
-        any_re""", 're.RegexObject')
+        any_re""", '_sre.compile.SRE_Pattern')
 
     def test_from_import(self):
         self.check('from os import path', 'os.path')
