@@ -158,7 +158,7 @@ def test_error_correction_with():
 
 
 def test_newline_positions():
-    endmarker = Parser(load_grammar(), 'a\n').module.children[-1]
+    endmarker = Parser(load_grammar(), u('a\n')).module.children[-1]
     assert endmarker.end_pos == (2, 0)
     new_line = endmarker.get_previous()
     assert new_line.start_pos == (1, 1)
@@ -171,7 +171,7 @@ def test_end_pos_error_correction():
     grammar needs it. However, they are removed again. We still want the right
     end_pos, even if something breaks in the parser (error correction).
     """
-    s = 'def x():\n .'
+    s = u('def x():\n .')
     m = Parser(load_grammar(), s).module
     func = m.children[0]
     assert func.type == 'funcdef'

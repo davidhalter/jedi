@@ -92,7 +92,7 @@ def test_end_newlines():
     line the parser needs.
     """
     def test(source, end_pos):
-        module = Parser(load_grammar(), source).module
+        module = Parser(load_grammar(), u(source)).module
         assert module.get_code() == source
         assert module.end_pos == end_pos
 
