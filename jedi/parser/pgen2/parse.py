@@ -212,5 +212,5 @@ class PgenParser(object):
             # symbol, children = node
             self.stack[-1][2][1].append(newnode)
         except IndexError:
-            # stack is empty, set the rootnode.
+            # Stack is empty, set the rootnode.
             self.rootnode = newnode

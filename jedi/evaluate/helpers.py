@@ -156,7 +156,7 @@ def get_module_names(module, all_scopes):
     return chain.from_iterable(dct.values())
 
 
-class FakeImport(pr.Import):
+class FakeImport(pr.ImportName):
     def __init__(self, name, parent, level=0):
         super(FakeImport, self).__init__([])
         self.parent = parent

@@ -77,7 +77,7 @@ class DocstringMixin(object):
         except AttributeError:
             pass  # Probably a pass Keyword (Leaf).
         else:
-            if isinstance(first, String):
+            if first.type == 'string':
                 # TODO We have to check next leaves until there are no new
                 # leaves anymore that might be part of the docstring. A
                 # docstring can also look like this: ``'foo' 'bar'
@@ -281,16 +281,17 @@ class Name(Leaf):
 
     def is_definition(self):
         stmt = self.get_definition()
-        if isinstance(stmt, (Function, Class, Module)):
+        if stmt.type in ('funcdef', 'classdef', 'file_input'):
             return self == stmt.name
-        elif isinstance(stmt, ForStmt):
+        elif stmt.type == 'for_stmt':
             return self.start_pos < stmt.children[2].start_pos
-        elif isinstance(stmt, Param):
+        elif stmt.type == 'param':
             return self == stmt.get_name()
-        elif isinstance(stmt, TryStmt):
+        elif stmt.type == 'try_stmt':
             return self.prev_sibling() == 'as'
         else:
-            return isinstance(stmt, (ExprStmt, Import, CompFor, WithStmt)) \
+            return stmt.type in ('expr_stmt', 'import_name', 'import_from',
+                                 'comp_for', 'with_stmt') \
                 and self in stmt.get_defined_names()
 
     def assignment_indexes(self):
@@ -402,6 +403,7 @@ class BaseNode(Base):
     the parser tree inherits from this class.
     """
     __slots__ = ('children', 'parent')
+    type = None
 
     def __init__(self, children):
         """
@@ -452,7 +454,7 @@ class BaseNode(Base):
     def get_statement_for_position(self, pos):
         for c in self.children:
             if c.start_pos <= pos <= c.end_pos:
-                if isinstance(c, (ExprStmt, Import)):
+                if c.type in ('expr_stmt', 'import_from', 'import_name'):
                     return c
                 else:
                     try:
@@ -633,7 +635,7 @@ class Module(Scope):
         # statement/import with a tokenizer (to check for syntax changes like
         # the future print statement).
         for imp in self.imports:
-            if isinstance(imp, ImportFrom) and imp.level == 0:
+            if imp.type == 'import_from' and imp.level == 0:
                 for path in imp.paths():
                     if [str(name) for name in path] == ['__future__', 'absolute_import']:
                         return True
@@ -950,7 +952,7 @@ class ImportFrom(Import):
         else:
             as_names = [last]
         for as_name in as_names:
-            if isinstance(as_name, Name):
+            if as_name.type == 'name':
                 yield as_name, None
             else:
                 yield as_name.children[::2]  # yields x, y -> ``x as y``
@@ -1011,7 +1013,7 @@ class ImportName(Import):
                 as_name = as_name.children[0]
             else:
                 alias = None
-            if isinstance(as_name, Name):
+            if as_name.type == 'name':
                 yield [as_name], alias
             else:
                 # dotted_names

@@ -565,6 +565,8 @@ class FunctionExecution(Executed):
     multiple calls to functions and recursion has to be avoided. But this is
     responsibility of the decorators.
     """
+    type = 'funcdef'
+
     def __init__(self, evaluator, base, *args, **kwargs):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
         # for deep_ast_copy
@@ -646,7 +648,7 @@ class FunctionExecution(Executed):
         return objects
 
     def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'imports', '_sub_module', 'type']:
+        if name not in ['start_pos', 'end_pos', 'imports', 'name', 'type']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
