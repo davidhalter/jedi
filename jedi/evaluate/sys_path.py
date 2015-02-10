@@ -10,6 +10,10 @@ from jedi import debug
 from jedi import common
 
 
+buildout_scripts = set()
+buildout_script_paths = set()
+
+
 def get_sys_path():
     def check_virtual_env(sys_path):
         """ Add virtualenv's site-packages to the `sys.path`."""
@@ -154,24 +158,28 @@ def sys_path_with_modifications(evaluator, module):
 
     result = _check_module(evaluator, module)
     result += _detect_django_path(module.path)
-    # buildout scripts often contain the same sys.path modifications
-    # the set here is used to avoid duplicate sys.path entries
-    buildout_paths = set()
-    for module_path in _get_buildout_scripts(module.path):
+    for buildout_script in _get_buildout_scripts(module.path):
+        if buildout_script in buildout_scripts:
+            continue
+        buildout_scripts.add(buildout_script)
         try:
-            with open(module_path, 'rb') as f:
+            with open(buildout_script, 'rb') as f:
                 source = f.read()
         except IOError:
             pass
         else:
-            p = Parser(evaluator.grammar, common.source_to_unicode(source), module_path)
-            for path in _check_module(p.module):
-                if path not in buildout_paths:
-                    buildout_paths.add(path)
-                    result.append(path)
+            p = Parser(evaluator.grammar,
+                       common.source_to_unicode(source),
+                       buildout_script)
+            try:
+                for path in _check_module(evaluator, p.module):
+                    if path not in buildout_script_paths:
+                        buildout_script_paths.add(path)
+            except Exception:
+                debug.dbg('Could not check module: "%s"', buildout_script)
     # cleanup, back to old directory
     os.chdir(curdir)
-    return list(result)
+    return list(result) + list(buildout_script_paths)
 
 
 def _traverse_parents(path):
