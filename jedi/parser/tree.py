@@ -281,12 +281,10 @@ class Name(Leaf):
 
     def is_definition(self):
         stmt = self.get_definition()
-        if stmt.type in ('funcdef', 'classdef', 'file_input'):
+        if stmt.type in ('funcdef', 'classdef', 'file_input', 'param'):
             return self == stmt.name
         elif stmt.type == 'for_stmt':
             return self.start_pos < stmt.children[2].start_pos
-        elif stmt.type == 'param':
-            return self == stmt.get_name()
         elif stmt.type == 'try_stmt':
             return self.prev_sibling() == 'as'
         else:
@@ -704,40 +702,32 @@ class Class(ClassOrFunc):
         return docstr
 
 
-def _create_params(function, lst):
-    if not lst:
+def _create_params(parent, argslist_list):
+    """
+    TODO DOC
+    This is a function to hack the general parser structure.
+    Preparing the replacement of *argslist with a list of Params.
+    """
+    if not argslist_list:
         return []
-    if is_node(lst[0], 'typedargslist', 'varargslist'):
-        params = []
-        iterator = iter(lst[0].children)
-        for n in iterator:
-            stars = 0
-            if n in ('*', '**'):
-                stars = len(n.value)
-                n = next(iterator)
 
-            op = next(iterator, None)
-            if op == '=':
-                default = next(iterator)
-                next(iterator, None)
-            else:
-                default = None
-            params.append(Param(n, function, default, stars))
+    if argslist_list[0].type == 'name':
+        return [Param([argslist_list[0]], parent)]
+    else:  # argslist is a `typedargslist` or a `varargslist`.
+        children = argslist_list[0].children
+        params = []
+        start = 0
+        # Start with offset 1, because the end is higher.
+        for end, child in enumerate(children + [None], 1):
+            if child is None or child == ',':
+                params.append(Param(children[start:end], parent))
+                start = end
         return params
-    else:
-        return [Param(lst[0], function)]
 
 
 class Function(ClassOrFunc):
     """
     Used to store the parsed contents of a python function.
-
-    :param name: The Function name.
-    :type name: str
-    :param params: The parameters (Statement) of a Function.
-    :type params: list
-    :param start_pos: The start position (line, column) the Function.
-    :type start_pos: tuple(int, int)
     """
     __slots__ = ('listeners', 'params')
     type = 'funcdef'
@@ -745,8 +735,12 @@ class Function(ClassOrFunc):
     def __init__(self, children):
         super(Function, self).__init__(children)
         self.listeners = set()  # not used here, but in evaluation.
-        lst = self.children[2].children[1:-1]  # After `def foo`
-        self.params = _create_params(self, lst)
+        parameters = self.children[2]  # After `def foo`
+        parameters.children[1:-1] = _create_params(parameters, parameters.children[1:-1])
+
+    @property
+    def params(self):
+        return self.children[2].children[1:-1]
 
     @property
     def name(self):
@@ -796,10 +790,11 @@ class Lambda(Function):
     __slots__ = ()
 
     def __init__(self, children):
+        # We don't want to call the Function constructor, call its parent.
         super(Function, self).__init__(children)
         self.listeners = set()  # not used here, but in evaluation.
         lst = self.children[1:-2]  # After `def foo`
-        self.params = _create_params(self, lst)
+        self.children[1:-2] = _create_params(self, lst)
 
     def is_generator(self):
         return False
@@ -1119,48 +1114,51 @@ class ExprStmt(BaseNode, DocstringMixin):
             return None
 
 
-class Param(Base):
+class Param(BaseNode):
     """
-    The class which shows definitions of params of classes and functions.
-    But this is not to define function calls.
-
-    A helper class for functions. Read only.
+    It's a helper class that makes business logic with params much easier. The
+    Python grammar defines no ``param`` node. It defines it in a different way
+    that is not really suited to working with parameters.
     """
-    __slots__ = ('tfpdef', 'default', 'stars', 'parent')
-    # Even though it's not not an official node, just give it one, because that
-    # makes checking more consistent.
     type = 'param'
 
-    def __init__(self, tfpdef, parent, default=None, stars=0):
-        self.tfpdef = tfpdef  # tfpdef: see grammar.txt
-        self.default = default
-        self.stars = stars
+    def __init__(self, children, parent):
+        super(Param, self).__init__(children)
         self.parent = parent
-        # Here we reset the parent of our name. IMHO this is ok.
-        self.get_name().parent = self
+        for child in children:
+            child.parent = self
+
+    @property
+    def stars(self):
+        first = self.children[0]
+        if first in ('*', '**'):
+            return len(first.value)
+        return 0
+
+    @property
+    def default(self):
+        try:
+            return self.children[int(self.children[0] in ('*', '**')) + 1]
+        except IndexError:
+            return None
 
     def annotation(self):
         # Generate from tfpdef.
         raise NotImplementedError
 
-    @property
-    def children(self):
-        return []
-
-    @property
-    def start_pos(self):
-        return self.tfpdef.start_pos
-
-    def get_name(self):
-        # TODO remove!
-        return self.name
+    def _tfpdef(self):
+        """
+        tfpdef: see grammar.txt.
+        """
+        offset = int(self.children[0] in ('*', '**'))
+        return self.children[offset]
 
     @property
     def name(self):
-        if is_node(self.tfpdef, 'tfpdef'):
-            return self.tfpdef.children[0]
+        if is_node(self._tfpdef(), 'tfpdef'):
+            return self._tfpdef().children[0]
         else:
-            return self.tfpdef
+            return self._tfpdef()
 
     @property
     def position_nr(self):
@@ -1172,11 +1170,11 @@ class Param(Base):
 
     def get_code(self):
         df = '' if self.default is None else '=' + self.default.get_code()
-        return self.tfpdef.get_code() + df
+        return self._tfpdef().get_code() + df
 
     def __repr__(self):
         default = '' if self.default is None else '=%s' % self.default
-        return '<%s: %s>' % (type(self).__name__, str(self.tfpdef) + default)
+        return '<%s: %s>' % (type(self).__name__, str(self._tfpdef()) + default)
 
 
 class CompFor(BaseNode):

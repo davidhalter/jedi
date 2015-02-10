@@ -339,7 +339,7 @@ class BaseDefinition(object):
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
-        return [_Param(self._evaluator, p.get_name()) for p in params]
+        return [_Param(self._evaluator, p.name) for p in params]
 
     def parent(self):
         scope = self._definition.get_parent_scope()

@@ -82,6 +82,7 @@ class NameFinder(object):
 
     @debug.increase_indent
     def find(self, scopes, search_global=False):
+        # TODO rename scopes to names_dicts
         names = self.filter_name(scopes)
         types = self._names_to_types(names, search_global)
 
@@ -109,7 +110,7 @@ class NameFinder(object):
 
     def names_dict_lookup(self, names_dict, position):
         def get_param(scope, el):
-            if isinstance(el.parent, pr.Param) or isinstance(el.parent.parent, pr.Param):
+            if isinstance(el.get_parent_until(pr.Param), pr.Param):
                 return scope.param_by_name(str(el))
             return el
 
@@ -331,7 +332,7 @@ def _remove_statements(evaluator, stmt, name):
 
 def _eval_param(evaluator, param, scope):
     res_new = []
-    func = param.parent
+    func = param.get_parent_scope()
 
     cls = func.parent.get_parent_until((pr.Class, pr.Function))
 

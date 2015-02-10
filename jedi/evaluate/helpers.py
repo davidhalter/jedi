@@ -70,7 +70,7 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
                         setattr(new_obj, key, new_elements[value])
                 except KeyError:
                     unfinished_parents.append(new_obj)
-            elif key in ['parent_function', 'use_as_parent', '_sub_module']:
+            elif key == 'position_modifier':
                 continue
             elif key == 'names_dict':
                 d = dict((k, sequence_recursion(v)) for k, v in value.items())

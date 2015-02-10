@@ -199,7 +199,7 @@ def get_params(evaluator, func, var_args):
     param_names = []
     param_dict = {}
     for param in func.params:
-        param_dict[str(param.get_name())] = param
+        param_dict[str(param.name)] = param
     unpacked_va = list(var_args.unpack(func))
     from jedi.evaluate.representation import InstanceElement
     if isinstance(func, InstanceElement):
@@ -279,7 +279,7 @@ def get_params(evaluator, func, var_args):
         # Now add to result if it's not one of the previously covered cases.
         if (not keys_only or param.stars == 2):
             param_names.append(ExecutedParam(param, var_args, values).name)
-            keys_used[unicode(param.get_name())] = param_names[-1]
+            keys_used[unicode(param.name)] = param_names[-1]
 
     if keys_only:
         # All arguments should be handed over to the next function. It's not

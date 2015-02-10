@@ -59,7 +59,7 @@ def search_params(evaluator, param):
     """
         for params in get_posibilities(evaluator, module, func_name):
             for p in params:
-                if str(p) == str(param.get_name()):
+                if str(p) == str(param.name):
                     result += p.parent.eval(evaluator)
                     """
     # Compare the param names.

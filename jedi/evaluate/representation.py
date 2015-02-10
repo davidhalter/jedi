@@ -140,7 +140,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         normally self.
         """
         try:
-            return str(func.params[0].get_name())
+            return str(func.params[0].name)
         except IndexError:
             return None
 

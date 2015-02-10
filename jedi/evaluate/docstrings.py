@@ -176,7 +176,7 @@ def follow_param(evaluator, param):
 
     return [p
             for param_str in _search_param_in_docstr(func.raw_doc,
-                                                     str(param.get_name()))
+                                                     str(param.name))
             for p in _evaluate_for_statement_string(evaluator, param_str,
                                                     param.get_parent_until())]
 
