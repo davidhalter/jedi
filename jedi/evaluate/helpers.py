@@ -13,7 +13,6 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
         return key_value[0] not in ('_expression_list', '_assignment_details')
 
     new_elements = new_elements_default or {}
-    unfinished_parents = []
 
     def recursion(obj, check_first=False):
         # If it's already in the cache, just return it.
@@ -25,11 +24,6 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
             # Actually copy and set attributes.
             new_obj = copy.copy(obj)
             new_elements[obj] = new_obj
-
-        if isinstance(obj, pr.ExprStmt):
-            # Need to set _set_vars, otherwise the cache is not working
-            # correctly, don't know exactly why.
-            obj.get_defined_names()
 
         # Gather items
         try:
@@ -48,28 +42,15 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
             except AttributeError:
                 pass
 
-        if isinstance(obj, pr.ExprStmt):
-            # We need to process something with priority for statements,
-            # because there are several references that don't walk the whole
-            # tree in there.
-            items = sorted(items, key=sort_stmt)
-        else:
-            # names_dict should be the last item.
-            items = sorted(items, key=lambda x: (x[0] == 'names_dict', x[0] == 'params'))
-
-        #if hasattr(new_obj, 'parent'): print(new_obj, new_obj.parent)
+        items = sorted(items, key=lambda x: (x[0] == 'names_dict', x[0] == 'params'))
 
         for key, value in items:
-            # replace parent (first try _parent and then parent)
-            if key in ['parent', '_parent'] and value is not None:
-                if key == 'parent' and '_parent' in items:
-                    # parent can be a property
-                    continue
+            if key == 'parent':
                 try:
                     if not check_first:
                         setattr(new_obj, key, new_elements[value])
                 except KeyError:
-                    unfinished_parents.append(new_obj)
+                    pass  # The parent can be what it was before.
             elif key == 'position_modifier':
                 continue
             elif key == 'names_dict':
@@ -97,17 +78,7 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
             return tuple(copied_array)
         return copied_array
 
-    result = recursion(obj, check_first=check_first)
-
-    # TODO this sucks... we need to change it.
-    # DOESNT WORK
-    for unfinished in unfinished_parents:
-        try:
-            unfinished.parent = new_elements[unfinished.parent]
-        except KeyError:  # TODO this keyerror is useless.
-            pass
-
-    return result
+    return recursion(obj, check_first=check_first)
 
 
 def call_of_name(name, cut_own_trailer=False):
