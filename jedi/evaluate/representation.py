@@ -569,10 +569,13 @@ class FunctionExecution(Executed):
 
     def __init__(self, evaluator, base, *args, **kwargs):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
-        # for deep_ast_copy
-        func = base.base_func
-        self._copy_dict = {func: self, func.parent: func.parent}
-        helpers.deep_ast_copy(self.base.base_func, self._copy_dict, check_first=True)
+        self._copy_dict = {}
+        new_func = helpers.deep_ast_copy(base.base_func, self._copy_dict)
+        for child in new_func.children:
+            if isinstance(child, (pr.Name, pr.BaseNode)):
+                child.parent = self
+        self.children = new_func.children
+        self.names_dict = new_func.names_dict
 
     @memoize_default(default=())
     @recursion.execution_recursion_decorator
@@ -610,9 +613,9 @@ class FunctionExecution(Executed):
         return types
 
     def names_dicts(self, search_global):
-        self.children
         yield dict((k, [self._copy_dict[v] for v in values])
                    for k, values in self.base.names_dict.items())
+        #yield self.names_dict  # Replace with this!
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):

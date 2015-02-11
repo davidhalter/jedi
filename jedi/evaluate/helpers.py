@@ -4,7 +4,7 @@ from itertools import chain
 from jedi.parser import tree as pr
 
 
-def deep_ast_copy(obj, new_elements_default=None, check_first=False):
+def deep_ast_copy(obj, new_elements=None, check_first=False):
     """
     Much, much faster than copy.deepcopy, but just for Parser elements (Doesn't
     copy parents).
@@ -12,7 +12,8 @@ def deep_ast_copy(obj, new_elements_default=None, check_first=False):
     def sort_stmt(key_value):
         return key_value[0] not in ('_expression_list', '_assignment_details')
 
-    new_elements = new_elements_default or {}
+    if new_elements is None:
+        new_elements = {}
 
     def recursion(obj, check_first=False):
         # If it's already in the cache, just return it.
