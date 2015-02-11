@@ -573,9 +573,6 @@ class FunctionExecution(Executed):
         func = base.base_func
         self._copy_dict = {func: self, func.parent: func.parent}
         helpers.deep_ast_copy(self.base.base_func, self._copy_dict, check_first=True)
-        # We definitely want the params to be generated. Params are special,
-        # because they have been altered and are not normal "children".
-        self.params
 
     @memoize_default(default=())
     @recursion.execution_recursion_decorator

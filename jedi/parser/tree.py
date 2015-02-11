@@ -729,7 +729,7 @@ class Function(ClassOrFunc):
     """
     Used to store the parsed contents of a python function.
     """
-    __slots__ = ('listeners', 'params')
+    __slots__ = ('listeners',)
     type = 'funcdef'
 
     def __init__(self, children):
@@ -795,6 +795,10 @@ class Lambda(Function):
         self.listeners = set()  # not used here, but in evaluation.
         lst = self.children[1:-2]  # After `def foo`
         self.children[1:-2] = _create_params(self, lst)
+
+    @property
+    def params(self):
+        return self.children[1:-2]
 
     def is_generator(self):
         return False
@@ -1138,7 +1142,7 @@ class Param(BaseNode):
     @property
     def default(self):
         try:
-            return self.children[int(self.children[0] in ('*', '**')) + 1]
+            return self.children[int(self.children[0] in ('*', '**')) + 2]
         except IndexError:
             return None
 
@@ -1162,15 +1166,11 @@ class Param(BaseNode):
 
     @property
     def position_nr(self):
-        return self.parent.params.index(self)
+        return self.parent.children.index(self) - 1
 
     @property
     def parent_function(self):
         return self.get_parent_until(IsScope)
-
-    def get_code(self):
-        df = '' if self.default is None else '=' + self.default.get_code()
-        return self._tfpdef().get_code() + df
 
     def __repr__(self):
         default = '' if self.default is None else '=%s' % self.default

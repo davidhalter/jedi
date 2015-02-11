@@ -11,7 +11,7 @@ from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.sys_path import get_sys_path
-from jedi.parser.tree import Param, Base
+from jedi.parser.tree import Param, Base, Operator, zero_position_modifier
 from jedi.evaluate.helpers import FakeName
 from . import fake
 
@@ -85,18 +85,11 @@ class CompiledObject(Base):
         params_str, ret = self._parse_function_doc()
         tokens = params_str.split(',')
         params = []
-        module = self.get_parent_until()
-        # it seems like start_pos/end_pos is always (0, 0) for a compiled
-        # object
-        start_pos, end_pos = (0, 0), (0, 0)
         for p in tokens:
             parts = [FakeName(part) for part in p.strip().split('=')]
-            name = parts[0]
-            if len(parts) > 2:
-                default = parts[2]
-            else:
-                default = None
-            params.append(Param(name, module, default))
+            if len(parts) > 1:
+                parts.insert(1, Operator(zero_position_modifier, '=', (0, 0)))
+            params.append(Param(parts, self))
         return params
 
     def __repr__(self):
