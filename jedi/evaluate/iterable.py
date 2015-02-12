@@ -143,7 +143,7 @@ class Comprehension(IterableWrapper):
                 break
             last = last.children[-1]
 
-        return helpers.deep_ast_copy(comprehension.children[0], {comprehension: last_comp})
+        return helpers.deep_ast_copy(comprehension.children[0], parent=last_comp)
 
     def get_exact_index_types(self, index):
         return [self._evaluator.eval_element(self.eval_node())[index]]

@@ -1192,6 +1192,10 @@ class CompFor(BaseNode):
             arr.append(name)
         return dct
 
+    @names_dict.setter
+    def names_dict(self, value):
+        pass
+
     def names_dicts(self, search_global):
         yield self.names_dict
 

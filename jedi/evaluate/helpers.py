@@ -51,63 +51,19 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
                 new_names_dict[string] = [new_elements[n] for n in names]
         return new_obj
 
-        # Gather items
-        try:
-            items = list(obj.__dict__.items())
-        except AttributeError:
-            # __dict__ not available, because of __slots__
-            items = []
-
-        before = ()
-        for cls in obj.__class__.__mro__:
-            try:
-                if before == cls.__slots__:
-                    continue
-                before = cls.__slots__
-                items += [(n, getattr(obj, n)) for n in before]
-            except AttributeError:
-                pass
-
-        items = sorted(items, key=lambda x: (x[0] == 'names_dict', x[0] == 'params'))
-
-        for key, value in items:
-            if key == 'parent':
-                try:
-                    setattr(new_obj, key, new_elements[value])
-                except KeyError:
-                    pass  # The parent can be what it was before.
-            elif key == 'position_modifier':
-                continue
-            elif key == 'names_dict':
-                d = dict((k, sequence_recursion(v)) for k, v in value.items())
-                setattr(new_obj, key, d)
-            elif isinstance(value, (list, tuple)):
-                setattr(new_obj, key, sequence_recursion(value))
-            elif isinstance(value, (pr.BaseNode, pr.Name)):
-                setattr(new_obj, key, recursion(value))
-
-        return new_obj
-
-    def sequence_recursion(array_obj):
-        if isinstance(array_obj, tuple):
-            copied_array = list(array_obj)
-        else:
-            copied_array = array_obj[:]   # lists, tuples, strings, unicode
-        for i, el in enumerate(copied_array):
-            if isinstance(el, (tuple, list)):
-                copied_array[i] = sequence_recursion(el)
-            else:
-                copied_array[i] = recursion(el)
-
-        if isinstance(array_obj, tuple):
-            return tuple(copied_array)
-        return copied_array
-
-    if parent is not None:
+    if obj.type == 'name':
+        # Special case of a Name object.
+        new_elements[obj] = new_obj = copy.copy(obj)
+        if parent is not None:
+            new_obj.parent = parent
+    elif isinstance(obj, pr.BaseNode):
         new_obj = copy_node(obj)
-        for child in new_obj.children:
-            if isinstance(child, (pr.Name, pr.BaseNode)):
-                child.parent = parent
+        if parent is not None:
+            for child in new_obj.children:
+                if isinstance(child, (pr.Name, pr.BaseNode)):
+                    child.parent = parent
+    else:  # String literals and so on.
+        new_obj = obj  # Good enough, don't need to copy anything.
     return new_obj
 
 
