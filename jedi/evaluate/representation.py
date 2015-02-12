@@ -610,9 +610,7 @@ class FunctionExecution(Executed):
         return types
 
     def names_dicts(self, search_global):
-        yield dict((k, [self._copy_dict[v] for v in values])
-                   for k, values in self.base.names_dict.items())
-        #yield self.names_dict  # Replace with this!
+        yield self.names_dict
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):

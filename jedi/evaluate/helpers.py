@@ -46,9 +46,13 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
         except AttributeError:
             pass
         else:
-            new_obj.names_dict = new_names_dict = {}
-            for string, names in names_dict.items():
-                new_names_dict[string] = [new_elements[n] for n in names]
+            try:
+                new_obj.names_dict = new_names_dict = {}
+            except AttributeError:  # Impossible to set CompFor.names_dict
+                pass
+            else:
+                for string, names in names_dict.items():
+                    new_names_dict[string] = [new_elements[n] for n in names]
         return new_obj
 
     if obj.type == 'name':
