@@ -538,6 +538,7 @@ class Scope(BaseNode, DocstringMixin):
     def imports(self):
         return self._search_in_scope(Import)
 
+    @Python3Method
     def _search_in_scope(self, typ):
         def scan(children):
             elements = []
