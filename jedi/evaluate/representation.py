@@ -570,10 +570,7 @@ class FunctionExecution(Executed):
     def __init__(self, evaluator, base, *args, **kwargs):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
         self._copy_dict = {}
-        new_func = helpers.deep_ast_copy(base.base_func, self._copy_dict)
-        for child in new_func.children:
-            if isinstance(child, (pr.Name, pr.BaseNode)):
-                child.parent = self
+        new_func = helpers.deep_ast_copy(base.base_func, self, self._copy_dict)
         self.children = new_func.children
         self.names_dict = new_func.names_dict
 
@@ -653,6 +650,7 @@ class FunctionExecution(Executed):
         return getattr(self.base, name)
 
     def _scope_copy(self, scope):
+        raise NotImplementedError
         """ Copies a scope (e.g. `if foo:`) in an execution """
         if scope != self.base.base_func:
             # Just make sure the parents been copied.
@@ -662,22 +660,22 @@ class FunctionExecution(Executed):
     @common.safe_property
     @memoize_default([])
     def returns(self):
-        return self._copy_list(self.base.returns)
+        return pr.Scope._search_in_scope(self, pr.ReturnStmt)
 
     @common.safe_property
     @memoize_default([])
     def yields(self):
-        return self._copy_list(self.base.yields)
+        return pr.Scope._search_in_scope(self, pr.YieldExpr)
 
     @common.safe_property
     @memoize_default([])
     def statements(self):
-        return self._copy_list(self.base.statements)
+        return pr.Scope._search_in_scope(self, pr.ExprStmt)
 
     @common.safe_property
     @memoize_default([])
     def subscopes(self):
-        return self._copy_list(self.base.subscopes)
+        return pr.Scope._search_in_scope(self, pr.Scope)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.base)

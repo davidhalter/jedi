@@ -4,18 +4,16 @@ from itertools import chain
 from jedi.parser import tree as pr
 
 
-def deep_ast_copy(obj, new_elements=None):
+def deep_ast_copy(obj, parent=None, new_elements=None):
     """
     Much, much faster than copy.deepcopy, but just for Parser elements (Doesn't
     copy parents).
     """
-    def sort_stmt(key_value):
-        return key_value[0] not in ('_expression_list', '_assignment_details')
 
     if new_elements is None:
         new_elements = {}
 
-    def recursion(obj):
+    def copy_node(obj):
         # If it's already in the cache, just return it.
         try:
             return new_elements[obj]
@@ -23,6 +21,35 @@ def deep_ast_copy(obj, new_elements=None):
             # Actually copy and set attributes.
             new_obj = copy.copy(obj)
             new_elements[obj] = new_obj
+
+        # Copy children
+        new_children = []
+        for child in obj.children:
+            typ = child.type
+            if typ in ('whitespace', 'operator', 'keyword', 'number', 'string'):
+                # At the moment we're not actually copying those primitive
+                # elements, because there's really no need to. The parents are
+                # obviously wrong, but that's not an issue.
+                new_child = child
+            elif typ == 'name':
+                new_elements[child] = new_child = copy.copy(child)
+                new_child.parent = new_obj
+            else:  # Is a BaseNode.
+                new_child = copy_node(child)
+                new_child.parent = new_obj
+            new_children.append(new_child)
+        new_obj.children = new_children
+
+        # Copy the names_dict (if there is one).
+        try:
+            names_dict = obj.names_dict
+        except AttributeError:
+            pass
+        else:
+            new_obj.names_dict = new_names_dict = {}
+            for string, names in names_dict.items():
+                new_names_dict[string] = [new_elements[n] for n in names]
+        return new_obj
 
         # Gather items
         try:
@@ -75,7 +102,13 @@ def deep_ast_copy(obj, new_elements=None):
         if isinstance(array_obj, tuple):
             return tuple(copied_array)
         return copied_array
-    return recursion(obj)
+
+    if parent is not None:
+        new_obj = copy_node(obj)
+        for child in new_obj.children:
+            if isinstance(child, (pr.Name, pr.BaseNode)):
+                child.parent = parent
+    return new_obj
 
 
 def call_of_name(name, cut_own_trailer=False):
