@@ -13,15 +13,15 @@ def test_add_to_end():
     help of caches, this is an example that didn't work.
     """
 
-    a = """
-class Abc():
-    def abc(self):
-        self.x = 3
+    a = dedent("""
+    class Abc():
+        def abc(self):
+            self.x = 3
 
-class Two(Abc):
-    def h(self):
-        self
-"""  #      ^ here is the first completion
+    class Two(Abc):
+        def h(self):
+            self
+    """)  #     ^ here is the first completion
 
     b = "    def g(self):\n" \
         "        self."
@@ -257,6 +257,17 @@ def test_class_func_if():
     pass
     """)
     check_fp(src, 3)
+
+
+def test_for_on_one_line():
+    src = dedent("""\
+    foo = 1
+    for x in foo: pass
+
+    def hi():
+        pass
+    """)
+    check_fp(src, 2)
 
 
 def test_wrong_indentation():
