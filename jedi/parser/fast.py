@@ -346,6 +346,9 @@ class FastParser(use_metaclass(CachedFastParser)):
                 self.current_node = self._get_node(code_part, source[start:],
                                                    line_offset, nodes, not is_first)
                 is_first = False
+            else:
+                debug.dbg('While parsing %s, line %s slowed down the fast parser',
+                          self.module_path, line_offset)
 
             line_offset += code_part.count('\n')
             start += len(code_part)
@@ -439,9 +442,11 @@ class FastTokenizer(object):
             self._expect_indent = False
         elif typ == DEDENT:
             self._indent_counter -= 1
-            if self._in_flow and self._indent_counter == self._flow_indent_counter:
-                self._in_flow = False
-            elif not self._in_flow:
+            if self._in_flow:
+                # TODO add <= for flows without INDENT in classes.
+                if self._indent_counter == self._flow_indent_counter:
+                    self._in_flow = False
+            else:
                 self._closed = True
             return current
 
@@ -450,11 +455,10 @@ class FastTokenizer(object):
         if self.previous[0] in (NEWLINE, INDENT, DEDENT) \
                 and not self._parentheses_level and typ != INDENT:
             # Check for NEWLINE, which symbolizes the indent.
-           # print('X', repr(value), tokenize.tok_name[typ])
             if not self._in_flow:
-                self._in_flow = value in FLOWS
-                if self._in_flow:
+                if value in FLOWS:
                     self._flow_indent_counter = self._indent_counter
+                    self._first_stmt = False
                 elif value in ('def', 'class', '@'):
                     # The values here are exactly the same check as in
                     # _split_parts, but this time with tokenize and therefore

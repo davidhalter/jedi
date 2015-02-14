@@ -34,7 +34,7 @@ from inspect import cleandoc
 from itertools import chain
 import textwrap
 
-from jedi._compatibility import (next, Python3Method, encoding, is_py3,
+from jedi._compatibility import (Python3Method, encoding, is_py3,
                                  literal_eval, use_metaclass, unicode)
 from jedi import cache
 
