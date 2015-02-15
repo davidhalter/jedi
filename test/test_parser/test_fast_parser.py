@@ -269,6 +269,15 @@ def test_for_on_one_line():
     """)
     check_fp(src, 2)
 
+    src = dedent("""\
+    def hi():
+        for x in foo: pass
+        pass
+
+    pass
+    """)
+    check_fp(src, 2)
+
 
 def test_wrong_indentation():
     src = dedent("""\
