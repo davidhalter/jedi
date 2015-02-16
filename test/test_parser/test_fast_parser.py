@@ -163,6 +163,17 @@ def test_for():
     check_fp(src, 1)
 
 
+def test_class_with_class_var():
+    src = dedent("""\
+    class SuperClass:
+        class_super = 3
+        def __init__(self):
+            self.foo = 4
+    pass
+    """)
+    check_fp(src, 3)
+
+
 def test_func_with_if():
     src = dedent("""\
     def recursion(a):

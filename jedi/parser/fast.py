@@ -221,7 +221,7 @@ class ParserNode(object):
 
 class FastParser(use_metaclass(CachedFastParser)):
 
-    _keyword_re = re.compile('^[ \t]*(def|class|@|%s)' % '|'.join(FLOWS))
+    _keyword_re = re.compile('^[ \t]*(def |class |@|%s)' % '|'.join(FLOWS))
 
     def __init__(self, grammar, source, module_path=None):
         # set values like `pr.Module`.
