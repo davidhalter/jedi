@@ -15,7 +15,7 @@ from jedi import debug
 from jedi.parser.tokenize import (source_tokens, NEWLINE,
                                   ENDMARKER, INDENT, DEDENT)
 
-FLOWS = ['if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally', 'for']
+FLOWS = 'if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally', 'for'
 
 
 class FastModule(pr.Module):
@@ -220,8 +220,11 @@ class ParserNode(object):
 
 
 class FastParser(use_metaclass(CachedFastParser)):
-
-    _keyword_re = re.compile('^[ \t]*(def |class |@|%s)' % '|'.join(FLOWS))
+    _FLOWS_NEED_SPACE = 'if', 'elif', 'while', 'with', 'except', 'for'
+    _FLOWS_NEED_COLON = 'else', 'try', 'except', 'finally'
+    _keyword_re = re.compile('^[ \t]*(def |class |@|(?:%s)|(?:%s)\s*:)'
+                             % ('|'.join(_FLOWS_NEED_SPACE),
+                                '|'.join(_FLOWS_NEED_COLON)))
 
     def __init__(self, grammar, source, module_path=None):
         # set values like `pr.Module`.
@@ -300,7 +303,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             if not in_flow:
                 m = self._keyword_re.match(l)
                 if m:
-                    in_flow = m.group(1) in FLOWS
+                    in_flow = m.group(1).strip(' \t\r\n:') in FLOWS
                     if not is_decorator and not in_flow:
                         if not just_newlines(current_lines):
                             yield gen_part()
