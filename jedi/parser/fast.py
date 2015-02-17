@@ -275,7 +275,8 @@ class FastParser(use_metaclass(CachedFastParser)):
         self._lines = source.splitlines(True)
         current_lines = []
         is_decorator = False
-        indent_list = [0]
+        # Use -1, because that indent is always smaller than any other.
+        indent_list = [-1, 0]
         new_indent = False
         flow_indent = None
         # All things within flows are simply being ignored.
@@ -287,7 +288,13 @@ class FastParser(use_metaclass(CachedFastParser)):
                 current_lines.append(l)  # just ignore comments and blank lines
                 continue
 
-            while indent < indent_list[-1]:  # -> dedent
+            if new_indent:
+                if indent > indent_list[-2]:
+                    # Set the actual indent, not just the random old indent + 1.
+                    indent_list[-1] = indent
+                new_indent = False
+
+            while indent <= indent_list[-2]:  # -> dedent
                 indent_list.pop()
                 # This automatically resets the flow_indent if there was a
                 # dedent or a flow just on one line (with one simple_stmt).
@@ -296,12 +303,6 @@ class FastParser(use_metaclass(CachedFastParser)):
                     if current_lines:
                         yield gen_part()
                 flow_indent = None
-
-            if new_indent:
-                if indent > indent_list[-1]:
-                    # Set the actual indent, not just the random old indent + 1.
-                    indent_list[-1] = indent
-                new_indent = False
 
             # Check lines for functions/classes and split the code there.
             if flow_indent is None:
@@ -358,7 +359,6 @@ class FastParser(use_metaclass(CachedFastParser)):
             else:
                 debug.dbg('While parsing %s, line %s slowed down the fast parser',
                           self.module_path, line_offset)
-                print(line_offset, repr(code_part))
 
             line_offset += code_part.count('\n')
             start += len(code_part)

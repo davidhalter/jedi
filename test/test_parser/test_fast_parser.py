@@ -244,6 +244,17 @@ def test_func_with_for_and_comment():
     check_fp('a\n' + src, 2, 3)
 
 
+def test_multi_line_params():
+    src = dedent("""\
+    def x(a,
+          b):
+        pass
+
+    foo = 1
+    """)
+    check_fp(src, 2)
+
+
 def test_one_statement_func():
     src = dedent("""\
     first
