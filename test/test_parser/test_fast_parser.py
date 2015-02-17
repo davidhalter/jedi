@@ -21,7 +21,7 @@ def test_add_to_end():
     class Two(Abc):
         def h(self):
             self
-    """)  #     ^ here is the first completion
+    """)      # ^ here is the first completion
 
     b = "    def g(self):\n" \
         "        self."
@@ -288,6 +288,17 @@ def test_for_on_one_line():
     pass
     """)
     check_fp(src, 2)
+
+
+def test_multi_line_for():
+    src = dedent("""\
+    for x in [1,
+              2]:
+        pass
+
+    pass
+    """)
+    check_fp(src, 1)
 
 
 def test_wrong_indentation():

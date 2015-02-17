@@ -275,10 +275,9 @@ class FastParser(use_metaclass(CachedFastParser)):
         self._lines = source.splitlines(True)
         current_lines = []
         is_decorator = False
-        current_indent = 0
-        old_indent = 0
+        indent_list = [0]
         new_indent = False
-        in_flow = False
+        flow_indent = None
         # All things within flows are simply being ignored.
         for i, l in enumerate(self._lines):
             # check for dedents
@@ -288,29 +287,36 @@ class FastParser(use_metaclass(CachedFastParser)):
                 current_lines.append(l)  # just ignore comments and blank lines
                 continue
 
-            if indent < current_indent:  # -> dedent
-                current_indent = indent
+            while indent < indent_list[-1]:  # -> dedent
+                indent_list.pop()
+                # This automatically resets the flow_indent if there was a
+                # dedent or a flow just on one line (with one simple_stmt).
                 new_indent = False
-                if not in_flow or indent < old_indent:
+                if flow_indent is None:
                     if current_lines:
                         yield gen_part()
-                in_flow = False
-            elif new_indent:
-                current_indent = indent
+                flow_indent = None
+
+            if new_indent:
+                if indent > indent_list[-1]:
+                    # Set the actual indent, not just the random old indent + 1.
+                    indent_list[-1] = indent
                 new_indent = False
 
             # Check lines for functions/classes and split the code there.
-            if not in_flow:
+            if flow_indent is None:
                 m = self._keyword_re.match(l)
                 if m:
-                    in_flow = m.group(1).strip(' \t\r\n:') in FLOWS
-                    if not is_decorator and not in_flow:
-                        if not just_newlines(current_lines):
+                    # Strip whitespace and colon from flows as a check.
+                    if m.group(1).strip(' \t\r\n:') in FLOWS:
+                        flow_indent = indent
+                    else:
+                        if not is_decorator and not just_newlines(current_lines):
                             yield gen_part()
                     is_decorator = '@' == m.group(1)
                     if not is_decorator:
-                        old_indent = current_indent
-                        current_indent += 1  # it must be higher
+                        # The new indent needs to be higher
+                        indent_list.append(indent + 1)
                         new_indent = True
                 elif is_decorator:
                     is_decorator = False
@@ -352,6 +358,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             else:
                 debug.dbg('While parsing %s, line %s slowed down the fast parser',
                           self.module_path, line_offset)
+                print(line_offset, repr(code_part))
 
             line_offset += code_part.count('\n')
             start += len(code_part)
