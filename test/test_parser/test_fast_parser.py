@@ -322,6 +322,16 @@ def test_wrong_indentation():
     check_fp(src, 1)
 
 
+def test_open_parentheses():
+    func = 'def func():\n a'
+    p = FastParser(load_grammar(), 'isinstance(\n' + func)
+    # As you can see, the isinstance call cannot be seen anymore after
+    # get_code, because it isn't valid code.
+    assert p.module.get_code() == '\n' + func
+    assert p.number_of_splits == 2
+    assert p.number_parsers_used == 2
+
+
 def test_incomplete_function():
     source = '''return ImportErr'''
 
