@@ -334,7 +334,39 @@ def test_open_parentheses():
     # however that would require to also break properly at flow level. That is
     # not possible because of ternary statements and would lead to strange
     # behavior without much more knowledge. So we just keep it this way.
-    assert p.number_parsers_used == 1
+    assert p.number_parsers_used == 2
+
+
+def test_strange_parentheses():
+    src = dedent("""
+    class X():
+        a = (1
+    if 1 else 2)
+        def x():
+            pass
+    """)
+    check_fp(src, 2)
+
+
+def test_backslash():
+    src = dedent("""\
+    a = 1\
+        if 1 else 2
+    def x():
+        pass
+    """)
+    check_fp(src, 2)
+
+    src = dedent("""\
+    if 2:
+        a = 1\
+    if 1 else 2
+        def y():
+            pass
+    """)
+    # The dangling if leads to not splitting where we theoretically could
+    # split.
+    check_fp(src, 1)
 
 
 def test_incomplete_function():

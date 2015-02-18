@@ -278,6 +278,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         # Use -1, because that indent is always smaller than any other.
         indent_list = [-1, 0]
         new_indent = False
+        parentheses_level = 0
         flow_indent = None
         # All things within flows are simply being ignored.
         for i, l in enumerate(self._lines):
@@ -299,9 +300,8 @@ class FastParser(use_metaclass(CachedFastParser)):
                 # This automatically resets the flow_indent if there was a
                 # dedent or a flow just on one line (with one simple_stmt).
                 new_indent = False
-                if flow_indent is None:
-                    if current_lines:
-                        yield gen_part()
+                if flow_indent is None and current_lines and not parentheses_level:
+                    yield gen_part()
                 flow_indent = None
 
             # Check lines for functions/classes and split the code there.
@@ -310,17 +310,22 @@ class FastParser(use_metaclass(CachedFastParser)):
                 if m:
                     # Strip whitespace and colon from flows as a check.
                     if m.group(1).strip(' \t\r\n:') in FLOWS:
-                        flow_indent = indent
+                        if not parentheses_level:
+                            flow_indent = indent
                     else:
                         if not is_decorator and not just_newlines(current_lines):
                             yield gen_part()
                     is_decorator = '@' == m.group(1)
                     if not is_decorator:
+                        parentheses_level = 0
                         # The new indent needs to be higher
                         indent_list.append(indent + 1)
                         new_indent = True
                 elif is_decorator:
                     is_decorator = False
+
+            parentheses_level += (l.count('(') + l.count('[') + l.count('{')
+                                  - l.count(')') - l.count(']') - l.count('}'))
 
             current_lines.append(l)
         if current_lines:
