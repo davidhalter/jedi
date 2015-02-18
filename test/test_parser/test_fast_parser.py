@@ -329,12 +329,11 @@ def test_open_parentheses():
     # get_code, because it isn't valid code.
     assert p.module.get_code() == '\n' + func
     assert p.number_of_splits == 2
-    # CAVEAT: There are multiple splits, but because of the open parentheses,
-    # we just use one parser. We could theoretically break at the `def`,
-    # however that would require to also break properly at flow level. That is
-    # not possible because of ternary statements and would lead to strange
-    # behavior without much more knowledge. So we just keep it this way.
     assert p.number_parsers_used == 2
+    cache.save_parser(None, None, p, pickling=False)
+
+    # Now with a correct parser it should work perfectly well.
+    check_fp('isinstance()\n' + func, 1)
 
 
 def test_strange_parentheses():
@@ -349,7 +348,7 @@ def test_strange_parentheses():
 
 
 def test_backslash():
-    src = dedent("""\
+    src = dedent(r"""
     a = 1\
         if 1 else 2
     def x():
@@ -357,8 +356,8 @@ def test_backslash():
     """)
     check_fp(src, 2)
 
-    src = dedent("""\
-    if 2:
+    src = dedent(r"""
+    def x():
         a = 1\
     if 1 else 2
         def y():
@@ -366,7 +365,7 @@ def test_backslash():
     """)
     # The dangling if leads to not splitting where we theoretically could
     # split.
-    check_fp(src, 1)
+    check_fp(src, 2)
 
 
 def test_incomplete_function():

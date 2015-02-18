@@ -280,13 +280,22 @@ class FastParser(use_metaclass(CachedFastParser)):
         new_indent = False
         parentheses_level = 0
         flow_indent = None
+        previous_line = None
         # All things within flows are simply being ignored.
         for i, l in enumerate(self._lines):
+            # Handle backslash newline escaping.
+            if l.endswith('\\\n') or l.endswith('\\\r\n'):
+                previous_line = l
+                continue
+            if previous_line is not None:
+                l = previous_line + l
+                previous_line = None
+
             # check for dedents
             s = l.lstrip('\t \n\r')
             indent = len(l) - len(s)
             if not s or s[0] == '#':
-                current_lines.append(l)  # just ignore comments and blank lines
+                current_lines.append(l)  # Just ignore comments and blank lines
                 continue
 
             if new_indent:
@@ -378,8 +387,6 @@ class FastParser(use_metaclass(CachedFastParser)):
         debug.dbg('Parsed %s, with %s parsers in %s splits.'
                   % (self.module_path, self.number_parsers_used,
                      self.number_of_splits))
-
-        # print(self.parsers[0].module.get_code())
 
     def _get_node(self, source, parser_code, line_offset, nodes, no_docstr):
         """

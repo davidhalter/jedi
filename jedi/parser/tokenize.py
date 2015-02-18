@@ -265,6 +265,7 @@ def generate_tokens(readline):
                             break
                 yield NAME, token, spos, prefix
             elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
+                additional_prefix += line[start:]
                 continue
             else:
                 if token in '([{':
