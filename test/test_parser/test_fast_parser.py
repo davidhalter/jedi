@@ -329,7 +329,12 @@ def test_open_parentheses():
     # get_code, because it isn't valid code.
     assert p.module.get_code() == '\n' + func
     assert p.number_of_splits == 2
-    assert p.number_parsers_used == 2
+    # CAVEAT: There are multiple splits, but because of the open parentheses,
+    # we just use one parser. We could theoretically break at the `def`,
+    # however that would require to also break properly at flow level. That is
+    # not possible because of ternary statements and would lead to strange
+    # behavior without much more knowledge. So we just keep it this way.
+    assert p.number_parsers_used == 1
 
 
 def test_incomplete_function():
