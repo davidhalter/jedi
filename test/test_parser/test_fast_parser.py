@@ -333,7 +333,7 @@ def test_open_parentheses():
     cache.save_parser(None, None, p, pickling=False)
 
     # Now with a correct parser it should work perfectly well.
-    check_fp('isinstance()\n' + func, 1)
+    check_fp('isinstance()\n' + func, 1, 2)
 
 
 def test_strange_parentheses():

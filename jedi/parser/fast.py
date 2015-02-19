@@ -382,7 +382,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                                                        line_offset, nodes)
                     last_end_line = self.current_node.parser.module.end_pos[0]
 
-                debug.dbg('While parsing %s, line %s slowed down the fast parser',
+                debug.dbg('While parsing %s, line %s slowed down the fast parser.',
                           self.module_path, line_offset)
 
             line_offset = next_line_offset
@@ -487,6 +487,16 @@ class FastTokenizer(object):
             else:
                 self._closed = True
             return current
+
+        if value in ('def', 'class') and self._parentheses_level \
+                and re.match('\n[ \t]*\Z', prefix):
+            # Account for the fact that an open parentheses before a function
+            # will reset the parentheses counter, but new lines before will
+            # still be ignored. So check the prefix.
+
+            # TODO what about flow parentheses counter resets in the tokenizer?
+            self._parentheses_level = 0
+            return self._close()
 
         # Parentheses ignore the indentation rules. The other three stand for
         # new lines.
