@@ -9,12 +9,6 @@ from jedi._compatibility import unicode, next, reraise
 from jedi import settings
 
 
-class MultiLevelStopIteration(Exception):
-    """
-    StopIteration's get catched pretty easy by for loops, let errors propagate.
-    """
-
-
 class UncaughtAttributeError(Exception):
     """
     Important, because `__getattr__` and `hasattr` catch AttributeErrors
