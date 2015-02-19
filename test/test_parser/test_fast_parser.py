@@ -368,6 +368,24 @@ def test_backslash():
     check_fp(src, 2)
 
 
+def test_fake_parentheses():
+    """
+    The fast parser splitting counts parentheses, but not as correct tokens.
+    Therefore parentheses in string tokens are included as well. This needs to
+    be accounted for.
+    """
+    src = dedent(r"""
+    def x():
+        a = (')'
+    if 1 else 2)
+        def y():
+            pass
+        def z():
+            pass
+    """)
+    check_fp(src, 3, 2)
+
+
 def test_incomplete_function():
     source = '''return ImportErr'''
 

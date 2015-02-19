@@ -333,8 +333,9 @@ class FastParser(use_metaclass(CachedFastParser)):
                 elif is_decorator:
                     is_decorator = False
 
-            parentheses_level += (l.count('(') + l.count('[') + l.count('{')
-                                  - l.count(')') - l.count(']') - l.count('}'))
+            parentheses_level = \
+                max(0, (l.count('(') + l.count('[') + l.count('{')
+                        - l.count(')') - l.count(']') - l.count('}')))
 
             current_lines.append(l)
         if current_lines:
@@ -351,31 +352,43 @@ class FastParser(use_metaclass(CachedFastParser)):
             source += '\n'
             added_newline = True
 
-        line_offset = 0
+        next_line_offset = line_offset = 0
         start = 0
-        is_first = True
         nodes = list(self.current_node.all_sub_nodes())
         # Now we can reset the node, because we have all the old nodes.
         self.current_node.reset_node()
+        last_end_line = 1
 
         for code_part in self._split_parts(source):
+            next_line_offset += code_part.count('\n')
             # If the last code part parsed isn't equal to the current end_pos,
             # we know that the parser went further (`def` start in a
             # docstring). So just parse the next part.
-            if is_first or line_offset + 1 == self.current_node.parser.module.end_pos[0]:
-                indent = len(code_part) - len(code_part.lstrip('\t '))
-                self.current_node = self.current_node.parent_until_indent(indent)
-
-                # check if code_part has already been parsed
+            if line_offset + 1 == last_end_line:
                 self.current_node = self._get_node(code_part, source[start:],
-                                                   line_offset, nodes, not is_first)
-                is_first = False
+                                                   line_offset, nodes)
             else:
+                # Means that some lines where not fully parsed. Parse it now.
+                # This is a very rare case. Should only happens with very
+                # strange code bits.
+                while last_end_line < next_line_offset + 1:
+                    line_offset = last_end_line - 1
+                    # We could calculate the src in a more complicated way to
+                    # make caching here possible as well. However, this is
+                    # complicated and error-prone. Since this is not very often
+                    # called - just ignore it.
+                    src = ''.join(self._lines[line_offset:])
+                    self.current_node = self._get_node(code_part, src,
+                                                       line_offset, nodes)
+                    last_end_line = self.current_node.parser.module.end_pos[0]
+
                 debug.dbg('While parsing %s, line %s slowed down the fast parser',
                           self.module_path, line_offset)
 
-            line_offset += code_part.count('\n')
+            line_offset = next_line_offset
             start += len(code_part)
+
+            last_end_line = self.current_node.parser.module.end_pos[0]
 
         if added_newline:
             self.current_node.remove_last_newline()
@@ -388,10 +401,13 @@ class FastParser(use_metaclass(CachedFastParser)):
                   % (self.module_path, self.number_parsers_used,
                      self.number_of_splits))
 
-    def _get_node(self, source, parser_code, line_offset, nodes, no_docstr):
+    def _get_node(self, source, parser_code, line_offset, nodes):
         """
         Side effect: Alters the list of nodes.
         """
+        indent = len(source) - len(source.lstrip('\t '))
+        self.current_node = self.current_node.parent_until_indent(indent)
+
         h = hash(source)
         for index, node in enumerate(nodes):
             #print('EQ', node, repr(node.source), repr(source))
