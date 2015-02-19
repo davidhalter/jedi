@@ -489,7 +489,7 @@ class FastTokenizer(object):
             return current
 
         if value in ('def', 'class') and self._parentheses_level \
-                and re.match('\n[ \t]*\Z', prefix):
+                and re.search(r'\n[ \t]*\Z', prefix):
             # Account for the fact that an open parentheses before a function
             # will reset the parentheses counter, but new lines before will
             # still be ignored. So check the prefix.

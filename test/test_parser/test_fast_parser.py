@@ -324,10 +324,10 @@ def test_wrong_indentation():
 
 def test_open_parentheses():
     func = 'def func():\n a'
-    p = FastParser(load_grammar(), 'isinstance(\n' + func)
+    p = FastParser(load_grammar(), 'isinstance(\n\n' + func)
     # As you can see, the isinstance call cannot be seen anymore after
     # get_code, because it isn't valid code.
-    assert p.module.get_code() == '\n' + func
+    assert p.module.get_code() == '\n\n' + func
     assert p.number_of_splits == 2
     assert p.number_parsers_used == 2
     cache.save_parser(None, None, p, pickling=False)
