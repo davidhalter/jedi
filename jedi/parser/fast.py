@@ -240,9 +240,10 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def update(self, source):
         # For testing purposes: It is important that the number of parsers used
-        # can be minimized. With this variable we can test it.
+        # can be minimized. With these variables we can test against that.
         self.number_parsers_used = 0
         self.number_of_splits = 0
+        self.number_of_misses = 0
         self.module.reset_caches()
         try:
             self._parse(source)
@@ -285,7 +286,10 @@ class FastParser(use_metaclass(CachedFastParser)):
         for i, l in enumerate(self._lines):
             # Handle backslash newline escaping.
             if l.endswith('\\\n') or l.endswith('\\\r\n'):
-                previous_line = l
+                if previous_line is not None:
+                    previous_line += l
+                else:
+                    previous_line = l
                 continue
             if previous_line is not None:
                 l = previous_line + l
@@ -371,6 +375,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                 # Means that some lines where not fully parsed. Parse it now.
                 # This is a very rare case. Should only happens with very
                 # strange code bits.
+                self.number_of_misses += 1
                 while last_end_line < next_line_offset + 1:
                     line_offset = last_end_line - 1
                     # We could calculate the src in a more complicated way to
@@ -383,7 +388,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     last_end_line = self.current_node.parser.module.end_pos[0]
 
                 debug.dbg('While parsing %s, line %s slowed down the fast parser.',
-                          self.module_path, line_offset)
+                          self.module_path, line_offset + 1)
 
             line_offset = next_line_offset
             start += len(code_part)
@@ -501,7 +506,7 @@ class FastTokenizer(object):
         # Parentheses ignore the indentation rules. The other three stand for
         # new lines.
         if self.previous[0] in (NEWLINE, INDENT, DEDENT) \
-                and not self._parentheses_level and typ != INDENT:
+                and not self._parentheses_level and typ not in (INDENT, DEDENT):
             # Check for NEWLINE, which symbolizes the indent.
             if not self._in_flow:
                 if value in FLOWS:

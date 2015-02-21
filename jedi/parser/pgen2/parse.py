@@ -121,7 +121,7 @@ class PgenParser(object):
             ilabel = self.classify(type, value, start_pos)
         except ParseError:
             # Currently we ignore tokens like `?`.
-            print('invalid token', tokenize.tok_name[type], value)
+            print('invalid token', tokenize.tok_name[type], repr(value))
             return
 
         # Loop until the token is shifted; may raise exceptions

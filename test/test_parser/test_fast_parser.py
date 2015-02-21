@@ -76,7 +76,7 @@ def test_split_parts():
     test('a\n', 'def b():\n pass\n', 'c\n')
 
 
-def check_fp(src, number_parsers_used, number_of_splits=None):
+def check_fp(src, number_parsers_used, number_of_splits=None, number_of_misses=0):
     if number_of_splits is None:
         number_of_splits = number_parsers_used
 
@@ -88,6 +88,7 @@ def check_fp(src, number_parsers_used, number_of_splits=None):
     assert src == p.module.get_code()
     assert p.number_of_splits == number_of_splits
     assert p.number_parsers_used == number_parsers_used
+    assert p.number_of_misses == number_of_misses
     return p.module
 
 
@@ -367,6 +368,18 @@ def test_backslash():
     # split.
     check_fp(src, 2)
 
+    src = dedent(r"""
+    def first():
+        if foo \
+                and bar \
+                or baz:
+            pass
+    def second():
+        pass
+    """)
+    check_fp(src, 2)
+
+
 
 def test_fake_parentheses():
     """
@@ -383,7 +396,7 @@ def test_fake_parentheses():
         def z():
             pass
     """)
-    check_fp(src, 3, 2)
+    check_fp(src, 3, 2, 1)
 
 
 def test_incomplete_function():
