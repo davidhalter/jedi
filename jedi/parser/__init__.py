@@ -350,7 +350,12 @@ class Parser(object):
             while True:
                 if newline.value == '':
                     # Must be a DEDENT, just continue.
-                    newline = newline.get_previous()
+                    try:
+                        newline = newline.get_previous()
+                    except IndexError:
+                        # If there's a statement that fails to be parsed, there
+                        # will be no previous leaf. So just ignore it.
+                        break
                 elif newline.value != '\n':
                     # This may happen if error correction strikes and removes
                     # a whole statement including '\n'.
