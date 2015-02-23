@@ -450,9 +450,26 @@ class TestX(object):
 # -----------------
 
 class A(object):
-    pass
+    a = 3
 
 #? ['mro']
 A.mro
 #? []
 A().mro
+
+
+# -----------------
+# mro resolution
+# -----------------
+
+class B(A()):
+    b = 3
+
+#?
+B.a
+#?
+B().a
+#? int()
+B.b
+#? int()
+B().b

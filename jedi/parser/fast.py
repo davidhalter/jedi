@@ -174,7 +174,6 @@ class ParserNode(object):
         Closes the current parser node. This means that after this no further
         nodes should be added anymore.
         """
-        #print('CLOSE NODE', id(self), self.parent, self._node_children)
         # We only need to replace the dict if multiple dictionaries are used:
         if self._node_children:
             dcts = [n.parser.module.names_dict for n in self._node_children]
@@ -398,7 +397,6 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 debug.dbg('While parsing %s, line %s slowed down the fast parser.',
                           self.module_path, line_offset + 1)
-                print(line_offset, repr(code_part))
 
             line_offset = next_line_offset
             start += len(code_part)

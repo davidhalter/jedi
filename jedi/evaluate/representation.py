@@ -404,9 +404,25 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         for cls in self.py__bases__(self._evaluator):
             # TODO detect for TypeError: duplicate base class str,
             # e.g.  `class X(str, str): pass`
-            add(cls)
-            for cls_new in cls.py__mro__(evaluator):
-                add(cls_new)
+            try:
+                mro_method = cls.py__mro__
+            except AttributeError:
+                # TODO add a TypeError like:
+                """
+                >>> class Y(lambda: test): pass
+                Traceback (most recent call last):
+                  File "<stdin>", line 1, in <module>
+                TypeError: function() argument 1 must be code, not str
+                >>> class Y(1): pass
+                Traceback (most recent call last):
+                  File "<stdin>", line 1, in <module>
+                TypeError: int() takes at most 2 arguments (3 given)
+                """
+                pass
+            else:
+                add(cls)
+                for cls_new in mro_method(evaluator):
+                    add(cls_new)
         return tuple(mro)
 
     @memoize_default(default=())
@@ -443,9 +459,16 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
 
     def get_subscope_by_name(self, name):
         for s in [self] + self.py__bases__(self._evaluator):
-            for sub in reversed(s.subscopes):
-                if sub.name.value == name:
-                    return sub
+            try:
+                subscopes = s.subscopes
+            except AttributeError:
+                # TODO look at the __mro__ todo, we should add a TypeError
+                # here.
+                pass
+            else:
+                for sub in reversed(subscopes):
+                    if sub.name.value == name:
+                        return sub
         raise KeyError("Couldn't find subscope.")
 
     def __getattr__(self, name):
