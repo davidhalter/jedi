@@ -458,16 +458,9 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         return True
 
     def get_subscope_by_name(self, name):
-        for s in [self] + self.py__bases__(self._evaluator):
-            try:
-                subscopes = s.subscopes
-            except AttributeError:
-                # TODO look at the __mro__ todo, we should add a TypeError
-                # here.
-                pass
-            else:
-                for sub in reversed(subscopes):
-                    if sub.name.value == name:
+        for s in self.py__mro__(self._evaluator):
+            for sub in reversed(s.subscopes):
+                if sub.name.value == name:
                         return sub
         raise KeyError("Couldn't find subscope.")
 
