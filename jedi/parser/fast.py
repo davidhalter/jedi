@@ -111,25 +111,11 @@ class CachedFastParser(type):
 
 
 class ParserNode(object):
-    def __init__(self, fast_module):
+    def __init__(self, fast_module, parser, source):
         self._fast_module = fast_module
         self.parent = None
-
         self._node_children = []
-        self.source = None
-        self.hash = None
-        self.parser = None
-        self._content_scope = self._fast_module
 
-    def __repr__(self):
-        module = self.parser.module
-        try:
-            return '<%s: %s-%s>' % (type(self).__name__, module.start_pos, module.end_pos)
-        except IndexError:
-            # There's no module yet.
-            return '<%s: empty>' % type(self).__name__
-
-    def set_parser(self, parser, source):
         self.source = source
         self.hash = hash(source)
         self.parser = parser
@@ -142,7 +128,14 @@ class ParserNode(object):
 
         # We need to be able to reset the original children of a parser.
         self._old_children = list(self._content_scope.children)
-        self._node_children = []
+
+    def __repr__(self):
+        module = self.parser.module
+        try:
+            return '<%s: %s-%s>' % (type(self).__name__, module.start_pos, module.end_pos)
+        except IndexError:
+            # There's no module yet.
+            return '<%s: empty>' % type(self).__name__
 
     def reset_node(self):
         """
@@ -235,8 +228,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def _reset_caches(self):
         self.module = FastModule(self.module_path)
-        self.current_node = ParserNode(self.module)
-        self.current_node.set_parser(self, '')
+        self.current_node = ParserNode(self.module, self, '')
 
     def update(self, source):
         # For testing purposes: It is important that the number of parsers used
@@ -389,6 +381,7 @@ class FastParser(use_metaclass(CachedFastParser)):
 
                 debug.dbg('While parsing %s, line %s slowed down the fast parser.',
                           self.module_path, line_offset + 1)
+                print(line_offset, repr(code_part))
 
             line_offset = next_line_offset
             start += len(code_part)
@@ -415,7 +408,6 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         h = hash(source)
         for index, node in enumerate(nodes):
-            #print('EQ', node, repr(node.source), repr(source))
             if node.hash == h and node.source == source:
                 node.reset_node()
                 nodes.remove(node)
@@ -423,14 +415,13 @@ class FastParser(use_metaclass(CachedFastParser)):
         else:
             tokenizer = FastTokenizer(parser_code)
             self.number_parsers_used += 1
-            #print('CODE', repr(source))
             p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
-            node = ParserNode(self.module)
 
             end = line_offset + p.module.end_pos[0]
             used_lines = self._lines[line_offset:end - 1]
             code_part_actually_used = ''.join(used_lines)
-            node.set_parser(p, code_part_actually_used)
+
+            node = ParserNode(self.module, p, code_part_actually_used)
 
         self.current_node.add_node(node, line_offset)
         return node
@@ -552,18 +543,21 @@ class FastTokenizer(object):
             return DEDENT, '', self.current[2], ''
         elif not self._returned_endmarker:
             self._returned_endmarker = True
-            # We're using the current prefix for the endmarker to not loose any
-            # information. However we care about "lost" lines. The prefix of
-            # the current line (indent) will always be included in the current
-            # line.
-            cur = self.current
-            while cur[0] == DEDENT:
-                cur = next(self._gen)
-            prefix = cur[3]
-
-            # \Z for the end of the string. $ is bugged, because it has the
-            # same behavior with or without re.MULTILINE.
-            prefix = re.sub(r'[^\n]+\Z', '', prefix)
-            return ENDMARKER, '', self.current[2], prefix
+            return ENDMARKER, '', self.current[2], self._get_prefix()
         else:
             raise StopIteration
+
+    def _get_prefix(self):
+        """
+        We're using the current prefix for the endmarker to not loose any
+        information. However we care about "lost" lines. The prefix of the
+        current line (indent) will always be included in the current line.
+        """
+        cur = self.current
+        while cur[0] == DEDENT:
+            cur = next(self._gen)
+        prefix = cur[3]
+
+        # \Z for the end of the string. $ is bugged, because it has the
+        # same behavior with or without re.MULTILINE.
+        return re.sub(r'[^\n]+\Z', '', prefix)
