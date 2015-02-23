@@ -135,8 +135,8 @@ del _compile
 
 tabsize = 8
 
-ALWAYS_BREAK_TOKEN = (';', 'import', 'from', 'class', 'def', 'try', 'except',
-                      'finally', 'while', 'return')
+ALWAYS_BREAK_TOKENS = (';', 'import', 'from', 'class', 'def', 'try', 'except',
+                       'finally', 'while', 'return')
 
 
 def source_tokens(source):
@@ -254,7 +254,7 @@ def generate_tokens(readline):
                 else:                                       # ordinary string
                     yield STRING, token, spos, prefix
             elif is_identifier(initial):                      # ordinary name
-                if token in ALWAYS_BREAK_TOKEN:
+                if token in ALWAYS_BREAK_TOKENS:
                     paren_level = 0
                     while True:
                         indent = indents.pop()
