@@ -301,6 +301,15 @@ def test_for_on_one_line():
     """)
     check_fp(src, 2)
 
+    src = dedent("""\
+    def hi():
+        for x in foo: pass
+
+        def nested():
+            pass
+    """)
+    check_fp(src, 2)
+
 
 def test_multi_line_for():
     src = dedent("""\

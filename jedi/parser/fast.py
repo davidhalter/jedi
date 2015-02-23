@@ -125,9 +125,26 @@ class ParserNode(object):
             self._content_scope = parser.module.subscopes[0]
         except IndexError:
             self._content_scope = parser.module
+        else:
+            self._rewrite_last_newline()
 
         # We need to be able to reset the original children of a parser.
         self._old_children = list(self._content_scope.children)
+
+    def _rewrite_last_newline(self):
+        """
+        The ENDMARKER can contain a newline in the prefix. However this prefix
+        really belongs to the function - respectively to the next function or
+        parser node. If we don't rewrite that newline, we end up with a newline
+        in the wrong position, i.d. at the end of the file instead of in the
+        middle.
+        """
+        c = self._content_scope.children
+        if pr.is_node(c[-1], 'suite'):  # In a simple_stmt there's no DEDENT.
+            end_marker = self.parser.module.children[-1]
+            # Set the DEDENT prefix instead of the ENDMARKER.
+            c[-1].children[-1].prefix = end_marker.prefix
+            end_marker.prefix = ''
 
     def __repr__(self):
         module = self.parser.module
