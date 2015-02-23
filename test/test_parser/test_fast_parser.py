@@ -322,6 +322,18 @@ def test_wrong_indentation():
     """)
     check_fp(src, 1)
 
+    src = dedent("""\
+    def complex():
+        def nested():
+            a
+             b
+            a
+
+        def other():
+            pass
+    """)
+    check_fp(src, 3)
+
 
 def test_open_parentheses():
     func = 'def func():\n a'

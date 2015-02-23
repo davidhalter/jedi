@@ -478,15 +478,15 @@ class FastTokenizer(object):
 
         if typ == INDENT:
             self._indent_counter += 1
-            if not self._expect_indent and not self._first_stmt:
-                # This does not mean that there is an actual flow, but it means
-                # that the INDENT is either syntactically wrong or a flow.
+            if not self._expect_indent and not self._first_stmt and not self._in_flow:
+                # This does not mean that there is an actual flow, it means
+                # that the INDENT is syntactically wrong.
+                self._flow_indent_counter = self._indent_counter - 1
                 self._in_flow = True
             self._expect_indent = False
         elif typ == DEDENT:
             self._indent_counter -= 1
             if self._in_flow:
-                # TODO add <= for flows without INDENT in classes.
                 if self._indent_counter == self._flow_indent_counter:
                     self._in_flow = False
             else:
@@ -507,7 +507,6 @@ class FastTokenizer(object):
         # new lines.
         if self.previous[0] in (NEWLINE, INDENT, DEDENT) \
                 and not self._parentheses_level and typ not in (INDENT, DEDENT):
-            # Check for NEWLINE, which symbolizes the indent.
             if not self._in_flow:
                 if value in FLOWS:
                     self._flow_indent_counter = self._indent_counter
