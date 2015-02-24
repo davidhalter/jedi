@@ -160,7 +160,8 @@ class UserContext(object):
             #     def/class/import stops the process.
             if next_must_be_name:
                 if tok_type == tokenize.NAME:
-                    call, _ = self._calc_path_until_cursor(start_pos=pos)
+                    end_pos = start_pos[0], start_pos[1] + len(tok_str)
+                    call, _ = self._calc_path_until_cursor(start_pos=end_pos)
                     return call, index, key_name
                 index = 0
                 next_must_be_name = False
@@ -174,7 +175,6 @@ class UserContext(object):
                 if level == 1:
                     next_must_be_name = True
                     level = 0
-                    pos = start_pos
             elif tok_str == ')':
                 level -= 1
             elif tok_str == ',':

@@ -174,6 +174,9 @@ class TestCallSignatures(TestCase):
     def test_unterminated_strings(self):
         self._run('str(";', 'str', 0)
 
+    def test_whitespace_before_bracket(self):
+        self._run('str (";', 'str', 0)
+
 
 class TestParams(TestCase):
     def params(self, source, line=None, column=None):
