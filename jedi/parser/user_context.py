@@ -56,7 +56,7 @@ class UserContext(object):
             else:
                 column = len(line) - tok_start_pos[1]
             # Multi-line docstrings must be accounted for.
-            first_line = (tok_str.splitlines() or [''])[0]
+            first_line = common.splitlines(tok_str)[0]
             column -= len(first_line)
             # Reverse the token again, so that it is in normal order again.
             yield typ, tok_str[::-1], (self._line_temp, column), prefix[::-1]
@@ -155,7 +155,8 @@ class UserContext(object):
         next_must_be_name = False
         next_is_key = False
         key_name = None
-        for tok_type, tok_str, start_pos, prefix in self._get_backwards_tokenizer(self.position):
+        generator = self._get_backwards_tokenizer(self.position)
+        for tok_type, tok_str, start_pos, prefix in generator:
             # TODO improve the speed by not tokenizing everything.
             #     def/class/import stops the process.
             if next_must_be_name:
@@ -181,6 +182,16 @@ class UserContext(object):
                 index += 1
             elif tok_str == '=':
                 next_is_key = True
+            elif tok_type == tokenize.ERRORTOKEN \
+                    and (tok_str.endswith('"') or tok_str.endswith("'")):
+                # -2, because we don't account for the newline in the beginning
+                # and want to remove the unfinished string literal.
+                end_pos = start_pos[0], start_pos[1] + len(tok_str) - 2
+                # Here we completely reset the for loop.
+                generator = self._get_backwards_tokenizer(end_pos)
+                level = 0
+                next_must_be_name = False
+                next_is_key = False
         return None, 0, None
 
     def get_context(self, yield_positions=False):

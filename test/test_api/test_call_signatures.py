@@ -175,7 +175,13 @@ class TestCallSignatures(TestCase):
         self._run('str(";', 'str', 0)
 
     def test_whitespace_before_bracket(self):
+        self._run('str (', 'str', 0)
         self._run('str (";', 'str', 0)
+        self._run('str\n(', 'str', 0)
+
+    def test_brackets_in_string_literals(self):
+        self._run('str (" (', 'str', 0)
+        self._run('str (" )', 'str', 0)
 
 
 class TestParams(TestCase):

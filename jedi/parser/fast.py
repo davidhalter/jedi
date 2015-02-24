@@ -281,6 +281,8 @@ class FastParser(use_metaclass(CachedFastParser)):
 
         # Split only new lines. Distinction between \r\n is the tokenizer's
         # job.
+        # It seems like there's no problem with form feed characters here,
+        # because we're not counting lines.
         self._lines = source.splitlines(True)
         current_lines = []
         is_decorator = False
