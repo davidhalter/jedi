@@ -139,6 +139,9 @@ class TestInstanceVar():
     def b(self):
         #< (-4,13), (0,13)
         self._instance_var
+        # A call to self used to trigger an error, because it's also a trailer
+        # with two children.
+        self()
 
 
 class NestedClass():

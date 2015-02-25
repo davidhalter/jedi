@@ -169,7 +169,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     if name.value == self_name and name.prev_sibling() is None:
                         trailer = name.next_sibling()
                         if pr.is_node(trailer, 'trailer') \
-                                and len(trailer.children) == 2:
+                                and len(trailer.children) == 2 \
+                                and trailer.children[0] == '.':
                             name = trailer.children[1]  # After dot.
                             if name.is_definition():
                                 arr = names.setdefault(name.value, [])
