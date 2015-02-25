@@ -12,6 +12,12 @@ from jedi import debug
 from jedi.common import PushBackIterator
 
 
+REPLACE_STR = r"[bBuU]?[rR]?" + (r"(?:(')[^\n'\\]*(?:\\.[^\n'\\]*)*(?:'|$)" +
+                                 '|' +
+                                 r'(")[^\n"\\]*(?:\\.[^\n"\\]*)*(?:"|$))')
+REPLACE_STR = re.compile(REPLACE_STR)
+
+
 class UserContext(object):
     """
     :param source: The source code of the file.
@@ -44,8 +50,9 @@ class UserContext(object):
             self._line_length = len(line)
             yield line[::-1] + '\n'
 
-    def _get_backwards_tokenizer(self, start_pos):
-        line_gen = self._backwards_line_generator(start_pos)
+    def _get_backwards_tokenizer(self, start_pos, line_gen=None):
+        if line_gen is None:
+            line_gen = self._backwards_line_generator(start_pos)
         token_gen = tokenize.generate_tokens(lambda: next(line_gen))
         for typ, tok_str, tok_start_pos, prefix in token_gen:
             line = self.get_line(self._line_temp)
@@ -150,16 +157,34 @@ class UserContext(object):
         """
         :return: Tuple of string of the call and the index of the cursor.
         """
+        def get_line(pos):
+            def simplify_str(match):
+                """
+                To avoid having strings without end marks (error tokens) and
+                strings that just screw up all the call signatures, just
+                simplify everything.
+                """
+                mark = match.group(1) or match.group(2)
+                return mark + ' ' * (len(match.group(0)) - 2) + mark
+
+            line_gen = self._backwards_line_generator(pos)
+            for line in line_gen:
+                # We have to switch the already backwards lines twice, because
+                # we scan them from start.
+                line = line[::-1]
+                modified = re.sub(REPLACE_STR, simplify_str, line)
+                yield modified[::-1]
+
         index = 0
         level = 0
         next_must_be_name = False
         next_is_key = False
         key_name = None
-        generator = self._get_backwards_tokenizer(self.position)
+        generator = self._get_backwards_tokenizer(self.position, get_line(self.position))
         for tok_type, tok_str, start_pos, prefix in generator:
-            # TODO improve the speed by not tokenizing everything.
-            #     def/class/import stops the process.
-            if next_must_be_name:
+            if tok_str in tokenize.ALWAYS_BREAK_TOKENS:
+                break
+            elif next_must_be_name:
                 if tok_type == tokenize.NAME:
                     end_pos = start_pos[0], start_pos[1] + len(tok_str)
                     call, _ = self._calc_path_until_cursor(start_pos=end_pos)

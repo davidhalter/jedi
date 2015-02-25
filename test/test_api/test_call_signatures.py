@@ -177,11 +177,20 @@ class TestCallSignatures(TestCase):
     def test_whitespace_before_bracket(self):
         self._run('str (', 'str', 0)
         self._run('str (";', 'str', 0)
+        # TODO this is not actually valid Python, the newline token should be
+        # ignored.
         self._run('str\n(', 'str', 0)
 
     def test_brackets_in_string_literals(self):
         self._run('str (" (', 'str', 0)
         self._run('str (" )', 'str', 0)
+
+    def test_function_definitions_should_break(self):
+        """
+        Function definitions (and other tokens that cannot exist within call
+        signatures) should break and not be able to return a call signature.
+        """
+        assert not Script('str(\ndef x').call_signatures()
 
 
 class TestParams(TestCase):
