@@ -207,16 +207,6 @@ class UserContext(object):
                 index += 1
             elif tok_str == '=':
                 next_is_key = True
-            elif tok_type == tokenize.ERRORTOKEN \
-                    and (tok_str.endswith('"') or tok_str.endswith("'")):
-                # -2, because we don't account for the newline in the beginning
-                # and want to remove the unfinished string literal.
-                end_pos = start_pos[0], start_pos[1] + len(tok_str) - 2
-                # Here we completely reset the for loop.
-                generator = self._get_backwards_tokenizer(end_pos)
-                level = 0
-                next_must_be_name = False
-                next_is_key = False
         return None, 0, None
 
     def get_context(self, yield_positions=False):
