@@ -47,6 +47,17 @@ arr2.app
 #? int()
 arr.count(1)
 
+x = []
+#?
+x.pop()
+x = [3]
+#? int()
+x.pop()
+x = []
+x.append(1.0)
+#? float()
+x.pop()
+
 # -----------------
 # dicts
 # -----------------

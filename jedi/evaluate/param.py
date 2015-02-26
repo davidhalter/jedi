@@ -44,7 +44,18 @@ class Arguments(pr.Base):
                     yield 0, child
 
     def get_parent_until(self, *args, **kwargs):
-        return self.trailer.get_parent_until(*args, **kwargs)
+        if self.trailer is None:
+            try:
+                element = self.argument_node[0]
+                from jedi.evaluate.iterable import AlreadyEvaluated
+                if isinstance(element, AlreadyEvaluated):
+                    element = self._evaluator.eval_element(element)[0]
+            except IndexError:
+                return None
+            else:
+                return element.get_parent_until(*args, **kwargs)
+        else:
+            return self.trailer.get_parent_until(*args, **kwargs)
 
     def as_tuple(self):
         for stars, argument in self._split():

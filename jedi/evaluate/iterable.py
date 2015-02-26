@@ -246,7 +246,8 @@ class Array(IterableWrapper):
     def names_dicts(self, search_global=False):  # Always False.
         # `array.type` is a string with the type, e.g. 'list'.
         scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
-        scope = self._evaluator.execute(scope)[0]  # builtins only have one class
+        # builtins only have one class -> [0]
+        scope = self._evaluator.execute(scope, (AlreadyEvaluated((self,)),))[0]
         return scope.names_dicts(search_global)
 
     @common.safe_property

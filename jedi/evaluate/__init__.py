@@ -146,7 +146,7 @@ class Evaluator(object):
     @memoize_default(evaluator_is_first_arg=True)
     def eval_element(self, element):
         if isinstance(element, iterable.AlreadyEvaluated):
-            return element
+            return list(element)
         elif isinstance(element, iterable.MergedNodes):
             return iterable.unite(self.eval_element(e) for e in element)
 
