@@ -40,6 +40,7 @@ class CompiledObject(Base):
     # comply with the parser
     start_pos = 0, 0
     path = None  # modules have this attribute - set it to None.
+    used_names = {}  # To be consistent with modules.
 
     def __init__(self, obj, parent=None):
         self.obj = obj
