@@ -131,7 +131,7 @@ def _check_module(evaluator, module):
     return sys_path
 
 
-@memoize_default(evaluator_is_first_arg=True)
+@memoize_default(evaluator_is_first_arg=True, default=[])
 def sys_path_with_modifications(evaluator, module):
     if module.path is None:
         # Support for modules without a path is bad, therefore return the
