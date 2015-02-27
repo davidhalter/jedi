@@ -192,6 +192,9 @@ class TestCallSignatures(TestCase):
         """
         assert not Script('str(\ndef x').call_signatures()
 
+    def test_flow_call(self):
+        assert not Script('if (1').call_signatures()
+
 
 class TestParams(TestCase):
     def params(self, source, line=None, column=None):

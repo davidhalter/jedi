@@ -505,6 +505,8 @@ class Script(object):
             return []
 
         stmt = self._get_under_cursor_stmt(call_txt)
+        if stmt is None:
+            return []
 
         with common.scale_speed_settings(settings.scale_call_signatures):
             origins = cache.cache_call_signatures(self._evaluator, stmt, self.source,
