@@ -268,8 +268,11 @@ class Script(object):
             return []
 
         if isinstance(user_stmt, pr.Import):
-            scopes = [helpers.get_on_import_stmt(self._evaluator, self._user_context,
-                                                 user_stmt, is_completion)[0]]
+            i, _ = helpers.get_on_import_stmt(self._evaluator, self._user_context,
+                                              user_stmt, is_completion)
+            if i is None:
+                return []
+            scopes = [i]
         else:
             # just parse one statement, take it and evaluate it
             eval_stmt = self._get_under_cursor_stmt(goto_path)

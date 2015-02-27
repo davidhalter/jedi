@@ -28,7 +28,7 @@ def get_on_import_stmt(evaluator, user_context, user_stmt, is_like_search=False)
     """
     name = user_stmt.name_for_position(user_context.position)
     if name is None:
-        raise NotImplementedError
+        return None, None
 
     i = imports.ImportWrapper(evaluator, name)
     return i, name

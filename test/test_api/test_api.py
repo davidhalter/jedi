@@ -108,6 +108,10 @@ def test_goto_assignments_on_non_name():
     assert api.Script('True').goto_assignments() == []
 
 
+def test_goto_definitions_on_non_name():
+    assert api.Script('import x', column=0).goto_definitions() == []
+
+
 def test_goto_definition_not_multiple():
     """
     There should be only one Definition result if it leads back to the same
