@@ -265,7 +265,7 @@ def _name_to_types(evaluator, name, scope):
     types = []
     typ = name.get_definition()
     if typ.isinstance(pr.ForStmt):
-        for_types = evaluator.eval_element(typ.children[-3])
+        for_types = evaluator.eval_element(typ.children[3])
         for_types = iterable.get_iterator_types(for_types)
         types += check_tuple_assignments(for_types, name)
     elif typ.isinstance(pr.CompFor):
