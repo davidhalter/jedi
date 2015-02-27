@@ -152,7 +152,19 @@ class Comprehension(IterableWrapper):
         return "<e%s of %s>" % (type(self).__name__, self._atom)
 
 
-class ListComprehension(Comprehension):
+class ArrayMixin(object):
+    @memoize_default()
+    def names_dicts(self, search_global=False):  # Always False.
+        # `array.type` is a string with the type, e.g. 'list'.
+        scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
+        # builtins only have one class -> [0]
+        scope = self._evaluator.execute(scope, (AlreadyEvaluated((self,)),))[0]
+        return scope.names_dicts(search_global)
+
+
+class ListComprehension(Comprehension, ArrayMixin):
+    type = 'list'
+
     def get_index_types(self, evaluator, index):
         return self.iter_content()
 
@@ -169,7 +181,7 @@ class GeneratorComprehension(Comprehension, GeneratorMixin):
         return self._evaluator.eval_element(self.eval_node())
 
 
-class Array(IterableWrapper):
+class Array(IterableWrapper, ArrayMixin):
     mapping = {'(': 'tuple',
                '[': 'list',
                '{': 'dict'}
@@ -241,14 +253,6 @@ class Array(IterableWrapper):
 
     def iter_content(self):
         return self.values()
-
-    @memoize_default()
-    def names_dicts(self, search_global=False):  # Always False.
-        # `array.type` is a string with the type, e.g. 'list'.
-        scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
-        # builtins only have one class -> [0]
-        scope = self._evaluator.execute(scope, (AlreadyEvaluated((self,)),))[0]
-        return scope.names_dicts(search_global)
 
     @common.safe_property
     def parent(self):

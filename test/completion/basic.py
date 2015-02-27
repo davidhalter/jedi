@@ -128,6 +128,8 @@ for i in range(10):
 a = ['' for a in [1]]
 #? str()
 a[0]
+#? ['insert']
+a.insert
 
 a = [a for a in [1]]
 #? int()
