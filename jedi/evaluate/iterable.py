@@ -69,6 +69,9 @@ class GeneratorMixin(object):
         """
         return [self.iter_content()[index]]
 
+    def py__bool__(self):
+        return True
+
 
 class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
     """Handling of `yield` functions."""
@@ -161,6 +164,9 @@ class ArrayMixin(object):
         scope = self._evaluator.execute(scope, (AlreadyEvaluated((self,)),))[0]
         return scope.names_dicts(search_global)
 
+    def py__bool__(self):
+        return None  # We don't know the length, because of appends.
+
 
 class ListComprehension(Comprehension, ArrayMixin):
     type = 'list'
@@ -202,9 +208,6 @@ class Array(IterableWrapper, ArrayMixin):
     @property
     def name(self):
         return helpers.FakeName(self.type, parent=self)
-
-    def py__bool__(self):
-        return None  # We don't know the length, because of appends.
 
     @memoize_default()
     def get_index_types(self, evaluator, index=()):
