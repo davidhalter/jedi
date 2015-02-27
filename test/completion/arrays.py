@@ -352,3 +352,11 @@ def recursion1(foo):
 
 #? int()
 recursion1([1,2])[0]
+
+# -----------------
+# Merged Arrays
+# -----------------
+
+for x in [1] + ['']:
+    #? int() str()
+    x

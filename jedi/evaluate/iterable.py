@@ -29,7 +29,7 @@ from jedi._compatibility import use_metaclass, is_py3, unicode
 from jedi.parser import tree as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
-from jedi.evaluate.cache import CachedMetaClass, memoize_default, NO_DEFAULT
+from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
 
 
@@ -206,7 +206,7 @@ class Array(IterableWrapper, ArrayMixin):
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
 
-    @memoize_default(NO_DEFAULT)
+    @memoize_default()
     def get_index_types(self, evaluator, index=()):
         """
         Get the types of a specific index or all, if not given.
@@ -228,7 +228,7 @@ class Array(IterableWrapper, ArrayMixin):
 
         return types if lookup_done else self.values()
 
-    @memoize_default(NO_DEFAULT)
+    @memoize_default()
     def values(self):
         result = unite(self._evaluator.eval_element(v) for v in self._values())
         result += check_array_additions(self._evaluator, self)
@@ -363,11 +363,11 @@ class MergedArray(_FakeArray):
         super(MergedArray, self).__init__(evaluator, arrays, arrays[-1].type)
         self._arrays = arrays
 
-    def get_index_types(self, evaluator, mixed_index):
-        return list(chain(*(a.values() for a in self._arrays)))
-
     def get_exact_index_types(self, mixed_index):
         raise IndexError
+
+    def values(self):
+        return list(chain(*(a.values() for a in self._arrays)))
 
     def __iter__(self):
         for array in self._arrays:
