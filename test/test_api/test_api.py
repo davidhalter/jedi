@@ -101,10 +101,11 @@ def test_completion_on_complex_literals():
     assert api.Script('4j').completions() == []
 
 
-def test_goto_assignments_on_non_statement():
+def test_goto_assignments_on_non_name():
     assert api.Script('for').goto_assignments() == []
 
     assert api.Script('assert').goto_assignments() == []
+    assert api.Script('True').goto_assignments() == []
 
 
 def test_goto_definition_not_multiple():

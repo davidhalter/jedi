@@ -407,7 +407,11 @@ class Script(object):
         if last_name is None:
             last_name = stmt
             while not isinstance(last_name, pr.Name):
-                last_name = last_name.children[-1]
+                try:
+                    last_name = last_name.children[-1]
+                except AttributeError:
+                    # Doesn't have a name in it.
+                    return []
 
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.
