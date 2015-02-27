@@ -509,8 +509,8 @@ class Script(object):
             return []
 
         with common.scale_speed_settings(settings.scale_call_signatures):
-            origins = cache.cache_call_signatures(self._evaluator, stmt, self.source,
-                                                  self._pos, stmt)
+            origins = cache.cache_call_signatures(self._evaluator, stmt,
+                                                  self.source, self._pos)
         debug.speed('func_call followed')
 
         return [classes.CallSignature(self._evaluator, o.name, stmt, call_index, key_name)

@@ -100,18 +100,18 @@ def time_cache(time_add_setting):
 
 
 @time_cache("call_signatures_validity")
-def cache_call_signatures(evaluator, call, source, user_pos, stmt):
+def cache_call_signatures(evaluator, call, source, user_pos):
     """This function calculates the cache key."""
     index = user_pos[0] - 1
     lines = common.splitlines(source)
 
     before_cursor = lines[index][:user_pos[1]]
-    other_lines = lines[stmt.start_pos[0]:index]
+    other_lines = lines[call.start_pos[0]:index]
     whole = '\n'.join(other_lines + [before_cursor])
     before_bracket = re.match(r'.*\(', whole, re.DOTALL)
 
-    module_path = stmt.get_parent_until().path
-    yield None if module_path is None else (module_path, before_bracket, stmt.start_pos)
+    module_path = call.get_parent_until().path
+    yield None if module_path is None else (module_path, before_bracket, call.start_pos)
     yield evaluator.eval_element(call)
 
 
