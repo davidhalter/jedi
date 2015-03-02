@@ -338,6 +338,11 @@ tuple((1,))[0]
 #? []
 list().__iterable
 
+# With a list comprehension.
+for i in set(a for a in [1]):
+    #? int()
+    i
+
 
 # -----------------
 # Recursions

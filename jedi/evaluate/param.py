@@ -84,7 +84,14 @@ class Arguments(pr.Base):
                         yield key, values
             else:
                 if pr.is_node(el, 'argument'):
-                    named_args.append((el.children[0].value, (el.children[2],)))
+                    c = el.children
+                    if len(c) == 3:  # Keyword argument.
+                        named_args.append((c[0].value, (c[2],)))
+                    else:  # Generator comprehension.
+                        # Include the brackets with the parent.
+                        comp = iterable.GeneratorComprehension(
+                            self._evaluator, self.argument_node.parent)
+                        yield None, (iterable.AlreadyEvaluated([comp]),)
                 elif isinstance(el, (list, tuple)):
                     yield None, el
                 else:
