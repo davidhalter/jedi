@@ -191,3 +191,14 @@ for key, value in [(1,2)]:
 for i in []:
     #! ['for i in []: i']
     i
+
+# -----------------
+# decorator
+# -----------------
+def dec(dec_param=3):
+    pass
+
+#! 8 ['dec_param=3']
+@dec(dec_param=5)
+def y():
+    pass

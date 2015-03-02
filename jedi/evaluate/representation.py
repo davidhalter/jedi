@@ -504,7 +504,6 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         if not self.is_decorated:
             for dec in reversed(decorators):
                 debug.dbg('decorator: %s %s', dec, f)
-                dec.children
                 dec_results = self._evaluator.eval_element(dec.children[1])
                 trailer = dec.children[2:-1]
                 if trailer:

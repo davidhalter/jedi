@@ -302,12 +302,14 @@ class Evaluator(object):
             if trailer.type == 'arglist':
                 trailer = trailer.parent
             if trailer.type != 'classdef':
-                for i, t in enumerate(trailer.parent.children):
-                    if t == trailer:
-                        to_evaluate = trailer.parent.children[:i]
-                types = self.eval_element(to_evaluate[0])
-                for trailer in to_evaluate[1:]:
-                    types = self.eval_trailer(types, trailer)
+                if trailer.type == 'decorator':
+                    types = self.eval_element(trailer.children[1])
+                else:
+                    i = trailer.parent.children.index(trailer)
+                    to_evaluate = trailer.parent.children[:i]
+                    types = self.eval_element(to_evaluate[0])
+                    for trailer in to_evaluate[1:]:
+                        types = self.eval_trailer(types, trailer)
                 param_names = []
                 for typ in types:
                     try:
