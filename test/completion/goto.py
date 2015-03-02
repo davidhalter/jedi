@@ -202,3 +202,17 @@ def dec(dec_param=3):
 @dec(dec_param=5)
 def y():
     pass
+
+class ClassDec():
+    def class_func(func):
+        return func
+
+#! 14 ['def class_func']
+@ClassDec.class_func
+def x():
+    pass
+
+#! 2 ['class ClassDec']
+@ClassDec.class_func
+def z():
+    pass
