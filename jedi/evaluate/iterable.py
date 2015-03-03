@@ -550,6 +550,11 @@ class ArrayInstance(IterableWrapper):
     Used for the usage of set() and list().
     This is definitely a hack, but a good one :-)
     It makes it possible to use set/list conversions.
+
+    In contrast to Array, ListComprehension and all other iterable types, this
+    is something that is only used inside `evaluate/compiled/fake/builtins.py`
+    and therefore doesn't need `names_dicts`, `py__bool__` and so on, because
+    we don't use these operations in `builtins.py`.
     """
     def __init__(self, evaluator, instance):
         self._evaluator = evaluator
