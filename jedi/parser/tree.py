@@ -69,9 +69,10 @@ class DocstringMixin(object):
             stmt = self.children[self.children.index(':') + 1]
             if is_node(stmt, 'suite'):  # Normally a suite
                 stmt = stmt.children[2]  # -> NEWLINE INDENT stmt
-        else:
-            c = self.parent.children
-            index = c.index(self) - 1
+        else:  # ExprStmt
+            simple_stmt = self.parent
+            c = simple_stmt.parent.children
+            index = c.index(simple_stmt)
             if not index:
                 return ''
             stmt = c[index - 1]

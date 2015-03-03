@@ -129,6 +129,11 @@ def test_completion_docstring():
     docstr('import jedi\njedi.Scr', cleandoc(Script.__doc__))
 
     docstr('abcd=3;abcd', '')
+    docstr('"hello"\nabcd=3\nabcd', 'hello')
+    # It works with a ; as well.
+    docstr('"hello"\nabcd=3;abcd', 'hello')
+    # Shouldn't work with a tuple.
+    docstr('"hello",0\nabcd=3\nabcd', '')
 
 
 def test_completion_params():
