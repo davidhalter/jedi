@@ -135,6 +135,12 @@ a = [a for a in [1]]
 #? int()
 a[0]
 
+y = 1.0
+# Should not leak.
+[y for y in [3]]
+#? float()
+y
+
 a = [a for a in (1, 2)]
 #? int()
 a[0]
@@ -229,6 +235,14 @@ left, right = (i for i in
 #? str()
 left
 
+# -----------------
+# name resolution in comprehensions.
+# -----------------
+
+def x():
+    #? 22
+    [a for a in h if hio]
+    if hio: pass
 
 # -----------------
 # ternary operator

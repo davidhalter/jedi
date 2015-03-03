@@ -41,7 +41,9 @@ def filter_after_position(names, position):
 
     names_new = []
     for n in names:
-        if n.start_pos[0] is not None and n.start_pos < position:
+        # Filter positions and also allow list comprehensions and lambdas.
+        if n.start_pos[0] is not None and n.start_pos < position \
+                or isinstance(n.get_definition(), (pr.CompFor, pr.Lambda)):
             names_new.append(n)
     return names_new
 
@@ -54,8 +56,6 @@ def filter_definition_names(names, origin, position=None):
     # Just calculate the scope from the first
     stmt = names[0].get_definition()
     scope = stmt.get_parent_scope()
-    if isinstance(stmt, (pr.CompFor, pr.Lambda)):
-        return names
 
     if not (isinstance(scope, er.FunctionExecution)
             and isinstance(scope.base, er.LambdaWrapper)):
