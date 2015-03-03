@@ -119,7 +119,7 @@ left
 # -----------------
 
 def x():
+    """Should not try to resolve to the if hio, which was a bug."""
     #? 22
     [a for a in h if hio]
     if hio: pass
-
