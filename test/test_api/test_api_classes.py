@@ -119,11 +119,16 @@ def test_completion_docstring():
     """
     Jedi should follow imports in certain conditions
     """
+    def docstr(src, result):
+        c = Script(src).completions()[0]
+        assert c.docstring(raw=True, fast=False) == cleandoc(result)
+
     c = Script('import jedi\njed').completions()[0]
     assert c.docstring(fast=False) == cleandoc(jedi_doc)
 
-    c = Script('import jedi\njedi.Scr').completions()[0]
-    assert c.docstring(raw=True, fast=False) == cleandoc(Script.__doc__)
+    docstr('import jedi\njedi.Scr', cleandoc(Script.__doc__))
+
+    docstr('abcd=3;abcd', '')
 
 
 def test_completion_params():

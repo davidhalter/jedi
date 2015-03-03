@@ -65,10 +65,17 @@ class DocstringMixin(object):
         """ Returns a cleaned version of the docstring token. """
         if isinstance(self, Module):
             stmt = self.children[0]
-        else:
+        elif isinstance(self, ClassOrFunc):
             stmt = self.children[self.children.index(':') + 1]
             if is_node(stmt, 'suite'):  # Normally a suite
                 stmt = stmt.children[2]  # -> NEWLINE INDENT stmt
+        else:
+            c = self.parent.children
+            index = c.index(self) - 1
+            if not index:
+                return ''
+            stmt = c[index - 1]
+
         if is_node(stmt, 'simple_stmt'):
             stmt = stmt.children[0]
 
