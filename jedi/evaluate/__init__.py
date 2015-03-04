@@ -159,6 +159,8 @@ class Evaluator(object):
             return [er.LambdaWrapper(self, element)]
         elif element.isinstance(er.LambdaWrapper):
             return [element]  # TODO this is no real evaluation.
+        elif element.type == 'expr_stmt':
+            return self.eval_statement(element)
         elif element.type == 'power':
             types = self._eval_atom(element.children[0])
             for trailer in element.children[1:]:

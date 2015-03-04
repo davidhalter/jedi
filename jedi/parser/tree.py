@@ -173,6 +173,10 @@ class Leaf(Base):
         return (self._start_pos[0] + self.position_modifier.line,
                 self._start_pos[1] + len(self.value))
 
+    def move(self, line_offset, column_offset):
+        self._start_pos = (self._start_pos[0] + line_offset,
+                           self._start_pos[1] + column_offset)
+
     def get_previous(self):
         """
         Returns the previous leaf in the parser tree.
@@ -427,11 +431,7 @@ class BaseNode(Base):
         Move the Node's start_pos.
         """
         for c in self.children:
-            if isinstance(c, Leaf):
-                c.start_pos = (c.start_pos[0] + line_offset,
-                               c.start_pos[1] + column_offset)
-            else:
-                c.move(line_offset, column_offset)
+            c.move(line_offset, column_offset)
 
     @property
     def start_pos(self):
@@ -460,7 +460,8 @@ class BaseNode(Base):
     def get_statement_for_position(self, pos):
         for c in self.children:
             if c.start_pos <= pos <= c.end_pos:
-                if c.type in ('expr_stmt', 'import_from', 'import_name'):
+                if c.type not in ('decorated', 'simple_stmt', 'suite') \
+                        and not isinstance(c, (Flow, ClassOrFunc)):
                     return c
                 else:
                     try:

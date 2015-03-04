@@ -285,7 +285,7 @@ class Script(object):
                 i = imports.get_importer(self._evaluator, names, module, level)
                 return i.follow(self._evaluator)
 
-            scopes = self._evaluator.eval_statement(eval_stmt)
+            scopes = self._evaluator.eval_element(eval_stmt)
 
         return scopes
 
@@ -294,9 +294,10 @@ class Script(object):
         tokenizer = source_tokens(cursor_txt)
         r = Parser(self._grammar, cursor_txt, tokenizer=tokenizer)
         try:
-            # Take the last statement available.
-            stmt = r.module.statements[-1]
-        except IndexError:
+            # Take the last statement available that is not an endmarker.
+            # And because it's a simple_stmt, we need to get the first child.
+            stmt = r.module.children[-2].children[0]
+        except (AttributeError, IndexError):
             return None
 
         user_stmt = self._parser.user_stmt()
