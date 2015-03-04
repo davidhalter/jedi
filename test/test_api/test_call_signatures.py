@@ -301,3 +301,12 @@ def test_signature_index():
     assert get(both + 'foo(a=2').index == 1
     assert get(both + 'foo(a=2, b=2').index == 1
     assert get(both + 'foo(a, b, c').index == 0
+
+
+def test_bracket_start():
+    def bracket_start(src):
+        signatures = Script(src).call_signatures()
+        assert len(signatures) == 1
+        return signatures[0].bracket_start
+
+    assert bracket_start('str(') == (1, 3)

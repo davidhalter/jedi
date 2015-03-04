@@ -290,7 +290,7 @@ class Script(object):
         return scopes
 
     @memoize_default()
-    def _get_under_cursor_stmt(self, cursor_txt):
+    def _get_under_cursor_stmt(self, cursor_txt, start_pos=None):
         tokenizer = source_tokens(cursor_txt)
         r = Parser(self._grammar, cursor_txt, tokenizer=tokenizer)
         try:
@@ -301,9 +301,10 @@ class Script(object):
 
         user_stmt = self._parser.user_stmt()
         if user_stmt is None:
-            # Set the start_pos to a pseudo position, that doesn't exist but works
-            # perfectly well (for both completions in docstrings and statements).
-            pos = self._pos
+            # Set the start_pos to a pseudo position, that doesn't exist but
+            # works perfectly well (for both completions in docstrings and
+            # statements).
+            pos = start_pos or self._pos
         else:
             pos = user_stmt.start_pos
 
@@ -500,11 +501,11 @@ class Script(object):
 
         :rtype: list of :class:`classes.CallSignature`
         """
-        call_txt, call_index, key_name = self._user_context.call_signature()
+        call_txt, call_index, key_name, start_pos = self._user_context.call_signature()
         if call_txt is None:
             return []
 
-        stmt = self._get_under_cursor_stmt(call_txt)
+        stmt = self._get_under_cursor_stmt(call_txt, start_pos)
         if stmt is None:
             return []
 

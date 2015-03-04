@@ -187,8 +187,8 @@ class UserContext(object):
             elif next_must_be_name:
                 if tok_type == tokenize.NAME:
                     end_pos = start_pos[0], start_pos[1] + len(tok_str)
-                    call, _ = self._calc_path_until_cursor(start_pos=end_pos)
-                    return call, index, key_name
+                    call, start_pos = self._calc_path_until_cursor(start_pos=end_pos)
+                    return call, index, key_name, start_pos
                 index = 0
                 next_must_be_name = False
             elif next_is_key:
@@ -207,7 +207,7 @@ class UserContext(object):
                 index += 1
             elif tok_str == '=':
                 next_is_key = True
-        return None, 0, None
+        return None, 0, None, (0, 0)
 
     def get_context(self, yield_positions=False):
         self.get_path_until_cursor()  # In case _start_cursor_pos is undefined.
