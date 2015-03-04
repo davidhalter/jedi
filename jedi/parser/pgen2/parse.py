@@ -117,12 +117,7 @@ class PgenParser(object):
     def addtoken(self, type, value, prefix, start_pos):
         """Add a token; return True iff this is the end of the program."""
         # Map from token to label
-        try:
-            ilabel = self.classify(type, value, start_pos)
-        except ParseError:
-            # Currently we ignore tokens like `?`.
-            print('invalid token', tokenize.tok_name[type], repr(value))
-            return
+        ilabel = self.classify(type, value, start_pos)
 
         # Loop until the token is shifted; may raise exceptions
         while True:
@@ -171,14 +166,12 @@ class PgenParser(object):
     def classify(self, type, value, start_pos):
         """Turn a token into a label.  (Internal)"""
         if type == tokenize.NAME:
-            # Check for reserved words
-            ilabel = self.grammar.keywords.get(value)
-            if ilabel is not None:
-                return ilabel
-        ilabel = self.grammar.tokens.get(type)
-        if ilabel is None:
-            raise ParseError("bad token", type, value, start_pos)
-        return ilabel
+            # Check for reserved words (keywords)
+            try:
+                return self.grammar.keywords[value]
+            except KeyError:
+                pass
+        return self.grammar.tokens[type]
 
     def shift(self, type, value, newstate, prefix, start_pos):
         """Shift a token.  (Internal)"""

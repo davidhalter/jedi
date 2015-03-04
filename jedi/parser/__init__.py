@@ -22,7 +22,7 @@ from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser import token
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
-                               STRING, OP)
+                               STRING, OP, ERRORTOKEN)
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser
 
@@ -74,6 +74,12 @@ class ErrorStatement(object):
         return first_type
 
 
+class ParserSyntaxError(object):
+    def __init__(self, message, position):
+        self.message = message
+        self.position = position
+
+
 class Parser(object):
     """
     This class is used to parse a Python file, it then divides them into a
@@ -114,6 +120,8 @@ class Parser(object):
             'old_lambdef': pt.Lambda,
             'lambdef_nocond': pt.Lambda,
         }
+
+        self.syntax_errors = []
 
         self._global_names = []
         self._omit_dedent_list = []
@@ -321,10 +329,16 @@ class Parser(object):
                 self._indent_counter -= 1
             elif typ == INDENT:
                 self._indent_counter += 1
+            elif typ == ERRORTOKEN:
+                self._add_syntax_error('Strange token', start_pos)
+                continue
 
             if typ == OP:
                 typ = token.opmap[value]
             yield typ, value, prefix, start_pos
+
+    def _add_syntax_error(self, message, position):
+        self.syntax_errors.append(ParserSyntaxError(message, position))
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
