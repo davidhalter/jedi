@@ -149,7 +149,7 @@ class NameFinder(object):
                 continue
 
             if isinstance(self.name_str, pr.Name):
-                origin_scope = self.name_str.get_definition().parent
+                origin_scope = self.name_str.get_parent_until(pr.Scope, reverse=True)
             else:
                 origin_scope = None
             if isinstance(stmt.parent, compiled.CompiledObject):

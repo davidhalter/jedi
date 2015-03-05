@@ -535,11 +535,7 @@ class Script(object):
         for n in imp_names:
             imports.ImportWrapper(self._evaluator, n).follow()
         for node in sorted(nodes, key=lambda obj: obj.start_pos):
-            #if not (isinstance(stmt.parent, pr.ForFlow) and stmt.parent.set_stmt == stmt):
-            if node.type == 'expr_stmt':
-                check_types(self._evaluator.eval_statement(node))
-            else:
-                check_types(self._evaluator.eval_element(node))
+            check_types(self._evaluator.eval_element(node))
 
         for dec_func in decorated_funcs:
             er.Function(self._evaluator, dec_func).get_decorated_func()

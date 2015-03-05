@@ -21,8 +21,9 @@ def test_user_statement_on_import():
 
 class TestCallAndName():
     def get_call(self, source):
-        stmt = Parser(load_grammar(), u(source)).module.statements[0]
-        return stmt.children[0]
+        # Get the simple_stmt and then the first one.
+        simple_stmt = Parser(load_grammar(), u(source)).module.children[0]
+        return simple_stmt.children[0]
 
     def test_name_and_call_positions(self):
         name = self.get_call('name\nsomething_else')

@@ -240,16 +240,33 @@ def get_module_statements(module):
                                     nodes.append(argument)
             return nodes
 
-    def add_stmts(stmts):
+    def add_nodes(nodes):
         new = set()
-        for stmt in stmts:
-            if stmt.type == 'expr_stmt':
-                new.add(stmt)
+        for node in nodes:
+            if isinstance(node, pr.Flow):
+                # Pick the suite/simple_stmt.
+                new |= add_nodes(node.children[-1].children)
+            elif node.type in ('simple_stmt', 'suite'):
+                new |= add_nodes(node.children)
+            elif node.type in ('return_stmt', 'yield_expr'):
+                try:
+                    new.add(node.children[1])
+                except IndexError:
+                    pass
+            elif node.type not in ('whitespace', 'operator', 'keyword',
+                                   'parameters', 'decorated') \
+                    and not isinstance(node, (pr.ClassOrFunc, pr.Import)):
+                new.add(node)
 
-            for node in stmt.children:
-                new.update(check_children(node))
-                if node.type != 'keyword' and stmt.type != 'expr_stmt':
-                    new.add(node)
+                try:
+                    children = node.children
+                except AttributeError:
+                    pass
+                else:
+                    for next_node in children:
+                        new.update(check_children(node))
+                        if next_node.type != 'keyword' and node.type != 'expr_stmt':
+                            new.add(node)
         return new
 
     nodes = set()
@@ -260,8 +277,11 @@ def get_module_statements(module):
             import_names |= set(imp.get_defined_names())
             if imp.is_nested():
                 import_names |= set(path[-1] for path in imp.paths())
-        nodes |= add_stmts(scope.statements)
-        nodes |= add_stmts(r for r in scope.returns if r is not None)
+
+        children = scope.children
+        if isinstance(scope, pr.ClassOrFunc):
+            children = children[2:]  # We don't want to include the class name.
+        nodes |= add_nodes(children)
 
         for flow in scope.flows:
             if flow.type == 'for_stmt':
