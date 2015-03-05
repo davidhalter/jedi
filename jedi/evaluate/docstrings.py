@@ -133,8 +133,10 @@ def _evaluate_for_statement_string(evaluator, string, module):
     p = Parser(load_grammar(), code % indent_block(string))
     try:
         pseudo_cls = p.module.subscopes[0]
-        stmt = pseudo_cls.statements[-1]
-    except IndexError:
+        # First pick suite, then simple_stmt (-2 for DEDENT) and then the node,
+        # which is also not the last item, because there's a newline.
+        stmt = pseudo_cls.children[-1].children[-2].children[-2]
+    except (AttributeError, IndexError):
         return []
 
     # Use the module of the param.
