@@ -56,12 +56,6 @@ def search_params(evaluator, param):
     debug.dbg('Dynamic param search for %s', param)
 
     func = param.get_parent_until(pr.Function)
-    """
-        for params in get_posibilities(evaluator, module, func_name):
-            for p in params:
-                if str(p) == str(param.name):
-                    result += p.parent.eval(evaluator)
-                    """
     # Compare the param names.
     names = [n for n in search_function_call(evaluator, func)
              if n.value == param.name.value]
@@ -90,9 +84,6 @@ def search_function_call(evaluator, func):
                 return []
 
             for name in names:
-                stmt = name.get_definition()
-                if not isinstance(stmt, (pr.ExprStmt, pr.CompFor, pr.ReturnStmt)):
-                    continue
                 parent = name.parent
                 if pr.is_node(parent, 'trailer'):
                     parent = parent.parent
