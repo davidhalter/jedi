@@ -153,6 +153,12 @@ class Parser(object):
                        self.error_recovery)
         tokenizer = tokenizer or tokenize.source_tokens(source)
         self.module = p.parse(self._tokenize(tokenizer))
+        if self.module.type != 'file_input':
+            # If there's only one statement, we get back a non-module. That's
+            # not what we want, we want a module, so we add it here:
+            self.module = self.convert_node(grammar,
+                                            grammar.symbol2number['file_input'],
+                                            [self.module])
 
         if added_newline:
             self.remove_last_newline()

@@ -190,11 +190,10 @@ class PgenParser(object):
         # If there's exactly one child, return that child instead of creating a
         # new node.  We still create expr_stmt and file_input though, because a
         # lot of Jedi depends on its logic.
-        if len(children) != 1 or type in (-1,
-                                          self.grammar.symbol2number['file_input']):
-            newnode = self.convert_node(self.grammar, type, children)
-        else:
+        if len(children) == 1:
             newnode = children[0]
+        else:
+            newnode = self.convert_node(self.grammar, type, children)
 
         try:
             # Equal to:
