@@ -272,18 +272,19 @@ class Name(Leaf):
                                    self.start_pos[0], self.start_pos[1])
 
     def get_definition(self):
-        scope = self.parent
+        scope = self
         while scope.parent is not None:
-            if scope.isinstance(Node):
+            parent = scope.parent
+            if scope.isinstance(Node, Name) and parent.type != 'simple_stmt':
                 if scope.type == 'testlist_comp':
                     try:
                         if isinstance(scope.children[1], CompFor):
                             return scope.children[1]
                     except IndexError:
                         pass
+                scope = parent
             else:
                 break
-            scope = scope.parent
         return scope
 
     def is_definition(self):

@@ -546,7 +546,11 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         elif isinstance(d, pr.Param):
             d = d.get_code()
         else:  # ExprStmt
-            first_leaf = d.first_leaf()
+            try:
+                first_leaf = d.first_leaf()
+            except AttributeError:
+                # `d` is already a Leaf (Name).
+                first_leaf = d
             # Remove the prefix, because that's not what we want for get_code
             # here.
             old, first_leaf.prefix = first_leaf.prefix, ''
