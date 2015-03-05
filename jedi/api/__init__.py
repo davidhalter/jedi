@@ -12,7 +12,7 @@ import warnings
 import sys
 from itertools import chain
 
-from jedi._compatibility import next, unicode, builtins
+from jedi._compatibility import unicode, builtins
 from jedi.parser import Parser, load_grammar
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import tree as pr
