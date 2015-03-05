@@ -153,7 +153,7 @@ def _execute_types_in_stmt(evaluator, stmt):
     doesn't include tuple, list and dict literals, because the stuff they
     contain is executed. (Used as type information).
     """
-    definitions = evaluator.eval_statement(stmt)
+    definitions = evaluator.eval_element(stmt)
     return chain.from_iterable(_execute_array_values(evaluator, d) for d in definitions)
 
 

@@ -64,39 +64,34 @@ class DocstringMixin(object):
     def raw_doc(self):
         """ Returns a cleaned version of the docstring token. """
         if isinstance(self, Module):
-            stmt = self.children[0]
+            node = self.children[0]
         elif isinstance(self, ClassOrFunc):
-            stmt = self.children[self.children.index(':') + 1]
-            if is_node(stmt, 'suite'):  # Normally a suite
-                stmt = stmt.children[2]  # -> NEWLINE INDENT stmt
+            node = self.children[self.children.index(':') + 1]
+            if is_node(node, 'suite'):  # Normally a suite
+                node = node.children[2]  # -> NEWLINE INDENT stmt
         else:  # ExprStmt
             simple_stmt = self.parent
             c = simple_stmt.parent.children
             index = c.index(simple_stmt)
             if not index:
                 return ''
-            stmt = c[index - 1]
+            node = c[index - 1]
 
-        if is_node(stmt, 'simple_stmt'):
-            stmt = stmt.children[0]
+        if is_node(node, 'simple_stmt'):
+            node = node.children[0]
 
-        try:
-            first = stmt.children[0]
-        except AttributeError:
-            pass  # Probably a pass Keyword (Leaf).
-        else:
-            if first.type == 'string':
-                # TODO We have to check next leaves until there are no new
-                # leaves anymore that might be part of the docstring. A
-                # docstring can also look like this: ``'foo' 'bar'
-                # Returns a literal cleaned version of the ``Token``.
-                cleaned = cleandoc(literal_eval(first.value))
-                # Since we want the docstr output to be always unicode, just
-                # force it.
-                if is_py3 or isinstance(cleaned, unicode):
-                    return cleaned
-                else:
-                    return unicode(cleaned, 'UTF-8', 'replace')
+        if node.type == 'string':
+            # TODO We have to check next leaves until there are no new
+            # leaves anymore that might be part of the docstring. A
+            # docstring can also look like this: ``'foo' 'bar'
+            # Returns a literal cleaned version of the ``Token``.
+            cleaned = cleandoc(literal_eval(node.value))
+            # Since we want the docstr output to be always unicode, just
+            # force it.
+            if is_py3 or isinstance(cleaned, unicode):
+                return cleaned
+            else:
+                return unicode(cleaned, 'UTF-8', 'replace')
         return ''
 
 

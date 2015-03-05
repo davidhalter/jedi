@@ -205,6 +205,10 @@ class Evaluator(object):
             scope = stmt.get_parent_until(pr.IsScope, include_current=True)
             if isinstance(stmt, pr.CompFor):
                 stmt = stmt.get_parent_until((pr.ClassOrFunc, pr.ExprStmt))
+            if stmt.type != 'expr_stmt':
+                # We only need to adjust the start_pos for statements, because
+                # there the name cannot be used.
+                stmt = atom
             return self.find_types(scope, atom, stmt.start_pos, search_global=True)
         elif isinstance(atom, pr.Literal):
             return [compiled.create(self, atom.eval())]
@@ -347,5 +351,9 @@ class Evaluator(object):
                 self.find_types(typ, name, is_goto=True) for typ in types
             ))
         else:
+            if stmt.type != 'expr_stmt':
+                # We only need to adjust the start_pos for statements, because
+                # there the name cannot be used.
+                stmt = name
             return self.find_types(scope, name, stmt.start_pos,
                                    search_global=True, is_goto=True)
