@@ -103,8 +103,8 @@ def _check_for_setattr(instance):
                for stmt in stmts)
 
 
-def add_attribute_error(evaluator, scope, name_part):
-    message = ('AttributeError: %s has no attribute %s.' % (scope, name_part))
+def add_attribute_error(evaluator, scope, name):
+    message = ('AttributeError: %s has no attribute %s.' % (scope, name))
     from jedi.evaluate.representation import Instance
     # Check for __getattr__/__getattribute__ existance and issue a warning
     # instead of an error, if that happens.
@@ -121,8 +121,8 @@ def add_attribute_error(evaluator, scope, name_part):
     else:
         typ = Error
 
-    payload = scope, name_part
-    add(evaluator, 'attribute-error', name_part, message, typ, payload)
+    payload = scope, name
+    add(evaluator, 'attribute-error', name, message, typ, payload)
 
 
 def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
@@ -244,8 +244,11 @@ def get_module_statements(module):
         new = set()
         for node in nodes:
             if isinstance(node, pr.Flow):
+                children = node.children
+                if node.type == 'for_stmt':
+                    children = children[2:]  # Don't want to include the names.
                 # Pick the suite/simple_stmt.
-                new |= add_nodes(node.children[-1].children)
+                new |= add_nodes(children)
             elif node.type in ('simple_stmt', 'suite'):
                 new |= add_nodes(node.children)
             elif node.type in ('return_stmt', 'yield_expr'):
@@ -254,7 +257,7 @@ def get_module_statements(module):
                 except IndexError:
                     pass
             elif node.type not in ('whitespace', 'operator', 'keyword',
-                                   'parameters', 'decorated') \
+                                   'parameters', 'decorated', 'except_clause') \
                     and not isinstance(node, (pr.ClassOrFunc, pr.Import)):
                 new.add(node)
 
