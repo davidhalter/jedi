@@ -375,6 +375,11 @@ def load_module(path, name):
             # the QObject class.
             # See https://github.com/davidhalter/jedi/pull/483
             return None
+        raise
+    except ImportError:
+        # If a module is "corrupt" or not really a Python module or whatever.
+        debug.warning('Module %s not importable.', path)
+        return None
     # Just access the cache after import, because of #59 as well as the very
     # complicated import structure of Python.
     module = sys.modules[dotted_path]

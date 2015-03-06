@@ -51,3 +51,9 @@ def test_flask_ext(script, name):
         assert name in [c.name for c in jedi.Script(script).completions()]
     finally:
         sys.path.remove(path)
+
+
+@cwd_at('test/test_evaluate/')
+def test_not_importable_file():
+    src = 'import not_importable_file as x; x.'
+    assert not jedi.Script(src, path='example.py').completions()
