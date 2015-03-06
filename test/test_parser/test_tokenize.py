@@ -5,8 +5,7 @@ from textwrap import dedent
 
 from jedi._compatibility import u, is_py3
 from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT
-from jedi import parser
-from token import STRING
+from jedi.parser import Parser, load_grammar, tokenize
 
 
 from ..helpers import unittest
@@ -14,7 +13,7 @@ from ..helpers import unittest
 
 class TokenTest(unittest.TestCase):
     def test_end_pos_one_line(self):
-        parsed = parser.Parser(parser.load_grammar(), dedent(u('''
+        parsed = Parser(load_grammar(), dedent(u('''
         def testit():
             a = "huhu"
         ''')))
@@ -22,7 +21,7 @@ class TokenTest(unittest.TestCase):
         assert tok.end_pos == (3, 14)
 
     def test_end_pos_multi_line(self):
-        parsed = parser.Parser(parser.load_grammar(), dedent(u('''
+        parsed = Parser(load_grammar(), dedent(u('''
         def testit():
             a = """huhu
         asdfasdf""" + "h"
@@ -34,7 +33,7 @@ class TokenTest(unittest.TestCase):
         # Test a simple one line string, no preceding whitespace
         simple_docstring = u('"""simple one line docstring"""')
         simple_docstring_io = StringIO(simple_docstring)
-        tokens = parser.tokenize.generate_tokens(simple_docstring_io.readline)
+        tokens = tokenize.generate_tokens(simple_docstring_io.readline)
         token_list = list(tokens)
         _, value, _, prefix = token_list[0]
         assert prefix == ''
@@ -44,7 +43,7 @@ class TokenTest(unittest.TestCase):
         # Test a simple one line string with preceding whitespace and newline
         simple_docstring = u('  """simple one line docstring""" \r\n')
         simple_docstring_io = StringIO(simple_docstring)
-        tokens = parser.tokenize.generate_tokens(simple_docstring_io.readline)
+        tokens = tokenize.generate_tokens(simple_docstring_io.readline)
         token_list = list(tokens)
         assert token_list[0][0] == INDENT
         typ, value, start_pos, prefix = token_list[1]
@@ -64,7 +63,7 @@ class TokenTest(unittest.TestCase):
                 print(True)
         '''))
         fundef_io = StringIO(fundef)
-        tokens = parser.tokenize.generate_tokens(fundef_io.readline)
+        tokens = tokenize.generate_tokens(fundef_io.readline)
         token_list = list(tokens)
         for _, value, _, prefix in token_list:
             if value == 'test_whitespace':
@@ -86,7 +85,7 @@ class TokenTest(unittest.TestCase):
             pass
         '''))
         fundef_io = StringIO(fundef)
-        tokens = parser.tokenize.generate_tokens(fundef_io.readline)
+        tokens = tokenize.generate_tokens(fundef_io.readline)
         token_list = list(tokens)
         unicode_token = token_list[1]
         if is_py3:
@@ -107,12 +106,14 @@ class TokenTest(unittest.TestCase):
         ]
 
         for s in string_tokens:
-            parsed = parser.Parser(u('''a = %s\n''' % s))
-            tok_list = parsed.module.statements[0]._token_list
-            self.assertEqual(len(tok_list), 3)
-            tok = tok_list[2]
-            self.assertIsInstance(tok, parser.tokenize.Token)
-            self.assertEqual(tok.type, STRING)
+            parsed = Parser(load_grammar(), u('''a = %s\n''' % s))
+            simple_stmt = parsed.module.children[0]
+            expr_stmt = simple_stmt.children[0]
+            assert len(expr_stmt.children) == 3
+            string_tok = expr_stmt.children[2]
+            assert string_tok.type == 'string'
+            assert string_tok.value == s
+            assert string_tok.eval() == 'test'
 
 
 def test_tokenizer_with_string_literal_backslash():
