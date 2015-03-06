@@ -333,29 +333,6 @@ def dotted_from_fs_path(fs_path, sys_path=None):
 
 
 def load_module(path, name):
-    """
-    if not name:
-        name = os.path.basename(path)
-        name = name.rpartition('.')[0]  # cut file type (normally .so)
-
-    # sometimes there are endings like `_sqlite3.cpython-32mu`
-    name = re.sub(r'\..*', '', name)
-
-    dot_path = []
-    if path:
-        p = path
-        # if path is not in sys.path, we need to make a well defined import
-        # like `from numpy.core import umath.`
-        while p and p not in sys.path:
-            p, sep, mod = p.rpartition(os.path.sep)
-            dot_path.insert(0, mod.partition('.')[0])
-        if p:
-            name = ".".join(dot_path)
-            path = p
-        else:
-            path = os.path.dirname(path)
-
-    """
     if path is not None:
         dotted_path = dotted_from_fs_path(path)
     else:
