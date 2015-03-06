@@ -154,7 +154,10 @@ class Evaluator(object):
             return self._eval_atom(element)
         elif isinstance(element, pr.Keyword):
             # For False/True/None
-            return [compiled.builtin.get_by_name(element.value)]
+            if element.value in ('False', 'True', 'None'):
+                return [compiled.builtin.get_by_name(element.value)]
+            else:
+                return []
         elif element.isinstance(pr.Lambda):
             return [er.LambdaWrapper(self, element)]
         elif element.isinstance(er.LambdaWrapper):
