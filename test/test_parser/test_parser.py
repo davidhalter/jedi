@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import jedi
 from jedi._compatibility import u, is_py3
-from jedi.parser import Parser
+from jedi.parser import Parser, load_grammar
 from jedi.parser.user_context import UserContextParser
-from jedi.parser import representation as pr
+from jedi.parser import tree as pt
 from textwrap import dedent
 
 
@@ -13,50 +14,50 @@ def test_user_statement_on_import():
           "    time)")
 
     for pos in [(2, 1), (2, 4)]:
-        p = UserContextParser(s, None, pos, None).user_stmt()
-        assert isinstance(p, pr.Import)
-        assert p.defunct is False
+        p = UserContextParser(load_grammar(), s, None, pos, None).user_stmt()
+        assert isinstance(p, pt.Import)
         assert [str(n) for n in p.get_defined_names()] == ['time']
 
 
 class TestCallAndName():
     def get_call(self, source):
-        stmt = Parser(u(source), no_docstr=True).module.statements[0]
-        return stmt.expression_list()[0]
+        # Get the simple_stmt and then the first one.
+        simple_stmt = Parser(load_grammar(), u(source)).module.children[0]
+        return simple_stmt.children[0]
 
     def test_name_and_call_positions(self):
-        call = self.get_call('name\nsomething_else')
-        assert str(call.name) == 'name'
-        assert call.name.start_pos == call.start_pos == (1, 0)
-        assert call.name.end_pos == call.end_pos == (1, 4)
+        name = self.get_call('name\nsomething_else')
+        assert str(name) == 'name'
+        assert name.start_pos == (1, 0)
+        assert name.end_pos == (1, 4)
 
-        call = self.get_call('1.0\n')
-        assert call.value == 1.0
-        assert call.start_pos == (1, 0)
-        assert call.end_pos == (1, 3)
+        leaf = self.get_call('1.0\n')
+        assert leaf.value == '1.0'
+        assert leaf.eval() == 1.0
+        assert leaf.start_pos == (1, 0)
+        assert leaf.end_pos == (1, 3)
 
     def test_call_type(self):
         call = self.get_call('hello')
-        assert isinstance(call, pr.Call)
-        assert type(call.name) == pr.Name
+        assert isinstance(call, pt.Name)
 
     def test_literal_type(self):
         literal = self.get_call('1.0')
-        assert isinstance(literal, pr.Literal)
-        assert type(literal.value) == float
+        assert isinstance(literal, pt.Literal)
+        assert type(literal.eval()) == float
 
         literal = self.get_call('1')
-        assert isinstance(literal, pr.Literal)
-        assert type(literal.value) == int
+        assert isinstance(literal, pt.Literal)
+        assert type(literal.eval()) == int
 
         literal = self.get_call('"hello"')
-        assert isinstance(literal, pr.Literal)
-        assert literal.value == 'hello'
+        assert isinstance(literal, pt.Literal)
+        assert literal.eval() == 'hello'
 
 
 class TestSubscopes():
     def get_sub(self, source):
-        return Parser(u(source)).module.subscopes[0]
+        return Parser(load_grammar(), u(source)).module.subscopes[0]
 
     def test_subscope_names(self):
         name = self.get_sub('class Foo: pass').name
@@ -72,7 +73,7 @@ class TestSubscopes():
 
 class TestImports():
     def get_import(self, source):
-        return Parser(source).module.imports[0]
+        return Parser(load_grammar(), source).module.imports[0]
 
     def test_import_names(self):
         imp = self.get_import(u('import math\n'))
@@ -87,13 +88,13 @@ class TestImports():
 
 
 def test_module():
-    module = Parser(u('asdf'), 'example.py', no_docstr=True).module
+    module = Parser(load_grammar(), u('asdf'), 'example.py').module
     name = module.name
     assert str(name) == 'example'
     assert name.start_pos == (1, 0)
     assert name.end_pos == (1, 7)
 
-    module = Parser(u('asdf'), no_docstr=True).module
+    module = Parser(load_grammar(), u('asdf')).module
     name = module.name
     assert str(name) == ''
     assert name.start_pos == (1, 0)
@@ -106,7 +107,7 @@ def test_end_pos():
                  def func():
                      y = None
                  '''))
-    parser = Parser(s)
+    parser = Parser(load_grammar(), s)
     scope = parser.module.subscopes[0]
     assert scope.start_pos == (3, 0)
     assert scope.end_pos == (5, 0)
@@ -119,14 +120,15 @@ def test_carriage_return_statements():
         # this is a namespace package
     '''))
     source = source.replace('\n', '\r\n')
-    stmt = Parser(source).module.statements[0]
+    stmt = Parser(load_grammar(), source).module.statements[0]
     assert '#' not in stmt.get_code()
 
 
 def test_incomplete_list_comprehension():
     """ Shouldn't raise an error, same bug as #418. """
-    s = Parser(u('(1 for def')).module.statements[0]
-    assert s.expression_list()
+    # With the old parser this actually returned a statement. With the new
+    # parser only valid statements generate one.
+    assert Parser(load_grammar(), u('(1 for def')).module.statements == []
 
 
 def test_hex_values_in_docstring():
@@ -138,8 +140,43 @@ def test_hex_values_in_docstring():
             return 1
         '''
 
-    doc = Parser(dedent(u(source))).module.subscopes[0].raw_doc
+    doc = Parser(load_grammar(), dedent(u(source))).module.subscopes[0].raw_doc
     if is_py3:
         assert doc == '\xff'
     else:
         assert doc == u('�')
+
+
+def test_error_correction_with():
+    source = """
+    with open() as f:
+        try:
+            f."""
+    comps = jedi.Script(source).completions()
+    assert len(comps) > 30
+    # `open` completions have a closed attribute.
+    assert [1 for c in comps if c.name == 'closed']
+
+
+def test_newline_positions():
+    endmarker = Parser(load_grammar(), u('a\n')).module.children[-1]
+    assert endmarker.end_pos == (2, 0)
+    new_line = endmarker.get_previous()
+    assert new_line.start_pos == (1, 1)
+    assert new_line.end_pos == (2, 0)
+
+
+def test_end_pos_error_correction():
+    """
+    Source code without ending newline are given one, because the Python
+    grammar needs it. However, they are removed again. We still want the right
+    end_pos, even if something breaks in the parser (error correction).
+    """
+    s = u('def x():\n .')
+    m = Parser(load_grammar(), s).module
+    func = m.children[0]
+    assert func.type == 'funcdef'
+    # This is not exactly correct, but ok, because it doesn't make a difference
+    # at all. We just want to make sure that the module end_pos is correct!
+    assert func.end_pos == (3, 0)
+    assert m.end_pos == (2, 2)

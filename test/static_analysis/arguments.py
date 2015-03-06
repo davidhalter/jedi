@@ -34,7 +34,7 @@ def two_params(x, y):
 two_params(y=2, x=1)
 two_params(1, y=2)
 
-#! 10 type-error-multiple-values
+#! 11 type-error-multiple-values
 two_params(1, x=2)
 #! 17 type-error-too-many-arguments
 two_params(1, 2, y=3)

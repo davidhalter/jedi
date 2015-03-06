@@ -12,7 +12,9 @@ Note: This requires the psutil library, available on PyPI.
 """
 import time
 import sys
+import os
 import psutil
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + '/..'))
 import jedi
 
 

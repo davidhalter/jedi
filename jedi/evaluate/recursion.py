@@ -7,7 +7,7 @@ Next to :mod:`jedi.evaluate.cache` this module also makes |jedi| not
 thread-safe. Why?  ``execution_recursion_decorator`` uses class variables to
 count the function calls.
 """
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
@@ -88,24 +88,18 @@ class _RecursionNode(object):
         if not other:
             return None
 
-        # List Comprehensions start on the same line as its statement.
-        # Therefore we have the unfortunate situation of the same start_pos for
-        # two statements.
-        is_list_comp = lambda x: isinstance(x, pr.ListComprehension)
         return self.script == other.script \
             and self.position == other.position \
-            and not is_list_comp(self.stmt.parent) \
-            and not is_list_comp(other.parent) \
             and not self.is_ignored and not other.is_ignored
 
 
 def execution_recursion_decorator(func):
-    def run(execution):
+    def run(execution, **kwargs):
         detector = execution._evaluator.execution_recursion_detector
         if detector.push_execution(execution):
             result = []
         else:
-            result = func(execution)
+            result = func(execution, **kwargs)
         detector.pop_execution()
         return result
 

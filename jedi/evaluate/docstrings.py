@@ -20,15 +20,14 @@ from itertools import chain
 from textwrap import dedent
 
 from jedi.evaluate.cache import memoize_default
-from jedi.parser import Parser
+from jedi.parser import Parser, load_grammar
 from jedi.common import indent_block
-from jedi.evaluate.iterable import Array
-from jedi.evaluate import helpers
+from jedi.evaluate.iterable import Array, FakeSequence, AlreadyEvaluated
 
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
-    r'\s*:param\s+(\w+)\s+%s:[^\n]+', # Sphinx param with type
+    r'\s*:param\s+(\w+)\s+%s:[^\n]+',  # Sphinx param with type
     r'\s*@type\s+%s:\s*([^\n]+)',  # Epydoc
 ]
 
@@ -117,7 +116,7 @@ def _strip_rst_role(type_str):
 def _evaluate_for_statement_string(evaluator, string, module):
     code = dedent("""
     def pseudo_docstring_stuff():
-        '''Create a pseudo function for docstring statements.'''
+        # Create a pseudo function for docstring statements.
     %s
     """)
     if string is None:
@@ -128,11 +127,16 @@ def _evaluate_for_statement_string(evaluator, string, module):
         # (e.g., 'threading' in 'threading.Thread').
         string = 'import %s\n' % element + string
 
-    p = Parser(code % indent_block(string), no_docstr=True)
-    pseudo_cls = p.module.subscopes[0]
+    # Take the default grammar here, if we load the Python 2.7 grammar here, it
+    # will be impossible to use `...` (Ellipsis) as a token. Docstring types
+    # don't need to conform with the current grammar.
+    p = Parser(load_grammar(), code % indent_block(string))
     try:
-        stmt = pseudo_cls.statements[-1]
-    except IndexError:
+        pseudo_cls = p.module.subscopes[0]
+        # First pick suite, then simple_stmt (-2 for DEDENT) and then the node,
+        # which is also not the last item, because there's a newline.
+        stmt = pseudo_cls.children[-1].children[-2].children[-2]
+    except (AttributeError, IndexError):
         return []
 
     # Use the module of the param.
@@ -149,7 +153,7 @@ def _execute_types_in_stmt(evaluator, stmt):
     doesn't include tuple, list and dict literals, because the stuff they
     contain is executed. (Used as type information).
     """
-    definitions = evaluator.eval_statement(stmt)
+    definitions = evaluator.eval_element(stmt)
     return chain.from_iterable(_execute_array_values(evaluator, d) for d in definitions)
 
 
@@ -162,10 +166,8 @@ def _execute_array_values(evaluator, array):
         values = []
         for typ in array.values():
             objects = _execute_array_values(evaluator, typ)
-            values.append(helpers.FakeStatement(objects))
-        arr = helpers.FakeArray(values, array.parent, array.type)
-        # Wrap it, because that's what the evaluator knows.
-        return [Array(evaluator, arr)]
+            values.append(AlreadyEvaluated(objects))
+        return [FakeSequence(evaluator, values, array.type)]
     else:
         return evaluator.execute(array)
 
@@ -176,7 +178,7 @@ def follow_param(evaluator, param):
 
     return [p
             for param_str in _search_param_in_docstr(func.raw_doc,
-                                                     str(param.get_name()))
+                                                     str(param.name))
             for p in _evaluate_for_statement_string(evaluator, param_str,
                                                     param.get_parent_until())]
 

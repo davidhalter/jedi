@@ -1,7 +1,7 @@
 """
 The ``Parser`` tries to convert the available Python code in an easy to read
 format, something like an abstract syntax tree. The classes who represent this
-tree, are sitting in the :mod:`jedi.parser.representation` module.
+tree, are sitting in the :mod:`jedi.parser.tree` module.
 
 The Python module ``tokenize`` is a very important part in the ``Parser``,
 because it splits the code into different words (tokens).  Sometimes it looks a
@@ -15,13 +15,16 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
-import keyword
+import os
+import re
 
-from jedi._compatibility import next, unicode
-from jedi import debug
-from jedi import common
-from jedi.parser import representation as pr
+from jedi.parser import tree as pt
 from jedi.parser import tokenize
+from jedi.parser import token
+from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
+                               STRING, OP, ERRORTOKEN)
+from jedi.parser.pgen2.pgen import generate_grammar
+from jedi.parser.pgen2.parse import PgenParser
 
 OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
 # Not used yet. In the future I intend to add something like KeywordStatement
@@ -29,623 +32,362 @@ STATEMENT_KEYWORDS = 'assert', 'del', 'global', 'nonlocal', 'raise', \
     'return', 'yield', 'pass', 'continue', 'break'
 
 
+_loaded_grammars = {}
+
+
+def load_grammar(file='grammar3.4'):
+    # For now we only support two different Python syntax versions: The latest
+    # Python 3 and Python 2. This may change.
+    if file.startswith('grammar3'):
+        file = 'grammar3.4'
+    else:
+        file = 'grammar2.7'
+
+    global _loaded_grammars
+    path = os.path.join(os.path.dirname(__file__), file) + '.txt'
+    try:
+        return _loaded_grammars[path]
+    except KeyError:
+        return _loaded_grammars.setdefault(path, generate_grammar(path))
+
+
+class ErrorStatement(object):
+    def __init__(self, stack, next_token, position_modifier, next_start_pos):
+        self.stack = stack
+        self._position_modifier = position_modifier
+        self.next_token = next_token
+        self._next_start_pos = next_start_pos
+
+    @property
+    def next_start_pos(self):
+        s = self._next_start_pos
+        return s[0] + self._position_modifier.line, s[1]
+
+    @property
+    def first_pos(self):
+        first_type, nodes = self.stack[0]
+        return nodes[0].start_pos
+
+    @property
+    def first_type(self):
+        first_type, nodes = self.stack[0]
+        return first_type
+
+
+class ParserSyntaxError(object):
+    def __init__(self, message, position):
+        self.message = message
+        self.position = position
+
+
 class Parser(object):
     """
     This class is used to parse a Python file, it then divides them into a
     class structure of different scopes.
 
-    :param source: The codebase for the parser.
-    :type source: str
+    :param grammar: The grammar object of pgen2. Loaded by load_grammar.
+    :param source: The codebase for the parser. Must be unicode.
     :param module_path: The path of the module in the file system, may be None.
     :type module_path: str
-    :param no_docstr: If True, a string at the beginning is not a docstr.
     :param top_module: Use this module as a parent instead of `self.module`.
     """
-    def __init__(self, source, module_path=None, no_docstr=False,
-                 tokenizer=None, top_module=None):
-        self.no_docstr = no_docstr
+    def __init__(self, grammar, source, module_path=None, tokenizer=None):
+        self._ast_mapping = {
+            'expr_stmt': pt.ExprStmt,
+            'classdef': pt.Class,
+            'funcdef': pt.Function,
+            'file_input': pt.Module,
+            'import_name': pt.ImportName,
+            'import_from': pt.ImportFrom,
+            'break_stmt': pt.KeywordStatement,
+            'continue_stmt': pt.KeywordStatement,
+            'return_stmt': pt.ReturnStmt,
+            'raise_stmt': pt.KeywordStatement,
+            'yield_expr': pt.YieldExpr,
+            'del_stmt': pt.KeywordStatement,
+            'pass_stmt': pt.KeywordStatement,
+            'global_stmt': pt.GlobalStmt,
+            'nonlocal_stmt': pt.KeywordStatement,
+            'assert_stmt': pt.AssertStmt,
+            'if_stmt': pt.IfStmt,
+            'with_stmt': pt.WithStmt,
+            'for_stmt': pt.ForStmt,
+            'while_stmt': pt.WhileStmt,
+            'try_stmt': pt.TryStmt,
+            'comp_for': pt.CompFor,
+            'decorator': pt.Decorator,
+            'lambdef': pt.Lambda,
+            'old_lambdef': pt.Lambda,
+            'lambdef_nocond': pt.Lambda,
+        }
 
+        self.syntax_errors = []
+
+        self._global_names = []
+        self._omit_dedent_list = []
+        self._indent_counter = 0
+        self._last_failed_start_pos = (0, 0)
+
+        # TODO do print absolute import detection here.
+        #try:
+        #    del python_grammar_no_print_statement.keywords["print"]
+        #except KeyError:
+        #    pass  # Doesn't exist in the Python 3 grammar.
+
+        #if self.options["print_function"]:
+        #    python_grammar = pygram.python_grammar_no_print_statement
+        #else:
+        self._used_names = {}
+        self._scope_names_stack = [{}]
+        self._error_statement_stacks = []
+
+        added_newline = False
+        # The Python grammar needs a newline at the end of each statement.
+        if not source.endswith('\n'):
+            source += '\n'
+            added_newline = True
+
+        # For the fast parser.
+        self.position_modifier = pt.PositionModifier()
+        p = PgenParser(grammar, self.convert_node, self.convert_leaf,
+                       self.error_recovery)
         tokenizer = tokenizer or tokenize.source_tokens(source)
-        self._gen = PushBackTokenizer(tokenizer)
+        self.module = p.parse(self._tokenize(tokenizer))
+        if self.module.type != 'file_input':
+            # If there's only one statement, we get back a non-module. That's
+            # not what we want, we want a module, so we add it here:
+            self.module = self.convert_node(grammar,
+                                            grammar.symbol2number['file_input'],
+                                            [self.module])
 
-        # initialize global Scope
-        start_pos = next(self._gen).start_pos
-        self._gen.push_last_back()
-        self.module = pr.SubModule(module_path, start_pos, top_module)
-        self._scope = self.module
-        self._top_module = top_module or self.module
+        if added_newline:
+            self.remove_last_newline()
+        self.module.used_names = self._used_names
+        self.module.path = module_path
+        self.module.global_names = self._global_names
+        self.module.error_statement_stacks = self._error_statement_stacks
 
+    def convert_node(self, grammar, type, children):
+        """
+        Convert raw node information to a Node instance.
+
+        This is passed to the parser driver which calls it whenever a reduction of a
+        grammar rule produces a new complete node, so that the tree is build
+        strictly bottom-up.
+        """
+        symbol = grammar.number2symbol[type]
         try:
-            self._parse()
-        except (common.MultiLevelStopIteration, StopIteration):
-            # StopIteration needs to be added as well, because python 2 has a
-            # strange way of handling StopIterations.
-            # sometimes StopIteration isn't catched. Just ignore it.
+            new_node = self._ast_mapping[symbol](children)
+        except KeyError:
+            new_node = pt.Node(symbol, children)
 
-            # on finish, set end_pos correctly
-            pass
-        s = self._scope
-        while s is not None:
-            s.end_pos = self._gen.current.end_pos
-            s = s.parent
+        # We need to check raw_node always, because the same node can be
+        # returned by convert multiple times.
+        if symbol == 'global_stmt':
+            self._global_names += new_node.get_global_names()
+        elif isinstance(new_node, pt.Lambda):
+            new_node.names_dict = self._scope_names_stack.pop()
+        elif isinstance(new_node, (pt.ClassOrFunc, pt.Module)) \
+                and symbol in ('funcdef', 'classdef', 'file_input'):
+            # scope_name_stack handling
+            scope_names = self._scope_names_stack.pop()
+            if isinstance(new_node, pt.ClassOrFunc):
+                n = new_node.name
+                scope_names[n.value].remove(n)
+                # Set the func name of the current node
+                arr = self._scope_names_stack[-1].setdefault(n.value, [])
+                arr.append(n)
+            new_node.names_dict = scope_names
+        elif isinstance(new_node, pt.CompFor):
+            # The name definitions of comprehenions shouldn't be part of the
+            # current scope. They are part of the comprehension scope.
+            for n in new_node.get_defined_names():
+                self._scope_names_stack[-1][n.value].remove(n)
+        return new_node
 
-        # clean up unused decorators
-        for d in self._decorators:
-            # set a parent for unused decorators, avoid NullPointerException
-            # because of `self.module.used_names`.
-            d.parent = self.module
+    def convert_leaf(self, grammar, type, value, prefix, start_pos):
+        #print('leaf', value, pytree.type_repr(type))
+        if type == tokenize.NAME:
+            if value in grammar.keywords:
+                if value in ('def', 'class', 'lambda'):
+                    self._scope_names_stack.append({})
 
-        self.module.end_pos = self._gen.current.end_pos
-        if self._gen.current.type == tokenize.NEWLINE:
-            # This case is only relevant with the FastTokenizer, because
-            # otherwise there's always an ENDMARKER.
-            # we added a newline before, so we need to "remove" it again.
-            #
-            # NOTE: It should be keep end_pos as-is if the last token of
-            # a source is a NEWLINE, otherwise the newline at the end of
-            # a source is not included in a ParserNode.code.
-            if self._gen.previous.type != tokenize.NEWLINE:
-                self.module.end_pos = self._gen.previous.end_pos
+                return pt.Keyword(self.position_modifier, value, start_pos, prefix)
+            else:
+                name = pt.Name(self.position_modifier, value, start_pos, prefix)
+                # Keep a listing of all used names
+                arr = self._used_names.setdefault(name.value, [])
+                arr.append(name)
+                arr = self._scope_names_stack[-1].setdefault(name.value, [])
+                arr.append(name)
+                return name
+        elif type == STRING:
+            return pt.String(self.position_modifier, value, start_pos, prefix)
+        elif type == NUMBER:
+            return pt.Number(self.position_modifier, value, start_pos, prefix)
+        elif type in (NEWLINE, ENDMARKER):
+            return pt.Whitespace(self.position_modifier, value, start_pos, prefix)
+        else:
+            return pt.Operator(self.position_modifier, value, start_pos, prefix)
 
-        del self._gen
+    def error_recovery(self, grammar, stack, typ, value, start_pos, prefix,
+                       add_token_callback):
+        """
+        This parser is written in a dynamic way, meaning that this parser
+        allows using different grammars (even non-Python). However, error
+        recovery is purely written for Python.
+        """
+        def current_suite(stack):
+            # For now just discard everything that is not a suite or
+            # file_input, if we detect an error.
+            for index, (dfa, state, (typ, nodes)) in reversed(list(enumerate(stack))):
+                # `suite` can sometimes be only simple_stmt, not stmt.
+                symbol = grammar.number2symbol[typ]
+                if symbol == 'file_input':
+                    break
+                elif symbol == 'suite' and len(nodes) > 1:
+                    # suites without an indent in them get discarded.
+                    break
+                elif symbol == 'simple_stmt' and len(nodes) > 1:
+                    # simple_stmt can just be turned into a Node, if there are
+                    # enough statements. Ignore the rest after that.
+                    break
+            return index, symbol, nodes
+
+        index, symbol, nodes = current_suite(stack)
+        if symbol == 'simple_stmt':
+            index -= 2
+            (_, _, (typ, suite_nodes)) = stack[index]
+            symbol = grammar.number2symbol[typ]
+            suite_nodes.append(pt.Node(symbol, list(nodes)))
+            # Remove
+            nodes[:] = []
+            nodes = suite_nodes
+            stack[index]
+
+        #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
+        self._stack_removal(grammar, stack, index + 1, value, start_pos)
+        if typ == INDENT:
+            # For every deleted INDENT we have to delete a DEDENT as well.
+            # Otherwise the parser will get into trouble and DEDENT too early.
+            self._omit_dedent_list.append(self._indent_counter)
+
+        if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
+            # Those can always be new statements.
+            add_token_callback(typ, value, prefix, start_pos)
+        elif typ == DEDENT and symbol == 'suite':
+            # Close the current suite, with DEDENT.
+            # Note that this may cause some suites to not contain any
+            # statements at all. This is contrary to valid Python syntax. We
+            # keep incomplete suites in Jedi to be able to complete param names
+            # or `with ... as foo` names. If we want to use this parser for
+            # syntax checks, we have to check in a separate turn if suites
+            # contain statements or not. However, a second check is necessary
+            # anyway (compile.c does that for Python), because Python's grammar
+            # doesn't stop you from defining `continue` in a module, etc.
+            add_token_callback(typ, value, prefix, start_pos)
+
+    def _stack_removal(self, grammar, stack, start_index, value, start_pos):
+        def clear_names(children):
+            for c in children:
+                try:
+                    clear_names(c.children)
+                except AttributeError:
+                    if isinstance(c, pt.Name):
+                        try:
+                            self._scope_names_stack[-1][c.value].remove(c)
+                            self._used_names[c.value].remove(c)
+                        except ValueError:
+                            pass  # This may happen with CompFor.
+
+        for dfa, state, node in stack[start_index:]:
+            clear_names(children=node[1])
+
+        failed_stack = []
+        found = False
+        for dfa, state, (typ, nodes) in stack[start_index:]:
+            if nodes:
+                found = True
+            if found:
+                symbol = grammar.number2symbol[typ]
+                failed_stack.append((symbol, nodes))
+            if nodes and nodes[0] in ('def', 'class', 'lambda'):
+                self._scope_names_stack.pop()
+        if failed_stack:
+            err = ErrorStatement(failed_stack, value, self.position_modifier, start_pos)
+            self._error_statement_stacks.append(err)
+
+        self._last_failed_start_pos = start_pos
+
+        stack[start_index:] = []
+
+    def _tokenize(self, tokenizer):
+        for typ, value, start_pos, prefix in tokenizer:
+            #print(tokenize.tok_name[typ], repr(value), start_pos, repr(prefix))
+            if typ == DEDENT:
+                # We need to count indents, because if we just omit any DEDENT,
+                # we might omit them in the wrong place.
+                o = self._omit_dedent_list
+                if o and o[-1] == self._indent_counter:
+                    o.pop()
+                    continue
+
+                self._indent_counter -= 1
+            elif typ == INDENT:
+                self._indent_counter += 1
+            elif typ == ERRORTOKEN:
+                self._add_syntax_error('Strange token', start_pos)
+                continue
+
+            if typ == OP:
+                typ = token.opmap[value]
+            yield typ, value, prefix, start_pos
+
+    def _add_syntax_error(self, message, position):
+        self.syntax_errors.append(ParserSyntaxError(message, position))
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
 
-    def _check_user_stmt(self, simple):
-        # this is not user checking, just update the used_names
-        for tok_name in self.module.temp_used_names:
-            try:
-                self.module.used_names[tok_name].add(simple)
-            except KeyError:
-                self.module.used_names[tok_name] = set([simple])
-        self.module.temp_used_names = []
-
-    def _parse_dot_name(self, pre_used_token=None):
+    def remove_last_newline(self):
         """
-        The dot name parser parses a name, variable or function and returns
-        their names.
-
-        :return: tuple of Name, next_token
+        In all of this we need to work with _start_pos, because if we worked
+        with start_pos, we would need to check the position_modifier as well
+        (which is accounted for in the start_pos property).
         """
-        def append(el):
-            names.append(el)
-            self.module.temp_used_names.append(el[0])
-
-        names = []
-        tok = next(self._gen) if pre_used_token is None else pre_used_token
-
-        if tok.type != tokenize.NAME and tok.string != '*':
-            return None, tok
-
-        first_pos = tok.start_pos
-        append((tok.string, first_pos))
-        while True:
-            end_pos = tok.end_pos
-            tok = next(self._gen)
-            if tok.string != '.':
-                break
-            tok = next(self._gen)
-            if tok.type != tokenize.NAME:
-                break
-            append((tok.string, tok.start_pos))
-
-        n = pr.Name(self.module, names, first_pos, end_pos) if names else None
-        return n, tok
-
-    def _parse_import_list(self):
-        """
-        The parser for the imports. Unlike the class and function parse
-        function, this returns no Import class, but rather an import list,
-        which is then added later on.
-        The reason, why this is not done in the same class lies in the nature
-        of imports. There are two ways to write them:
-
-        - from ... import ...
-        - import ...
-
-        To distinguish, this has to be processed after the parser.
-
-        :return: List of imports.
-        :rtype: list
-        """
-        imports = []
-        brackets = False
-        continue_kw = [",", ";", "\n", '\r\n', ')'] \
-            + list(set(keyword.kwlist) - set(['as']))
-        while True:
-            defunct = False
-            tok = next(self._gen)
-            if tok.string == '(':  # python allows only one `(` in the statement.
-                brackets = True
-                tok = next(self._gen)
-            if brackets and tok.type == tokenize.NEWLINE:
-                tok = next(self._gen)
-            i, tok = self._parse_dot_name(tok)
-            if not i:
-                defunct = True
-            name2 = None
-            if tok.string == 'as':
-                name2, tok = self._parse_dot_name()
-            imports.append((i, name2, defunct))
-            while tok.string not in continue_kw:
-                tok = next(self._gen)
-            if not (tok.string == "," or brackets and tok.type == tokenize.NEWLINE):
-                break
-        return imports
-
-    def _parse_parentheses(self, is_class):
-        """
-        Functions and Classes have params (which means for classes
-        super-classes). They are parsed here and returned as Statements.
-
-        :return: List of Statements
-        :rtype: list
-        """
-        params = []
-        tok = None
-        pos = 0
-        breaks = [',', ':']
-        while tok is None or tok.string not in (')', ':'):
-            # Classes don't have params, a Class works more like a function
-            # call.
-            param, tok = self._parse_statement(added_breaks=breaks,
-                                               stmt_class=pr.ExprStmt
-                                               if is_class else pr.Param)
-            if is_class:
-                if param is not None:
-                    params.append(param)
-            else:
-                if param is not None and tok.string == ':':
-                    # parse annotations
-                    annotation, tok = self._parse_statement(added_breaks=breaks)
-                    if annotation:
-                        param.add_annotation(annotation)
-
-                # Function params without vars are usually syntax errors.
-                # expressions are valid in superclass declarations.
-                if param is not None and param.get_defined_names():
-                    param.position_nr = pos
-                    params.append(param)
-                    pos += 1
-
-        return params
-
-    def _parse_function(self):
-        """
-        The parser for a text functions. Process the tokens, which follow a
-        function definition.
-
-        :return: Return a Scope representation of the tokens.
-        :rtype: Function
-        """
-        first_pos = self._gen.current.start_pos
-        tok = next(self._gen)
-        if tok.type != tokenize.NAME:
-            return None
-
-        fname = pr.Name(self.module, [(tok.string, tok.start_pos)], tok.start_pos,
-                        tok.end_pos)
-
-        tok = next(self._gen)
-        if tok.string != '(':
-            return None
-        params = self._parse_parentheses(is_class=False)
-
-        colon = next(self._gen)
-        annotation = None
-        if colon.string in ('-', '->'):
-            # parse annotations
-            if colon.string == '-':
-                # The Python 2 tokenizer doesn't understand this
-                colon = next(self._gen)
-                if colon.string != '>':
-                    return None
-            annotation, colon = self._parse_statement(added_breaks=[':'])
-
-        if colon.string != ':':
-            return None
-
-        # because of 2 line func param definitions
-        return pr.Function(self.module, fname, params, first_pos, annotation)
-
-    def _parse_class(self):
-        """
-        The parser for a text class. Process the tokens, which follow a
-        class definition.
-
-        :return: Return a Scope representation of the tokens.
-        :rtype: Class
-        """
-        first_pos = self._gen.current.start_pos
-        cname = next(self._gen)
-        if cname.type != tokenize.NAME:
-            debug.warning("class: syntax err, token is not a name@%s (%s: %s)",
-                          cname.start_pos[0], tokenize.tok_name[cname.type], cname.string)
-            return None
-
-        cname = pr.Name(self.module, [(cname.string, cname.start_pos)],
-                        cname.start_pos, cname.end_pos)
-
-        superclasses = []
-        _next = next(self._gen)
-        if _next.string == '(':
-            superclasses = self._parse_parentheses(is_class=True)
-            _next = next(self._gen)
-
-        if _next.string != ':':
-            debug.warning("class syntax: %s@%s", cname, _next.start_pos[0])
-            return None
-
-        return pr.Class(self.module, cname, superclasses, first_pos)
-
-    def _parse_statement(self, pre_used_token=None, added_breaks=None,
-                         stmt_class=pr.ExprStmt, names_are_set_vars=False,
-                         maybe_docstr=False):
-        """
-        Parses statements like::
-
-            a = test(b)
-            a += 3 - 2 or b
-
-        and so on. One line at a time.
-
-        :param pre_used_token: The pre parsed token.
-        :type pre_used_token: set
-        :return: ExprStmt + last parsed token.
-        :rtype: (ExprStmt, str)
-        """
-        set_vars = []
-        level = 0  # The level of parentheses
-
-        if pre_used_token:
-            tok = pre_used_token
+        endmarker = self.module.children[-1]
+        # The newline is either in the endmarker as a prefix or the previous
+        # leaf as a newline token.
+        if endmarker.prefix.endswith('\n'):
+            endmarker.prefix = endmarker.prefix[:-1]
+            last_line = re.sub('.*\n', '', endmarker.prefix)
+            endmarker._start_pos = endmarker._start_pos[0] - 1, len(last_line)
         else:
-            tok = next(self._gen)
-
-        while tok.type == tokenize.COMMENT:
-            # remove newline and comment
-            next(self._gen)
-            tok = next(self._gen)
-
-        first_pos = tok.start_pos
-        opening_brackets = ['{', '(', '[']
-        closing_brackets = ['}', ')', ']']
-
-        # the difference between "break" and "always break" is that the latter
-        # will even break in parentheses. This is true for typical flow
-        # commands like def and class and the imports, which will never be used
-        # in a statement.
-        breaks = set(['\n', '\r\n', ':', ')'])
-        always_break = [';', 'import', 'from', 'class', 'def', 'try', 'except',
-                        'finally', 'while', 'return', 'yield']
-        not_first_break = ['del', 'raise']
-        if added_breaks:
-            breaks |= set(added_breaks)
-
-        tok_list = []
-        as_names = []
-        in_lambda_param = False
-        while not (tok.string in always_break
-                   or tok.string in not_first_break and not tok_list
-                   or tok.string in breaks and level <= 0
-                   and not (in_lambda_param and tok.string in ',:')):
             try:
-                is_kw = tok.string in OPERATOR_KEYWORDS
-                if tok.type == tokenize.OP or is_kw:
-                    tok_list.append(
-                        pr.Operator(self.module, tok.string, self._scope, tok.start_pos)
-                    )
-                else:
-                    tok_list.append(tok)
-
-                if tok.string == 'as':
-                    tok = next(self._gen)
-                    if tok.type == tokenize.NAME:
-                        n, tok = self._parse_dot_name(self._gen.current)
-                        if n:
-                            set_vars.append(n)
-                            as_names.append(n)
-                        tok_list.append(n)
-                    continue
-                elif tok.string == 'lambda':
-                    breaks.discard(':')
-                    in_lambda_param = True
-                elif in_lambda_param and tok.string == ':':
-                    in_lambda_param = False
-                elif tok.type == tokenize.NAME and not is_kw:
-                    n, tok = self._parse_dot_name(self._gen.current)
-                    # removed last entry, because we add Name
-                    tok_list.pop()
-                    if n:
-                        tok_list.append(n)
-                    continue
-                elif tok.string in opening_brackets:
-                    level += 1
-                elif tok.string in closing_brackets:
-                    level -= 1
-
-                tok = next(self._gen)
-            except (StopIteration, common.MultiLevelStopIteration):
-                # comes from tokenizer
-                break
-
-        if not tok_list:
-            return None, tok
-
-        first_tok = tok_list[0]
-        # docstrings
-        if len(tok_list) == 1 and isinstance(first_tok, tokenize.Token) \
-                and first_tok.type == tokenize.STRING and maybe_docstr:
-            # Normal docstring check
-            if self.freshscope and not self.no_docstr:
-                self._scope.add_docstr(first_tok)
-                return None, tok
-
-            # Attribute docstring (PEP 224) support (sphinx uses it, e.g.)
-            # If string literal is being parsed...
-            else:
-                with common.ignored(IndexError, AttributeError):
-                    # ...then set it as a docstring
-                    self._scope.statements[-1].add_docstr(first_tok)
-                    return None, tok
-
-        stmt = stmt_class(self.module, tok_list, first_pos, tok.end_pos,
-                          as_names=as_names,
-                          names_are_set_vars=names_are_set_vars)
-
-        stmt.parent = self._top_module
-        self._check_user_stmt(stmt)
-
-        if tok.string in always_break + not_first_break:
-            self._gen.push_last_back()
-        return stmt, tok
-
-    def _parse(self):
-        """
-        The main part of the program. It analyzes the given code-text and
-        returns a tree-like scope. For a more detailed description, see the
-        class description.
-
-        :param text: The code which should be parsed.
-        :param type: str
-
-        :raises: IndentationError
-        """
-        extended_flow = ['else', 'elif', 'except', 'finally']
-        statement_toks = ['{', '[', '(', '`']
-
-        self._decorators = []
-        self.freshscope = True
-        for tok in self._gen:
-            token_type = tok.type
-            tok_str = tok.string
-            first_pos = tok.start_pos
-            self.module.temp_used_names = []
-            # debug.dbg('main: tok=[%s] type=[%s] indent=[%s]', \
-            #           tok, tokenize.tok_name[token_type], start_position[0])
-
-            # check again for unindented stuff. this is true for syntax
-            # errors. only check for names, because thats relevant here. If
-            # some docstrings are not indented, I don't care.
-            while first_pos[1] <= self._scope.start_pos[1] \
-                    and (token_type == tokenize.NAME or tok_str in ('(', '['))\
-                    and self._scope != self.module:
-                self._scope.end_pos = first_pos
-                self._scope = self._scope.parent
-                if isinstance(self._scope, pr.Module) \
-                        and not isinstance(self._scope, pr.SubModule):
-                    self._scope = self.module
-
-            if isinstance(self._scope, pr.SubModule):
-                use_as_parent_scope = self._top_module
-            else:
-                use_as_parent_scope = self._scope
-            if tok_str == 'def':
-                func = self._parse_function()
-                if func is None:
-                    debug.warning("function: syntax error@%s", first_pos[0])
-                    continue
-                self.freshscope = True
-                self._scope = self._scope.add_scope(func, self._decorators)
-                self._decorators = []
-            elif tok_str == 'class':
-                cls = self._parse_class()
-                if cls is None:
-                    debug.warning("class: syntax error@%s" % first_pos[0])
-                    continue
-                self.freshscope = True
-                self._scope = self._scope.add_scope(cls, self._decorators)
-                self._decorators = []
-            # import stuff
-            elif tok_str == 'import':
-                imports = self._parse_import_list()
-                for count, (m, alias, defunct) in enumerate(imports):
-                    e = (alias or m or self._gen.previous).end_pos
-                    end_pos = self._gen.previous.end_pos if count + 1 == len(imports) else e
-                    i = pr.Import(self.module, first_pos, end_pos, m,
-                                  alias, defunct=defunct)
-                    self._check_user_stmt(i)
-                    self._scope.add_import(i)
-                if not imports:
-                    i = pr.Import(self.module, first_pos, self._gen.current.end_pos,
-                                  None, defunct=True)
-                    self._check_user_stmt(i)
-                self.freshscope = False
-            elif tok_str == 'from':
-                defunct = False
-                # take care for relative imports
-                relative_count = 0
-                while True:
-                    tok = next(self._gen)
-                    if tok.string != '.':
-                        break
-                    relative_count += 1
-                # the from import
-                mod, tok = self._parse_dot_name(self._gen.current)
-                tok_str = tok.string
-                if str(mod) == 'import' and relative_count:
-                    self._gen.push_last_back()
-                    tok_str = 'import'
-                    mod = None
-                if not mod and not relative_count or tok_str != "import":
-                    debug.warning("from: syntax error@%s", tok.start_pos[0])
-                    defunct = True
-                    if tok_str != 'import':
-                        self._gen.push_last_back()
-                names = self._parse_import_list()
-                for count, (name, alias, defunct2) in enumerate(names):
-                    star = name is not None and unicode(name.names[0]) == '*'
-                    if star:
-                        name = None
-                    e = (alias or name or self._gen.previous).end_pos
-                    end_pos = self._gen.previous.end_pos if count + 1 == len(names) else e
-                    i = pr.Import(self.module, first_pos, end_pos, name,
-                                  alias, mod, star, relative_count,
-                                  defunct=defunct or defunct2)
-                    self._check_user_stmt(i)
-                    self._scope.add_import(i)
-                self.freshscope = False
-            # loops
-            elif tok_str == 'for':
-                set_stmt, tok = self._parse_statement(added_breaks=['in'],
-                                                      names_are_set_vars=True)
-                if tok.string != 'in':
-                    debug.warning('syntax err, for flow incomplete @%s', tok.start_pos[0])
-
-                try:
-                    statement, tok = self._parse_statement()
-                except StopIteration:
-                    statement, tok = None, None
-                s = [] if statement is None else [statement]
-                f = pr.ForFlow(self.module, s, first_pos, set_stmt)
-                self._scope = self._scope.add_statement(f)
-                if tok is None or tok.string != ':':
-                    debug.warning('syntax err, for flow started @%s', first_pos[0])
-            elif tok_str in ['if', 'while', 'try', 'with'] + extended_flow:
-                added_breaks = []
-                command = tok_str
-                if command in ('except', 'with'):
-                    added_breaks.append(',')
-                # multiple inputs because of with
-                inputs = []
-                first = True
-                while first or command == 'with' and tok.string not in (':', '\n', '\r\n'):
-                    statement, tok = \
-                        self._parse_statement(added_breaks=added_breaks)
-                    if command == 'except' and tok.string == ',':
-                        # the except statement defines a var
-                        # this is only true for python 2
-                        n, tok = self._parse_dot_name()
-                        if n:
-                            n.parent = statement
-                            statement.as_names.append(n)
-                    if statement:
-                        inputs.append(statement)
-                    first = False
-
-                f = pr.Flow(self.module, command, inputs, first_pos)
-                if command in extended_flow:
-                    # The last statement has to be another part of the flow
-                    # statement, because a dedent releases the main scope, so
-                    # just take the last statement.
+                newline = endmarker.get_previous()
+            except IndexError:
+                return  # This means that the parser is empty.
+            while True:
+                if newline.value == '':
+                    # Must be a DEDENT, just continue.
                     try:
-                        s = self._scope.statements[-1].set_next(f)
-                    except (AttributeError, IndexError):
-                        # If set_next doesn't exist, just add it.
-                        s = self._scope.add_statement(f)
+                        newline = newline.get_previous()
+                    except IndexError:
+                        # If there's a statement that fails to be parsed, there
+                        # will be no previous leaf. So just ignore it.
+                        break
+                elif newline.value != '\n':
+                    # This may happen if error correction strikes and removes
+                    # a whole statement including '\n'.
+                    break
                 else:
-                    s = self._scope.add_statement(f)
-                self._scope = s
-                if tok.string != ':':
-                    debug.warning('syntax err, flow started @%s', tok.start_pos[0])
-            # returns
-            elif tok_str in ('return', 'yield'):
-                s = tok.start_pos
-                self.freshscope = False
-                # Add returns to the scope
-                # Should be a function, otherwise just add it to a module!
-                func = self._scope.get_parent_until((pr.Function, pr.Module))
-                if tok_str == 'yield':
-                    func.is_generator = True
-
-                stmt, tok = self._parse_statement()
-                if stmt is not None:
-                    stmt.parent = use_as_parent_scope
-                try:
-                    kw_stmt = pr.KeywordStatement(tok_str, s,
-                                                  use_as_parent_scope, stmt)
-                    self._scope.statements.append(kw_stmt)
-                    func.returns.append(kw_stmt)
-                    # start_pos is the one of the return statement
-                    stmt.start_pos = s
-                except AttributeError:
-                    debug.warning('return in non-function')
-                stmt = None
-            elif tok_str == 'assert':
-                stmt, tok = self._parse_statement()
-                if stmt is not None:
-                    stmt.parent = use_as_parent_scope
-                    self._scope.statements.append(stmt)
-                    self._scope.asserts.append(stmt)
-            elif tok_str in STATEMENT_KEYWORDS:
-                stmt, _ = self._parse_statement()
-                kw = pr.KeywordStatement(tok_str, tok.start_pos,
-                                         use_as_parent_scope, stmt)
-                self._scope.add_statement(kw)
-                if stmt is not None and tok_str == 'global':
-                    for t in stmt._token_list:
-                        if isinstance(t, pr.Name):
-                            # Add the global to the top module, it counts there.
-                            self.module.add_global(t)
-            # decorator
-            elif tok_str == '@':
-                stmt, tok = self._parse_statement()
-                if stmt is not None:
-                    self._decorators.append(stmt)
-            elif tok_str == 'pass':
-                continue
-            # default
-            elif token_type in (tokenize.NAME, tokenize.STRING,
-                                tokenize.NUMBER, tokenize.OP) \
-                    or tok_str in statement_toks:
-                # this is the main part - a name can be a function or a
-                # normal var, which can follow anything. but this is done
-                # by the statement parser.
-                stmt, tok = self._parse_statement(self._gen.current,
-                                                  maybe_docstr=True)
-                if stmt:
-                    self._scope.add_statement(stmt)
-                self.freshscope = False
-            else:
-                if token_type not in (tokenize.COMMENT, tokenize.NEWLINE, tokenize.ENDMARKER):
-                    debug.warning('Token not used: %s %s %s', tok_str,
-                                  tokenize.tok_name[token_type], first_pos)
-                continue
-            self.no_docstr = False
-
-
-class PushBackTokenizer(object):
-    def __init__(self, tokenizer):
-        self._tokenizer = tokenizer
-        self._push_backs = []
-        self.current = self.previous = tokenize.Token(None, '', (0, 0))
-
-    def push_last_back(self):
-        self._push_backs.append(self.current)
-
-    def next(self):
-        """ Python 2 Compatibility """
-        return self.__next__()
-
-    def __next__(self):
-        if self._push_backs:
-            return self._push_backs.pop(0)
-
-        previous = self.current
-        self.current = next(self._tokenizer)
-        self.previous = previous
-        return self.current
-
-    def __iter__(self):
-        return self
+                    newline.value = ''
+                    if self._last_failed_start_pos > newline._start_pos:
+                        # It may be the case that there was a syntax error in a
+                        # function. In that case error correction removes the
+                        # right newline. So we use the previously assigned
+                        # _last_failed_start_pos variable to account for that.
+                        endmarker._start_pos = self._last_failed_start_pos
+                    else:
+                        endmarker._start_pos = newline._start_pos
+                    break

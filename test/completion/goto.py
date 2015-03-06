@@ -93,7 +93,7 @@ ClassVar().x = ''
 
 # Recurring use of the same var name, github #315
 def f(t=None):
-    #! 9 ['t = None']
+    #! 9 ['t=None']
     t = t or 1
 
 # -----------------
@@ -181,13 +181,38 @@ ab1(ClassDef);ab2(ClassDef);ab3(ClassDef)
 # -----------------
 
 for i in range(1):
-    #! ['for i in range(1):    i']
+    #! ['for i in range(1): i']
     i
 
 for key, value in [(1,2)]:
-    #! ['for key,value in [(1, 2)]:    key']
+    #! ['for key, value in [(1,2)]: key']
     key
 
 for i in []:
-    #! ['for i in []:    i']
+    #! ['for i in []: i']
     i
+
+# -----------------
+# decorator
+# -----------------
+def dec(dec_param=3):
+    pass
+
+#! 8 ['dec_param=3']
+@dec(dec_param=5)
+def y():
+    pass
+
+class ClassDec():
+    def class_func(func):
+        return func
+
+#! 14 ['def class_func']
+@ClassDec.class_func
+def x():
+    pass
+
+#! 2 ['class ClassDec']
+@ClassDec.class_func
+def z():
+    pass

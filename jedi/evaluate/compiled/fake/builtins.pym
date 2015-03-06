@@ -156,7 +156,7 @@ class set():
             yield i
 
     def pop(self):
-        return self.__iterable.pop()
+        return list(self.__iterable)[-1]
 
     def copy(self):
         return self

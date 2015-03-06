@@ -31,9 +31,7 @@ from jedi import settings
 from jedi import common
 from jedi import debug
 
-_time_caches = []
-
-_star_import_cache = {}
+_time_caches = {}
 
 # for fast_parser, should not be deleted
 parser_cache = {}
@@ -47,7 +45,7 @@ class ParserCacheItem(object):
         self.change_time = change_time
 
 
-def clear_caches(delete_all=False):
+def clear_time_caches(delete_all=False):
     """ Jedi caches many things, that should be completed after each completion
     finishes.
 
@@ -57,12 +55,12 @@ def clear_caches(delete_all=False):
     global _time_caches
 
     if delete_all:
-        _time_caches = []
-        _star_import_cache.clear()
+        for cache in _time_caches.values():
+            cache.clear()
         parser_cache.clear()
     else:
         # normally just kill the expired entries, not all
-        for tc in _time_caches:
+        for tc in _time_caches.values():
             # check time_cache for expired entries
             for key, (t, value) in list(tc.items()):
                 if t < time.time():
@@ -71,23 +69,28 @@ def clear_caches(delete_all=False):
 
 
 def time_cache(time_add_setting):
-    """ This decorator works as follows: Call it with a setting and after that
+    """
+    s
+    This decorator works as follows: Call it with a setting and after that
     use the function with a callable that returns the key.
     But: This function is only called if the key is not available. After a
     certain amount of time (`time_add_setting`) the cache is invalid.
     """
     def _temp(key_func):
         dct = {}
-        _time_caches.append(dct)
+        _time_caches[time_add_setting] = dct
 
-        def wrapper(optional_callable, *args, **kwargs):
-            key = key_func(*args, **kwargs)
-            value = None
-            if key in dct:
+        def wrapper(*args, **kwargs):
+            generator = key_func(*args, **kwargs)
+            key = next(generator)
+            try:
                 expiry, value = dct[key]
                 if expiry > time.time():
                     return value
-            value = optional_callable()
+            except KeyError:
+                pass
+
+            value = next(generator)
             time_add = getattr(settings, time_add_setting)
             if key is not None:
                 dct[key] = time.time() + time_add, value
@@ -97,18 +100,19 @@ def time_cache(time_add_setting):
 
 
 @time_cache("call_signatures_validity")
-def cache_call_signatures(source, user_pos, stmt):
+def cache_call_signatures(evaluator, call, source, user_pos):
     """This function calculates the cache key."""
     index = user_pos[0] - 1
     lines = common.splitlines(source)
 
     before_cursor = lines[index][:user_pos[1]]
-    other_lines = lines[stmt.start_pos[0]:index]
+    other_lines = lines[call.start_pos[0]:index]
     whole = '\n'.join(other_lines + [before_cursor])
     before_bracket = re.match(r'.*\(', whole, re.DOTALL)
 
-    module_path = stmt.get_parent_until().path
-    return None if module_path is None else (module_path, before_bracket, stmt.start_pos)
+    module_path = call.get_parent_until().path
+    yield None if module_path is None else (module_path, before_bracket, call.start_pos)
+    yield evaluator.eval_element(call)
 
 
 def underscore_memoization(func):
@@ -145,52 +149,36 @@ def underscore_memoization(func):
     return wrapper
 
 
-def memoize(func):
+def memoize_method(method):
     """A normal memoize function."""
-    dct = {}
-
-    def wrapper(*args, **kwargs):
+    def wrapper(self, *args, **kwargs):
+        dct = self.__dict__.setdefault('_memoize_method_dct', {})
         key = (args, frozenset(kwargs.items()))
         try:
             return dct[key]
         except KeyError:
-            result = func(*args, **kwargs)
+            result = method(self, *args, **kwargs)
             dct[key] = result
             return result
     return wrapper
 
 
 def cache_star_import(func):
-    def wrapper(evaluator, scope, *args, **kwargs):
-        with common.ignored(KeyError):
-            mods = _star_import_cache[scope]
-            if mods[0] + settings.star_import_cache_validity > time.time():
-                return mods[1]
-        # cache is too old and therefore invalid or not available
-        _invalidate_star_import_cache_module(scope)
-        mods = func(evaluator, scope, *args, **kwargs)
-        _star_import_cache[scope] = time.time(), mods
-
-        return mods
+    @time_cache("star_import_cache_validity")
+    def wrapper(self):
+        yield self.base  # The cache key
+        yield func(self)
     return wrapper
 
 
 def _invalidate_star_import_cache_module(module, only_main=False):
     """ Important if some new modules are being reparsed """
-    with common.ignored(KeyError):
-        t, mods = _star_import_cache[module]
-
-        del _star_import_cache[module]
-
-        for m in mods:
-            _invalidate_star_import_cache_module(m, only_main=True)
-
-    if not only_main:
-        # We need a list here because otherwise the list is being changed
-        # during the iteration in py3k: iteritems -> items.
-        for key, (t, mods) in list(_star_import_cache.items()):
-            if module in mods:
-                _invalidate_star_import_cache_module(key)
+    try:
+        t, modules = _time_caches['star_import_cache_validity'][module]
+    except KeyError:
+        pass
+    else:
+        del _time_caches['star_import_cache_validity'][module]
 
 
 def invalidate_star_import_cache(path):
@@ -198,10 +186,9 @@ def invalidate_star_import_cache(path):
     try:
         parser_cache_item = parser_cache[path]
     except KeyError:
-        return False
+        pass
     else:
         _invalidate_star_import_cache_module(parser_cache_item.parser.module)
-        return True
 
 
 def load_parser(path, name):
@@ -243,7 +230,7 @@ def save_parser(path, name, parser, pickling=True):
 
 class ParserPickling(object):
 
-    version = 17
+    version = 24
     """
     Version number (integer) for file system cache.
 

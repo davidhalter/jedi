@@ -5,19 +5,19 @@ the interesting information about completion and goto operations.
 """
 import warnings
 from itertools import chain
+import re
 
-from jedi._compatibility import next, unicode, use_metaclass
+from jedi._compatibility import unicode, use_metaclass
 from jedi import settings
 from jedi import common
-from jedi.parser import representation as pr
-from jedi.evaluate.helpers import statement_elements_in_statement
+from jedi.parser import tree as pr
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.api import keywords
-from jedi.evaluate.finder import get_names_of_scope
+from jedi.evaluate.finder import filter_definition_names
 
 
 def defined_names(evaluator, scope):
@@ -27,17 +27,10 @@ def defined_names(evaluator, scope):
     :type scope: Scope
     :rtype: list of Definition
     """
-    # Calling get_names_of_scope doesn't make sense always. It might include
-    # star imports or inherited stuff. Wanted?
-    # TODO discuss!
-    if isinstance(scope, pr.Module):
-        pair = scope, scope.get_defined_names()
-    else:
-        pair = next(get_names_of_scope(evaluator, scope, star_search=False,
-                                       include_builtin=False), None)
-    names = pair[1] if pair else []
-    names = [n for n in names if isinstance(n, pr.Import) or (len(n) == 1)]
-    return [Definition(evaluator, d.names[-1]) for d in sorted(names, key=lambda s: s.start_pos)]
+    dct = scope.names_dict
+    names = list(chain.from_iterable(dct.values()))
+    names = filter_definition_names(names, scope)
+    return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
 
 
 class BaseDefinition(object):
@@ -68,7 +61,7 @@ class BaseDefinition(object):
         """
         An instance of :class:`jedi.parser.reprsentation.Name` subclass.
         """
-        self._definition = self._name.get_definition()
+        self._definition = er.wrap(evaluator, self._name.get_definition())
         self.is_keyword = isinstance(self._definition, keywords.Keyword)
 
         # generate a path to the definition
@@ -156,9 +149,12 @@ class BaseDefinition(object):
             stripped = stripped.var
 
         if isinstance(stripped, compiled.CompiledObject):
-            return stripped.type()
-        if isinstance(stripped, iterable.Array):
+            return stripped.api_type()
+        elif isinstance(stripped, iterable.Array):
             return 'instance'
+        elif isinstance(stripped, pr.Import):
+            return 'import'
+
         string = type(stripped).__name__.lower().replace('wrapper', '')
         if string == 'exprstmt':
             return 'statement'
@@ -168,18 +164,11 @@ class BaseDefinition(object):
     def _path(self):
         """The module path."""
         path = []
-
-        def insert_nonnone(x):
-            if x:
-                path.insert(0, x)
-
         par = self._definition
         while par is not None:
             if isinstance(par, pr.Import):
-                insert_nonnone(par.namespace)
-                insert_nonnone(par.from_ns)
-                if par.relative_count == 0:
-                    break
+                path += imports.ImportWrapper(self._evaluator, self._name).import_path
+                break
             with common.ignored(AttributeError):
                 path.insert(0, par.name)
             par = par.parent
@@ -202,16 +191,6 @@ class BaseDefinition(object):
     def in_builtin_module(self):
         """Whether this is a builtin module."""
         return isinstance(self._module, compiled.CompiledObject)
-
-    @property
-    def line_nr(self):
-        """
-        .. deprecated:: 0.5.0
-           Use :attr:`.line` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use line instead.", DeprecationWarning)
-        return self.line
 
     @property
     def line(self):
@@ -241,7 +220,7 @@ class BaseDefinition(object):
         >>> script = Script(source, 1, len('def f'), 'example.py')
         >>> doc = script.goto_definitions()[0].docstring()
         >>> print(doc)
-        f(a, b = 1)
+        f(a, b=1)
         <BLANKLINE>
         Document for function f.
 
@@ -320,24 +299,8 @@ class BaseDefinition(object):
         return '.'.join(path if path[0] else path[1:])
 
     def goto_assignments(self):
-        def call_path_for_name_part(stmt_or_imp, name_part):
-            if isinstance(stmt_or_imp, pr.Import):
-                return [name_part]
-            else:
-                for stmt_el in statement_elements_in_statement(stmt_or_imp):
-                    call_path = list(stmt_el.generate_call_path())
-                    for i, element in enumerate(call_path):
-                        if element is name_part:
-                            return call_path[:i + 1]
-
-        if self.type not in ('statement', 'import'):
-            # Functions, classes and modules are already fixed definitions, we
-            # cannot follow them anymore.
-            return [self]
-        stmt_or_imp = self._name.get_parent_until((pr.Statement, pr.Import))
-        call_path = call_path_for_name_part(stmt_or_imp, self._name)
-        names = self._evaluator.goto(stmt_or_imp, call_path)
-        return [Definition(self._evaluator, n) for n in names]
+        defs = self._evaluator.goto(self._name)
+        return [Definition(self._evaluator, d) for d in defs]
 
     @memoize_default()
     def _follow_statements_imports(self):
@@ -347,7 +310,7 @@ class BaseDefinition(object):
         if self._definition.isinstance(pr.ExprStmt):
             return self._evaluator.eval_statement(self._definition)
         elif self._definition.isinstance(pr.Import):
-            return imports.follow_imports(self._evaluator, [self._definition])
+            return imports.ImportWrapper(self._evaluator, self._name).follow()
         else:
             return [self._definition]
 
@@ -376,12 +339,12 @@ class BaseDefinition(object):
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
-        return [_Param(self._evaluator, p.get_name().names[-1]) for p in params]
+        return [_Param(self._evaluator, p.name) for p in params]
 
     def parent(self):
         scope = self._definition.get_parent_scope()
-        non_flow = scope.get_parent_until(pr.Flow, reverse=True)
-        return Definition(self._evaluator, non_flow.name.names[-1])
+        scope = er.wrap(self._evaluator, scope)
+        return Definition(self._evaluator, scope.name)
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
@@ -392,12 +355,11 @@ class Completion(BaseDefinition):
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
-    def __init__(self, evaluator, name, needs_dot, like_name_length, base):
+    def __init__(self, evaluator, name, needs_dot, like_name_length):
         super(Completion, self).__init__(evaluator, name)
 
         self._needs_dot = needs_dot
         self._like_name_length = like_name_length
-        self._base = base
 
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
@@ -411,9 +373,9 @@ class Completion(BaseDefinition):
             append = '('
 
         if settings.add_dot_after_module:
-            if isinstance(self._base, pr.Module):
+            if isinstance(self._definition, pr.Module):
                 append += '.'
-        if isinstance(self._base, pr.Param):
+        if isinstance(self._definition, pr.Param):
             append += '='
 
         name = str(self._name)
@@ -446,23 +408,13 @@ class Completion(BaseDefinition):
         return self._complete(False)
 
     @property
-    def word(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.name` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use name instead.", DeprecationWarning)
-        return self.name
-
-    @property
     def description(self):
         """Provide a description of the completion object."""
         if self._definition is None:
             return ''
         t = self.type
         if t == 'statement' or t == 'import':
-            desc = self._definition.get_code(False)
+            desc = self._definition.get_code()
         else:
             desc = '.'.join(unicode(p) for p in self._path())
 
@@ -482,7 +434,7 @@ class Completion(BaseDefinition):
         """
         definition = self._definition
         if isinstance(definition, pr.Import):
-            i = imports.ImportWrapper(self._evaluator, definition)
+            i = imports.ImportWrapper(self._evaluator, self._name)
             if len(i.import_path) > 1 or not fast:
                 followed = self._follow_statements_imports()
                 if followed:
@@ -501,7 +453,7 @@ class Completion(BaseDefinition):
         description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
         """
         if isinstance(self._definition, pr.Import):
-            i = imports.ImportWrapper(self._evaluator, self._definition)
+            i = imports.ImportWrapper(self._evaluator, self._name)
             if len(i.import_path) <= 1:
                 return 'module'
 
@@ -518,14 +470,9 @@ class Completion(BaseDefinition):
         # imports completion is very complicated and needs to be treated
         # separately in Completion.
         definition = self._definition
-        if definition.isinstance(pr.Import) and definition.alias is None:
-            i = imports.ImportWrapper(self._evaluator, definition, True)
-            import_path = i.import_path + (unicode(self._name),)
-            try:
-                return imports.get_importer(self._evaluator, import_path,
-                                            i._importer.module).follow(self._evaluator)
-            except imports.ModuleNotFound:
-                pass
+        if definition.isinstance(pr.Import):
+            i = imports.ImportWrapper(self._evaluator, self._name)
+            return i.follow()
         return super(Completion, self)._follow_statements_imports()
 
     @memoize_default()
@@ -539,7 +486,7 @@ class Completion(BaseDefinition):
         it's just PITA-slow.
         """
         defs = self._follow_statements_imports()
-        return [Definition(self._evaluator, d.name.names[-1]) for d in defs]
+        return [Definition(self._evaluator, d.name) for d in defs]
 
 
 class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
@@ -583,7 +530,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             d = d.var
 
         if isinstance(d, compiled.CompiledObject):
-            typ = d.type()
+            typ = d.api_type()
             if typ == 'instance':
                 typ = 'class'  # The description should be similar to Py objects.
             d = typ + ' ' + d.name.get_code()
@@ -596,9 +543,25 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         elif isinstance(d, pr.Module):
             # only show module name
             d = 'module %s' % self.module_name
-        else:
-            d = d.get_code().replace('\n', '').replace('\r', '')
-        return d
+        elif isinstance(d, pr.Param):
+            d = d.get_code()
+        else:  # ExprStmt
+            try:
+                first_leaf = d.first_leaf()
+            except AttributeError:
+                # `d` is already a Leaf (Name).
+                first_leaf = d
+            # Remove the prefix, because that's not what we want for get_code
+            # here.
+            old, first_leaf.prefix = first_leaf.prefix, ''
+            try:
+                d = d.get_code()
+            finally:
+                first_leaf.prefix = old
+        # Delete comments:
+        d = re.sub('#[^\n]+\n', ' ', d)
+        # Delete multi spaces/newlines
+        return re.sub('\s+', ' ', d).strip()
 
     @property
     def desc_with_module(self):
@@ -633,13 +596,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         Returns True, if defined as a name in a statement, function or class.
         Returns False, if it's a reference to such a definition.
         """
-        _def = self._name.get_parent_until((pr.ExprStmt, pr.Import,
-                                            pr.Function, pr.Class, pr.Module))
-        if isinstance(_def, pr.ExprStmt):
-            exp_list = _def.expression_list()
-            return not exp_list or self._name.start_pos < exp_list[0].start_pos
-        else:
-            return True
+        return self._name.is_definition()
 
     def __eq__(self, other):
         return self._name.start_pos == other._name.start_pos \
@@ -660,17 +617,17 @@ class CallSignature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, executable_name, call, index, key_name):
+    def __init__(self, evaluator, executable_name, call_stmt, index, key_name):
         super(CallSignature, self).__init__(evaluator, executable_name)
         self._index = index
         self._key_name = key_name
-        self._call = call
+        self._call_stmt = call_stmt
 
     @property
     def index(self):
         """
         The Param index of the current call.
-        Returns None if the index doesn't is not defined.
+        Returns None if the index cannot be found in the curent call.
         """
         if self._key_name is not None:
             for i, param in enumerate(self.params):
@@ -696,10 +653,7 @@ class CallSignature(Definition):
         The indent of the bracket that is responsible for the last function
         call.
         """
-        c = self._call
-        while c.next is not None:
-            c = c.next
-        return c.name.end_pos
+        return self._call_stmt.end_pos
 
     @property
     def call_name(self):

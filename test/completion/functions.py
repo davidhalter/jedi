@@ -266,6 +266,7 @@ class Something():
     def x(self, a, b=1):
         return a
 
+#? int()
 Something().x(1)
 
 
@@ -288,10 +289,15 @@ exe['b']
 #? int() float()
 exe['c']
 
+a = 'a'
 exe2 = kwargs_func(**{a:3,
-                      b:4.0})
+                      'b':4.0})
 #? int()
 exe2['a']
+#? float()
+exe2['b']
+#? int() float()
+exe2['c']
 
 # -----------------
 # *args / ** kwargs
@@ -352,20 +358,20 @@ def nested_kw(**kwargs1):
 def nested_kw2(**kwargs2):
     return nested_kw(**kwargs2)
 
-#? int()
+# invalid command, doesn't need to return anything
+#? 
 nested_kw(b=1, c=1.0, list)
 #? int()
 nested_kw(b=1)
-#? int()
+# invalid command, doesn't need to return anything
+#?  
 nested_kw(d=1.0, b=1, list)
-#? int()
-nested_kw(b=1)
 #? int()
 nested_kw(a=3.0, b=1)
 #? int()
 nested_kw(b=1, a=r"")
 #? []
-nested_kw('')
+nested_kw(1, '')
 #? []
 nested_kw(a='')
 
@@ -391,10 +397,12 @@ def nested_both(*args, **kwargs):
 def nested_both2(*args, **kwargs):
     return nested_both(*args, **kwargs)
 
-#? int()
+# invalid commands, may return whatever.
+#? list
 nested_both('', b=1, c=1.0, list)
-#? int()
+#? list
 nested_both('', c=1.0, b=1, list)
+
 #? []
 nested_both('')
 
@@ -431,23 +439,6 @@ nested_def2('', b=1, c=1.0)[1]
 nested_def2('', c=1.0, b=1)[1]
 #? []
 nested_def2('')[1]
-
-# -----------------
-# function annotations (should be ignored at the moment)
-# -----------------
-def annot(a:3, *args:3):
-    return a, args[0]
-
-#? str()
-annot('', 1.0)[0]
-#? float()
-annot('', 1.0)[1]
-
-def annot_ret(a:3) -> 3:
-    return a
-
-#? str()
-annot_ret('')
 
 # -----------------
 # magic methods

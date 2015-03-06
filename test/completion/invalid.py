@@ -10,7 +10,7 @@ there should never be any errors.
 ##? 5 
 's'()
 
-#? ['upper']
+#? []
 str()).upper
 
 # -----------------
@@ -19,15 +19,22 @@ str()).upper
 def asdf(a or b): # multiple param names
     return a
 
-#? int()
+#? 
 asdf(2)
+
+asdf = ''
 
 from a import (b
 def blub():
     return 0
-def openbrace():
+def wrong_indents():
     asdf = 3
      asdf
+    asdf(
+    #? int()
+    asdf
+def openbrace():
+    asdf = 3
     asdf(
     #? int()
     asdf
@@ -58,7 +65,7 @@ normalfunc()
 # dots in param
 def f(seq1...=None):
     return seq1
-#? int()
+#?
 f(1)
 
 @
@@ -96,14 +103,17 @@ try:
         #? str()
         ""
 
+def break(): pass
 # wrong ternary expression
+a = ''
 a = 1 if
-#? int()
+#? str()
 a
 
+# No completions for for loops without the right syntax
 for for_local in :
     for_local
-#? ['for_local']
+#? []
 for_local
 #? 
 for_local
@@ -122,7 +132,7 @@ a3 = [for xyz in]
 a3[0]
 
 a3 = [a4 for in 'b']
-#? str()
+#? 
 a3[0]
 
 a3 = [a4 for a in for x in y]
@@ -137,10 +147,10 @@ a[0]
 
 a = [a for a in [1,2]
 def break(): pass
-#? int()
+#?
 a[0]
 
-#? ['real']
+#? []
 int()).real
 
 # -----------------
@@ -165,14 +175,39 @@ import datetime as
 
 call = ''
 invalid = .call
-#? str()
+#?
 invalid
 
 invalid = call?.call
-#? str()
+#?
 invalid
 
 # comma
 invalid = ,call
-#? str()
+#?
 invalid
+
+
+# -----------------
+# classes
+# -----------------
+
+class BrokenPartsOfClass():
+    def foo(self):
+        # This construct contains two places where Jedi with Python 3 can fail.
+        # It should just ignore those constructs and still execute `bar`.
+        pass
+        if 2:
+            try:
+                pass
+            except ValueError, e:
+                raise TypeError, e
+        else:
+            pass
+
+    def bar(self):
+        self.x = 3
+        return ''
+
+#? str()
+BrokenPartsOfClass().bar()

@@ -29,9 +29,11 @@ def test_namespace_package():
         # completion
         completions = jedi.Script('from pkg import ').completions()
         names = [str(c.name) for c in completions]  # str because of unicode
-        compare = ['foo', 'ns1_file', 'ns1_folder', 'ns2_folder', 'ns2_file']
+        compare = ['foo', 'ns1_file', 'ns1_folder', 'ns2_folder', 'ns2_file',
+                   'pkg_resources', 'pkgutil', '__name__', '__path__',
+                   '__package__', '__file__', '__doc__']
         # must at least contain these items, other items are not important
-        assert not (set(compare) - set(names))
+        assert set(compare) == set(names)
 
         tests = {
             'from pkg import ns2_folder as x': 'ns2_folder!',

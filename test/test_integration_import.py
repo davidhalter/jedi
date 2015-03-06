@@ -16,11 +16,22 @@ def test_goto_definition_on_import():
 
 @cwd_at('jedi')
 def test_complete_on_empty_import():
+    assert Script("from datetime import").completions()[0].name == 'import'
     # should just list the files in the directory
     assert 10 < len(Script("from .", path='').completions()) < 30
-    assert 10 < len(Script("from . import", 1, 5, '').completions()) < 30
-    assert 10 < len(Script("from . import classes", 1, 5, '').completions()) < 30
-    assert len(Script("import").completions()) == 0
+
+    # Global import
+    assert len(Script("from . import", 1, 5, '').completions()) > 30
+    # relative import
+    assert 10 < len(Script("from . import", 1, 6, '').completions()) < 30
+
+    # Global import
+    assert len(Script("from . import classes", 1, 5, '').completions()) > 30
+    # relative import
+    assert 10 < len(Script("from . import classes", 1, 6, '').completions()) < 30
+
+    wanted = set(['ImportError', 'import', 'ImportWarning'])
+    assert set([c.name for c in Script("import").completions()]) == wanted
     if not is_py26:  # python 2.6 doesn't always come with a library `import*`.
         assert len(Script("import import", path='').completions()) > 0
 
@@ -63,6 +74,7 @@ def test_after_from():
         completions = Script(source, column=column).completions()
         assert [c.name for c in completions] == result
 
+    check('\nfrom os. ', ['path'])
     check('\nfrom os ', ['import'])
     check('from os ', ['import'])
     check('\nfrom os import whatever', ['import'], len('from os im'))

@@ -10,10 +10,10 @@ from ..helpers import TestCase
 
 class TestDefinedNames(TestCase):
     def assert_definition_names(self, definitions, names):
-        self.assertEqual([d.name for d in definitions], names)
+        assert [d.name for d in definitions] == names
 
     def check_defined_names(self, source, names):
-        definitions = api.defined_names(textwrap.dedent(source))
+        definitions = api.names(textwrap.dedent(source))
         self.assert_definition_names(definitions, names)
         return definitions
 
@@ -31,7 +31,7 @@ class TestDefinedNames(TestCase):
         self.check_defined_names("""
         x = Class()
         x.y.z = None
-        """, ['x'])
+        """, ['x', 'z'])  # TODO is this behavior what we want?
 
     def test_multiple_assignment(self):
         self.check_defined_names("""

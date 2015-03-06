@@ -111,3 +111,9 @@ import import_tree
 
 import_tree.a
 import_tree.b
+
+# This is something that raised an error, because it was using a complex
+# mixture of Jedi fakes and compiled objects.
+import _sre
+#! 15 attribute-error
+_sre.compile().not_existing

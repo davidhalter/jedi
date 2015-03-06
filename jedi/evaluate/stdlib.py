@@ -7,14 +7,17 @@ To add a new implementation, create a function and add it to the
 
 """
 import collections
+import re
+
 from jedi._compatibility import unicode
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
-from jedi.evaluate.helpers import FakeArray, FakeStatement
 from jedi.parser import Parser
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi import debug
+from jedi.evaluate import precedence
+from jedi.evaluate import param
 
 
 class NotInStdLib(LookupError):
@@ -44,42 +47,77 @@ def execute(evaluator, obj, params):
 
 def _follow_param(evaluator, params, index):
     try:
-        stmt = params[index]
+        key, values = list(params.unpack())[index]
     except IndexError:
         return []
     else:
-        if isinstance(stmt, pr.Statement):
-            return evaluator.eval_statement(stmt)
-        else:
-            return [stmt]  # just some arbitrary object
+        return iterable.unite(evaluator.eval_element(v) for v in values)
 
 
-def builtins_getattr(evaluator, obj, params):
-    stmts = []
+def argument_clinic(string, want_obj=False, want_scope=False):
+    """
+    Works like Argument Clinic (PEP 436), to validate function params.
+    """
+    clinic_args = []
+    allow_kwargs = False
+    optional = False
+    while string:
+        # Optional arguments have to begin with a bracket. And should always be
+        # at the end of the arguments. This is therefore not a proper argument
+        # clinic implementation. `range()` for exmple allows an optional start
+        # value at the beginning.
+        match = re.match('(?:(?:(\[),? ?|, ?|)(\w+)|, ?/)\]*', string)
+        string = string[len(match.group(0)):]
+        if not match.group(2):  # A slash -> allow named arguments
+            allow_kwargs = True
+            continue
+        optional = optional or bool(match.group(1))
+        word = match.group(2)
+        clinic_args.append((word, optional, allow_kwargs))
+
+    def f(func):
+        def wrapper(evaluator, obj, arguments):
+            try:
+                lst = list(arguments.eval_argument_clinic(clinic_args))
+            except ValueError:
+                return []
+            else:
+                kwargs = {}
+                if want_scope:
+                    kwargs['scope'] = arguments.scope()
+                if want_obj:
+                    kwargs['obj'] = obj
+                return func(evaluator, *lst, **kwargs)
+
+        return wrapper
+    return f
+
+
+@argument_clinic('object, name[, default], /')
+def builtins_getattr(evaluator, objects, names, defaults=None):
+    types = []
     # follow the first param
-    objects = _follow_param(evaluator, params, 0)
-    names = _follow_param(evaluator, params, 1)
     for obj in objects:
         if not isinstance(obj, (er.Instance, er.Class, pr.Module, compiled.CompiledObject)):
             debug.warning('getattr called without instance')
             continue
 
         for name in names:
-            s = unicode, str
-            if isinstance(name, compiled.CompiledObject) and isinstance(name.obj, s):
-                stmts += evaluator.follow_path(iter([name.obj]), [obj], obj)
+            if precedence.is_string(name):
+                return evaluator.find_types(obj, name.obj)
             else:
                 debug.warning('getattr called without str')
                 continue
-    return stmts
+    return types
 
 
-def builtins_type(evaluator, obj, params):
-    if len(params) == 1:
-        # otherwise it would be a metaclass... maybe someday...
-        objects = _follow_param(evaluator, params, 0)
+@argument_clinic('object[, bases, dict], /')
+def builtins_type(evaluator, objects, bases, dicts):
+    if bases or dicts:
+        # metaclass... maybe someday...
+        return []
+    else:
         return [o.base for o in objects if isinstance(o, er.Instance)]
-    return []
 
 
 class SuperInstance(er.Instance):
@@ -89,14 +127,14 @@ class SuperInstance(er.Instance):
         super().__init__(evaluator, su and su[0] or self)
 
 
-def builtins_super(evaluator, obj, params):
+@argument_clinic('[type[, obj]], /', want_scope=True)
+def builtins_super(evaluator, types, objects, scope):
     # TODO make this able to detect multiple inheritance super
     accept = (pr.Function, er.FunctionExecution)
-    func = params.get_parent_until(accept)
-    if func.isinstance(*accept):
+    if scope.isinstance(*accept):
         wanted = (pr.Class, er.Instance)
-        cls = func.get_parent_until(accept + wanted,
-                                    include_current=False)
+        cls = scope.get_parent_until(accept + wanted,
+                                     include_current=False)
         if isinstance(cls, wanted):
             if isinstance(cls, pr.Class):
                 cls = er.Class(evaluator, cls)
@@ -108,27 +146,25 @@ def builtins_super(evaluator, obj, params):
     return []
 
 
-def builtins_reversed(evaluator, obj, params):
-    objects = tuple(_follow_param(evaluator, params, 0))
-    if objects:
-        # unpack the iterator values
-        objects = tuple(iterable.get_iterator_types(objects))
-        if objects:
-            rev = reversed(objects)
-            # Repack iterator values and then run it the normal way. This is
-            # necessary, because `reversed` is a function and autocompletion
-            # would fail in certain cases like `reversed(x).__iter__` if we
-            # just returned the result directly.
-            stmts = [FakeStatement([r]) for r in rev]
-            objects = (iterable.Array(evaluator, FakeArray(stmts, objects[0].parent)),)
-    return [er.Instance(evaluator, obj, objects)]
+@argument_clinic('sequence, /', want_obj=True)
+def builtins_reversed(evaluator, sequences, obj):
+    # Unpack the iterator values
+    objects = tuple(iterable.get_iterator_types(sequences))
+    rev = [iterable.AlreadyEvaluated([o]) for o in reversed(objects)]
+    # Repack iterator values and then run it the normal way. This is
+    # necessary, because `reversed` is a function and autocompletion
+    # would fail in certain cases like `reversed(x).__iter__` if we
+    # just returned the result directly.
+    rev = iterable.AlreadyEvaluated(
+        [iterable.FakeSequence(evaluator, rev, 'list')]
+    )
+    return [er.Instance(evaluator, obj, param.Arguments(evaluator, [rev]))]
 
 
-def builtins_isinstance(evaluator, obj, params):
-    obj = _follow_param(evaluator, params, 0)
-    raw_classes = _follow_param(evaluator, params, 1)
+@argument_clinic('obj, type, /')
+def builtins_isinstance(evaluator, objects, types):
     bool_results = set([])
-    for o in obj:
+    for o in objects:
         try:
             mro_func = o.py__class__(evaluator).py__mro__
         except AttributeError:
@@ -139,7 +175,7 @@ def builtins_isinstance(evaluator, obj, params):
 
         mro = mro_func(evaluator)
 
-        for cls_or_tup in raw_classes:
+        for cls_or_tup in types:
             if cls_or_tup.is_class():
                 bool_results.add(cls_or_tup in mro)
             else:
@@ -189,14 +225,13 @@ def collections_namedtuple(evaluator, obj, params):
     )
 
     # Parse source
-    generated_class = Parser(unicode(source)).module.subscopes[0]
+    generated_class = Parser(evaluator.grammar, unicode(source)).module.subscopes[0]
     return [er.Class(evaluator, generated_class)]
 
 
-def _return_first_param(evaluator, obj, params):
-    if len(params) == 1:
-        return _follow_param(evaluator, params, 0)
-    return []
+@argument_clinic('first, /')
+def _return_first_param(evaluator, firsts):
+    return firsts
 
 
 _implemented = {

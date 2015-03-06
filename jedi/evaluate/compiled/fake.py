@@ -8,9 +8,8 @@ import os
 import inspect
 
 from jedi._compatibility import is_py3, builtins, unicode
-from jedi.parser import Parser
-from jedi.parser import tokenize
-from jedi.parser.representation import Class
+from jedi.parser import Parser, load_grammar
+from jedi.parser import tree as pt
 from jedi.evaluate.helpers import FakeName
 
 modules = {}
@@ -31,16 +30,17 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        module = Parser(unicode(source), module_name).module
+        grammar = load_grammar('grammar3.4')
+        module = Parser(grammar, unicode(source), module_name).module
         modules[module_name] = module
 
         if module_name == 'builtins' and not is_py3:
             # There are two implementations of `open` for either python 2/3.
             # -> Rename the python2 version (`look at fake/builtins.pym`).
             open_func = search_scope(module, 'open')
-            open_func.name = FakeName('open_python3')
+            open_func.children[1] = FakeName('open_python3')
             open_func = search_scope(module, 'open_python2')
-            open_func.name = FakeName('open')
+            open_func.children[1] = FakeName('open')
         return module
 
 
@@ -100,11 +100,16 @@ def _faked(module, obj, name):
 def get_faked(module, obj, name=None):
     obj = obj.__class__ if is_class_instance(obj) else obj
     result = _faked(module, obj, name)
-    if not isinstance(result, Class) and result is not None:
+    # TODO may this ever happen? result None? if so, document!
+    if not isinstance(result, pt.Class) and result is not None:
         # Set the docstr which was previously not set (faked modules don't
         # contain it).
-        doc = '''"""%s"""''' % obj.__doc__  # TODO need escapes.
-        result.add_docstr(tokenize.Token(tokenize.STRING, doc, (0, 0)))
+        doc = '"""%s"""' % obj.__doc__  # TODO need escapes.
+        suite = result.children[-1]
+        string = pt.String(pt.zero_position_modifier, doc, (0, 0), '')
+        new_line = pt.Whitespace('\n', (0, 0), '')
+        docstr_node = pt.Node('simple_stmt', [string, new_line])
+        suite.children.insert(2, docstr_node)
         return result
 
 

@@ -4,10 +4,12 @@
 - ``CachedMetaClass`` uses ``memoize_default`` to do the same with classes.
 """
 
+import inspect
+
 NO_DEFAULT = object()
 
 
-def memoize_default(default=None, evaluator_is_first_arg=False, second_arg_is_evaluator=False):
+def memoize_default(default=NO_DEFAULT, evaluator_is_first_arg=False, second_arg_is_evaluator=False):
     """ This is a typical memoization decorator, BUT there is one difference:
     To prevent recursion it sets defaults.
 
@@ -37,6 +39,8 @@ def memoize_default(default=None, evaluator_is_first_arg=False, second_arg_is_ev
                 if default is not NO_DEFAULT:
                     memo[key] = default
                 rv = function(obj, *args, **kwargs)
+                if inspect.isgenerator(rv):
+                    rv = list(rv)
                 memo[key] = rv
                 return rv
         return wrapper
@@ -46,8 +50,8 @@ def memoize_default(default=None, evaluator_is_first_arg=False, second_arg_is_ev
 class CachedMetaClass(type):
     """
     This is basically almost the same than the decorator above, it just caches
-    class initializations. I haven't found any other way, so I'm doing it with
-    meta classes.
+    class initializations. Either you do it this way or with decorators, but
+    with decorators you lose class access (isinstance, etc).
     """
     @memoize_default(None, second_arg_is_evaluator=True)
     def __call__(self, *args, **kwargs):

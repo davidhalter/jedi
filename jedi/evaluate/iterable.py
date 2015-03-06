@@ -26,13 +26,16 @@ from jedi import common
 from jedi import debug
 from jedi import settings
 from jedi._compatibility import use_metaclass, is_py3, unicode
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
-from jedi.evaluate import precedence
-from jedi.evaluate.cache import CachedMetaClass, memoize_default, NO_DEFAULT
-from jedi.cache import underscore_memoization
+from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
+
+
+def unite(iterable):
+    """Turns a two dimensional array into a one dimensional."""
+    return list(chain.from_iterable(iterable))
 
 
 class IterableWrapper(pr.Base):
@@ -40,39 +43,21 @@ class IterableWrapper(pr.Base):
         return False
 
 
-class Generator(use_metaclass(CachedMetaClass, IterableWrapper)):
-    """Handling of `yield` functions."""
-    def __init__(self, evaluator, func, var_args):
-        super(Generator, self).__init__()
-        self._evaluator = evaluator
-        self.func = func
-        self.var_args = var_args
-
-    @underscore_memoization
-    def _get_defined_names(self):
-        """
-        Returns a list of names that define a generator, which can return the
-        content of a generator.
-        """
+class GeneratorMixin(object):
+    @memoize_default()
+    def names_dicts(self, search_global=False):  # is always False
+        dct = {}
         executes_generator = '__next__', 'send', 'next'
-        for name in compiled.generator_obj.get_defined_names():
-            if name.name in executes_generator:
-                parent = GeneratorMethod(self, name.parent)
-                yield helpers.FakeName(name.name, parent)
-            else:
-                yield name
+        for names in compiled.generator_obj.names_dict.values():
+            for name in names:
+                if name.value in executes_generator:
+                    parent = GeneratorMethod(self, name.parent)
+                    dct[name.value] = [helpers.FakeName(name.name, parent, is_definition=True)]
+                else:
+                    dct[name.value] = [name]
+        yield dct
 
-    def scope_names_generator(self, position=None):
-        yield self, self._get_defined_names()
-
-    def iter_content(self):
-        """ returns the content of __iter__ """
-        # Directly execute it, because with a normal call to py__call__ a
-        # Generator will be returned.
-        from jedi.evaluate.representation import FunctionExecution
-        return FunctionExecution(self._evaluator, self.func, self.var_args).get_return_types()
-
-    def get_index_types(self, index_array):
+    def get_index_types(self, evaluator, index_array):
         #debug.warning('Tried to get array access on a generator: %s', self)
         analysis.add(self._evaluator, 'type-error-generator', index_array)
         return []
@@ -84,9 +69,29 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper)):
         """
         return [self.iter_content()[index]]
 
+    def py__bool__(self):
+        return True
+
+
+class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
+    """Handling of `yield` functions."""
+    def __init__(self, evaluator, func, var_args):
+        super(Generator, self).__init__()
+        self._evaluator = evaluator
+        self.func = func
+        self.var_args = var_args
+
+    def iter_content(self):
+        """ returns the content of __iter__ """
+        # Directly execute it, because with a normal call to py__call__ a
+        # Generator will be returned.
+        from jedi.evaluate.representation import FunctionExecution
+        f = FunctionExecution(self._evaluator, self.func, self.var_args)
+        return f.get_return_types(check_yields=True)
+
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
-                        'asserts', 'doc', 'docstr', 'get_parent_until',
+                        'doc', 'docstr', 'get_parent_until',
                         'get_code', 'subscopes']:
             raise AttributeError("Accessing %s of %s is not allowed."
                                  % (self, name))
@@ -110,46 +115,115 @@ class GeneratorMethod(IterableWrapper):
         return getattr(self._builtin_func, name)
 
 
-class GeneratorComprehension(Generator):
-    def __init__(self, evaluator, comprehension):
-        super(GeneratorComprehension, self).__init__(evaluator, comprehension, None)
-        self.comprehension = comprehension
+class Comprehension(IterableWrapper):
+    @staticmethod
+    def from_atom(evaluator, atom):
+        mapping = {
+            '(': GeneratorComprehension,
+            '[': ListComprehension
+        }
+        return mapping[atom.children[0]](evaluator, atom)
 
-    def iter_content(self):
-        return self._evaluator.eval_statement_element(self.comprehension)
-
-
-class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
-    """
-    Used as a mirror to pr.Array, if needed. It defines some getter
-    methods which are important in this module.
-    """
-    def __init__(self, evaluator, array):
+    def __init__(self, evaluator, atom):
         self._evaluator = evaluator
-        self._array = array
+        self._atom = atom
 
-    @property
-    def name(self):
-        return helpers.FakeName(self._array.type, parent=self)
+    @memoize_default()
+    def eval_node(self):
+        """
+        The first part `x + 1` of the list comprehension:
+
+            [x + 1 for x in foo]
+        """
+        comprehension = self._atom.children[1]
+        # For nested comprehensions we need to search the last one.
+        last = comprehension.children[-1]
+        last_comp = comprehension.children[1]
+        while True:
+            if isinstance(last, pr.CompFor):
+                last_comp = last
+            elif not pr.is_node(last, 'comp_if'):
+                break
+            last = last.children[-1]
+
+        return helpers.deep_ast_copy(comprehension.children[0], parent=last_comp)
+
+    def get_exact_index_types(self, index):
+        return [self._evaluator.eval_element(self.eval_node())[index]]
+
+    def __repr__(self):
+        return "<e%s of %s>" % (type(self).__name__, self._atom)
+
+
+class ArrayMixin(object):
+    @memoize_default()
+    def names_dicts(self, search_global=False):  # Always False.
+        # `array.type` is a string with the type, e.g. 'list'.
+        scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
+        # builtins only have one class -> [0]
+        scope = self._evaluator.execute(scope, (AlreadyEvaluated((self,)),))[0]
+        return scope.names_dicts(search_global)
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
 
-    @memoize_default(NO_DEFAULT)
-    def get_index_types(self, index_array=()):
+
+class ListComprehension(Comprehension, ArrayMixin):
+    type = 'list'
+
+    def get_index_types(self, evaluator, index):
+        return self.iter_content()
+
+    def iter_content(self):
+        return self._evaluator.eval_element(self.eval_node())
+
+    @property
+    def name(self):
+        return FakeSequence(self._evaluator, [], 'list').name
+
+
+class GeneratorComprehension(Comprehension, GeneratorMixin):
+    def iter_content(self):
+        return self._evaluator.eval_element(self.eval_node())
+
+
+class Array(IterableWrapper, ArrayMixin):
+    mapping = {'(': 'tuple',
+               '[': 'list',
+               '{': 'dict'}
+
+    def __init__(self, evaluator, atom):
+        self._evaluator = evaluator
+        self.atom = atom
+        self.type = Array.mapping[atom.children[0]]
+        """The builtin name of the array (list, set, tuple or dict)."""
+
+        c = self.atom.children
+        array_node = c[1]
+        if self.type == 'dict' and array_node != '}' \
+                and (not hasattr(array_node, 'children')
+                     or ':' not in array_node.children):
+            self.type = 'set'
+
+    @property
+    def name(self):
+        return helpers.FakeName(self.type, parent=self)
+
+    @memoize_default()
+    def get_index_types(self, evaluator, index=()):
         """
         Get the types of a specific index or all, if not given.
 
-        :param indexes: The index input types.
+        :param index: A subscriptlist node (or subnode).
         """
-        indexes = create_indexes_or_slices(self._evaluator, index_array)
-        if [index for index in indexes if isinstance(index, Slice)]:
-            return [self]
-
+        indexes = create_indexes_or_slices(evaluator, index)
         lookup_done = False
         types = []
         for index in indexes:
-            if isinstance(index, compiled.CompiledObject) \
+            if isinstance(index, Slice):
+                types += [self]
+                lookup_done = True
+            elif isinstance(index, compiled.CompiledObject) \
                     and isinstance(index.obj, (int, str, unicode)):
                 with common.ignored(KeyError, IndexError, TypeError):
                     types += self.get_exact_index_types(index.obj)
@@ -157,50 +231,31 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
 
         return types if lookup_done else self.values()
 
-    @memoize_default(NO_DEFAULT)
+    @memoize_default()
     def values(self):
-        result = list(_follow_values(self._evaluator, self._array.values))
+        result = unite(self._evaluator.eval_element(v) for v in self._values())
         result += check_array_additions(self._evaluator, self)
         return result
 
     def get_exact_index_types(self, mixed_index):
         """ Here the index is an int/str. Raises IndexError/KeyError """
-        index = mixed_index
-        if self.type == pr.Array.DICT:
-            index = None
-            for i, key_statement in enumerate(self._array.keys):
+        if self.type == 'dict':
+            for key, values in self._items():
                 # Because we only want the key to be a string.
-                key_expression_list = key_statement.expression_list()
-                if len(key_expression_list) != 1:  # cannot deal with complex strings
-                    continue
-                key = key_expression_list[0]
-                if isinstance(key, pr.Literal):
-                    key = key.value
-                elif isinstance(key, pr.Name):
-                    key = str(key)
-                else:
-                    continue
+                keys = self._evaluator.eval_element(key)
 
-                if mixed_index == key:
-                    index = i
-                    break
-            if index is None:
-                raise KeyError('No key found in dictionary')
+                for k in keys:
+                    if isinstance(k, compiled.CompiledObject) \
+                            and mixed_index == k.obj:
+                        for value in values:
+                            return self._evaluator.eval_element(value)
+            raise KeyError('No key found in dictionary %s.' % self)
 
         # Can raise an IndexError
-        values = [self._array.values[index]]
-        return _follow_values(self._evaluator, values)
+        return self._evaluator.eval_element(self._items()[mixed_index])
 
-    def scope_names_generator(self, position=None):
-        """
-        This method generates all `ArrayMethod` for one pr.Array.
-        It returns e.g. for a list: append, pop, ...
-        """
-        # `array.type` is a string with the type, e.g. 'list'.
-        scope = self._evaluator.find_types(compiled.builtin, self._array.type)[0]
-        scope = self._evaluator.execute(scope)[0]  # builtins only have one class
-        for _, names in scope.scope_names_generator():
-            yield self, [ArrayMethod(n) for n in names]
+    def iter_content(self):
+        return self.values()
 
     @common.safe_property
     def parent(self):
@@ -210,59 +265,112 @@ class Array(use_metaclass(CachedMetaClass, IterableWrapper)):
         return compiled.builtin
 
     def __getattr__(self, name):
-        if name not in ['type', 'start_pos', 'get_only_subelement', 'parent',
+        if name not in ['start_pos', 'get_only_subelement', 'parent',
                         'get_parent_until', 'items']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
-        return getattr(self._array, name)
+        return getattr(self.atom, name)
+
+    def _values(self):
+        """Returns a list of a list of node."""
+        if self.type == 'dict':
+            return list(chain.from_iterable(v for k, v in self._items()))
+        else:
+            return self._items()
+
+    def _items(self):
+        c = self.atom.children
+        array_node = c[1]
+        if array_node in (']', '}', ')'):
+            return []  # Direct closing bracket, doesn't contain items.
+
+        if pr.is_node(array_node, 'testlist_comp'):
+            return array_node.children[::2]
+        elif pr.is_node(array_node, 'dictorsetmaker'):
+            kv = []
+            iterator = iter(array_node.children)
+            for key in iterator:
+                op = next(iterator, None)
+                if op is None or op == ',':
+                    kv.append(key)  # A set.
+                elif op == ':':  # A dict.
+                    kv.append((key, [next(iterator)]))
+                    next(iterator, None)  # Possible comma.
+                else:
+                    raise NotImplementedError('dict/set comprehensions')
+            return kv
+        else:
+            return [array_node]
 
     def __iter__(self):
-        return iter(self._array)
-
-    def __len__(self):
-        return len(self._array)
+        return iter(self._items())
 
     def __repr__(self):
-        return "<e%s of %s>" % (type(self).__name__, self._array)
+        return "<%s of %s>" % (type(self).__name__, self.atom)
 
 
-class ArrayMethod(IterableWrapper):
-    """
-    A name, e.g. `list.append`, it is used to access the original array
-    methods.
-    """
-    def __init__(self, name):
-        super(ArrayMethod, self).__init__()
-        self.name = name
-
-    @property
-    @underscore_memoization
-    def names(self):
-        # TODO remove this method, we need the ArrayMethod input to be a NamePart.
-        return [pr.NamePart(self.name._sub_module, unicode(n), self, n.start_pos) for n in self.name.names]
-
-    def __getattr__(self, name):
-        # Set access privileges:
-        if name not in ['parent', 'start_pos', 'end_pos', 'get_code', 'get_definition']:
-            raise AttributeError('Strange access on %s: %s.' % (self, name))
-        return getattr(self.name, name)
-
-    def get_parent_until(self):
-        return compiled.builtin
-
-    def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.name)
+class _FakeArray(Array):
+    def __init__(self, evaluator, container, type):
+        self.type = type
+        self._evaluator = evaluator
+        self.atom = container
 
 
-class MergedArray(Array):
+class ImplicitTuple(_FakeArray):
+    def __init__(self, evaluator, testlist):
+        super(ImplicitTuple, self).__init__(evaluator, testlist, 'tuple')
+        self._testlist = testlist
+
+    def _items(self):
+        return self._testlist.children[::2]
+
+
+class FakeSequence(_FakeArray):
+    def __init__(self, evaluator, sequence_values, type):
+        super(FakeSequence, self).__init__(evaluator, sequence_values, type)
+        self._sequence_values = sequence_values
+
+    def _items(self):
+        return self._sequence_values
+
+    def get_exact_index_types(self, index):
+        value = self._sequence_values[index]
+        return self._evaluator.eval_element(value)
+
+
+class AlreadyEvaluated(frozenset):
+    """A simple container to add already evaluated objects to an array."""
+    def get_code(self):
+        # For debugging purposes.
+        return str(self)
+
+
+class MergedNodes(frozenset):
+    pass
+
+
+class FakeDict(_FakeArray):
+    def __init__(self, evaluator, dct):
+        super(FakeDict, self).__init__(evaluator, dct, 'dict')
+        self._dct = dct
+
+    def get_exact_index_types(self, index):
+        return list(chain.from_iterable(self._evaluator.eval_element(v)
+                                        for v in self._dct[index]))
+
+    def _items(self):
+        return self._dct.items()
+
+
+class MergedArray(_FakeArray):
     def __init__(self, evaluator, arrays):
-        super(MergedArray, self).__init__(evaluator, arrays[-1]._array)
+        super(MergedArray, self).__init__(evaluator, arrays, arrays[-1].type)
         self._arrays = arrays
-
-    def get_index_types(self, mixed_index):
-        return list(chain(*(a.values() for a in self._arrays)))
 
     def get_exact_index_types(self, mixed_index):
         raise IndexError
+
+    def values(self):
+        return list(chain(*(a.values() for a in self._arrays)))
 
     def __iter__(self):
         for array in self._arrays:
@@ -279,7 +387,7 @@ def get_iterator_types(inputs):
     # Take the first statement (for has always only
     # one, remember `in`). And follow it.
     for it in inputs:
-        if isinstance(it, (Generator, Array, ArrayInstance)):
+        if isinstance(it, (Generator, Array, ArrayInstance, Comprehension)):
             iterators.append(it)
         else:
             if not hasattr(it, 'execute_subscope_by_name'):
@@ -294,9 +402,8 @@ def get_iterator_types(inputs):
     from jedi.evaluate.representation import Instance
     for it in iterators:
         if isinstance(it, Array):
-            # Array is a little bit special, since this is an internal
-            # array, but there's also the list builtin, which is
-            # another thing.
+            # Array is a little bit special, since this is an internal array,
+            # but there's also the list builtin, which is another thing.
             result += it.values()
         elif isinstance(it, Instance):
             # __iter__ returned an instance.
@@ -314,128 +421,128 @@ def get_iterator_types(inputs):
 
 def check_array_additions(evaluator, array):
     """ Just a mapper function for the internal _check_array_additions """
-    if not pr.Array.is_type(array._array, pr.Array.LIST, pr.Array.SET):
+    if array.type not in ('list', 'set'):
         # TODO also check for dict updates
         return []
 
-    is_list = array._array.type == 'list'
-    current_module = array._array.get_parent_until()
-    res = _check_array_additions(evaluator, array, current_module, is_list)
-    return res
+    is_list = array.type == 'list'
+    try:
+        current_module = array.atom.get_parent_until()
+    except AttributeError:
+        # If there's no get_parent_until, it's a FakeSequence or another Fake
+        # type. Those fake types are used inside Jedi's engine. No values may
+        # be added to those after their creation.
+        return []
+    return _check_array_additions(evaluator, array, current_module, is_list)
 
 
 @memoize_default([], evaluator_is_first_arg=True)
 def _check_array_additions(evaluator, compare_array, module, is_list):
     """
-    Checks if a `pr.Array` has "add" statements:
+    Checks if a `Array` has "add" (append, insert, extend) statements:
+
     >>> a = [""]
     >>> a.append(1)
     """
     if not settings.dynamic_array_additions or isinstance(module, compiled.CompiledObject):
         return []
 
-    def check_calls(calls, add_name):
-        """
-        Calls are processed here. The part before the call is searched and
-        compared with the original Array.
-        """
+    def check_additions(arglist, add_name):
+        params = list(param.Arguments(evaluator, arglist).unpack())
         result = []
-        for c in calls:
-            call_path = list(c.generate_call_path())
-            call_path_simple = [unicode(n) if isinstance(n, pr.NamePart) else n
-                                for n in call_path]
-            separate_index = call_path_simple.index(add_name)
-            if add_name == call_path_simple[-1] or separate_index == 0:
-                # this means that there is no execution -> [].append
-                # or the keyword is at the start -> append()
-                continue
-            backtrack_path = iter(call_path[:separate_index])
-
-            position = c.start_pos
-            scope = c.get_parent_scope()
-
-            found = evaluator.eval_call_path(backtrack_path, scope, position)
-            if not compare_array in found:
-                continue
-
-            params = call_path[separate_index + 1]
-            if not params.values:
-                continue  # no params: just ignore it
-            if add_name in ['append', 'add']:
-                for param in params:
-                    result += evaluator.eval_statement(param)
-            elif add_name in ['insert']:
-                try:
-                    second_param = params[1]
-                except IndexError:
-                    continue
-                else:
-                    result += evaluator.eval_statement(second_param)
-            elif add_name in ['extend', 'update']:
-                for param in params:
-                    iterators = evaluator.eval_statement(param)
+        if add_name in ['insert']:
+            params = params[1:]
+        if add_name in ['append', 'add', 'insert']:
+            for key, nodes in params:
+                result += unite(evaluator.eval_element(node) for node in nodes)
+        elif add_name in ['extend', 'update']:
+            for key, nodes in params:
+                iterators = unite(evaluator.eval_element(node) for node in nodes)
                 result += get_iterator_types(iterators)
         return result
 
-    from jedi.evaluate import representation as er
+    from jedi.evaluate import representation as er, param
 
-    def get_execution_parent(element, *stop_classes):
+    def get_execution_parent(element):
         """ Used to get an Instance/FunctionExecution parent """
         if isinstance(element, Array):
-            stmt = element._array.parent
+            node = element.atom
         else:
-            # is an Instance with an ArrayInstance inside
-            stmt = element.var_args[0].var_args.parent
-        if isinstance(stmt, er.InstanceElement):
-            stop_classes = list(stop_classes) + [er.Function]
-        return stmt.get_parent_until(stop_classes)
+            # Is an Instance with an
+            # Arguments([AlreadyEvaluated([ArrayInstance])]) inside
+            # Yeah... I know... It's complicated ;-)
+            node = list(element.var_args.argument_node[0])[0].var_args.trailer
+        if isinstance(node, er.InstanceElement):
+            return node
+        return node.get_parent_until(er.FunctionExecution)
 
-    temp_param_add = settings.dynamic_params_for_other_modules
-    settings.dynamic_params_for_other_modules = False
+    temp_param_add, settings.dynamic_params_for_other_modules = \
+        settings.dynamic_params_for_other_modules, False
 
-    search_names = ['append', 'extend', 'insert'] if is_list else \
-        ['add', 'update']
-    comp_arr_parent = get_execution_parent(compare_array, er.FunctionExecution)
+    search_names = ['append', 'extend', 'insert'] if is_list else ['add', 'update']
+    comp_arr_parent = get_execution_parent(compare_array)
 
-    possible_stmts = []
-    res = []
-    for n in search_names:
+    added_types = []
+    for add_name in search_names:
         try:
-            possible_stmts += module.used_names[n]
+            possible_names = module.used_names[add_name]
         except KeyError:
             continue
-        for stmt in possible_stmts:
-            # Check if the original scope is an execution. If it is, one
-            # can search for the same statement, that is in the module
-            # dict. Executions are somewhat special in jedi, since they
-            # literally copy the contents of a function.
-            if isinstance(comp_arr_parent, er.FunctionExecution):
-                stmt = comp_arr_parent. \
-                    get_statement_for_position(stmt.start_pos)
-                if stmt is None:
+        else:
+            for name in possible_names:
+                # Check if the original scope is an execution. If it is, one
+                # can search for the same statement, that is in the module
+                # dict. Executions are somewhat special in jedi, since they
+                # literally copy the contents of a function.
+                if isinstance(comp_arr_parent, er.FunctionExecution):
+                    if comp_arr_parent.start_pos < name.start_pos < comp_arr_parent.end_pos:
+                        name = comp_arr_parent.name_for_position(name.start_pos)
+                    else:
+                        # Don't check definitions that are not defined in the
+                        # same function. This is not "proper" anyway. It also
+                        # improves Jedi's speed for array lookups, since we
+                        # don't have to check the whole source tree anymore.
+                        continue
+                trailer = name.parent
+                power = trailer.parent
+                trailer_pos = power.children.index(trailer)
+                try:
+                    execution_trailer = power.children[trailer_pos + 1]
+                except IndexError:
                     continue
-            # InstanceElements are special, because they don't get copied,
-            # but have this wrapper around them.
-            if isinstance(comp_arr_parent, er.InstanceElement):
-                stmt = er.get_instance_el(comp_arr_parent.instance, stmt)
+                else:
+                    if execution_trailer.type != 'trailer' \
+                            or execution_trailer.children[0] != '(' \
+                            or execution_trailer.children[1] == ')':
+                        continue
+                power = helpers.call_of_name(name, cut_own_trailer=True)
+                # InstanceElements are special, because they don't get copied,
+                # but have this wrapper around them.
+                if isinstance(comp_arr_parent, er.InstanceElement):
+                    power = er.get_instance_el(evaluator, comp_arr_parent.instance, power)
 
-            if evaluator.recursion_detector.push_stmt(stmt):
-                # check recursion
-                continue
+                if evaluator.recursion_detector.push_stmt(power):
+                    # Check for recursion. Possible by using 'extend' in
+                    # combination with function calls.
+                    continue
+                if compare_array in evaluator.eval_element(power):
+                    # The arrays match. Now add the results
+                    added_types += check_additions(execution_trailer.children[1], add_name)
 
-            res += check_calls(helpers.scan_statement_for_calls(stmt, n), n)
-            evaluator.recursion_detector.pop_stmt()
+                evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
-    return res
+    return added_types
 
 
 def check_array_instances(evaluator, instance):
     """Used for set() and list() instances."""
-    if not settings.dynamic_arrays_instances:
+    if not settings.dynamic_array_additions:
         return instance.var_args
+
     ai = ArrayInstance(evaluator, instance)
-    return [ai]
+    from jedi.evaluate import param
+    return param.Arguments(evaluator, [AlreadyEvaluated([ai])])
 
 
 class ArrayInstance(IterableWrapper):
@@ -443,6 +550,11 @@ class ArrayInstance(IterableWrapper):
     Used for the usage of set() and list().
     This is definitely a hack, but a good one :-)
     It makes it possible to use set/list conversions.
+
+    In contrast to Array, ListComprehension and all other iterable types, this
+    is something that is only used inside `evaluate/compiled/fake/builtins.py`
+    and therefore doesn't need `names_dicts`, `py__bool__` and so on, because
+    we don't use these operations in `builtins.py`.
     """
     def __init__(self, evaluator, instance):
         self._evaluator = evaluator
@@ -455,31 +567,15 @@ class ArrayInstance(IterableWrapper):
         lists/sets are too complicated too handle that.
         """
         items = []
-        from jedi.evaluate.representation import Instance
-        for stmt in self.var_args:
-            for typ in self._evaluator.eval_statement(stmt):
-                if isinstance(typ, Instance) and len(typ.var_args):
-                    array = typ.var_args[0]
-                    if isinstance(array, ArrayInstance):
-                        # Certain combinations can cause recursions, see tests.
-                        if not self._evaluator.recursion_detector.push_stmt(self.var_args):
-                            items += array.iter_content()
-                            self._evaluator.recursion_detector.pop_stmt()
-                items += get_iterator_types([typ])
-
-        # TODO check if exclusion of tuple is a problem here.
-        if isinstance(self.var_args, tuple) or self.var_args.parent is None:
-            return []  # generated var_args should not be checked for arrays
+        for key, nodes in self.var_args.unpack():
+            for node in nodes:
+                for typ in self._evaluator.eval_element(node):
+                    items += get_iterator_types([typ])
 
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
         items += _check_array_additions(self._evaluator, self.instance, module, is_list)
         return items
-
-
-def _follow_values(evaluator, values):
-    """ helper function for the index getters """
-    return list(chain.from_iterable(evaluator.eval_statement(v) for v in values))
 
 
 class Slice(object):
@@ -500,7 +596,7 @@ class Slice(object):
             if element is None:
                 return None
 
-            result = precedence.process_precedence_element(self._evaluator, element)
+            result = self._evaluator.eval_element(element)
             if len(result) != 1:
                 # We want slices to be clear defined with just one type.
                 # Otherwise we will return an empty slice object.
@@ -516,26 +612,20 @@ class Slice(object):
             return slice(None, None, None)
 
 
-def create_indexes_or_slices(evaluator, index_array):
-    if not index_array:
-        return ()
+def create_indexes_or_slices(evaluator, index):
+    if pr.is_node(index, 'subscript'):  # subscript is a slice operation.
+        start, stop, step = None, None, None
+        result = []
+        for el in index.children:
+            if el == ':':
+                if not result:
+                    result.append(None)
+            elif pr.is_node(el, 'sliceop'):
+                if len(el.children) == 2:
+                    result.append(el.children[1])
+            else:
+                result.append(el)
+        result += [None] * (3 - len(result))
 
-    # Just take the first part of the "array", because this is Python stdlib
-    # behavior. Numpy et al. perform differently, but Jedi won't understand
-    # that anyway.
-    expression_list = index_array[0].expression_list()
-    prec = precedence.create_precedence(expression_list)
-
-    # check for slices
-    if isinstance(prec, precedence.Precedence) and prec.operator == ':':
-        start = prec.left
-        if isinstance(start, precedence.Precedence) and start.operator == ':':
-            stop = start.right
-            start = start.left
-            step = prec.right
-        else:
-            stop = prec.right
-            step = None
-        return (Slice(evaluator, start, stop, step),)
-    else:
-        return tuple(precedence.process_precedence_element(evaluator, prec))
+        return (Slice(evaluator, *result),)
+    return evaluator.eval_element(index)

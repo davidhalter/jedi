@@ -1,9 +1,8 @@
 """
 Test of keywords and ``jedi.keywords``
 """
-import jedi
-from jedi import Script, common
-import pytest
+from jedi._compatibility import is_py3
+from jedi import Script
 
 
 def test_goto_assignments_keyword():
@@ -18,13 +17,13 @@ def test_goto_assignments_keyword():
 def test_keyword():
     """ github jedi-vim issue #44 """
     defs = Script("print").goto_definitions()
-    assert [d.doc for d in defs]
+    if is_py3:
+        assert [d.doc for d in defs]
+    else:
+        assert defs == []
 
-    with pytest.raises(jedi.NotFoundError):
-        Script("import").goto_assignments()
+    assert Script("import").goto_assignments() == []
 
     completions = Script("import", 1, 1).completions()
-    assert len(completions) == 0
-    with common.ignored(jedi.NotFoundError):  # TODO shouldn't throw that.
-        defs = Script("assert").goto_definitions()
-        assert len(defs) == 1
+    assert len(completions) > 10 and 'if' in [c.name for c in completions]
+    assert Script("assert").goto_definitions() == []

@@ -55,10 +55,25 @@ a = lambda: 3
 a.__closure__
 
 class C():
-    def __init__(self):
+    def __init__(self, foo=1.0):
         self.a = lambda: 1
+        self.foo = foo
+
+    def ret(self):
+        return lambda: self.foo
+
+    def with_param(self):
+        return lambda x: x + self.a()
+
 #? int()
 C().a()
+
+#? str()
+C('foo').ret()()
+
+index = C().with_param()(1)
+#? float()
+['', 1, 1.0][index]
 
 
 def xy(param):
@@ -80,3 +95,12 @@ class Test(object):
         self.a
         #? float()
         pred(1.0, 2)
+
+# -----------------
+# test_nocond in grammar (happens in list comprehensions with `if`)
+# -----------------
+# Doesn't need to do anything yet. It should just not raise an error. These
+# nocond lambdas make no sense at all.
+
+#? int()
+[a for a in [1,2] if lambda: 3][0]

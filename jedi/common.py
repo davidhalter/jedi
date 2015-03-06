@@ -5,14 +5,8 @@ import functools
 import re
 from ast import literal_eval
 
-from jedi._compatibility import unicode, next, reraise
+from jedi._compatibility import unicode, reraise
 from jedi import settings
-
-
-class MultiLevelStopIteration(Exception):
-    """
-    StopIteration's get catched pretty easy by for loops, let errors propagate.
-    """
 
 
 class UncaughtAttributeError(Exception):

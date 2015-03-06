@@ -2,9 +2,7 @@
 The API basically only provides one class. You can create a :class:`Script` and
 use its methods.
 
-Additionally you can add a debug function with :func:`set_debug_function` and
-catch :exc:`NotFoundError` which is being raised if your completion is not
-possible.
+Additionally you can add a debug function with :func:`set_debug_function`.
 
 .. warning:: Please, note that Jedi is **not thread safe**.
 """
@@ -14,10 +12,10 @@ import warnings
 import sys
 from itertools import chain
 
-from jedi._compatibility import next, unicode, builtins
-from jedi.parser import Parser
+from jedi._compatibility import unicode, builtins
+from jedi.parser import Parser, load_grammar
 from jedi.parser.tokenize import source_tokens
-from jedi.parser import representation as pr
+from jedi.parser import tree as pr
 from jedi.parser.user_context import UserContext, UserContextParser
 from jedi import debug
 from jedi import settings
@@ -28,13 +26,13 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import usages
 from jedi.api import helpers
-from jedi.evaluate import Evaluator, filter_private_variable
+from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
-from jedi.evaluate.helpers import FakeName, get_module_name_parts
-from jedi.evaluate.finder import get_names_of_scope
-from jedi.evaluate.helpers import search_call_signatures
+from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.helpers import FakeName, get_module_names
+from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
 from jedi.evaluate import analysis
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -43,7 +41,13 @@ sys.setrecursionlimit(2000)
 
 
 class NotFoundError(Exception):
-    """A custom error to avoid catching the wrong exceptions."""
+    """A custom error to avoid catching the wrong exceptions.
+
+    .. deprecated:: 0.9.0
+       Not in use anymore, Jedi just returns no goto result if you're not on a
+       valid name.
+    .. todo:: Remove!
+    """
 
 
 class Script(object):
@@ -98,11 +102,13 @@ class Script(object):
             raise ValueError('`column` parameter is not in a valid range.')
         self._pos = line, column
 
-        cache.clear_caches()
+        cache.clear_time_caches()
         debug.reset_time()
+        self._grammar = load_grammar('grammar%s.%s' % sys.version_info[:2])
         self._user_context = UserContext(self.source, self._pos)
-        self._parser = UserContextParser(self.source, path, self._pos, self._user_context)
-        self._evaluator = Evaluator()
+        self._parser = UserContextParser(self._grammar, self.source, path,
+                                         self._pos, self._user_context)
+        self._evaluator = Evaluator(self._grammar)
         debug.speed('init')
 
     @property
@@ -127,34 +133,54 @@ class Script(object):
         :rtype: list of :class:`classes.Completion`
         """
         def get_completions(user_stmt, bs):
-            if isinstance(user_stmt, pr.Import):
-                context = self._user_context.get_context()
-                next(context)  # skip the path
+            # TODO this closure is ugly. it also doesn't work with
+            # simple_complete (used for Interpreter), somehow redo.
+            module = self._parser.module()
+            names, level, only_modules, unfinished_dotted = \
+                helpers.check_error_statements(module, self._pos)
+            completion_names = []
+            if names is not None:
+                imp_names = [n for n in names if n.end_pos < self._pos]
+                i = imports.get_importer(self._evaluator, imp_names, module, level)
+                completion_names = i.completion_names(self._evaluator, only_modules)
+
+            # TODO this paragraph is necessary, but not sure it works.
+            context = self._user_context.get_context()
+            if not next(context).startswith('.'):  # skip the path
                 if next(context) == 'from':
                     # completion is just "import" if before stands from ..
-                    return ((k, bs) for k in keywords.keyword_names('import'))
-            return self._simple_complete(path, like)
+                    if unfinished_dotted:
+                        return completion_names
+                    else:
+                        return keywords.keyword_names('import')
 
-        def completion_possible(path):
-            """
-            The completion logic is kind of complicated, because we strip the
-            last word part. To ignore certain strange patterns with dots, just
-            use regex.
-            """
-            if re.match('\d+\.\.$|\.{4}$', path):
-                return True  # check Ellipsis and float literal `1.`
+            if isinstance(user_stmt, pr.Import):
+                module = self._parser.module()
+                completion_names += imports.completion_names(self._evaluator,
+                                                             user_stmt, self._pos)
+                return completion_names
 
-            return not re.search(r'^\.|^\d\.$|\.\.$', path)
+            if names is None and not isinstance(user_stmt, pr.Import):
+                if not path and not dot:
+                    # add keywords
+                    completion_names += keywords.keyword_names(all=True)
+                    # TODO delete? We should search for valid parser
+                    # transformations.
+                completion_names += self._simple_complete(path, dot, like)
+            return completion_names
 
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
-        if not completion_possible(path):
+        # Dots following an int are not the start of a completion but a float
+        # literal.
+        if re.search(r'^\d\.$', path):
             return []
         path, dot, like = helpers.completion_parts(path)
 
         user_stmt = self._parser.user_stmt_with_whitespace()
+
         b = compiled.builtin
-        completions = get_completions(user_stmt, b)
+        completion_names = get_completions(user_stmt, b)
 
         if not dot:
             # add named params
@@ -167,36 +193,29 @@ class Script(object):
                         # Allow access on _definition here, because it's a
                         # public API and we don't want to make the internal
                         # Name object public.
-                        if p._name.get_definition().stars == 0:  # no *args/**kwargs
-                            completions.append((p._name.parent, p))
-
-            if not path and not isinstance(user_stmt, pr.Import):
-                # add keywords
-                completions += ((k, b) for k in keywords.keyword_names(all=True))
+                        if p._definition.stars == 0:  # no *args/**kwargs
+                            completion_names.append(p._name)
 
         needs_dot = not dot and path
 
         comps = []
         comp_dct = {}
-        for c, s in set(completions):
-            # TODO Remove this line. c should be a namepart even before that.
-            c = c.names[-1]
+        for c in set(completion_names):
             n = str(c)
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
-                if not filter_private_variable(s, user_stmt or self._parser.user_scope(), n):
-                    if isinstance(c.parent.parent, (pr.Function, pr.Class)):
-                        # TODO I think this is a hack. It should be an
-                        #   er.Function/er.Class before that.
-                        c = er.wrap(self._evaluator, c.parent.parent).name.names[-1]
-                    new = classes.Completion(self._evaluator, c, needs_dot, len(like), s)
-                    k = (new.name, new.complete)  # key
-                    if k in comp_dct and settings.no_completion_duplicates:
-                        comp_dct[k]._same_name_completions.append(new)
-                    else:
-                        comp_dct[k] = new
-                        comps.append(new)
+                if isinstance(c.parent, (pr.Function, pr.Class)):
+                    # TODO I think this is a hack. It should be an
+                    #   er.Function/er.Class before that.
+                    c = er.wrap(self._evaluator, c.parent).name
+                new = classes.Completion(self._evaluator, c, needs_dot, len(like))
+                k = (new.name, new.complete)  # key
+                if k in comp_dct and settings.no_completion_duplicates:
+                    comp_dct[k]._same_name_completions.append(new)
+                else:
+                    comp_dct[k] = new
+                    comps.append(new)
 
         debug.speed('completions end')
 
@@ -204,42 +223,35 @@ class Script(object):
                                             x.name.startswith('_'),
                                             x.name.lower()))
 
-    def _simple_complete(self, path, like):
-        try:
-            scopes = list(self._prepare_goto(path, True))
-        except NotFoundError:
-            scopes = []
-            scope_names_generator = get_names_of_scope(self._evaluator,
-                                                       self._parser.user_scope(),
-                                                       self._pos)
-            completions = []
-            for scope, name_list in scope_names_generator:
-                for c in name_list:
-                    completions.append((c, scope))
+    def _simple_complete(self, path, dot, like):
+        if not path and not dot:
+            scope = self._parser.user_scope()
+            if not scope.is_scope():  # Might be a flow (if/while/etc).
+                scope = scope.get_parent_scope()
+            names_dicts = global_names_dict_generator(
+                self._evaluator,
+                er.wrap(self._evaluator, scope),
+                self._pos
+            )
+            completion_names = []
+            for names_dict, pos in names_dicts:
+                names = list(chain.from_iterable(names_dict.values()))
+                if not names:
+                    continue
+                completion_names += filter_definition_names(names, self._parser.user_stmt(), pos)
+        elif self._get_under_cursor_stmt(path) is None:
+            return []
         else:
-            completions = []
+            scopes = list(self._prepare_goto(path, True))
+            completion_names = []
             debug.dbg('possible completion scopes: %s', scopes)
             for s in scopes:
-                if s.isinstance(er.Function):
-                    names = s.get_magic_function_names()
-                elif isinstance(s, imports.ImportWrapper):
-                    under = like + self._user_context.get_path_after_cursor()
-                    if under == 'import':
-                        current_line = self._user_context.get_position_line()
-                        if not current_line.endswith('import import'):
-                            continue
-                    a = s.import_stmt.alias
-                    if a and a.start_pos <= self._pos <= a.end_pos:
-                        continue
-                    names = s.get_defined_names(on_import_stmt=True)
-                else:
-                    names = []
-                    for _, new_names in s.scope_names_generator():
-                        names += new_names
+                names = []
+                for names_dict in s.names_dicts(search_global=False):
+                    names += chain.from_iterable(names_dict.values())
 
-                for c in names:
-                    completions.append((c, s))
-        return completions
+                completion_names += filter_definition_names(names, self._parser.user_stmt())
+        return completion_names
 
     def _prepare_goto(self, goto_path, is_completion=False):
         """
@@ -256,107 +268,50 @@ class Script(object):
             return []
 
         if isinstance(user_stmt, pr.Import):
-            scopes = [helpers.get_on_import_stmt(self._evaluator, self._user_context,
-                                                 user_stmt, is_completion)[0]]
+            i, _ = helpers.get_on_import_stmt(self._evaluator, self._user_context,
+                                              user_stmt, is_completion)
+            if i is None:
+                return []
+            scopes = [i]
         else:
             # just parse one statement, take it and evaluate it
             eval_stmt = self._get_under_cursor_stmt(goto_path)
+            if eval_stmt is None:
+                return []
 
-            if not is_completion:
-                # goto_definition returns definitions of its statements if the
-                # cursor is on the assignee. By changing the start_pos of our
-                # "pseudo" statement, the Jedi evaluator can find the assignees.
-                if user_stmt is not None:
-                    eval_stmt.start_pos = user_stmt.end_pos
-            scopes = self._evaluator.eval_statement(eval_stmt)
+            module = self._parser.module()
+            names, level, _, _ = helpers.check_error_statements(module, self._pos)
+            if names:
+                i = imports.get_importer(self._evaluator, names, module, level)
+                return i.follow(self._evaluator)
+
+            scopes = self._evaluator.eval_element(eval_stmt)
 
         return scopes
 
-    def _get_under_cursor_stmt(self, cursor_txt):
-        tokenizer = source_tokens(cursor_txt, line_offset=self._pos[0] - 1)
-        r = Parser(cursor_txt, no_docstr=True, tokenizer=tokenizer)
+    @memoize_default()
+    def _get_under_cursor_stmt(self, cursor_txt, start_pos=None):
+        tokenizer = source_tokens(cursor_txt)
+        r = Parser(self._grammar, cursor_txt, tokenizer=tokenizer)
         try:
-            # Take the last statement available.
-            stmt = r.module.statements[-1]
-        except IndexError:
-            raise NotFoundError()
-        if isinstance(stmt, pr.KeywordStatement):
-            stmt = stmt.stmt
-        if not isinstance(stmt, pr.ExprStmt):
-            raise NotFoundError()
+            # Take the last statement available that is not an endmarker.
+            # And because it's a simple_stmt, we need to get the first child.
+            stmt = r.module.children[-2].children[0]
+        except (AttributeError, IndexError):
+            return None
 
         user_stmt = self._parser.user_stmt()
         if user_stmt is None:
-            # Set the start_pos to a pseudo position, that doesn't exist but works
-            # perfectly well (for both completions in docstrings and statements).
-            stmt.start_pos = self._pos
+            # Set the start_pos to a pseudo position, that doesn't exist but
+            # works perfectly well (for both completions in docstrings and
+            # statements).
+            pos = start_pos or self._pos
         else:
-            stmt.start_pos = user_stmt.start_pos
+            pos = user_stmt.start_pos
+
+        stmt.move(pos[0] - 1, pos[1])  # Moving the offset.
         stmt.parent = self._parser.user_scope()
         return stmt
-
-    def complete(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.completions` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use completions instead.", DeprecationWarning)
-        return self.completions()
-
-    def goto(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.goto_assignments` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use goto_assignments instead.", DeprecationWarning)
-        return self.goto_assignments()
-
-    def definition(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.goto_definitions` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use goto_definitions instead.", DeprecationWarning)
-        return self.goto_definitions()
-
-    def get_definition(self):
-        """
-        .. deprecated:: 0.5.0
-           Use :attr:`.goto_definitions` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use goto_definitions instead.", DeprecationWarning)
-        return self.goto_definitions()
-
-    def related_names(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.usages` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use usages instead.", DeprecationWarning)
-        return self.usages()
-
-    def get_in_function_call(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.call_signatures` instead.
-        .. todo:: Remove!
-        """
-        return self.function_definition()
-
-    def function_definition(self):
-        """
-        .. deprecated:: 0.6.0
-           Use :attr:`.call_signatures` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use call_signatures instead.", DeprecationWarning)
-        sig = self.call_signatures()
-        return sig[0] if sig else None
 
     def goto_definitions(self):
         """
@@ -377,7 +332,6 @@ class Script(object):
                     scopes.update(resolve_import_paths(set(s.follow())))
             return scopes
 
-        user_stmt = self._parser.user_stmt_with_whitespace()
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
         definitions = set()
@@ -386,19 +340,24 @@ class Script(object):
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                call, _, _ = search_call_signatures(user_stmt, self._pos)
-                if call is not None:
-                    definitions = set(self._evaluator.eval_call(call))
+                definitions = set(signature._definition
+                                  for signature in self.call_signatures())
 
-        if not definitions:
-            if goto_path:
-                definitions = set(self._prepare_goto(goto_path))
+        if re.match('\w[\w\d_]*$', goto_path) and not definitions:
+            user_stmt = self._parser.user_stmt()
+            if user_stmt is not None and user_stmt.type == 'expr_stmt':
+                for name in user_stmt.get_defined_names():
+                    if name.start_pos <= self._pos <= name.end_pos:
+                        # TODO scaning for a name and then using it should be
+                        # the default.
+                        definitions = set(self._evaluator.goto_definition(name))
+
+        if not definitions and goto_path:
+            definitions = set(self._prepare_goto(goto_path))
 
         definitions = resolve_import_paths(definitions)
-        names = [s if isinstance(s, pr.Name) else s.name for s in definitions
-                 if s is not imports.ImportWrapper.GlobalNamespace]
-        defs = [classes.Definition(self._evaluator, name.names[-1])
-                for name in names]
+        names = [s.name for s in definitions]
+        defs = [classes.Definition(self._evaluator, name) for name in names]
         return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self):
@@ -411,8 +370,7 @@ class Script(object):
         :rtype: list of :class:`classes.Definition`
         """
         results = self._goto()
-        d = [classes.Definition(self._evaluator, d) for d in set(results)
-             if d is not imports.ImportWrapper.GlobalNamespace]
+        d = [classes.Definition(self._evaluator, d) for d in set(results)]
         return helpers.sorted_definitions(d)
 
     def _goto(self, add_import_name=False):
@@ -432,30 +390,38 @@ class Script(object):
                         and d.start_pos == (0, 0):
                     i = imports.ImportWrapper(self._evaluator, d.parent).follow(is_goto=True)
                     definitions.remove(d)
-                    definitions |= follow_inexistent_imports(i.names[-1])
+                    definitions |= follow_inexistent_imports(i)
             return definitions
 
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
         user_stmt = self._parser.user_stmt()
+        user_scope = self._parser.user_scope()
 
+        # TODO restructure this. stmt is not always needed.
         stmt = self._get_under_cursor_stmt(goto_path)
-        expression_list = stmt.expression_list()
-        if len(expression_list) == 0:
+        if stmt is None:
             return []
-        # The reverse tokenizer only generates parses call.
-        assert len(expression_list) == 1
-        call = expression_list[0]
-        if isinstance(call, pr.Call):
-            call_path = list(call.generate_call_path())
+
+        if user_scope is None:
+            last_name = None
         else:
-            # goto_assignments on Operator returns nothing.
-            return []
+            # Try to use the parser if possible.
+            last_name = user_scope.name_for_position(self._pos)
+
+        if last_name is None:
+            last_name = stmt
+            while not isinstance(last_name, pr.Name):
+                try:
+                    last_name = last_name.children[-1]
+                except AttributeError:
+                    # Doesn't have a name in it.
+                    return []
 
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.
             user_scope = self._parser.user_scope()
-            definitions = set([user_scope.name.names[-1]])
+            definitions = set([user_scope.name])
         elif isinstance(user_stmt, pr.Import):
             s, name_part = helpers.get_on_import_stmt(self._evaluator,
                                                       self._user_context, user_stmt)
@@ -467,20 +433,20 @@ class Script(object):
             if add_import_name:
                 import_name = user_stmt.get_defined_names()
                 # imports have only one name
-                np = import_name[0].names[-1]
-                if not user_stmt.star and unicode(name_part) == unicode(np):
+                np = import_name[0]
+                if not user_stmt.is_star_import() and unicode(name_part) == unicode(np):
                     definitions.append(np)
         else:
             # The Evaluator.goto function checks for definitions, but since we
             # use a reverse tokenizer, we have new name_part objects, so we
             # have to check the user_stmt here for positions.
-            if isinstance(user_stmt, pr.ExprStmt):
+            if isinstance(user_stmt, pr.ExprStmt) \
+                    and isinstance(last_name.parent, pr.ExprStmt):
                 for name in user_stmt.get_defined_names():
-                    if name.start_pos <= self._pos <= name.end_pos \
-                            and len(name.names) == 1:
-                        return [name.names[0]]
+                    if name.start_pos <= self._pos <= name.end_pos:
+                        return [name]
 
-            defs = self._evaluator.goto(stmt, call_path)
+            defs = self._evaluator.goto(last_name)
             definitions = follow_inexistent_imports(defs)
         return definitions
 
@@ -504,16 +470,6 @@ class Script(object):
                 # Without a definition for a name we cannot find references.
                 return []
 
-            # Once Script._goto works correct, we can probably remove this
-            # branch.
-            if isinstance(user_stmt, pr.ExprStmt):
-                c = user_stmt.expression_list()[0]
-                if not isinstance(c, unicode) and self._pos < c.start_pos:
-                    # The lookup might be before `=`
-                    definitions = [v.names[-1] for v in user_stmt.get_defined_names()
-                                   if unicode(v.names[-1]) ==
-                                   list(definitions)[0].get_code()]
-
             if not isinstance(user_stmt, pr.Import):
                 # import case is looked at with add_import_name option
                 definitions = usages.usages_add_import_modules(self._evaluator,
@@ -524,12 +480,7 @@ class Script(object):
             names = usages.usages(self._evaluator, definitions, module)
 
             for d in set(definitions):
-                try:
-                    name_part = d.names[-1]
-                except AttributeError:
-                    names.append(classes.Definition(self._evaluator, d))
-                else:
-                    names.append(classes.Definition(self._evaluator, name_part))
+                names.append(classes.Definition(self._evaluator, d))
         finally:
             settings.dynamic_flow_information = temp
 
@@ -551,43 +502,43 @@ class Script(object):
 
         :rtype: list of :class:`classes.CallSignature`
         """
-        user_stmt = self._parser.user_stmt_with_whitespace()
-        call, execution_arr, index = search_call_signatures(user_stmt, self._pos)
-        if call is None:
+        call_txt, call_index, key_name, start_pos = self._user_context.call_signature()
+        if call_txt is None:
+            return []
+
+        stmt = self._get_under_cursor_stmt(call_txt, start_pos)
+        if stmt is None:
             return []
 
         with common.scale_speed_settings(settings.scale_call_signatures):
-            _callable = lambda: self._evaluator.eval_call(call)
-            origins = cache.cache_call_signatures(_callable, self.source,
-                                                  self._pos, user_stmt)
+            origins = cache.cache_call_signatures(self._evaluator, stmt,
+                                                  self.source, self._pos)
         debug.speed('func_call followed')
 
-        key_name = None
-        try:
-            detail = execution_arr[index].assignment_details[0]
-        except IndexError:
-            pass
-        else:
-            try:
-                key_name = unicode(detail[0][0].name)
-            except (IndexError, AttributeError):
-                pass
-        return [classes.CallSignature(self._evaluator, o.name.names[-1], call, index, key_name)
+        return [classes.CallSignature(self._evaluator, o.name, stmt, call_index, key_name)
                 for o in origins if hasattr(o, 'py__call__')]
 
     def _analysis(self):
+        def check_types(types):
+            for typ in types:
+                try:
+                    f = typ.iter_content
+                except AttributeError:
+                    pass
+                else:
+                    check_types(f())
+
         #statements = set(chain(*self._parser.module().used_names.values()))
-        stmts, imps = analysis.get_module_statements(self._parser.module())
+        nodes, imp_names, decorated_funcs = \
+            analysis.get_module_statements(self._parser.module())
         # Sort the statements so that the results are reproducible.
-        for i in imps:
-            iw = imports.ImportWrapper(self._evaluator, i,
-                                       nested_resolve=True).follow()
-            if i.is_nested() and any(not isinstance(i, pr.Module) for i in iw):
-                analysis.add(self._evaluator, 'import-error', i.namespace.names[-1])
-        for stmt in sorted(stmts, key=lambda obj: obj.start_pos):
-            if not (isinstance(stmt.parent, pr.ForFlow)
-                    and stmt.parent.set_stmt == stmt):
-                self._evaluator.eval_statement(stmt)
+        for n in imp_names:
+            imports.ImportWrapper(self._evaluator, n).follow()
+        for node in sorted(nodes, key=lambda obj: obj.start_pos):
+            check_types(self._evaluator.eval_element(node))
+
+        for dec_func in decorated_funcs:
+            er.Function(self._evaluator, dec_func).get_decorated_func()
 
         ana = [a for a in self._evaluator.analysis if self.path == a.path]
         return sorted(set(ana), key=lambda x: x.line)
@@ -609,7 +560,7 @@ class Interpreter(Script):
     upper
     """
 
-    def __init__(self, source, namespaces=[], **kwds):
+    def __init__(self, source, namespaces, **kwds):
         """
         Parse `source` and mixin interpreted Python objects from `namespaces`.
 
@@ -623,17 +574,28 @@ class Interpreter(Script):
         If `line` and `column` are None, they are assumed be at the end of
         `source`.
         """
+        if type(namespaces) is not list or len(namespaces) == 0 or \
+           any([type(x) is not dict for x in namespaces]):
+            raise TypeError("namespaces must be a non-empty list of dict")
+
         super(Interpreter, self).__init__(source, **kwds)
         self.namespaces = namespaces
 
-        # Here we add the namespaces to the current parser.
-        interpreter.create(self._evaluator, namespaces[0], self._parser.module())
+        # Don't use the fast parser, because it does crazy stuff that we don't
+        # need in our very simple and small code here (that is always
+        # changing).
+        self._parser = UserContextParser(self._grammar, self.source,
+                                         self._orig_path, self._pos,
+                                         self._user_context,
+                                         use_fast_parser=False)
+        interpreter.add_namespaces_to_parser(self._evaluator, namespaces,
+                                             self._parser.module())
 
-    def _simple_complete(self, path, like):
+    def _simple_complete(self, path, dot, like):
         user_stmt = self._parser.user_stmt_with_whitespace()
         is_simple_path = not path or re.search('^[\w][\w\d.]*$', path)
         if isinstance(user_stmt, pr.Import) or not is_simple_path:
-            return super(Interpreter, self)._simple_complete(path, like)
+            return super(Interpreter, self)._simple_complete(path, dot, like)
         else:
             class NamespaceModule(object):
                 def __getattr__(_, name):
@@ -659,14 +621,14 @@ class Interpreter(Script):
                     except AttributeError:
                         pass
 
-            completions = []
+            completion_names = []
             for namespace in namespaces:
                 for name in dir(namespace):
                     if name.lower().startswith(like.lower()):
                         scope = self._parser.module()
                         n = FakeName(name, scope)
-                        completions.append((n, scope))
-            return completions
+                        completion_names.append(n)
+            return completion_names
 
 
 def defined_names(source, path=None, encoding='utf-8'):
@@ -680,12 +642,13 @@ def defined_names(source, path=None, encoding='utf-8'):
     (e.g., methods in class).
 
     :rtype: list of classes.Definition
+
+    .. deprecated:: 0.9.0
+       Use :func:`names` instead.
+    .. todo:: Remove!
     """
-    parser = Parser(
-        common.source_to_unicode(source, encoding),
-        module_path=path,
-    )
-    return classes.defined_names(Evaluator(), parser.module)
+    warnings.warn("Use call_signatures instead.", DeprecationWarning)
+    return names(source, path, encoding)
 
 
 def names(source=None, path=None, encoding='utf-8', all_scopes=False,
@@ -711,7 +674,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding)
     defs = [classes.Definition(script._evaluator, name_part)
-            for name_part in get_module_name_parts(script._parser.module())]
+            for name_part in get_module_names(script._parser.module(), all_scopes)]
     return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 
 

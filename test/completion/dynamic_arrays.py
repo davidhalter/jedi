@@ -1,108 +1,6 @@
 """
-This is used for dynamic object completion.
-Jedi tries to guess the types with a backtracking approach.
+Checking for ``list.append`` and all the other possible array modifications.
 """
-def func(a):
-    #? int() str()
-    return a
-
-#? int()
-func(1)
-
-func
-
-int(1) + (int(2))+ func('')
-
-# Again the same function, but with another call.
-def func(a):
-    #? float()
-    return a
-
-func(1.0)
-
-# Again the same function, but with no call.
-def func(a):
-    #? 
-    return a
-
-def func(a):
-    #? float()
-    return a
-str(func(1.0))
-
-# -----------------
-# *args, **args
-# -----------------
-def arg(*args):
-    #? tuple()
-    args
-    #? int()
-    args[0]
-
-arg(1,"")
-# -----------------
-# decorators
-# -----------------
-def def_func(f):
-    def wrapper(*args, **kwargs):
-        return f(*args, **kwargs)
-    return wrapper
-
-@def_func
-def func(c):
-    #? str()
-    return c
-
-#? str()
-func("str")
-
-@def_func
-def func(c=1):
-    #? int() float()
-    return c
-
-func(1.0)
-
-# Needs to be here, because in this case func is an import -> shouldn't lead to
-# exceptions.
-import sys as func
-func.sys
-
-# -----------------
-# classes
-# -----------------
-
-class A():
-    def __init__(self, a):
-        #? str()
-        a
-
-A("s")
-
-class A():
-    def __init__(self, a):
-        #? int()
-        a
-        self.a = a
-
-    def test(self, a):
-        #? float()
-        a
-        self.c = self.test2()
-
-    def test2(self):
-        #? int()
-        return self.a
-
-    def test3(self):
-        #? int()
-        self.test2()
-        #? int()
-        self.c
-
-A(3).test(2.0)
-A(3).test2()
-
 # -----------------
 # list.append
 # -----------------
@@ -344,12 +242,19 @@ class C():
         a[0]
         return a
 
-    def class_arr(self, el):
+    def literal_arr(self, el):
         self.a = []
         self.a.append(el)
         #? int()
         self.a[0]
         return self.a
+
+    def list_arr(self, el):
+        self.b = list([])
+        self.b.append(el)
+        #? float()
+        self.b[0]
+        return self.b
 
 #? int()
 C().blub(1)[0]
@@ -359,7 +264,12 @@ C().blub2(1)[0]
 #? int()
 C().a[0]
 #? int()
-C().class_arr(1)[0]
+C().literal_arr(1)[0]
+
+#? float()
+C().b[0]
+#? float()
+C().list_arr(1.0)[0]
 
 # -----------------
 # array recursions
@@ -394,14 +304,3 @@ def third():
     return list(b)
 #? 
 third()[0]
-
-# -----------------
-# list comprehensions
-# -----------------
-
-def from_comprehension(foo):
-    #? int() float()
-    return foo
-
-[from_comprehension(1.0) for n in (1,)]
-[from_comprehension(n) for n in (1,)]

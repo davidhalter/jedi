@@ -3,25 +3,27 @@ Renaming tests. This means search for usages.
 I always leave a little bit of space to add room for additions, because the
 results always contain position informations.
 """
-#< 4 (0,4), (3,0), (5,0)
+#< 4 (0,4), (3,0), (5,0), (17,0)
 def abc(): pass
 
-#< 0 (-3,4), (0,0), (2,0)
+#< 0 (-3,4), (0,0), (2,0), (14,0)
 abc.d.a.bsaasd.abc.d
 
 abc
 # unicode chars shouldn't be a problem.
 x['smörbröd'].abc
 
+# With the new parser these statements are not recognized as stateents, because
+# they are not valid Python.
 if 1:
     abc = 
 else:
     (abc) = 
-
 abc = 
-
-#< (-3,0), (0,0)
+#< (-17,4), (-14,0), (-12,0), (0,0)
 abc
+
+abc = 5
 
 
 Abc = 3
@@ -47,12 +49,13 @@ class Abc():
 Abc.d.Abc
 
 
-#< 4 (0,4), (4,1)
-def blub():
+#< 4 (0,4), (5,1)
+def blubi():
+    pass
 
 
-#< (-4,4), (0,1)
-@blub
+#< (-5,4), (0,1)
+@blubi
 def a(): pass
 
 
@@ -96,7 +99,7 @@ from import_tree.rename1 import abc
 #< (0, 32),
 from import_tree.rename1 import not_existing
 
-# Shouldn't work (would raise a NotFoundError, because there's no name.)
+# Shouldn't raise an error or do anything weird.
 from not_existing import *
 
 # -----------------
@@ -136,6 +139,9 @@ class TestInstanceVar():
     def b(self):
         #< (-4,13), (0,13)
         self._instance_var
+        # A call to self used to trigger an error, because it's also a trailer
+        # with two children.
+        self()
 
 
 class NestedClass():
@@ -161,7 +167,7 @@ class Super(object):
     def base_method(self):
         #< 13 (0,13), (20,13)
         self.base_var = 1
-        #< 13 (0,13), (24,13), (29,13)
+        #< 13 (0,13),
         self.instance_var = 1
 
     #< 8 (0,8),
@@ -190,7 +196,7 @@ class TestClass(Super):
 
     #< 9 (0,8), 
     def just_a_method(self):
-        #< (-5,13), (0,13), (-29,13)
+        #< (-5,13), (0,13)
         self.instance_var
 
 

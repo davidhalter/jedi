@@ -95,7 +95,7 @@ def test_function_call_signature_in_doc():
         pass
     f""").goto_definitions()
     doc = defs[0].doc
-    assert "f(x, y = 1, z = 'a')" in str(doc)
+    assert "f(x, y=1, z='a')" in str(doc)
 
 
 def test_class_call_signature():
@@ -105,7 +105,7 @@ def test_class_call_signature():
             pass
     Foo""").goto_definitions()
     doc = defs[0].doc
-    assert "Foo(self, x, y = 1, z = 'a')" in str(doc)
+    assert "Foo(self, x, y=1, z='a')" in str(doc)
 
 
 def test_position_none_if_builtin():
@@ -119,11 +119,21 @@ def test_completion_docstring():
     """
     Jedi should follow imports in certain conditions
     """
+    def docstr(src, result):
+        c = Script(src).completions()[0]
+        assert c.docstring(raw=True, fast=False) == cleandoc(result)
+
     c = Script('import jedi\njed').completions()[0]
     assert c.docstring(fast=False) == cleandoc(jedi_doc)
 
-    c = Script('import jedi\njedi.Scr').completions()[0]
-    assert c.docstring(raw=True, fast=False) == cleandoc(Script.__doc__)
+    docstr('import jedi\njedi.Scr', cleandoc(Script.__doc__))
+
+    docstr('abcd=3;abcd', '')
+    docstr('"hello"\nabcd=3\nabcd', 'hello')
+    # It works with a ; as well.
+    docstr('"hello"\nabcd=3;abcd', 'hello')
+    # Shouldn't work with a tuple.
+    docstr('"hello",0\nabcd=3\nabcd', '')
 
 
 def test_completion_params():
@@ -146,6 +156,39 @@ def test_signature_params():
 
     check(Script(s).goto_assignments())
     check(Script(s + '\nbar=foo\nbar').goto_assignments())
+
+
+class TestIsDefinition(TestCase):
+    def _def(self, source, index=-1):
+        return names(dedent(source), references=True, all_scopes=True)[index]
+
+    def _bool_is_definitions(self, source):
+        ns = names(dedent(source), references=True, all_scopes=True)
+        # Assure that names are definitely sorted.
+        ns = sorted(ns, key=lambda name: (name.line, name.column))
+        return [name.is_definition() for name in ns]
+
+    def test_name(self):
+        d = self._def('name')
+        assert d.name == 'name'
+        assert not d.is_definition()
+
+    def test_stmt(self):
+        src = 'a = f(x)'
+        d = self._def(src, 0)
+        assert d.name == 'a'
+        assert d.is_definition()
+        d = self._def(src, 1)
+        assert d.name == 'f'
+        assert not d.is_definition()
+        d = self._def(src)
+        assert d.name == 'x'
+        assert not d.is_definition()
+
+    def test_import(self):
+        assert self._bool_is_definitions('import x as a') == [False, True]
+        assert self._bool_is_definitions('from x import y') == [False, True]
+        assert self._bool_is_definitions('from x.z import y') == [False, False, True]
 
 
 class TestParent(TestCase):
@@ -179,7 +222,7 @@ class TestParent(TestCase):
                 def bar(): pass
             Foo().bar''')).completions()[0].parent()
         assert parent.name == 'Foo'
-        assert parent.type == 'class'
+        assert parent.type == 'instance'
 
         parent = Script('str.join').completions()[0].parent()
         assert parent.name == 'str'
@@ -219,3 +262,63 @@ class TestGotoAssignments(TestCase):
         param = bar.goto_assignments()[0]
         assert param.start_pos == (1, 13)
         assert param.type == 'param'
+
+    def test_class_call(self):
+        src = 'from threading import Thread; Thread(group=1)'
+        n = names(src, references=True)[-1]
+        assert n.name == 'group'
+        param_def = n.goto_assignments()[0]
+        assert param_def.name == 'group'
+        assert param_def.type == 'param'
+
+    def test_parentheses(self):
+        n = names('("").upper', references=True)[-1]
+        assert n.goto_assignments()[0].name == 'upper'
+
+    def test_import(self):
+        nms = names('from json import load', references=True)
+        assert nms[0].name == 'json'
+        assert nms[0].type == 'import'
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'json'
+        assert n.type == 'module'
+
+        assert nms[1].name == 'load'
+        assert nms[1].type == 'import'
+        n = nms[1].goto_assignments()[0]
+        assert n.name == 'load'
+        assert n.type == 'function'
+
+        nms = names('import os; os.path', references=True)
+        assert nms[0].name == 'os'
+        assert nms[0].type == 'import'
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'os'
+        assert n.type == 'module'
+
+        n = nms[2].goto_assignments()[0]
+        assert n.name == 'path'
+        assert n.type == 'import'
+
+        nms = names('import os.path', references=True)
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'os'
+        assert n.type == 'module'
+        n = nms[1].goto_assignments()[0]
+        assert n.name == 'path'
+        assert n.type == 'import'
+
+    def test_import_alias(self):
+        nms = names('import json as foo', references=True)
+        assert nms[0].name == 'json'
+        assert nms[0].type == 'import'
+        n = nms[0].goto_assignments()[0]
+        assert n.name == 'json'
+        assert n.type == 'module'
+
+        assert nms[1].name == 'foo'
+        assert nms[1].type == 'import'
+        ass = nms[1].goto_assignments()
+        assert len(ass) == 1
+        assert ass[0].name == 'json'
+        assert ass[0].type == 'module'

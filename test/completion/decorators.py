@@ -121,7 +121,7 @@ class SelfVars():
     @Decorator
     def __init__(self):
         """
-        init decorators should be ignored when looking up variables in the
+        __init__ decorators should be ignored when looking up variables in the
         class.
         """
         self.c = list

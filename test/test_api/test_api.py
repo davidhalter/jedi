@@ -5,6 +5,7 @@ Test all things related to the ``jedi.api`` module.
 from textwrap import dedent
 
 from jedi import api
+from jedi._compatibility import is_py3
 from pytest import raises
 
 
@@ -79,7 +80,10 @@ def test_completion_on_number_literals():
 def test_completion_on_hex_literals():
     assert api.Script('0x1..').completions() == []
     _check_number('0x1.', 'int')  # hexdecimal
-    _check_number('0b3.', 'int')  # binary
+    # Completing binary literals doesn't work if they are not actually binary
+    # (invalid statements).
+    assert api.Script('0b2.').completions() == []
+    _check_number('0b1.', 'int')  # binary
     _check_number('0o7.', 'int')  # octal
 
     _check_number('0x2e.', 'int')
@@ -98,12 +102,19 @@ def test_completion_on_complex_literals():
     assert api.Script('4j').completions() == []
 
 
-def test_goto_assignments_on_non_statement():
-    with raises(api.NotFoundError):
-        api.Script('for').goto_assignments()
+def test_goto_assignments_on_non_name():
+    assert api.Script('for').goto_assignments() == []
 
-    with raises(api.NotFoundError):
-        api.Script('assert').goto_assignments()
+    assert api.Script('assert').goto_assignments() == []
+    if is_py3:
+        assert api.Script('True').goto_assignments() == []
+    else:
+        # In Python 2.7 True is still a name.
+        assert api.Script('True').goto_assignments()[0].description == 'class bool'
+
+
+def test_goto_definitions_on_non_name():
+    assert api.Script('import x', column=0).goto_definitions() == []
 
 
 def test_goto_definition_not_multiple():

@@ -22,6 +22,9 @@ class TestCallSignatures(TestCase):
     def _run_simple(self, source, name, index=0, column=None, line=1):
         self._run(source, name, index, line, column)
 
+    def test_valid_call(self):
+        self._run('str()', 'str', column=4)
+
     def test_simple(self):
         run = self._run_simple
         s7 = "str().upper().center("
@@ -171,6 +174,27 @@ class TestCallSignatures(TestCase):
     def test_unterminated_strings(self):
         self._run('str(";', 'str', 0)
 
+    def test_whitespace_before_bracket(self):
+        self._run('str (', 'str', 0)
+        self._run('str (";', 'str', 0)
+        # TODO this is not actually valid Python, the newline token should be
+        # ignored.
+        self._run('str\n(', 'str', 0)
+
+    def test_brackets_in_string_literals(self):
+        self._run('str (" (', 'str', 0)
+        self._run('str (" )', 'str', 0)
+
+    def test_function_definitions_should_break(self):
+        """
+        Function definitions (and other tokens that cannot exist within call
+        signatures) should break and not be able to return a call signature.
+        """
+        assert not Script('str(\ndef x').call_signatures()
+
+    def test_flow_call(self):
+        assert not Script('if (1').call_signatures()
+
 
 class TestParams(TestCase):
     def params(self, source, line=None, column=None):
@@ -277,3 +301,12 @@ def test_signature_index():
     assert get(both + 'foo(a=2').index == 1
     assert get(both + 'foo(a=2, b=2').index == 1
     assert get(both + 'foo(a, b, c').index == 0
+
+
+def test_bracket_start():
+    def bracket_start(src):
+        signatures = Script(src).call_signatures()
+        assert len(signatures) == 1
+        return signatures[0].bracket_start
+
+    assert bracket_start('str(') == (1, 3)

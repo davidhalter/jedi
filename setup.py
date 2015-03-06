@@ -11,6 +11,8 @@ __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
+packages = ['jedi', 'jedi.parser', 'jedi.parser.pgen2',
+            'jedi.evaluate', 'jedi.evaluate.compiled', 'jedi.api']
 
 import jedi
 
@@ -25,8 +27,8 @@ setup(name='jedi',
       license='MIT',
       keywords='python completion refactoring vim',
       long_description=readme,
-      packages=['jedi', 'jedi.parser', 'jedi.evaluate', 'jedi.evaluate.compiled', 'jedi.api'],
-      package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
+      packages=packages,
+      package_data={'jedi': ['evaluate/compiled/fake/*.pym', 'parser/grammar*.txt']},
       platforms=['any'],
       classifiers=[
           'Development Status :: 4 - Beta',
@@ -40,6 +42,7 @@ setup(name='jedi',
           'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.2',
           'Programming Language :: Python :: 3.3',
+          'Programming Language :: Python :: 3.4',
           'Topic :: Software Development :: Libraries :: Python Modules',
           'Topic :: Text Editors :: Integrated Development Environments (IDE)',
           'Topic :: Utilities',

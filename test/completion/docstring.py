@@ -3,7 +3,7 @@
 # -----------------
 # sphinx style
 # -----------------
-def f(a, b, c, d, x):
+def sphinxy(a, b, c, d, x):
     """ asdfasdf
     :param a: blablabla
     :type a: str
@@ -27,10 +27,10 @@ def f(a, b, c, d, x):
     x.lower
 
 #? dict()
-f()
+sphinxy()
 
 # wrong declarations
-def f(a, b, x):
+def sphinxy2(a, b, x):
     """
     :param a: Forgot type declaration
     :type a:
@@ -47,7 +47,7 @@ def f(a, b, x):
     x
 
 #? 
-f()
+sphinxy2()
 
 # local classes -> github #370
 class ProgramNode():
@@ -104,7 +104,7 @@ return_module_object().join
 # -----------------
 # epydoc style
 # -----------------
-def e(a, b):
+def epydoc(a, b):
     """ asdfasdf
     @type a: str
     @param a: blablabla
@@ -121,7 +121,7 @@ def e(a, b):
     b[1]
 
 #? list()
-e()
+epydoc()
 
 
 # Returns with param type only

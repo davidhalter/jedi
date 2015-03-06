@@ -3,7 +3,7 @@ import difflib
 import pytest
 
 from jedi._compatibility import u
-from jedi.parser import Parser
+from jedi.parser import Parser, load_grammar
 
 code_basic_features = u('''
 """A mod docstring"""
@@ -44,21 +44,19 @@ def diff_code_assert(a, b, n=4):
 def test_basic_parsing():
     """Validate the parsing features"""
 
-    prs = Parser(code_basic_features)
+    prs = Parser(load_grammar(), code_basic_features)
     diff_code_assert(
         code_basic_features,
-        prs.module.get_code2()
+        prs.module.get_code()
     )
 
 
-@pytest.mark.skipif('True', reason='Not yet working.')
 def test_operators():
     src = u('5  * 3')
-    prs = Parser(src)
+    prs = Parser(load_grammar(), src)
     diff_code_assert(src, prs.module.get_code())
 
 
-@pytest.mark.skipif('True', reason='Broke get_code support for yield/return statements.')
 def test_get_code():
     """Use the same code that the parser also generates, to compare"""
     s = u('''"""a docstring"""
@@ -84,4 +82,24 @@ def method_with_docstring():
     """class docstr"""
     pass
 ''')
-    assert Parser(s).module.get_code() == s
+    assert Parser(load_grammar(), s).module.get_code() == s
+
+
+def test_end_newlines():
+    """
+    The Python grammar explicitly needs a newline at the end. Jedi though still
+    wants to be able, to return the exact same code without the additional new
+    line the parser needs.
+    """
+    def test(source, end_pos):
+        module = Parser(load_grammar(), u(source)).module
+        assert module.get_code() == source
+        assert module.end_pos == end_pos
+
+    test('a', (1, 1))
+    test('a\n', (2, 0))
+    test('a\nb', (2, 1))
+    test('a\n#comment\n', (3, 0))
+    test('a\n#comment', (2, 8))
+    test('a#comment', (1, 9))
+    test('def a():\n pass', (2, 5))

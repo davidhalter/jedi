@@ -29,6 +29,9 @@ Syohei Yoshida (@syohex) <syohex@gmail.com>
 ppalucky (@ppalucky)
 immerrr (@immerrr) immerrr@gmail.com
 Albertas Agejevas (@alga)
+Savor d'Isavano (@KenetJervet) <newelevenken@163.com>
+Phillip Berndt (@phillipberndt) <phillip.berndt@gmail.com>
+Ian Lee (@IanLee1521) <IanLee1521@gmail.com>
 Farkhad Khatamov (@hatamov) <comsgn@gmail.com>
 
 Note: (@user) means a github user name.
