@@ -1,10 +1,9 @@
 # -*- coding: utf-8    # This file contains Unicode characters.
 
 from io import StringIO
-from token import NEWLINE, STRING, INDENT
 
 from jedi._compatibility import u, is_py3
-from jedi.parser.token import NAME
+from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT
 from jedi import parser
 
 
@@ -84,17 +83,15 @@ def 我あφ():
     pass
 ''')
         fundef_io = StringIO(fundef)
+        tokens = parser.tokenize.generate_tokens(fundef_io.readline)
+        token_list = list(tokens)
+        unicode_token = token_list[1]
         if is_py3:
-            tokens = parser.tokenize.generate_tokens(fundef_io.readline)
-            token_list = list(tokens)
-            identifier_token = next(
-                (token for token in token_list if token[1] == '我あφ'),
-                None
-            )
-            self.assertIsNotNone(identifier_token)
-            assert identifier_token[0] == NAME
+            assert unicode_token[0] == NAME
         else:
-            pass
+            # Unicode tokens in Python 2 seem to be identified as operators.
+            # They will be ignored in the parser, that's ok.
+            assert unicode_token[0] == OP
 
 
 def test_tokenizer_with_string_literal_backslash():
