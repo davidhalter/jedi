@@ -1,6 +1,7 @@
 # -*- coding: utf-8    # This file contains Unicode characters.
 
 from io import StringIO
+from textwrap import dedent
 
 from jedi._compatibility import u, is_py3
 from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT
@@ -12,19 +13,19 @@ from ..helpers import unittest
 
 class TokenTest(unittest.TestCase):
     def test_end_pos_one_line(self):
-        parsed = parser.Parser(parser.load_grammar(), u('''
-def testit():
-    a = "huhu"
-'''))
+        parsed = parser.Parser(parser.load_grammar(), dedent(u('''
+        def testit():
+            a = "huhu"
+        ''')))
         tok = parsed.module.subscopes[0].statements[0].children[2]
         assert tok.end_pos == (3, 14)
 
     def test_end_pos_multi_line(self):
-        parsed = parser.Parser(parser.load_grammar(), u('''
-def testit():
-    a = """huhu
-asdfasdf""" + "h"
-'''))
+        parsed = parser.Parser(parser.load_grammar(), dedent(u('''
+        def testit():
+            a = """huhu
+        asdfasdf""" + "h"
+        ''')))
         tok = parsed.module.subscopes[0].statements[0].children[2].children[0]
         assert tok.end_pos == (4, 11)
 
@@ -55,11 +56,12 @@ asdfasdf""" + "h"
 
     def test_function_whitespace(self):
         # Test function definition whitespace identification
-        fundef = u('''def test_whitespace(*args, **kwargs):
-    x = 1
-    if x > 0:
-        print(True)
-''')
+        fundef = dedent(u('''
+        def test_whitespace(*args, **kwargs):
+            x = 1
+            if x > 0:
+                print(True)
+        '''))
         fundef_io = StringIO(fundef)
         tokens = parser.tokenize.generate_tokens(fundef_io.readline)
         token_list = list(tokens)
@@ -78,10 +80,10 @@ asdfasdf""" + "h"
                 assert prefix == '    '
 
     def test_identifier_contains_unicode(self):
-        fundef = u('''
-def 我あφ():
-    pass
-''')
+        fundef = dedent(u('''
+        def 我あφ():
+            pass
+        '''))
         fundef_io = StringIO(fundef)
         tokens = parser.tokenize.generate_tokens(fundef_io.readline)
         token_list = list(tokens)
