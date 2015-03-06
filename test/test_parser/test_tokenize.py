@@ -6,6 +6,7 @@ from textwrap import dedent
 from jedi._compatibility import u, is_py3
 from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT
 from jedi import parser
+from token import STRING
 
 
 from ..helpers import unittest
@@ -94,6 +95,24 @@ class TokenTest(unittest.TestCase):
             # Unicode tokens in Python 2 seem to be identified as operators.
             # They will be ignored in the parser, that's ok.
             assert unicode_token[0] == OP
+
+    def test_quoted_strings(self):
+
+        string_tokens = [
+            'u"test"',
+            'u"""test"""',
+            'U"""test"""',
+            "u'''test'''",
+            "U'''test'''",
+        ]
+
+        for s in string_tokens:
+            parsed = parser.Parser(u('''a = %s\n''' % s))
+            tok_list = parsed.module.statements[0]._token_list
+            self.assertEqual(len(tok_list), 3)
+            tok = tok_list[2]
+            self.assertIsInstance(tok, parser.tokenize.Token)
+            self.assertEqual(tok.type, STRING)
 
 
 def test_tokenizer_with_string_literal_backslash():
