@@ -33,8 +33,15 @@ def _get_venv_sitepackages(venv):
     if os.name == 'nt':
         p = os.path.join(venv, 'lib', 'site-packages')
     else:
-        p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
-                         'site-packages')
+        # Account for the VIRTUAL_ENV using an alternate python verison
+        venv_lib = os.path.join(venv, 'lib')
+        try:
+            pyver = [p for p in os.listdir(venv_lib) if
+                     p.startswith('python')][0]
+            p = os.path.join(venv_lib, pyver, 'site-packages')
+        except IndexError:
+            # There should always be a 'pythonX.X' file, but just in case
+            p = ''
     return p
 
 

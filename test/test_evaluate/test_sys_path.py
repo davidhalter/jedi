@@ -22,10 +22,20 @@ def test_paths_from_assignment():
 def test_get_sys_path(monkeypatch):
     monkeypatch.setenv('VIRTUAL_ENV', os.path.join(os.path.dirname(__file__),
                                                    'egg-link', 'venv'))
-    def sitepackages_dir(venv):
-        return os.path.join(venv, 'lib', 'python3.4', 'site-packages')
+    # Mock os.listdir to test the new functionality of _get_venv_sitepackages()
+    def listdir(vdir):
+        # When glob.glob is used in check_virtual_env(), it calls os.listdir()
+        # with the returned site-packages directory. As such, we mimic the
+        # expected 'egg_link.egg-link' response. The other call is in
+        # _get_venv_sitepackages() which expects a single 'pythonX.X' list.
+        if vdir.endswith('packages'):
+            return [os.path.join(vdir, 'egg_link.egg-link')]
+        return ['python3.4']
 
-    monkeypatch.setattr('jedi.evaluate.sys_path._get_venv_sitepackages',
-                        sitepackages_dir)
+    monkeypatch.setattr('os.listdir', listdir)
+
+    python_path = os.path.join(os.path.dirname(__file__), 'egg-link', 'venv',
+                               'lib', 'python3.4', 'site-packages')
 
     assert '/path/from/egg-link' in sys_path.get_sys_path()
+    assert python_path in sys_path.get_sys_path()
