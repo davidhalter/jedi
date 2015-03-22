@@ -1,5 +1,6 @@
 import glob
 import os
+import re
 import sys
 
 from jedi._compatibility import exec_function, unicode
@@ -30,6 +31,7 @@ def get_sys_path():
     return [p for p in sys.path if p != ""]
 
 def _get_venv_sitepackages(venv):
+    pyre = re.compile('^python\d\.\d$')
     if os.name == 'nt':
         p = os.path.join(venv, 'lib', 'site-packages')
     else:
@@ -37,7 +39,7 @@ def _get_venv_sitepackages(venv):
         venv_lib = os.path.join(venv, 'lib')
         try:
             pyver = [p for p in os.listdir(venv_lib) if
-                     p.startswith('python')][0]
+                     pyre.search(p)][0]
             p = os.path.join(venv_lib, pyver, 'site-packages')
         except IndexError:
             # There should always be a 'pythonX.X' file, but just in case
