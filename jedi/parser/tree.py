@@ -710,23 +710,44 @@ class Class(ClassOrFunc):
 
 def _create_params(parent, argslist_list):
     """
-    TODO DOC
-    This is a function to hack the general parser structure.
-    Preparing the replacement of *argslist with a list of Params.
+    `argslist_list` is a list that can contain an argslist as a first item, but
+    most not. It's basically the items between the parameter brackets (which is
+    at most one item).
+    This function modifies the parser structure. It generates `Param` objects
+    from the normal ast. Those param objects do not exist in a normal ast, but
+    make the evaluation of the ast tree so much easier.
+    You could also say that this function replaces the argslist node with a
+    list of Param objects.
     """
-    if not argslist_list:
+    def check_python2_nested_param(node):
+        """
+        Python 2 allows params to look like ``def x(a, (b, c))``, which is
+        basically a way of unpacking tuples in params. Python 3 has ditched
+        this behavior. Jedi currently just ignores those constructs.
+        """
+        return node.type == 'tfpdef' and node.children[0] == '('
+
+    try:
+        first = argslist_list[0]
+    except IndexError:
         return []
 
-    if argslist_list[0].type == 'name':
-        return [Param([argslist_list[0]], parent)]
+    if first.type in ('name', 'tfpdef'):
+        if check_python2_nested_param(first):
+            return []
+        else:
+            return [Param([first], parent)]
     else:  # argslist is a `typedargslist` or a `varargslist`.
-        children = argslist_list[0].children
+        children = first.children
         params = []
         start = 0
         # Start with offset 1, because the end is higher.
         for end, child in enumerate(children + [None], 1):
             if child is None or child == ',':
-                params.append(Param(children[start:end], parent))
+                new_children = children[start:end]
+                if check_python2_nested_param(new_children[0]):
+                    continue
+                params.append(Param(new_children, parent))
                 start = end
         return params
 
