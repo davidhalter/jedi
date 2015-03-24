@@ -80,3 +80,13 @@ class TestInterpreterAPI(TestCase):
 
         foo = Foo()
         self.check_interpreter_complete('foo[0].', locals(), [])
+
+    def test_property_error(self):
+        class Foo():
+            @property
+            def bar(self):
+                raise ValueError
+
+        foo = Foo()
+        self.check_interpreter_complete('foo.bar', locals(), ['bar'])
+        self.check_interpreter_complete('foo.bar.baz', locals(), [])

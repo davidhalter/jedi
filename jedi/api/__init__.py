@@ -618,7 +618,7 @@ class Interpreter(Script):
                 for n in old:
                     try:
                         namespaces.append(getattr(n, p))
-                    except AttributeError:
+                    except Exception:
                         pass
 
             completion_names = []
