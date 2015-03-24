@@ -745,10 +745,11 @@ def _create_params(parent, argslist_list):
         for end, child in enumerate(children + [None], 1):
             if child is None or child == ',':
                 new_children = children[start:end]
-                if check_python2_nested_param(new_children[0]):
-                    continue
-                params.append(Param(new_children, parent))
-                start = end
+                if new_children:  # Could as well be comma and then end.
+                    if check_python2_nested_param(new_children[0]):
+                        continue
+                    params.append(Param(new_children, parent))
+                    start = end
         return params
 
 
