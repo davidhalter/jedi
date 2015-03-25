@@ -202,3 +202,8 @@ def test_param_splitting():
 
     check('def x(a, (b, c)):\n pass', ['a'])
     check('def x((b, c)):\n pass', [])
+
+
+def test_unicode_string():
+    s = pt.String(None, u'bö', (0, 0))
+    assert repr(s)  # Should not raise an Error!

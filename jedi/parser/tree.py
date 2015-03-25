@@ -34,7 +34,7 @@ from inspect import cleandoc
 from itertools import chain
 import textwrap
 
-from jedi._compatibility import (Python3Method, encoding, is_py3,
+from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, use_metaclass, unicode)
 from jedi import cache
 
@@ -223,8 +223,9 @@ class Leaf(Base):
                     return None
                 return self.parent.children[i - 1]
 
+    @utf8_repr
     def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, repr(self.value))
+        return "<%s: %s>" % (type(self).__name__, self.value)
 
 
 class LeafWithNewLines(Leaf):
@@ -335,16 +336,6 @@ class Literal(LeafWithNewLines):
 
     def eval(self):
         return literal_eval(self.value)
-
-    def __repr__(self):
-        # TODO remove?
-        """
-        if is_py3:
-            s = self.literal
-        else:
-            s = self.literal.encode('ascii', 'replace')
-        """
-        return "<%s: %s>" % (type(self).__name__, self.value)
 
 
 class Number(Literal):
@@ -472,6 +463,7 @@ class BaseNode(Base):
         except AttributeError:
             return self.children[0]
 
+    @utf8_repr
     def __repr__(self):
         code = self.get_code().replace('\n', ' ')
         if not is_py3:
