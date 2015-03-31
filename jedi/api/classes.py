@@ -544,7 +544,9 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             # only show module name
             d = 'module %s' % self.module_name
         elif isinstance(d, pr.Param):
-            d = d.get_code()
+            d = d.get_code().strip()
+            if d.endswith(','):
+                d = d[:-1]  # Remove the comma.
         else:  # ExprStmt
             try:
                 first_leaf = d.first_leaf()
