@@ -205,5 +205,5 @@ def test_param_splitting():
 
 
 def test_unicode_string():
-    s = pt.String(None, u'bö', (0, 0))
+    s = pt.String(None, u('bö'), (0, 0))
     assert repr(s)  # Should not raise an Error!
