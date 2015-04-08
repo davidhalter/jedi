@@ -140,8 +140,11 @@ def source_to_unicode(source, encoding=None):
         # only cast str/bytes
         return source
 
-    # cast to unicode by default
-    return unicode(source, detect_encoding(), 'replace')
+    try:
+        return unicode(source, detect_encoding(), 'replace')
+    except LookupError:
+        # If people do not adhere to PEP 263, try to fall back to UTF-8 for improved compability
+        return unicode(source, 'utf-8', 'replace')
 
 
 def splitlines(string):
