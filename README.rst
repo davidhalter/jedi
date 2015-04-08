@@ -40,6 +40,7 @@ Jedi can be used with the following editors:
 - TextMate_ (Not sure if it's actually working)
 - Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
+- Atom [https://github.com/atom/atom] with auto-complete-plus [ https://github.com/atom-community/autocomplete-plus ] and auto-complete-plus-python [ https://github.com/tinloaf/autocomplete-plus-python-jedi] 
 
 And it powers the following projects:
 
