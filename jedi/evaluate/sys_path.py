@@ -71,7 +71,7 @@ def _get_venv_path_online(venv):
             break
     else:
         raise RuntimeError("Cannot find python executable in venv: %s" % venv)
-    command = [python_path, '-c', 'import sys; print(sys.path)']
+    command = [python_path, '-E', '-c', 'import sys; print(sys.path)']
     return literal_eval(check_output(command))
 
 
