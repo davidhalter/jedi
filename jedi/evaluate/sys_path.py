@@ -10,10 +10,6 @@ from jedi import debug
 from jedi import common
 
 
-buildout_scripts = set()
-buildout_script_paths = set()
-
-
 def get_sys_path():
     def check_virtual_env(sys_path):
         """ Add virtualenv's site-packages to the `sys.path`."""
@@ -156,30 +152,34 @@ def sys_path_with_modifications(evaluator, module):
     with common.ignored(OSError):
         os.chdir(os.path.dirname(module.path))
 
+    buildout_script_paths = set()
+
     result = _check_module(evaluator, module)
     result += _detect_django_path(module.path)
     for buildout_script in _get_buildout_scripts(module.path):
-        if buildout_script in buildout_scripts:
-            continue
-        buildout_scripts.add(buildout_script)
-        try:
-            with open(buildout_script, 'rb') as f:
-                source = f.read()
-        except IOError:
-            pass
-        else:
-            p = Parser(evaluator.grammar,
-                       common.source_to_unicode(source),
-                       buildout_script)
-            try:
-                for path in _check_module(evaluator, p.module):
-                    if path not in buildout_script_paths:
-                        buildout_script_paths.add(path)
-            except Exception:
-                debug.dbg('Could not check module: "%s"', buildout_script)
+        for path in _get_paths_from_buildout_script(evaluator, buildout_script):
+            buildout_script_paths.add(path)
     # cleanup, back to old directory
     os.chdir(curdir)
     return list(result) + list(buildout_script_paths)
+
+
+@memoize_default(evaluator_is_first_arg=True)
+def _get_paths_from_buildout_script(evaluator, buildout_script):
+    try:
+        with open(buildout_script, 'rb') as f:
+            source = f.read()
+    except IOError:
+        pass
+    else:
+        p = Parser(evaluator.grammar,
+                   common.source_to_unicode(source),
+                   buildout_script)
+        try:
+            for path in _check_module(evaluator, p.module):
+                yield path
+        except Exception:
+            debug.dbg('Could not check module: "%s"', buildout_script)
 
 
 def _traverse_parents(path):
