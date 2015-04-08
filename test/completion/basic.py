@@ -143,6 +143,9 @@ ret()[0]
 with open('') as f:
     #? ['closed']
     f.closed
+    for line in f:
+        #? str()
+        line
 
 with open('') as f1, open('') as f2:
     #? ['closed']

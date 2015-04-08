@@ -1,3 +1,6 @@
 class TextIOWrapper():
     def __next__(self):
-        return 'hacked io return'
+        return str()
+
+    def __iter__(self):
+        yield str()

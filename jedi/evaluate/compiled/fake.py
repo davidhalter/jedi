@@ -100,8 +100,10 @@ def _faked(module, obj, name):
 def get_faked(module, obj, name=None):
     obj = obj.__class__ if is_class_instance(obj) else obj
     result = _faked(module, obj, name)
-    # TODO may this ever happen? result None? if so, document!
-    if not isinstance(result, pt.Class) and result is not None:
+    if result is None or isinstance(result, pt.Class):
+        # We're not interested in classes. What we want is functions.
+        return None
+    else:
         # Set the docstr which was previously not set (faked modules don't
         # contain it).
         doc = '"""%s"""' % obj.__doc__  # TODO need escapes.
