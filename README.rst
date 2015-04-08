@@ -1,6 +1,6 @@
-###################################################
-Jedi - an awesome autocompletion library for Python
-###################################################
+###################################################################
+Jedi - an awesome autocompletion/static analysis library for Python
+###################################################################
 
 .. image:: https://secure.travis-ci.org/davidhalter/jedi.png?branch=master
     :target: http://travis-ci.org/davidhalter/jedi
@@ -18,20 +18,22 @@ Jedi - an awesome autocompletion library for Python
     :target: https://crate.io/packages/jedi/
     :alt: Latest PyPI version
 
-Jedi is an autocompletion tool for Python that can be used in IDEs/editors.
-Jedi works. Jedi is fast. It understands all of the basic Python syntax
-elements including many builtin functions.
+Jedi is a static analysis tool for Python that can be used in IDEs/editors. Its
+historic focus is autocompletion, but does static analysis for now as well.
+Jedi is fast and is very well tested. It understands Python on a deeper level
+than all other static analysis frameworks for Python.
 
-Additionaly, Jedi suports two different goto functions and has support for
-renaming as well as Pydoc support and some other IDE features.
+Jedi has support for two different goto functions. It's possible to search for
+related names and to list all names in a Python file and infer them. Jedi
+understands docstrings and you can use Jedi autocompletion in your REPL as
+well.
 
 Jedi uses a very simple API to connect with IDE's. There's a reference
 implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
-which uses Jedi's autocompletion.  I encourage you to use Jedi in your IDEs.
-It's really easy. If there are any problems (also with licensing), just contact
-me.
+which uses Jedi's autocompletion.  We encourage you to use Jedi in your IDEs.
+It's really easy.
 
-Jedi can be used with the following editors:
+Jedi can currently be used with the following editors:
 
 - Vim (jedi-vim_, YouCompleteMe_)
 - Emacs (Jedi.el_, elpy_, anaconda-mode_, ycmd_)
