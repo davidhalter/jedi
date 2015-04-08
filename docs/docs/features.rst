@@ -3,6 +3,20 @@
 Features and Caveats
 ====================
 
+Jedi obviously supports autocompletion. It's also possible to get it working in
+(:ref:`your REPL (IPython, etc.) <repl-completion>`).
+
+Static analysis is also possible by using the command ``jedi.names``.
+
+The Jedi Linter is currently in an alpha version and can be tested by calling
+``python -m jedi linter``.
+
+Jedi would in theory support refactoring, but we have never publicized it,
+because it's not production ready. If you're interested in helping out here,
+let me know. With the latest parser changes, it should be very easy to actually
+make it work.
+
+
 General Features
 ----------------
 

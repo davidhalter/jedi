@@ -53,7 +53,7 @@ And it powers the following projects:
 - wdb_ - Web Debugger
 
 
-Here are some pictures:
+Here are some pictures taken from jedi-vim_:
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_complete.png
 
@@ -65,7 +65,7 @@ Display of function/class bodies, docstrings.
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_pydoc.png
 
-Pydoc support (with highlighting, Shift+k).
+Pydoc support (Shift+k).
 
 There is also support for goto and renaming.
 
@@ -131,8 +131,8 @@ This means that IPython and others are `supported
 <https://jedi.readthedocs.org/en/latest/docs/usage.html#tab-completion-in-the-python-shell>`_.
 
 
-Static Analysis
----------------
+Static Analysis / Linter
+------------------------
 
 To do all forms of static analysis, please try to use ``jedi.names``. It will
 return a list of names that you can use to infer types and so on.
