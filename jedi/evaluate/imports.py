@@ -383,10 +383,13 @@ class _Importer(object):
                     p = os.path.join(path, '__init__' + suffix)
                     if os.path.exists(p):
                         if suffix == '.py':
-                            with open(path, 'rb') as f:
+                            with open(p, 'rb') as f:
                                 source = f.read()
+                            path = p
                         else:  # It's a binary!
                             source = None
+                        break
+
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
