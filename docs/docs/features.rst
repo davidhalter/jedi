@@ -3,9 +3,6 @@
 Features and Caveats
 ====================
 
-|jedi| supports many of the widely used Python features:
-
-
 General Features
 ----------------
 
@@ -19,6 +16,8 @@ General Features
 
 Supported Python Features
 -------------------------
+
+|jedi| supports many of the widely used Python features:
 
 - builtins
 - multiple returns or yields

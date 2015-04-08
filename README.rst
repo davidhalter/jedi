@@ -18,6 +18,11 @@ Jedi - an awesome autocompletion/static analysis library for Python
     :target: https://crate.io/packages/jedi/
     :alt: Latest PyPI version
 
+
+*If you have specific questions, please add an issue or ask on `stackoverflow
+<https://stackoverflow.com>`_ with the label ``python-jedi``.*
+
+
 Jedi is a static analysis tool for Python that can be used in IDEs/editors. Its
 historic focus is autocompletion, but does static analysis for now as well.
 Jedi is fast and is very well tested. It understands Python on a deeper level
@@ -90,7 +95,7 @@ Feature Support and Caveats
 ===========================
 
 Jedi really understands your Python code. For a comprehensive list what Jedi
-can do, see: `Features
+understands, see: `Features
 <https://jedi.readthedocs.org/en/latest/docs/features.html>`_. A list of
 caveats can be found on the same page.
 
@@ -100,16 +105,51 @@ understand/parse code older than those versions.
 Tips on how to use Jedi efficiently can be found `here
 <https://jedi.readthedocs.org/en/latest/docs/recipes.html>`_.
 
+API
+---
 
-API for IDEs
-============
+You can find the documentation for the `API here <https://jedi.readthedocs.org/en/latest/docs/plugin-api.html>`_.
 
-It's very easy to create an editor plugin that uses Jedi. See `Plugin API
-<https://jedi.readthedocs.org/en/latest/docs/plugin-api.html>`_ for more
-information.
 
-If you have specific questions, please add an issue or ask on `stackoverflow
-<https://stackoverflow.com>`_ with the label ``python-jedi``.
+Autocompletion / Goto / Pydoc
+-----------------------------
+
+Please check the API for a good explanation. There are the following commands:
+
+- ``jedi.Script.goto_assignments``
+- ``jedi.Script.completions``
+- ``jedi.Script.usages``
+
+The returned objects are very powerful and really all you might need.
+
+
+Autocompletion in your REPL (IPython, etc.)
+-------------------------------------------
+
+It's possible to have Jedi autocompletion in REPL modes - `example video <https://vimeo.com/122332037>`_.
+This means that IPython and others are `supported
+<https://jedi.readthedocs.org/en/latest/docs/usage.html#tab-completion-in-the-python-shell>`_.
+
+
+Static Analysis
+---------------
+
+To do all forms of static analysis, please try to use ``jedi.names``. It will
+return a list of names that you can use to infer types and so on.
+
+Linting is another thing that is going to be part of Jedi. For now you can try
+an alpha version ``python -m jedi linter``. The API might change though and
+it's still buggy. It's Jedi's goal to be smarter than classic linter and
+understand ``AttributeError`` and other code issues.
+
+
+Refactoring
+-----------
+
+Jedi would in theory support refactoring, but we have never publicized it,
+because it's not production ready. If you're interested in helping out here,
+let me know. With the latest parser changes, it should be very easy to actually
+make it work.
 
 
 Development
