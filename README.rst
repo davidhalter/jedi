@@ -1,6 +1,6 @@
-###################################################
-Jedi - an awesome autocompletion library for Python
-###################################################
+###################################################################
+Jedi - an awesome autocompletion/static analysis library for Python
+###################################################################
 
 .. image:: https://secure.travis-ci.org/davidhalter/jedi.png?branch=master
     :target: http://travis-ci.org/davidhalter/jedi
@@ -18,20 +18,27 @@ Jedi - an awesome autocompletion library for Python
     :target: https://crate.io/packages/jedi/
     :alt: Latest PyPI version
 
-Jedi is an autocompletion tool for Python that can be used in IDEs/editors.
-Jedi works. Jedi is fast. It understands all of the basic Python syntax
-elements including many builtin functions.
 
-Additionaly, Jedi suports two different goto functions and has support for
-renaming as well as Pydoc support and some other IDE features.
+*If you have specific questions, please add an issue or ask on `stackoverflow
+<https://stackoverflow.com>`_ with the label ``python-jedi``.*
+
+
+Jedi is a static analysis tool for Python that can be used in IDEs/editors. Its
+historic focus is autocompletion, but does static analysis for now as well.
+Jedi is fast and is very well tested. It understands Python on a deeper level
+than all other static analysis frameworks for Python.
+
+Jedi has support for two different goto functions. It's possible to search for
+related names and to list all names in a Python file and infer them. Jedi
+understands docstrings and you can use Jedi autocompletion in your REPL as
+well.
 
 Jedi uses a very simple API to connect with IDE's. There's a reference
 implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
-which uses Jedi's autocompletion.  I encourage you to use Jedi in your IDEs.
-It's really easy. If there are any problems (also with licensing), just contact
-me.
+which uses Jedi's autocompletion.  We encourage you to use Jedi in your IDEs.
+It's really easy.
 
-Jedi can be used with the following editors:
+Jedi can currently be used with the following editors:
 
 - Vim (jedi-vim_, YouCompleteMe_)
 - Emacs (Jedi.el_, elpy_, anaconda-mode_, ycmd_)
@@ -46,7 +53,7 @@ And it powers the following projects:
 - wdb_ - Web Debugger
 
 
-Here are some pictures:
+Here are some pictures taken from jedi-vim_:
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_complete.png
 
@@ -58,7 +65,7 @@ Display of function/class bodies, docstrings.
 
 .. image:: https://github.com/davidhalter/jedi/raw/master/docs/_screenshots/screenshot_pydoc.png
 
-Pydoc support (with highlighting, Shift+k).
+Pydoc support (Shift+k).
 
 There is also support for goto and renaming.
 
@@ -88,7 +95,7 @@ Feature Support and Caveats
 ===========================
 
 Jedi really understands your Python code. For a comprehensive list what Jedi
-can do, see: `Features
+understands, see: `Features
 <https://jedi.readthedocs.org/en/latest/docs/features.html>`_. A list of
 caveats can be found on the same page.
 
@@ -98,16 +105,51 @@ understand/parse code older than those versions.
 Tips on how to use Jedi efficiently can be found `here
 <https://jedi.readthedocs.org/en/latest/docs/recipes.html>`_.
 
+API
+---
 
-API for IDEs
-============
+You can find the documentation for the `API here <https://jedi.readthedocs.org/en/latest/docs/plugin-api.html>`_.
 
-It's very easy to create an editor plugin that uses Jedi. See `Plugin API
-<https://jedi.readthedocs.org/en/latest/docs/plugin-api.html>`_ for more
-information.
 
-If you have specific questions, please add an issue or ask on `stackoverflow
-<https://stackoverflow.com>`_ with the label ``python-jedi``.
+Autocompletion / Goto / Pydoc
+-----------------------------
+
+Please check the API for a good explanation. There are the following commands:
+
+- ``jedi.Script.goto_assignments``
+- ``jedi.Script.completions``
+- ``jedi.Script.usages``
+
+The returned objects are very powerful and really all you might need.
+
+
+Autocompletion in your REPL (IPython, etc.)
+-------------------------------------------
+
+It's possible to have Jedi autocompletion in REPL modes - `example video <https://vimeo.com/122332037>`_.
+This means that IPython and others are `supported
+<https://jedi.readthedocs.org/en/latest/docs/usage.html#tab-completion-in-the-python-shell>`_.
+
+
+Static Analysis / Linter
+------------------------
+
+To do all forms of static analysis, please try to use ``jedi.names``. It will
+return a list of names that you can use to infer types and so on.
+
+Linting is another thing that is going to be part of Jedi. For now you can try
+an alpha version ``python -m jedi linter``. The API might change though and
+it's still buggy. It's Jedi's goal to be smarter than classic linter and
+understand ``AttributeError`` and other code issues.
+
+
+Refactoring
+-----------
+
+Jedi would in theory support refactoring, but we have never publicized it,
+because it's not production ready. If you're interested in helping out here,
+let me know. With the latest parser changes, it should be very easy to actually
+make it work.
 
 
 Development

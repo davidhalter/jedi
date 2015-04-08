@@ -1,4 +1,4 @@
-from jedi._compatibility import encoding, is_py3
+from jedi._compatibility import encoding, is_py3, u
 import inspect
 import os
 import time
@@ -63,13 +63,13 @@ def dbg(message, *args):
         mod = inspect.getmodule(frm[0])
         if not (mod.__name__ in ignored_modules):
             i = ' ' * _debug_indent
-            debug_function(NOTICE, i + 'dbg: ' + message % args)
+            debug_function(NOTICE, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
 
 
 def warning(message, *args):
     if debug_function and enable_warning:
         i = ' ' * _debug_indent
-        debug_function(WARNING, i + 'warning: ' + message % args)
+        debug_function(WARNING, i + 'warning: ' + message % tuple(u(repr(a)) for a in args))
 
 
 def speed(name):

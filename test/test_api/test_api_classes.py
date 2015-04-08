@@ -158,6 +158,15 @@ def test_signature_params():
     check(Script(s + '\nbar=foo\nbar').goto_assignments())
 
 
+def test_param_endings():
+    """
+    Params should be represented without the comma and whitespace they have
+    around them.
+    """
+    sig = Script('def x(a, b=5, c=""): pass\n x(').call_signatures()[0]
+    assert [p.description for p in sig.params] == ['a', 'b=5', 'c=""']
+
+
 class TestIsDefinition(TestCase):
     def _def(self, source, index=-1):
         return names(dedent(source), references=True, all_scopes=True)[index]

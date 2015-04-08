@@ -5,7 +5,7 @@ import functools
 import re
 from ast import literal_eval
 
-from jedi._compatibility import unicode, next, reraise
+from jedi._compatibility import unicode, reraise
 from jedi import settings
 
 

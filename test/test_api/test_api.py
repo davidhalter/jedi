@@ -5,6 +5,7 @@ Test all things related to the ``jedi.api`` module.
 from textwrap import dedent
 
 from jedi import api
+from jedi._compatibility import is_py3
 from pytest import raises
 
 
@@ -105,7 +106,11 @@ def test_goto_assignments_on_non_name():
     assert api.Script('for').goto_assignments() == []
 
     assert api.Script('assert').goto_assignments() == []
-    assert api.Script('True').goto_assignments() == []
+    if is_py3:
+        assert api.Script('True').goto_assignments() == []
+    else:
+        # In Python 2.7 True is still a name.
+        assert api.Script('True').goto_assignments()[0].description == 'class bool'
 
 
 def test_goto_definitions_on_non_name():

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 
 import jedi
 from jedi._compatibility import u, is_py3
@@ -180,3 +181,29 @@ def test_end_pos_error_correction():
     # at all. We just want to make sure that the module end_pos is correct!
     assert func.end_pos == (3, 0)
     assert m.end_pos == (2, 2)
+
+
+def test_param_splitting():
+    """
+    Jedi splits parameters into params, this is not what the grammar does,
+    but Jedi does this to simplify argument parsing.
+    """
+    def check(src, result):
+        # Python 2 tuple params should be ignored for now.
+        grammar = load_grammar('grammar%s.%s' % sys.version_info[:2])
+        m = Parser(grammar, u(src)).module
+        if is_py3:
+            assert not m.subscopes
+        else:
+            # We don't want b and c to be a part of the param enumeration. Just
+            # ignore them, because it's not what we want to support in the
+            # future.
+            assert [str(param.name) for param in m.subscopes[0].params] == result
+
+    check('def x(a, (b, c)):\n pass', ['a'])
+    check('def x((b, c)):\n pass', [])
+
+
+def test_unicode_string():
+    s = pt.String(None, u('bö'), (0, 0))
+    assert repr(s)  # Should not raise an Error!
