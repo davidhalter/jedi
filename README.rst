@@ -40,7 +40,7 @@ Jedi can be used with the following editors:
 - TextMate_ (Not sure if it's actually working)
 - Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
-- Atom <https://github.com/atom/atom> with auto-complete-plus <https://github.com/atom-community/autocomplete-plus> and auto-complete-plus-python <https://github.com/tinloaf/autocomplete-plus-python-jedi> 
+- Atom_  with auto-complete-plus_ and auto-complete-plus-python-jedi_ packages 
 
 And it powers the following projects:
 
@@ -153,3 +153,6 @@ For more detailed information visit the `testing documentation
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
 .. _Kate: http://kate-editor.org
+.. _Atom : https://github.com/atom/atom
+.. _auto-complete-plus : https://github.com/atom-community/autocomplete-plus
+.. _auto-complete-plus-python-jedi : https://github.com/tinloaf/autocomplete-plus-python-jedi
