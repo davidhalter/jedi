@@ -11,6 +11,7 @@ correct implementation is delegated to _compatibility.
 This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
+import imp
 import os
 import pkgutil
 import sys
@@ -378,9 +379,14 @@ class _Importer(object):
         if is_package_directory or current_namespace[0]:
             # is a directory module
             if is_package_directory:
-                path = os.path.join(path, '__init__.py')
-                with open(path, 'rb') as f:
-                    source = f.read()
+                for suffix, _, _ in imp.get_suffixes():
+                    p = os.path.join(path, '__init__' + suffix)
+                    if os.path.exists(p):
+                        if suffix == '.py':
+                            with open(path, 'rb') as f:
+                                source = f.read()
+                        else:  # It's a binary!
+                            source = None
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
