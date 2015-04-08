@@ -5,6 +5,7 @@ import os
 
 import jedi
 from ..helpers import cwd_at
+import pytest
 
 
 def test_completions():
@@ -32,6 +33,8 @@ def test_call_signatures_stdlib():
     assert len(sigs[0].params) == 1
 
 
+# Check only on linux 64 bit platform and Python3.4.
+@pytest.mark.skipif('sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 4)')
 @cwd_at('test/test_evaluate')
 def test_init_extension_module():
     """
@@ -39,6 +42,13 @@ def test_init_extension_module():
     that.
 
     Originally coming from #472.
+
+    This test was built by the module.c and setup.py combination you can find
+    in the init_extension_module folder. You can easily build the
+    `__init__.cpython-34m.so` by compiling it (create a virtualenv and run
+    `setup.py install`.
+
+    This is also why this test only runs on certain systems (and Python 3.4).
     """
     s = jedi.Script('import init_extension_module as i\ni.', path='not_existing.py')
     assert 'foo' in [c.name for c in s.completions()]
