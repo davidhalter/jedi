@@ -8,8 +8,8 @@ def sphinxy(a, b, c, d, x):
     :param a: blablabla
     :type a: str
     :type b: (str, int)
-    :type c: threading.Thread
-    :type d: :class:`threading.Thread`
+    :type c: random.Random
+    :type d: :class:`random.Random`
     :param str x: blablabla
     :rtype: dict
     """
@@ -19,10 +19,10 @@ def sphinxy(a, b, c, d, x):
     b[0]
     #? int()
     b[1]
-    #? ['join']
-    c.join
-    #? ['join']
-    d.join
+    #? ['seed']
+    c.seed
+    #? ['seed']
+    d.seed
     #? ['lower']
     x.lower
 
@@ -72,10 +72,10 @@ def list_with_non_imports(lst):
     """
     Should be able to work with tuples and lists and still import stuff.
 
-    :type lst: (threading.Thread, [collections.defaultdict, ...])
+    :type lst: (random.Random, [collections.defaultdict, ...])
     """
-    #? ['start']
-    lst[0].start
+    #? ['seed']
+    lst[0].seed
 
     import collections as col
     # use some weird index
@@ -94,11 +94,11 @@ def two_dots(a):
 # sphinx returns
 def return_module_object():
     """
-    :rtype: :class:`threading.Thread`
+    :rtype: :class:`random.Random`
     """
 
-#? ['join']
-return_module_object().join
+#? ['seed']
+return_module_object().seed
 
 
 # -----------------

@@ -51,11 +51,11 @@ class TestDocstring(unittest.TestCase):
         s = """
                 def func(arg):
                     '''
-                    :type arg: threading.Thread
+                    :type arg: random.Random
                     '''
                     arg."""
         names = [c.name for c in jedi.Script(s).completions()]
-        assert 'start' in names
+        assert 'seed' in names
 
     def test_docstrings_param_type(self):
         s = """
