@@ -4,6 +4,7 @@ from textwrap import dedent
 from jedi._compatibility import u
 from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     _get_buildout_scripts,
+                                    sys_path_with_modifications,
                                     _check_module)
 from jedi.evaluate import Evaluator
 from jedi.parser import Parser, load_grammar
@@ -51,6 +52,18 @@ def test_path_from_invalid_sys_path_assignment():
     paths = _check_module(Evaluator(grammar), p.module)
     assert len(paths) > 0
     assert 'invalid' not in paths
+
+
+@cwd_at('test/test_evaluate/buildout_project/src/proj_name/')
+def test_sys_path_with_modifications():
+    SRC = dedent(u("""
+        import os
+    """))
+    grammar = load_grammar()
+    p = Parser(grammar, SRC)
+    p.module.path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
+    paths = sys_path_with_modifications(Evaluator(grammar), p.module)
+    assert '/tmp/.buildout/eggs/important_package.egg' in paths
 
 
 def test_path_from_sys_path_assignment():
