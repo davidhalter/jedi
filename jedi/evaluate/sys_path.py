@@ -8,6 +8,7 @@ from jedi.parser import Parser
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
+from jedi import cache
 
 
 def get_sys_path():
@@ -152,26 +153,38 @@ def sys_path_with_modifications(evaluator, module):
     with common.ignored(OSError):
         os.chdir(os.path.dirname(module.path))
 
+    buildout_script_paths = set()
+
     result = _check_module(evaluator, module)
     result += _detect_django_path(module.path)
-    # buildout scripts often contain the same sys.path modifications
-    # the set here is used to avoid duplicate sys.path entries
-    buildout_paths = set()
-    for module_path in _get_buildout_scripts(module.path):
-        try:
-            with open(module_path, 'rb') as f:
-                source = f.read()
-        except IOError:
-            pass
-        else:
-            p = Parser(evaluator.grammar, common.source_to_unicode(source), module_path)
-            for path in _check_module(p.module):
-                if path not in buildout_paths:
-                    buildout_paths.add(path)
-                    result.append(path)
+    for buildout_script in _get_buildout_scripts(module.path):
+        for path in _get_paths_from_buildout_script(evaluator, buildout_script):
+            buildout_script_paths.add(path)
     # cleanup, back to old directory
     os.chdir(curdir)
-    return list(result)
+    return list(result) + list(buildout_script_paths)
+
+
+def _get_paths_from_buildout_script(evaluator, buildout_script):
+    def load(buildout_script):
+        try:
+            with open(buildout_script, 'rb') as f:
+                source = common.source_to_unicode(f.read())
+        except IOError:
+            debug.dbg('Error trying to read buildout_script: %s', buildout_script)
+            return
+
+        p = Parser(evaluator.grammar, source, buildout_script)
+        cache.save_parser(buildout_script, None, p)
+        return p.module
+
+    cached = cache.load_parser(buildout_script, None)
+    module = cached and cached.module or load(buildout_script)
+    if not module:
+        return
+
+    for path in _check_module(evaluator, module):
+        yield path
 
 
 def _traverse_parents(path):
