@@ -326,7 +326,7 @@ class BaseDefinition(object):
             raise AttributeError()
         followed = followed[0]  # only check the first one.
 
-        if followed.isinstance(er.Function):
+        if followed.type == 'funcdef':
             if isinstance(followed, er.InstanceElement):
                 params = followed.params[1:]
             else:

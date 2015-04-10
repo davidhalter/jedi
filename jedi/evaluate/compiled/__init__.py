@@ -85,6 +85,8 @@ class CompiledObject(Base):
     def params(self):
         params_str, ret = self._parse_function_doc()
         tokens = params_str.split(',')
+        if inspect.ismethoddescriptor(self._cls().obj):
+            tokens.insert(0, 'self')
         params = []
         for p in tokens:
             parts = [FakeName(part) for part in p.strip().split('=')]

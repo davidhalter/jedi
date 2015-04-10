@@ -230,6 +230,18 @@ class TestParams(TestCase):
         assert p[0].name in ['file', 'name']
         assert p[1].name == 'mode'
 
+    def test_builtins(self):
+        """
+        The self keyword should be visible even for builtins, if not
+        instantiated.
+        """
+        p = self.params('str.endswith(')
+        assert p[0].name == 'self'
+        assert p[1].name == 'suffix'
+        p = self.params('str.endswith(')
+        assert p[0].name == 'suffix'
+
+
 
 def test_signature_is_definition():
     """
