@@ -195,6 +195,20 @@ class TestCallSignatures(TestCase):
     def test_flow_call(self):
         assert not Script('if (1').call_signatures()
 
+    def test_chained_calls(self):
+        source = dedent('''
+        class B():
+          def test2(self, arg):
+            pass
+
+        class A():
+          def test1(self):
+            return B()
+
+        A().test1().test2(''')
+
+        self._run(source, 'test2', 0)
+
 
 class TestParams(TestCase):
     def params(self, source, line=None, column=None):

@@ -185,6 +185,10 @@ class UserContext(object):
             if tok_str in tokenize.ALWAYS_BREAK_TOKENS:
                 break
             elif next_must_be_name:
+                if tok_type == tokenize.NUMBER:
+                    # If there's a number at the end of the string, it will be
+                    # tokenized as a number. So add it to the name.
+                    tok_type, t, _, _ = next(generator)
                 if tok_type == tokenize.NAME:
                     end_pos = start_pos[0], start_pos[1] + len(tok_str)
                     call, start_pos = self._calc_path_until_cursor(start_pos=end_pos)
