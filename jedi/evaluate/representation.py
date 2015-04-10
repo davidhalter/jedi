@@ -275,12 +275,17 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
     """
     Returns an InstanceElement if it makes sense, otherwise leaves the object
     untouched.
+
+    Basically having an InstanceElement is context information. That is needed
+    in quite a lot of cases, which includes Nodes like ``power``, that need to
+    know where a self name comes from for example.
     """
     if isinstance(var, pr.Name):
         parent = get_instance_el(evaluator, instance, var.parent, is_class_var)
         return InstanceName(var, parent)
-    elif isinstance(var, (Instance, compiled.CompiledObject, pr.Leaf,
-                          pr.Module, FunctionExecution)):
+    elif var.type != 'funcdef' \
+            and isinstance(var, (Instance, compiled.CompiledObject, pr.Leaf,
+                           pr.Module, FunctionExecution)):
         return var
 
     var = wrap(evaluator, var)
@@ -364,7 +369,12 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return self.var.is_scope()
 
     def py__call__(self, evaluator, params):
-        return Function.py__call__(self, evaluator, params)
+        if isinstance(self.var, compiled.CompiledObject):
+            # This check is a bit strange, but CompiledObject itself is a bit
+            # more complicated than we would it actually like to be.
+            return self.var.py__call__(evaluator, params)
+        else:
+            return Function.py__call__(self, evaluator, params)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)

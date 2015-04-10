@@ -238,7 +238,7 @@ class TestParams(TestCase):
         p = self.params('str.endswith(')
         assert p[0].name == 'self'
         assert p[1].name == 'suffix'
-        p = self.params('str.endswith(')
+        p = self.params('str().endswith(')
         assert p[0].name == 'suffix'
 
 
