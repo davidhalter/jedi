@@ -110,6 +110,23 @@ def as_imports():
     #? int()
     bar.a
 
+
+def test_import_priorities():
+    """
+    It's possible to overwrite import paths in an ``__init__.py`` file, by
+    just assigining something there.
+
+    See also #536.
+    """
+    from import_tree import the_pkg, invisible_pkg
+    # TODO currently not enabled, later we should actually fix this.
+    ##? int()
+    invisible_pkg
+    # The renamed invisible_pkg in that module (look at ``__init__.py``!)
+    #? float()
+    the_pkg.foo
+
+
 # -----------------
 # std lib modules
 # -----------------
