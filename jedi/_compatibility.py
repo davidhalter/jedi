@@ -20,7 +20,12 @@ def find_module_py33(string, path=None):
     loader = importlib.machinery.PathFinder.find_module(string, path)
 
     if loader is None and path is None:  # Fallback to find builtins
-        loader = importlib.find_loader(string)
+        try:
+            loader = importlib.find_loader(string)
+        except ValueError as e:
+            # See #491. Importlib might raise a ValueError, to avoid this, we
+            # just raise an ImportError to fix the issue.
+            raise ImportError("Originally ValueError: " + e.message)
 
     if loader is None:
         raise ImportError("Couldn't find a loader for {0}".format(string))
