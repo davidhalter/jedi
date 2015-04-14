@@ -78,3 +78,14 @@ class TestFullDefinedName(TestCase):
         from os.path import join
         from os import path as opath
         """, ['os', 'os.path', 'os.path.join', 'os.path'])
+
+
+def test_sub_module():
+    """
+    ``full_name needs to check sys.path to actually find it's real path module
+    path.
+    """
+    defs = jedi.Script('from jedi.api import classes; classes').goto_definitions()
+    assert [d.full_name for d in defs] == ['jedi.api.classes']
+    defs = jedi.Script('import jedi.api; jedi.api').goto_definitions()
+    assert [d.full_name for d in defs] == ['jedi.api']

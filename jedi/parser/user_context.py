@@ -266,13 +266,14 @@ class UserContext(object):
 
 class UserContextParser(object):
     def __init__(self, grammar, source, path, position, user_context,
-                 use_fast_parser=True):
+                 parser_done_callback, use_fast_parser=True):
         self._grammar = grammar
         self._source = source
         self._path = path and os.path.abspath(path)
         self._position = position
         self._user_context = user_context
         self._use_fast_parser = use_fast_parser
+        self._parser_done_callback = parser_done_callback
 
     @cache.underscore_memoization
     def _parser(self):
@@ -283,6 +284,7 @@ class UserContextParser(object):
             cache.save_parser(self._path, None, parser, pickling=False)
         else:
             parser = Parser(self._grammar, self._source, self._path)
+        self._parser_done_callback(parser)
         return parser
 
     @cache.underscore_memoization

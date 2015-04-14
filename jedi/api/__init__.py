@@ -107,9 +107,14 @@ class Script(object):
         self._grammar = load_grammar('grammar%s.%s' % sys.version_info[:2])
         self._user_context = UserContext(self.source, self._pos)
         self._parser = UserContextParser(self._grammar, self.source, path,
-                                         self._pos, self._user_context)
+                                         self._pos, self._user_context,
+                                         self._parsed_callback)
         self._evaluator = Evaluator(self._grammar)
         debug.speed('init')
+
+    def _parsed_callback(self, parser):
+        module = er.wrap(self._evaluator, parser.module)
+        self._evaluator.module_name_cache[module] = unicode(module.name)
 
     @property
     def source_path(self):
@@ -135,12 +140,12 @@ class Script(object):
         def get_completions(user_stmt, bs):
             # TODO this closure is ugly. it also doesn't work with
             # simple_complete (used for Interpreter), somehow redo.
-            module = self._parser.module()
+            module = self._evaluator.wrap(self._parser.module())
             names, level, only_modules, unfinished_dotted = \
                 helpers.check_error_statements(module, self._pos)
             completion_names = []
             if names is not None:
-                imp_names = [n for n in names if n.end_pos < self._pos]
+                imp_names = tuple(n for n in names if n.end_pos < self._pos)
                 i = imports.get_importer(self._evaluator, imp_names, module, level)
                 completion_names = i.completion_names(self._evaluator, only_modules)
 
@@ -586,7 +591,7 @@ class Interpreter(Script):
         # changing).
         self._parser = UserContextParser(self._grammar, self.source,
                                          self._orig_path, self._pos,
-                                         self._user_context,
+                                         self._user_context, self._parsed_callback,
                                          use_fast_parser=False)
         interpreter.add_namespaces_to_parser(self._evaluator, namespaces,
                                              self._parser.module())

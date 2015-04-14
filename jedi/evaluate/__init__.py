@@ -82,11 +82,17 @@ class Evaluator(object):
     def __init__(self, grammar):
         self.grammar = grammar
         self.memoize_cache = {}  # for memoize decorators
+        # To memorize module names (that are assigned to modules by the import
+        # logic) -> a ``__name__`` is given.
+        self.module_name_cache = {}
         self.import_cache = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `compiled.create()`
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
         self.analysis = []
+
+    def wrap(self, element):
+        return er.wrap(self, element)
 
     def find_types(self, scope, name_str, position=None, search_global=False,
                    is_goto=False):

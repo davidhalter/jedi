@@ -759,6 +759,9 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     def name(self):
         return helpers.FakeName(unicode(self.base.name), self, (1, 0))
 
+    def py__name__(self):
+        return self._evaluator.module_name_cache[self]
+
     @memoize_default()
     def _sub_modules_dict(self):
         """

@@ -162,15 +162,26 @@ class BaseDefinition(object):
             return string
 
     def _path(self):
-        """The module path."""
+        """The path to a module/class/function definition."""
         path = []
         par = self._definition
         while par is not None:
             if isinstance(par, pr.Import):
                 path += imports.ImportWrapper(self._evaluator, self._name).import_path
                 break
-            with common.ignored(AttributeError):
-                path.insert(0, par.name)
+            try:
+                name = par.name
+            except AttributeError:
+                pass
+            else:
+                if isinstance(par, er.ModuleWrapper):
+                    #module = er.wrap(self._evaluator, par)
+                    # TODO just make the path dotted from the beginning, we
+                    # shouldn't really split here.
+                    path[0:0] = par.py__name__().split('.')
+                    break
+                else:
+                    path.insert(0, unicode(name))
             par = par.parent
         return path
 

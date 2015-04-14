@@ -40,7 +40,7 @@ class ModuleNotFound(Exception):
 
 def completion_names(evaluator, imp, pos):
     name = imp.name_for_position(pos)
-    module = imp.get_parent_until()
+    module = evaluator.wrap(imp.get_parent_until())
     if name is None:
         level = 0
         for node in imp.children:
@@ -79,7 +79,7 @@ class ImportWrapper(pr.Base):
             return []
 
         try:
-            module = self._import.get_parent_until()
+            module = self._evaluator.wrap(self._import.get_parent_until())
             import_path = self._import.path_for_name(self._name)
             importer = get_importer(self._evaluator, tuple(import_path),
                                     module, self._import.level)
@@ -157,16 +157,25 @@ def get_importer(evaluator, import_path, module, level=0):
     Checks the evaluator caches first, which resembles the ``sys.modules``
     cache and speeds up libraries like ``numpy``.
     """
-    import_path = tuple(import_path)  # We use it as hash in the import cache.
-    if level != 0:
-        # Only absolute imports should be cached. Otherwise we have a mess.
-        # TODO Maybe calculate the absolute import and save it here?
-        return _Importer(evaluator, import_path, module, level)
+    if level:
+        base = module.py__name__().split('.')
+        if level > len(base):
+            # TODO add import error.
+            debug.warning('Attempted relative import beyond top-level package.')
+            # TODO this is just in the wrong place.
+            return _Importer(evaluator, import_path, module, level)
+        else:
+            # Here we basically rewrite the level to 0.
+            import_path = tuple(base) + import_path
+
+        
+
+    check_import_path = tuple(unicode(i) for i in import_path)
     try:
-        return evaluator.import_cache[import_path]
+        return evaluator.import_cache[check_import_path]
     except KeyError:
-        importer = _Importer(evaluator, import_path, module, level)
-        evaluator.import_cache[import_path] = importer
+        importer = _Importer(evaluator, import_path, module, level=0)
+        evaluator.import_cache[check_import_path] = importer
         return importer
 
 
@@ -280,10 +289,11 @@ class _Importer(object):
         else:
             sys_path_mod = list(get_sys_path())
 
-        from jedi.evaluate.representation import ModuleWrapper
         module, rest = self._follow_sys_path(sys_path_mod)
         if isinstance(module, pr.Module):
-            return ModuleWrapper(self._evaluator, module), rest
+            # TODO this looks strange. do we really need to check and should
+            # this transformation happen here?
+            return self._evaluator.wrap(module), rest
         return module, rest
 
     def namespace_packages(self, found_path, import_path):
@@ -375,6 +385,11 @@ class _Importer(object):
         path = current_namespace[1]
         is_package_directory = current_namespace[2]
 
+        module_names = list(self.str_import_path)
+        for _ in rest:
+            module_names.pop()
+        module_name = '.'.join(module_names)
+
         f = None
         if is_package_directory or current_namespace[0]:
             # is a directory module
@@ -393,9 +408,11 @@ class _Importer(object):
             else:
                 source = current_namespace[0].read()
                 current_namespace[0].close()
-            return _load_module(self._evaluator, path, source, sys_path=sys_path), rest
+            return _load_module(self._evaluator, path, source,
+                                sys_path=sys_path, module_name=module_name), rest
         else:
-            return _load_module(self._evaluator, name=path, sys_path=sys_path), rest
+            return _load_module(self._evaluator, name=path,
+                                sys_path=sys_path, module_name=module_name), rest
 
     def _generate_name(self, name):
         return helpers.FakeName(name, parent=self.module)
@@ -482,13 +499,13 @@ class _Importer(object):
                                             '__init__.py')
                     if os.path.exists(rel_path):
                         module = _load_module(self._evaluator, rel_path)
-                        module = er.wrap(self._evaluator, module)
+                        module = self._evaluator.wrap(module)
                         for names_dict in module.names_dicts(search_global=False):
                             names += chain.from_iterable(names_dict.values())
         return names
 
 
-def _load_module(evaluator, path=None, source=None, name=None, sys_path=None):
+def _load_module(evaluator, path=None, source=None, name=None, sys_path=None, module_name=None):
     def load(source):
         dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
         if path is not None and path.endswith('.py') \
@@ -501,10 +518,15 @@ def _load_module(evaluator, path=None, source=None, name=None, sys_path=None):
         p = path or name
         p = fast.FastParser(evaluator.grammar, common.source_to_unicode(source), p)
         cache.save_parser(path, name, p)
+
         return p.module
 
     cached = cache.load_parser(path, name)
-    return load(source) if cached is None else cached.module
+    module = load(source) if cached is None else cached.module
+    # TODO return mod instead of just something.
+    module = evaluator.wrap(module)
+    evaluator.module_name_cache[module] = module_name
+    return module
 
 
 def get_modules_containing_name(evaluator, mods, name):
