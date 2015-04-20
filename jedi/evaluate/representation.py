@@ -30,6 +30,7 @@ __
 """
 import os
 import pkgutil
+import imp
 from itertools import chain
 
 from jedi._compatibility import use_metaclass, unicode, Python3Method
@@ -761,6 +762,28 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
 
     def py__name__(self):
         return self._evaluator.module_name_cache[self]
+
+    def py__file__(self):
+        return self._module.path
+
+    @property
+    def py__path__(self):
+        """
+        In case of a package, this returns Python's __path__ attribute, which
+        is a list of paths (strings).
+        Raises an AttributeError if the module is not a package.
+        """
+        def return_value():
+            return [path]
+
+        for suffix, _, _ in imp.get_suffixes():
+            ending = '__init__' + suffix
+            if self.py__file__().endswith(ending):
+                # Remove the ending, including the separator.
+                path = self.py__file__()[:-len(ending) - 1]
+                return return_value
+        else:
+            raise AttributeError('Only packages have __path__ attributes.')
 
     @memoize_default()
     def _sub_modules_dict(self):

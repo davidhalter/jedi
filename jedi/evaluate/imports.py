@@ -448,14 +448,18 @@ class _Importer(object):
                     # This is a recursive way of importing that works great with
                     # the module cache.
                     base = self._do_import(import_path[:-1], sys_path)
-                    path = base.py__file__()
-
-                    debug.dbg('search_module %s in pkg %s', module_name, path)
-                    module_file, module_path, is_pkg = \
-                        find_module(import_parts[-1], [path])
-                    raise NotImplementedError
+                    try:
+                        paths = base.py__path__()
+                    except AttributeError:
+                        # The module is not a package.
+                        raise NotImplementedError
+                    else:
+                        debug.dbg('search_module %s in paths %s', module_name, paths)
+                        for path in paths:
+                            module_file, module_path, is_pkg = \
+                                find_module(import_parts[-1], [path])
                 else:
-                    debug.dbg('search_module %s in %s', module_name, self.file_path)
+                    debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
                     # Override the sys.path. It works only good that way.
                     # Injecting the path directly into `find_module` did not work.
                     sys.path, temp = sys_path, sys.path
