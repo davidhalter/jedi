@@ -30,6 +30,7 @@ def get_sys_path():
     check_virtual_env(sys.path)
     return [p for p in sys.path if p != ""]
 
+
 def _get_venv_sitepackages(venv):
     if os.name == 'nt':
         p = os.path.join(venv, 'lib', 'site-packages')
@@ -175,7 +176,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
             return
 
         p = Parser(evaluator.grammar, source, buildout_script)
-        cache.save_parser(buildout_script, None, p)
+        cache.save_parser(buildout_script, p)
         return p.module
 
     cached = cache.load_parser(buildout_script, None)

@@ -334,7 +334,7 @@ def dotted_from_fs_path(fs_path, sys_path=None):
     return _path_re.sub('', fs_path[len(path):].lstrip(os.path.sep)).replace(os.path.sep, '.')
 
 
-def load_module(path, name):
+def load_module(path=None, name=None):
     if path is not None:
         dotted_path = dotted_from_fs_path(path)
     else:

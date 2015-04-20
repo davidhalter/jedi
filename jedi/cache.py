@@ -191,17 +191,13 @@ def invalidate_star_import_cache(path):
         _invalidate_star_import_cache_module(parser_cache_item.parser.module)
 
 
-def load_parser(path, name):
+def load_parser(path):
     """
     Returns the module or None, if it fails.
     """
-    if path is None and name is None:
-        return None
-
     p_time = os.path.getmtime(path) if path else None
-    n = name if path is None else path
     try:
-        parser_cache_item = parser_cache[n]
+        parser_cache_item = parser_cache[path]
         if not path or p_time <= parser_cache_item.change_time:
             return parser_cache_item.parser
         else:
@@ -211,21 +207,20 @@ def load_parser(path, name):
             _invalidate_star_import_cache_module(parser_cache_item.parser.module)
     except KeyError:
         if settings.use_filesystem_cache:
-            return ParserPickling.load_parser(n, p_time)
+            return ParserPickling.load_parser(path, p_time)
 
 
-def save_parser(path, name, parser, pickling=True):
+def save_parser(path, parser, pickling=True):
     try:
-        p_time = None if not path else os.path.getmtime(path)
+        p_time = os.path.getmtime(path)
     except OSError:
         p_time = None
         pickling = False
 
-    n = name if path is None else path
     item = ParserCacheItem(parser, p_time)
-    parser_cache[n] = item
+    parser_cache[path] = item
     if settings.use_filesystem_cache and pickling:
-        ParserPickling.save_parser(n, item)
+        ParserPickling.save_parser(path, item)
 
 
 class ParserPickling(object):

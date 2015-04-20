@@ -163,12 +163,11 @@ def get_importer(evaluator, import_path, module, level=0):
             # TODO add import error.
             debug.warning('Attempted relative import beyond top-level package.')
             # TODO this is just in the wrong place.
+            raise NotImplementedError
             return _Importer(evaluator, import_path, module, level)
         else:
             # Here we basically rewrite the level to 0.
             import_path = tuple(base) + import_path
-
-        
 
     check_import_path = tuple(unicode(i) for i in import_path)
     try:
@@ -215,18 +214,34 @@ class _Importer(object):
 
     @memoize_default()
     def sys_path_with_modifications(self):
-        # If you edit e.g. gunicorn, there will be imports like this:
-        # `from gunicorn import something`. But gunicorn is not in the
-        # sys.path. Therefore look if gunicorn is a parent directory, #56.
         in_path = []
-        if self.import_path and self.file_path is not None:
-            parts = self.file_path.split(os.path.sep)
-            for i, p in enumerate(parts):
-                if p == unicode(self.import_path[0]):
-                    new = os.path.sep.join(parts[:i])
-                    in_path.append(new)
+        sys_path_mod = list(sys_path_with_modifications(self._evaluator, self.module))
+        if self.file_path is not None:
+            # If you edit e.g. gunicorn, there will be imports like this:
+            # `from gunicorn import something`. But gunicorn is not in the
+            # sys.path. Therefore look if gunicorn is a parent directory, #56.
+            if self.import_path:  # TODO is this check really needed?
+                parts = self.file_path.split(os.path.sep)
+                for i, p in enumerate(parts):
+                    if p == unicode(self.import_path[0]):
+                        new = os.path.sep.join(parts[:i])
+                        in_path.append(new)
 
-        return in_path + sys_path_with_modifications(self._evaluator, self.module)
+            if not self.module.has_explicit_absolute_import:
+                # If the module explicitly asks for absolute imports,
+                # there's probably a bogus local one.
+                sys_path_mod.insert(0, self.file_path)
+
+            # First the sys path is searched normally and if that doesn't
+            # succeed, try to search the parent directories, because sometimes
+            # Jedi doesn't recognize sys.path modifications (like py.test
+            # stuff).
+            old_path, temp_path = self.file_path, os.path.dirname(self.file_path)
+            while old_path != temp_path:
+                sys_path_mod.append(temp_path)
+                old_path, temp_path = temp_path, os.path.dirname(temp_path)
+
+        return in_path + sys_path_mod
 
     def follow(self, evaluator):
         try:
@@ -257,6 +272,11 @@ class _Importer(object):
 
     @memoize_default(NO_DEFAULT)
     def follow_file_system(self):
+        module = self._do_import(self.import_path, self.sys_path_with_modifications())
+        return module, []
+
+
+# TODO delete - move!
         # Handle "magic" Flask extension imports:
         # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
         if len(self.import_path) > 2 and self.str_import_path[:2] == ('flask', 'ext'):
@@ -325,50 +345,50 @@ class _Importer(object):
                 return follow_path((str(i) for i in import_path), sys.path)
         return []
 
+    def _follow_str(self, sys_path, ns_path, string):
+        debug.dbg('follow_module %s in %s', string, ns_path)
+        path = None
+        if ns_path:
+            path = ns_path
+        elif self.level > 0:  # is a relative import
+            path = self.get_relative_path()
+
+        if path is not None:
+            importing = find_module(string, [path])
+        else:
+            debug.dbg('search_module %s in %s', string, self.file_path)
+            # Override the sys.path. It works only good that way.
+            # Injecting the path directly into `find_module` did not work.
+            sys.path, temp = sys_path, sys.path
+            try:
+                importing = find_module(string)
+            finally:
+                sys.path = temp
+
+        return importing
+
     def _follow_sys_path(self, sys_path):
         """
         Find a module with a path (of the module, like usb.backend.libusb10).
         """
-        def follow_str(ns_path, string):
-            debug.dbg('follow_module %s in %s', string, ns_path)
-            path = None
-            if ns_path:
-                path = ns_path
-            elif self.level > 0:  # is a relative import
-                path = self.get_relative_path()
-
-            if path is not None:
-                importing = find_module(string, [path])
-            else:
-                debug.dbg('search_module %s in %s', string, self.file_path)
-                # Override the sys.path. It works only good that way.
-                # Injecting the path directly into `find_module` did not work.
-                sys.path, temp = sys_path, sys.path
-                try:
-                    importing = find_module(string)
-                finally:
-                    sys.path = temp
-
-            return importing
-
         current_namespace = (None, None, None)
         # now execute those paths
         rest = []
         for i, s in enumerate(self.import_path):
             try:
-                current_namespace = follow_str(current_namespace[1], unicode(s))
+                current_namespace = self._follow_str(sys_path, current_namespace[1], unicode(s))
             except ImportError:
                 _continue = False
                 if self.level >= 1 and len(self.import_path) == 1:
                     # follow `from . import some_variable`
                     rel_path = self.get_relative_path()
                     with common.ignored(ImportError):
-                        current_namespace = follow_str(rel_path, '__init__')
+                        current_namespace = self._follow_str(sys_path, rel_path, '__init__')
                 elif current_namespace[2]:  # is a package
                     path = self.str_import_path[:i]
                     for n in self.namespace_packages(current_namespace[1], path):
                         try:
-                            current_namespace = follow_str(n, unicode(s))
+                            current_namespace = self._follow_str(sys_path, n, unicode(s))
                             if current_namespace[1]:
                                 _continue = True
                                 break
@@ -413,6 +433,62 @@ class _Importer(object):
         else:
             return _load_module(self._evaluator, name=path,
                                 sys_path=sys_path, module_name=module_name), rest
+
+    def _do_import(self, import_path, sys_path):
+        """
+        This method is very similar to importlib's `_gcd_import`.
+        """
+        import_parts = [str(i) for i in import_path]
+        module_name = '.'.join(import_parts)
+        try:
+            return self._evaluator.modules[module_name]
+        except KeyError:
+            try:
+                if len(import_path) > 1:
+                    # This is a recursive way of importing that works great with
+                    # the module cache.
+                    base = self._do_import(import_path[:-1], sys_path)
+                    path = base.py__file__()
+
+                    debug.dbg('search_module %s in pkg %s', module_name, path)
+                    module_file, module_path, is_pkg = \
+                        find_module(import_parts[-1], [path])
+                    raise NotImplementedError
+                else:
+                    debug.dbg('search_module %s in %s', module_name, self.file_path)
+                    # Override the sys.path. It works only good that way.
+                    # Injecting the path directly into `find_module` did not work.
+                    sys.path, temp = sys_path, sys.path
+                    try:
+                        module_file, module_path, is_pkg = \
+                            find_module(import_parts[-1])
+                    finally:
+                        sys.path = temp
+            except ImportError:
+                raise NotImplementedError
+            else:
+                source = None
+                if is_pkg:
+                    # In this case, we don't have a file yet. Search for the
+                    # __init__ file.
+                    for suffix, _, _ in imp.get_suffixes():
+                        path = os.path.join(module_path, '__init__' + suffix)
+                        if os.path.exists(path):
+                            if suffix == '.py':
+                                module_path = path
+                            break
+                elif module_file:
+                    source = module_file.read()
+                    module_file.close()
+
+                if module_file is None and not module_path.endswith('.py'):
+                    module = compiled.load_module(module_path)
+                else:
+                    module = _load_module(self._evaluator, module_path, source,
+                                          sys_path, module_name)
+
+        self._evaluator.modules[module_name] = module
+        return module
 
     def _generate_name(self, name):
         return helpers.FakeName(name, parent=self.module)
@@ -505,7 +581,7 @@ class _Importer(object):
         return names
 
 
-def _load_module(evaluator, path=None, source=None, name=None, sys_path=None, module_name=None):
+def _load_module(evaluator, path=None, source=None, sys_path=None, module_name=None):
     def load(source):
         dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
         if path is not None and path.endswith('.py') \
@@ -514,18 +590,16 @@ def _load_module(evaluator, path=None, source=None, name=None, sys_path=None, mo
                 with open(path, 'rb') as f:
                     source = f.read()
         else:
-            return compiled.load_module(path, name)
-        p = path or name
+            return compiled.load_module(path)
+        p = path
         p = fast.FastParser(evaluator.grammar, common.source_to_unicode(source), p)
-        cache.save_parser(path, name, p)
-
+        cache.save_parser(path, p)
         return p.module
 
-    cached = cache.load_parser(path, name)
+    cached = cache.load_parser(path)
     module = load(source) if cached is None else cached.module
     # TODO return mod instead of just something.
     module = evaluator.wrap(module)
-    evaluator.module_name_cache[module] = module_name
     return module
 
 

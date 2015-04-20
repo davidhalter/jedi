@@ -281,7 +281,7 @@ class UserContextParser(object):
         if self._use_fast_parser:
             parser = FastParser(self._grammar, self._source, self._path)
             # Don't pickle that module, because the main module is changing quickly
-            cache.save_parser(self._path, None, parser, pickling=False)
+            cache.save_parser(self._path, parser, pickling=False)
         else:
             parser = Parser(self._grammar, self._source, self._path)
         self._parser_done_callback(parser)
