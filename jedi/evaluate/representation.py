@@ -761,7 +761,9 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         return helpers.FakeName(unicode(self.base.name), self, (1, 0))
 
     def py__name__(self):
-        return self._evaluator.module_name_cache[self]
+        for name, module in self._evaluator.modules.items():
+            if module == self:
+                return name
 
     def py__file__(self):
         return self._module.path
