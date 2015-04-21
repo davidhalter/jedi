@@ -189,31 +189,10 @@ def get_importer(evaluator, import_path, module, level=0):
     Checks the evaluator caches first, which resembles the ``sys.modules``
     cache and speeds up libraries like ``numpy``.
     """
-    if level:
-        base = module.py__package__().split('.')
-        if base == ['']:
-            base = []
-        if level > len(base):
-            path = module.py__file__()
-            import_path = list(import_path)
-            for i in range(level):
-                path = os.path.dirname(path)
-            dir_name = os.path.basename(path)
-            if dir_name:
-                import_path.insert(0, dir_name)
-            else:
-                raise NotImplementedError
+    return _Importer(evaluator, import_path, module, level)
 
-            # TODO add import error.
-            debug.warning('Attempted relative import beyond top-level package.')
-            # This is not the proper way to do relative imports. However, since
-            # Jedi cannot be sure about the entry point, we just calculate an
-            # absolute path here.
-            return _Importer(evaluator, import_path, module, 0)
-        else:
-            # Here we basically rewrite the level to 0.
-            import_path = tuple(base) + import_path
-
+    # TODO remove this and is the import_cache still used?
+    """
     check_import_path = tuple(unicode(i) for i in import_path)
     try:
         return evaluator.import_cache[check_import_path]
@@ -221,6 +200,7 @@ def get_importer(evaluator, import_path, module, level=0):
         importer = _Importer(evaluator, import_path, module, level=0)
         evaluator.import_cache[check_import_path] = importer
         return importer
+    """
 
 
 class _Importer(object):
@@ -239,12 +219,38 @@ class _Importer(object):
         """
         debug.speed('import %s' % (import_path,))
         self._evaluator = evaluator
-        self.import_path = import_path
         self.level = level
         self.module = module
         path = module.path
         # TODO abspath
         self.file_path = os.path.dirname(path) if path is not None else None
+
+        if level:
+            base = module.py__package__().split('.')
+            if base == ['']:
+                base = []
+            if level > len(base):
+                path = module.py__file__()
+                import_path = list(import_path)
+                for i in range(level):
+                    path = os.path.dirname(path)
+                dir_name = os.path.basename(path)
+                # This is not the proper way to do relative imports. However, since
+                # Jedi cannot be sure about the entry point, we just calculate an
+                # absolute path here.
+                if dir_name:
+                    import_path.insert(0, dir_name)
+                else:
+                    analysis.add(self._evaluator, 'import-error', import_path[-1])
+                    import_path = []
+
+                # TODO add import error.
+                debug.warning('Attempted relative import beyond top-level package.')
+            else:
+                # Here we basically rewrite the level to 0.
+                import_path = tuple(base) + import_path
+        self.import_path = import_path
+
 
     @property
     def str_import_path(self):
@@ -317,6 +323,8 @@ class _Importer(object):
 
     @memoize_default(NO_DEFAULT)
     def follow_file_system(self):
+        if not self.import_path:
+            return None, []
         module = self._do_import(self.import_path, self.sys_path_with_modifications())
         return module, []
 
