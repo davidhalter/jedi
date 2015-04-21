@@ -31,6 +31,7 @@ __
 import os
 import pkgutil
 import imp
+import re
 from itertools import chain
 
 from jedi._compatibility import use_metaclass, unicode, Python3Method
@@ -760,6 +761,14 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     def name(self):
         return helpers.FakeName(unicode(self.base.name), self, (1, 0))
 
+    def _get_init_directory(self):
+        for suffix, _, _ in imp.get_suffixes():
+            ending = '__init__' + suffix
+            if self.py__file__().endswith(ending):
+                # Remove the ending, including the separator.
+                return self.py__file__()[:-len(ending) - 1]
+        return None
+
     def py__name__(self):
         for name, module in self._evaluator.modules.items():
             if module == self:
@@ -767,6 +776,12 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
 
     def py__file__(self):
         return self._module.path
+
+    def py__package__(self):
+        if self._get_init_directory() is None:
+            return re.sub(r'\.?[^\.]+$', '', self.py__name__())
+        else:
+            return self.py__name__()
 
     @property
     def py__path__(self):
@@ -778,14 +793,12 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         def return_value():
             return [path]
 
-        for suffix, _, _ in imp.get_suffixes():
-            ending = '__init__' + suffix
-            if self.py__file__().endswith(ending):
-                # Remove the ending, including the separator.
-                path = self.py__file__()[:-len(ending) - 1]
-                return return_value
-        else:
+        path = self._get_init_directory()
+
+        if path is None:
             raise AttributeError('Only packages have __path__ attributes.')
+        else:
+            return return_value
 
     @memoize_default()
     def _sub_modules_dict(self):

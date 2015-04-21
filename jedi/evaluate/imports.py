@@ -81,6 +81,19 @@ class ImportWrapper(pr.Base):
         try:
             module = self._evaluator.wrap(self._import.get_parent_until())
             import_path = self._import.path_for_name(self._name)
+            from_import_name = None
+            try:
+                from_names = self._import.get_from_names()
+            except AttributeError:
+                # Is an import_name
+                pass
+            else:
+                if len(from_names) + 1 == len(import_path):
+                    # We have to fetch the from_names part first and then check
+                    # if from_names exists in the modules.
+                    from_import_name = import_path[-1]
+                    import_path = from_names
+
             importer = get_importer(self._evaluator, tuple(import_path),
                                     module, self._import.level)
             try:
@@ -90,34 +103,50 @@ class ImportWrapper(pr.Base):
                 return []
 
             if module is None:
+                # TODO does that really happen? Why?
                 return []
 
             #if self._import.is_nested() and not self.nested_resolve:
             #    scopes = [NestedImportModule(module, self._import)]
-            scopes = [module]
+            types = [module]
+
+            if from_import_name is not None:
+                types = list(chain.from_iterable(
+                    self._evaluator.find_types(s, from_import_name, is_goto)
+                    for s in types))
+                if not types:
+                    importer = get_importer(self._evaluator, tuple(import_path),
+                                            module, self._import.level)
+                    module, _ = importer.follow_file_system()
+                    if module is None:
+                        types = []
+                    else:
+                        types = [module]
+
+
 
             # goto only accepts `Name`
             if is_goto and not rest:
-                scopes = [s.name for s in scopes]
+                types = [s.name for s in types]
 
             # follow the rest of the import (not FS -> classes, functions)
             if rest:
                 if is_goto:
-                    scopes = list(chain.from_iterable(
+                    types = list(chain.from_iterable(
                         self._evaluator.find_types(s, rest[0], is_goto=True)
-                        for s in scopes))
+                        for s in types))
                 else:
                     if self._import.type == 'import_from' \
                             or importer.str_import_path == ('os', 'path'):
-                        scopes = importer.follow_rest(scopes[0], rest)
+                        types = importer.follow_rest(types[0], rest)
                     else:
-                        scopes = []
-            debug.dbg('after import: %s', scopes)
-            if not scopes:
-                analysis.add(self._evaluator, 'import-error', importer.import_path[-1])
+                        types = []
+            debug.dbg('after import: %s', types)
+            #if not types:
+            #    analysis.add(self._evaluator, 'import-error', importer.import_path[-1])
         finally:
             self._evaluator.recursion_detector.pop_stmt()
-        return scopes
+        return types
 
 
 class NestedImportModule(pr.Module):
@@ -158,7 +187,7 @@ def get_importer(evaluator, import_path, module, level=0):
     cache and speeds up libraries like ``numpy``.
     """
     if level:
-        base = module.py__name__().split('.')
+        base = module.py__package__().split('.')
         if level > len(base):
             # TODO add import error.
             debug.warning('Attempted relative import beyond top-level package.')
@@ -171,6 +200,7 @@ def get_importer(evaluator, import_path, module, level=0):
 
     check_import_path = tuple(unicode(i) for i in import_path)
     try:
+        print(check_import_path)
         return evaluator.import_cache[check_import_path]
     except KeyError:
         importer = _Importer(evaluator, import_path, module, level=0)
@@ -452,7 +482,8 @@ class _Importer(object):
                         paths = base.py__path__()
                     except AttributeError:
                         # The module is not a package.
-                        raise NotImplementedError
+                        analysis.add(self._evaluator, 'import-error', import_path[-1])
+                        return None
                     else:
                         debug.dbg('search_module %s in paths %s', module_name, paths)
                         for path in paths:

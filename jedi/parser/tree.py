@@ -948,6 +948,17 @@ class ImportFrom(Import):
         return dict((alias, name) for name, alias in self._as_name_tuples()
                     if alias is not None)
 
+    def get_from_names(self):
+        for n in self.children[1:]:
+            if n not in ('.', '...'):
+                break
+        if is_node(n, 'dotted_name'):  # from x.y import
+            return n.children[::2]
+        elif n == 'import':  # from . import
+            return []
+        else:  # from x import
+            return [n]
+
     @property
     def level(self):
         """The level parameter of ``__import__``."""
@@ -987,15 +998,7 @@ class ImportFrom(Import):
         The import paths defined in an import statement. Typically an array
         like this: ``[<Name: datetime>, <Name: date>]``.
         """
-        for n in self.children[1:]:
-            if n not in ('.', '...'):
-                break
-        if is_node(n, 'dotted_name'):  # from x.y import
-            dotted = n.children[::2]
-        elif n == 'import':  # from . import
-            dotted = []
-        else:  # from x import
-            dotted = [n]
+        dotted = self.get_from_names()
 
         if self.children[-1] == '*':
             return [dotted]
