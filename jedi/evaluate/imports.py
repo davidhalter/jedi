@@ -203,6 +203,12 @@ def get_importer(evaluator, import_path, module, level=0):
     """
 
 
+def _add_error(evaluator, name, message=None):
+    if hasattr(name, 'parent'):
+        # Should be a name, not a string!
+        analysis.add(evaluator, 'import-error', name, message)
+
+
 class _Importer(object):
     def __init__(self, evaluator, import_path, module, level=0):
         """
@@ -241,7 +247,7 @@ class _Importer(object):
                 if dir_name:
                     import_path.insert(0, dir_name)
                 else:
-                    analysis.add(self._evaluator, 'import-error', import_path[-1])
+                    _add_error(self._evaluator, import_path[-1])
                     import_path = []
 
                 # TODO add import error.
@@ -298,6 +304,8 @@ class _Importer(object):
         try:
             scope, rest = self.follow_file_system()
         except ModuleNotFound:
+            return []
+        if scope is None:
             return []
         if rest:
             # follow the rest of the import (not FS -> classes, functions)
@@ -505,7 +513,7 @@ class _Importer(object):
                         paths = base.py__path__()
                     except AttributeError:
                         # The module is not a package.
-                        analysis.add(self._evaluator, 'import-error', import_path[-1])
+                        _add_error(self._evaluator, import_path[-1])
                         return None
                     else:
                         debug.dbg('search_module %s in paths %s', module_name, paths)
@@ -524,7 +532,7 @@ class _Importer(object):
                         sys.path = temp
             except ImportError:
                 # The module is not a package.
-                analysis.add(self._evaluator, 'import-error', import_path[-1])
+                _add_error(self._evaluator, import_path[-1])
                 return None
             else:
                 source = None

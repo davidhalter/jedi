@@ -145,7 +145,7 @@ class Script(object):
                 helpers.check_error_statements(module, self._pos)
             completion_names = []
             if names is not None:
-                imp_names = tuple(n for n in names if n.end_pos < self._pos)
+                imp_names = tuple(str(n) for n in names if n.end_pos < self._pos)
                 i = imports.get_importer(self._evaluator, imp_names, module, level)
                 completion_names = i.completion_names(self._evaluator, only_modules)
 
@@ -287,6 +287,7 @@ class Script(object):
             module = self._parser.module()
             names, level, _, _ = helpers.check_error_statements(module, self._pos)
             if names:
+                names = [str(n) for n in names]
                 i = imports.get_importer(self._evaluator, names, module, level)
                 return i.follow(self._evaluator)
 
