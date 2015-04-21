@@ -121,9 +121,6 @@ def test_import_priorities():
     from import_tree import the_pkg, invisible_pkg
     #? int()
     invisible_pkg
-    # The renamed invisible_pkg in that module (look at ``__init__.py``!)
-    #? float()
-    the_pkg.foo
 
 
 # -----------------

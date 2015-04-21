@@ -115,7 +115,8 @@ class ImportWrapper(pr.Base):
                     self._evaluator.find_types(s, from_import_name, is_goto)
                     for s in types))
                 if not types:
-                    importer = get_importer(self._evaluator, tuple(import_path),
+                    importer = get_importer(self._evaluator,
+                                            tuple(import_path + [from_import_name]),
                                             module, self._import.level)
                     module, _ = importer.follow_file_system()
                     if module is None:
@@ -129,6 +130,7 @@ class ImportWrapper(pr.Base):
             if is_goto and not rest:
                 types = [s.name for s in types]
 
+            """
             # follow the rest of the import (not FS -> classes, functions)
             if rest:
                 if is_goto:
@@ -141,6 +143,7 @@ class ImportWrapper(pr.Base):
                         types = importer.follow_rest(types[0], rest)
                     else:
                         types = []
+            """
             debug.dbg('after import: %s', types)
             #if not types:
             #    analysis.add(self._evaluator, 'import-error', importer.import_path[-1])
@@ -188,19 +191,31 @@ def get_importer(evaluator, import_path, module, level=0):
     """
     if level:
         base = module.py__package__().split('.')
+        if base == ['']:
+            base = []
         if level > len(base):
+            path = module.py__file__()
+            import_path = list(import_path)
+            for i in range(level):
+                path = os.path.dirname(path)
+            dir_name = os.path.basename(path)
+            if dir_name:
+                import_path.insert(0, dir_name)
+            else:
+                raise NotImplementedError
+
             # TODO add import error.
             debug.warning('Attempted relative import beyond top-level package.')
-            # TODO this is just in the wrong place.
-            raise NotImplementedError
-            return _Importer(evaluator, import_path, module, level)
+            # This is not the proper way to do relative imports. However, since
+            # Jedi cannot be sure about the entry point, we just calculate an
+            # absolute path here.
+            return _Importer(evaluator, import_path, module, 0)
         else:
             # Here we basically rewrite the level to 0.
             import_path = tuple(base) + import_path
 
     check_import_path = tuple(unicode(i) for i in import_path)
     try:
-        print(check_import_path)
         return evaluator.import_cache[check_import_path]
     except KeyError:
         importer = _Importer(evaluator, import_path, module, level=0)
@@ -500,7 +515,9 @@ class _Importer(object):
                     finally:
                         sys.path = temp
             except ImportError:
-                raise NotImplementedError
+                # The module is not a package.
+                analysis.add(self._evaluator, 'import-error', import_path[-1])
+                return None
             else:
                 source = None
                 if is_pkg:
