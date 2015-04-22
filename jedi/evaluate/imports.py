@@ -304,17 +304,6 @@ class _Importer(object):
 
 
 # TODO delete - move!
-        # Handle "magic" Flask extension imports:
-        # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
-        if len(self.import_path) > 2 and self.str_import_path[:2] == ('flask', 'ext'):
-            orig_path = tuple(self.import_path)
-            try:
-                self.import_path = ('flask_' + str(orig_path[2]),) + orig_path[3:]
-                return self._real_follow_file_system()
-            except ModuleNotFound:
-                self.import_path = ('flaskext',) + orig_path[2:]
-                return self._real_follow_file_system()
-
         return self._real_follow_file_system()
 
     def _real_follow_file_system(self):
@@ -377,6 +366,19 @@ class _Importer(object):
         This method is very similar to importlib's `_gcd_import`.
         """
         import_parts = [str(i) for i in import_path]
+
+        # Handle "magic" Flask extension imports:
+        # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
+        if len(import_path) > 2 and import_parts[:2] == ['flask', 'ext']:
+            # New style.
+            ipath = ('flask_' + str(import_parts[2]),) + import_path[3:]
+            modules = self._do_import(ipath, sys_path)
+            if modules:
+                return modules
+            else:
+                # Old style
+                return self._do_import(('flaskext',) + import_path[2:], sys_path)
+
         module_name = '.'.join(import_parts)
         try:
             return [self._evaluator.modules[module_name]]
