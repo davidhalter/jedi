@@ -96,19 +96,11 @@ class ImportWrapper(pr.Base):
 
             importer = get_importer(self._evaluator, tuple(import_path),
                                     module, self._import.level)
-            try:
-                module, rest = importer.follow_file_system()
-            except ModuleNotFound as e:
-                analysis.add(self._evaluator, 'import-error', e.name)
-                return []
 
-            if module is None:
-                # TODO does that really happen? Why?
-                return []
+            types, rest = importer.follow_file_system()
 
             #if self._import.is_nested() and not self.nested_resolve:
             #    scopes = [NestedImportModule(module, self._import)]
-            types = [module]
 
             if from_import_name is not None:
                 types = list(chain.from_iterable(
@@ -118,11 +110,7 @@ class ImportWrapper(pr.Base):
                     importer = get_importer(self._evaluator,
                                             tuple(import_path + [from_import_name]),
                                             module, self._import.level)
-                    module, _ = importer.follow_file_system()
-                    if module is None:
-                        types = []
-                    else:
-                        types = [module]
+                    types, _ = importer.follow_file_system()
 
 
 
@@ -302,39 +290,17 @@ class _Importer(object):
 
     def follow(self, evaluator):
         try:
-            scope, rest = self.follow_file_system()
+            scopes, _ = self.follow_file_system()
         except ModuleNotFound:
             return []
-        if scope is None:
-            return []
-        if rest:
-            # follow the rest of the import (not FS -> classes, functions)
-            return self.follow_rest(scope, rest)
-        return [scope]
-
-    def follow_rest(self, module, rest):
-        # Either os.path or path length is smaller.
-        if len(rest) < 2 or len(self.str_import_path) < 4 \
-                and ('os', 'path') == self.str_import_path[:2] and self.level == 0:
-            # This is a huge exception, we follow a nested import
-            # ``os.path``, because it's a very important one in Python
-            # that is being achieved by messing with ``sys.modules`` in
-            # ``os``.
-            scopes = [module]
-            for r in rest:
-                scopes = list(chain.from_iterable(
-                              self._evaluator.find_types(s, r)
-                              for s in scopes))
-            return scopes
-        else:
-            return []
+        return scopes
 
     @memoize_default(NO_DEFAULT)
     def follow_file_system(self):
         if not self.import_path:
             return None, []
-        module = self._do_import(self.import_path, self.sys_path_with_modifications())
-        return module, []
+        modules = self._do_import(self.import_path, self.sys_path_with_modifications())
+        return modules, []
 
 
 # TODO delete - move!
@@ -413,61 +379,77 @@ class _Importer(object):
         import_parts = [str(i) for i in import_path]
         module_name = '.'.join(import_parts)
         try:
-            return self._evaluator.modules[module_name]
+            return [self._evaluator.modules[module_name]]
         except KeyError:
-            try:
-                if len(import_path) > 1:
-                    # This is a recursive way of importing that works great with
-                    # the module cache.
-                    base = self._do_import(import_path[:-1], sys_path)
-                    try:
-                        paths = base.py__path__()
-                    except AttributeError:
-                        # The module is not a package.
-                        _add_error(self._evaluator, import_path[-1])
-                        return None
-                    else:
-                        debug.dbg('search_module %s in paths %s', module_name, paths)
-                        for path in paths:
-                            module_file, module_path, is_pkg = \
-                                find_module(import_parts[-1], [path])
-                else:
-                    debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
-                    # Override the sys.path. It works only good that way.
-                    # Injecting the path directly into `find_module` did not work.
-                    sys.path, temp = sys_path, sys.path
-                    try:
-                        module_file, module_path, is_pkg = \
-                            find_module(import_parts[-1])
-                    finally:
-                        sys.path = temp
-            except ImportError:
-                # The module is not a package.
-                _add_error(self._evaluator, import_path[-1])
-                return None
-            else:
-                source = None
-                if is_pkg:
-                    # In this case, we don't have a file yet. Search for the
-                    # __init__ file.
-                    for suffix, _, _ in imp.get_suffixes():
-                        path = os.path.join(module_path, '__init__' + suffix)
-                        if os.path.exists(path):
-                            if suffix == '.py':
-                                module_path = path
-                            break
-                elif module_file:
-                    source = module_file.read()
-                    module_file.close()
+            pass
 
-                if module_file is None and not module_path.endswith('.py'):
-                    module = compiled.load_module(module_path)
+        try:
+            if len(import_path) > 1:
+                # This is a recursive way of importing that works great with
+                # the module cache.
+                bases = self._do_import(import_path[:-1], sys_path)
+                if not bases:
+                    return []
+                # We can take the first element, because only the os special
+                # case yields multiple modules, which is not important for
+                # further imports.
+                base = bases[0]
+
+                # This is a huge exception, we follow a nested import
+                # ``os.path``, because it's a very important one in Python
+                # that is being achieved by messing with ``sys.modules`` in
+                # ``os``.
+                if [str(i) for i in import_path] == ['os', 'path']:
+                    return self._evaluator.find_types(base, 'path')
+
+                try:
+                    paths = base.py__path__()
+                except AttributeError:
+                    # The module is not a package.
+                    _add_error(self._evaluator, import_path[-1])
+                    return []
                 else:
-                    module = _load_module(self._evaluator, module_path, source,
-                                          sys_path, module_name)
+                    debug.dbg('search_module %s in paths %s', module_name, paths)
+                    for path in paths:
+                        module_file, module_path, is_pkg = \
+                            find_module(import_parts[-1], [path])
+            else:
+                debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
+                # Override the sys.path. It works only good that way.
+                # Injecting the path directly into `find_module` did not work.
+                sys.path, temp = sys_path, sys.path
+                try:
+                    module_file, module_path, is_pkg = \
+                        find_module(import_parts[-1])
+                finally:
+                    sys.path = temp
+        except ImportError:
+            # The module is not a package.
+            _add_error(self._evaluator, import_path[-1])
+            return []
+        else:
+            source = None
+            if is_pkg:
+                # In this case, we don't have a file yet. Search for the
+                # __init__ file.
+                for suffix, _, _ in imp.get_suffixes():
+                    path = os.path.join(module_path, '__init__' + suffix)
+                    if os.path.exists(path):
+                        if suffix == '.py':
+                            module_path = path
+                        break
+            elif module_file:
+                source = module_file.read()
+                module_file.close()
+
+            if module_file is None and not module_path.endswith('.py'):
+                module = compiled.load_module(module_path)
+            else:
+                module = _load_module(self._evaluator, module_path, source,
+                                      sys_path, module_name)
 
         self._evaluator.modules[module_name] = module
-        return module
+        return [module]
 
     def _generate_name(self, name):
         return helpers.FakeName(name, parent=self.module)
