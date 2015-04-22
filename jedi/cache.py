@@ -212,7 +212,7 @@ def load_parser(path):
 
 def save_parser(path, parser, pickling=True):
     try:
-        p_time = os.path.getmtime(path)
+        p_time = None if path is None else os.path.getmtime(path)
     except OSError:
         p_time = None
         pickling = False

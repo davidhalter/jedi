@@ -81,7 +81,7 @@ def check_fp(src, number_parsers_used, number_of_splits=None, number_of_misses=0
         number_of_splits = number_parsers_used
 
     p = FastParser(load_grammar(), u(src))
-    cache.save_parser(None, None, p, pickling=False)
+    cache.save_parser(None, p, pickling=False)
 
     # TODO Don't change get_code, the whole thing should be the same.
     # -> Need to refactor the parser first, though.
@@ -352,7 +352,7 @@ def test_open_parentheses():
     assert p.module.get_code() == '\n\n' + func
     assert p.number_of_splits == 2
     assert p.number_parsers_used == 2
-    cache.save_parser(None, None, p, pickling=False)
+    cache.save_parser(None, p, pickling=False)
 
     # Now with a correct parser it should work perfectly well.
     check_fp('isinstance()\n' + func, 1, 2)
