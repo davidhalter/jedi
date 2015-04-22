@@ -406,95 +406,6 @@ class _Importer(object):
                 return follow_path((str(i) for i in import_path), sys.path)
         return []
 
-    def _follow_str(self, sys_path, ns_path, string):
-        debug.dbg('follow_module %s in %s', string, ns_path)
-        path = None
-        if ns_path:
-            path = ns_path
-        elif self.level > 0:  # is a relative import
-            path = self.get_relative_path()
-
-        if path is not None:
-            importing = find_module(string, [path])
-        else:
-            debug.dbg('search_module %s in %s', string, self.file_path)
-            # Override the sys.path. It works only good that way.
-            # Injecting the path directly into `find_module` did not work.
-            sys.path, temp = sys_path, sys.path
-            try:
-                importing = find_module(string)
-            finally:
-                sys.path = temp
-
-        return importing
-
-    def _follow_sys_path(self, sys_path):
-        """
-        Find a module with a path (of the module, like usb.backend.libusb10).
-        """
-        current_namespace = (None, None, None)
-        # now execute those paths
-        rest = []
-        for i, s in enumerate(self.import_path):
-            try:
-                current_namespace = self._follow_str(sys_path, current_namespace[1], unicode(s))
-            except ImportError:
-                _continue = False
-                if self.level >= 1 and len(self.import_path) == 1:
-                    # follow `from . import some_variable`
-                    rel_path = self.get_relative_path()
-                    with common.ignored(ImportError):
-                        current_namespace = self._follow_str(sys_path, rel_path, '__init__')
-                elif current_namespace[2]:  # is a package
-                    path = self.str_import_path[:i]
-                    for n in self.namespace_packages(current_namespace[1], path):
-                        try:
-                            current_namespace = self._follow_str(sys_path, n, unicode(s))
-                            if current_namespace[1]:
-                                _continue = True
-                                break
-                        except ImportError:
-                            pass
-
-                if not _continue:
-                    if current_namespace[1]:
-                        rest = self.str_import_path[i:]
-                        break
-                    else:
-                        raise ModuleNotFound(s)
-
-        path = current_namespace[1]
-        is_package_directory = current_namespace[2]
-
-        module_names = list(self.str_import_path)
-        for _ in rest:
-            module_names.pop()
-        module_name = '.'.join(module_names)
-
-        f = None
-        if is_package_directory or current_namespace[0]:
-            # is a directory module
-            if is_package_directory:
-                for suffix, _, _ in imp.get_suffixes():
-                    p = os.path.join(path, '__init__' + suffix)
-                    if os.path.exists(p):
-                        if suffix == '.py':
-                            with open(p, 'rb') as f:
-                                source = f.read()
-                            path = p
-                        else:  # It's a binary!
-                            source = None
-                        break
-
-            else:
-                source = current_namespace[0].read()
-                current_namespace[0].close()
-            return _load_module(self._evaluator, path, source,
-                                sys_path=sys_path, module_name=module_name), rest
-        else:
-            return _load_module(self._evaluator, name=path,
-                                sys_path=sys_path, module_name=module_name), rest
-
     def _do_import(self, import_path, sys_path):
         """
         This method is very similar to importlib's `_gcd_import`.
@@ -583,7 +494,7 @@ class _Importer(object):
         :param only_modules: Indicates wheter it's possible to import a
             definition that is not defined in a module.
         """
-        from jedi.evaluate import finder, representation as er
+        from jedi.evaluate import finder
         names = []
         if self.import_path:
             # flask
@@ -638,14 +549,6 @@ class _Importer(object):
                     path = os.path.dirname(path)
                 names += self._get_module_names([path])
 
-                if self.level:
-                    rel_path = os.path.join(self.get_relative_path(),
-                                            '__init__.py')
-                    if os.path.exists(rel_path):
-                        module = _load_module(self._evaluator, rel_path)
-                        module = self._evaluator.wrap(module)
-                        for names_dict in module.names_dicts(search_global=False):
-                            names += chain.from_iterable(names_dict.values())
         return names
 
 
