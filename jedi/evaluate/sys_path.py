@@ -179,7 +179,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
         cache.save_parser(buildout_script, p)
         return p.module
 
-    cached = cache.load_parser(buildout_script, None)
+    cached = cache.load_parser(buildout_script)
     module = cached and cached.module or load(buildout_script)
     if not module:
         return

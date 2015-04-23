@@ -429,8 +429,11 @@ class Script(object):
             user_scope = self._parser.user_scope()
             definitions = set([user_scope.name])
         elif isinstance(user_stmt, pr.Import):
-            s, name_part = helpers.get_on_import_stmt(self._evaluator,
-                                                      self._user_context, user_stmt)
+            s, name = helpers.get_on_import_stmt(self._evaluator,
+                                                 self._user_context, user_stmt)
+
+            definitions = self._evaluator.goto(name)
+            """
             try:
                 definitions = [s.follow(is_goto=True)[0]]
             except IndexError:
@@ -442,6 +445,7 @@ class Script(object):
                 np = import_name[0]
                 if not user_stmt.is_star_import() and unicode(name_part) == unicode(np):
                     definitions.append(np)
+        """
         else:
             # The Evaluator.goto function checks for definitions, but since we
             # use a reverse tokenizer, we have new name_part objects, so we
@@ -472,6 +476,12 @@ class Script(object):
         try:
             user_stmt = self._parser.user_stmt()
             definitions = self._goto(add_import_name=True)
+            if not definitions and isinstance(user_stmt, pr.Import):
+                # For not defined imports (goto doesn't find something, we take
+                # the name as a definition. This is enough, because every name
+                # points to it.
+                definitions = [user_stmt.name_for_position(self._pos)]
+
             if not definitions:
                 # Without a definition for a name we cannot find references.
                 return []

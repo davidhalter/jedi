@@ -305,7 +305,8 @@ class Evaluator(object):
                     s = imports.ImportWrapper(self, name)
                     for n in s.follow(is_goto=True):
                         yield n
-                yield name
+                else:
+                    yield name
 
         stmt = name.get_definition()
         par = name.parent
@@ -340,7 +341,8 @@ class Evaluator(object):
         elif isinstance(par, (pr.Param, pr.Function, pr.Class)) and par.name is name:
             return [name]
         elif isinstance(stmt, pr.Import):
-            return imports.ImportWrapper(self, name).follow(is_goto=True)
+            modules = imports.ImportWrapper(self, name).follow(is_goto=True)
+            return list(resolve_implicit_imports(modules))
         elif par.type == 'dotted_name':  # Is a decorator.
             index = par.children.index(name)
             if index > 0:

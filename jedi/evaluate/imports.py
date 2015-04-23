@@ -104,19 +104,22 @@ class ImportWrapper(pr.Base):
 
             if from_import_name is not None:
                 types = list(chain.from_iterable(
-                    self._evaluator.find_types(s, from_import_name, is_goto)
+                    self._evaluator.find_types(s, from_import_name, is_goto=is_goto)
                     for s in types))
                 if not types:
                     importer = get_importer(self._evaluator,
                                             tuple(import_path + [from_import_name]),
                                             module, self._import.level)
                     types, _ = importer.follow_file_system()
+                    # goto only accepts `Name`
+                    if is_goto:
+                        types = [s.name for s in types]
+            else:
+                # goto only accepts `Name`
+                if is_goto:
+                    types = [s.name for s in types]
 
 
-
-            # goto only accepts `Name`
-            if is_goto and not rest:
-                types = [s.name for s in types]
 
             """
             # follow the rest of the import (not FS -> classes, functions)
@@ -298,7 +301,7 @@ class _Importer(object):
     @memoize_default(NO_DEFAULT)
     def follow_file_system(self):
         if not self.import_path:
-            return None, []
+            return [], []
         modules = self._do_import(self.import_path, self.sys_path_with_modifications())
         return modules, []
 
@@ -413,6 +416,8 @@ class _Importer(object):
                 else:
                     debug.dbg('search_module %s in paths %s', module_name, paths)
                     for path in paths:
+                        # At the moment we are only using one path. So this is
+                        # not important to be correct.
                         module_file, module_path, is_pkg = \
                             find_module(import_parts[-1], [path])
             else:

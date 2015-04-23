@@ -775,7 +775,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
                 return name
 
     def py__file__(self):
-        return self._module.path
+        return os.path.abspath(self._module.path)
 
     def py__package__(self):
         if self._get_init_directory() is None:
