@@ -314,8 +314,10 @@ class TestGotoAssignments(TestCase):
         assert n.name == 'os'
         assert n.type == 'module'
         n = nms[1].goto_assignments()[0]
-        assert n.name == 'path'
-        assert n.type == 'import'
+        # This is very special, normally the name doesn't chance, but since
+        # os.path is a sys.modules hack, it does.
+        assert n.name in ('ntpath', 'posixpath')
+        assert n.type == 'module'
 
     def test_import_alias(self):
         nms = names('import json as foo', references=True)
