@@ -97,7 +97,7 @@ class ImportWrapper(pr.Base):
             importer = get_importer(self._evaluator, tuple(import_path),
                                     module, self._import.level)
 
-            types, rest = importer.follow_file_system()
+            types = importer.follow_file_system()
 
             #if self._import.is_nested() and not self.nested_resolve:
             #    scopes = [NestedImportModule(module, self._import)]
@@ -110,7 +110,7 @@ class ImportWrapper(pr.Base):
                     importer = get_importer(self._evaluator,
                                             tuple(import_path + [from_import_name]),
                                             module, self._import.level)
-                    types, _ = importer.follow_file_system()
+                    types = importer.follow_file_system()
                     # goto only accepts `Name`
                     if is_goto:
                         types = [s.name for s in types]
@@ -293,7 +293,7 @@ class _Importer(object):
 
     def follow(self, evaluator):
         try:
-            scopes, _ = self.follow_file_system()
+            scopes = self.follow_file_system()
         except ModuleNotFound:
             return []
         return scopes
@@ -301,9 +301,9 @@ class _Importer(object):
     @memoize_default(NO_DEFAULT)
     def follow_file_system(self):
         if not self.import_path:
-            return [], []
+            return []
         modules = self._do_import(self.import_path, self.sys_path_with_modifications())
-        return modules, []
+        return modules
 
 
 # TODO delete - move!
