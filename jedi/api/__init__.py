@@ -113,7 +113,7 @@ class Script(object):
         debug.speed('init')
 
     def _parsed_callback(self, parser):
-        module = er.wrap(self._evaluator, parser.module)
+        module = self._evaluator.wrap(parser.module)
         self._evaluator.modules[unicode(module.name)] = module
 
     @property
@@ -213,7 +213,7 @@ class Script(object):
                 if isinstance(c.parent, (pr.Function, pr.Class)):
                     # TODO I think this is a hack. It should be an
                     #   er.Function/er.Class before that.
-                    c = er.wrap(self._evaluator, c.parent).name
+                    c = self._evaluator.wrap(c.parent).name
                 new = classes.Completion(self._evaluator, c, needs_dot, len(like))
                 k = (new.name, new.complete)  # key
                 if k in comp_dct and settings.no_completion_duplicates:
@@ -235,7 +235,7 @@ class Script(object):
                 scope = scope.get_parent_scope()
             names_dicts = global_names_dict_generator(
                 self._evaluator,
-                er.wrap(self._evaluator, scope),
+                self._evaluator.wrap(scope),
                 self._pos
             )
             completion_names = []
@@ -342,7 +342,7 @@ class Script(object):
         context = self._user_context.get_context()
         definitions = set()
         if next(context) in ('class', 'def'):
-            definitions = set([er.wrap(self._evaluator, self._parser.user_scope())])
+            definitions = set([self._evaluator.wrap(self._parser.user_scope())])
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:

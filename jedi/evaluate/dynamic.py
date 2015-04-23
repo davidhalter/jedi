@@ -112,7 +112,7 @@ def search_function_call(evaluator, func):
                         else:
                             undec.append(escope)
 
-                    if er.wrap(evaluator, compare) in undec:
+                    if evaluator.wrap(compare) in undec:
                         # Only if we have the correct function we execute
                         # it, otherwise just ignore it.
                         evaluator.eval_trailer(types, trailer)

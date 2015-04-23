@@ -85,7 +85,7 @@ class LazyName(helpers.FakeName):
                     assert len(parser_path) == 1
                     found = self._evaluator.find_types(mod, parser_path[0], search_global=True)
                 else:
-                    found = [er.wrap(self._evaluator, mod)]
+                    found = [self._evaluator.wrap(mod)]
 
                 if not found:
                     debug.warning('Possibly an interpreter lookup for Python code failed %s',

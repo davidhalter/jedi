@@ -91,7 +91,18 @@ class Evaluator(object):
         self.analysis = []
 
     def wrap(self, element):
-        return er.wrap(self, element)
+        if isinstance(element, pr.Class):
+            return er.Class(self, element)
+        elif isinstance(element, pr.Function):
+            if isinstance(element, pr.Lambda):
+                return er.LambdaWrapper(self, element)
+            else:
+                return er.Function(self, element)
+        elif isinstance(element, (pr.Module)) \
+                and not isinstance(element, er.ModuleWrapper):
+            return er.ModuleWrapper(self, element)
+        else:
+            return element
 
     def find_types(self, scope, name_str, position=None, search_global=False,
                    is_goto=False):
@@ -133,7 +144,7 @@ class Evaluator(object):
             operator = copy.copy(first_operation)
             operator.value = operator.value[:-1]
             name = str(stmt.get_defined_names()[0])
-            parent = er.wrap(self, stmt.get_parent_scope())
+            parent = self.wrap(stmt.get_parent_scope())
             left = self.find_types(parent, name, stmt.start_pos, search_global=True)
             if isinstance(stmt.get_parent_until(pr.ForStmt), pr.ForStmt):
                 # Iterate through result and add the values, that's possible

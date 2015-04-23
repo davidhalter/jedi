@@ -61,7 +61,7 @@ class BaseDefinition(object):
         """
         An instance of :class:`jedi.parser.reprsentation.Name` subclass.
         """
-        self._definition = er.wrap(evaluator, self._name.get_definition())
+        self._definition = evaluator.wrap(self._name.get_definition())
         self.is_keyword = isinstance(self._definition, keywords.Keyword)
 
         # generate a path to the definition
@@ -175,7 +175,6 @@ class BaseDefinition(object):
                 pass
             else:
                 if isinstance(par, er.ModuleWrapper):
-                    #module = er.wrap(self._evaluator, par)
                     # TODO just make the path dotted from the beginning, we
                     # shouldn't really split here.
                     path[0:0] = par.py__name__().split('.')
@@ -354,7 +353,7 @@ class BaseDefinition(object):
 
     def parent(self):
         scope = self._definition.get_parent_scope()
-        scope = er.wrap(self._evaluator, scope)
+        scope = self._evaluator.wrap(scope)
         return Definition(self._evaluator, scope.name)
 
     def __repr__(self):

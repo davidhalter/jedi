@@ -76,7 +76,7 @@ class NameFinder(object):
     def __init__(self, evaluator, scope, name_str, position=None):
         self._evaluator = evaluator
         # Make sure that it's not just a syntax tree node.
-        self.scope = er.wrap(evaluator, scope)
+        self.scope = evaluator.wrap(scope)
         self.name_str = name_str
         self.position = position
 
@@ -129,7 +129,7 @@ class NameFinder(object):
         last_names = []
         for name in reversed(sorted(names, key=lambda name: name.start_pos)):
             stmt = name.get_definition()
-            name_scope = er.wrap(self._evaluator, stmt.get_parent_scope())
+            name_scope = self._evaluator.wrap(stmt.get_parent_scope())
 
             if isinstance(self.scope, er.Instance) and not isinstance(name_scope, er.Instance):
                 # Instances should not be checked for positioning, because we
@@ -191,7 +191,7 @@ class NameFinder(object):
         for n in names:
             definition = n.parent
             if isinstance(definition, (pr.Function, pr.Class, pr.Module)):
-                yield er.wrap(self._evaluator, definition).name
+                yield self._evaluator.wrap(definition).name
             else:
                 yield n
 
@@ -344,7 +344,7 @@ def _eval_param(evaluator, param, scope):
         if isinstance(scope, er.InstanceElement):
             res_new.append(scope.instance)
         else:
-            inst = er.Instance(evaluator, er.wrap(evaluator, cls),
+            inst = er.Instance(evaluator, evaluator.wrap(cls),
                                Arguments(evaluator, ()), is_generated=True)
             res_new.append(inst)
         return res_new
@@ -464,7 +464,7 @@ def global_names_dict_generator(evaluator, scope, position):
 
     >>> from jedi.evaluate import Evaluator
     >>> evaluator = Evaluator(load_grammar())
-    >>> scope = er.wrap(evaluator, scope)
+    >>> scope = evaluator.wrap(scope)
     >>> pairs = list(global_names_dict_generator(evaluator, scope, (4, 0)))
     >>> no_unicode_pprint(pairs[0])
     ({'func': [], 'y': [<Name: y@4,4>]}, (4, 0))
@@ -503,7 +503,7 @@ def global_names_dict_generator(evaluator, scope, position):
                 # The position should be reset if the current scope is a function.
                 in_func = True
                 position = None
-        scope = er.wrap(evaluator, scope.get_parent_scope())
+        scope = evaluator.wrap(scope.get_parent_scope())
 
     # Add builtins to the global scope.
     for names_dict in compiled.builtin.names_dicts(True):

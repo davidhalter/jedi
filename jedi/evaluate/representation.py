@@ -50,21 +50,6 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
 
 
-def wrap(evaluator, element):
-    if isinstance(element, pr.Class):
-        return Class(evaluator, element)
-    elif isinstance(element, pr.Function):
-        if isinstance(element, pr.Lambda):
-            return LambdaWrapper(evaluator, element)
-        else:
-            return Function(evaluator, element)
-    elif isinstance(element, (pr.Module)) \
-            and not isinstance(element, ModuleWrapper):
-        return ModuleWrapper(evaluator, element)
-    else:
-        return element
-
-
 class Executed(pr.Base):
     """
     An instance is also an executable - because __init__ is called
@@ -290,7 +275,7 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
                            pr.Module, FunctionExecution)):
         return var
 
-    var = wrap(evaluator, var)
+    var = evaluator.wrap(var)
     return InstanceElement(evaluator, instance, var, is_class_var)
 
 
