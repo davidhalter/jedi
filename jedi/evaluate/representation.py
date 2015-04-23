@@ -786,11 +786,34 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
     @property
     def py__path__(self):
         """
+        Not seen here, since it's a property. The callback actually uses a
+        variable, so use it like::
+
+            foo.py__path__(sys_path)
+
         In case of a package, this returns Python's __path__ attribute, which
         is a list of paths (strings).
         Raises an AttributeError if the module is not a package.
         """
-        def return_value():
+        def return_value(search_path):
+            init_path = self.py__file__()
+            if os.path.basename(init_path) == '__init__.py':
+
+                with open(init_path, 'rb') as f:
+                    content = common.source_to_unicode(f.read())
+                    # these are strings that need to be used for namespace packages,
+                    # the first one is ``pkgutil``, the second ``pkg_resources``.
+                    options = ('declare_namespace(__name__)', 'extend_path(__path__')
+                    if options[0] in content or options[1] in content:
+                        # It is a namespace, now try to find the rest of the
+                        # modules on sys_path or whatever the search_path is.
+                        paths = set()
+                        for s in search_path:
+                            other = os.path.join(s, unicode(self.name))
+                            if os.path.isdir(other):
+                                paths.add(other)
+                        return list(paths)
+            # Default to this.
             return [path]
 
         path = self._get_init_directory()
