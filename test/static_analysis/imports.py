@@ -14,7 +14,7 @@ date.today
 #! 5 attribute-error
 date.not_existing_attribute
 
-#! 26 import-error
+#! 14 import-error
 from datetime.date import today
 
 #! 16 import-error

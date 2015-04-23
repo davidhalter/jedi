@@ -104,11 +104,12 @@ class ImportWrapper(pr.Base):
 
             if from_import_name is not None:
                 types = list(chain.from_iterable(
-                    self._evaluator.find_types(s, from_import_name, is_goto=is_goto)
+                    self._evaluator.find_types(s, unicode(from_import_name),
+                                               is_goto=is_goto)
                     for s in types))
                 if not types:
-                    importer = get_importer(self._evaluator,
-                                            tuple(import_path + [from_import_name]),
+                    path = import_path + [from_import_name]
+                    importer = get_importer(self._evaluator, tuple(path),
                                             module, self._import.level)
                     types = importer.follow_file_system()
                     # goto only accepts `Name`
