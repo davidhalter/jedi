@@ -289,7 +289,7 @@ class Script(object):
             if names:
                 names = [str(n) for n in names]
                 i = imports.get_importer(self._evaluator, names, module, level)
-                return i.follow(self._evaluator)
+                return i.follow()
 
             scopes = self._evaluator.eval_element(eval_stmt)
 

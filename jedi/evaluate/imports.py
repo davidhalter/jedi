@@ -32,12 +32,6 @@ from jedi.evaluate import analysis
 from jedi.evaluate.cache import memoize_default, NO_DEFAULT
 
 
-class ModuleNotFound(Exception):
-    def __init__(self, name):
-        super(ModuleNotFound, self).__init__()
-        self.name = name
-
-
 def completion_names(evaluator, imp, pos):
     name = imp.name_for_position(pos)
     module = evaluator.wrap(imp.get_parent_until())
@@ -97,7 +91,7 @@ class ImportWrapper(pr.Base):
             importer = get_importer(self._evaluator, tuple(import_path),
                                     module, self._import.level)
 
-            types = importer.follow_file_system()
+            types = importer.follow()
 
             #if self._import.is_nested() and not self.nested_resolve:
             #    scopes = [NestedImportModule(module, self._import)]
@@ -111,7 +105,7 @@ class ImportWrapper(pr.Base):
                     path = import_path + [from_import_name]
                     importer = get_importer(self._evaluator, tuple(path),
                                             module, self._import.level)
-                    types = importer.follow_file_system()
+                    types = importer.follow()
                     # goto only accepts `Name`
                     if is_goto:
                         types = [s.name for s in types]
@@ -204,7 +198,7 @@ def _add_error(evaluator, name, message=None):
 class _Importer(object):
     def __init__(self, evaluator, import_path, module, level=0):
         """
-        An implementation similar to ``__import__``. Use `follow_file_system`
+        An implementation similar to ``__import__``. Use `follow`
         to actually follow the imports.
 
         *level* specifies whether to use absolute or relative imports. 0 (the
@@ -292,49 +286,12 @@ class _Importer(object):
 
         return in_path + sys_path_mod
 
-    def follow(self, evaluator):
-        try:
-            scopes = self.follow_file_system()
-        except ModuleNotFound:
-            return []
-        return scopes
-
     @memoize_default(NO_DEFAULT)
-    def follow_file_system(self):
+    def follow(self):
         if not self.import_path:
             return []
         modules = self._do_import(self.import_path, self.sys_path_with_modifications())
         return modules
-
-
-# TODO delete - move!
-        return self._real_follow_file_system()
-
-    def _real_follow_file_system(self):
-        if self.file_path:
-            sys_path_mod = list(self.sys_path_with_modifications())
-            if not self.module.has_explicit_absolute_import:
-                # If the module explicitly asks for absolute imports,
-                # there's probably a bogus local one.
-                sys_path_mod.insert(0, self.file_path)
-
-            # First the sys path is searched normally and if that doesn't
-            # succeed, try to search the parent directories, because sometimes
-            # Jedi doesn't recognize sys.path modifications (like py.test
-            # stuff).
-            old_path, temp_path = self.file_path, os.path.dirname(self.file_path)
-            while old_path != temp_path:
-                sys_path_mod.append(temp_path)
-                old_path, temp_path = temp_path, os.path.dirname(temp_path)
-        else:
-            sys_path_mod = list(get_sys_path())
-
-        module, rest = self._follow_sys_path(sys_path_mod)
-        if isinstance(module, pr.Module):
-            # TODO this looks strange. do we really need to check and should
-            # this transformation happen here?
-            return self._evaluator.wrap(module), rest
-        return module, rest
 
     def namespace_packages(self, found_path, import_path):
         """
@@ -408,6 +365,9 @@ class _Importer(object):
                 return self._evaluator.find_types(base, 'path')
 
             try:
+                # It's possible that by giving it always the sys path (and not
+                # the __path__ attribute of the parent, we get wrong results
+                # and nested namespace packages don't work.  But I'm not sure.
                 paths = base.py__path__(sys_path)
             except AttributeError:
                 # The module is not a package.
@@ -508,7 +468,7 @@ class _Importer(object):
                     if os.path.isdir(flaskext):
                         names += self._get_module_names([flaskext])
 
-            for scope in self.follow(evaluator):
+            for scope in self.follow():
                 # Non-modules are not completable.
                 if not scope.type == 'file_input':  # not a module
                     continue
