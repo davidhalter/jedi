@@ -717,7 +717,10 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
         yield dict((str(n), [GlobalName(n)]) for n in self.base.global_names)
         yield self._sub_modules_dict()
 
-    @cache_star_import
+    # I'm not sure if the star import cache is really that effective anymore
+    # with all the other really fast import caches. Recheck. Also we would need
+    # to push the star imports into Evaluator.modules, if we reenable this.
+    #@cache_star_import
     @memoize_default([])
     def star_imports(self):
         modules = []

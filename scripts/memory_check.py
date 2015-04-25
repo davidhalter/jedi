@@ -42,15 +42,17 @@ def main(mods):
     for mod in mods:
         elapsed, used = profile_preload(mod)
         if used > 0:
-            print('%8.1f | %8d | %s' % (elapsed, used, mod))
+            print('%8.2f | %8d | %s' % (elapsed, used, mod))
     print('------------------------------')
     elapsed = time.time() - t0
     used = used_memory() - baseline
-    print('%8.1f | %8d | %s' % (elapsed, used, 'Total'))
+    print('%8.2f | %8d | %s' % (elapsed, used, 'Total'))
 
 
 if __name__ == '__main__':
-    mods = ['re', 'numpy', 'scipy', 'scipy.sparse', 'scipy.stats',
-            'wx', 'decimal', 'PyQt4.QtGui', 'PySide.QtGui', 'Tkinter']
-    mods += sys.argv[1:]
+    if sys.argv[1:]:
+        mods = sys.argv[1:]
+    else:
+        mods = ['re', 'numpy', 'scipy', 'scipy.sparse', 'scipy.stats',
+                'wx', 'decimal', 'PyQt4.QtGui', 'PySide.QtGui', 'Tkinter']
     main(mods)
