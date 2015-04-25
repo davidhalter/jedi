@@ -23,7 +23,7 @@ from jedi import debug
 from jedi import cache
 from jedi.parser import fast
 from jedi.parser import tree as pr
-from jedi.evaluate.sys_path import get_sys_path, sys_path_with_modifications
+from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi import settings
 from jedi.common import source_to_unicode
@@ -213,9 +213,11 @@ class _Importer(object):
         self._evaluator = evaluator
         self.level = level
         self.module = module
-        path = module.path
-        # TODO abspath
-        self.file_path = os.path.dirname(path) if path is not None else None
+        try:
+            self.file_path = module.py__file__()
+        except AttributeError:
+            # Can be None for certain compiled modules like 'builtins'.
+            self.file_path = None
 
         if level:
             base = module.py__package__().split('.')
@@ -235,14 +237,12 @@ class _Importer(object):
                 else:
                     _add_error(self._evaluator, import_path[-1])
                     import_path = []
-
-                # TODO add import error.
-                debug.warning('Attempted relative import beyond top-level package.')
+                    # TODO add import error.
+                    debug.warning('Attempted relative import beyond top-level package.')
             else:
                 # Here we basically rewrite the level to 0.
                 import_path = tuple(base) + import_path
         self.import_path = import_path
-
 
     @property
     def str_import_path(self):
@@ -258,31 +258,20 @@ class _Importer(object):
     @memoize_default()
     def sys_path_with_modifications(self):
         in_path = []
-        sys_path_mod = list(sys_path_with_modifications(self._evaluator, self.module))
+        sys_path_mod = list(sys_path.sys_path_with_modifications(self._evaluator, self.module))
         if self.file_path is not None:
             # If you edit e.g. gunicorn, there will be imports like this:
             # `from gunicorn import something`. But gunicorn is not in the
             # sys.path. Therefore look if gunicorn is a parent directory, #56.
             if self.import_path:  # TODO is this check really needed?
-                parts = self.file_path.split(os.path.sep)
-                for i, p in enumerate(parts):
-                    if p == unicode(self.import_path[0]):
-                        new = os.path.sep.join(parts[:i])
-                        in_path.append(new)
+                for path in sys_path.traverse_parents(self.file_path):
+                    if os.path.basename(path) == self.str_import_path[0]:
+                        in_path.append(os.path.dirname(path))
 
-            if not self.module.has_explicit_absolute_import:
-                # If the module explicitly asks for absolute imports,
-                # there's probably a bogus local one.
-                sys_path_mod.insert(0, self.file_path)
-
-            # First the sys path is searched normally and if that doesn't
-            # succeed, try to search the parent directories, because sometimes
-            # Jedi doesn't recognize sys.path modifications (like py.test
-            # stuff).
-            old_path, temp_path = self.file_path, os.path.dirname(self.file_path)
-            while old_path != temp_path:
-                sys_path_mod.append(temp_path)
-                old_path, temp_path = temp_path, os.path.dirname(temp_path)
+            # Since we know nothing about the call location of the sys.path,
+            # it's a possibility that the current directory is the origin of
+            # the Python execution.
+            sys_path_mod.insert(0, os.path.dirname(self.file_path))
 
         return in_path + sys_path_mod
 

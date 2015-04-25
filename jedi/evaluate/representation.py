@@ -760,6 +760,12 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
                 return name
 
     def py__file__(self):
+        """
+        In contrast to Python's __file__ can be None.
+        """
+        if self._module.path is None:
+            return None
+
         return os.path.abspath(self._module.path)
 
     def py__package__(self):

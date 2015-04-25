@@ -284,7 +284,7 @@ class Script(object):
             if eval_stmt is None:
                 return []
 
-            module = self._parser.module()
+            module = self._evaluator.wrap(self._parser.module())
             names, level, _, _ = helpers.check_error_statements(module, self._pos)
             if names:
                 names = [str(n) for n in names]

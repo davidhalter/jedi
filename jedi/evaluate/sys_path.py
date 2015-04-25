@@ -188,7 +188,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
         yield path
 
 
-def _traverse_parents(path):
+def traverse_parents(path):
     while True:
         new = os.path.dirname(path)
         if new == path:
@@ -198,7 +198,7 @@ def _traverse_parents(path):
 
 
 def _get_parent_dir_with_file(path, filename):
-    for parent in _traverse_parents(path):
+    for parent in traverse_parents(path):
         if os.path.isfile(os.path.join(parent, filename)):
             return parent
     return None
@@ -208,7 +208,7 @@ def _detect_django_path(module_path):
     """ Detects the path of the very well known Django library (if used) """
     result = []
 
-    for parent in _traverse_parents(module_path):
+    for parent in traverse_parents(module_path):
         with common.ignored(IOError):
             with open(parent + os.path.sep + 'manage.py'):
                 debug.dbg('Found django path: %s', module_path)

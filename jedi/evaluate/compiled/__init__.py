@@ -74,6 +74,9 @@ class CompiledObject(Base):
     def py__bool__(self):
         return bool(self.obj)
 
+    def py__file__(self):
+        return self.obj.__file__
+
     def is_class(self):
         return inspect.isclass(self.obj)
 
