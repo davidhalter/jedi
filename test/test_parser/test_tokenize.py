@@ -3,6 +3,8 @@
 from io import StringIO
 from textwrap import dedent
 
+import pytest
+
 from jedi._compatibility import u, is_py3
 from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT
 from jedi.parser import Parser, load_grammar, tokenize
@@ -120,3 +122,31 @@ def test_tokenizer_with_string_literal_backslash():
     import jedi
     c = jedi.Script("statement = u'foo\\\n'; statement").goto_definitions()
     assert c[0]._name.parent.obj == 'foo'
+
+
+def test_ur_literals():
+    """
+    Decided to parse `u''` literals regardless of Python version. This makes
+    probably sense:
+
+    - Python 3.2 doesn't support it and is still supported by Jedi, but might
+      not be. While this is incorrect, it's just incorrect for one "old" and in
+      the future not very important version.
+    - All the other Python versions work very well with it.
+    """
+    def check(literal):
+        io = StringIO(literal)
+        tokens = tokenize.generate_tokens(io.readline)
+        token_list = list(tokens)
+        typ, result_literal, _, _ = token_list[0]
+        assert typ == STRING
+        assert result_literal == literal
+
+    check('u""')
+    check('ur""')
+    check('Ur""')
+    check('UR""')
+    check('bR""')
+    # Must be in the right order.
+    with pytest.raises(AssertionError):
+        check('Rb""')

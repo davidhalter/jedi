@@ -105,13 +105,17 @@ endprogs = {"'": _compile(single), '"': _compile(double),
             "r'''": single3prog, 'r"""': double3prog,
             "b'''": single3prog, 'b"""': double3prog,
             "u'''": single3prog, 'u"""': double3prog,
-            "br'''": single3prog, 'br"""': double3prog,
             "R'''": single3prog, 'R"""': double3prog,
             "B'''": single3prog, 'B"""': double3prog,
             "U'''": single3prog, 'U"""': double3prog,
+            "br'''": single3prog, 'br"""': double3prog,
             "bR'''": single3prog, 'bR"""': double3prog,
             "Br'''": single3prog, 'Br"""': double3prog,
             "BR'''": single3prog, 'BR"""': double3prog,
+            "ur'''": single3prog, 'ur"""': double3prog,
+            "uR'''": single3prog, 'uR"""': double3prog,
+            "Ur'''": single3prog, 'Ur"""': double3prog,
+            "UR'''": single3prog, 'UR"""': double3prog,
             'r': None, 'R': None, 'b': None, 'B': None}
 
 triple_quoted = {}
@@ -120,7 +124,9 @@ for t in ("'''", '"""',
           "b'''", 'b"""', "B'''", 'B"""',
           "u'''", 'u"""', "U'''", 'U"""',
           "br'''", 'br"""', "Br'''", 'Br"""',
-          "bR'''", 'bR"""', "BR'''", 'BR"""'):
+          "bR'''", 'bR"""', "BR'''", 'BR"""',
+          "ur'''", 'ur"""', "Ur'''", 'Ur"""',
+          "uR'''", 'uR"""', "UR'''", 'UR"""'):
     triple_quoted[t] = t
 single_quoted = {}
 for t in ("'", '"',
@@ -128,7 +134,9 @@ for t in ("'", '"',
           "b'", 'b"', "B'", 'B"',
           "u'", 'u"', "U'", 'U"',
           "br'", 'br"', "Br'", 'Br"',
-          "bR'", 'bR"', "BR'", 'BR"'):
+          "bR'", 'bR"', "BR'", 'BR"',
+          "ur'", 'ur"', "Ur'", 'Ur"',
+          "uR'", 'uR"', "UR'", 'UR"'):
     single_quoted[t] = t
 
 del _compile
