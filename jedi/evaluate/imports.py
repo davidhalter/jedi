@@ -49,7 +49,7 @@ def completion_names(evaluator, imp, pos):
         import_path = imp.path_for_name(name)[:-1]
         level = imp.level
 
-    importer = get_importer(evaluator, tuple(import_path), module, level)
+    importer = Importer(evaluator, tuple(import_path), module, level)
     if isinstance(imp, tree.ImportFrom):
         c = imp.children
         only_modules = c[c.index('import')].start_pos >= pos
@@ -88,8 +88,8 @@ class ImportWrapper(tree.Base):
                     from_import_name = import_path[-1]
                     import_path = from_names
 
-            importer = get_importer(self._evaluator, tuple(import_path),
-                                    module, self._import.level)
+            importer = Importer(self._evaluator, tuple(import_path),
+                                module, self._import.level)
 
             types = importer.follow()
 
@@ -101,10 +101,11 @@ class ImportWrapper(tree.Base):
                     self._evaluator.find_types(t, unicode(from_import_name),
                                                is_goto=is_goto)
                     for t in types))
+
                 if not types:
                     path = import_path + [from_import_name]
-                    importer = get_importer(self._evaluator, tuple(path),
-                                            module, self._import.level)
+                    importer = Importer(self._evaluator, tuple(path),
+                                        module, self._import.level)
                     types = importer.follow()
                     # goto only accepts `Name`
                     if is_goto:
@@ -114,25 +115,7 @@ class ImportWrapper(tree.Base):
                 if is_goto:
                     types = [s.name for s in types]
 
-
-
-            """
-            # follow the rest of the import (not FS -> classes, functions)
-            if rest:
-                if is_goto:
-                    types = list(chain.from_iterable(
-                        self._evaluator.find_types(s, rest[0], is_goto=True)
-                        for s in types))
-                else:
-                    if self._import.type == 'import_from' \
-                            or importer.str_import_path == ('os', 'path'):
-                        types = importer.follow_rest(types[0], rest)
-                    else:
-                        types = []
-            """
             debug.dbg('after import: %s', types)
-            #if not types:
-            #    analysis.add(self._evaluator, 'import-error', importer.import_path[-1])
         finally:
             self._evaluator.recursion_detector.pop_stmt()
         return types
@@ -170,32 +153,13 @@ class NestedImportModule(tree.Module):
                                    self._nested_import)
 
 
-def get_importer(evaluator, import_path, module, level=0):
-    """
-    Checks the evaluator caches first, which resembles the ``sys.modules``
-    cache and speeds up libraries like ``numpy``.
-    """
-    return _Importer(evaluator, import_path, module, level)
-
-    # TODO remove this and is the import_cache still used?
-    """
-    check_import_path = tuple(unicode(i) for i in import_path)
-    try:
-        return evaluator.import_cache[check_import_path]
-    except KeyError:
-        importer = _Importer(evaluator, import_path, module, level=0)
-        evaluator.import_cache[check_import_path] = importer
-        return importer
-    """
-
-
 def _add_error(evaluator, name, message=None):
     if hasattr(name, 'parent'):
         # Should be a name, not a string!
         analysis.add(evaluator, 'import-error', name, message)
 
 
-class _Importer(object):
+class Importer(object):
     def __init__(self, evaluator, import_path, module, level=0):
         """
         An implementation similar to ``__import__``. Use `follow`

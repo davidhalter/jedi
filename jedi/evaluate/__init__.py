@@ -83,8 +83,7 @@ class Evaluator(object):
         self.grammar = grammar
         self.memoize_cache = {}  # for memoize decorators
         # To memorize modules -> equals `sys.modules`.
-        self.modules = {}
-        self.import_cache = {}  # like `sys.modules`.
+        self.modules = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `compiled.create()`
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
