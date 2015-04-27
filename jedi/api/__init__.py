@@ -15,7 +15,7 @@ from itertools import chain
 from jedi._compatibility import unicode, builtins
 from jedi.parser import Parser, load_grammar
 from jedi.parser.tokenize import source_tokens
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi.parser.user_context import UserContext, UserContextParser
 from jedi import debug
 from jedi import settings
@@ -159,13 +159,13 @@ class Script(object):
                     else:
                         return keywords.keyword_names('import')
 
-            if isinstance(user_stmt, pr.Import):
+            if isinstance(user_stmt, tree.Import):
                 module = self._parser.module()
                 completion_names += imports.completion_names(self._evaluator,
                                                              user_stmt, self._pos)
                 return completion_names
 
-            if names is None and not isinstance(user_stmt, pr.Import):
+            if names is None and not isinstance(user_stmt, tree.Import):
                 if not path and not dot:
                     # add keywords
                     completion_names += keywords.keyword_names(all=True)
@@ -210,7 +210,7 @@ class Script(object):
             if settings.case_insensitive_completion \
                     and n.lower().startswith(like.lower()) \
                     or n.startswith(like):
-                if isinstance(c.parent, (pr.Function, pr.Class)):
+                if isinstance(c.parent, (tree.Function, tree.Class)):
                     # TODO I think this is a hack. It should be an
                     #   er.Function/er.Class before that.
                     c = self._evaluator.wrap(c.parent).name
@@ -272,7 +272,7 @@ class Script(object):
             # matched to much.
             return []
 
-        if isinstance(user_stmt, pr.Import):
+        if isinstance(user_stmt, tree.Import):
             i, _ = helpers.get_on_import_stmt(self._evaluator, self._user_context,
                                               user_stmt, is_completion)
             if i is None:
@@ -392,7 +392,7 @@ class Script(object):
             """
             definitions = set(defs)
             for d in defs:
-                if isinstance(d.parent, pr.Import) \
+                if isinstance(d.parent, tree.Import) \
                         and d.start_pos == (0, 0):
                     i = imports.ImportWrapper(self._evaluator, d.parent).follow(is_goto=True)
                     definitions.remove(d)
@@ -417,7 +417,7 @@ class Script(object):
 
         if last_name is None:
             last_name = stmt
-            while not isinstance(last_name, pr.Name):
+            while not isinstance(last_name, tree.Name):
                 try:
                     last_name = last_name.children[-1]
                 except AttributeError:
@@ -428,7 +428,7 @@ class Script(object):
             # The cursor is on a class/function name.
             user_scope = self._parser.user_scope()
             definitions = set([user_scope.name])
-        elif isinstance(user_stmt, pr.Import):
+        elif isinstance(user_stmt, tree.Import):
             s, name = helpers.get_on_import_stmt(self._evaluator,
                                                  self._user_context, user_stmt)
 
@@ -450,8 +450,8 @@ class Script(object):
             # The Evaluator.goto function checks for definitions, but since we
             # use a reverse tokenizer, we have new name_part objects, so we
             # have to check the user_stmt here for positions.
-            if isinstance(user_stmt, pr.ExprStmt) \
-                    and isinstance(last_name.parent, pr.ExprStmt):
+            if isinstance(user_stmt, tree.ExprStmt) \
+                    and isinstance(last_name.parent, tree.ExprStmt):
                 for name in user_stmt.get_defined_names():
                     if name.start_pos <= self._pos <= name.end_pos:
                         return [name]
@@ -476,7 +476,7 @@ class Script(object):
         try:
             user_stmt = self._parser.user_stmt()
             definitions = self._goto(add_import_name=True)
-            if not definitions and isinstance(user_stmt, pr.Import):
+            if not definitions and isinstance(user_stmt, tree.Import):
                 # For not defined imports (goto doesn't find something, we take
                 # the name as a definition. This is enough, because every name
                 # points to it.
@@ -486,7 +486,7 @@ class Script(object):
                 # Without a definition for a name we cannot find references.
                 return []
 
-            if not isinstance(user_stmt, pr.Import):
+            if not isinstance(user_stmt, tree.Import):
                 # import case is looked at with add_import_name option
                 definitions = usages.usages_add_import_modules(self._evaluator,
                                                                definitions)
@@ -610,7 +610,7 @@ class Interpreter(Script):
     def _simple_complete(self, path, dot, like):
         user_stmt = self._parser.user_stmt_with_whitespace()
         is_simple_path = not path or re.search('^[\w][\w\d.]*$', path)
-        if isinstance(user_stmt, pr.Import) or not is_simple_path:
+        if isinstance(user_stmt, tree.Import) or not is_simple_path:
             return super(Interpreter, self)._simple_complete(path, dot, like)
         else:
             class NamespaceModule(object):

@@ -9,7 +9,7 @@ from itertools import chain
 from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.parser import Parser
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi import cache
 from jedi import debug
 from jedi.parser.tokenize import (source_tokens, NEWLINE,
@@ -18,7 +18,7 @@ from jedi.parser.tokenize import (source_tokens, NEWLINE,
 FLOWS = 'if', 'else', 'elif', 'while', 'with', 'try', 'except', 'finally', 'for'
 
 
-class FastModule(pr.Module):
+class FastModule(tree.Module):
     type = 'file_input'
 
     def __init__(self, module_path):
@@ -140,7 +140,7 @@ class ParserNode(object):
         middle.
         """
         c = self._content_scope.children
-        if pr.is_node(c[-1], 'suite'):  # In a simple_stmt there's no DEDENT.
+        if tree.is_node(c[-1], 'suite'):  # In a simple_stmt there's no DEDENT.
             end_marker = self.parser.module.children[-1]
             # Set the DEDENT prefix instead of the ENDMARKER.
             c[-1].children[-1].prefix = end_marker.prefix
@@ -236,7 +236,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                                 '|'.join(_FLOWS_NEED_COLON)))
 
     def __init__(self, grammar, source, module_path=None):
-        # set values like `pr.Module`.
+        # set values like `tree.Module`.
         self._grammar = grammar
         self.module_path = module_path
         self._reset_caches()

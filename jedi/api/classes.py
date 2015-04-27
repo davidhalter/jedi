@@ -10,7 +10,7 @@ import re
 from jedi._compatibility import unicode, use_metaclass
 from jedi import settings
 from jedi import common
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
@@ -152,7 +152,7 @@ class BaseDefinition(object):
             return stripped.api_type()
         elif isinstance(stripped, iterable.Array):
             return 'instance'
-        elif isinstance(stripped, pr.Import):
+        elif isinstance(stripped, tree.Import):
             return 'import'
 
         string = type(stripped).__name__.lower().replace('wrapper', '')
@@ -166,7 +166,7 @@ class BaseDefinition(object):
         path = []
         par = self._definition
         while par is not None:
-            if isinstance(par, pr.Import):
+            if isinstance(par, tree.Import):
                 path += imports.ImportWrapper(self._evaluator, self._name).import_path
                 break
             try:
@@ -317,9 +317,9 @@ class BaseDefinition(object):
         """
         Follow both statements and imports, as far as possible.
         """
-        if self._definition.isinstance(pr.ExprStmt):
+        if self._definition.isinstance(tree.ExprStmt):
             return self._evaluator.eval_statement(self._definition)
-        elif self._definition.isinstance(pr.Import):
+        elif self._definition.isinstance(tree.Import):
             return imports.ImportWrapper(self._evaluator, self._name).follow()
         else:
             return [self._definition]
@@ -383,9 +383,9 @@ class Completion(BaseDefinition):
             append = '('
 
         if settings.add_dot_after_module:
-            if isinstance(self._definition, pr.Module):
+            if isinstance(self._definition, tree.Module):
                 append += '.'
-        if isinstance(self._definition, pr.Param):
+        if isinstance(self._definition, tree.Param):
             append += '='
 
         name = str(self._name)
@@ -443,7 +443,7 @@ class Completion(BaseDefinition):
             parses all libraries starting with ``a``.
         """
         definition = self._definition
-        if isinstance(definition, pr.Import):
+        if isinstance(definition, tree.Import):
             i = imports.ImportWrapper(self._evaluator, self._name)
             if len(i.import_path) > 1 or not fast:
                 followed = self._follow_statements_imports()
@@ -462,7 +462,7 @@ class Completion(BaseDefinition):
         The type of the completion objects. Follows imports. For a further
         description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
         """
-        if isinstance(self._definition, pr.Import):
+        if isinstance(self._definition, tree.Import):
             i = imports.ImportWrapper(self._evaluator, self._name)
             if len(i.import_path) <= 1:
                 return 'module'
@@ -480,7 +480,7 @@ class Completion(BaseDefinition):
         # imports completion is very complicated and needs to be treated
         # separately in Completion.
         definition = self._definition
-        if definition.isinstance(pr.Import):
+        if definition.isinstance(tree.Import):
             i = imports.ImportWrapper(self._evaluator, self._name)
             return i.follow()
         return super(Completion, self)._follow_statements_imports()
@@ -546,14 +546,14 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             d = typ + ' ' + d.name.get_code()
         elif isinstance(d, iterable.Array):
             d = 'class ' + d.type
-        elif isinstance(d, (pr.Class, er.Class, er.Instance)):
+        elif isinstance(d, (tree.Class, er.Class, er.Instance)):
             d = 'class ' + unicode(d.name)
-        elif isinstance(d, (er.Function, pr.Function)):
+        elif isinstance(d, (er.Function, tree.Function)):
             d = 'def ' + unicode(d.name)
-        elif isinstance(d, pr.Module):
+        elif isinstance(d, tree.Module):
             # only show module name
             d = 'module %s' % self.module_name
-        elif isinstance(d, pr.Param):
+        elif isinstance(d, tree.Param):
             d = d.get_code().strip()
             if d.endswith(','):
                 d = d[:-1]  # Remove the comma.

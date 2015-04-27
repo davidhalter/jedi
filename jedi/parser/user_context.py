@@ -7,7 +7,7 @@ from jedi import common
 from jedi.parser import tokenize, Parser
 from jedi._compatibility import u
 from jedi.parser.fast import FastParser
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi import debug
 from jedi.common import PushBackIterator
 
@@ -323,8 +323,8 @@ class UserContextParser(object):
             def scan(scope):
                 for s in scope.children:
                     if s.start_pos <= self._position <= s.end_pos:
-                        if isinstance(s, (pr.Scope, pr.Flow)):
-                                if isinstance(s, pr.Flow):
+                        if isinstance(s, (tree.Scope, tree.Flow)):
+                                if isinstance(s, tree.Flow):
                                     return s
                                 return scan(s) or s
                         elif s.type in ('suite', 'decorated'):
