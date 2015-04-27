@@ -430,11 +430,11 @@ def test_incomplete_function():
 def test_string_literals():
     """Simplified case of jedi-vim#377."""
     source = dedent("""
-    x = ur''' '''
+    x = ur''' 
 
     def foo():
         pass
-    x""")
+    """)
 
     script = jedi.Script(dedent(source))
     assert script.completions()

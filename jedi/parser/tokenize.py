@@ -282,7 +282,9 @@ def generate_tokens(readline):
                     paren_level -= 1
                 yield OP, token, spos, prefix
 
+    end_pos = (lnum, max - 1)
+    # As the last position we just take the maximally possible position. We
+    # remove -1 for the last new line.
     for indent in indents[1:]:
-        yield DEDENT, '', (lnum, max), ''
-    # As the last position we just take the max possible.
-    yield ENDMARKER, '', (lnum, max), prefix
+        yield DEDENT, '', end_pos, ''
+    yield ENDMARKER, '', end_pos, prefix
