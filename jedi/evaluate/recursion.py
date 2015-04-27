@@ -7,7 +7,6 @@ Next to :mod:`jedi.evaluate.cache` this module also makes |jedi| not
 thread-safe. Why?  ``execution_recursion_decorator`` uses class variables to
 count the function calls.
 """
-from jedi.parser import tree as pr
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
@@ -81,8 +80,7 @@ class _RecursionNode(object):
         # Don't check param instances, they are not causing recursions
         # The same's true for the builtins, because the builtins are really
         # simple.
-        self.is_ignored = isinstance(stmt, pr.Param) \
-            or (self.script == compiled.builtin)
+        self.is_ignored = self.script == compiled.builtin
 
     def __eq__(self, other):
         if not other:
