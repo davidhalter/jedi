@@ -275,5 +275,6 @@ def generate_tokens(readline):
                 yield OP, token, spos, prefix
 
     for indent in indents[1:]:
-        yield DEDENT, '', spos, ''
-    yield ENDMARKER, '', spos, prefix
+        yield DEDENT, '', (lnum, max), ''
+    # As the last position we just take the max possible.
+    yield ENDMARKER, '', (lnum, max), prefix
