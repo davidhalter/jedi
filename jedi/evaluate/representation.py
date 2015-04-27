@@ -35,7 +35,7 @@ import re
 from itertools import chain
 
 from jedi._compatibility import use_metaclass, unicode, Python3Method
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi import debug
 from jedi import common
 from jedi.cache import underscore_memoization, cache_star_import
@@ -50,7 +50,7 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
 
 
-class Executed(pr.Base):
+class Executed(tree.Base):
     """
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of a parser node or a list.
@@ -64,7 +64,7 @@ class Executed(pr.Base):
         return True
 
     def get_parent_until(self, *args, **kwargs):
-        return pr.Base.get_parent_until(self, *args, **kwargs)
+        return tree.Base.get_parent_until(self, *args, **kwargs)
 
     @common.safe_property
     def parent(self):
@@ -136,7 +136,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         # This loop adds the names of the self object, copies them and removes
         # the self.
         for sub in self.base.subscopes:
-            if isinstance(sub, pr.Class):
+            if isinstance(sub, tree.Class):
                 continue
             # Get the self name, if there's one.
             self_name = self._get_func_self_name(sub)
@@ -155,7 +155,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                 for name in name_list:
                     if name.value == self_name and name.prev_sibling() is None:
                         trailer = name.next_sibling()
-                        if pr.is_node(trailer, 'trailer') \
+                        if tree.is_node(trailer, 'trailer') \
                                 and len(trailer.children) == 2 \
                                 and trailer.children[0] == '.':
                             name = trailer.children[1]  # After dot.
@@ -246,9 +246,9 @@ class LazyInstanceDict(object):
         return [self[key] for key in self._dct]
 
 
-class InstanceName(pr.Name):
+class InstanceName(tree.Name):
     def __init__(self, origin_name, parent):
-        super(InstanceName, self).__init__(pr.zero_position_modifier,
+        super(InstanceName, self).__init__(tree.zero_position_modifier,
                                            origin_name.value,
                                            origin_name.start_pos)
         self._origin_name = origin_name
@@ -267,19 +267,19 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
     in quite a lot of cases, which includes Nodes like ``power``, that need to
     know where a self name comes from for example.
     """
-    if isinstance(var, pr.Name):
+    if isinstance(var, tree.Name):
         parent = get_instance_el(evaluator, instance, var.parent, is_class_var)
         return InstanceName(var, parent)
     elif var.type != 'funcdef' \
-            and isinstance(var, (Instance, compiled.CompiledObject, pr.Leaf,
-                           pr.Module, FunctionExecution)):
+            and isinstance(var, (Instance, compiled.CompiledObject, tree.Leaf,
+                           tree.Module, FunctionExecution)):
         return var
 
     var = evaluator.wrap(var)
     return InstanceElement(evaluator, instance, var, is_class_var)
 
 
-class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
+class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
     """
     InstanceElement is a wrapper for any object, that is used as an instance
     variable (e.g. self.variable or class methods).
@@ -295,7 +295,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
-                or isinstance(par, pr.Class) \
+                or isinstance(par, tree.Class) \
                 and par == self.instance.base.base:
             par = self.instance
         else:
@@ -304,10 +304,10 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return par
 
     def get_parent_until(self, *args, **kwargs):
-        return pr.BaseNode.get_parent_until(self, *args, **kwargs)
+        return tree.BaseNode.get_parent_until(self, *args, **kwargs)
 
     def get_definition(self):
-        return self.get_parent_until((pr.ExprStmt, pr.IsScope, pr.Import))
+        return self.get_parent_until((tree.ExprStmt, tree.IsScope, tree.Import))
 
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
@@ -367,7 +367,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, pr.Base)):
         return "<%s of %s>" % (type(self).__name__, self.var)
 
 
-class Wrapper(pr.Base):
+class Wrapper(tree.Base):
     def is_scope(self):
         return True
 
@@ -383,7 +383,7 @@ class Wrapper(pr.Base):
 
 class Class(use_metaclass(CachedMetaClass, Wrapper)):
     """
-    This class is not only important to extend `pr.Class`, it is also a
+    This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
     """
     def __init__(self, evaluator, base):
@@ -505,7 +505,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 trailer = dec.children[2:-1]
                 if trailer:
                     # Create a trailer and evaluate it.
-                    trailer = pr.Node('trailer', trailer)
+                    trailer = tree.Node('trailer', trailer)
                     dec_results = self._evaluator.eval_trailer(dec_results, trailer)
 
                 if not len(dec_results):
@@ -629,7 +629,7 @@ class FunctionExecution(Executed):
     def _get_params(self):
         """
         This returns the params for an TODO and is injected as a
-        'hack' into the pr.Function class.
+        'hack' into the tree.Function class.
         This needs to be here, because Instance can have __init__ functions,
         which act the same way as normal functions.
         """
@@ -639,7 +639,7 @@ class FunctionExecution(Executed):
         return [n for n in self._get_params() if str(n) == name][0]
 
     def name_for_position(self, position):
-        return pr.Function.name_for_position(self, position)
+        return tree.Function.name_for_position(self, position)
 
     def _copy_list(self, lst):
         """
@@ -671,22 +671,22 @@ class FunctionExecution(Executed):
     @common.safe_property
     @memoize_default([])
     def returns(self):
-        return pr.Scope._search_in_scope(self, pr.ReturnStmt)
+        return tree.Scope._search_in_scope(self, tree.ReturnStmt)
 
     @common.safe_property
     @memoize_default([])
     def yields(self):
-        return pr.Scope._search_in_scope(self, pr.YieldExpr)
+        return tree.Scope._search_in_scope(self, tree.YieldExpr)
 
     @common.safe_property
     @memoize_default([])
     def statements(self):
-        return pr.Scope._search_in_scope(self, pr.ExprStmt)
+        return tree.Scope._search_in_scope(self, tree.ExprStmt)
 
     @common.safe_property
     @memoize_default([])
     def subscopes(self):
-        return pr.Scope._search_in_scope(self, pr.Scope)
+        return tree.Scope._search_in_scope(self, tree.Scope)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.base)
@@ -702,7 +702,7 @@ class GlobalName(helpers.FakeName):
                                          name.start_pos, is_definition=True)
 
 
-class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
+class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
     def __init__(self, evaluator, module):
         self._evaluator = evaluator
         self.base = self._module = module
@@ -729,7 +729,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, pr.Module, Wrapper)):
                 name = i.star_import_name()
                 new = imports.ImportWrapper(self._evaluator, name).follow()
                 for module in new:
-                    if isinstance(module, pr.Module):
+                    if isinstance(module, tree.Module):
                         modules += module.star_imports()
                 modules += new
         return modules

@@ -1,4 +1,4 @@
-from jedi.parser import tree as pr
+from jedi.parser import tree
 
 
 class Status(object):
@@ -53,7 +53,7 @@ def _break_check(evaluator, stmt, base_scope, element_scope):
     base_scope = evaluator.wrap(base_scope)
 
     reachable = REACHABLE
-    if isinstance(element_scope, pr.IfStmt):
+    if isinstance(element_scope, tree.IfStmt):
         if element_scope.node_after_else(stmt):
             for check_node in element_scope.check_nodes():
                 reachable = _check_if(evaluator, check_node)
@@ -63,7 +63,7 @@ def _break_check(evaluator, stmt, base_scope, element_scope):
         else:
             node = element_scope.node_in_which_check_node(stmt)
             reachable = _check_if(evaluator, node)
-    elif isinstance(element_scope, (pr.TryStmt, pr.WhileStmt)):
+    elif isinstance(element_scope, (tree.TryStmt, tree.WhileStmt)):
         return UNSURE
 
     # Only reachable branches need to be examined further.

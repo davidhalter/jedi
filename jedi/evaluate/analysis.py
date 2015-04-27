@@ -2,7 +2,7 @@
 Module for statical analysis.
 """
 from jedi import debug
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi.evaluate.compiled import CompiledObject
 
 
@@ -196,13 +196,13 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
             return False
 
     obj = jedi_obj
-    while obj is not None and not obj.isinstance(pr.Function, pr.Class):
-        if obj.isinstance(pr.Flow):
+    while obj is not None and not obj.isinstance(tree.Function, tree.Class):
+        if obj.isinstance(tree.Flow):
             # try/except catch check
-            if obj.isinstance(pr.TryStmt) and check_try_for_except(obj, exception):
+            if obj.isinstance(tree.TryStmt) and check_try_for_except(obj, exception):
                 return True
             # hasattr check
-            if exception == AttributeError and obj.isinstance(pr.IfStmt, pr.WhileStmt):
+            if exception == AttributeError and obj.isinstance(tree.IfStmt, tree.WhileStmt):
                 if check_hasattr(obj.children[1], obj.children[3]):
                     return True
         obj = obj.parent
@@ -243,7 +243,7 @@ def get_module_statements(module):
     def add_nodes(nodes):
         new = set()
         for node in nodes:
-            if isinstance(node, pr.Flow):
+            if isinstance(node, tree.Flow):
                 children = node.children
                 if node.type == 'for_stmt':
                     children = children[2:]  # Don't want to include the names.
@@ -258,7 +258,7 @@ def get_module_statements(module):
                     pass
             elif node.type not in ('whitespace', 'operator', 'keyword',
                                    'parameters', 'decorated', 'except_clause') \
-                    and not isinstance(node, (pr.ClassOrFunc, pr.Import)):
+                    and not isinstance(node, (tree.ClassOrFunc, tree.Import)):
                 new.add(node)
 
                 try:
@@ -282,7 +282,7 @@ def get_module_statements(module):
                 import_names |= set(path[-1] for path in imp.paths())
 
         children = scope.children
-        if isinstance(scope, pr.ClassOrFunc):
+        if isinstance(scope, tree.ClassOrFunc):
             children = children[2:]  # We don't want to include the class name.
         nodes |= add_nodes(children)
 

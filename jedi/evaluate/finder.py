@@ -14,7 +14,7 @@ check for -> a is a string). There's big potential in these checks.
 from itertools import chain
 
 from jedi._compatibility import unicode, u
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi import debug
 from jedi import common
 from jedi import settings
@@ -43,7 +43,7 @@ def filter_after_position(names, position):
     for n in names:
         # Filter positions and also allow list comprehensions and lambdas.
         if n.start_pos[0] is not None and n.start_pos < position \
-                or isinstance(n.get_definition(), (pr.CompFor, pr.Lambda)):
+                or isinstance(n.get_definition(), (tree.CompFor, tree.Lambda)):
             names_new.append(n)
     return names_new
 
@@ -87,8 +87,8 @@ class NameFinder(object):
         types = self._names_to_types(names, search_global)
 
         if not names and not types \
-                and not (isinstance(self.name_str, pr.Name)
-                         and isinstance(self.name_str.parent.parent, pr.Param)):
+                and not (isinstance(self.name_str, tree.Name)
+                         and isinstance(self.name_str.parent.parent, tree.Param)):
             if not isinstance(self.name_str, (str, unicode)):  # TODO Remove?
                 if search_global:
                     message = ("NameError: name '%s' is not defined."
@@ -110,7 +110,7 @@ class NameFinder(object):
 
     def names_dict_lookup(self, names_dict, position):
         def get_param(scope, el):
-            if isinstance(el.get_parent_until(pr.Param), pr.Param):
+            if isinstance(el.get_parent_until(tree.Param), tree.Param):
                 return scope.param_by_name(str(el))
             return el
 
@@ -148,8 +148,8 @@ class NameFinder(object):
                 last_names.append(name)
                 continue
 
-            if isinstance(self.name_str, pr.Name):
-                origin_scope = self.name_str.get_parent_until(pr.Scope, reverse=True)
+            if isinstance(self.name_str, tree.Name):
+                origin_scope = self.name_str.get_parent_until(tree.Scope, reverse=True)
             else:
                 origin_scope = None
             if isinstance(stmt.parent, compiled.CompiledObject):
@@ -190,7 +190,7 @@ class NameFinder(object):
         """
         for n in names:
             definition = n.parent
-            if isinstance(definition, (pr.Function, pr.Class, pr.Module)):
+            if isinstance(definition, (tree.Function, tree.Class, tree.Module)):
                 yield self._evaluator.wrap(definition).name
             else:
                 yield n
@@ -215,7 +215,7 @@ class NameFinder(object):
         types = []
 
         # Add isinstance and other if/assert knowledge.
-        if isinstance(self.name_str, pr.Name):
+        if isinstance(self.name_str, tree.Name):
             # Ignore FunctionExecution parents for now.
             flow_scope = self.name_str
             until = flow_scope.get_parent_until(er.FunctionExecution)
@@ -246,7 +246,7 @@ class NameFinder(object):
         # definition. __get__ is only called if the descriptor is defined in
         # the class dictionary.
         name_scope = name.get_definition().get_parent_scope()
-        if not isinstance(name_scope, (er.Instance, pr.Class)):
+        if not isinstance(name_scope, (er.Instance, tree.Class)):
             return types
 
         result = []
@@ -264,23 +264,23 @@ class NameFinder(object):
 def _name_to_types(evaluator, name, scope):
     types = []
     typ = name.get_definition()
-    if typ.isinstance(pr.ForStmt):
+    if typ.isinstance(tree.ForStmt):
         for_types = evaluator.eval_element(typ.children[3])
         for_types = iterable.get_iterator_types(for_types)
         types += check_tuple_assignments(for_types, name)
-    elif typ.isinstance(pr.CompFor):
+    elif typ.isinstance(tree.CompFor):
         for_types = evaluator.eval_element(typ.children[3])
         for_types = iterable.get_iterator_types(for_types)
         types += check_tuple_assignments(for_types, name)
-    elif isinstance(typ, pr.Param):
+    elif isinstance(typ, tree.Param):
         types += _eval_param(evaluator, typ, scope)
-    elif typ.isinstance(pr.ExprStmt):
+    elif typ.isinstance(tree.ExprStmt):
         types += _remove_statements(evaluator, typ, name)
-    elif typ.isinstance(pr.WithStmt):
+    elif typ.isinstance(tree.WithStmt):
         types += evaluator.eval_element(typ.node_from_name(name))
-    elif isinstance(typ, pr.Import):
+    elif isinstance(typ, tree.Import):
         types += imports.ImportWrapper(evaluator, name).follow()
-    elif isinstance(typ, pr.GlobalStmt):
+    elif isinstance(typ, tree.GlobalStmt):
         # TODO theoretically we shouldn't be using search_global here, it
         # doesn't make sense, because it's a local search (for that name)!
         # However, globals are not that important and resolving them doesn't
@@ -288,7 +288,7 @@ def _name_to_types(evaluator, name, scope):
         # something is executed.
         types += evaluator.find_types(typ.get_parent_scope(), str(name),
                                       search_global=True)
-    elif isinstance(typ, pr.TryStmt):
+    elif isinstance(typ, tree.TryStmt):
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
         # the static analysis report.
@@ -325,7 +325,7 @@ def _remove_statements(evaluator, stmt, name):
     if check_instance is not None:
         # class renames
         types = [er.get_instance_el(evaluator, check_instance, a, True)
-                 if isinstance(a, (er.Function, pr.Function))
+                 if isinstance(a, (er.Function, tree.Function))
                  else a for a in types]
     return types
 
@@ -334,10 +334,10 @@ def _eval_param(evaluator, param, scope):
     res_new = []
     func = param.get_parent_scope()
 
-    cls = func.parent.get_parent_until((pr.Class, pr.Function))
+    cls = func.parent.get_parent_until((tree.Class, tree.Function))
 
     from jedi.evaluate.param import ExecutedParam, Arguments
-    if isinstance(cls, pr.Class) and param.position_nr == 0 \
+    if isinstance(cls, tree.Class) and param.position_nr == 0 \
             and not isinstance(param, ExecutedParam):
         # This is where we add self - if it has never been
         # instantiated.
@@ -396,13 +396,13 @@ def check_flow_information(evaluator, flow, search_name, pos):
             names = []
 
         for name in names:
-            ass = name.get_parent_until(pr.AssertStmt)
-            if isinstance(ass, pr.AssertStmt) and pos is not None and ass.start_pos < pos:
+            ass = name.get_parent_until(tree.AssertStmt)
+            if isinstance(ass, tree.AssertStmt) and pos is not None and ass.start_pos < pos:
                 result = _check_isinstance_type(evaluator, ass.assertion(), search_name)
                 if result:
                     break
 
-    if isinstance(flow, (pr.IfStmt, pr.WhileStmt)):
+    if isinstance(flow, (tree.IfStmt, tree.WhileStmt)):
         element = flow.children[1]
         result = _check_isinstance_type(evaluator, element, search_name)
     return result
@@ -414,7 +414,7 @@ def _check_isinstance_type(evaluator, element, search_name):
         # this might be removed if we analyze and, etc
         assert len(element.children) == 2
         first, trailer = element.children
-        assert isinstance(first, pr.Name) and first.value == 'isinstance'
+        assert isinstance(first, tree.Name) and first.value == 'isinstance'
         assert trailer.type == 'trailer' and trailer.children[0] == '('
         assert len(trailer.children) == 3
 
@@ -536,7 +536,7 @@ def filter_private_variable(scope, origin_node):
     instance = scope.get_parent_scope()
     coming_from = origin_node
     while coming_from is not None \
-            and not isinstance(coming_from, (pr.Class, compiled.CompiledObject)):
+            and not isinstance(coming_from, (tree.Class, compiled.CompiledObject)):
         coming_from = coming_from.get_parent_scope()
 
     # CompiledObjects don't have double underscore attributes, but Jedi abuses

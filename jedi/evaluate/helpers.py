@@ -1,7 +1,7 @@
 import copy
 from itertools import chain
 
-from jedi.parser import tree as pr
+from jedi.parser import tree
 
 
 def deep_ast_copy(obj, parent=None, new_elements=None):
@@ -60,11 +60,11 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
         new_elements[obj] = new_obj = copy.copy(obj)
         if parent is not None:
             new_obj.parent = parent
-    elif isinstance(obj, pr.BaseNode):
+    elif isinstance(obj, tree.BaseNode):
         new_obj = copy_node(obj)
         if parent is not None:
             for child in new_obj.children:
-                if isinstance(child, (pr.Name, pr.BaseNode)):
+                if isinstance(child, (tree.Name, tree.BaseNode)):
                     child.parent = parent
     else:  # String literals and so on.
         new_obj = obj  # Good enough, don't need to copy anything.
@@ -83,11 +83,11 @@ def call_of_name(name, cut_own_trailer=False):
     This generates a copy of the original ast node.
     """
     par = name
-    if pr.is_node(par.parent, 'trailer'):
+    if tree.is_node(par.parent, 'trailer'):
         par = par.parent
 
     power = par.parent
-    if pr.is_node(power, 'power') and power.children[0] != name \
+    if tree.is_node(power, 'power') and power.children[0] != name \
             and not (power.children[-2] == '**' and
                      name.start_pos > power.children[-1].start_pos):
         par = power
@@ -117,7 +117,7 @@ def get_module_names(module, all_scopes):
     return chain.from_iterable(dct.values())
 
 
-class FakeImport(pr.ImportName):
+class FakeImport(tree.ImportName):
     def __init__(self, name, parent, level=0):
         super(FakeImport, self).__init__([])
         self.parent = parent
@@ -145,13 +145,13 @@ class FakeImport(pr.ImportName):
         return True
 
 
-class FakeName(pr.Name):
+class FakeName(tree.Name):
     def __init__(self, name_str, parent=None, start_pos=(0, 0), is_definition=None):
         """
         In case is_definition is defined (not None), that bool value will be
         returned.
         """
-        super(FakeName, self).__init__(pr.zero_position_modifier, name_str, start_pos)
+        super(FakeName, self).__init__(tree.zero_position_modifier, name_str, start_pos)
         self.parent = parent
         self._is_definition = is_definition
 

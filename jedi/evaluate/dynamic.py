@@ -19,7 +19,7 @@ It works as follows:
 from itertools import chain
 
 from jedi._compatibility import unicode
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi import settings
 from jedi import debug
 from jedi.evaluate.cache import memoize_default
@@ -55,7 +55,7 @@ def search_params(evaluator, param):
         return []
     debug.dbg('Dynamic param search for %s', param)
 
-    func = param.get_parent_until(pr.Function)
+    func = param.get_parent_until(tree.Function)
     # Compare the param names.
     names = [n for n in search_function_call(evaluator, func)
              if n.value == param.name.value]
@@ -85,11 +85,11 @@ def search_function_call(evaluator, func):
 
             for name in names:
                 parent = name.parent
-                if pr.is_node(parent, 'trailer'):
+                if tree.is_node(parent, 'trailer'):
                     parent = parent.parent
 
                 trailer = None
-                if pr.is_node(parent, 'power'):
+                if tree.is_node(parent, 'power'):
                     for t in parent.children[1:]:
                         if t == '**':
                             break
@@ -124,7 +124,7 @@ def search_function_call(evaluator, func):
     compare = func
     if func_name == '__init__':
         cls = func.get_parent_scope()
-        if isinstance(cls, pr.Class):
+        if isinstance(cls, tree.Class):
             func_name = unicode(cls.name)
             compare = cls
 

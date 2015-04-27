@@ -4,7 +4,7 @@ Handles operator precedence.
 import operator
 
 from jedi._compatibility import unicode
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi import debug
 from jedi.evaluate.compiled import (CompiledObject, create, builtin,
                                     keyword_from_value, true_obj, false_obj)
@@ -43,7 +43,7 @@ def calculate_children(evaluator, children):
     types = evaluator.eval_element(next(iterator))
     for operator in iterator:
         right = next(iterator)
-        if pr.is_node(operator, 'comp_op'):  # not in / is not
+        if tree.is_node(operator, 'comp_op'):  # not in / is not
             operator = ' '.join(str(c.value) for c in operator.children)
 
         # handle lazy evaluation of and/or here.

@@ -14,7 +14,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.parser import Parser
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param
@@ -32,7 +32,7 @@ def execute(evaluator, obj, params):
     else:
         if obj.parent == compiled.builtin:
             module_name = 'builtins'
-        elif isinstance(obj.parent, pr.Module):
+        elif isinstance(obj.parent, tree.Module):
             module_name = str(obj.parent.name)
         else:
             module_name = ''
@@ -98,7 +98,7 @@ def builtins_getattr(evaluator, objects, names, defaults=None):
     types = []
     # follow the first param
     for obj in objects:
-        if not isinstance(obj, (er.Instance, er.Class, pr.Module, compiled.CompiledObject)):
+        if not isinstance(obj, (er.Instance, er.Class, tree.Module, compiled.CompiledObject)):
             debug.warning('getattr called without instance')
             continue
 
@@ -130,13 +130,13 @@ class SuperInstance(er.Instance):
 @argument_clinic('[type[, obj]], /', want_scope=True)
 def builtins_super(evaluator, types, objects, scope):
     # TODO make this able to detect multiple inheritance super
-    accept = (pr.Function, er.FunctionExecution)
+    accept = (tree.Function, er.FunctionExecution)
     if scope.isinstance(*accept):
-        wanted = (pr.Class, er.Instance)
+        wanted = (tree.Class, er.Instance)
         cls = scope.get_parent_until(accept + wanted,
                                      include_current=False)
         if isinstance(cls, wanted):
-            if isinstance(cls, pr.Class):
+            if isinstance(cls, tree.Class):
                 cls = er.Class(evaluator, cls)
             elif isinstance(cls, er.Instance):
                 cls = cls.base

@@ -4,7 +4,7 @@ from itertools import chain
 from jedi._compatibility import unicode, zip_longest
 from jedi import debug
 from jedi import common
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import precedence
@@ -12,7 +12,7 @@ from jedi.evaluate.helpers import FakeName
 from jedi.cache import underscore_memoization
 
 
-class Arguments(pr.Base):
+class Arguments(tree.Base):
     def __init__(self, evaluator, argument_node, trailer=None):
         """
         The argument_node is either a parser node or a list of evaluated
@@ -30,7 +30,7 @@ class Arguments(pr.Base):
             for el in self.argument_node:
                 yield 0, el
         else:
-            if not pr.is_node(self.argument_node, 'arglist'):
+            if not tree.is_node(self.argument_node, 'arglist'):
                 yield 0, self.argument_node
                 return
 
@@ -59,7 +59,7 @@ class Arguments(pr.Base):
 
     def as_tuple(self):
         for stars, argument in self._split():
-            if pr.is_node(argument, 'argument'):
+            if tree.is_node(argument, 'argument'):
                 argument, default = argument.children[::2]
             else:
                 default = None
@@ -83,7 +83,7 @@ class Arguments(pr.Base):
                     for key, values in dct.items():
                         yield key, values
             else:
-                if pr.is_node(el, 'argument'):
+                if tree.is_node(el, 'argument'):
                     c = el.children
                     if len(c) == 3:  # Keyword argument.
                         named_args.append((c[0].value, (c[2],)))
@@ -106,7 +106,7 @@ class Arguments(pr.Base):
         named_index = None
         new_args = []
         for i, stmt in enumerate(var_args):
-            if isinstance(stmt, pr.ExprStmt):
+            if isinstance(stmt, tree.ExprStmt):
                 if named_index is None and stmt.assignment_details:
                     named_index = i
 
@@ -143,7 +143,7 @@ class Arguments(pr.Base):
 
     def scope(self):
         # Returns the scope in which the arguments are used.
-        return (self.trailer or self.argument_node).get_parent_until(pr.IsScope)
+        return (self.trailer or self.argument_node).get_parent_until(tree.IsScope)
 
     def eval_args(self):
         # TODO this method doesn't work with named args and a lot of other
@@ -154,14 +154,14 @@ class Arguments(pr.Base):
         return '<%s: %s>' % (type(self).__name__, self.argument_node)
 
     def get_calling_var_args(self):
-        if pr.is_node(self.argument_node, 'arglist', 'argument') \
+        if tree.is_node(self.argument_node, 'arglist', 'argument') \
                 or self.argument_node == () and self.trailer is not None:
             return _get_calling_var_args(self._evaluator, self)
         else:
             return None
 
 
-class ExecutedParam(pr.Param):
+class ExecutedParam(tree.Param):
     """Fake a param and give it values."""
     def __init__(self, original_param, var_args, values):
         self._original_param = original_param
@@ -193,7 +193,7 @@ def _get_calling_var_args(evaluator, var_args):
     while var_args != old_var_args:
         old_var_args = var_args
         for name, default, stars in reversed(list(var_args.as_tuple())):
-            if not stars or not isinstance(name, pr.Name):
+            if not stars or not isinstance(name, tree.Name):
                 continue
 
             names = evaluator.goto(name)
@@ -201,7 +201,7 @@ def _get_calling_var_args(evaluator, var_args):
                 break
             param = names[0].get_definition()
             if not isinstance(param, ExecutedParam):
-                if isinstance(param, pr.Param):
+                if isinstance(param, tree.Param):
                     # There is no calling var_args in this case - there's just
                     # a param without any input.
                     return None

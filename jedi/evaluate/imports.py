@@ -22,7 +22,7 @@ from jedi import common
 from jedi import debug
 from jedi import cache
 from jedi.parser import fast
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi import settings
@@ -50,7 +50,7 @@ def completion_names(evaluator, imp, pos):
         level = imp.level
 
     importer = get_importer(evaluator, tuple(import_path), module, level)
-    if isinstance(imp, pr.ImportFrom):
+    if isinstance(imp, tree.ImportFrom):
         c = imp.children
         only_modules = c[c.index('import')].start_pos >= pos
     else:
@@ -58,12 +58,12 @@ def completion_names(evaluator, imp, pos):
     return importer.completion_names(evaluator, only_modules)
 
 
-class ImportWrapper(pr.Base):
+class ImportWrapper(tree.Base):
     def __init__(self, evaluator, name):
         self._evaluator = evaluator
         self._name = name
 
-        self._import = name.get_parent_until(pr.Import)
+        self._import = name.get_parent_until(tree.Import)
         self.import_path = self._import.path_for_name(name)
 
     @memoize_default()
@@ -138,7 +138,7 @@ class ImportWrapper(pr.Base):
         return types
 
 
-class NestedImportModule(pr.Module):
+class NestedImportModule(tree.Module):
     """
     TODO while there's no use case for nested import module right now, we might
         be able to use them for static analysis checks later on.
@@ -157,7 +157,7 @@ class NestedImportModule(pr.Module):
         zero = (0, 0)
         names = [unicode(name) for name in i.namespace_names[1:]]
         name = helpers.FakeName(names, self._nested_import)
-        new = pr.Import(i._sub_module, zero, zero, name)
+        new = tree.Import(i._sub_module, zero, zero, name)
         new.parent = self._module
         debug.dbg('Generated a nested import: %s', new)
         return helpers.FakeName(str(i.namespace_names[1]), new)
@@ -462,7 +462,7 @@ class _Importer(object):
                     continue
 
                 # namespace packages
-                if isinstance(scope, pr.Module) and scope.path.endswith('__init__.py'):
+                if isinstance(scope, tree.Module) and scope.path.endswith('__init__.py'):
                     pkg_path = os.path.dirname(scope.path)
                     paths = self.namespace_packages(pkg_path, self.import_path)
                     names += self._get_module_names([pkg_path] + paths)

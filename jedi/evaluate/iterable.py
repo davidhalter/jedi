@@ -26,7 +26,7 @@ from jedi import common
 from jedi import debug
 from jedi import settings
 from jedi._compatibility import use_metaclass, is_py3, unicode
-from jedi.parser import tree as pr
+from jedi.parser import tree
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
@@ -38,7 +38,7 @@ def unite(iterable):
     return list(chain.from_iterable(iterable))
 
 
-class IterableWrapper(pr.Base):
+class IterableWrapper(tree.Base):
     def is_class(self):
         return False
 
@@ -140,9 +140,9 @@ class Comprehension(IterableWrapper):
         last = comprehension.children[-1]
         last_comp = comprehension.children[1]
         while True:
-            if isinstance(last, pr.CompFor):
+            if isinstance(last, tree.CompFor):
                 last_comp = last
-            elif not pr.is_node(last, 'comp_if'):
+            elif not tree.is_node(last, 'comp_if'):
                 break
             last = last.children[-1]
 
@@ -283,9 +283,9 @@ class Array(IterableWrapper, ArrayMixin):
         if array_node in (']', '}', ')'):
             return []  # Direct closing bracket, doesn't contain items.
 
-        if pr.is_node(array_node, 'testlist_comp'):
+        if tree.is_node(array_node, 'testlist_comp'):
             return array_node.children[::2]
-        elif pr.is_node(array_node, 'dictorsetmaker'):
+        elif tree.is_node(array_node, 'dictorsetmaker'):
             kv = []
             iterator = iter(array_node.children)
             for key in iterator:
@@ -613,14 +613,14 @@ class Slice(object):
 
 
 def create_indexes_or_slices(evaluator, index):
-    if pr.is_node(index, 'subscript'):  # subscript is a slice operation.
+    if tree.is_node(index, 'subscript'):  # subscript is a slice operation.
         start, stop, step = None, None, None
         result = []
         for el in index.children:
             if el == ':':
                 if not result:
                     result.append(None)
-            elif pr.is_node(el, 'sliceop'):
+            elif tree.is_node(el, 'sliceop'):
                 if len(el.children) == 2:
                     result.append(el.children[1])
             else:
