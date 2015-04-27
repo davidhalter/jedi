@@ -62,6 +62,7 @@ def test_modulepickling_delete_incompatible_cache():
     assert cached2 is None
 
 
+@pytest.mark.skipif('True', message='Currently the star import cache is not enabled.')
 def test_star_import_cache_duration():
     new = 0.01
     old, jedi.settings.star_import_cache_validity = \
