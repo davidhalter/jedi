@@ -159,6 +159,18 @@ def _add_error(evaluator, name, message=None):
         analysis.add(evaluator, 'import-error', name, message)
 
 
+def get_init_path(directory_path):
+    """
+    The __init__ file can be searched in a directory. If found return it, else
+    None.
+    """
+    for suffix, _, _ in imp.get_suffixes():
+        path = os.path.join(directory_path, '__init__' + suffix)
+        if os.path.exists(path):
+            return path
+    return None
+
+
 class Importer(object):
     def __init__(self, evaluator, import_path, module, level=0):
         """
@@ -171,7 +183,7 @@ class Importer(object):
         directory of the module calling ``__import__()`` (see PEP 328 for the
         details).
 
-        :param import_path: List of namespaces (strings).
+        :param import_path: List of namespaces (strings or Names).
         """
         debug.speed('import %s' % (import_path,))
         self._evaluator = evaluator
@@ -212,12 +224,6 @@ class Importer(object):
     def str_import_path(self):
         """Returns the import path as pure strings instead of `Name`."""
         return tuple(str(name) for name in self.import_path)
-
-    def get_relative_path(self):
-        path = self.file_path
-        for i in range(self.level - 1):
-            path = os.path.dirname(path)
-        return path
 
     @memoize_default()
     def sys_path_with_modifications(self):
@@ -359,12 +365,7 @@ class Importer(object):
         if is_pkg:
             # In this case, we don't have a file yet. Search for the
             # __init__ file.
-            for suffix, _, _ in imp.get_suffixes():
-                path = os.path.join(module_path, '__init__' + suffix)
-                if os.path.exists(path):
-                    if suffix == '.py':
-                        module_path = path
-                    break
+            module_path = get_init_path(module_path)
         elif module_file:
             source = module_file.read()
             module_file.close()
@@ -478,7 +479,6 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, module_name=N
 
     cached = cache.load_parser(path)
     module = load(source) if cached is None else cached.module
-    # TODO return mod instead of just something.
     module = evaluator.wrap(module)
     return module
 
