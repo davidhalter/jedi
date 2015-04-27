@@ -98,9 +98,9 @@ class ImportWrapper(pr.Base):
 
             if from_import_name is not None:
                 types = list(chain.from_iterable(
-                    self._evaluator.find_types(s, unicode(from_import_name),
+                    self._evaluator.find_types(t, unicode(from_import_name),
                                                is_goto=is_goto)
-                    for s in types))
+                    for t in types))
                 if not types:
                     path = import_path + [from_import_name]
                     importer = get_importer(self._evaluator, tuple(path),
@@ -279,8 +279,7 @@ class _Importer(object):
     def follow(self):
         if not self.import_path:
             return []
-        modules = self._do_import(self.import_path, self.sys_path_with_modifications())
-        return modules
+        return self._do_import(self.import_path, self.sys_path_with_modifications())
 
     def namespace_packages(self, found_path, import_path):
         """
