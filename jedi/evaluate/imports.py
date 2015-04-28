@@ -251,35 +251,6 @@ class Importer(object):
             return []
         return self._do_import(self.import_path, self.sys_path_with_modifications())
 
-    def namespace_packages(self, found_path, import_path):
-        """
-        Returns a list of paths of possible ``pkgutil``/``pkg_resources``
-        namespaces. If the package is no "namespace package", an empty list is
-        returned.
-        """
-        def follow_path(directories, paths):
-            try:
-                directory = next(directories)
-            except StopIteration:
-                return paths
-            else:
-                deeper_paths = []
-                for p in paths:
-                    new = os.path.join(p, directory)
-                    if os.path.isdir(new) and new != found_path:
-                        deeper_paths.append(new)
-                return follow_path(directories, deeper_paths)
-
-        with open(os.path.join(found_path, '__init__.py'), 'rb') as f:
-            content = common.source_to_unicode(f.read())
-            # these are strings that need to be used for namespace packages,
-            # the first one is ``pkgutil``, the second ``pkg_resources``.
-            options = ('declare_namespace(__name__)', 'extend_path(__path__')
-            if options[0] in content or options[1] in content:
-                # It is a namespace, now try to find the rest of the modules.
-                return follow_path((str(i) for i in import_path), sys.path)
-        return []
-
     def _do_import(self, import_path, sys_path):
         """
         This method is very similar to importlib's `_gcd_import`.
@@ -428,9 +399,8 @@ class Importer(object):
 
                 # namespace packages
                 if isinstance(scope, tree.Module) and scope.path.endswith('__init__.py'):
-                    pkg_path = os.path.dirname(scope.path)
-                    paths = self.namespace_packages(pkg_path, self.import_path)
-                    names += self._get_module_names([pkg_path] + paths)
+                    paths = scope.py__path__(self.sys_path_with_modifications())
+                    names += self._get_module_names(paths)
 
                 if only_modules:
                     # In the case of an import like `from x.` we don't need to
