@@ -374,6 +374,13 @@ class Wrapper(tree.Base):
     def is_class(self):
         return False
 
+    def py__bool__(self):
+        """
+        Since Wrapper is a super class for classes, functions and modules,
+        the return value will always be true.
+        """
+        return True
+
     @property
     @underscore_memoization
     def name(self):
@@ -551,9 +558,6 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
             return [iterable.Generator(evaluator, self, params)]
         else:
             return FunctionExecution(evaluator, self, params).get_return_types()
-
-    def py__bool__(self):
-        return True
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
@@ -851,6 +855,3 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self._module)
-
-    def py__bool__(self):
-        return True

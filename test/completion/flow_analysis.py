@@ -205,3 +205,16 @@ if 0:
         foobar
     #?
     nested
+
+# -----------------
+# True objects like modules
+# -----------------
+
+class X():
+    pass
+if X:
+    a = 1
+else:
+    a = ''
+#? int()
+a
