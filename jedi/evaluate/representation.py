@@ -506,6 +506,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 if trailer:
                     # Create a trailer and evaluate it.
                     trailer = tree.Node('trailer', trailer)
+                    trailer.parent = dec
                     dec_results = self._evaluator.eval_trailer(dec_results, trailer)
 
                 if not len(dec_results):

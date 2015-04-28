@@ -53,9 +53,9 @@ def search_params(evaluator, param):
     """
     if not settings.dynamic_params:
         return []
-    debug.dbg('Dynamic param search for %s', param)
 
     func = param.get_parent_until(tree.Function)
+    debug.dbg('Dynamic param search for %s in %s.', param, str(func.name))
     # Compare the param names.
     names = [n for n in search_function_call(evaluator, func)
              if n.value == param.name.value]
