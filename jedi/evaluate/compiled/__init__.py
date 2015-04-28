@@ -366,10 +366,13 @@ def load_module(path=None, name=None):
         # If a module is "corrupt" or not really a Python module or whatever.
         debug.warning('Module %s not importable.', path)
         return None
+    finally:
+        sys.path = temp
+
     # Just access the cache after import, because of #59 as well as the very
     # complicated import structure of Python.
     module = sys.modules[dotted_path]
-    sys.path = temp
+
     return CompiledObject(module)
 
 

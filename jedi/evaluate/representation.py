@@ -763,6 +763,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
             if module == self:
                 return name
 
+        return '__main__'
+
     def py__file__(self):
         """
         In contrast to Python's __file__ can be None.

@@ -114,7 +114,7 @@ class Script(object):
 
     def _parsed_callback(self, parser):
         module = self._evaluator.wrap(parser.module)
-        self._evaluator.modules[unicode(module.name)] = module
+        imports.add_module(self._evaluator, unicode(module.name), module)
 
     @property
     def source_path(self):

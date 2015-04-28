@@ -344,8 +344,7 @@ class Importer(object):
         if module_file is None and not module_path.endswith('.py'):
             module = compiled.load_module(module_path)
         else:
-            module = _load_module(self._evaluator, module_path, source,
-                                  sys_path, module_name)
+            module = _load_module(self._evaluator, module_path, source, sys_path)
 
         self._evaluator.modules[module_name] = module
         return [module]
@@ -432,7 +431,7 @@ class Importer(object):
         return names
 
 
-def _load_module(evaluator, path=None, source=None, sys_path=None, module_name=None):
+def _load_module(evaluator, path=None, source=None, sys_path=None):
     def load(source):
         dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
         if path is not None and path.endswith('.py') \
@@ -453,6 +452,15 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, module_name=N
     return module
 
 
+def add_module(evaluator, module_name, module):
+    if '.' not in module_name:
+        # We cannot add paths with dots, because that would collide with
+        # the sepatator dots for nested packages. Therefore we return
+        # `__main__` in ModuleWrapper.py__name__(), which is similar to
+        # Python behavior.
+        evaluator.modules[module_name] = module
+
+
 def get_modules_containing_name(evaluator, mods, name):
     """
     Search a name in the directories of modules.
@@ -470,7 +478,10 @@ def get_modules_containing_name(evaluator, mods, name):
         with open(path, 'rb') as f:
             source = source_to_unicode(f.read())
             if name in source:
-                return _load_module(evaluator, path, source)
+                module_name = os.path.basename(path)[:-3]  # Remove `.py`.
+                module = _load_module(evaluator, path, source)
+                add_module(evaluator, module_name, module)
+                return module
 
     # skip non python modules
     mods = set(m for m in mods if not isinstance(m, compiled.CompiledObject))
