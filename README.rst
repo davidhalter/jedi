@@ -10,14 +10,6 @@ Jedi - an awesome autocompletion/static analysis library for Python
     :target: https://coveralls.io/r/davidhalter/jedi
     :alt: Coverage Status
 
-.. image:: https://pypip.in/d/jedi/badge.png
-    :target: https://crate.io/packages/jedi/
-    :alt: Number of PyPI downloads
-
-.. image:: https://pypip.in/v/jedi/badge.png
-    :target: https://crate.io/packages/jedi/
-    :alt: Latest PyPI version
-
 
 *If you have specific questions, please add an issue or ask on* `stackoverflow
 <https://stackoverflow.com>`_ *with the label* ``python-jedi``.
