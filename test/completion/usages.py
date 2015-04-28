@@ -266,3 +266,10 @@ import _sre
 
 #< 0 (-3,7), (0,0), ('_sre', None, None)
 _sre
+
+# -----------------
+# on syntax
+# -----------------
+
+#< 0
+import undefined

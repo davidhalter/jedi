@@ -466,7 +466,11 @@ class Script(object):
                 # For not defined imports (goto doesn't find something, we take
                 # the name as a definition. This is enough, because every name
                 # points to it.
-                definitions = [user_stmt.name_for_position(self._pos)]
+                name = user_stmt.name_for_position(self._pos)
+                if name is None:
+                    # Must be syntax
+                    return []
+                definitions = [name]
 
             if not definitions:
                 # Without a definition for a name we cannot find references.
