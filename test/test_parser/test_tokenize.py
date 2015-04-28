@@ -135,7 +135,7 @@ def test_ur_literals():
     - All the other Python versions work very well with it.
     """
     def check(literal):
-        io = StringIO(literal)
+        io = StringIO(u(literal))
         tokens = tokenize.generate_tokens(io.readline)
         token_list = list(tokens)
         typ, result_literal, _, _ = token_list[0]
