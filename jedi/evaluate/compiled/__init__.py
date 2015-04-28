@@ -318,6 +318,10 @@ def dotted_from_fs_path(fs_path, sys_path=None):
     if sys_path is None:
         sys_path = get_sys_path()
 
+    if os.path.basename(fs_path).startswith('__init__.'):
+        # We are calculating the path. __init__ files are not interesting.
+        fs_path = os.path.dirname(fs_path)
+
     # prefer
     #   - UNIX
     #     /path/to/pythonX.Y/lib-dynload
