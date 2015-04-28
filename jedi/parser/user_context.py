@@ -104,7 +104,8 @@ class UserContext(object):
                 # The same is true for string prefixes -> represented as a
                 # combination of string and name.
                 if tok_type == tokenize.NUMBER and tok_str[-1] == '.' \
-                        or tok_type == tokenize.NAME and last_type == tokenize.STRING:
+                        or tok_type == tokenize.NAME and last_type == tokenize.STRING \
+                        and tok_str.lower() in ('b', 'u', 'r', 'br', 'ur'):
                     force_point = False
                 else:
                     break

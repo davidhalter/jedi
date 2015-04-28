@@ -209,6 +209,13 @@ class TestCallSignatures(TestCase):
 
         self._run(source, 'test2', 0)
 
+    def test_return(self):
+        source = dedent('''
+        def foo():
+            return '.'.join()''')
+
+        self._run(source, 'join', 0, column=len("    return '.'.join("))
+
 
 class TestParams(TestCase):
     def params(self, source, line=None, column=None):
