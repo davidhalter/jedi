@@ -272,7 +272,7 @@ def generate_tokens(readline):
                             indents.append(indent)
                             break
                 yield NAME, token, spos, prefix
-            elif initial == '\\' and line[start:] == '\\\n':  # continued stmt
+            elif initial == '\\' and line[start:] in ('\\\n', '\\\r\n'):  # continued stmt
                 additional_prefix += prefix + line[start:]
                 break
             else:

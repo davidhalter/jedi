@@ -207,3 +207,9 @@ def test_param_splitting():
 def test_unicode_string():
     s = pt.String(None, u('bö'), (0, 0))
     assert repr(s)  # Should not raise an Error!
+
+
+def test_backslash_dos_style():
+    grammar = load_grammar()
+    m = Parser(grammar, u('\\\r\n')).module
+    assert m
