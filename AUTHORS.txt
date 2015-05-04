@@ -33,5 +33,6 @@ Savor d'Isavano (@KenetJervet) <newelevenken@163.com>
 Phillip Berndt (@phillipberndt) <phillip.berndt@gmail.com>
 Ian Lee (@IanLee1521) <IanLee1521@gmail.com>
 Farkhad Khatamov (@hatamov) <comsgn@gmail.com>
+Sid Shanker (@squidarth) <sid.p.shanker@gmail.com>
 
 Note: (@user) means a github user name.
