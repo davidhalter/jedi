@@ -36,6 +36,15 @@ next(open(''))
 tuple.__itemsize__
 
 # -----------------
+# enumerate
+# -----------------
+for i, j in enumerate(["as", "ad"]):
+    #? int()
+    i
+    #? str()
+    j
+
+# -----------------
 # re
 # -----------------
 import re
