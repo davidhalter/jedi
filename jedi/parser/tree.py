@@ -248,6 +248,10 @@ class LeafWithNewLines(Leaf):
         return end_pos_line, end_pos_col
 
 
+    @utf8_repr
+    def __repr__(self):
+        return "<%s: %r>" % (type(self).__name__, self.value)
+
 class Whitespace(LeafWithNewLines):
     """Contains NEWLINE and ENDMARKER tokens."""
     __slots__ = ()
