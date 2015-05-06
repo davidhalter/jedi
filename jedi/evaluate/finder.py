@@ -203,10 +203,13 @@ class NameFinder(object):
         with common.ignored(KeyError):
             result = inst.execute_subscope_by_name('__getattr__', name)
         if not result:
-            # this is a little bit special. `__getattribute__` is executed
-            # before anything else. But: I know no use case, where this
-            # could be practical and the jedi would return wrong types. If
-            # you ever have something, let me know!
+            # This is a little bit special. `__getattribute__` is in Python
+            # executed before `__getattr__`. But: I know no use case, where
+            # this could be practical and where jedi would return wrong types.
+            # If you ever find something, let me know!
+            # We are inversing this, because a hand-crafted `__getattribute__`
+            # could still call another hand-crafted `__getattr__`, but not the
+            # other way around.
             with common.ignored(KeyError):
                 result = inst.execute_subscope_by_name('__getattribute__', name)
         return result
