@@ -290,9 +290,12 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
                     skip = 'Thirdparty-Library %s not found.' % lib
 
             path = os.path.join(base_dir, f_name)
-            source = open(path).read()
-            if not is_py3:
-                source = unicode(source, 'UTF-8')
+
+            if is_py3:
+                source = open(path, encoding='utf-8').read()
+            else:
+                source = unicode(open(path).read(), 'UTF-8')
+
             for case in collect_file_tests(StringIO(source),
                                            lines_to_execute):
                 case.path = path
