@@ -3,6 +3,7 @@ import sys
 import contextlib
 import functools
 import re
+from itertools import chain
 from ast import literal_eval
 
 from jedi._compatibility import unicode, reraise
@@ -152,3 +153,8 @@ def splitlines(string):
     Also different: Returns ``['']`` for an empty string input.
     """
     return re.split('\n|\r\n', string)
+
+
+def unite(iterable):
+    """Turns a two dimensional array into a one dimensional."""
+    return list(chain.from_iterable(iterable))

@@ -20,9 +20,7 @@ It is important to note that:
 1. Array modfications work only in the current module.
 2. Jedi only checks Array additions; ``list.pop``, etc are ignored.
 """
-from itertools import chain
-
-from jedi import common
+from jedi.common import unite, ignored, safe_property
 from jedi import debug
 from jedi import settings
 from jedi._compatibility import use_metaclass, is_py3, unicode
@@ -31,11 +29,6 @@ from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
-
-
-def unite(iterable):
-    """Turns a two dimensional array into a one dimensional."""
-    return list(chain.from_iterable(iterable))
 
 
 class IterableWrapper(tree.Base):
@@ -225,7 +218,7 @@ class Array(IterableWrapper, ArrayMixin):
                 lookup_done = True
             elif isinstance(index, compiled.CompiledObject) \
                     and isinstance(index.obj, (int, str, unicode)):
-                with common.ignored(KeyError, IndexError, TypeError):
+                with ignored(KeyError, IndexError, TypeError):
                     types += self.get_exact_index_types(index.obj)
                     lookup_done = True
 
@@ -257,7 +250,7 @@ class Array(IterableWrapper, ArrayMixin):
     def iter_content(self):
         return self.values()
 
-    @common.safe_property
+    @safe_property
     def parent(self):
         return compiled.builtin
 
@@ -273,7 +266,7 @@ class Array(IterableWrapper, ArrayMixin):
     def _values(self):
         """Returns a list of a list of node."""
         if self.type == 'dict':
-            return list(chain.from_iterable(v for k, v in self._items()))
+            return unite(v for k, v in self._items())
         else:
             return self._items()
 
@@ -354,8 +347,7 @@ class FakeDict(_FakeArray):
         self._dct = dct
 
     def get_exact_index_types(self, index):
-        return list(chain.from_iterable(self._evaluator.eval_element(v)
-                                        for v in self._dct[index]))
+        return unite(self._evaluator.eval_element(v) for v in self._dct[index])
 
     def _items(self):
         return self._dct.items()
@@ -370,7 +362,7 @@ class MergedArray(_FakeArray):
         raise IndexError
 
     def values(self):
-        return list(chain(*(a.values() for a in self._arrays)))
+        return unite(*(a.values() for a in self._arrays))
 
     def __iter__(self):
         for array in self._arrays:
