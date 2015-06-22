@@ -2,6 +2,7 @@ import copy
 from itertools import chain
 
 from jedi.parser import tree
+from jedi import common
 
 
 def deep_ast_copy(obj, parent=None, new_elements=None):
@@ -103,6 +104,18 @@ def call_of_name(name, cut_own_trailer=False):
             par.children[index:] = []
 
     return par
+
+
+def get_names_of_node(node):
+    try:
+        children = node.children
+    except AttributeError:
+        if node.type == 'name':
+            return [node]
+        else:
+            return []
+    else:
+        return common.unite(get_names_of_node(c) for c in children)
 
 
 def get_module_names(module, all_scopes):

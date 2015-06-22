@@ -362,7 +362,7 @@ class MergedArray(_FakeArray):
         raise IndexError
 
     def values(self):
-        return unite(*(a.values() for a in self._arrays))
+        return unite((a.values() for a in self._arrays))
 
     def __iter__(self):
         for array in self._arrays:

@@ -88,6 +88,7 @@ class Evaluator(object):
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
         self.analysis = []
+        self.predefined_if_name_dict_dict = {}
 
     def wrap(self, element):
         if isinstance(element, tree.Class):
@@ -157,13 +158,78 @@ class Evaluator(object):
         debug.dbg('eval_statement result %s', types)
         return types
 
-    @memoize_default(evaluator_is_first_arg=True)
     def eval_element(self, element):
         if isinstance(element, iterable.AlreadyEvaluated):
             return list(element)
         elif isinstance(element, iterable.MergedNodes):
             return iterable.unite(self.eval_element(e) for e in element)
 
+        parent = element.get_parent_until((tree.IfStmt, tree.IsScope))
+        predefined_if_name_dict = self.predefined_if_name_dict_dict.get(parent)
+        if not predefined_if_name_dict and isinstance(parent, tree.IfStmt):
+            if_stmt = parent.children[1]
+            name_dicts = [{}]
+            # If we already did a check, we don't want to do it again -> If
+            # predefined_if_name_dict_dict is filled, we stop.
+            # We don't want to check the if stmt itself, it's just about
+            # the content.
+            if element.start_pos > if_stmt.end_pos:
+                # Now we need to check if the names in the if_stmt match the
+                # names in the suite.
+                if_names = helpers.get_names_of_node(if_stmt)
+                element_names = helpers.get_names_of_node(element)
+                str_element_names = [str(e) for e in element_names]
+                if any(str(i) in str_element_names for i in if_names):
+                    for if_name in if_names:
+                        definitions = self.goto_definition(if_name)
+                        # Every name that has multiple different definitions
+                        # causes the complexity to rise. The complexity should
+                        # never fall below 1.
+                        if len(definitions) > 1:
+                            if len(name_dicts) * len(definitions) > 16:
+                                debug.dbg('Too many options for if branch evaluation %s.', if_stmt)
+                                # There's only a certain amount of branches
+                                # Jedi can evaluate, otherwise it will take to
+                                # long.
+                                name_dicts = [{}]
+                                break
+
+                            original_name_dicts = list(name_dicts)
+                            name_dicts = []
+                            for definition in definitions:
+                                new_name_dicts = list(original_name_dicts)
+                                for i, name_dict in enumerate(new_name_dicts):
+                                    new_name_dicts[i] = name_dict.copy()
+                                    new_name_dicts[i][str(if_name)] = [definition]
+
+                                name_dicts += new_name_dicts
+                        else:
+                            for name_dict in name_dicts:
+                                name_dict[str(if_name)] = definitions
+                        if len(name_dicts) > 1: 
+                            print('XXXX', len(name_dicts), if_name, definitions)
+            if len(name_dicts) > 1:
+                result = []
+                for name_dict in name_dicts:
+                    self.predefined_if_name_dict_dict[parent] = name_dict
+                    try:
+                        result += self._eval_element_not_cached(element)
+                    finally:
+                        del self.predefined_if_name_dict_dict[parent]
+                return result
+            else:
+                    return self._eval_element_cached(element)
+        else:
+            if predefined_if_name_dict:
+                return self._eval_element_not_cached(element)
+            else:
+                return self._eval_element_cached(element)
+
+    @memoize_default(evaluator_is_first_arg=True)
+    def _eval_element_cached(self, element):
+        return self._eval_element_not_cached(element)
+
+    def _eval_element_not_cached(self, element):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
         if isinstance(element, (tree.Name, tree.Literal)) or tree.is_node(element, 'atom'):
             return self._eval_atom(element)

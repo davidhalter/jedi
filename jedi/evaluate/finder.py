@@ -79,11 +79,17 @@ class NameFinder(object):
         self.scope = evaluator.wrap(scope)
         self.name_str = name_str
         self.position = position
+        self._found_predefined_if_name = None
 
     @debug.increase_indent
     def find(self, scopes, search_global=False):
         # TODO rename scopes to names_dicts
+
         names = self.filter_name(scopes)
+        if self._found_predefined_if_name is not None:
+            print('HAVE FOUND', self._found_predefined_if_name)
+            return self._found_predefined_if_name
+
         types = self._names_to_types(names, search_global)
 
         if not names and not types \
@@ -150,8 +156,29 @@ class NameFinder(object):
 
             if isinstance(self.name_str, tree.Name):
                 origin_scope = self.name_str.get_parent_until(tree.Scope, reverse=True)
+                scope = self.name_str
+                check = None
+                while True:
+                    scope = scope.parent
+                    if isinstance(scope, tree.IsScope) or scope is None:
+                        break
+                    elif isinstance(scope, tree.IfStmt):
+                        try:
+                            name_dict = self._evaluator.predefined_if_name_dict_dict[scope]
+                            types = name_dict[str(self.name_str)]
+                        except KeyError:
+                            continue
+                        else:
+                            check = flow_analysis.break_check(self._evaluator, self.scope,
+                                                              origin_scope)
+                            if check is flow_analysis.UNREACHABLE:
+                                self._found_predefined_if_name = []
+                            else:
+                                self._found_predefined_if_name = types
+                            break
             else:
                 origin_scope = None
+
             if isinstance(stmt.parent, compiled.CompiledObject):
                 # TODO seriously? this is stupid.
                 continue
@@ -159,8 +186,10 @@ class NameFinder(object):
                                               stmt, origin_scope)
             if check is not flow_analysis.UNREACHABLE:
                 last_names.append(name)
+
             if check is flow_analysis.REACHABLE:
                 break
+            last_names.append(name)
 
         if isinstance(name_scope, er.FunctionExecution):
             # Replace params
