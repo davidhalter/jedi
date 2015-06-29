@@ -169,12 +169,18 @@ class NameFinder(object):
                         except KeyError:
                             continue
                         else:
-                            check = flow_analysis.break_check(self._evaluator, self.scope,
-                                                              origin_scope)
-                            if check is flow_analysis.UNREACHABLE:
-                                self._found_predefined_if_name = []
-                            else:
+                            if self.name_str.start_pos < scope.end_pos:
+                                # It doesn't make any sense to check if
+                                # statements in the if statement itself, just
+                                # deliver types.
                                 self._found_predefined_if_name = types
+                            else:
+                                check = flow_analysis.break_check(self._evaluator, self.scope,
+                                                                  origin_scope)
+                                if check is flow_analysis.UNREACHABLE:
+                                    self._found_predefined_if_name = []
+                                else:
+                                    self._found_predefined_if_name = types
                             break
             else:
                 origin_scope = None
@@ -189,7 +195,6 @@ class NameFinder(object):
 
             if check is flow_analysis.REACHABLE:
                 break
-            last_names.append(name)
 
         if isinstance(name_scope, er.FunctionExecution):
             # Replace params

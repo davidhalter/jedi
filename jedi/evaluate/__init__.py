@@ -367,10 +367,11 @@ class Evaluator(object):
             return types
 
     def goto_definition(self, name):
+        # TODO rename to goto_definitions
         def_ = name.get_definition()
         if def_.type == 'expr_stmt' and name in def_.get_defined_names():
             return self.eval_statement(def_, name)
-        call = helpers.call_of_name(name)
+        call = helpers.call_of_name(name, True)
         return self.eval_element(call)
 
     def goto(self, name):

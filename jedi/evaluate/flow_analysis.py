@@ -47,7 +47,8 @@ def break_check(evaluator, base_scope, stmt, origin_scope=None):
             return REACHABLE
         origin_scope = origin_scope.parent
     """
-    return _break_check(evaluator, stmt, base_scope, element_scope)
+    x = _break_check(evaluator, stmt, base_scope, element_scope)
+    return x
 
 
 def _break_check(evaluator, stmt, base_scope, element_scope):
