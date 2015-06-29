@@ -169,7 +169,7 @@ class NameFinder(object):
                         except KeyError:
                             continue
                         else:
-                            if self.name_str.start_pos < scope.end_pos:
+                            if self.name_str.start_pos < scope.children[1].end_pos:
                                 # It doesn't make any sense to check if
                                 # statements in the if statement itself, just
                                 # deliver types.
