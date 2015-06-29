@@ -21,5 +21,8 @@ else:
 #! 6 type-error-operation
 z = x + y
 # However, here we have correct types.
-if type(x) == type(y):
+if x == y:
+    z = x + y
+else:
+    #! 6 type-error-operation
     z = x + y

@@ -120,7 +120,7 @@ class Evaluator(object):
             return f.filter_name(scopes)
         return f.find(scopes, search_global)
 
-    @memoize_default(default=[], evaluator_is_first_arg=True)
+    #@memoize_default(default=[], evaluator_is_first_arg=True)
     @recursion.recursion_decorator
     @debug.increase_indent
     def eval_statement(self, stmt, seek_name=None):
@@ -211,6 +211,7 @@ class Evaluator(object):
             if len(name_dicts) > 1:
                 result = []
                 for name_dict in name_dicts:
+                    print('NAME_DICT', element, name_dict)
                     self.predefined_if_name_dict_dict[parent] = name_dict
                     try:
                         result += self._eval_element_not_cached(element)
