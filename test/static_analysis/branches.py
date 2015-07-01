@@ -30,3 +30,17 @@ if x == y:
 else:
     #! 6 type-error-operation
     z = x + y
+
+# -----------------
+# With a function
+# -----------------
+
+def addition(a, b):
+    if type(a) == type(b):
+        return a + b
+    else:
+        #! 9 type-error-operation
+        return a + b
+
+addition(1, 1)
+addition(1.0, '')
