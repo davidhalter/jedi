@@ -65,6 +65,9 @@ class GeneratorMixin(object):
     def py__bool__(self):
         return True
 
+    def py__class__(self, evaluator):
+        return compiled.generator_obj.py__class__(evaluator)
+
 
 class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
     """Handling of `yield` functions."""
@@ -159,6 +162,9 @@ class ArrayMixin(object):
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
+
+    def py__class__(self, evaluator):
+        return compiled.builtin.get_by_name(self.type)
 
 
 class ListComprehension(Comprehension, ArrayMixin):

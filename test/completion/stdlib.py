@@ -35,6 +35,25 @@ next(open(''))
 #? ['__itemsize__']
 tuple.__itemsize__
 
+# type
+
+#? int
+type(1)
+#? int
+type(int())
+#? type
+type(int)
+#? type
+type(type)
+#? list
+type([])
+
+def x():
+    yield 1
+generator = type(x())
+#? generator
+type(x for x in [])
+
 # -----------------
 # re
 # -----------------
