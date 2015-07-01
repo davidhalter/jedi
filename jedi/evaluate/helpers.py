@@ -82,6 +82,9 @@ def call_of_name(name, cut_own_trailer=False):
     You would get a node with the content ``list([]).append`` back.
 
     This generates a copy of the original ast node.
+
+    # TODO remove cut_own_trailer option, since its always used with it. Just
+    #      ignore it, It's not what we want anyway. Or document it better?
     """
     par = name
     if tree.is_node(par.parent, 'trailer'):

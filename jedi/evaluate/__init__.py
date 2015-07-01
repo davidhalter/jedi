@@ -248,6 +248,7 @@ class Evaluator(object):
             return self.eval_statement(element)
         elif element.type == 'power':
             types = self._eval_atom(element.children[0])
+            print(element, element.start_pos)
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
                     raise NotImplementedError
@@ -372,7 +373,7 @@ class Evaluator(object):
         def_ = name.get_definition()
         if def_.type == 'expr_stmt' and name in def_.get_defined_names():
             return self.eval_statement(def_, name)
-        call = helpers.call_of_name(name, True)
+        call = helpers.call_of_name(name)
         return self.eval_element(call)
 
     def goto(self, name):
