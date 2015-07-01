@@ -559,6 +559,9 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         else:
             return FunctionExecution(evaluator, self, params).get_return_types()
 
+    def py__class__(self, evaluator):
+        return compiled.magic_function_class
+
     def __getattr__(self, name):
         return getattr(self.base_func, name)
 

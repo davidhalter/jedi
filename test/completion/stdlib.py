@@ -35,8 +35,9 @@ next(open(''))
 #? ['__itemsize__']
 tuple.__itemsize__
 
-# type
-
+# -----------------
+# type() calls with one parameter
+# -----------------
 #? int
 type(1)
 #? int
@@ -53,6 +54,8 @@ def x():
 generator = type(x())
 #? generator
 type(x for x in [])
+#? type(x)
+type(lambda: x)
 
 # -----------------
 # re

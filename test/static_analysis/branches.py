@@ -1,3 +1,7 @@
+# -----------------
+# Simple tests
+# -----------------
+
 import random
 
 if random.choice([0, 1]):
