@@ -61,6 +61,9 @@ import math
 import os
 #? type(os)
 type(math)
+class X(): pass
+#? type
+type(X)
 
 # -----------------
 # re

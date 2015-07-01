@@ -445,6 +445,9 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def py__getattribute__(self, name):
         return self._evaluator.find_types(self, name)
 
+    def py__class__(self, evaluator):
+        return compiled.builtin.get_by_name('type')
+
     @property
     def params(self):
         return self.get_subscope_by_name('__init__').params
