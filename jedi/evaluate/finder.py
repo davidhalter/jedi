@@ -87,7 +87,6 @@ class NameFinder(object):
 
         names = self.filter_name(scopes)
         if self._found_predefined_if_name is not None:
-            print('HAVE FOUND', self._found_predefined_if_name)
             return self._found_predefined_if_name
 
         types = self._names_to_types(names, search_global)

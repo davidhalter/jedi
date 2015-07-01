@@ -206,12 +206,9 @@ class Evaluator(object):
                         else:
                             for name_dict in name_dicts:
                                 name_dict[str(if_name)] = definitions
-                        if len(name_dicts) > 1: 
-                            print('XXXX', len(name_dicts), if_name, definitions)
             if len(name_dicts) > 1:
                 result = []
                 for name_dict in name_dicts:
-                    print('NAME_DICT', element, name_dict)
                     self.predefined_if_name_dict_dict[parent] = name_dict
                     try:
                         result += self._eval_element_not_cached(element)
@@ -248,7 +245,6 @@ class Evaluator(object):
             return self.eval_statement(element)
         elif element.type == 'power':
             types = self._eval_atom(element.children[0])
-            print(element, element.start_pos)
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
                     raise NotImplementedError

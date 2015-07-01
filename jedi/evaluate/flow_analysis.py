@@ -41,12 +41,10 @@ def break_check(evaluator, base_scope, stmt, origin_scope=None):
     # e.g. `if 0:` would cause all name lookup within the flow make
     # unaccessible. This is not a "problem" in Python, because the code is
     # never called. In Jedi though, we still want to infer types.
-    """
     while origin_scope is not None:
         if element_scope == origin_scope:
             return REACHABLE
         origin_scope = origin_scope.parent
-    """
     x = _break_check(evaluator, stmt, base_scope, element_scope)
     return x
 
