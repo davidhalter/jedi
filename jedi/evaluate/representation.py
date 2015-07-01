@@ -853,6 +853,9 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
 
         return names
 
+    def py__class__(self, evaluator):
+        return compiled.module_class
+
     def __getattr__(self, name):
         return getattr(self._module, name)
 

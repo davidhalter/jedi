@@ -57,6 +57,11 @@ type(x for x in [])
 #? type(x)
 type(lambda: x)
 
+import math
+import os
+#? type(os)
+type(math)
+
 # -----------------
 # re
 # -----------------

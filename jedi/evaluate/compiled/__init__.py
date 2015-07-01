@@ -475,7 +475,9 @@ def _create_from_name(module, parent, name):
 
 
 builtin = Builtin(_builtins)
+# TODO Rename magic_function_class to just function_class or something similar.
 magic_function_class = CompiledObject(type(load_module), parent=builtin)
+module_class = CompiledObject(type(os))
 generator_obj = CompiledObject(_a_generator(1.0))
 _type_names_dict = builtin.get_by_name('type').names_dict
 none_obj = builtin.get_by_name('None')
