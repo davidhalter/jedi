@@ -54,8 +54,18 @@ left
 #? int()
 [a for a in {1, 2, 3}][0]
 
+#? set()
+{a for a in range(10)}
+
 ##? int()
-{a for a in range(10)}[0]
+[x for x in {a for a in range(10)}][0]
+
+##? int()
+{a for a in range(10)}.pop()
+
+##? int()
+iter({a for a in range(10)}).next()
+
 
 # list comprehensions should also work in combination with functions
 def listen(arg):
