@@ -242,7 +242,7 @@ class Evaluator(object):
             except (IndexError, AttributeError):
                 pass
             else:
-                if isinstance(comp_for, tree.CompFor):
+                if isinstance(comp_for, tree.CompFor) and c[0] != '{':
                     return [iterable.Comprehension.from_atom(self, atom)]
             return [iterable.Array(self, atom)]
 
