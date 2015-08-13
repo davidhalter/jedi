@@ -29,11 +29,13 @@ DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
     r'\s*:param\s+(\w+)\s+%s:[^\n]+',  # Sphinx param with type
     r'\s*@type\s+%s:\s*([^\n]+)',  # Epydoc
+    '\s*%s\s*\((.+?)\):.+',  # Google param with type
 ]
 
 DOCSTRING_RETURN_PATTERNS = [
     re.compile(r'\s*:rtype:\s*([^\n]+)', re.M),  # Sphinx
     re.compile(r'\s*@rtype:\s*([^\n]+)', re.M),  # Epydoc
+    re.compile(r'\s*Returns:\s*([^:]+):.*', re.M),  # Google
 ]
 
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
@@ -77,6 +79,10 @@ def _search_param_in_docstr(docstr, param_str):
     False
     >>> _search_param_in_docstr(':param int param: some description', 'param')
     ['int']
+    >>> _search_param_in_docstr('param (int): doc', 'param')
+    ['int']
+    >>> _search_param_in_docstr('param: doc', 'param')
+    []
 
     """
     # look at #40 to see definitions of those params
