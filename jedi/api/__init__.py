@@ -62,8 +62,8 @@ class Script(object):
     :type source: str
     :param line: The line to perform actions on (starting with 1).
     :type line: int
-    :param col: The column of the cursor (starting with 0).
-    :type col: int
+    :param column: The column of the cursor (starting with 0).
+    :type column: int
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
     :type path: str or None
