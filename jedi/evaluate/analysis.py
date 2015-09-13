@@ -210,9 +210,9 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
     return False
 
 
-def get_module_statements(module):
+def get_executable_nodes(module):
     """
-    Returns the statements used in a module. All these statements should be
+    Returns the nodes used in a module. All these nodes should be
     evaluated to check for potential exceptions.
     """
     def check_children(node):
@@ -251,7 +251,7 @@ def get_module_statements(module):
                 new |= add_nodes(children)
             elif node.type in ('simple_stmt', 'suite'):
                 new |= add_nodes(node.children)
-            elif node.type in ('return_stmt', 'yield_expr'):
+            elif node.type in ('return_stmt', 'yield_expr', 'raise_stmt'):
                 try:
                     new.add(node.children[1])
                 except IndexError:
@@ -259,8 +259,6 @@ def get_module_statements(module):
             elif node.type not in ('whitespace', 'operator', 'keyword',
                                    'parameters', 'decorated', 'except_clause') \
                     and not isinstance(node, (tree.ClassOrFunc, tree.Import)):
-                new.add(node)
-
                 try:
                     children = node.children
                 except AttributeError:
@@ -268,8 +266,6 @@ def get_module_statements(module):
                 else:
                     for next_node in children:
                         new.update(check_children(node))
-                        if next_node.type != 'keyword' and node.type != 'expr_stmt':
-                            new.add(node)
         return new
 
     nodes = set()

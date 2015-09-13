@@ -536,7 +536,7 @@ class Script(object):
 
         #statements = set(chain(*self._parser.module().used_names.values()))
         nodes, imp_names, decorated_funcs = \
-            analysis.get_module_statements(self._parser.module())
+            analysis.get_executable_nodes(self._parser.module())
         # Sort the statements so that the results are reproducible.
         for n in imp_names:
             imports.ImportWrapper(self._evaluator, n).follow()
