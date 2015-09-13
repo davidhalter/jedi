@@ -1,18 +1,13 @@
-from sys import argv
+import sys
 from os.path import join, dirname, abspath, isdir
 
 
-if len(argv) == 2 and argv[1] == 'repl':
-    # don't want to use __main__ only for repl yet, maybe we want to use it for
-    # something else. So just use the keyword ``repl`` for now.
-    print(join(dirname(abspath(__file__)), 'api', 'replstartup.py'))
-elif len(argv) > 1 and argv[1] == 'linter':
+def _start_linter():
     """
     This is a pre-alpha API. You're not supposed to use it at all, except for
     testing. It will very likely change.
     """
     import jedi
-    import sys
 
     if '--debug' in sys.argv:
         jedi.set_debug_function()
@@ -41,3 +36,11 @@ elif len(argv) > 1 and argv[1] == 'linter':
                 pdb.post_mortem()
             else:
                 raise
+
+
+if len(sys.argv) == 2 and sys.argv[1] == 'repl':
+    # don't want to use __main__ only for repl yet, maybe we want to use it for
+    # something else. So just use the keyword ``repl`` for now.
+    print(join(dirname(abspath(__file__)), 'api', 'replstartup.py'))
+elif len(sys.argv) > 1 and sys.argv[1] == 'linter':
+    _start_linter()
