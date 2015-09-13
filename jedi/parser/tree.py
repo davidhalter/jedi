@@ -1064,12 +1064,19 @@ class KeywordStatement(BaseNode):
     __slots__ = ()
 
     @property
+    def type(self):
+        """
+        Keyword statements start with the keyword and end with `_stmt`. You can
+        crosscheck this with the Python grammar.
+        """
+        return '%s_stmt' % self.keyword
+
+    @property
     def keyword(self):
         return self.children[0].value
 
 
 class AssertStmt(KeywordStatement):
-    type = 'assert_stmt'
     __slots__ = ()
 
     def assertion(self):
@@ -1077,7 +1084,6 @@ class AssertStmt(KeywordStatement):
 
 
 class GlobalStmt(KeywordStatement):
-    type = 'global_stmt'
     __slots__ = ()
 
     def get_defined_names(self):
@@ -1088,13 +1094,14 @@ class GlobalStmt(KeywordStatement):
 
 
 class ReturnStmt(KeywordStatement):
-    type = 'return_stmt'
     __slots__ = ()
 
 
 class YieldExpr(BaseNode):
-    type = 'yield_expr'
     __slots__ = ()
+
+    def type(self):
+        return 'yield_expr'
 
 
 def _defined_names(current):
