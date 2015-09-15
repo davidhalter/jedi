@@ -144,6 +144,9 @@ class Base(object):
         # Default is not being a scope. Just inherit from Scope.
         return False
 
+    def nodes_to_execute(self, last_added=False):
+        raise NotImplementedError()
+
 
 class Leaf(Base):
     __slots__ = ('position_modifier', 'value', 'parent', '_start_pos', 'prefix')
@@ -222,6 +225,9 @@ class Leaf(Base):
                 if i == 0:
                     return None
                 return self.parent.children[i - 1]
+
+    def nodes_to_execute(self, last_added=False):
+        return []
 
     @utf8_repr
     def __repr__(self):
@@ -329,6 +335,9 @@ class Name(Leaf):
             compare = node
             node = node.parent
         return indexes
+
+    def nodes_to_execute(self, last_added=False):
+        yield self
 
 
 class Literal(LeafWithNewLines):
@@ -487,6 +496,15 @@ class Node(BaseNode):
         """
         super(Node, self).__init__(children)
         self.type = type
+
+    def nodes_to_execute(self, last_added=False):
+        """
+        For static analysis.
+        """
+        result = []
+        for child in self.children:
+            result += child.nodes_to_execute(last_added)
+        return result
 
     def __repr__(self):
         return "%s(%s, %r)" % (self.__class__.__name__, self.type, self.children)
@@ -699,6 +717,20 @@ class Class(ClassOrFunc):
                     sub.get_call_signature(func_name=self.name), docstr)
         return docstr
 
+    def nodes_to_execute(self, last_added=False):
+        # Yield itself, class needs to be executed for decorator checks.
+        yield self
+        for param in self.params:
+            if param.default is None:
+                yield param.default
+            else:
+                # metaclass=
+                raise NotImplementedError('Metaclasses not implemented')
+        # care for the class suite:
+        for node_to_execute in self.children[-1].nodes_to_execute(False):
+            yield node_to_execute
+
+
 
 def _create_params(parent, argslist_list):
     """
@@ -801,6 +833,16 @@ class Function(ClassOrFunc):
         docstr = self.raw_doc
         return '%s\n\n%s' % (self.get_call_signature(), docstr)
 
+    def nodes_to_execute(self, last_added=False):
+        # Yield itself, functions needs to be executed for decorator checks.
+        yield self
+        for param in self.params:
+            if param.default is not None:
+                yield param.default
+        # care for the function suite:
+        for node_to_execute in self.children[-1].nodes_to_execute(False):
+            yield node_to_execute
+
 
 class Lambda(Function):
     """
@@ -826,12 +868,25 @@ class Lambda(Function):
     def yields(self):
         return []
 
+    def nodes_to_execute(self, last_added=False):
+        for param in self.params:
+            if param.default is not None:
+                yield param.default
+        # Care for the lambda test (last child):
+        for node_to_execute in self.children[-1].nodes_to_execute(False):
+            yield node_to_execute
+
     def __repr__(self):
         return "<%s@%s>" % (self.__class__.__name__, self.start_pos)
 
 
 class Flow(BaseNode):
     __slots__ = ()
+
+    def nodes_to_execute(self, last_added=False):
+        for child in self.children:
+            for node_to_execute in child.nodes_to_execute(False):
+                yield node_to_execute
 
 
 class IfStmt(Flow):
