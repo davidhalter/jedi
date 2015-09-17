@@ -485,6 +485,11 @@ class Node(BaseNode):
     """Concrete implementation for interior nodes."""
     __slots__ = ('type',)
 
+    _IGNORE_EXECUTE_NODES = set([
+        'suite', 'subscriptlist', 'subscript', 'simple_stmt', 'sliceop',
+        'testlist_comp', 'dictorsetmaker', 'trailer', 'decorators', 'decorated'
+    ])
+
     def __init__(self, type, children):
         """
         Initializer.
@@ -502,6 +507,9 @@ class Node(BaseNode):
         For static analysis.
         """
         result = []
+        if self.type not in Node._IGNORE_EXECUTE_NODES:
+            result.append(self)
+
         for child in self.children:
             result += child.nodes_to_execute(last_added)
         return result
@@ -655,10 +663,24 @@ class Module(Scope):
                         return True
         return False
 
+    def nodes_to_execute(self, last_added=False):
+        # Yield itself, class needs to be executed for decorator checks.
+        result = []
+        for child in self.children:
+            result += child.nodes_to_execute()
+        return result
+
 
 class Decorator(BaseNode):
     type = 'decorator'
     __slots__ = ()
+
+    def nodes_to_execute(self, last_added=False):
+        if self.children[-2] == ')':
+            node = self.children[-3]
+            if node != '(':
+                return node.nodes_to_execute()
+        return []
 
 
 class ClassOrFunc(Scope):
@@ -727,7 +749,7 @@ class Class(ClassOrFunc):
                 # metaclass=
                 raise NotImplementedError('Metaclasses not implemented')
         # care for the class suite:
-        for node_to_execute in self.children[-1].nodes_to_execute(False):
+        for node_to_execute in self.children[-1].nodes_to_execute():
             yield node_to_execute
 
 
@@ -840,7 +862,7 @@ class Function(ClassOrFunc):
             if param.default is not None:
                 yield param.default
         # care for the function suite:
-        for node_to_execute in self.children[-1].nodes_to_execute(False):
+        for node_to_execute in self.children[-1].nodes_to_execute():
             yield node_to_execute
 
 
@@ -873,7 +895,7 @@ class Lambda(Function):
             if param.default is not None:
                 yield param.default
         # Care for the lambda test (last child):
-        for node_to_execute in self.children[-1].nodes_to_execute(False):
+        for node_to_execute in self.children[-1].nodes_to_execute():
             yield node_to_execute
 
     def __repr__(self):
@@ -885,7 +907,7 @@ class Flow(BaseNode):
 
     def nodes_to_execute(self, last_added=False):
         for child in self.children:
-            for node_to_execute in child.nodes_to_execute(False):
+            for node_to_execute in child.nodes_to_execute():
                 yield node_to_execute
 
 
@@ -948,6 +970,16 @@ class TryStmt(Flow):
             elif node == 'except':
                 yield None
 
+    def nodes_to_execute(self, last_added=False):
+        result = []
+        for child in self.children[2::3]:
+            result += child.nodes_to_execute()
+        for child in self.children[0::3]:
+            if child.type == 'except_clause':
+                # Add the test node and ignore the `as NAME` definition.
+                result += child.children[1].nodes_to_execute()
+        return result
+
 
 class WithStmt(Flow):
     type = 'with_stmt'
@@ -967,6 +999,16 @@ class WithStmt(Flow):
             node = node.parent
             if is_node(node, 'with_item'):
                 return node.children[0]
+
+    def nodes_to_execute(self, last_added=False):
+        result = []
+        for child in self.children[1::2]:
+            if child.type == 'with_item':
+                # Just ignore the `as EXPR` part - at least for now, because
+                # most times it's just a name.
+                child = child.children[0]
+            result += child.nodes_to_execute()
+        return result
 
 
 class Import(BaseNode):
@@ -989,6 +1031,14 @@ class Import(BaseNode):
 
     def is_star_import(self):
         return self.children[-1] == '*'
+
+    def nodes_to_execute(self, last_added=False):
+        """
+        `nodes_to_execute` works a bit different for imports, because the names
+        itself cannot directly get resolved (except on itself).
+        """
+        # TODO couldn't we return the names? Would be nicer.
+        return [self]
 
 
 class ImportFrom(Import):
@@ -1114,7 +1164,10 @@ class ImportName(Import):
 class KeywordStatement(BaseNode):
     """
     For the following statements: `assert`, `del`, `global`, `nonlocal`,
-    `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
+    `raise`, `return`, `yield`, `return`, `yield`.
+
+    `pass`, `continue` and `break` are not in there, because they are just
+    simple keywords and the parser reduces it to a keyword.
     """
     __slots__ = ()
 
@@ -1129,6 +1182,12 @@ class KeywordStatement(BaseNode):
     @property
     def keyword(self):
         return self.children[0].value
+
+    def nodes_to_execute(self, last_added=False):
+        result = []
+        for child in self.children:
+            result += child.nodes_to_execute(last_added)
+        return result
 
 
 class AssertStmt(KeywordStatement):
@@ -1146,6 +1205,13 @@ class GlobalStmt(KeywordStatement):
 
     def get_global_names(self):
         return self.children[1::2]
+
+    def nodes_to_execute(self, last_added=False):
+        """
+        The global keyword allows to define any name. Even if it doesn't
+        exist.
+        """
+        return []
 
 
 class ReturnStmt(KeywordStatement):
@@ -1201,6 +1267,14 @@ class ExprStmt(BaseNode, DocstringMixin):
             return self.children[1]
         except IndexError:
             return None
+
+    def nodes_to_execute(self, last_added=False):
+        # I think evaluating the statment (and possibly returned arrays),
+        # should be enough for static analysis.
+        result = [self]
+        for child in self.children:
+            result += child.nodes_to_execute(last_added=True)
+        return result
 
 
 class Param(BaseNode):

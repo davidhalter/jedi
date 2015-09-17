@@ -222,9 +222,8 @@ def get_executable_nodes(module):
 
 ------------ cared for:
 global_stmt
-exec_stmt
+exec_stmt  # no priority
 assert_stmt
-compound_stmt
 if_stmt
 while_stmt
 for_stmt
@@ -233,21 +232,16 @@ try_stmt
 with_stmt
 (with_item)
 (with_var)
+print_stmt
+del_stmt
+return_stmt
+raise_stmt
 yield_expr
 file_input
 funcdef
 param
 old_lambdef
 lambdef
-print_stmt
-del_stmt
-pass_stmt
-flow_stmt
-break_stmt
-continue_stmt
-return_stmt
-raise_stmt
-import_stmt
 import_name
 import_from
 (import_as_name)
@@ -258,6 +252,7 @@ import_from
 classdef
 comp_for
 (comp_if) ?
+decorator
 
 ----------- add basic
 test
@@ -298,8 +293,6 @@ simple_stmt
 testlist_comp  # prob ignore and care about it with atom.
 dictorsetmaker
 trailer
-
-decorator
 decorators
 decorated
 
@@ -312,7 +305,13 @@ vfplist    # not in 3
 
 --------- not existing with parser reductions.
 small_stmt
+import_stmt
+flow_stmt
+compound_stmt
 stmt
+pass_stmt
+break_stmt
+continue_stmt
 comp_op
 augassign
 old_test
@@ -320,6 +319,7 @@ typedargslist  # afaik becomes [param]
 varargslist    # dito
 vname
 comp_iter
+test_nocond
 
     """
     def check_children(node):
