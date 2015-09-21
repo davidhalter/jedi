@@ -280,10 +280,6 @@ testlist_star_expr  # should probably just work with expr_stmt
 star_expr
 exprlist  # just ignore? then names are just resolved. Strange anyway, bc expr is not really allowed in the list, typically.
 
-# always execute function arguments? -> no problem with stars.
-arglist
-argument
-
 ----------- ignore:
 suite
 subscriptlist
@@ -295,6 +291,11 @@ dictorsetmaker
 trailer
 decorators
 decorated
+# always execute function arguments? -> no problem with stars.
+# Also arglist and argument are different in different grammars.
+arglist
+argument
+
 
 ----------- remove:
 tname      # only exists in current Jedi parser. REMOVE!

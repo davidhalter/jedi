@@ -488,7 +488,8 @@ class Node(BaseNode):
 
     _IGNORE_EXECUTE_NODES = set([
         'suite', 'subscriptlist', 'subscript', 'simple_stmt', 'sliceop',
-        'testlist_comp', 'dictorsetmaker', 'trailer', 'decorators', 'decorated'
+        'testlist_comp', 'dictorsetmaker', 'trailer', 'decorators',
+        'decorated', 'arglist', 'argument'
     ])
 
     def __init__(self, type, children):
