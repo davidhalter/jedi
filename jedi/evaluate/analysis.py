@@ -366,6 +366,7 @@ test_nocond
             elif node.type not in ('whitespace', 'operator', 'keyword',
                                    'parameters', 'decorated', 'except_clause') \
                     and not isinstance(node, (tree.ClassOrFunc, tree.Import)):
+                new.add(node)
                 try:
                     children = node.children
                 except AttributeError:
