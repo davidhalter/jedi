@@ -33,7 +33,6 @@ from jedi.evaluate import imports
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_names
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
-from jedi.evaluate import analysis
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -548,20 +547,6 @@ class Script(object):
                     imports.ImportWrapper(self._evaluator, n).follow()
             else:
                 check_types(self._evaluator.eval_element(node))
-
-        """
-        #statements = set(chain(*self._parser.module().used_names.values()))
-        nodes, imp_names, decorated_funcs = \
-            analysis.get_executable_nodes(self._parser.module())
-        # Sort the statements so that the results are reproducible.
-        for n in imp_names:
-            imports.ImportWrapper(self._evaluator, n).follow()
-        for node in sorted(nodes, key=lambda obj: obj.start_pos):
-            check_types(self._evaluator.eval_element(node))
-
-        for dec_func in decorated_funcs:
-            er.Function(self._evaluator, dec_func).get_decorated_func()
-        """
 
         ana = [a for a in self._evaluator.analysis if self.path == a.path]
         return sorted(set(ana), key=lambda x: x.line)
