@@ -263,6 +263,10 @@ class Whitespace(LeafWithNewLines):
     __slots__ = ()
     type = 'whitespace'
 
+    @utf8_repr
+    def __repr__(self):
+        return "<%s: %s>" % (type(self).__name__, repr(self.value))
+
 
 class Name(Leaf):
     """
@@ -765,8 +769,12 @@ class Class(ClassOrFunc):
                     yield argument
 
         # care for the class suite:
-        for node_to_execute in self.children[-1].nodes_to_execute():
-            yield node_to_execute
+        for node in self.children[self.children.index(':'):]:
+            # This could be easier without the fast parser. But we need to find
+            # the position of the colon, because everything after it can be a
+            # part of the class, not just its suite.
+            for node_to_execute in node.nodes_to_execute():
+                yield node_to_execute
 
 
 def _create_params(parent, argslist_list):
@@ -877,8 +885,13 @@ class Function(ClassOrFunc):
             if param.default is not None:
                 yield param.default
         # care for the function suite:
-        for node_to_execute in self.children[-1].nodes_to_execute():
-            yield node_to_execute
+        for node in self.children[4:]:
+            # This could be easier without the fast parser. The fast parser
+            # allows that the 4th position is empty or that there's even a
+            # fifth element (another function/class). So just scan everything
+            # after colon.
+            for node_to_execute in node.nodes_to_execute():
+                yield node_to_execute
 
 
 class Lambda(Function):
@@ -1201,7 +1214,7 @@ class KeywordStatement(BaseNode):
     def nodes_to_execute(self, last_added=False):
         result = []
         for child in self.children:
-            result += child.nodes_to_execute(last_added)
+            result += child.nodes_to_execute()
         return result
 
 
@@ -1290,7 +1303,7 @@ class ExprStmt(BaseNode, DocstringMixin):
             return None
 
     def nodes_to_execute(self, last_added=False):
-        # I think evaluating the statment (and possibly returned arrays),
+        # I think evaluating the statement (and possibly returned arrays),
         # should be enough for static analysis.
         result = [self]
         for child in self.children:
@@ -1377,3 +1390,6 @@ class CompFor(BaseNode):
 
     def get_defined_names(self):
         return _defined_names(self.children[1])
+
+    def nodes_to_execute(self, last_added=False):
+        return self.children[-1].nodes_to_execute()
