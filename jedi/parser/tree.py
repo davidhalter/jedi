@@ -27,6 +27,10 @@ Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 [<ImportName: import os@1,0>]
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
+
+For static analysis purposes there exists a method called
+``nodes_to_execute`` on all nodes and leaves. It's documented in the static
+anaylsis documentation.
 """
 import os
 import re
