@@ -722,10 +722,10 @@ class Class(ClassOrFunc):
 
     def get_super_arglist(self):
         if self.children[2] != '(':  # Has no parentheses
-            return None
+            return []
         else:
             if self.children[3] == ')':  # Empty parentheses
-                return None
+                return []
             else:
                 return self.children[3]
 
@@ -744,12 +744,14 @@ class Class(ClassOrFunc):
     def nodes_to_execute(self, last_added=False):
         # Yield itself, class needs to be executed for decorator checks.
         yield self
-        for param in self.get_super_arglist:
-            if param.default is None:
-                yield param.default
-            else:
-                # metaclass=
+        # Super arguments.
+        for args in self.get_super_arglist:
+            if args.type == 'args':
+                # metaclass= or list comprehension or */**
                 raise NotImplementedError('Metaclasses not implemented')
+            else:
+                yield args
+
         # care for the class suite:
         for node_to_execute in self.children[-1].nodes_to_execute():
             yield node_to_execute
@@ -1225,6 +1227,12 @@ class YieldExpr(BaseNode):
 
     def type(self):
         return 'yield_expr'
+
+    def nodes_to_execute(self, last_added=False):
+        if len(self.children) > 1:
+            return self.children[1].nodes_to_execute()
+        else:
+            return []
 
 
 def _defined_names(current):
