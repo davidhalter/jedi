@@ -982,6 +982,12 @@ class ForStmt(Flow):
     type = 'for_stmt'
     __slots__ = ()
 
+    def nodes_to_execute(self, last_added=False):
+        # We shouldn't include the definitions.
+        for child in self.children[3:]:
+            for node_to_execute in child.nodes_to_execute():
+                yield node_to_execute
+
 
 class TryStmt(Flow):
     type = 'try_stmt'
