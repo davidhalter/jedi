@@ -337,7 +337,8 @@ class Name(Leaf):
         return indexes
 
     def nodes_to_execute(self, last_added=False):
-        yield self
+        if last_added is False:
+            yield self
 
 
 class Literal(LeafWithNewLines):
@@ -509,6 +510,7 @@ class Node(BaseNode):
         result = []
         if self.type not in Node._IGNORE_EXECUTE_NODES:
             result.append(self)
+            last_added = True
 
         for child in self.children:
             result += child.nodes_to_execute(last_added)
@@ -742,7 +744,7 @@ class Class(ClassOrFunc):
     def nodes_to_execute(self, last_added=False):
         # Yield itself, class needs to be executed for decorator checks.
         yield self
-        for param in self.params:
+        for param in self.get_super_arglist:
             if param.default is None:
                 yield param.default
             else:

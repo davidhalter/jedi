@@ -534,6 +534,22 @@ class Script(object):
                 else:
                     check_types(f())
 
+        for node in self._parser.module().nodes_to_execute():
+            if node.type in ('funcdef', 'classdef'):
+                if node.type == 'classdef':
+                    continue
+                    raise NotImplementedError
+                er.Function(self._evaluator, node).get_decorated_func()
+            elif isinstance(node, tree.Import):
+                import_names = set(node.get_defined_names())
+                if node.is_nested():
+                    import_names |= set(path[-1] for path in node.paths())
+                for n in import_names:
+                    imports.ImportWrapper(self._evaluator, n).follow()
+            else:
+                check_types(self._evaluator.eval_element(node))
+
+        """
         #statements = set(chain(*self._parser.module().used_names.values()))
         nodes, imp_names, decorated_funcs = \
             analysis.get_executable_nodes(self._parser.module())
@@ -545,6 +561,7 @@ class Script(object):
 
         for dec_func in decorated_funcs:
             er.Function(self._evaluator, dec_func).get_decorated_func()
+        """
 
         ana = [a for a in self._evaluator.analysis if self.path == a.path]
         return sorted(set(ana), key=lambda x: x.line)
