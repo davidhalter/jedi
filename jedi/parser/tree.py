@@ -722,10 +722,10 @@ class Class(ClassOrFunc):
 
     def get_super_arglist(self):
         if self.children[2] != '(':  # Has no parentheses
-            return []
+            return None
         else:
             if self.children[3] == ')':  # Empty parentheses
-                return []
+                return None
             else:
                 return self.children[3]
 
@@ -745,17 +745,23 @@ class Class(ClassOrFunc):
         # Yield itself, class needs to be executed for decorator checks.
         yield self
         # Super arguments.
-        for args in self.get_super_arglist:
-            if args.type == 'args':
-                # metaclass= or list comprehension or */**
-                raise NotImplementedError('Metaclasses not implemented')
-            else:
-                yield args
+        arglist = self.get_super_arglist()
+        try:
+            children = arglist.children
+        except AttributeError:
+            if arglist is not None:
+                yield arglist
+        else:
+            for argument in children:
+                if argument.type == 'argument':
+                    # metaclass= or list comprehension or */**
+                    raise NotImplementedError('Metaclasses not implemented')
+                else:
+                    yield argument
 
         # care for the class suite:
         for node_to_execute in self.children[-1].nodes_to_execute():
             yield node_to_execute
-
 
 
 def _create_params(parent, argslist_list):
