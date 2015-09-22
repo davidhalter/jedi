@@ -148,7 +148,7 @@ class Comprehension(IterableWrapper):
         return [self._evaluator.eval_element(self.eval_node())[index]]
 
     def __repr__(self):
-        return "<e%s of %s>" % (type(self).__name__, self._atom)
+        return "<%s of %s>" % (type(self).__name__, self._atom)
 
 
 class ArrayMixin(object):

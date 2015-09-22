@@ -89,6 +89,7 @@ class Evaluator(object):
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
         self.analysis = []
         self.predefined_if_name_dict_dict = {}
+        self.is_analysis = False
 
     def wrap(self, element):
         if isinstance(element, tree.Class):
@@ -342,6 +343,9 @@ class Evaluator(object):
     def execute(self, obj, arguments=(), trailer=None):
         if not isinstance(arguments, param.Arguments):
             arguments = param.Arguments(self, arguments, trailer)
+
+        if self.is_analysis:
+            arguments.eval_all()
 
         if obj.isinstance(er.Function):
             obj = obj.get_decorated_func()

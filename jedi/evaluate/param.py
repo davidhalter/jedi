@@ -12,6 +12,17 @@ from jedi.evaluate.helpers import FakeName
 from jedi.cache import underscore_memoization
 
 
+def try_iter_content(types):
+    """Helper method for static analysis."""
+    for typ in types:
+        try:
+            f = typ.iter_content
+        except AttributeError:
+            pass
+        else:
+            try_iter_content(f())
+
+
 class Arguments(tree.Base):
     def __init__(self, evaluator, argument_node, trailer=None):
         """
@@ -159,6 +170,16 @@ class Arguments(tree.Base):
             return _get_calling_var_args(self._evaluator, self)
         else:
             return None
+
+    def eval_all(self, func=None):
+        """
+        Evaluates all arguments as a support for static analysis
+        (normally Jedi).
+        """
+        for key, element_values in self.unpack():
+            for element in element_values:
+                types = self._evaluator.eval_element(element)
+                try_iter_content(types)
 
 
 class ExecutedParam(tree.Param):

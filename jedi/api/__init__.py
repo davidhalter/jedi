@@ -30,6 +30,7 @@ from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
+from jedi.evaluate.param import try_iter_content
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_names
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
@@ -524,32 +525,27 @@ class Script(object):
                 for o in origins if hasattr(o, 'py__call__')]
 
     def _analysis(self):
-        def check_types(types):
-            for typ in types:
-                try:
-                    f = typ.iter_content
-                except AttributeError:
-                    pass
+        self._evaluator.is_analysis = True
+        try:
+            for node in self._parser.module().nodes_to_execute():
+                if node.type in ('funcdef', 'classdef'):
+                    if node.type == 'classdef':
+                        continue
+                        raise NotImplementedError
+                    er.Function(self._evaluator, node).get_decorated_func()
+                elif isinstance(node, tree.Import):
+                    import_names = set(node.get_defined_names())
+                    if node.is_nested():
+                        import_names |= set(path[-1] for path in node.paths())
+                    for n in import_names:
+                        imports.ImportWrapper(self._evaluator, n).follow()
                 else:
-                    check_types(f())
+                    try_iter_content(self._evaluator.eval_element(node))
 
-        for node in self._parser.module().nodes_to_execute():
-            if node.type in ('funcdef', 'classdef'):
-                if node.type == 'classdef':
-                    continue
-                    raise NotImplementedError
-                er.Function(self._evaluator, node).get_decorated_func()
-            elif isinstance(node, tree.Import):
-                import_names = set(node.get_defined_names())
-                if node.is_nested():
-                    import_names |= set(path[-1] for path in node.paths())
-                for n in import_names:
-                    imports.ImportWrapper(self._evaluator, n).follow()
-            else:
-                check_types(self._evaluator.eval_element(node))
-
-        ana = [a for a in self._evaluator.analysis if self.path == a.path]
-        return sorted(set(ana), key=lambda x: x.line)
+            ana = [a for a in self._evaluator.analysis if self.path == a.path]
+            return sorted(set(ana), key=lambda x: x.line)
+        finally:
+            self._evaluator.is_analysis = False
 
 
 class Interpreter(Script):

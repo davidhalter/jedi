@@ -517,7 +517,7 @@ class Node(BaseNode):
         For static analysis.
         """
         result = []
-        if self.type not in Node._IGNORE_EXECUTE_NODES:
+        if self.type not in Node._IGNORE_EXECUTE_NODES and not last_added:
             result.append(self)
             last_added = True
 
