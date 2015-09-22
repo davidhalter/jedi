@@ -54,7 +54,7 @@ def _follow_param(evaluator, arguments, index):
         return iterable.unite(evaluator.eval_element(v) for v in values)
 
 
-def argument_clinic(string, want_obj=False, want_scope=False):
+def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=False):
     """
     Works like Argument Clinic (PEP 436), to validate function params.
     """
@@ -87,6 +87,8 @@ def argument_clinic(string, want_obj=False, want_scope=False):
                     kwargs['scope'] = arguments.scope()
                 if want_obj:
                     kwargs['obj'] = obj
+                if want_obj:
+                    kwargs['arguments'] = arguments
                 return func(evaluator, *lst, **kwargs)
 
         return wrapper
@@ -146,9 +148,11 @@ def builtins_super(evaluator, types, objects, scope):
     return []
 
 
-@argument_clinic('sequence, /', want_obj=True)
-def builtins_reversed(evaluator, sequences, obj):
+@argument_clinic('sequence, /', want_obj=True, want_arguments=True)
+def builtins_reversed(evaluator, sequences, obj, arguments):
     # Unpack the iterator values
+    # TODO replace get_iterator_types.
+    #elements = list(arguments.unpack())[0][1]
     objects = tuple(iterable.get_iterator_types(sequences))
     rev = [iterable.AlreadyEvaluated([o]) for o in reversed(objects)]
     # Repack iterator values and then run it the normal way. This is

@@ -389,6 +389,7 @@ def get_iterator_types(inputs):
             iterators.append(it)
         else:
             if not hasattr(it, 'execute_subscope_by_name'):
+                analysis.add(self._evaluator, 'type-error-generator', index_array)
                 debug.warning('iterator/for loop input wrong: %s', it)
                 continue
             try:

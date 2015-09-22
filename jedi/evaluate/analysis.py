@@ -18,6 +18,7 @@ CODES = {
     'type-error-star-star': (9, TypeError, None),
     'type-error-star': (10, TypeError, None),
     'type-error-operation': (11, TypeError, None),
+    'type-error-not-iterable': (12, TypeError, None),
 }
 
 
