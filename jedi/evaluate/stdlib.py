@@ -24,7 +24,7 @@ class NotInStdLib(LookupError):
     pass
 
 
-def execute(evaluator, obj, params):
+def execute(evaluator, obj, arguments):
     try:
         obj_name = str(obj.name)
     except AttributeError:
@@ -39,15 +39,15 @@ def execute(evaluator, obj, params):
 
         # for now we just support builtin functions.
         try:
-            return _implemented[module_name][obj_name](evaluator, obj, params)
+            return _implemented[module_name][obj_name](evaluator, obj, arguments)
         except KeyError:
             pass
     raise NotInStdLib()
 
 
-def _follow_param(evaluator, params, index):
+def _follow_param(evaluator, arguments, index):
     try:
-        key, values = list(params.unpack())[index]
+        key, values = list(arguments.unpack())[index]
     except IndexError:
         return []
     else:
@@ -186,7 +186,7 @@ def builtins_isinstance(evaluator, objects, types):
     return [compiled.keyword_from_value(x) for x in bool_results]
 
 
-def collections_namedtuple(evaluator, obj, params):
+def collections_namedtuple(evaluator, obj, arguments):
     """
     Implementation of the namedtuple function.
 
@@ -201,8 +201,8 @@ def collections_namedtuple(evaluator, obj, params):
         return []
 
     # Process arguments
-    name = _follow_param(evaluator, params, 0)[0].obj
-    _fields = _follow_param(evaluator, params, 1)[0]
+    name = _follow_param(evaluator, arguments, 0)[0].obj
+    _fields = _follow_param(evaluator, arguments, 1)[0]
     if isinstance(_fields, compiled.CompiledObject):
         fields = _fields.obj.replace(',', ' ').split()
     elif isinstance(_fields, iterable.Array):
