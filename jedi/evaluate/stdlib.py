@@ -87,7 +87,7 @@ def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=Fal
                     kwargs['scope'] = arguments.scope()
                 if want_obj:
                     kwargs['obj'] = obj
-                if want_obj:
+                if want_arguments:
                     kwargs['arguments'] = arguments
                 return func(evaluator, *lst, **kwargs)
 
@@ -150,7 +150,7 @@ def builtins_super(evaluator, types, objects, scope):
 
 def get_iterable_content(evaluator, arguments, argument_index):
     nodes = list(arguments.unpack())[argument_index][1]
-    return tuple(iterable.unite(iterable.get_iterator_types(node)
+    return tuple(iterable.unite(iterable.get_iterator_types(evaluator, node)
                                 for node in nodes))
 
 
