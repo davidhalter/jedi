@@ -379,17 +379,17 @@ class MergedArray(_FakeArray):
         return sum(len(a) for a in self._arrays)
 
 
-def get_iterator_types(inputs):
+def get_iterator_types(evaluator, element):
     """Returns the types of any iterator (arrays, yields, __iter__, etc)."""
     iterators = []
     # Take the first statement (for has always only
     # one, remember `in`). And follow it.
-    for it in inputs:
+    for it in evaluator.eval_element(element):
         if isinstance(it, (Generator, Array, ArrayInstance, Comprehension)):
             iterators.append(it)
         else:
             if not hasattr(it, 'execute_subscope_by_name'):
-                analysis.add(self._evaluator, 'type-error-generator', index_array)
+                analysis.add(evaluator, 'type-error-not-iterable', element)
                 debug.warning('iterator/for loop input wrong: %s', it)
                 continue
             try:
@@ -456,8 +456,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                 result += unite(evaluator.eval_element(node) for node in nodes)
         elif add_name in ['extend', 'update']:
             for key, nodes in params:
-                iterators = unite(evaluator.eval_element(node) for node in nodes)
-                result += get_iterator_types(iterators)
+                result += unite(get_iterator_types(evaluator, node) for node in nodes)
         return result
 
     from jedi.evaluate import representation as er, param
@@ -568,8 +567,7 @@ class ArrayInstance(IterableWrapper):
         items = []
         for key, nodes in self.var_args.unpack():
             for node in nodes:
-                for typ in self._evaluator.eval_element(node):
-                    items += get_iterator_types([typ])
+                items += get_iterator_types(self._evaluator, node)
 
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'

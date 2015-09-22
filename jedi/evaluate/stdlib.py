@@ -148,12 +148,16 @@ def builtins_super(evaluator, types, objects, scope):
     return []
 
 
+def get_iterable_content(evaluator, arguments, argument_index):
+    nodes = list(arguments.unpack())[argument_index][1]
+    return tuple(iterable.unite(iterable.get_iterator_types(node)
+                                for node in nodes))
+
+
 @argument_clinic('sequence, /', want_obj=True, want_arguments=True)
 def builtins_reversed(evaluator, sequences, obj, arguments):
     # Unpack the iterator values
-    # TODO replace get_iterator_types.
-    #elements = list(arguments.unpack())[0][1]
-    objects = tuple(iterable.get_iterator_types(sequences))
+    objects = get_iterable_content(evaluator, arguments, 0)
     rev = [iterable.AlreadyEvaluated([o]) for o in reversed(objects)]
     # Repack iterator values and then run it the normal way. This is
     # necessary, because `reversed` is a function and autocompletion
@@ -165,8 +169,8 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     return [er.Instance(evaluator, obj, param.Arguments(evaluator, [rev]))]
 
 
-@argument_clinic('obj, type, /')
-def builtins_isinstance(evaluator, objects, types):
+@argument_clinic('obj, type, /', want_arguments=True)
+def builtins_isinstance(evaluator, objects, types, arguments):
     bool_results = set([])
     for o in objects:
         try:
@@ -184,7 +188,7 @@ def builtins_isinstance(evaluator, objects, types):
                 bool_results.add(cls_or_tup in mro)
             else:
                 # Check for tuples.
-                classes = iterable.get_iterator_types([cls_or_tup])
+                classes = get_iterable_content(evaluator, arguments, 1)
                 bool_results.add(any(cls in mro for cls in classes))
 
     return [compiled.keyword_from_value(x) for x in bool_results]
