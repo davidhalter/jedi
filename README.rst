@@ -40,7 +40,7 @@ Jedi can currently be used with the following editors:
 - Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
 - Atom_ (autocomplete-python_)
-- sourcelair_
+- SourceLair_
 
 And it powers the following projects:
 
@@ -190,4 +190,4 @@ For more detailed information visit the `testing documentation
 .. _Kate: http://kate-editor.org
 .. _Atom: https://atom.io/
 .. _autocomplete-python: https://atom.io/packages/autocomplete-python
-.. _sourcelair: https://www.sourcelair.com
+.. _SourceLair: https://www.sourcelair.com
