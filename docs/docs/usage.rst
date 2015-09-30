@@ -51,6 +51,10 @@ Atom:
 
 - autocomplete-python_
 
+SourceLair:
+
+- sourcelair_
+
 
 .. _other-software:
 
@@ -91,3 +95,4 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
 .. _kate: http://kate-editor.org/
 .. _autocomplete-python: https://atom.io/packages/autocomplete-python
+.. _sourcelair: https://www.sourcelair.com
