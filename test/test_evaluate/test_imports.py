@@ -57,3 +57,10 @@ def test_flask_ext(script, name):
 def test_not_importable_file():
     src = 'import not_importable_file as x; x.'
     assert not jedi.Script(src, path='example.py').completions()
+
+
+def test_import_unique():
+    src = "import os; os.path"
+    defs = jedi.Script(src, path='example.py').goto_definitions()
+    defs = [d._definition for d in defs]
+    assert len(defs) == len(set(defs))

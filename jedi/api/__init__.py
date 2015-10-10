@@ -340,14 +340,14 @@ class Script(object):
 
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
-        definitions = set()
+        definitions = []
         if next(context) in ('class', 'def'):
-            definitions = set([self._evaluator.wrap(self._parser.user_scope())])
+            definitions = [self._evaluator.wrap(self._parser.user_scope())]
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                definitions = set(signature._definition
-                                  for signature in self.call_signatures())
+                definitions = [signature._definition
+                               for signature in self.call_signatures()]
 
         if re.match('\w[\w\d_]*$', goto_path) and not definitions:
             user_stmt = self._parser.user_stmt()
@@ -356,15 +356,15 @@ class Script(object):
                     if name.start_pos <= self._pos <= name.end_pos:
                         # TODO scaning for a name and then using it should be
                         # the default.
-                        definitions = set(self._evaluator.goto_definition(name))
+                        definitions = self._evaluator.goto_definition(name)
 
         if not definitions and goto_path:
-            definitions = set(self._prepare_goto(goto_path))
+            definitions = self._prepare_goto(goto_path)
 
         definitions = resolve_import_paths(definitions)
         names = [s.name for s in definitions]
         defs = [classes.Definition(self._evaluator, name) for name in names]
-        return helpers.sorted_definitions(set(defs))
+        return helpers.sorted_definitions(defs)
 
     def goto_assignments(self):
         """
@@ -526,6 +526,7 @@ class Script(object):
 
     def _analysis(self):
         self._evaluator.is_analysis = True
+        self._evaluator.analysis_modules = [self._parser.module()]
         try:
             for node in self._parser.module().nodes_to_execute():
                 if node.type in ('funcdef', 'classdef'):
