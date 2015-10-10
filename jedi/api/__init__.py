@@ -332,7 +332,7 @@ class Script(object):
         :rtype: list of :class:`classes.Definition`
         """
         def resolve_import_paths(scopes):
-            for s in scopes.copy():
+            for s in set(scopes):
                 if isinstance(s, imports.ImportWrapper):
                     scopes.remove(s)
                     scopes.update(resolve_import_paths(set(s.follow())))

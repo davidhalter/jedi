@@ -248,7 +248,7 @@ class NameFinder(object):
         return result
 
     def _names_to_types(self, names, search_global):
-        types = []
+        types = set()
 
         # Add isinstance and other if/assert knowledge.
         if isinstance(self.name_str, tree.Name):
@@ -268,12 +268,12 @@ class NameFinder(object):
         for name in names:
             new_types = _name_to_types(self._evaluator, name, self.scope)
             if isinstance(self.scope, (er.Class, er.Instance)) and not search_global:
-                types += self._resolve_descriptors(name, new_types)
+                types |= set(self._resolve_descriptors(name, new_types))
             else:
-                types += new_types
+                types |= set(new_types)
         if not names and isinstance(self.scope, er.Instance):
             # handling __getattr__ / __getattribute__
-            types = self._check_getattr(self.scope)
+            return self._check_getattr(self.scope)
 
         return types
 
