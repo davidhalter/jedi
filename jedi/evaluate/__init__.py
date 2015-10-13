@@ -152,7 +152,7 @@ class Evaluator(object):
                 # only in for loops without clutter, because they are
                 # predictable.
                 for r in types:
-                    left = precedence.calculate(self, left, operator, [r])
+                    left = precedence.calculate(self, left, operator, set([r]))
                 types = left
             else:
                 types = precedence.calculate(self, left, operator, types)
@@ -161,9 +161,9 @@ class Evaluator(object):
 
     def eval_element(self, element):
         if isinstance(element, iterable.AlreadyEvaluated):
-            return list(element)
+            return set(element)
         elif isinstance(element, iterable.MergedNodes):
-            return iterable.unite(self.eval_element(e) for e in element)
+            return set(iterable.unite(self.eval_element(e) for e in element))
 
         parent = element.get_parent_until((tree.IfStmt, tree.IsScope))
         predefined_if_name_dict = self.predefined_if_name_dict_dict.get(parent)
@@ -208,11 +208,11 @@ class Evaluator(object):
                             for name_dict in name_dicts:
                                 name_dict[str(if_name)] = definitions
             if len(name_dicts) > 1:
-                result = []
+                result = set()
                 for name_dict in name_dicts:
                     self.predefined_if_name_dict_dict[parent] = name_dict
                     try:
-                        result += self._eval_element_not_cached(element)
+                        result |= self._eval_element_not_cached(element)
                     finally:
                         del self.predefined_if_name_dict_dict[parent]
                 return result
@@ -235,13 +235,13 @@ class Evaluator(object):
         elif isinstance(element, tree.Keyword):
             # For False/True/None
             if element.value in ('False', 'True', 'None'):
-                return [compiled.builtin.get_by_name(element.value)]
+                return set([compiled.builtin.get_by_name(element.value)])
             else:
                 return []
         elif element.isinstance(tree.Lambda):
-            return [er.LambdaWrapper(self, element)]
+            return set([er.LambdaWrapper(self, element)])
         elif element.isinstance(er.LambdaWrapper):
-            return [element]  # TODO this is no real evaluation.
+            return set([element])  # TODO this is no real evaluation.
         elif element.type == 'expr_stmt':
             return self.eval_statement(element)
         elif element.type == 'power':
@@ -254,24 +254,24 @@ class Evaluator(object):
             return types
         elif element.type in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
-            return [iterable.ImplicitTuple(self, element)]
+            return set([iterable.ImplicitTuple(self, element)])
         elif element.type in ('not_test', 'factor'):
             types = self.eval_element(element.children[-1])
             for operator in element.children[:-1]:
-                types = list(precedence.factor_calculate(self, types, operator))
+                types = precedence.factor_calculate(self, types, operator)
             return types
         elif element.type == 'test':
             # `x if foo else y` case.
-            return (self.eval_element(element.children[0]) +
+            return (self.eval_element(element.children[0]) |
                     self.eval_element(element.children[-1]))
         elif element.type == 'operator':
             # Must be an ellipsis, other operators are not evaluated.
-            return []  # Ignore for now.
+            return set()  # Ignore for now.
         elif element.type == 'dotted_name':
             types = self._eval_atom(element.children[0])
             for next_name in element.children[2::2]:
-                types = list(chain.from_iterable(self.find_types(typ, next_name)
-                                                 for typ in types))
+                types = set(chain.from_iterable(self.find_types(typ, next_name)
+                                                for typ in types))
             return types
         else:
             return precedence.calculate_children(self, element.children)
@@ -294,7 +294,7 @@ class Evaluator(object):
                 stmt = atom
             return self.find_types(scope, atom, stmt.start_pos, search_global=True)
         elif isinstance(atom, tree.Literal):
-            return [compiled.create(self, atom.eval())]
+            return set([compiled.create(self, atom.eval())])
         else:
             c = atom.children
             # Parentheses without commas are not tuples.
@@ -308,20 +308,20 @@ class Evaluator(object):
                 pass
             else:
                 if isinstance(comp_for, tree.CompFor):
-                    return [iterable.Comprehension.from_atom(self, atom)]
-            return [iterable.Array(self, atom)]
+                    return set([iterable.Comprehension.from_atom(self, atom)])
+            return set([iterable.Array(self, atom)])
 
     def eval_trailer(self, types, trailer):
         trailer_op, node = trailer.children[:2]
         if node == ')':  # `arglist` is optional.
             node = ()
-        new_types = []
+        new_types = set()
         for typ in types:
             debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
             if trailer_op == '.':
-                new_types += self.find_types(typ, node)
+                new_types |= self.find_types(typ, node)
             elif trailer_op == '(':
-                new_types += self.execute(typ, node, trailer)
+                new_types |= self.execute(typ, node, trailer)
             elif trailer_op == '[':
                 try:
                     get = typ.get_index_types
@@ -329,7 +329,7 @@ class Evaluator(object):
                     debug.warning("TypeError: '%s' object is not subscriptable"
                                   % typ)
                 else:
-                    new_types += get(self, node)
+                    new_types |= get(self, node)
         return new_types
 
     def execute_evaluated(self, obj, *args):
@@ -362,7 +362,7 @@ class Evaluator(object):
             func = obj.py__call__
         except AttributeError:
             debug.warning("no execution possible %s", obj)
-            return []
+            return set()
         else:
             types = func(self, arguments)
             debug.dbg('execute result: %s in %s', types, obj)

@@ -180,7 +180,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         try:
             return self.execute_subscope_by_name('__get__', *args)
         except KeyError:
-            return [self]
+            return set([self])
 
     @memoize_default()
     def names_dicts(self, search_global):
@@ -207,7 +207,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             method = self.get_subscope_by_name('__getitem__')
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
-            return []
+            return set()
         else:
             return self._evaluator.execute(method, [iterable.AlreadyEvaluated(indexes)])
 
@@ -440,7 +440,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
             return [compiled.object_obj]
 
     def py__call__(self, evaluator, params):
-        return [Instance(evaluator, self, params)]
+        return set([Instance(evaluator, self, params)])
 
     def py__getattribute__(self, name):
         return self._evaluator.find_types(self, name)
@@ -541,7 +541,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                     # TODO resolve issue with multiple wrappers -> multiple types
                     debug.warning('multiple wrappers found %s %s',
                                   self.base_func, wrappers)
-                f = wrappers[0]
+                f = list(wrappers)[0]
                 if isinstance(f, (Instance, Function)):
                     f.decorates = self
 
@@ -558,7 +558,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
     @Python3Method
     def py__call__(self, evaluator, params):
         if self.base.is_generator():
-            return [iterable.Generator(evaluator, self, params)]
+            return set([iterable.Generator(evaluator, self, params)])
         else:
             return FunctionExecution(evaluator, self, params).get_return_types()
 
@@ -613,21 +613,21 @@ class FunctionExecution(Executed):
             # If we do have listeners, that means that there's not a regular
             # execution ongoing. In this case Jedi is interested in the
             # inserted params, not in the actual execution of the function.
-            return []
+            return set()
 
         if check_yields:
-            types = []
+            types = set()
             returns = self.yields
         else:
             returns = self.returns
-            types = list(docstrings.find_return_types(self._evaluator, func))
+            types = set(docstrings.find_return_types(self._evaluator, func))
 
         for r in returns:
             check = flow_analysis.break_check(self._evaluator, self, r)
             if check is flow_analysis.UNREACHABLE:
                 debug.dbg('Return unreachable: %s', r)
             else:
-                types += self._evaluator.eval_element(r.children[1])
+                types |= self._evaluator.eval_element(r.children[1])
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break
@@ -748,7 +748,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
     @memoize_default()
     def _module_attributes_dict(self):
         def parent_callback():
-            return self._evaluator.execute(compiled.create(self._evaluator, str))[0]
+            # Create a string type object (without a defined string in it):
+            return list(self._evaluator.execute(compiled.create(self._evaluator, str)))[0]
 
         names = ['__file__', '__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.

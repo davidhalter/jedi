@@ -53,14 +53,14 @@ class GeneratorMixin(object):
     def get_index_types(self, evaluator, index_array):
         #debug.warning('Tried to get array access on a generator: %s', self)
         analysis.add(self._evaluator, 'type-error-generator', index_array)
-        return []
+        return set()
 
     def get_exact_index_types(self, index):
         """
         Exact lookups are used for tuple lookups, which are perfectly fine if
         used with generators.
         """
-        return [self.iter_content()[index]]
+        return set([list(self.iter_content())[index]])
 
     def py__bool__(self):
         return True
@@ -145,7 +145,9 @@ class Comprehension(IterableWrapper):
         return helpers.deep_ast_copy(comprehension.children[0], parent=last_comp)
 
     def get_exact_index_types(self, index):
-        return [self._evaluator.eval_element(self.eval_node())[index]]
+        # TODO this will return a random type (depending on the current set
+        # hash function).
+        return set([list(self._evaluator.eval_element(self.eval_node()))[index]])
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._atom)
@@ -155,9 +157,9 @@ class ArrayMixin(object):
     @memoize_default()
     def names_dicts(self, search_global=False):  # Always False.
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = self._evaluator.find_types(compiled.builtin, self.type)[0]
+        scope = list(self._evaluator.find_types(compiled.builtin, self.type))[0]
         # builtins only have one class -> [0]
-        scope = self._evaluator.execute(scope, (AlreadyEvaluated((self,)),))[0]
+        scope = list(self._evaluator.execute(scope, (AlreadyEvaluated((self,)),)))[0]
         return scope.names_dicts(search_global)
 
     def py__bool__(self):
@@ -217,23 +219,23 @@ class Array(IterableWrapper, ArrayMixin):
         """
         indexes = create_indexes_or_slices(evaluator, index)
         lookup_done = False
-        types = []
+        types = set()
         for index in indexes:
             if isinstance(index, Slice):
-                types += [self]
+                types.add(self)
                 lookup_done = True
             elif isinstance(index, compiled.CompiledObject) \
                     and isinstance(index.obj, (int, str, unicode)):
                 with ignored(KeyError, IndexError, TypeError):
-                    types += self.get_exact_index_types(index.obj)
+                    types |= self.get_exact_index_types(index.obj)
                     lookup_done = True
 
         return types if lookup_done else self.values()
 
     @memoize_default()
     def values(self):
-        result = unite(self._evaluator.eval_element(v) for v in self._values())
-        result += check_array_additions(self._evaluator, self)
+        result = set(unite(self._evaluator.eval_element(v) for v in self._values()))
+        result |= check_array_additions(self._evaluator, self)
         return result
 
     def get_exact_index_types(self, mixed_index):
@@ -353,7 +355,7 @@ class FakeDict(_FakeArray):
         self._dct = dct
 
     def get_exact_index_types(self, index):
-        return unite(self._evaluator.eval_element(v) for v in self._dct[index])
+        return set(unite(self._evaluator.eval_element(v) for v in self._dct[index]))
 
     def _items(self):
         return self._dct.items()
@@ -368,7 +370,7 @@ class MergedArray(_FakeArray):
         raise IndexError
 
     def values(self):
-        return unite((a.values() for a in self._arrays))
+        return set(unite((a.values() for a in self._arrays)))
 
     def __iter__(self):
         for array in self._arrays:
@@ -397,24 +399,24 @@ def get_iterator_types(evaluator, element):
             except KeyError:
                 debug.warning('iterators: No __iter__ method found.')
 
-    result = []
+    result = set()
     from jedi.evaluate.representation import Instance
     for it in iterators:
         if isinstance(it, Array):
             # Array is a little bit special, since this is an internal array,
             # but there's also the list builtin, which is another thing.
-            result += it.values()
+            result |= it.values()
         elif isinstance(it, Instance):
             # __iter__ returned an instance.
             name = '__next__' if is_py3 else 'next'
             try:
-                result += it.execute_subscope_by_name(name)
+                result |= it.execute_subscope_by_name(name)
             except KeyError:
                 debug.warning('Instance has no __next__ function in %s.', it)
         else:
             # TODO this is not correct, __iter__ can return arbitrary input!
             # Is a generator.
-            result += it.iter_content()
+            result |= it.iter_content()
     return result
 
 
@@ -422,7 +424,7 @@ def check_array_additions(evaluator, array):
     """ Just a mapper function for the internal _check_array_additions """
     if array.type not in ('list', 'set'):
         # TODO also check for dict updates
-        return []
+        return set()
 
     is_list = array.type == 'list'
     try:
@@ -431,7 +433,7 @@ def check_array_additions(evaluator, array):
         # If there's no get_parent_until, it's a FakeSequence or another Fake
         # type. Those fake types are used inside Jedi's engine. No values may
         # be added to those after their creation.
-        return []
+        return set()
     return _check_array_additions(evaluator, array, current_module, is_list)
 
 
@@ -444,19 +446,19 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     >>> a.append(1)
     """
     if not settings.dynamic_array_additions or isinstance(module, compiled.CompiledObject):
-        return []
+        return set()
 
     def check_additions(arglist, add_name):
         params = list(param.Arguments(evaluator, arglist).unpack())
-        result = []
+        result = set()
         if add_name in ['insert']:
             params = params[1:]
         if add_name in ['append', 'add', 'insert']:
             for key, nodes in params:
-                result += unite(evaluator.eval_element(node) for node in nodes)
+                result |= set(unite(evaluator.eval_element(node) for node in nodes))
         elif add_name in ['extend', 'update']:
             for key, nodes in params:
-                result += unite(get_iterator_types(evaluator, node) for node in nodes)
+                result |= set(unite(get_iterator_types(evaluator, node) for node in nodes))
         return result
 
     from jedi.evaluate import representation as er, param
@@ -480,7 +482,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     search_names = ['append', 'extend', 'insert'] if is_list else ['add', 'update']
     comp_arr_parent = get_execution_parent(compare_array)
 
-    added_types = []
+    added_types = set()
     for add_name in search_names:
         try:
             possible_names = module.used_names[add_name]
@@ -525,7 +527,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                     continue
                 if compare_array in evaluator.eval_element(power):
                     # The arrays match. Now add the results
-                    added_types += check_additions(execution_trailer.children[1], add_name)
+                    added_types |= check_additions(execution_trailer.children[1], add_name)
 
                 evaluator.recursion_detector.pop_stmt()
     # reset settings
@@ -564,14 +566,14 @@ class ArrayInstance(IterableWrapper):
         The index is here just ignored, because of all the appends, etc.
         lists/sets are too complicated too handle that.
         """
-        items = []
+        items = set()
         for key, nodes in self.var_args.unpack():
             for node in nodes:
-                items += get_iterator_types(self._evaluator, node)
+                items |= get_iterator_types(self._evaluator, node)
 
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
-        items += _check_array_additions(self._evaluator, self.instance, module, is_list)
+        items |= _check_array_additions(self._evaluator, self.instance, module, is_list)
         return items
 
 
@@ -624,5 +626,5 @@ def create_indexes_or_slices(evaluator, index):
                 result.append(el)
         result += [None] * (3 - len(result))
 
-        return (Slice(evaluator, *result),)
+        return set([Slice(evaluator, *result)])
     return evaluator.eval_element(index)

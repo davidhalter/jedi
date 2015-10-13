@@ -60,7 +60,7 @@ def search_params(evaluator, param):
     names = [n for n in search_function_call(evaluator, func)
              if n.value == param.name.value]
     # Evaluate the ExecutedParams to types.
-    result = list(chain.from_iterable(n.parent.eval(evaluator) for n in names))
+    result = set(chain.from_iterable(n.parent.eval(evaluator) for n in names))
     debug.dbg('Dynamic param result %s', result)
     return result
 

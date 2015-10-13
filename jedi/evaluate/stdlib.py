@@ -80,7 +80,7 @@ def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=Fal
             try:
                 lst = list(arguments.eval_argument_clinic(clinic_args))
             except ValueError:
-                return []
+                return set()
             else:
                 kwargs = {}
                 if want_scope:
@@ -97,7 +97,6 @@ def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=Fal
 
 @argument_clinic('object, name[, default], /')
 def builtins_getattr(evaluator, objects, names, defaults=None):
-    types = []
     # follow the first param
     for obj in objects:
         if not isinstance(obj, (er.Instance, er.Class, tree.Module, compiled.CompiledObject)):
@@ -110,16 +109,16 @@ def builtins_getattr(evaluator, objects, names, defaults=None):
             else:
                 debug.warning('getattr called without str')
                 continue
-    return types
+    return set()
 
 
 @argument_clinic('object[, bases, dict], /')
 def builtins_type(evaluator, objects, bases, dicts):
     if bases or dicts:
         # It's a type creation... maybe someday...
-        return []
+        return set()
     else:
-        return [o.py__class__(evaluator) for o in objects]
+        return set([o.py__class__(evaluator) for o in objects])
 
 
 class SuperInstance(er.Instance):
@@ -145,20 +144,20 @@ def builtins_super(evaluator, types, objects, scope):
             su = cls.py__bases__(evaluator)
             if su:
                 return evaluator.execute(su[0])
-    return []
+    return set()
 
 
 def get_iterable_content(evaluator, arguments, argument_index):
     nodes = list(arguments.unpack())[argument_index][1]
-    return tuple(iterable.unite(iterable.get_iterator_types(evaluator, node)
-                                for node in nodes))
+    return set(iterable.unite(iterable.get_iterator_types(evaluator, node)
+                              for node in nodes))
 
 
 @argument_clinic('sequence, /', want_obj=True, want_arguments=True)
 def builtins_reversed(evaluator, sequences, obj, arguments):
     # Unpack the iterator values
     objects = get_iterable_content(evaluator, arguments, 0)
-    rev = [iterable.AlreadyEvaluated([o]) for o in reversed(objects)]
+    rev = [iterable.AlreadyEvaluated([o]) for o in reversed(list(objects))]
     # Repack iterator values and then run it the normal way. This is
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
@@ -166,7 +165,7 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     rev = iterable.AlreadyEvaluated(
         [iterable.FakeSequence(evaluator, rev, 'list')]
     )
-    return [er.Instance(evaluator, obj, param.Arguments(evaluator, [rev]))]
+    return set([er.Instance(evaluator, obj, param.Arguments(evaluator, [rev]))])
 
 
 @argument_clinic('obj, type, /', want_arguments=True)
@@ -179,7 +178,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             # This is temporary. Everything should have a class attribute in
             # Python?! Maybe we'll leave it here, because some numpy objects or
             # whatever might not.
-            return [compiled.true_obj, compiled.false_obj]
+            return set([compiled.true_obj, compiled.false_obj])
 
         mro = mro_func(evaluator)
 
@@ -191,7 +190,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                 classes = get_iterable_content(evaluator, arguments, 1)
                 bool_results.add(any(cls in mro for cls in classes))
 
-    return [compiled.keyword_from_value(x) for x in bool_results]
+    return set(compiled.keyword_from_value(x) for x in bool_results)
 
 
 def collections_namedtuple(evaluator, obj, arguments):
@@ -206,7 +205,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     """
     # Namedtuples are not supported on Python 2.6
     if not hasattr(collections, '_class_template'):
-        return []
+        return set()
 
     # Process arguments
     name = _follow_param(evaluator, arguments, 0)[0].obj
@@ -217,9 +216,9 @@ def collections_namedtuple(evaluator, obj, arguments):
         try:
             fields = [v.obj for v in _fields.values()]
         except AttributeError:
-            return []
+            return set()
     else:
-        return []
+        return set()
 
     # Build source
     source = collections._class_template.format(
@@ -234,7 +233,7 @@ def collections_namedtuple(evaluator, obj, arguments):
 
     # Parse source
     generated_class = Parser(evaluator.grammar, unicode(source)).module.subscopes[0]
-    return [er.Class(evaluator, generated_class)]
+    return set(er.Class(evaluator, generated_class))
 
 
 @argument_clinic('first, /')
@@ -255,8 +254,8 @@ _implemented = {
         'deepcopy': _return_first_param,
     },
     'json': {
-        'load': lambda *args: [],
-        'loads': lambda *args: [],
+        'load': lambda *args: set(),
+        'loads': lambda *args: set(),
     },
     'collections': {
         'namedtuple': collections_namedtuple,

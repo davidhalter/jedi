@@ -176,11 +176,11 @@ def _execute_array_values(evaluator, array):
 def follow_param(evaluator, param):
     func = param.parent_function
 
-    return [p
-            for param_str in _search_param_in_docstr(func.raw_doc,
-                                                     str(param.name))
+    return set(
+        [p for param_str in _search_param_in_docstr(func.raw_doc,
+                                                    str(param.name))
             for p in _evaluate_for_statement_string(evaluator, param_str,
-                                                    param.get_parent_until())]
+                                                    param.get_parent_until())])
 
 
 @memoize_default(None, evaluator_is_first_arg=True)

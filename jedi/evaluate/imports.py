@@ -70,7 +70,7 @@ class ImportWrapper(tree.Base):
     def follow(self, is_goto=False):
         if self._evaluator.recursion_detector.push_stmt(self._import):
             # check recursion
-            return []
+            return set()
 
         try:
             module = self._evaluator.wrap(self._import.get_parent_until())
@@ -97,7 +97,7 @@ class ImportWrapper(tree.Base):
             #    scopes = [NestedImportModule(module, self._import)]
 
             if from_import_name is not None:
-                types = list(chain.from_iterable(
+                types = set(chain.from_iterable(
                     self._evaluator.find_types(t, unicode(from_import_name),
                                                is_goto=is_goto)
                     for t in types))
@@ -109,11 +109,11 @@ class ImportWrapper(tree.Base):
                     types = importer.follow()
                     # goto only accepts `Name`
                     if is_goto:
-                        types = [s.name for s in types]
+                        types = set(s.name for s in types)
             else:
                 # goto only accepts `Name`
                 if is_goto:
-                    types = [s.name for s in types]
+                    types = set(s.name for s in types)
 
             debug.dbg('after import: %s', types)
         finally:
@@ -248,7 +248,7 @@ class Importer(object):
     @memoize_default(NO_DEFAULT)
     def follow(self):
         if not self.import_path:
-            return []
+            return set()
         return self._do_import(self.import_path, self.sys_path_with_modifications())
 
     def _do_import(self, import_path, sys_path):
@@ -271,7 +271,7 @@ class Importer(object):
 
         module_name = '.'.join(import_parts)
         try:
-            return [self._evaluator.modules[module_name]]
+            return set([self._evaluator.modules[module_name]])
         except KeyError:
             pass
 
@@ -280,11 +280,11 @@ class Importer(object):
             # the module cache.
             bases = self._do_import(import_path[:-1], sys_path)
             if not bases:
-                return []
+                return set()
             # We can take the first element, because only the os special
             # case yields multiple modules, which is not important for
             # further imports.
-            base = bases[0]
+            base = list(bases)[0]
 
             # This is a huge exception, we follow a nested import
             # ``os.path``, because it's a very important one in Python
@@ -301,7 +301,7 @@ class Importer(object):
             except AttributeError:
                 # The module is not a package.
                 _add_error(self._evaluator, import_path[-1])
-                return []
+                return set()
             else:
                 debug.dbg('search_module %s in paths %s', module_name, paths)
                 for path in paths:
@@ -315,7 +315,7 @@ class Importer(object):
                         module_path = None
                 if module_path is None:
                     _add_error(self._evaluator, import_path[-1])
-                    return []
+                    return set()
         else:
             try:
                 debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
@@ -330,7 +330,7 @@ class Importer(object):
             except ImportError:
                 # The module is not a package.
                 _add_error(self._evaluator, import_path[-1])
-                return []
+                return set()
 
         source = None
         if is_pkg:
@@ -347,7 +347,7 @@ class Importer(object):
             module = _load_module(self._evaluator, module_path, source, sys_path)
 
         self._evaluator.modules[module_name] = module
-        return [module]
+        return set([module])
 
     def _generate_name(self, name):
         return helpers.FakeName(name, parent=self.module)

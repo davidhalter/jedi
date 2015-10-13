@@ -95,7 +95,7 @@ def execution_recursion_decorator(func):
     def run(execution, **kwargs):
         detector = execution._evaluator.execution_recursion_detector
         if detector.push_execution(execution):
-            result = []
+            result = set()
         else:
             result = func(execution, **kwargs)
         detector.pop_execution()

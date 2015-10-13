@@ -142,8 +142,8 @@ class Arguments(tree.Base):
                 debug.warning('TypeError: %s expected at least %s arguments, got %s',
                               name, len(arguments), i)
                 raise ValueError
-            values = list(chain.from_iterable(self._evaluator.eval_element(el)
-                                              for el in va_values))
+            values = set(chain.from_iterable(self._evaluator.eval_element(el)
+                                             for el in va_values))
             if not values and not optional:
                 # For the stdlib we always want values. If we don't get them,
                 # that's ok, maybe something is too hard to resolve, however,
@@ -190,9 +190,9 @@ class ExecutedParam(tree.Param):
         self._values = values
 
     def eval(self, evaluator):
-        types = []
+        types = set()
         for v in self._values:
-            types += evaluator.eval_element(v)
+            types |= evaluator.eval_element(v)
         return types
 
     @property

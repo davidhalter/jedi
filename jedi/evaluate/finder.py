@@ -164,7 +164,7 @@ class NameFinder(object):
                     elif isinstance(scope, tree.IfStmt):
                         try:
                             name_dict = self._evaluator.predefined_if_name_dict_dict[scope]
-                            types = name_dict[str(self.name_str)]
+                            types = set(name_dict[str(self.name_str)])
                         except KeyError:
                             continue
                         else:
@@ -177,7 +177,7 @@ class NameFinder(object):
                                 check = flow_analysis.break_check(self._evaluator, self.scope,
                                                                   origin_scope)
                                 if check is flow_analysis.UNREACHABLE:
-                                    self._found_predefined_if_name = []
+                                    self._found_predefined_if_name = set()
                                 else:
                                     self._found_predefined_if_name = types
                             break
@@ -230,7 +230,7 @@ class NameFinder(object):
 
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
-        result = []
+        result = set()
         # str is important, because it shouldn't be `Name`!
         name = compiled.create(self._evaluator, str(self.name_str))
         with common.ignored(KeyError):
@@ -285,51 +285,50 @@ class NameFinder(object):
         if not isinstance(name_scope, (er.Instance, tree.Class)):
             return types
 
-        result = []
+        result = set()
         for r in types:
             try:
                 desc_return = r.get_descriptor_returns
             except AttributeError:
-                result.append(r)
+                result.add(r)
             else:
-                result += desc_return(self.scope)
+                result |= desc_return(self.scope)
         return result
 
 
-@memoize_default([], evaluator_is_first_arg=True)
+@memoize_default(set(), evaluator_is_first_arg=True)
 def _name_to_types(evaluator, name, scope):
-    types = []
+    types = set()
     typ = name.get_definition()
     if typ.isinstance(tree.ForStmt, tree.CompFor):
         for_types = iterable.get_iterator_types(evaluator, typ.children[3])
-        types += check_tuple_assignments(for_types, name)
+        types |= check_tuple_assignments(for_types, name)
     elif isinstance(typ, tree.Param):
-        types += _eval_param(evaluator, typ, scope)
+        types |= _eval_param(evaluator, typ, scope)
     elif typ.isinstance(tree.ExprStmt):
-        types += _remove_statements(evaluator, typ, name)
+        types |= _remove_statements(evaluator, typ, name)
     elif typ.isinstance(tree.WithStmt):
-        types += evaluator.eval_element(typ.node_from_name(name))
+        types |= evaluator.eval_element(typ.node_from_name(name))
     elif isinstance(typ, tree.Import):
-        types += imports.ImportWrapper(evaluator, name).follow()
+        types |= imports.ImportWrapper(evaluator, name).follow()
     elif isinstance(typ, tree.GlobalStmt):
         # TODO theoretically we shouldn't be using search_global here, it
         # doesn't make sense, because it's a local search (for that name)!
         # However, globals are not that important and resolving them doesn't
         # guarantee correctness in any way, because we don't check for when
         # something is executed.
-        types += evaluator.find_types(typ.get_parent_scope(), str(name),
+        types |= evaluator.find_types(typ.get_parent_scope(), str(name),
                                       search_global=True)
     elif isinstance(typ, tree.TryStmt):
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
         # the static analysis report.
         exceptions = evaluator.eval_element(name.prev_sibling().prev_sibling())
-        types = list(chain.from_iterable(
-                     evaluator.execute(t) for t in exceptions))
+        types = set(chain.from_iterable(evaluator.execute(t) for t in exceptions))
     else:
         if typ.isinstance(er.Function):
             typ = typ.get_decorated_func()
-        types.append(typ)
+        types.add(typ)
     return types
 
 
@@ -340,7 +339,7 @@ def _remove_statements(evaluator, stmt, name):
     Due to lazy evaluation, statements like a = func; b = a; b() have to be
     evaluated.
     """
-    types = []
+    types = set()
     # Remove the statement docstr stuff for now, that has to be
     # implemented with the evaluator class.
     #if stmt.docstr:
@@ -351,18 +350,18 @@ def _remove_statements(evaluator, stmt, name):
         check_instance = stmt.instance
         stmt = stmt.var
 
-    types += evaluator.eval_statement(stmt, seek_name=name)
+    types |= evaluator.eval_statement(stmt, seek_name=name)
 
     if check_instance is not None:
         # class renames
-        types = [er.get_instance_el(evaluator, check_instance, a, True)
-                 if isinstance(a, (er.Function, tree.Function))
-                 else a for a in types]
+        types = set([er.get_instance_el(evaluator, check_instance, a, True)
+                     if isinstance(a, (er.Function, tree.Function))
+                     else a for a in types])
     return types
 
 
 def _eval_param(evaluator, param, scope):
-    res_new = []
+    res_new = set()
     func = param.get_parent_scope()
 
     cls = func.parent.get_parent_until((tree.Class, tree.Function))
@@ -373,11 +372,11 @@ def _eval_param(evaluator, param, scope):
         # This is where we add self - if it has never been
         # instantiated.
         if isinstance(scope, er.InstanceElement):
-            res_new.append(scope.instance)
+            res_new.add(scope.instance)
         else:
             inst = er.Instance(evaluator, evaluator.wrap(cls),
                                Arguments(evaluator, ()), is_generated=True)
-            res_new.append(inst)
+            res_new.add(inst)
         return res_new
 
     # Instances are typically faked, if the instance is not called from
@@ -392,17 +391,17 @@ def _eval_param(evaluator, param, scope):
         return doc_params
 
     if isinstance(param, ExecutedParam):
-        return res_new + param.eval(evaluator)
+        return res_new | param.eval(evaluator)
     else:
         # Param owns no information itself.
-        res_new += dynamic.search_params(evaluator, param)
+        res_new |= dynamic.search_params(evaluator, param)
         if not res_new:
             if param.stars:
                 t = 'tuple' if param.stars == 1 else 'dict'
-                typ = evaluator.find_types(compiled.builtin, t)[0]
+                typ = list(evaluator.find_types(compiled.builtin, t))[0]
                 res_new = evaluator.execute(typ)
         if param.default:
-            res_new += evaluator.eval_element(param.default)
+            res_new |= evaluator.eval_element(param.default)
         return res_new
 
 
@@ -418,7 +417,7 @@ def check_flow_information(evaluator, flow, search_name, pos):
     if not settings.dynamic_flow_information:
         return None
 
-    result = []
+    result = set()
     if flow.is_scope():
         # Check for asserts.
         try:
@@ -462,12 +461,12 @@ def _check_isinstance_type(evaluator, element, search_name):
         call = helpers.call_of_name(search_name)
         assert name.get_code() == call.get_code()
     except AssertionError:
-        return []
+        return set()
 
-    result = []
+    result = set()
     for typ in evaluator.eval_element(classes):
         for typ in (typ.values() if isinstance(typ, iterable.Array) else [typ]):
-            result += evaluator.execute(typ)
+            result |= evaluator.execute(typ)
     return result
 
 
@@ -546,7 +545,7 @@ def check_tuple_assignments(types, name):
     Checks if tuples are assigned.
     """
     for index in name.assignment_indexes():
-        new_types = []
+        new_types = set()
         for r in types:
             try:
                 func = r.get_exact_index_types
@@ -555,7 +554,7 @@ def check_tuple_assignments(types, name):
                               index, types, name)
             else:
                 try:
-                    new_types += func(index)
+                    new_types |= func(index)
                 except IndexError:
                     pass
         types = new_types

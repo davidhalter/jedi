@@ -51,9 +51,9 @@ class CompiledObject(Base):
         def actual(evaluator, params):
             if inspect.isclass(self.obj):
                 from jedi.evaluate.representation import Instance
-                return [Instance(evaluator, self, params)]
+                return set([Instance(evaluator, self, params)])
             else:
-                return list(self._execute_function(evaluator, params))
+                return set(self._execute_function(evaluator, params))
 
         # Might raise an AttributeError, which is intentional.
         self.obj.__call__
@@ -173,12 +173,12 @@ class CompiledObject(Base):
         # AttributeError.
         if not hasattr(self.obj, '__getitem__'):
             debug.warning('Tried to call __getitem__ on non-iterable.')
-            return []
+            return set()
         if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
             # Get rid of side effects, we won't call custom `__getitem__`s.
-            return []
+            return set()
 
-        result = []
+        result = set()
         from jedi.evaluate.iterable import create_indexes_or_slices
         for typ in create_indexes_or_slices(evaluator, index_array):
             index = None
@@ -188,9 +188,9 @@ class CompiledObject(Base):
             except (KeyError, IndexError, TypeError, AttributeError):
                 # Just try, we don't care if it fails, except for slices.
                 if isinstance(index, slice):
-                    result.append(self)
+                    result.add(self)
             else:
-                result.append(CompiledObject(new))
+                result.add(CompiledObject(new))
         if not result:
             try:
                 for obj in self.obj:

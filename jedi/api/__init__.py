@@ -331,12 +331,13 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        def resolve_import_paths(scopes):
-            for s in set(scopes):
+        def resolve_import_paths(definitions):
+            new_defs = list(definitions)
+            for s in definitions:
                 if isinstance(s, imports.ImportWrapper):
-                    scopes.remove(s)
-                    scopes.update(resolve_import_paths(set(s.follow())))
-            return scopes
+                    new_defs.remove(s)
+                    new_defs += resolve_import_paths(set(s.follow()))
+            return new_defs
 
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
