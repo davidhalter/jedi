@@ -271,6 +271,15 @@ class Array(IterableWrapper, ArrayMixin):
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self.atom, name)
 
+    def per_index_values(self):
+        """
+        While values returns the possible values for any array field, this
+        function returns the value for a certain index.
+        """
+        values = self._values()
+        for value in values:
+            yield self._evaluator.eval_element(value)
+
     def _values(self):
         """Returns a list of a list of node."""
         if self.type == 'dict':

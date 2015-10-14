@@ -164,8 +164,8 @@ def _execute_array_values(evaluator, array):
     """
     if isinstance(array, Array):
         values = []
-        for typ in array.values():
-            objects = _execute_array_values(evaluator, typ)
+        for types in array.per_index_values():
+            objects = set(chain.from_iterable(_execute_array_values(evaluator, typ) for typ in types))
             values.append(AlreadyEvaluated(objects))
         return [FakeSequence(evaluator, values, array.type)]
     else:
