@@ -23,17 +23,19 @@ COMPARISON_OPERATORS = {
 }
 
 
-def _literals_to_types(evaluator, result):
+def literals_to_types(evaluator, result):
     # Changes literals ('a', 1, 1.0, etc) to its type instances (str(),
     # int(), float(), etc).
-    result = list(result)
-    for i, r in enumerate(result):
-        if is_literal(r):
+    new_result = set()
+    for typ in result:
+        if is_literal(typ):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
-            cls = builtin.get_by_name(r.name.get_code())
-            result[i] = list(evaluator.execute(cls))[0]
-    return set(result)
+            cls = builtin.get_by_name(typ.name.get_code())
+            new_result.add(list(evaluator.execute(cls))[0])
+        else:
+            new_result.add(typ)
+    return new_result
 
 
 def calculate_children(evaluator, children):
@@ -69,13 +71,13 @@ def calculate(evaluator, left_result, operator, right_result):
     if not left_result or not right_result:
         # illegal slices e.g. cause left/right_result to be None
         result = (left_result or set()) | (right_result or set())
-        result = _literals_to_types(evaluator, result)
+        result = literals_to_types(evaluator, result)
     else:
         # I don't think there's a reasonable chance that a string
         # operation is still correct, once we pass something like six
         # objects.
         if len(left_result) * len(right_result) > 6:
-            result = _literals_to_types(evaluator, left_result | right_result)
+            result = literals_to_types(evaluator, left_result | right_result)
         else:
             for left in left_result:
                 for right in right_result:

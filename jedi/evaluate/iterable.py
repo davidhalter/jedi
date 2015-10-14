@@ -29,6 +29,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
+from jedi.evaluate.precedence import literals_to_types
 
 
 class IterableWrapper(tree.Base):
@@ -388,6 +389,28 @@ class MergedArray(_FakeArray):
 
     def __len__(self):
         return sum(len(a) for a in self._arrays)
+
+
+def ordered_elements_of_iterable(evaluator, iterable_type, all_values):
+    """
+    This function returns the ordered types of an iterable. If the input is not
+    an Array, we just return all types as the first and only item of the
+    output list.
+    """
+    ordered = []
+    # Unpack the iterator values
+    for sequence in iterable_type:
+        if not isinstance(sequence, Array):
+            ordered = [literals_to_types(evaluator, all_values)]
+            break
+        else:
+            # Try
+            for i, types in enumerate(sequence.per_index_values()):
+                try:
+                    ordered[i] |= types
+                except IndexError:
+                    ordered.append(set(types))
+    return ordered
 
 
 def get_iterator_types(evaluator, element):

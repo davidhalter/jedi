@@ -147,12 +147,16 @@ class Evaluator(object):
             name = str(stmt.get_defined_names()[0])
             parent = self.wrap(stmt.get_parent_scope())
             left = self.find_types(parent, name, stmt.start_pos, search_global=True)
-            if isinstance(stmt.get_parent_until(tree.ForStmt), tree.ForStmt):
+
+            for_stmt = stmt.get_parent_until(tree.ForStmt)
+            if isinstance(for_stmt, tree.ForStmt):
                 # Iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
                 # predictable.
-                for r in types:
-                    left = precedence.calculate(self, left, operator, set([r]))
+                for_iterable = self.eval_element(for_stmt.children[3])
+                ordered = iterable.ordered_elements_of_iterable(self, for_iterable, types)
+                for index_types in ordered:
+                    left = precedence.calculate(self, left, operator, index_types)
                 types = left
             else:
                 types = precedence.calculate(self, left, operator, types)

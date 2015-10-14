@@ -155,9 +155,14 @@ def get_iterable_content(evaluator, arguments, argument_index):
 
 @argument_clinic('sequence, /', want_obj=True, want_arguments=True)
 def builtins_reversed(evaluator, sequences, obj, arguments):
-    # Unpack the iterator values
-    objects = get_iterable_content(evaluator, arguments, 0)
-    rev = [iterable.AlreadyEvaluated([o]) for o in reversed(list(objects))]
+    # While we could do without this variable (just by using sequences), we
+    # want static analysis to work well. Therefore we need to generated the
+    # values again.
+    all_sequence_types = get_iterable_content(evaluator, arguments, 0)
+
+    ordered = iterable.ordered_elements_of_iterable(evaluator, sequences, all_sequence_types)
+
+    rev = [iterable.AlreadyEvaluated(o) for o in reversed(ordered)]
     # Repack iterator values and then run it the normal way. This is
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
