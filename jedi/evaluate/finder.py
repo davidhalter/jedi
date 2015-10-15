@@ -161,7 +161,7 @@ class NameFinder(object):
                     scope = scope.parent
                     if isinstance(scope, tree.IsScope) or scope is None:
                         break
-                    elif isinstance(scope, tree.IfStmt):
+                    elif isinstance(scope, (tree.IfStmt, tree.ForStmt)):
                         try:
                             name_dict = self._evaluator.predefined_if_name_dict_dict[scope]
                             types = set(name_dict[str(self.name_str)])

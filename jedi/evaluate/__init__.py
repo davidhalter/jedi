@@ -122,7 +122,7 @@ class Evaluator(object):
         return f.find(scopes, search_global)
 
     #@memoize_default(default=[], evaluator_is_first_arg=True)
-    @recursion.recursion_decorator
+    #@recursion.recursion_decorator
     @debug.increase_indent
     def eval_statement(self, stmt, seek_name=None):
         """
@@ -149,15 +149,22 @@ class Evaluator(object):
             left = self.find_types(parent, name, stmt.start_pos, search_global=True)
 
             for_stmt = stmt.get_parent_until(tree.ForStmt)
-            if isinstance(for_stmt, tree.ForStmt):
+            if isinstance(for_stmt, tree.ForStmt) and types \
+                    and isinstance(for_stmt.children[1], tree.Name) \
+                    and self.predefined_if_name_dict_dict.get(for_stmt) is None:
                 # Iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
-                # predictable.
+                # predictable. Also only do it, if the variable is not a tuple.
                 for_iterable = self.eval_element(for_stmt.children[3])
                 ordered = iterable.ordered_elements_of_iterable(self, for_iterable, types)
+
                 for index_types in ordered:
-                    left = precedence.calculate(self, left, operator, index_types)
+                    dct = {for_stmt.children[1]: index_types}
+                    self.predefined_if_name_dict_dict[for_stmt] = dct
+                    t = self.eval_statement(stmt)
+                    left = precedence.calculate(self, left, operator, t)
                 types = left
+                del self.predefined_if_name_dict_dict[for_stmt]
             else:
                 types = precedence.calculate(self, left, operator, types)
         debug.dbg('eval_statement result %s', types)
