@@ -134,7 +134,8 @@ class Evaluator(object):
         :param stmt: A `tree.ExprStmt`.
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
-        types = self.eval_element(stmt.get_rhs())
+        rhs = stmt.get_rhs()
+        types = self.eval_element(rhs)
 
         if seek_name:
             types = finder.check_tuple_assignments(types, seek_name)
@@ -150,8 +151,7 @@ class Evaluator(object):
 
             for_stmt = stmt.get_parent_until(tree.ForStmt)
             if isinstance(for_stmt, tree.ForStmt) and types \
-                    and isinstance(for_stmt.children[1], tree.Name) \
-                    and self.predefined_if_name_dict_dict.get(for_stmt) is None:
+                    and isinstance(for_stmt.children[1], tree.Name):
                 # Iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
                 # predictable. Also only do it, if the variable is not a tuple.
@@ -159,9 +159,9 @@ class Evaluator(object):
                 ordered = iterable.ordered_elements_of_iterable(self, for_iterable, types)
 
                 for index_types in ordered:
-                    dct = {for_stmt.children[1]: index_types}
+                    dct = {str(for_stmt.children[1]): index_types}
                     self.predefined_if_name_dict_dict[for_stmt] = dct
-                    t = self.eval_statement(stmt)
+                    t = self.eval_element(rhs)
                     left = precedence.calculate(self, left, operator, t)
                 types = left
                 del self.predefined_if_name_dict_dict[for_stmt]
@@ -176,7 +176,7 @@ class Evaluator(object):
         elif isinstance(element, iterable.MergedNodes):
             return set(iterable.unite(self.eval_element(e) for e in element))
 
-        parent = element.get_parent_until((tree.IfStmt, tree.IsScope))
+        parent = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
         predefined_if_name_dict = self.predefined_if_name_dict_dict.get(parent)
         if not predefined_if_name_dict and isinstance(parent, tree.IfStmt):
             if_stmt = parent.children[1]
