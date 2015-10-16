@@ -33,14 +33,14 @@ enable_notice = False
 # callback, interface: level, str
 debug_function = None
 ignored_modules = ['jedi.evaluate.builtin', 'jedi.parser']
-_debug_indent = -1
+_debug_indent = 0
 _start_time = time.time()
 
 
 def reset_time():
     global _start_time, _debug_indent
     _start_time = time.time()
-    _debug_indent = -1
+    _debug_indent = 0
 
 
 def increase_indent(func):
@@ -49,10 +49,9 @@ def increase_indent(func):
         global _debug_indent
         _debug_indent += 1
         try:
-            result = func(*args, **kwargs)
+            return func(*args, **kwargs)
         finally:
             _debug_indent -= 1
-        return result
     return wrapper
 
 
