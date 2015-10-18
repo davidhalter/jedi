@@ -20,6 +20,7 @@ except ImportError:
         RED = ''
         GREEN = ''
         YELLOW = ''
+        MAGENTA = ''
         RESET = ''
 
 NOTICE = object()
@@ -55,37 +56,45 @@ def increase_indent(func):
     return wrapper
 
 
-def dbg(message, *args):
+def dbg(message, *args, **kwargs):
     """ Looks at the stack, to see if a debug message should be printed. """
+    if kwargs:
+        # Python 2 compatibility, because it doesn't understand default args
+        # after *args.
+        color = kwargs.get('color')
+        if color is None:
+            raise TypeError("debug.dbg doesn't support more named arguments than color")
+    else:
+        color = 'GREEN'
+
     if debug_function and enable_notice:
         frm = inspect.stack()[1]
         mod = inspect.getmodule(frm[0])
         if not (mod.__name__ in ignored_modules):
             i = ' ' * _debug_indent
-            debug_function(NOTICE, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
+            debug_function(color, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
 
 
 def warning(message, *args):
     if debug_function and enable_warning:
         i = ' ' * _debug_indent
-        debug_function(WARNING, i + 'warning: ' + message % tuple(u(repr(a)) for a in args))
+        debug_function('RED', i + 'warning: ' + message % tuple(u(repr(a)) for a in args))
 
 
 def speed(name):
     if debug_function and enable_speed:
         now = time.time()
         i = ' ' * _debug_indent
-        debug_function(SPEED, i + 'speed: ' + '%s %s' % (name, now - _start_time))
+        debug_function('YELLOW', i + 'speed: ' + '%s %s' % (name, now - _start_time))
 
 
-def print_to_stdout(level, str_out):
-    """ The default debug function """
-    if level == NOTICE:
-        col = Fore.GREEN
-    elif level == WARNING:
-        col = Fore.RED
-    else:
-        col = Fore.YELLOW
+def print_to_stdout(color, str_out):
+    """
+    The default debug function that prints to standard out.
+
+    :param str color: A string that is an attribute of ``colorama.Fore``.
+    """
+    col = getattr(Fore, color)
     if not is_py3:
         str_out = str_out.encode(encoding, 'replace')
     print(col + str_out + Fore.RESET)

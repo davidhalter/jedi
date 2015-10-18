@@ -470,6 +470,7 @@ def check_array_additions(evaluator, array):
 
 
 @memoize_default([], evaluator_is_first_arg=True)
+@debug.increase_indent
 def _check_array_additions(evaluator, compare_array, module, is_list):
     """
     Checks if a `Array` has "add" (append, insert, extend) statements:
@@ -477,7 +478,9 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
     >>> a = [""]
     >>> a.append(1)
     """
+    debug.dbg('Dynamic array search for %s' % compare_array, color='MAGENTA')
     if not settings.dynamic_array_additions or isinstance(module, compiled.CompiledObject):
+        debug.dbg('Dynamic array search aborted.', color='MAGENTA')
         return set()
 
     def check_additions(arglist, add_name):
@@ -564,6 +567,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                 evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
+    debug.dbg('Dynamic array result %s' % added_types, color='MAGENTA')
     return added_types
 
 
