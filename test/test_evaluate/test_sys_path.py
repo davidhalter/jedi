@@ -30,8 +30,8 @@ def test_paths_from_assignment():
 # invoked with one of those versions, the test below will be run for the
 # matching directory.
 CUR_DIR = os.path.dirname(__file__)
-VENVS = list(glob(os.path.join(CUR_DIR,
-                               'venvs/venv%d%d' % sys.version_info[:2])))
+VENVS = list(glob(
+    os.path.join(CUR_DIR, 'sample_venvs/venv%d%d' % sys.version_info[:2])))
 
 
 @pytest.mark.parametrize('venv', VENVS)
@@ -49,4 +49,6 @@ def test_get_venv_path(venv):
         pjoin('/path', 'from', 'smth.py'),
         pjoin('/path', 'from', 'smth.py:extend_path')
     ]
+    # Ensure that none of venv dirs leaked to the interpreter.
+    assert not set(sys.path).intersection(ETALON)
     assert venv_path[:len(ETALON)] == ETALON
