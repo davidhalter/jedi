@@ -46,11 +46,8 @@ def test_flask_ext(script, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
     """
     path = os.path.join(os.path.dirname(__file__), 'flask-site-packages')
-    sys.path.append(path)
-    try:
-        assert name in [c.name for c in jedi.Script(script).completions()]
-    finally:
-        sys.path.remove(path)
+    completions = jedi.Script(script, sys_path=[path]).completions()
+    assert name in [c.name for c in completions]
 
 
 @cwd_at('test/test_evaluate/')
