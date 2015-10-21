@@ -308,6 +308,17 @@ class BaseDefinition(object):
 
         return '.'.join(path if path[0] else path[1:])
 
+    @property
+    def return_type(self):
+        if self.type != 'function':
+            raise AttributeError()
+        execute_result = self._evaluator.execute(self._definition)
+        ret = []
+        for r in execute_result:
+            if r.name is not None:
+                ret.append(Definition(self._evaluator, r.name))
+        return ret
+
     def goto_assignments(self):
         defs = self._evaluator.goto(self._name)
         return [Definition(self._evaluator, d) for d in defs]
