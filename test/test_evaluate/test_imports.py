@@ -54,3 +54,19 @@ def test_flask_ext(script, name):
 def test_not_importable_file():
     src = 'import not_importable_file as x; x.'
     assert not jedi.Script(src, path='example.py').completions()
+
+
+def test_cache_works_with_sys_path_param(tmpdir):
+    foo_path = tmpdir.join('foo')
+    bar_path = tmpdir.join('bar')
+    foo_path.join('module.py').write('foo = 123', ensure=True)
+    bar_path.join('module.py').write('bar = 123', ensure=True)
+    foo_completions = jedi.Script('import module; module.',
+                                  sys_path=[foo_path.strpath]).completions()
+    bar_completions = jedi.Script('import module; module.',
+                                  sys_path=[bar_path.strpath]).completions()
+    assert 'foo' in [c.name for c in foo_completions]
+    assert 'bar' not in [c.name for c in foo_completions]
+
+    assert 'bar' in [c.name for c in bar_completions]
+    assert 'foo' not in [c.name for c in bar_completions]
