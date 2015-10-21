@@ -35,7 +35,10 @@ def _get_sys_path_with_egglinks(sys_path):
     result = []
     for p in sys_path:
         result.append(p)
-        for egg_link in glob.glob(os.path.join(p, '*.egg-link')):
+        # pkg_resources does not define a specific order for egg-link files
+        # using os.listdir to enumerate them, we're sorting them to have
+        # reproducible tests.
+        for egg_link in sorted(glob.glob(os.path.join(p, '*.egg-link'))):
             with open(egg_link) as fd:
                 for line in fd:
                     line = line.strip()

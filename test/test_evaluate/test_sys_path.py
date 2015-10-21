@@ -43,8 +43,8 @@ def test_get_venv_path(venv):
                  glob(pjoin(venv, 'lib', 'site-packages')))[0]
     ETALON = [
         site_pkgs,
-        pjoin(site_pkgs, '.', 'relative', 'egg-link', 'path'),
         pjoin('/path', 'from', 'egg-link'),
+        pjoin(site_pkgs, '.', 'relative', 'egg-link', 'path'),
         pjoin(site_pkgs, 'dir-from-foo-pth'),
         pjoin('/path', 'from', 'smth.py'),
         pjoin('/path', 'from', 'smth.py:extend_path')
