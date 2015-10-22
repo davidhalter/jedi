@@ -1,7 +1,5 @@
 import os
-import shutil
 import re
-import tempfile
 
 import pytest
 
@@ -125,25 +123,3 @@ def isolated_jedi_cache(monkeypatch, tmpdir):
     """
     from jedi import settings
     monkeypatch.setattr(settings, 'cache_directory', str(tmpdir))
-
-
-@pytest.fixture(scope='session')
-def clean_jedi_cache(request):
-    """
-    Set `jedi.settings.cache_directory` to a temporary directory during test.
-
-    Note that you can't use built-in `tmpdir` and `monkeypatch`
-    fixture here because their scope is 'function', which is not used
-    in 'session' scope fixture.
-
-    This fixture is activated in ../pytest.ini.
-    """
-    from jedi import settings
-    old = settings.cache_directory
-    tmp = tempfile.mkdtemp(prefix='jedi-test-')
-    settings.cache_directory = tmp
-
-    @request.addfinalizer
-    def restore():
-        settings.cache_directory = old
-        shutil.rmtree(tmp)
