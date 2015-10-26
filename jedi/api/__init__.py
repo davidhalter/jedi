@@ -59,6 +59,18 @@ class Script(object):
     You can either use the ``source`` parameter or ``path`` to read a file.
     Usually you're going to want to use both of them (in an editor).
 
+    The script might be analyzed in a different ``sys.path`` than |jedi|:
+
+    - if `sys_path` parameter is not ``None``, it will be used as ``sys.path``
+      for the script;
+
+    - if `sys_path` parameter is ``None`` and ``VIRTUAL_ENV`` environment
+      variable is defined, ``sys.path`` for the specified environment will be
+      guessed (see :func:`jedi.evaluate.sys_path.get_venv_path`) and used for
+      the script;
+
+    - otherwise ``sys.path`` will match that of |jedi|.
+
     :param source: The source code of the current file, separated by newlines.
     :type source: str
     :param line: The line to perform actions on (starting with 1).
@@ -74,6 +86,9 @@ class Script(object):
     :param source_encoding: The encoding of ``source``, if it is not a
         ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
+    :param sys_path: ``sys.path`` to use during analysis of the script
+    :type sys_path: list
+
     """
     def __init__(self, source=None, line=None, column=None, path=None,
                  encoding='utf-8', source_path=None, source_encoding=None,
