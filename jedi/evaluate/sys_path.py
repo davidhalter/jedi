@@ -1,7 +1,7 @@
 import glob
 import os
 import sys
-from site import addsitedir
+from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
 from jedi.parser import tree
@@ -54,12 +54,9 @@ def _get_venv_path_dirs(venv):
     """Get sys.path for venv without starting up the interpreter."""
     venv = os.path.abspath(venv)
     sitedir = _get_venv_sitepackages(venv)
-    sys.path, old_sys_path = [], sys.path
-    try:
-        addsitedir(sitedir)
-        return sys.path
-    finally:
-        sys.path = old_sys_path
+    sys_path = []
+    addsitedir(sys_path, sitedir)
+    return sys_path
 
 
 def _get_venv_sitepackages(venv):

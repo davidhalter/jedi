@@ -46,9 +46,14 @@ def test_get_venv_path(venv):
         pjoin('/path', 'from', 'egg-link'),
         pjoin(site_pkgs, '.', 'relative', 'egg-link', 'path'),
         pjoin(site_pkgs, 'dir-from-foo-pth'),
-        pjoin('/path', 'from', 'smth.py'),
-        pjoin('/path', 'from', 'smth.py:extend_path')
     ]
+
+    # Ensure that pth and egg-link paths were added.
+    assert venv_path[:len(ETALON)] == ETALON
+
     # Ensure that none of venv dirs leaked to the interpreter.
     assert not set(sys.path).intersection(ETALON)
-    assert venv_path[:len(ETALON)] == ETALON
+
+    # Ensure that "import ..." lines were ignored.
+    assert pjoin('/path', 'from', 'smth.py') not in venv_path
+    assert pjoin('/path', 'from', 'smth.py:extend_path') not in venv_path
