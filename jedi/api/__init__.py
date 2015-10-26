@@ -34,6 +34,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_names
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
 from jedi.evaluate import analysis
+from jedi.evaluate.sys_path import get_venv_path
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -75,7 +76,8 @@ class Script(object):
     :type encoding: str
     """
     def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', source_path=None, source_encoding=None):
+                 encoding='utf-8', source_path=None, source_encoding=None,
+                 sys_path=None):
         if source_path is not None:
             warnings.warn("Use path instead of source_path.", DeprecationWarning)
             path = source_path
@@ -109,7 +111,11 @@ class Script(object):
         self._parser = UserContextParser(self._grammar, self.source, path,
                                          self._pos, self._user_context,
                                          self._parsed_callback)
-        self._evaluator = Evaluator(self._grammar)
+        if sys_path is None:
+            venv = os.getenv('VIRTUAL_ENV')
+            if venv:
+                sys_path = list(get_venv_path(venv)) + sys.path
+        self._evaluator = Evaluator(self._grammar, sys_path=sys_path)
         debug.speed('init')
 
     def _parsed_callback(self, parser):
