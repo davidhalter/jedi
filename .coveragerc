@@ -1,6 +1,7 @@
 [run]
 omit =
     jedi/_compatibility.py
+    jedi/evaluate/site.py
 
 [report]
 # Regexes for lines to exclude from consideration

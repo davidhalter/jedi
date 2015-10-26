@@ -66,8 +66,9 @@ class TestRegression(TestCase):
         src1 = "def r(a): return a"
         # Other fictional modules in another place in the fs.
         src2 = 'from .. import setup; setup.r(1)'
-        imports.load_module(os.path.abspath(fname), src2)
-        result = Script(src1, path='../setup.py').goto_definitions()
+        script = Script(src1, path='../setup.py')
+        imports.load_module(script._evaluator, os.path.abspath(fname), src2)
+        result = script.goto_definitions()
         assert len(result) == 1
         assert result[0].description == 'class int'
 
