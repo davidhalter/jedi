@@ -228,7 +228,7 @@ class Evaluator(object):
                         del self.predefined_if_name_dict_dict[parent]
                 return result
             else:
-                    return self._eval_element_cached(element)
+                return self._eval_element_cached(element)
         else:
             if predefined_if_name_dict:
                 return self._eval_element_not_cached(element)
@@ -239,53 +239,53 @@ class Evaluator(object):
     def _eval_element_cached(self, element):
         return self._eval_element_not_cached(element)
 
+    @debug.increase_indent
     def _eval_element_not_cached(self, element):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
         if isinstance(element, (tree.Name, tree.Literal)) or tree.is_node(element, 'atom'):
-            return self._eval_atom(element)
+            types = self._eval_atom(element)
         elif isinstance(element, tree.Keyword):
             # For False/True/None
             if element.value in ('False', 'True', 'None'):
-                return set([compiled.builtin.get_by_name(element.value)])
+                types = set([compiled.builtin.get_by_name(element.value)])
             else:
-                return []
+                types = set()
         elif element.isinstance(tree.Lambda):
-            return set([er.LambdaWrapper(self, element)])
+            types = set([er.LambdaWrapper(self, element)])
         elif element.isinstance(er.LambdaWrapper):
-            return set([element])  # TODO this is no real evaluation.
+            types = set([element])  # TODO this is no real evaluation.
         elif element.type == 'expr_stmt':
-            return self.eval_statement(element)
+            types = self.eval_statement(element)
         elif element.type == 'power':
             types = self._eval_atom(element.children[0])
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
                     raise NotImplementedError
                 types = self.eval_trailer(types, trailer)
-
-            return types
         elif element.type in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
-            return set([iterable.ImplicitTuple(self, element)])
+            types = set([iterable.ImplicitTuple(self, element)])
         elif element.type in ('not_test', 'factor'):
             types = self.eval_element(element.children[-1])
             for operator in element.children[:-1]:
-                types = precedence.factor_calculate(self, types, operator)
-            return types
+                types = set(precedence.factor_calculate(self, types, operator))
         elif element.type == 'test':
             # `x if foo else y` case.
-            return (self.eval_element(element.children[0]) |
-                    self.eval_element(element.children[-1]))
+            types = (self.eval_element(element.children[0]) |
+                     self.eval_element(element.children[-1]))
         elif element.type == 'operator':
             # Must be an ellipsis, other operators are not evaluated.
-            return set()  # Ignore for now.
+            types = set()  # Ignore for now.
         elif element.type == 'dotted_name':
             types = self._eval_atom(element.children[0])
             for next_name in element.children[2::2]:
                 types = set(chain.from_iterable(self.find_types(typ, next_name)
                                                 for typ in types))
-            return types
+            types = types
         else:
-            return precedence.calculate_children(self, element.children)
+            types = precedence.calculate_children(self, element.children)
+        debug.dbg('eval_element result %s', types)
+        return types
 
     def _eval_atom(self, atom):
         """

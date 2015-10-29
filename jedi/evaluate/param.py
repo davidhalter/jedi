@@ -60,7 +60,7 @@ class Arguments(tree.Base):
                 element = self.argument_node[0]
                 from jedi.evaluate.iterable import AlreadyEvaluated
                 if isinstance(element, AlreadyEvaluated):
-                    element = self._evaluator.eval_element(element)[0]
+                    element = list(self._evaluator.eval_element(element))[0]
             except IndexError:
                 return None
             else:

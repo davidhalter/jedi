@@ -228,6 +228,8 @@ class Array(IterableWrapper, ArrayMixin):
             elif isinstance(index, compiled.CompiledObject) \
                     and isinstance(index.obj, (int, str, unicode)):
                 with ignored(KeyError, IndexError, TypeError):
+                    # TODO REMOVE the ignores. this should not be the case,
+                    # because it tends to swallow errors.
                     types |= self.get_exact_index_types(index.obj)
                     lookup_done = True
 
