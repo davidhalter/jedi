@@ -194,7 +194,7 @@ class CompiledObject(Base):
         if not result:
             try:
                 for obj in self.obj:
-                    result.append(CompiledObject(obj))
+                    result.add(CompiledObject(obj))
             except TypeError:
                 pass  # self.obj maynot have an __iter__ method.
         return result

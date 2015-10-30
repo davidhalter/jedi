@@ -12,7 +12,7 @@ def test_simple():
     obj = compiled.CompiledObject('_str_', bltn)
     upper = e.find_types(obj, 'upper')
     assert len(upper) == 1
-    objs = list(e.execute(upper[0]))
+    objs = list(e.execute(list(upper)[0]))
     assert len(objs) == 1
     assert isinstance(objs[0], representation.Instance)
 
