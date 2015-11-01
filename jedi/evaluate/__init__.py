@@ -164,7 +164,11 @@ class Evaluator(object):
                     t = self.eval_element(rhs)
                     left = precedence.calculate(self, left, operator, t)
                 types = left
-                del self.predefined_if_name_dict_dict[for_stmt]
+                if ordered:
+                    # If there are no for entries, we cannot iterate and the
+                    # types are defined by += entries. Therefore the for loop
+                    # is never called.
+                    del self.predefined_if_name_dict_dict[for_stmt]
             else:
                 types = precedence.calculate(self, left, operator, types)
         debug.dbg('eval_statement result %s', types)

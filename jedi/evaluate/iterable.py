@@ -406,7 +406,6 @@ def ordered_elements_of_iterable(evaluator, iterable_type, all_values):
             ordered = [literals_to_types(evaluator, all_values)]
             break
         else:
-            # Try
             for i, types in enumerate(sequence.per_index_values()):
                 try:
                     ordered[i] |= types
