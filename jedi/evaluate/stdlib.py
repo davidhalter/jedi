@@ -238,7 +238,7 @@ def collections_namedtuple(evaluator, obj, arguments):
 
     # Parse source
     generated_class = Parser(evaluator.grammar, unicode(source)).module.subscopes[0]
-    return set(er.Class(evaluator, generated_class))
+    return set([er.Class(evaluator, generated_class)])
 
 
 @argument_clinic('first, /')

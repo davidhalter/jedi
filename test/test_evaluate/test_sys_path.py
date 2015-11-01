@@ -9,14 +9,14 @@ def test_paths_from_assignment():
     def paths(src):
         grammar = load_grammar()
         stmt = Parser(grammar, unicode(src)).module.statements[0]
-        return list(sys_path._paths_from_assignment(Evaluator(grammar), stmt))
+        return set(sys_path._paths_from_assignment(Evaluator(grammar), stmt))
 
-    assert paths('sys.path[0:0] = ["a"]') == ['a']
-    assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == ['b', 'c']
-    assert paths('sys.path = a = ["a"]') == ['a']
+    assert paths('sys.path[0:0] = ["a"]') == set(['a'])
+    assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == set(['b', 'c'])
+    assert paths('sys.path = a = ["a"]') == set(['a'])
 
     # Fail for complicated examples.
-    assert paths('sys.path, other = ["a"], 2') == []
+    assert paths('sys.path, other = ["a"], 2') == set()
 
 
 def test_get_sys_path(monkeypatch):

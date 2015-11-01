@@ -184,7 +184,7 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
             # Check name
             key, values = args[1]
             assert len(values) == 1
-            names = evaluator.eval_element(values[0])
+            names = list(evaluator.eval_element(values[0]))
             assert len(names) == 1 and isinstance(names[0], CompiledObject)
             assert names[0].obj == str(payload[1])
 

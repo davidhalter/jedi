@@ -634,11 +634,11 @@ class Slice(object):
 
             result = self._evaluator.eval_element(element)
             if len(result) != 1:
-                # We want slices to be clear defined with just one type.
-                # Otherwise we will return an empty slice object.
+                # For simplicity, we want slices to be clear defined with just
+                # one type.  Otherwise we will return an empty slice object.
                 raise IndexError
             try:
-                return result[0].obj
+                return list(result)[0].obj
             except AttributeError:
                 return None
 
