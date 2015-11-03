@@ -395,18 +395,18 @@ class MergedArray(_FakeArray):
 
 def ordered_elements_of_iterable(evaluator, iterable_type, all_values):
     """
-    This function returns the ordered types of an iterable. If the input is not
-    an Array, we just return all types as the first and only item of the
-    output list.
+    This function returns the ordered types of an iterable.
     """
     ordered = []
     # Unpack the iterator values
     for sequence in iterable_type:
-        if not isinstance(sequence, Array):
+        try:
+            per_index_values = sequence.per_index_values
+        except AttributeError:
             ordered = [literals_to_types(evaluator, all_values)]
             break
         else:
-            for i, types in enumerate(sequence.per_index_values()):
+            for i, types in enumerate(per_index_values()):
                 try:
                     ordered[i] |= types
                 except IndexError:
