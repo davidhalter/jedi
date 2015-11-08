@@ -151,11 +151,11 @@ class Evaluator(object):
 
             for_stmt = stmt.get_parent_until(tree.ForStmt)
             if isinstance(for_stmt, tree.ForStmt) and types \
-                    and isinstance(for_stmt.children[1], tree.Name):
+                    and for_stmt.defines_one_name():
                 # Iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
                 # predictable. Also only do it, if the variable is not a tuple.
-                for_iterable = self.eval_element(for_stmt.children[3])
+                for_iterable = self.eval_element(for_stmt.get_input_node())
                 ordered = iterable.ordered_elements_of_iterable(self, for_iterable, types)
 
                 for index_types in ordered:

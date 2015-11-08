@@ -988,6 +988,21 @@ class ForStmt(Flow):
             for node_to_execute in child.nodes_to_execute():
                 yield node_to_execute
 
+    def get_input_node(self):
+        """
+        Returns the input node ``y`` from: ``for x in y:``.
+        """
+        return self.children[3]
+
+    def defines_one_name(self):
+        """
+        Returns True if only one name is returned: ``for x in y``.
+        Returns False if the for loop is more complicated: ``for x, z in y``.
+
+        :returns: bool
+        """
+        return self.children[1].type == 'name'
+
 
 class TryStmt(Flow):
     type = 'try_stmt'
