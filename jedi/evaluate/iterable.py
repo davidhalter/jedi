@@ -86,6 +86,11 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
         f = FunctionExecution(self._evaluator, self.func, self.var_args)
         return f.get_return_types(check_yields=True)
 
+    def py__iter__(self):
+        from jedi.evaluate.representation import FunctionExecution
+        f = FunctionExecution(self._evaluator, self.func, self.var_args)
+        return f.get_yield_types()
+
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
                         'doc', 'docstr', 'get_parent_until',
@@ -274,7 +279,7 @@ class Array(IterableWrapper, ArrayMixin):
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self.atom, name)
 
-    def per_index_values(self):
+    def py__iter__(self):
         """
         While values returns the possible values for any array field, this
         function returns the value for a certain index.
@@ -401,12 +406,13 @@ def ordered_elements_of_iterable(evaluator, iterable_type, all_values):
     # Unpack the iterator values
     for sequence in iterable_type:
         try:
-            per_index_values = sequence.per_index_values
+            # TODO every type should have a py__iter__ method.
+            py__iter__ = sequence.py__iter__
         except AttributeError:
             ordered = [literals_to_types(evaluator, all_values)]
             break
         else:
-            for i, types in enumerate(per_index_values()):
+            for i, types in enumerate(py__iter__()):
                 try:
                     ordered[i] |= types
                 except IndexError:

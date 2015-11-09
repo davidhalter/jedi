@@ -211,6 +211,17 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         else:
             return self._evaluator.execute(method, [iterable.AlreadyEvaluated(indexes)])
 
+    def py__iter__(self):
+        try:
+            method = self.get_subscope_by_name('__iter__')
+        except KeyError:
+            debug.warning('No __iter__ on %s.' % self)
+            return
+        else:
+            for generator in self._evaluator.execute(method):
+                for typ in generator.py__iter__():
+                    yield typ
+
     @property
     @underscore_memoization
     def name(self):
@@ -228,8 +239,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         dec = ''
         if self.decorates is not None:
             dec = " decorates " + repr(self.decorates)
-        return "<e%s of %s(%s)%s>" % (type(self).__name__, self.base,
-                                      self.var_args, dec)
+        return "<%s of %s(%s)%s>" % (type(self).__name__, self.base,
+                                     self.var_args, dec)
 
 
 class LazyInstanceDict(object):
@@ -632,6 +643,41 @@ class FunctionExecution(Executed):
                 debug.dbg('Return reachable: %s', r)
                 break
         return types
+
+    def get_yield_types(self):
+        yields = self.yields
+        stopAt = tree.ForStmt, tree.WhileStmt, FunctionExecution
+        for_parents = [(x, x.get_parent_until((stopAt))) for x in yields]
+
+        # Calculate if the yields are placed within the same for loop.
+        yields_order = []
+        last_for_stmt = None
+        for yield_, for_stmt in for_parents:
+            # For really simple for loops we can predict the order. Otherwise
+            # we just ignore it.
+            parent = for_stmt.parent
+            if parent.type == 'suite':
+                parent = parent.parent
+            if for_stmt.type == 'for_stmt' and parent == self \
+                    and for_stmt.defines_one_name():  # Simplicity for now.
+                if for_stmt == last_for_stmt:
+                    yields_order[-1][1].append(yield_)
+                else:
+                    yields_order.append((for_stmt, [yield_]))
+            else:
+                yield self.get_return_types()
+                return
+            last_for_stmt = for_stmt
+
+        for for_stmt, yields in yields_order:
+            for_types = self._evaluator.eval_element(for_stmt.get_input_node())
+            ordered = iterable.ordered_elements_of_iterable(self._evaluator, for_types, [])
+            for index_types in ordered:
+                dct = {str(for_stmt.children[1]): index_types}
+                self._evaluator.predefined_if_name_dict_dict[for_stmt] = dct
+                for yield_in_same_for_stmt in yields:
+                    yield self._evaluator.eval_element(yield_in_same_for_stmt.children[1])
+                del self._evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def names_dicts(self, search_global):
         yield self.names_dict

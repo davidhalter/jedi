@@ -483,7 +483,7 @@ class BaseNode(Base):
 
     @utf8_repr
     def __repr__(self):
-        code = self.get_code().replace('\n', ' ')
+        code = self.get_code().replace('\n', ' ').strip()
         if not is_py3:
             code = code.encode(encoding, 'replace')
         return "<%s: %s@%s,%s>" % \
