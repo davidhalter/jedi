@@ -365,7 +365,10 @@ class Script(object):
         definitions = resolve_import_paths(definitions)
         names = [s.name for s in definitions]
         defs = [classes.Definition(self._evaluator, name) for name in names]
-        return helpers.sorted_definitions(defs)
+        # The additional set here allows the definitions to become unique in an
+        # API sense. In the internals we want to separate more things than in
+        # the API.
+        return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self):
         """
