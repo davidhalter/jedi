@@ -18,7 +18,7 @@ def recursion_decorator(func):
         rec_detect = evaluator.recursion_detector
         # print stmt, len(self.node_statements())
         if rec_detect.push_stmt(stmt):
-            return []
+            return set()
         else:
             result = func(evaluator, stmt, *args, **kwargs)
             rec_detect.pop_stmt()
@@ -119,7 +119,7 @@ class ExecutionRecursionDetector(object):
         debug.dbg('Execution recursions: %s', execution, self.recursion_level,
                   self.execution_count, len(self.execution_funcs))
         if self.check_recursion(execution):
-            result = []
+            result = set()
         else:
             result = self.func(execution)
         self.pop_execution()

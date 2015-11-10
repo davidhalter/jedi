@@ -609,7 +609,7 @@ class FunctionExecution(Executed):
         self.children = new_func.children
         self.names_dict = new_func.names_dict
 
-    @memoize_default(default=())
+    @memoize_default(default=set())
     @recursion.execution_recursion_decorator
     def get_return_types(self, check_yields=False):
         func = self.base
@@ -644,6 +644,7 @@ class FunctionExecution(Executed):
                 break
         return types
 
+    # TODO add execution_recursion_decorator
     def get_yield_types(self):
         yields = self.yields
         stopAt = tree.ForStmt, tree.WhileStmt, FunctionExecution
@@ -679,7 +680,7 @@ class FunctionExecution(Executed):
                     yield evaluator.eval_element(yield_.children[1])
             else:
                 for_types = evaluator.eval_element(for_stmt.get_input_node())
-                ordered = iterable.ordered_elements_of_iterable(evaluator, for_types, [])
+                ordered = iterable.ordered_elements_of_iterable(evaluator, for_types, set())
                 for index_types in ordered:
                     dct = {str(for_stmt.children[1]): index_types}
                     evaluator.predefined_if_name_dict_dict[for_stmt] = dct

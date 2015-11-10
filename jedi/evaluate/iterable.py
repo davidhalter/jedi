@@ -476,7 +476,7 @@ def check_array_additions(evaluator, array):
     return _check_array_additions(evaluator, array, current_module, is_list)
 
 
-@memoize_default([], evaluator_is_first_arg=True)
+@memoize_default(default=set(), evaluator_is_first_arg=True)
 @debug.increase_indent
 def _check_array_additions(evaluator, compare_array, module, is_list):
     """
