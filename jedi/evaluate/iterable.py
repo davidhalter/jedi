@@ -61,7 +61,7 @@ class GeneratorMixin(object):
         Exact lookups are used for tuple lookups, which are perfectly fine if
         used with generators.
         """
-        return set([list(self.iter_content())[index]])
+        return list(self.py__iter__())[index]
 
     def py__bool__(self):
         return True
