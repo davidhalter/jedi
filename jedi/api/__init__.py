@@ -34,6 +34,7 @@ from jedi.evaluate.param import try_iter_content
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_names
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
+from jedi.evaluate.sys_path import get_venv_path
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -58,6 +59,18 @@ class Script(object):
     You can either use the ``source`` parameter or ``path`` to read a file.
     Usually you're going to want to use both of them (in an editor).
 
+    The script might be analyzed in a different ``sys.path`` than |jedi|:
+
+    - if `sys_path` parameter is not ``None``, it will be used as ``sys.path``
+      for the script;
+
+    - if `sys_path` parameter is ``None`` and ``VIRTUAL_ENV`` environment
+      variable is defined, ``sys.path`` for the specified environment will be
+      guessed (see :func:`jedi.evaluate.sys_path.get_venv_path`) and used for
+      the script;
+
+    - otherwise ``sys.path`` will match that of |jedi|.
+
     :param source: The source code of the current file, separated by newlines.
     :type source: str
     :param line: The line to perform actions on (starting with 1).
@@ -73,9 +86,13 @@ class Script(object):
     :param source_encoding: The encoding of ``source``, if it is not a
         ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
+    :param sys_path: ``sys.path`` to use during analysis of the script
+    :type sys_path: list
+
     """
     def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', source_path=None, source_encoding=None):
+                 encoding='utf-8', source_path=None, source_encoding=None,
+                 sys_path=None):
         if source_path is not None:
             warnings.warn("Use path instead of source_path.", DeprecationWarning)
             path = source_path
@@ -109,7 +126,11 @@ class Script(object):
         self._parser = UserContextParser(self._grammar, self.source, path,
                                          self._pos, self._user_context,
                                          self._parsed_callback)
-        self._evaluator = Evaluator(self._grammar)
+        if sys_path is None:
+            venv = os.getenv('VIRTUAL_ENV')
+            if venv:
+                sys_path = list(get_venv_path(venv))
+        self._evaluator = Evaluator(self._grammar, sys_path=sys_path)
         debug.speed('init')
 
     def _parsed_callback(self, parser):
