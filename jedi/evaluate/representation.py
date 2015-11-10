@@ -664,20 +664,28 @@ class FunctionExecution(Executed):
                     yields_order[-1][1].append(yield_)
                 else:
                     yields_order.append((for_stmt, [yield_]))
+            elif for_stmt == self:
+                yields_order.append((None, [yield_]))
             else:
                 yield self.get_return_types()
                 return
             last_for_stmt = for_stmt
 
+        evaluator = self._evaluator
         for for_stmt, yields in yields_order:
-            for_types = self._evaluator.eval_element(for_stmt.get_input_node())
-            ordered = iterable.ordered_elements_of_iterable(self._evaluator, for_types, [])
-            for index_types in ordered:
-                dct = {str(for_stmt.children[1]): index_types}
-                self._evaluator.predefined_if_name_dict_dict[for_stmt] = dct
-                for yield_in_same_for_stmt in yields:
-                    yield self._evaluator.eval_element(yield_in_same_for_stmt.children[1])
-                del self._evaluator.predefined_if_name_dict_dict[for_stmt]
+            if for_stmt is None:
+                # No for_stmt, just normal yields.
+                for yield_ in yields:
+                    yield evaluator.eval_element(yield_.children[1])
+            else:
+                for_types = evaluator.eval_element(for_stmt.get_input_node())
+                ordered = iterable.ordered_elements_of_iterable(evaluator, for_types, [])
+                for index_types in ordered:
+                    dct = {str(for_stmt.children[1]): index_types}
+                    evaluator.predefined_if_name_dict_dict[for_stmt] = dct
+                    for yield_in_same_for_stmt in yields:
+                        yield evaluator.eval_element(yield_in_same_for_stmt.children[1])
+                    del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def names_dicts(self, search_global):
         yield self.names_dict

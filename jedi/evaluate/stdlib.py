@@ -77,6 +77,7 @@ def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=Fal
 
     def f(func):
         def wrapper(evaluator, obj, arguments):
+            debug.dbg('builtin start %s' % obj, color='MAGENTA')
             try:
                 lst = list(arguments.eval_argument_clinic(clinic_args))
             except ValueError:
@@ -90,6 +91,8 @@ def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=Fal
                 if want_arguments:
                     kwargs['arguments'] = arguments
                 return func(evaluator, *lst, **kwargs)
+            finally:
+                debug.dbg('builtin end', color='MAGENTA')
 
         return wrapper
     return f
