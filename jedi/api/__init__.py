@@ -561,7 +561,7 @@ class Interpreter(Script):
 
     >>> from os.path import join
     >>> namespace = locals()
-    >>> script = Interpreter('join().up', [namespace])
+    >>> script = Interpreter('join("").up', [namespace])
     >>> print(script.completions()[0].name)
     upper
     """
