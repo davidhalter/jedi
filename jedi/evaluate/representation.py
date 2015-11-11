@@ -644,10 +644,10 @@ class FunctionExecution(Executed):
                 break
         return types
 
-    # TODO add execution_recursion_decorator
+    # TODO add execution_recursion_decorator?!
     def get_yield_types(self):
         yields = self.yields
-        stopAt = tree.ForStmt, tree.WhileStmt, FunctionExecution
+        stopAt = tree.ForStmt, tree.WhileStmt, FunctionExecution, tree.IfStmt
         for_parents = [(x, x.get_parent_until((stopAt))) for x in yields]
 
         # Calculate if the yields are placed within the same for loop.
@@ -668,7 +668,7 @@ class FunctionExecution(Executed):
             elif for_stmt == self:
                 yields_order.append((None, [yield_]))
             else:
-                yield self.get_return_types()
+                yield self.get_return_types(check_yields=True)
                 return
             last_for_stmt = for_stmt
 
