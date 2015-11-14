@@ -56,13 +56,6 @@ class GeneratorMixin(object):
         analysis.add(self._evaluator, 'type-error-generator', index_array)
         return set()
 
-    def get_exact_index_types(self, index):
-        """
-        Exact lookups are used for tuple lookups, which are perfectly fine if
-        used with generators.
-        """
-        return list(self.py__iter__())[index]
-
     def py__bool__(self):
         return True
 
@@ -90,6 +83,13 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
         from jedi.evaluate.representation import FunctionExecution
         f = FunctionExecution(self._evaluator, self.func, self.var_args)
         return f.get_yield_types()
+
+    def get_exact_index_types(self, index):
+        """
+        Exact lookups are used for tuple lookups, which are perfectly fine if
+        used with generators.
+        """
+        return list(self.py__iter__())[index]
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
@@ -130,6 +130,14 @@ class Comprehension(IterableWrapper):
         self._evaluator = evaluator
         self._atom = atom
 
+    def _get_comprehension(self):
+        # The atom contains a testlist_comp
+        return self._atom.children[1]
+
+    def _get_comp_for(self):
+        # The atom contains a testlist_comp
+        return self._get_comprehension().children[1]
+
     @memoize_default()
     def eval_node(self):
         """
@@ -137,22 +145,37 @@ class Comprehension(IterableWrapper):
 
             [x + 1 for x in foo]
         """
-        comprehension = self._atom.children[1]
+        comp_for = self._get_comp_for()
         # For nested comprehensions we need to search the last one.
-        last = comprehension.children[-1]
-        last_comp = comprehension.children[1]
-        while True:
-            if isinstance(last, tree.CompFor):
-                last_comp = last
-            elif not tree.is_node(last, 'comp_if'):
-                break
-            last = last.children[-1]
+        last_comp = list(comp_for.get_comp_fors())[-1]
+        return helpers.deep_ast_copy(self._get_comprehension().children[0], parent=last_comp)
 
-        return helpers.deep_ast_copy(comprehension.children[0], parent=last_comp)
+    def py__iter__(self):
+        def nested(input_types, comp_fors):
+            iterated = ordered_elements_of_iterable(evaluator, input_types, [])
+            comp_for = comp_fors[0]
+            exprlist = comp_for.children[1]
+            for types in iterated:
+                evaluator.predefined_if_name_dict_dict[comp_for] = \
+                    create_for_dict(evaluator, types, exprlist)
+                try:
+                    if len(comp_fors) > 1:
+                        for result in nested(types, comp_fors[1:]):
+                            yield result
+                    else:
+                        yield evaluator.eval_element(self.eval_node())
+                finally:
+                    del evaluator.predefined_if_name_dict_dict[comp_for]
+
+        evaluator = self._evaluator
+        comp_fors = list(self._get_comp_for().get_comp_fors())
+        input_node = comp_fors[0].children[-1]
+        input_types = evaluator.eval_element(input_node)
+        for result in nested(input_types, comp_fors):
+            yield result
 
     def get_exact_index_types(self, index):
-        # TODO this will return a random type (depending on the current set
-        # hash function).
+        return list(self.py__iter__())[index]
         return set([list(self._evaluator.eval_element(self.eval_node()))[index]])
 
     def __repr__(self):
@@ -418,6 +441,29 @@ def ordered_elements_of_iterable(evaluator, iterable_type, all_values):
                 except IndexError:
                     ordered.append(set(types))
     return ordered
+
+
+def create_for_dict(evaluator, types, exprlist):
+    if exprlist.type == 'name':
+        return {exprlist.value: types}
+    elif exprlist.type == 'atom' and exprlist.children[0] in '([':
+        return create_for_dict(evaluator, types, exprlist.children[1])
+    elif exprlist.type in ('testlist_comp', 'exprlist'):
+        dct = {}
+        parts = iter(exprlist.children[:2])
+        for iter_types in ordered_elements_of_iterable(evaluator, types, []):
+            try:
+                part = next(parts)
+            except StopIteration:
+                raise NotImplementedError
+            else:
+                dct.update(create_for_dict(evaluator, iter_types, part))
+        has_parts = next(parts, None)
+        if has_parts is not None:
+            raise NotImplementedError
+        return dct
+    else:
+        raise NotImplementedError
 
 
 def get_iterator_types(evaluator, element):

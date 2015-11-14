@@ -93,6 +93,8 @@ left, right = (i for i in (1, ''))
 
 #? int()
 left
+#? str()
+right
 
 gen = (i for i in (1,))
 
@@ -110,9 +112,11 @@ next(gen)
 
 # issues with different formats
 left, right = (i for i in
-                       ('1', '2'))
+                       ('1', 2))
 #? str()
 left
+#? int()
+right
 
 # -----------------
 # name resolution in comprehensions.
