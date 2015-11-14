@@ -344,7 +344,9 @@ if __name__ == '__main__':
             last = arg
 
     # completion tests:
-    completion_test_dir = '../test/completion'
+    dir = os.path.dirname(os.path.realpath(__file__))
+    completion_test_dir = os.path.join(dir, '../test/completion')
+    completion_test_dir = os.path.abspath(completion_test_dir)
     summary = []
     tests_fail = 0
 
