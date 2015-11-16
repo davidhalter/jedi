@@ -189,19 +189,19 @@ class Evaluator(object):
         elif isinstance(element, iterable.MergedNodes):
             return set(iterable.unite(self.eval_element(e) for e in element))
 
-        parent = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
-        predefined_if_name_dict = self.predefined_if_name_dict_dict.get(parent)
-        if not predefined_if_name_dict and isinstance(parent, tree.IfStmt):
-            if_stmt = parent.children[1]
+        if_stmt = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
+        predefined_if_name_dict = self.predefined_if_name_dict_dict.get(if_stmt)
+        if not predefined_if_name_dict and isinstance(if_stmt, tree.IfStmt):
+            if_stmt_test = if_stmt.children[1]
             name_dicts = [{}]
             # If we already did a check, we don't want to do it again -> If
             # predefined_if_name_dict_dict is filled, we stop.
             # We don't want to check the if stmt itself, it's just about
             # the content.
-            if element.start_pos > if_stmt.end_pos:
+            if element.start_pos > if_stmt_test.end_pos:
                 # Now we need to check if the names in the if_stmt match the
                 # names in the suite.
-                if_names = helpers.get_names_of_node(if_stmt)
+                if_names = helpers.get_names_of_node(if_stmt_test)
                 element_names = helpers.get_names_of_node(element)
                 str_element_names = [str(e) for e in element_names]
                 if any(str(i) in str_element_names for i in if_names):
@@ -234,11 +234,11 @@ class Evaluator(object):
             if len(name_dicts) > 1:
                 result = set()
                 for name_dict in name_dicts:
-                    self.predefined_if_name_dict_dict[parent] = name_dict
+                    self.predefined_if_name_dict_dict[if_stmt] = name_dict
                     try:
                         result |= self._eval_element_not_cached(element)
                     finally:
-                        del self.predefined_if_name_dict_dict[parent]
+                        del self.predefined_if_name_dict_dict[if_stmt]
                 return result
             else:
                 return self._eval_element_cached(element)

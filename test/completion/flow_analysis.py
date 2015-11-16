@@ -218,3 +218,23 @@ else:
     a = ''
 #? int()
 a
+
+
+# -----------------
+# Recursion issues
+# -----------------
+
+def possible_recursion_error(filename):
+    if filename == 'a':
+        return filename
+    # It seems like without the brackets there wouldn't be a RecursionError.
+    elif type(filename) == str:
+        return filename
+
+
+if NOT_DEFINED:
+    s = str()
+else:
+    s = str()
+#? str()
+possible_recursion_error(s)

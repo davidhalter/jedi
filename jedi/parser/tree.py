@@ -985,9 +985,20 @@ class IfStmt(Flow):
                 yield self.children[i + 1]
 
     def node_in_which_check_node(self, node):
+        """
+        Returns the check node (see function above) that a node is contained
+        in. However if it the node is in the check node itself and not in the
+        suite return None.
+        """
+        start_pos = node.start_pos
         for check_node in reversed(list(self.check_nodes())):
-            if check_node.start_pos < node.start_pos:
-                return check_node
+            if check_node.start_pos < start_pos:
+                if start_pos < check_node.end_pos:
+                    return None
+                    # In this case the node is within the check_node itself,
+                    # not in the suite
+                else:
+                    return check_node
 
     def node_after_else(self, node):
         """
