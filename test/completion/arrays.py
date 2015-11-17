@@ -204,6 +204,8 @@ dic2['asdf']
 dic2[r'asdf']
 #? int()
 dic2[r'asdf']
+#? int()
+dic2[r'as' 'd' u'f']
 #? int() str()
 dic2['just_something']
 

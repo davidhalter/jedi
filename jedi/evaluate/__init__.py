@@ -321,8 +321,15 @@ class Evaluator(object):
             return set([compiled.create(self, atom.eval())])
         else:
             c = atom.children
+            if c[0].type == 'string':
+                # Will be one string.
+                types = self._eval_atom(c[0])
+                for string in c[1:]:
+                    right = self._eval_atom(string)
+                    types = precedence.calculate(self, types, '+', right)
+                return types
             # Parentheses without commas are not tuples.
-            if c[0] == '(' and not len(c) == 2 \
+            elif c[0] == '(' and not len(c) == 2 \
                     and not(tree.is_node(c[1], 'testlist_comp')
                             and len(c[1].children) > 1):
                 return self.eval_element(c[1])
