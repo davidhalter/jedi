@@ -32,6 +32,8 @@ def _start_linter():
                     print(error)
         except Exception:
             if '--pdb' in sys.argv:
+                import traceback
+                traceback.print_exc()
                 import pdb
                 pdb.post_mortem()
             else:

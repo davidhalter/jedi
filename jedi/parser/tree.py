@@ -1462,4 +1462,14 @@ class CompFor(BaseNode):
         return _defined_names(self.children[1])
 
     def nodes_to_execute(self, last_added=False):
-        return self.children[-1].nodes_to_execute()
+        last = self.children[-1]
+        if last.type == 'comp_if':
+            for node in last.children[-1].nodes_to_execute():
+                yield node
+            last = self.children[-2]
+        elif last.type == 'comp_for':
+            for node in last.nodes_to_execute():
+                yield node
+            last = self.children[-2]
+        for node in last.nodes_to_execute():
+            yield node
