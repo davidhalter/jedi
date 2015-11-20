@@ -339,6 +339,9 @@ class Evaluator(object):
                 pass
             else:
                 if isinstance(comp_for, tree.CompFor):
+                    if atom.children[0] == '{':
+                        # TODO dict/set comprehensions should be working.
+                        return []
                     return set([iterable.Comprehension.from_atom(self, atom)])
             return set([iterable.Array(self, atom)])
 

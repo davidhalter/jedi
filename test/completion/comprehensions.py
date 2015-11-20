@@ -47,9 +47,6 @@ left
 #? str()
 [a for a in {1:'x'}][0]
 
-##? str()
-{a-1:b for a,b in {1:'a', 3:1.0}.items()}[0]
-
 # list comprehensions should also work in combination with functions
 def listen(arg):
     for x in arg:
@@ -119,6 +116,16 @@ left
 right
 
 # -----------------
+# set comprehensions
+# -----------------
+
+##? str()
+{a - 1: b for a, b in {1: 'a', 3: 1.0}.items()}[0]
+
+#?
+{a - 1 for a in [1]}
+
+# -----------------
 # name resolution in comprehensions.
 # -----------------
 
@@ -127,3 +134,5 @@ def x():
     #? 22
     [a for a in h if hio]
     if hio: pass
+
+
