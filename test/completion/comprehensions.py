@@ -124,6 +124,8 @@ right
 
 #?
 {a - 1 for a in [1]}
+#? int()
+{a - 1: 3 for a in [1]}[0]
 
 # -----------------
 # name resolution in comprehensions.
