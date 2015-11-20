@@ -273,7 +273,9 @@ class Evaluator(object):
             types = self._eval_atom(element.children[0])
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
-                    raise NotImplementedError
+                    right = self.eval_element(element.children[2])
+                    types = set(precedence.calculate(self, types, trailer, right))
+                    break
                 types = self.eval_trailer(types, trailer)
         elif element.type in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
