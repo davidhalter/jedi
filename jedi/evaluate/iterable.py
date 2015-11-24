@@ -444,13 +444,17 @@ def ordered_elements_of_iterable(evaluator, iterable_type, all_values):
 
 
 def create_for_dict(evaluator, types, exprlist):
+    """
+    Unpacking tuple assignments in for statements and expr_stmts.
+    """
     if exprlist.type == 'name':
         return {exprlist.value: types}
     elif exprlist.type == 'atom' and exprlist.children[0] in '([':
         return create_for_dict(evaluator, types, exprlist.children[1])
-    elif exprlist.type in ('testlist_comp', 'exprlist'):
+    elif exprlist.type in ('testlist', 'testlist_comp', 'exprlist',
+                           'testlist_star_expr'):
         dct = {}
-        parts = iter(exprlist.children[:2])
+        parts = iter(exprlist.children[::2])
         for iter_types in ordered_elements_of_iterable(evaluator, types, []):
             try:
                 part = next(parts)
