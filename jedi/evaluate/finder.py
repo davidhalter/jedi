@@ -553,6 +553,8 @@ def check_tuple_assignments(types, name):
                 debug.warning("Invalid tuple lookup #%s of result %s in %s",
                               index, types, name)
             else:
+                if r.type == 'dict':
+                    continue
                 try:
                     new_types |= func(index)
                 except IndexError:
