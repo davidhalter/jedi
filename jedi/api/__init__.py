@@ -35,7 +35,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_names
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
 from jedi.evaluate.sys_path import get_venv_path
-from jedi.evaluate.iterable import create_for_dict
+from jedi.evaluate.iterable import unpack_tuple_to_dict
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -570,7 +570,7 @@ class Script(object):
                     types = self._evaluator.eval_element(node)
                     for testlist in node.children[:-1:2]:
                         # Iterate tuples.
-                        create_for_dict(self._evaluator, types, testlist)
+                        unpack_tuple_to_dict(self._evaluator, types, testlist)
                 else:
                     try_iter_content(self._evaluator.eval_element(node))
 

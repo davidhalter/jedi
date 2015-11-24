@@ -157,7 +157,7 @@ class Comprehension(IterableWrapper):
             exprlist = comp_for.children[1]
             for types in iterated:
                 evaluator.predefined_if_name_dict_dict[comp_for] = \
-                    create_for_dict(evaluator, types, exprlist)
+                    unpack_tuple_to_dict(evaluator, types, exprlist)
                 try:
                     if len(comp_fors) > 1:
                         for result in nested(types, comp_fors[1:]):
@@ -443,14 +443,14 @@ def ordered_elements_of_iterable(evaluator, iterable_type, all_values):
     return ordered
 
 
-def create_for_dict(evaluator, types, exprlist):
+def unpack_tuple_to_dict(evaluator, types, exprlist):
     """
     Unpacking tuple assignments in for statements and expr_stmts.
     """
     if exprlist.type == 'name':
         return {exprlist.value: types}
     elif exprlist.type == 'atom' and exprlist.children[0] in '([':
-        return create_for_dict(evaluator, types, exprlist.children[1])
+        return unpack_tuple_to_dict(evaluator, types, exprlist.children[1])
     elif exprlist.type in ('testlist', 'testlist_comp', 'exprlist',
                            'testlist_star_expr'):
         dct = {}
@@ -461,13 +461,17 @@ def create_for_dict(evaluator, types, exprlist):
             except StopIteration:
                 raise NotImplementedError
             else:
-                dct.update(create_for_dict(evaluator, iter_types, part))
+                dct.update(unpack_tuple_to_dict(evaluator, iter_types, part))
         has_parts = next(parts, None)
         if has_parts is not None:
             raise NotImplementedError
         return dct
-    else:
-        raise NotImplementedError
+    elif exprlist.type == 'power':
+        # Something like ``arr[x], var = ...``.
+        # This is something that is not yet supported, would also be difficult
+        # to write into a dict.
+        return {}
+    raise NotImplementedError
 
 
 def get_iterator_types(evaluator, element):
