@@ -269,7 +269,7 @@ class Script(object):
         elif self._get_under_cursor_stmt(path) is None:
             return []
         else:
-            scopes = list(self._prepare_goto(path, True))
+            scopes = list(self._type_inference(path, True))
             completion_names = []
             debug.dbg('possible completion scopes: %s', scopes)
             for s in scopes:
@@ -280,7 +280,7 @@ class Script(object):
                 completion_names += filter_definition_names(names, self._parser.user_stmt())
         return completion_names
 
-    def _prepare_goto(self, goto_path, is_completion=False):
+    def _type_inference(self, goto_path, is_completion=False):
         """
         Base for completions/goto. Basically it returns the resolved scopes
         under cursor.
@@ -382,7 +382,7 @@ class Script(object):
                         definitions = self._evaluator.goto_definition(name)
 
         if not definitions and goto_path:
-            definitions = self._prepare_goto(goto_path)
+            definitions = self._type_inference(goto_path)
 
         definitions = resolve_import_paths(definitions)
         names = [s.name for s in definitions]
