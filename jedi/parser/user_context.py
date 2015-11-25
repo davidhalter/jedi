@@ -325,11 +325,10 @@ class UserContextParser(object):
                 for s in scope.children:
                     if s.start_pos <= self._position <= s.end_pos:
                         if isinstance(s, (tree.Scope, tree.Flow)):
-                                if isinstance(s, tree.Flow):
-                                    return s
-                                return scan(s) or s
+                            return scan(s) or s
                         elif s.type in ('suite', 'decorated'):
                             return scan(s)
+                return None
 
             return scan(self.module()) or self.module()
         else:

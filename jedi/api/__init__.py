@@ -301,7 +301,7 @@ class Script(object):
                 return []
             scopes = [i]
         else:
-            # just parse one statement, take it and evaluate it
+            # Just parse one statement, take it and evaluate it.
             eval_stmt = self._get_under_cursor_stmt(goto_path)
             if eval_stmt is None:
                 return []
