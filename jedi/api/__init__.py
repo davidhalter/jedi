@@ -451,7 +451,6 @@ class Script(object):
 
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.
-            user_scope = self._parser.user_scope()
             definitions = set([user_scope.name])
         elif isinstance(user_stmt, tree.Import):
             s, name = helpers.get_on_import_stmt(self._evaluator,

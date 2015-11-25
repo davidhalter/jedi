@@ -61,6 +61,9 @@ def isinstance_func(arr):
             # Shouldn't fail, even with the dot.
             #? 17 dict()
             value.
+        elif isinstance(value, int):
+            #? int()
+            value
 
 # -----------------
 # Names with multiple indices.

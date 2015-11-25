@@ -433,8 +433,10 @@ def check_flow_information(evaluator, flow, search_name, pos):
                     break
 
     if isinstance(flow, (tree.IfStmt, tree.WhileStmt)):
-        element = flow.children[1]
-        result = _check_isinstance_type(evaluator, element, search_name)
+        potential_ifs = [c for c in flow.children[1::4] if c != ':']
+        for if_test in reversed(potential_ifs):
+            if search_name.start_pos > if_test.end_pos:
+                return _check_isinstance_type(evaluator, if_test, search_name)
     return result
 
 
