@@ -55,6 +55,13 @@ a
 fooooo2('')
 
 
+def isinstance_func(arr):
+    for value in arr:
+        if isinstance(value, dict):
+            # Shouldn't fail, even with the dot.
+            #? 17 dict()
+            value.
+
 # -----------------
 # Names with multiple indices.
 # -----------------
