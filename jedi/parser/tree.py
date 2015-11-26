@@ -201,7 +201,9 @@ class Leaf(Base):
             except AttributeError:  # A Leaf doesn't have children.
                 return node
 
-    def get_code(self):
+    def get_code(self, normalized=False):
+        if normalized:
+            return self.value
         return self.prefix + self.value
 
     def next_sibling(self):
@@ -446,8 +448,9 @@ class BaseNode(Base):
     def end_pos(self):
         return self.children[-1].end_pos
 
-    def get_code(self):
-        return "".join(c.get_code() for c in self.children)
+    def get_code(self, normalized=False):
+        # TODO implement normalized (dependin on context).
+        return "".join(c.get_code(normalized) for c in self.children)
 
     @Python3Method
     def name_for_position(self, position):
