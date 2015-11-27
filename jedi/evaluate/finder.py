@@ -461,7 +461,7 @@ def _check_isinstance_type(evaluator, element, search_name):
         # and everything will be all right.
         classes = lst[1][1][0]
         call = helpers.call_of_name(search_name)
-        assert name.get_code() == call.get_code()
+        assert name.get_code(normalized=True) == call.get_code(normalized=True)
     except AssertionError:
         return set()
 

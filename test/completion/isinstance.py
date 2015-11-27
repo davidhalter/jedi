@@ -62,8 +62,9 @@ def isinstance_func(arr):
             #? 17 dict()
             value.
         elif isinstance(value, int):
+            x = value
             #? int()
-            value
+            x
 
 # -----------------
 # Names with multiple indices.
