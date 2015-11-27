@@ -301,7 +301,8 @@ def _name_to_types(evaluator, name, scope):
     types = set()
     typ = name.get_definition()
     if typ.isinstance(tree.ForStmt, tree.CompFor):
-        for_types = iterable.get_iterator_types(evaluator, typ.children[3])
+        container_types = evaluator.eval_element(typ.children[3])
+        for_types = common.unite(iterable.py__iter__(evaluator, container_types))
         types |= check_tuple_assignments(for_types, name)
     elif isinstance(typ, tree.Param):
         types |= _eval_param(evaluator, typ, scope)

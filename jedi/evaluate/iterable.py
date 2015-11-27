@@ -474,6 +474,16 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
     raise NotImplementedError
 
 
+def py__iter__(evaluator, types):
+    for typ in types:
+        for result in typ.py__iter__():
+            yield result
+
+
+def py__iter__types(evaluator, types):
+    return unite(py__iter__(evaluator, types))
+
+
 def get_iterator_types(evaluator, element):
     """Returns the types of any iterator (arrays, yields, __iter__, etc)."""
     iterators = []
