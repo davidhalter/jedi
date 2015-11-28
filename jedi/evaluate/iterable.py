@@ -414,6 +414,11 @@ class MergedArray(_FakeArray):
     def get_exact_index_types(self, mixed_index):
         raise IndexError
 
+    def py__iter__(self):
+        for array in self._arrays:
+            for types in array.py__iter__():
+                yield types
+
     def values(self):
         return unite((a.values() for a in self._arrays))
 
@@ -435,12 +440,12 @@ def ordered_elements_of_iterable(evaluator, iterable_type, all_values):
     for sequence in iterable_type:
         try:
             # TODO every type should have a py__iter__ method.
-            py__iter__ = sequence.py__iter__
+            method = sequence.py__iter__
         except AttributeError:
             ordered = [literals_to_types(evaluator, all_values)]
             break
         else:
-            for i, types in enumerate(py__iter__()):
+            for i, types in enumerate(method()):
                 try:
                     ordered[i] |= types
                 except IndexError:
