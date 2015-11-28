@@ -10,6 +10,7 @@ import collections
 import re
 
 from jedi._compatibility import unicode
+from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
@@ -49,9 +50,9 @@ def _follow_param(evaluator, arguments, index):
     try:
         key, values = list(arguments.unpack())[index]
     except IndexError:
-        return []
+        return set()
     else:
-        return iterable.unite(evaluator.eval_element(v) for v in values)
+        return unite(evaluator.eval_element(v) for v in values)
 
 
 def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=False):
@@ -152,8 +153,7 @@ def builtins_super(evaluator, types, objects, scope):
 
 def get_iterable_content(evaluator, arguments, argument_index):
     nodes = list(arguments.unpack())[argument_index][1]
-    return set(iterable.unite(iterable.get_iterator_types(evaluator, node)
-                              for node in nodes))
+    return unite(iterable.get_iterator_types(evaluator, node) for node in nodes)
 
 
 @argument_clinic('sequence, /', want_obj=True, want_arguments=True)
@@ -216,8 +216,9 @@ def collections_namedtuple(evaluator, obj, arguments):
         return set()
 
     # Process arguments
-    name = _follow_param(evaluator, arguments, 0)[0].obj
-    _fields = _follow_param(evaluator, arguments, 1)[0]
+    # TODO here we only use one of the types, we should use all.
+    name = list(_follow_param(evaluator, arguments, 0))[0].obj
+    _fields = list(_follow_param(evaluator, arguments, 1))[0]
     if isinstance(_fields, compiled.CompiledObject):
         fields = _fields.obj.replace(',', ' ').split()
     elif isinstance(_fields, iterable.Array):

@@ -265,7 +265,7 @@ class Array(IterableWrapper, ArrayMixin):
 
     @memoize_default()
     def values(self):
-        result = set(unite(self._evaluator.eval_element(v) for v in self._values()))
+        result = unite(self._evaluator.eval_element(v) for v in self._values())
         result |= check_array_additions(self._evaluator, self)
         return result
 
@@ -400,7 +400,7 @@ class FakeDict(_FakeArray):
         self._dct = dct
 
     def get_exact_index_types(self, index):
-        return set(unite(self._evaluator.eval_element(v) for v in self._dct[index]))
+        return unite(self._evaluator.eval_element(v) for v in self._dct[index])
 
     def _items(self):
         return self._dct.items()
@@ -415,7 +415,7 @@ class MergedArray(_FakeArray):
         raise IndexError
 
     def values(self):
-        return set(unite((a.values() for a in self._arrays)))
+        return unite((a.values() for a in self._arrays))
 
     def __iter__(self):
         for array in self._arrays:
@@ -562,10 +562,10 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             params = params[1:]
         if add_name in ['append', 'add', 'insert']:
             for key, nodes in params:
-                result |= set(unite(evaluator.eval_element(node) for node in nodes))
+                result |= unite(evaluator.eval_element(node) for node in nodes)
         elif add_name in ['extend', 'update']:
             for key, nodes in params:
-                result |= set(unite(get_iterator_types(evaluator, node) for node in nodes))
+                result |= unite(get_iterator_types(evaluator, node) for node in nodes)
         return result
 
     from jedi.evaluate import representation as er, param

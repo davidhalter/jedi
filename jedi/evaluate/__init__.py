@@ -187,7 +187,7 @@ class Evaluator(object):
         if isinstance(element, iterable.AlreadyEvaluated):
             return set(element)
         elif isinstance(element, iterable.MergedNodes):
-            return set(iterable.unite(self.eval_element(e) for e in element))
+            return iterable.unite(self.eval_element(e) for e in element)
 
         if_stmt = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
         predefined_if_name_dict = self.predefined_if_name_dict_dict.get(if_stmt)
