@@ -491,7 +491,7 @@ def get_iterator_types(evaluator, element):
     # Take the first statement (for has always only
     # one, remember `in`). And follow it.
     for it in evaluator.eval_element(element):
-        if isinstance(it, (Generator, Array, ArrayInstance, Comprehension)):
+        if isinstance(it, (Generator, Array, _ArrayInstance, Comprehension)):
             iterators.append(it)
         else:
             if not hasattr(it, 'execute_subscope_by_name'):
@@ -576,7 +576,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             node = element.atom
         else:
             # Is an Instance with an
-            # Arguments([AlreadyEvaluated([ArrayInstance])]) inside
+            # Arguments([AlreadyEvaluated([_ArrayInstance])]) inside
             # Yeah... I know... It's complicated ;-)
             node = list(element.var_args.argument_node[0])[0].var_args.trailer
         if isinstance(node, er.InstanceElement):
@@ -648,12 +648,12 @@ def check_array_instances(evaluator, instance):
     if not settings.dynamic_array_additions:
         return instance.var_args
 
-    ai = ArrayInstance(evaluator, instance)
+    ai = _ArrayInstance(evaluator, instance)
     from jedi.evaluate import param
     return param.Arguments(evaluator, [AlreadyEvaluated([ai])])
 
 
-class ArrayInstance(IterableWrapper):
+class _ArrayInstance(IterableWrapper):
     """
     Used for the usage of set() and list().
     This is definitely a hack, but a good one :-)
@@ -683,6 +683,17 @@ class ArrayInstance(IterableWrapper):
         is_list = str(self.instance.name) == 'list'
         items |= _check_array_additions(self._evaluator, self.instance, module, is_list)
         return items
+
+    def py__iter__(self):
+        _, first_nodes = next(self.var_args.unpack())
+        types = unite(self._evaluator.eval_element(node) for node in first_nodes)
+
+        for typ in py__iter__(self._evaluator, types):
+            yield typ
+        module = self.var_args.get_parent_until()
+        is_list = str(self.instance.name) == 'list'
+        for typ in _check_array_additions(self._evaluator, self.instance, module, is_list):
+            yield typ
 
 
 class Slice(object):
