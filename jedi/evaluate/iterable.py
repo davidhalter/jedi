@@ -307,8 +307,13 @@ class Array(IterableWrapper, ArrayMixin):
         While values returns the possible values for any array field, this
         function returns the value for a certain index.
         """
-        values = self._values()
-        for value in values:
+        if self.type == 'dict':
+            # Get keys.
+            iterate = set(k for k, v in self._items())
+        else:
+            iterate = self._items()
+
+        for value in iterate:
             yield self._evaluator.eval_element(value)
 
     def _values(self):
@@ -478,10 +483,6 @@ def py__iter__(evaluator, types):
     for typ in types:
         for result in typ.py__iter__():
             yield result
-
-
-def py__iter__types(evaluator, types):
-    return unite(py__iter__(evaluator, types))
 
 
 def get_iterator_types(evaluator, element):

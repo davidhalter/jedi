@@ -234,6 +234,11 @@ dic = {str(key): ''}
 #? str()
 dic['']
 
+
+for x in {1: 3.0, '': 1j}:
+    #? int() str()
+    x
+
 # -----------------
 # with variable as index
 # -----------------
