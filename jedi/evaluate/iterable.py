@@ -316,7 +316,9 @@ class Array(IterableWrapper, ArrayMixin):
         for value in iterate:
             yield self._evaluator.eval_element(value)
 
-        yield check_array_additions(self._evaluator, self)
+        additions = check_array_additions(self._evaluator, self)
+        if additions:
+            yield additions
 
     def _values(self):
         """Returns a list of a list of node."""
@@ -709,7 +711,9 @@ class _ArrayInstance(IterableWrapper):
             yield types
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
-        yield _check_array_additions(self._evaluator, self.instance, module, is_list)
+        additions = _check_array_additions(self._evaluator, self.instance, module, is_list)
+        if additions:
+            yield additions
 
 
 class Slice(object):

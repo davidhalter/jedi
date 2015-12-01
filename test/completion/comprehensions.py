@@ -44,7 +44,7 @@ left, right = [x for x in (left, right)]
 left
 
 # with a dict literal
-#? str()
+#? int()
 [a for a in {1:'x'}][0]
 
 # list comprehensions should also work in combination with functions
