@@ -34,7 +34,7 @@ import imp
 import re
 from itertools import chain
 
-from jedi._compatibility import use_metaclass, unicode, Python3Method
+from jedi._compatibility import use_metaclass, unicode, Python3Method, is_py3
 from jedi.parser import tree
 from jedi import debug
 from jedi import common
@@ -218,9 +218,18 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             debug.warning('No __iter__ on %s.' % self)
             return
         else:
-            for generator in self._evaluator.execute(method):
-                for typ in generator.py__iter__():
-                    yield typ
+            iters = self._evaluator.execute(method)
+            for generator in iters:
+                if isinstance(generator, Instance):
+                    # `__next__` logic.
+                    name = '__next__' if is_py3 else 'next'
+                    try:
+                        yield generator.execute_subscope_by_name(name)
+                    except KeyError:
+                        debug.warning('Instance has no __next__ function in %s.', generator)
+                else:
+                    for typ in generator.py__iter__():
+                        yield typ
 
     @property
     @underscore_memoization
