@@ -298,28 +298,27 @@ class NameFinder(object):
 
 @memoize_default(set(), evaluator_is_first_arg=True)
 def _name_to_types(evaluator, name, scope):
-    types = set()
     typ = name.get_definition()
     if typ.isinstance(tree.ForStmt, tree.CompFor):
         container_types = evaluator.eval_element(typ.children[3])
         for_types = common.unite(iterable.py__iter__(evaluator, container_types))
-        types |= check_tuple_assignments(for_types, name)
+        types = check_tuple_assignments(for_types, name)
     elif isinstance(typ, tree.Param):
-        types |= _eval_param(evaluator, typ, scope)
+        types = _eval_param(evaluator, typ, scope)
     elif typ.isinstance(tree.ExprStmt):
-        types |= _remove_statements(evaluator, typ, name)
+        types = _remove_statements(evaluator, typ, name)
     elif typ.isinstance(tree.WithStmt):
-        types |= evaluator.eval_element(typ.node_from_name(name))
+        types = evaluator.eval_element(typ.node_from_name(name))
     elif isinstance(typ, tree.Import):
-        types |= imports.ImportWrapper(evaluator, name).follow()
+        types = imports.ImportWrapper(evaluator, name).follow()
     elif isinstance(typ, tree.GlobalStmt):
         # TODO theoretically we shouldn't be using search_global here, it
         # doesn't make sense, because it's a local search (for that name)!
         # However, globals are not that important and resolving them doesn't
         # guarantee correctness in any way, because we don't check for when
         # something is executed.
-        types |= evaluator.find_types(typ.get_parent_scope(), str(name),
-                                      search_global=True)
+        types = evaluator.find_types(typ.get_parent_scope(), str(name),
+                                     search_global=True)
     elif isinstance(typ, tree.TryStmt):
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
@@ -329,7 +328,7 @@ def _name_to_types(evaluator, name, scope):
     else:
         if typ.isinstance(er.Function):
             typ = typ.get_decorated_func()
-        types.add(typ)
+        types = set([typ])
     return types
 
 

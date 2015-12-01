@@ -316,6 +316,8 @@ class Array(IterableWrapper, ArrayMixin):
         for value in iterate:
             yield self._evaluator.eval_element(value)
 
+        yield check_array_additions(self._evaluator, self)
+
     def _values(self):
         """Returns a list of a list of node."""
         if self.type == 'dict':
@@ -485,9 +487,15 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
 
 
 def py__iter__(evaluator, types):
+    debug.dbg('py__iter__')
     for typ in types:
-        for result in typ.py__iter__():
-            yield result
+        try:
+            iter_method = typ.py__iter__
+        except AttributeError:
+            raise NotImplementedError
+        else:
+            for result in iter_method():
+                yield result
 
 
 def get_iterator_types(evaluator, element):
@@ -690,15 +698,18 @@ class _ArrayInstance(IterableWrapper):
         return items
 
     def py__iter__(self):
-        _, first_nodes = next(self.var_args.unpack())
-        types = unite(self._evaluator.eval_element(node) for node in first_nodes)
+        try:
+            _, first_nodes = next(self.var_args.unpack())
+        except StopIteration:
+            types = set()
+        else:
+            types = unite(self._evaluator.eval_element(node) for node in first_nodes)
 
-        for typ in py__iter__(self._evaluator, types):
-            yield typ
+        for types in py__iter__(self._evaluator, types):
+            yield types
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
-        for typ in _check_array_additions(self._evaluator, self.instance, module, is_list):
-            yield typ
+        yield _check_array_additions(self._evaluator, self.instance, module, is_list)
 
 
 class Slice(object):

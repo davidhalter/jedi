@@ -198,6 +198,17 @@ class CompiledObject(Base):
                 pass  # self.obj maynot have an __iter__ method.
         return result
 
+    def py__iter__(self):
+        if not hasattr(self.obj, '__iter__'):
+            debug.warning('Tried to call __getitem__ on non-iterable.')
+            return
+        if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
+            # Get rid of side effects, we won't call custom `__getitem__`s.
+            return
+
+        for obj in self.obj:
+            yield set([CompiledObject(obj)])
+
     @property
     def name(self):
         # might not exist sometimes (raises AttributeError)
