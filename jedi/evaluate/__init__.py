@@ -164,8 +164,8 @@ class Evaluator(object):
                 # Iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
                 # predictable. Also only do it, if the variable is not a tuple.
-                for_iterable = self.eval_element(for_stmt.get_input_node())
-                ordered = iterable.ordered_elements_of_iterable(self, for_iterable, types)
+                for_iterables = self.eval_element(for_stmt.get_input_node())
+                ordered = list(iterable.py__iter__(self, for_iterables))
 
                 for index_types in ordered:
                     dct = {str(for_stmt.children[1]): index_types}

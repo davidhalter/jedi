@@ -689,7 +689,7 @@ class FunctionExecution(Executed):
                     yield evaluator.eval_element(yield_.children[1])
             else:
                 for_types = evaluator.eval_element(for_stmt.get_input_node())
-                ordered = iterable.ordered_elements_of_iterable(evaluator, for_types, set())
+                ordered = iterable.py__iter__(evaluator, for_types)
                 for index_types in ordered:
                     dct = {str(for_stmt.children[1]): index_types}
                     evaluator.predefined_if_name_dict_dict[for_stmt] = dct

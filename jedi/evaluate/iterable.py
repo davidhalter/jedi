@@ -152,7 +152,7 @@ class Comprehension(IterableWrapper):
 
     def py__iter__(self):
         def nested(input_types, comp_fors):
-            iterated = ordered_elements_of_iterable(evaluator, input_types, [])
+            iterated = py__iter__(evaluator, input_types)
             comp_for = comp_fors[0]
             exprlist = comp_for.children[1]
             for types in iterated:
@@ -469,7 +469,7 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
                            'testlist_star_expr'):
         dct = {}
         parts = iter(exprlist.children[::2])
-        for iter_types in ordered_elements_of_iterable(evaluator, types, []):
+        for iter_types in py__iter__(evaluator, types):
             try:
                 part = next(parts)
             except StopIteration:

@@ -164,7 +164,7 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     # values again.
     all_sequence_types = get_iterable_content(evaluator, arguments, 0)
 
-    ordered = iterable.ordered_elements_of_iterable(evaluator, sequences, all_sequence_types)
+    ordered = list(iterable.py__iter__(evaluator, sequences))
 
     rev = [iterable.AlreadyEvaluated(o) for o in reversed(ordered)]
     # Repack iterator values and then run it the normal way. This is
