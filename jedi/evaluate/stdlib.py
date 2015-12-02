@@ -153,7 +153,8 @@ def builtins_super(evaluator, types, objects, scope):
 
 def get_iterable_content(evaluator, arguments, argument_index):
     nodes = list(arguments.unpack())[argument_index][1]
-    return unite(iterable.get_iterator_types(evaluator, node) for node in nodes)
+    types = unite(evaluator.eval_element(n) for n in nodes)
+    return iterable.py__iter__types(evaluator, types)
 
 
 @argument_clinic('sequence, /', want_obj=True, want_arguments=True)

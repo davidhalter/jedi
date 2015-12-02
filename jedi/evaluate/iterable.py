@@ -500,6 +500,14 @@ def py__iter__(evaluator, types):
                 yield result
 
 
+def py__iter__types(evaluator, types):
+    """
+    Calls `py__iter__`, but ignores the ordering in the end and just returns
+    all types that it contains.
+    """
+    return unite(py__iter__(evaluator, types))
+
+
 def get_iterator_types(evaluator, element):
     """Returns the types of any iterator (arrays, yields, __iter__, etc)."""
     iterators = []
@@ -580,7 +588,8 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                 result |= unite(evaluator.eval_element(node) for node in nodes)
         elif add_name in ['extend', 'update']:
             for key, nodes in params:
-                result |= unite(get_iterator_types(evaluator, node) for node in nodes)
+                types = unite(evaluator.eval_element(n) for n in nodes)
+                result |= py__iter__types(evaluator, types)
         return result
 
     from jedi.evaluate import representation as er, param
@@ -691,8 +700,8 @@ class _ArrayInstance(IterableWrapper):
         """
         items = set()
         for key, nodes in self.var_args.unpack():
-            for node in nodes:
-                items |= get_iterator_types(self._evaluator, node)
+            types = unite(self._evaluator.eval_element(n) for n in nodes)
+            items |= py__iter__types(self._evaluator, types)
 
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'

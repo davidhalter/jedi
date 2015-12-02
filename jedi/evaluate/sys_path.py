@@ -118,11 +118,13 @@ def _paths_from_assignment(evaluator, expr_stmt):
         except AssertionError:
             continue
 
-        from jedi.evaluate.iterable import get_iterator_types
+        from jedi.evaluate.iterable import py__iter__
         from jedi.evaluate.precedence import is_string
-        for val in get_iterator_types(evaluator, expr_stmt):
-            if is_string(val):
-                yield val.obj
+        types = evaluator.eval_element(expr_stmt)
+        for types in py__iter__(evaluator, types):
+            for typ in types:
+                if is_string(typ):
+                    yield typ.obj
 
 
 def _paths_from_list_modifications(module_path, trailer1, trailer2):
