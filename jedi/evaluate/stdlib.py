@@ -151,19 +151,11 @@ def builtins_super(evaluator, types, objects, scope):
     return set()
 
 
-def get_iterable_content(evaluator, arguments, argument_index):
-    nodes = list(arguments.unpack())[argument_index][1]
-    types = unite(evaluator.eval_element(n) for n in nodes)
-    return iterable.py__iter__types(evaluator, types)
-
-
-@argument_clinic('sequence, /', want_obj=True, want_arguments=True)
-def builtins_reversed(evaluator, sequences, obj, arguments):
+@argument_clinic('sequence, /', want_obj=True)
+def builtins_reversed(evaluator, sequences, obj):
     # While we could do without this variable (just by using sequences), we
     # want static analysis to work well. Therefore we need to generated the
     # values again.
-    all_sequence_types = get_iterable_content(evaluator, arguments, 0)
-
     ordered = list(iterable.py__iter__(evaluator, sequences))
 
     rev = [iterable.AlreadyEvaluated(o) for o in reversed(ordered)]
@@ -196,7 +188,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                 bool_results.add(cls_or_tup in mro)
             else:
                 # Check for tuples.
-                classes = get_iterable_content(evaluator, arguments, 1)
+                classes = iterable.py__iter__types(evaluator, set([cls_or_tup]))
                 bool_results.add(any(cls in mro for cls in classes))
 
     return set(compiled.keyword_from_value(x) for x in bool_results)
