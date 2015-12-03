@@ -16,11 +16,12 @@ def try_iter_content(types):
     """Helper method for static analysis."""
     for typ in types:
         try:
-            f = typ.iter_content
+            f = typ.py__iter__
         except AttributeError:
             pass
         else:
-            try_iter_content(f())
+            for iter_types in f():
+                try_iter_content(iter_types)
 
 
 class Arguments(tree.Base):

@@ -151,8 +151,8 @@ class Comprehension(IterableWrapper):
         return helpers.deep_ast_copy(self._get_comprehension().children[0], parent=last_comp)
 
     def py__iter__(self):
-        def nested(input_types, comp_fors):
-            iterated = py__iter__(evaluator, input_types)
+        def nested(input_types, comp_fors, node):
+            iterated = py__iter__(evaluator, input_types, node)
             comp_for = comp_fors[0]
             exprlist = comp_for.children[1]
             for types in iterated:
@@ -160,7 +160,7 @@ class Comprehension(IterableWrapper):
                     unpack_tuple_to_dict(evaluator, types, exprlist)
                 try:
                     if len(comp_fors) > 1:
-                        for result in nested(types, comp_fors[1:]):
+                        for result in nested(types, comp_fors[1:], exprlist):
                             yield result
                     else:
                         yield evaluator.eval_element(self.eval_node())
@@ -171,7 +171,7 @@ class Comprehension(IterableWrapper):
         comp_fors = list(self._get_comp_for().get_comp_fors())
         input_node = comp_fors[0].children[-1]
         input_types = evaluator.eval_element(input_node)
-        for result in nested(input_types, comp_fors):
+        for result in nested(input_types, comp_fors, input_node):
             yield result
 
     def get_exact_index_types(self, index):
@@ -466,26 +466,24 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
     raise NotImplementedError
 
 
-def py__iter__(evaluator, types):
+def py__iter__(evaluator, types, node):
     debug.dbg('py__iter__')
     for typ in types:
         try:
             iter_method = typ.py__iter__
         except AttributeError:
-            raise NotImplementedError
-            analysis.add(evaluator, 'type-error-not-iterable', element)
-            debug.warning('iterator/for loop input wrong: %s', it)
+            analysis.add(evaluator, 'type-error-not-iterable', node)
         else:
             for result in iter_method():
                 yield result
 
 
-def py__iter__types(evaluator, types):
+def py__iter__types(evaluator, types, node):
     """
     Calls `py__iter__`, but ignores the ordering in the end and just returns
     all types that it contains.
     """
-    return unite(py__iter__(evaluator, types))
+    return unite(py__iter__(evaluator, types, node))
 
 
 def check_array_additions(evaluator, array):
@@ -529,8 +527,9 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                 result |= unite(evaluator.eval_element(node) for node in nodes)
         elif add_name in ['extend', 'update']:
             for key, nodes in params:
-                types = unite(evaluator.eval_element(n) for n in nodes)
-                result |= py__iter__types(evaluator, types)
+                for node in nodes:
+                    types = evaluator.eval_element(node)
+                    result |= py__iter__types(evaluator, types, node)
         return result
 
     from jedi.evaluate import representation as er, param
@@ -641,8 +640,9 @@ class _ArrayInstance(IterableWrapper):
         """
         items = set()
         for key, nodes in self.var_args.unpack():
-            types = unite(self._evaluator.eval_element(n) for n in nodes)
-            items |= py__iter__types(self._evaluator, types)
+            for node in nodes:
+                types = self._evaluator.eval_element(node)
+                items |= py__iter__types(self._evaluator, types, node)
 
         module = self.var_args.get_parent_until()
         is_list = str(self.instance.name) == 'list'
@@ -657,13 +657,13 @@ class _ArrayInstance(IterableWrapper):
         else:
             types = unite(self._evaluator.eval_element(node) for node in first_nodes)
 
-        for types in py__iter__(self._evaluator, types):
-            yield types
-        module = self.var_args.get_parent_until()
-        is_list = str(self.instance.name) == 'list'
-        additions = _check_array_additions(self._evaluator, self.instance, module, is_list)
-        if additions:
-            yield additions
+            for types in py__iter__(self._evaluator, types, first_nodes[0]):
+                yield types
+            module = self.var_args.get_parent_until()
+            is_list = str(self.instance.name) == 'list'
+            additions = _check_array_additions(self._evaluator, self.instance, module, is_list)
+            if additions:
+                yield additions
 
 
 class Slice(object):
