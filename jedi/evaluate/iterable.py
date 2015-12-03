@@ -447,7 +447,7 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
                            'testlist_star_expr'):
         dct = {}
         parts = iter(exprlist.children[::2])
-        for iter_types in py__iter__(evaluator, types):
+        for iter_types in py__iter__(evaluator, types, exprlist):
             try:
                 part = next(parts)
             except StopIteration:
@@ -656,14 +656,14 @@ class _ArrayInstance(IterableWrapper):
             types = set()
         else:
             types = unite(self._evaluator.eval_element(node) for node in first_nodes)
-
             for types in py__iter__(self._evaluator, types, first_nodes[0]):
                 yield types
-            module = self.var_args.get_parent_until()
-            is_list = str(self.instance.name) == 'list'
-            additions = _check_array_additions(self._evaluator, self.instance, module, is_list)
-            if additions:
-                yield additions
+
+        module = self.var_args.get_parent_until()
+        is_list = str(self.instance.name) == 'list'
+        additions = _check_array_additions(self._evaluator, self.instance, module, is_list)
+        if additions:
+            yield additions
 
 
 class Slice(object):

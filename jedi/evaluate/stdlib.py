@@ -154,12 +154,13 @@ def builtins_super(evaluator, types, objects, scope):
     return set()
 
 
-@argument_clinic('sequence, /', want_obj=True)
-def builtins_reversed(evaluator, sequences, obj):
+@argument_clinic('sequence, /', want_obj=True, want_arguments=True)
+def builtins_reversed(evaluator, sequences, obj, arguments):
     # While we could do without this variable (just by using sequences), we
     # want static analysis to work well. Therefore we need to generated the
     # values again.
-    ordered = list(iterable.py__iter__(evaluator, sequences))
+    first_arg = next(arguments.as_tuple())[0]
+    ordered = list(iterable.py__iter__(evaluator, sequences, first_arg))
 
     rev = [iterable.AlreadyEvaluated(o) for o in reversed(ordered)]
     # Repack iterator values and then run it the normal way. This is

@@ -121,7 +121,7 @@ def _paths_from_assignment(evaluator, expr_stmt):
         from jedi.evaluate.iterable import py__iter__
         from jedi.evaluate.precedence import is_string
         types = evaluator.eval_element(expr_stmt)
-        for types in py__iter__(evaluator, types):
+        for types in py__iter__(evaluator, types, expr_stmt):
             for typ in types:
                 if is_string(typ):
                     yield typ.obj
