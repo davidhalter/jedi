@@ -187,6 +187,8 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             if cls_or_tup.is_class():
                 bool_results.add(cls_or_tup in mro)
             else:
+                # TODO Actually we should check for non iterables here (the
+                # type should be object or tuple of object)
                 # Check for tuples.
                 classes = iterable.py__iter__types(evaluator, set([cls_or_tup]))
                 bool_results.add(any(cls in mro for cls in classes))

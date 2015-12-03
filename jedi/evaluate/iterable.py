@@ -435,28 +435,6 @@ class MergedArray(_FakeArray):
         return sum(len(a) for a in self._arrays)
 
 
-def ordered_elements_of_iterable(evaluator, iterable_type, all_values):
-    """
-    This function returns the ordered types of an iterable.
-    """
-    ordered = []
-    # Unpack the iterator values
-    for sequence in iterable_type:
-        try:
-            # TODO every type should have a py__iter__ method.
-            method = sequence.py__iter__
-        except AttributeError:
-            ordered = [literals_to_types(evaluator, all_values)]
-            break
-        else:
-            for i, types in enumerate(method()):
-                try:
-                    ordered[i] |= types
-                except IndexError:
-                    ordered.append(set(types))
-    return ordered
-
-
 def unpack_tuple_to_dict(evaluator, types, exprlist):
     """
     Unpacking tuple assignments in for statements and expr_stmts.
@@ -495,6 +473,8 @@ def py__iter__(evaluator, types):
             iter_method = typ.py__iter__
         except AttributeError:
             raise NotImplementedError
+            analysis.add(evaluator, 'type-error-not-iterable', element)
+            debug.warning('iterator/for loop input wrong: %s', it)
         else:
             for result in iter_method():
                 yield result
@@ -506,45 +486,6 @@ def py__iter__types(evaluator, types):
     all types that it contains.
     """
     return unite(py__iter__(evaluator, types))
-
-
-def get_iterator_types(evaluator, element):
-    """Returns the types of any iterator (arrays, yields, __iter__, etc)."""
-    iterators = []
-    # Take the first statement (for has always only
-    # one, remember `in`). And follow it.
-    for it in evaluator.eval_element(element):
-        if isinstance(it, (Generator, Array, _ArrayInstance, Comprehension)):
-            iterators.append(it)
-        else:
-            if not hasattr(it, 'execute_subscope_by_name'):
-                analysis.add(evaluator, 'type-error-not-iterable', element)
-                debug.warning('iterator/for loop input wrong: %s', it)
-                continue
-            try:
-                iterators += it.execute_subscope_by_name('__iter__')
-            except KeyError:
-                debug.warning('iterators: No __iter__ method found.')
-
-    result = set()
-    from jedi.evaluate.representation import Instance
-    for it in iterators:
-        if isinstance(it, Array):
-            # Array is a little bit special, since this is an internal array,
-            # but there's also the list builtin, which is another thing.
-            result |= it.values()
-        elif isinstance(it, Instance):
-            # __iter__ returned an instance.
-            name = '__next__' if is_py3 else 'next'
-            try:
-                result |= it.execute_subscope_by_name(name)
-            except KeyError:
-                debug.warning('Instance has no __next__ function in %s.', it)
-        else:
-            # TODO this is not correct, __iter__ can return arbitrary input!
-            # Is a generator.
-            result |= it.iter_content()
-    return result
 
 
 def check_array_additions(evaluator, array):
