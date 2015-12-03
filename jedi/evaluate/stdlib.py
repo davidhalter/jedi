@@ -19,6 +19,7 @@ from jedi.parser import tree
 from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param
+from jedi.evaluate import analysis
 
 
 class NotInStdLib(LookupError):
@@ -40,9 +41,11 @@ def execute(evaluator, obj, arguments):
 
         # for now we just support builtin functions.
         try:
-            return _implemented[module_name][obj_name](evaluator, obj, arguments)
+            func = _implemented[module_name][obj_name]
         except KeyError:
             pass
+        else:
+            return func(evaluator, obj, arguments)
     raise NotInStdLib()
 
 
@@ -186,12 +189,15 @@ def builtins_isinstance(evaluator, objects, types, arguments):
         for cls_or_tup in types:
             if cls_or_tup.is_class():
                 bool_results.add(cls_or_tup in mro)
-            else:
-                # TODO Actually we should check for non iterables here (the
-                # type should be object or tuple of object)
+            elif str(cls_or_tup.name) == 'tuple' \
+                    and cls_or_tup.get_parent_scope() == compiled.builtin:
                 # Check for tuples.
-                classes = iterable.py__iter__types(evaluator, set([cls_or_tup]))
+                classes = unite(cls_or_tup.py__iter__())
                 bool_results.add(any(cls in mro for cls in classes))
+            else:
+                _, nodes = list(arguments.unpack())[1]
+                for node in nodes:
+                    analysis.add(evaluator, 'type-error-isinstance', node)
 
     return set(compiled.keyword_from_value(x) for x in bool_results)
 

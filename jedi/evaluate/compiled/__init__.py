@@ -208,8 +208,8 @@ class CompiledObject(Base):
                 # Get rid of side effects, we won't call custom `__getitem__`s.
                 return
 
-            for obj in self.obj:
-                yield set([CompiledObject(obj)])
+            for part in self.obj:
+                yield set([CompiledObject(part)])
         return actual
 
     @property

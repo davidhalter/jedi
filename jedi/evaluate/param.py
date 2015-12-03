@@ -12,8 +12,13 @@ from jedi.evaluate.helpers import FakeName
 from jedi.cache import underscore_memoization
 
 
-def try_iter_content(types):
+def try_iter_content(types, depth=0):
     """Helper method for static analysis."""
+    if depth > 10:
+        # It's possible that a loop has references on itself (especially with
+        # CompiledObject). Therefore don't loop infinitely.
+        return
+
     for typ in types:
         try:
             f = typ.py__iter__
@@ -21,7 +26,7 @@ def try_iter_content(types):
             pass
         else:
             for iter_types in f():
-                try_iter_content(iter_types)
+                try_iter_content(iter_types, depth + 1)
 
 
 class Arguments(tree.Base):
