@@ -319,14 +319,14 @@ class Name(Leaf):
 
     def assignment_indexes(self):
         """
-        Returns an array of ints of the indexes that are used in tuple
-        assignments.
+        Returns an array of tuple(int, node) of the indexes that are used in
+        tuple assignments.
 
         For example if the name is ``y`` in the following code::
 
             x, (y, z) = 2, ''
 
-        would result in ``[1, 0]``.
+        would result in ``[(1, xyz_node), (0, yz_node)]``.
         """
         indexes = []
         node = self.parent
@@ -335,7 +335,7 @@ class Name(Leaf):
             if is_node(node, 'testlist_comp', 'testlist_star_expr', 'exprlist'):
                 for i, child in enumerate(node.children):
                     if child == compare:
-                        indexes.insert(0, int(i / 2))
+                        indexes.insert(0, (int(i / 2), node))
                         break
                 else:
                     raise LookupError("Couldn't find the assignment.")

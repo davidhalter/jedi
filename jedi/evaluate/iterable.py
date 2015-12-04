@@ -23,13 +23,12 @@ It is important to note that:
 from jedi.common import unite, ignored, safe_property
 from jedi import debug
 from jedi import settings
-from jedi._compatibility import use_metaclass, is_py3, unicode
+from jedi._compatibility import use_metaclass, unicode
 from jedi.parser import tree
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
-from jedi.evaluate.precedence import literals_to_types
 
 
 class IterableWrapper(tree.Base):
@@ -269,8 +268,8 @@ class Array(IterableWrapper, ArrayMixin):
         result |= check_array_additions(self._evaluator, self)
         return result
 
-    def get_exact_index_types(self, mixed_index):
-        """ Here the index is an int/str. Raises IndexError/KeyError """
+    def py__getitem__(self, index):
+        """Here the index is an int/str. Raises IndexError/KeyError."""
         if self.type == 'dict':
             for key, values in self._items():
                 # Because we only want the key to be a string.
@@ -278,13 +277,13 @@ class Array(IterableWrapper, ArrayMixin):
 
                 for k in keys:
                     if isinstance(k, compiled.CompiledObject) \
-                            and mixed_index == k.obj:
+                            and index == k.obj:
                         for value in values:
                             return self._evaluator.eval_element(value)
             raise KeyError('No key found in dictionary %s.' % self)
 
         # Can raise an IndexError
-        return self._evaluator.eval_element(self._items()[mixed_index])
+        return self._evaluator.eval_element(self._items()[index])
 
     def iter_content(self):
         return self.values()
@@ -466,24 +465,52 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
     raise NotImplementedError
 
 
-def py__iter__(evaluator, types, node):
+def py__iter__(evaluator, types, node=None):
     debug.dbg('py__iter__')
     for typ in types:
         try:
             iter_method = typ.py__iter__
         except AttributeError:
-            analysis.add(evaluator, 'type-error-not-iterable', node)
+            if node is not None:
+                analysis.add(evaluator, 'type-error-not-iterable', node)
         else:
             for result in iter_method():
                 yield result
 
 
-def py__iter__types(evaluator, types, node):
+def py__iter__types(evaluator, types, node=None):
     """
     Calls `py__iter__`, but ignores the ordering in the end and just returns
     all types that it contains.
     """
     return unite(py__iter__(evaluator, types, node))
+
+
+def py__getitem__(evaluator, types, index, node):
+    result = set()
+
+    # Index handling.
+    if isinstance(index, compiled.CompiledObject):
+        pure_index = index.obj
+    elif not type(index) in (float, int, str, unicode):
+        pure_index = index
+    else:
+        # If the index is not clearly defined, we have to get all the
+        # possiblities.
+        return py__iter__types(evaluator, types)
+
+    for typ in types:
+        # The actual getitem call.
+        try:
+            getitem = typ.py__getitem__
+        except AttributeError:
+            analysis.add(evaluator, 'type-error-not-subscriptable', node)
+        else:
+            try:
+                result |= getitem(pure_index)
+            except IndexError:
+                return py__iter__types(evaluator, set([typ]))
+    return result
 
 
 def check_array_additions(evaluator, array):

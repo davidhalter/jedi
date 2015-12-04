@@ -22,6 +22,9 @@ py__bool__()                           Returns True/False/None; None means that
                                        there's no certainty.
 py__bases__(evaluator)                 Returns a list of base classes.
 py__mro__(evaluator)                   Returns a list of classes (the mro).
+py__iter__()                           Returns a generator of a set of types.
+py__getitem__(index: int/str)          Returns a a set of types of the index.
+                                       Can raise an IndexError/KeyError.
 py__getattribute__(evaluator, name)    Returns a list of attribute values. The
                                        name can be str or Name.
 ====================================== ========================================

@@ -209,6 +209,15 @@ dic2[r'as' 'd' u'f']
 #? int() str()
 dic2['just_something']
 
+# unpacking
+a, b = dic2
+#? str()
+a
+a, b = {1: 'x', 2.0: 1j}
+#? int() float()
+a
+
+
 def f():
     """ github #83 """
     r = {}

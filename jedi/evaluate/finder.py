@@ -302,7 +302,7 @@ def _name_to_types(evaluator, name, scope):
     if typ.isinstance(tree.ForStmt, tree.CompFor):
         container_types = evaluator.eval_element(typ.children[3])
         for_types = iterable.py__iter__types(evaluator, container_types, typ.children[3])
-        types = check_tuple_assignments(for_types, name)
+        types = check_tuple_assignments(evaluator, for_types, name)
     elif isinstance(typ, tree.Param):
         types = _eval_param(evaluator, typ, scope)
     elif typ.isinstance(tree.ExprStmt):
@@ -542,26 +542,20 @@ def global_names_dict_generator(evaluator, scope, position):
         yield names_dict, None
 
 
-def check_tuple_assignments(types, name):
+def check_tuple_assignments(evaluator, types, name):
     """
     Checks if tuples are assigned.
     """
-    for index in name.assignment_indexes():
-        new_types = set()
-        for r in types:
+    for index, node in name.assignment_indexes():
+        iterated = iterable.py__iter__(evaluator, types, node)
+        all_types = set()
+        for _ in range(index + 1):
             try:
-                func = r.get_exact_index_types
-            except AttributeError:
-                debug.warning("Invalid tuple lookup #%s of result %s in %s",
-                              index, types, name)
-            else:
-                if isinstance(r, iterable.Array) and r.type == 'dict':
-                    continue
-                try:
-                    new_types |= func(index)
-                except IndexError:
-                    pass
-        types = new_types
+                types = next(iterated)
+                all_types |= types
+            except StopIteration:
+                types = all_types
+                break
     return types
 
 

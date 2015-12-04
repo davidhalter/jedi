@@ -147,7 +147,7 @@ class Evaluator(object):
         types = self.eval_element(rhs)
 
         if seek_name:
-            types = finder.check_tuple_assignments(types, seek_name)
+            types = finder.check_tuple_assignments(self, types, seek_name)
 
         first_operation = stmt.first_operation()
         if first_operation not in ('=', None) and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
@@ -352,21 +352,18 @@ class Evaluator(object):
         trailer_op, node = trailer.children[:2]
         if node == ')':  # `arglist` is optional.
             node = ()
+
         new_types = set()
-        for typ in types:
-            debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
-            if trailer_op == '.':
-                new_types |= self.find_types(typ, node)
-            elif trailer_op == '(':
-                new_types |= self.execute(typ, node, trailer)
-            elif trailer_op == '[':
-                try:
-                    get = typ.get_index_types
-                except AttributeError:
-                    debug.warning("TypeError: '%s' object is not subscriptable"
-                                  % typ)
-                else:
-                    new_types |= get(self, node)
+        if trailer_op == '[':
+            for trailer_typ in self.eval_element(node):
+                new_types |= iterable.py__getitem__(self, types, trailer_typ, trailer_op)
+        else:
+            for typ in types:
+                debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
+                if trailer_op == '.':
+                    new_types |= self.find_types(typ, node)
+                elif trailer_op == '(':
+                    new_types |= self.execute(typ, node, trailer)
         return new_types
 
     def execute_evaluated(self, obj, *args):
