@@ -548,13 +548,15 @@ def check_tuple_assignments(evaluator, types, name):
     """
     for index, node in name.assignment_indexes():
         iterated = iterable.py__iter__(evaluator, types, node)
-        all_types = set()
         for _ in range(index + 1):
             try:
                 types = next(iterated)
-                all_types |= types
             except StopIteration:
-                types = all_types
+                # We could do this with the default param in next. But this
+                # would allow this loop to run for a very long time if the
+                # index number is high. Therefore break if the loop is
+                # finished.
+                types = set()
                 break
     return types
 

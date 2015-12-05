@@ -245,7 +245,7 @@ class Array(IterableWrapper, ArrayMixin):
 
         :param index: A subscriptlist node (or subnode).
         """
-        indexes = create_indexes_or_slices(evaluator, index)
+        indexes = create_index_types(evaluator, index)
         lookup_done = False
         types = set()
         for index in indexes:
@@ -283,7 +283,10 @@ class Array(IterableWrapper, ArrayMixin):
             raise KeyError('No key found in dictionary %s.' % self)
 
         # Can raise an IndexError
-        return self._evaluator.eval_element(self._items()[index])
+        if isinstance(index, slice):
+            return set([self])
+        else:
+            return self._evaluator.eval_element(self._items()[index])
 
     def iter_content(self):
         return self.values()
@@ -308,16 +311,22 @@ class Array(IterableWrapper, ArrayMixin):
         """
         if self.type == 'dict':
             # Get keys.
-            iterate = set(k for k, v in self._items())
+            types = set()
+            for k, _ in self._items():
+                types |= self._evaluator.eval_element(k)
+            # We don't know which dict index comes first, therefore always
+            # yield all the types.
+            for _ in types:
+                yield types
         else:
             iterate = self._items()
 
-        for value in iterate:
-            yield self._evaluator.eval_element(value)
+            for value in iterate:
+                yield self._evaluator.eval_element(value)
 
-        additions = check_array_additions(self._evaluator, self)
-        if additions:
-            yield additions
+            additions = check_array_additions(self._evaluator, self)
+            if additions:
+                yield additions
 
     def _values(self):
         """Returns a list of a list of node."""
@@ -472,7 +481,8 @@ def py__iter__(evaluator, types, node=None):
             iter_method = typ.py__iter__
         except AttributeError:
             if node is not None:
-                analysis.add(evaluator, 'type-error-not-iterable', node)
+                analysis.add(evaluator, 'type-error-not-iterable', node,
+                             message="TypeError: '%s' object is not iterable" % typ)
         else:
             for result in iter_method():
                 yield result
@@ -490,11 +500,10 @@ def py__getitem__(evaluator, types, index, node):
     result = set()
 
     # Index handling.
-    if isinstance(index, compiled.CompiledObject):
-        pure_index = index.obj
-    elif not type(index) in (float, int, str, unicode):
-        pure_index = index
-    else:
+    if isinstance(index, (compiled.CompiledObject, Slice)):
+        index = index.obj
+
+    if type(index) not in (float, int, str, unicode, slice):
         # If the index is not clearly defined, we have to get all the
         # possiblities.
         return py__iter__types(evaluator, types)
@@ -504,12 +513,16 @@ def py__getitem__(evaluator, types, index, node):
         try:
             getitem = typ.py__getitem__
         except AttributeError:
-            analysis.add(evaluator, 'type-error-not-subscriptable', node)
+            analysis.add(evaluator, 'type-error-not-subscriptable', node,
+                         message="TypeError: '%s' object is not subscriptable" % typ)
         else:
             try:
-                result |= getitem(pure_index)
+                result |= getitem(index)
             except IndexError:
                 return py__iter__types(evaluator, set([typ]))
+            except KeyError:
+                # Must be a dict. Lists don't raise IndexErrors.
+                return typ.values()
     return result
 
 
@@ -727,7 +740,10 @@ class Slice(object):
             return slice(None, None, None)
 
 
-def create_indexes_or_slices(evaluator, index):
+def create_index_types(evaluator, index):
+    """
+    Handles slices in subscript nodes.
+    """
     if tree.is_node(index, 'subscript'):  # subscript is a slice operation.
         start, stop, step = None, None, None
         result = []
