@@ -120,7 +120,7 @@ def gen():
 a, b = next(gen())
 #? int()
 a
-#? str() float()
+#? str()
 b
 
 

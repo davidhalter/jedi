@@ -272,12 +272,7 @@ class Array(IterableWrapper, ArrayMixin):
         """Here the index is an int/str. Raises IndexError/KeyError."""
         if self.type == 'dict':
             for key, values in self._items():
-                # Because we only want the key to be a string.
-                keys = self._evaluator.eval_element(key)
-
-                for k in keys:
-                    if isinstance(k, compiled.CompiledObject) \
-                            and index == k.obj:
+                    if index == key:
                         for value in values:
                             return self._evaluator.eval_element(value)
             raise KeyError('No key found in dictionary %s.' % self)
@@ -433,6 +428,9 @@ class MergedArray(_FakeArray):
 
     def values(self):
         return unite((a.values() for a in self._arrays))
+
+    def py__getitem__(self, index):
+        return unite(self.py__iter__())
 
     def __iter__(self):
         for array in self._arrays:
