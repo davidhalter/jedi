@@ -198,21 +198,15 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         for names_dict in self.base.names_dicts(search_global=False, is_instance=True):
             yield LazyInstanceDict(self._evaluator, self, names_dict)
 
-    def get_index_types(self, evaluator, index_array):
-        indexes = iterable.create_indexes_or_slices(self._evaluator, index_array)
-        if any([isinstance(i, iterable.Slice) for i in indexes]):
-            # Slice support in Jedi is very marginal, at the moment, so just
-            # ignore them in case of __getitem__.
-            # TODO support slices in a more general way.
-            indexes = []
-
+    def py__getitem__(self, index):
         try:
             method = self.get_subscope_by_name('__getitem__')
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
             return set()
         else:
-            return self._evaluator.execute(method, [iterable.AlreadyEvaluated(indexes)])
+            index_obj = compiled.create(self._evaluator, index)
+            return self._evaluator.execute_evaluated(method, index_obj)
 
     def py__iter__(self):
         try:

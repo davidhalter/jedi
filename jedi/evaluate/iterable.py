@@ -519,10 +519,10 @@ def py__getitem__(evaluator, types, index, node):
             try:
                 result |= getitem(index)
             except IndexError:
-                return py__iter__types(evaluator, set([typ]))
+                result |= py__iter__types(evaluator, set([typ]))
             except KeyError:
                 # Must be a dict. Lists don't raise IndexErrors.
-                return typ.values()
+                result |= typ.values()
     return result
 
 
