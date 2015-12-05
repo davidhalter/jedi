@@ -168,7 +168,7 @@ class Comprehension(IterableWrapper):
 
         evaluator = self._evaluator
         comp_fors = list(self._get_comp_for().get_comp_fors())
-        input_node = comp_fors[0].children[-1]
+        input_node = comp_fors[0].children[3]
         input_types = evaluator.eval_element(input_node)
         for result in nested(input_types, comp_fors, input_node):
             yield result
@@ -205,6 +205,10 @@ class ListComprehension(Comprehension, ArrayMixin):
 
     def iter_content(self):
         return self._evaluator.eval_element(self.eval_node())
+
+    def py__getitem__(self, index):
+        all_types = list(self.py__iter__())
+        return all_types[index]
 
     @property
     def name(self):
@@ -272,7 +276,9 @@ class Array(IterableWrapper, ArrayMixin):
         """Here the index is an int/str. Raises IndexError/KeyError."""
         if self.type == 'dict':
             for key, values in self._items():
-                    if index == key:
+                for k in self._evaluator.eval_element(key):
+                    if isinstance(k, compiled.CompiledObject) \
+                            and index == k.obj:
                         for value in values:
                             return self._evaluator.eval_element(value)
             raise KeyError('No key found in dictionary %s.' % self)
@@ -406,7 +412,10 @@ class FakeDict(_FakeArray):
         super(FakeDict, self).__init__(evaluator, dct, 'dict')
         self._dct = dct
 
-    def get_exact_index_types(self, index):
+    def py__iter__(self):
+        yield set(compiled.create(self._evaluator, key) for key in self._dct)
+
+    def py__getitem__(self, index):
         return unite(self._evaluator.eval_element(v) for v in self._dct[index])
 
     def _items(self):

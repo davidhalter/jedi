@@ -30,8 +30,12 @@ a[0]
 
 arr = [1,'']
 a = [a for a in arr]
-#? int() str()
+#? int()
 a[0]
+#? str()
+a[1]
+#? int() str()
+a[2]
 
 a = [a if 1.0 else '' for a in [1] if [1.0]]
 #? int() str()
@@ -54,7 +58,7 @@ def listen(arg):
         x
 
 listen(['' for x in [1]])
-#? str
+#?
 ([str for x in []])[0]
 
 

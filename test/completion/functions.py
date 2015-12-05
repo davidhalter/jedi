@@ -327,6 +327,15 @@ exe[3]
 #? set
 exe[3]['c']
 
+
+def kwargs_iteration(**kwargs):
+    return kwargs
+
+for x in kwargs_iteration(d=3):
+    #? float()
+    {'d': 1.0, 'c': '1'}[x]
+
+
 # -----------------
 # nested *args
 # -----------------
