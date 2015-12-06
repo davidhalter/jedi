@@ -54,7 +54,7 @@ Alternate Test Runner
 If you don't like the output of ``py.test``, there's an alternate test runner
 that you can start by running ``./run.py``. The above example could be run by::
 
-    ./run.py basic 4 6 8
+    ./run.py basic 4 6 8 50-80
 
 The advantage of this runner is simplicity and more customized error reports.
 Using both runners will help you to have a quicker overview of what's
@@ -269,9 +269,14 @@ def collect_file_tests(lines, lines_to_execute):
             except AttributeError:
                 correct = None
             else:
-                # skip the test, if this is not specified test
-                if lines_to_execute and line_nr not in lines_to_execute:
-                    correct = None
+                # Skip the test, if this is not specified test.
+                for l in lines_to_execute:
+                    if isinstance(l, tuple) and l[0] <= line_nr <= l[1] \
+                            or line_nr == l:
+                        break
+                else:
+                    if lines_to_execute:
+                        correct = None
 
 
 def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
@@ -335,7 +340,11 @@ if __name__ == '__main__':
     test_files = {}
     last = None
     for arg in arguments['<rest>']:
-        if arg.isdigit():
+        match = re.match('(\d+)-(\d+)', arg)
+        if match:
+            start, end = match.groups()
+            test_files[last].append((int(start), int(end)))
+        elif arg.isdigit():
             if last is None:
                 continue
             test_files[last].append(int(arg))
