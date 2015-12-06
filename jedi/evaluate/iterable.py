@@ -185,10 +185,10 @@ class ArrayMixin(object):
     @memoize_default()
     def names_dicts(self, search_global=False):  # Always False.
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = list(self._evaluator.find_types(compiled.builtin, self.type))[0]
+        scope = compiled.builtin.get_by_name(self.type)
         # builtins only have one class -> [0]
-        scope = list(self._evaluator.execute(scope, (AlreadyEvaluated((self,)),)))[0]
-        return scope.names_dicts(search_global)
+        scopes = self._evaluator.execute_evaluated(scope, self)
+        return list(scopes)[0].names_dicts(search_global)
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
