@@ -6,7 +6,7 @@ import operator
 from jedi._compatibility import unicode
 from jedi.parser import tree
 from jedi import debug
-from jedi.evaluate.compiled import CompiledObject, create
+from jedi.evaluate.compiled import CompiledObject, create, builtin_from_name
 from jedi.evaluate import analysis
 
 # Maps Python syntax to the operator module.
@@ -30,7 +30,7 @@ def literals_to_types(evaluator, result):
         if is_literal(typ):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
-            cls = create(evaluator, typ.name.value)
+            cls = builtin_from_name(evaluator, typ.name.value)
             new_result |= evaluator.execute(cls)
         else:
             new_result.add(typ)

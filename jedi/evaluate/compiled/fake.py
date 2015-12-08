@@ -65,6 +65,7 @@ def get_module(obj):
         return builtins
     else:
         if imp_plz is None:
+            # Happens for example in `(_ for _ in []).send.__module__`.
             return builtins
         else:
             return __import__(imp_plz)
@@ -77,7 +78,7 @@ def _faked(module, obj, name):
 
     faked_mod = _load_faked_module(module)
     if faked_mod is None:
-        return
+        return None
 
     # Having the module as a `parser.representation.module`, we need to scan
     # for methods.
@@ -95,12 +96,15 @@ def _faked(module, obj, name):
                 if cls is None:
                     return None
                 return search_scope(cls, obj.__name__)
-
     else:
         if obj == module:
             return search_scope(faked_mod, name)
         else:
-            cls = search_scope(faked_mod, obj.__name__)
+            try:
+                cls_name = obj.__name__
+            except AttributeError:
+                return None
+            cls = search_scope(faked_mod, cls_name)
             if cls is None:
                 return None
             return search_scope(cls, name)

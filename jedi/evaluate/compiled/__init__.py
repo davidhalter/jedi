@@ -225,14 +225,15 @@ class CompiledObject(Base):
 
         for name in self._parse_function_doc()[1].split():
             try:
-                bltn_obj = builtin_from_name(evaluator, name)
+                bltn_obj = getattr(_builtins, name)
             except AttributeError:
                 continue
             else:
-                if bltn_obj.obj is None:
+                if bltn_obj is None:
                     # We want to evaluate everything except None.
                     # TODO do we?
                     continue
+                bltn_obj = create(evaluator, bltn_obj)
                 for result in evaluator.execute(bltn_obj, params):
                     yield result
 
@@ -529,12 +530,5 @@ def create(evaluator, obj, parent=None, module=None):
         if faked is not None:
             faked.parent = parent
             return faked
-
-    # TODO delete
-    #try:
-        #if parent == builtin and obj.__module__ in ('builtins', '__builtin__'):
-            #return builtin.get_by_name(obj.__name__)
-    #except AttributeError:
-        #pass
 
     return CompiledObject(evaluator, obj, parent)

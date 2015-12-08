@@ -274,6 +274,10 @@ class Array(IterableWrapper, ArrayMixin):
         result |= check_array_additions(self._evaluator, self)
         return result
 
+    @memoize_default()
+    def dict_values(self):
+        return unite(self._evaluator.eval_element(v) for v in self._values())
+
     def py__getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
         if self.type == 'dict':
@@ -515,7 +519,11 @@ def py__getitem__(evaluator, types, index, node):
     if type(index) not in (float, int, str, unicode, slice):
         # If the index is not clearly defined, we have to get all the
         # possiblities.
-        return py__iter__types(evaluator, types)
+        for typ in list(types):
+            if isinstance(typ, Array) and typ.type == 'dict':
+                types.remove(typ)
+                result |= typ.dict_values()
+        return result | py__iter__types(evaluator, types)
 
     for typ in types:
         # The actual getitem call.
@@ -531,7 +539,7 @@ def py__getitem__(evaluator, types, index, node):
                 result |= py__iter__types(evaluator, set([typ]))
             except KeyError:
                 # Must be a dict. Lists don't raise IndexErrors.
-                result |= typ.values()
+                result |= typ.dict_values()
     return result
 
 
