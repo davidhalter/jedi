@@ -33,7 +33,7 @@ enable_notice = False
 
 # callback, interface: level, str
 debug_function = None
-ignored_modules = ['jedi.evaluate.builtin', 'jedi.parser']
+ignored_modules = ['jedi.parser']
 _debug_indent = 0
 _start_time = time.time()
 

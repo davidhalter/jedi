@@ -86,7 +86,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         self.is_generated = is_generated
 
         if base.name.get_code() in ['list', 'set'] \
-                and compiled.builtin == base.get_parent_until():
+                and evaluator.BUILTINS == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = iterable.check_array_instances(evaluator, self)
         elif not is_generated:
@@ -179,7 +179,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         """ Throws a KeyError if there's no method. """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        args = [obj, obj.base] if isinstance(obj, Instance) else [compiled.none_obj, obj]
+        none_obj = compiled.create(self._evaluator, None)
+        args = [obj, obj.base] if isinstance(obj, Instance) else [none_obj, obj]
         try:
             return self.execute_subscope_by_name('__get__', *args)
         except KeyError:
@@ -454,7 +455,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
             args = param.Arguments(self._evaluator, arglist)
             return list(chain.from_iterable(args.eval_args()))
         else:
-            return [compiled.object_obj]
+            return [compiled.create(evaluator, object)]
 
     def py__call__(self, evaluator, params):
         return set([Instance(evaluator, self, params)])
@@ -463,7 +464,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         return self._evaluator.find_types(self, name)
 
     def py__class__(self, evaluator):
-        return compiled.builtin.get_by_name('type')
+        return compiled.create(evaluator, 'type')
 
     @property
     def params(self):
@@ -569,7 +570,8 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         if search_global:
             yield self.names_dict
         else:
-            for names_dict in compiled.magic_function_class.names_dicts(False):
+            scope = compiled.get_special_object(self._evaluator, 'FUNCTION_CLASS')
+            for names_dict in scope.names_dicts(False):
                 yield names_dict
 
     @Python3Method
@@ -580,7 +582,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
             return FunctionExecution(evaluator, self, params).get_return_types()
 
     def py__class__(self, evaluator):
-        return compiled.magic_function_class
+        return compiled.get_special_object(evaluator, 'FUNCTION_CLASS')
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
@@ -920,7 +922,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         return names
 
     def py__class__(self, evaluator):
-        return compiled.module_class
+        return compiled.get_special_object(evaluator, 'MODULE_CLASS')
 
     def __getattr__(self, name):
         return getattr(self._module, name)

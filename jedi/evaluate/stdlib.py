@@ -32,7 +32,7 @@ def execute(evaluator, obj, arguments):
     except AttributeError:
         pass
     else:
-        if obj.parent == compiled.builtin:
+        if obj.parent == evaluator.BUILTINS:
             module_name = 'builtins'
         elif isinstance(obj.parent, tree.Module):
             module_name = str(obj.parent.name)
@@ -183,7 +183,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             # This is temporary. Everything should have a class attribute in
             # Python?! Maybe we'll leave it here, because some numpy objects or
             # whatever might not.
-            return set([compiled.true_obj, compiled.false_obj])
+            return set([compiled.create(True), compiled.create(False)])
 
         mro = mro_func(evaluator)
 
@@ -191,7 +191,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             if cls_or_tup.is_class():
                 bool_results.add(cls_or_tup in mro)
             elif str(cls_or_tup.name) == 'tuple' \
-                    and cls_or_tup.get_parent_scope() == compiled.builtin:
+                    and cls_or_tup.get_parent_scope() == evaluator.BUILTINS:
                 # Check for tuples.
                 classes = unite(cls_or_tup.py__iter__())
                 bool_results.add(any(cls in mro for cls in classes))
@@ -200,7 +200,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                 for node in nodes:
                     analysis.add(evaluator, 'type-error-isinstance', node)
 
-    return set(compiled.keyword_from_value(x) for x in bool_results)
+    return set(compiled.create(evaluator, x) for x in bool_results)
 
 
 def collections_namedtuple(evaluator, obj, arguments):

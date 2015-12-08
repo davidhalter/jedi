@@ -12,7 +12,7 @@ import warnings
 import sys
 from itertools import chain
 
-from jedi._compatibility import unicode, builtins
+from jedi._compatibility import unicode
 from jedi.parser import Parser, load_grammar
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import tree
@@ -179,7 +179,7 @@ class Script(object):
                     if unfinished_dotted:
                         return completion_names
                     else:
-                        return keywords.keyword_names('import')
+                        return keywords.keyword_names(self._evaluator, 'import')
 
             if isinstance(user_stmt, tree.Import):
                 module = self._parser.module()
@@ -190,7 +190,7 @@ class Script(object):
             if names is None and not isinstance(user_stmt, tree.Import):
                 if not path and not dot:
                     # add keywords
-                    completion_names += keywords.keyword_names(all=True)
+                    completion_names += keywords.keyword_names(self._evaluator, all=True)
                     # TODO delete? We should search for valid parser
                     # transformations.
                 completion_names += self._simple_complete(path, dot, like)
@@ -206,8 +206,7 @@ class Script(object):
 
         user_stmt = self._parser.user_stmt_with_whitespace()
 
-        b = compiled.builtin
-        completion_names = get_completions(user_stmt, b)
+        completion_names = get_completions(user_stmt, self._evaluator.BUILTINS)
 
         if not dot:
             # add named params
@@ -647,7 +646,7 @@ class Interpreter(Script):
 
             paths = path.split('.') if path else []
 
-            namespaces = (NamespaceModule(), builtins)
+            namespaces = (NamespaceModule(), BUILTINS)
             for p in paths:
                 old, namespaces = namespaces, []
                 for n in old:

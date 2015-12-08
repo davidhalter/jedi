@@ -15,7 +15,6 @@ from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
 from jedi.evaluate import helpers
 from jedi.evaluate import iterable
-from jedi.evaluate import representation as er
 
 
 def add_namespaces_to_parser(evaluator, namespaces, parser_module):
@@ -92,10 +91,7 @@ class LazyName(helpers.FakeName):
                                   parser_path)
 
         if not found:
-            evaluated = compiled.CompiledObject(obj)
-            if evaluated == builtins:
-                # The builtins module is special and always cached.
-                evaluated = compiled.builtin
+            evaluated = compiled.create(self._evaluator, obj)
             found = [evaluated]
 
         content = iterable.AlreadyEvaluated(found)

@@ -3,7 +3,6 @@ import keyword
 
 from jedi._compatibility import is_py3
 from jedi import common
-from jedi.evaluate import compiled
 from jedi.evaluate.helpers import FakeName
 
 try:
@@ -18,27 +17,27 @@ else:
     keys = keyword.kwlist + ['None', 'False', 'True']
 
 
-def keywords(string='', pos=(0, 0), all=False):
+def keywords(evaluator, string='', pos=(0, 0), all=False):
     if all:
-        return set([Keyword(k, pos) for k in keys])
+        return set([Keyword(evaluator, k, pos) for k in keys])
     if string in keys:
-        return set([Keyword(string, pos)])
+        return set([Keyword(evaluator, string, pos)])
     return set()
 
 
-def keyword_names(*args, **kwargs):
-    return [k.name for k in keywords(*args, **kwargs)]
+def keyword_names(evaluator, *args, **kwargs):
+    return [k.name for k in keywords(evaluator, *args, **kwargs)]
 
 
-def get_operator(string, pos):
-    return Keyword(string, pos)
+def get_operator(evaluator, string, pos):
+    return Keyword(evaluator, string, pos)
 
 
 class Keyword(object):
-    def __init__(self, name, pos):
+    def __init__(self, evaluator, name, pos):
         self.name = FakeName(name, self, pos)
         self.start_pos = pos
-        self.parent = compiled.builtin
+        self.parent = evaluator.BUILTINS
 
     def get_parent_until(self):
         return self.parent

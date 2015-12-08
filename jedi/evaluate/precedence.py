@@ -6,8 +6,7 @@ import operator
 from jedi._compatibility import unicode
 from jedi.parser import tree
 from jedi import debug
-from jedi.evaluate.compiled import (CompiledObject, create, builtin,
-                                    keyword_from_value, true_obj, false_obj)
+from jedi.evaluate.compiled import CompiledObject, create
 from jedi.evaluate import analysis
 
 # Maps Python syntax to the operator module.
@@ -31,8 +30,8 @@ def literals_to_types(evaluator, result):
         if is_literal(typ):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
-            cls = builtin.get_by_name(typ.name.get_code())
-            new_result.add(list(evaluator.execute(cls))[0])
+            cls = create(evaluator, typ.name.value)
+            new_result |= evaluator.execute(cls)
         else:
             new_result.add(typ)
     return new_result
@@ -97,7 +96,7 @@ def factor_calculate(evaluator, types, operator):
             value = typ.py__bool__()
             if value is None:  # Uncertainty.
                 return
-            yield keyword_from_value(not value)
+            yield create(evaluator, not value)
         else:
             yield typ
 
@@ -156,10 +155,12 @@ def _element_calculate(evaluator, left, operator, right):
             right = right.obj
 
         try:
-            return set([keyword_from_value(operation(left, right))])
+            result = operation(left, right)
         except TypeError:
             # Could be True or False.
-            return set([true_obj, false_obj])
+            return set([create(evaluator, True), create(evaluator, False)])
+        else:
+            return set([create(evaluator, result)])
     elif operator == 'in':
         return set()
 

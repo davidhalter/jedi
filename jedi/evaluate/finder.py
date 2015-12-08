@@ -212,7 +212,7 @@ class NameFinder(object):
                 break
 
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
-                  self.scope, u(names), self.position)
+                  self.scope, names, self.position)
         return list(self._clean_names(names))
 
     def _clean_names(self, names):
@@ -398,7 +398,7 @@ def _eval_param(evaluator, param, scope):
         if not res_new:
             if param.stars:
                 t = 'tuple' if param.stars == 1 else 'dict'
-                typ = list(evaluator.find_types(compiled.builtin, t))[0]
+                typ = list(evaluator.find_types(evaluator.BUILTINS, t))[0]
                 res_new = evaluator.execute(typ)
         if param.default:
             res_new |= evaluator.eval_element(param.default)
@@ -538,7 +538,7 @@ def global_names_dict_generator(evaluator, scope, position):
         scope = evaluator.wrap(scope.get_parent_scope())
 
     # Add builtins to the global scope.
-    for names_dict in compiled.builtin.names_dicts(True):
+    for names_dict in evaluator.BUILTINS.names_dicts(True):
         yield names_dict, None
 
 

@@ -41,7 +41,8 @@ class GeneratorMixin(object):
     def names_dicts(self, search_global=False):  # is always False
         dct = {}
         executes_generator = '__next__', 'send', 'next'
-        for names in compiled.generator_obj.names_dict.values():
+        gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
+        for names in gen_obj.names_dict.values():
             for name in names:
                 if name.value in executes_generator:
                     parent = GeneratorMethod(self, name.parent)
@@ -59,7 +60,8 @@ class GeneratorMixin(object):
         return True
 
     def py__class__(self, evaluator):
-        return compiled.generator_obj.py__class__(evaluator)
+        gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
+        return gen_obj.py__class__(evaluator)
 
 
 class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
@@ -185,7 +187,7 @@ class ArrayMixin(object):
     @memoize_default()
     def names_dicts(self, search_global=False):  # Always False.
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = compiled.builtin.get_by_name(self.type)
+        scope = compiled.builtin_from_name(self._evaluator, self.type)
         # builtins only have one class -> [0]
         scopes = self._evaluator.execute_evaluated(scope, self)
         return list(scopes)[0].names_dicts(search_global)
@@ -194,7 +196,7 @@ class ArrayMixin(object):
         return None  # We don't know the length, because of appends.
 
     def py__class__(self, evaluator):
-        return compiled.builtin.get_by_name(self.type)
+        return compiled.builtin_from_name(evaluator, self.type)
 
 
 class ListComprehension(Comprehension, ArrayMixin):
@@ -294,10 +296,10 @@ class Array(IterableWrapper, ArrayMixin):
 
     @safe_property
     def parent(self):
-        return compiled.builtin
+        return self._evaluator.BUILTINS
 
     def get_parent_until(self):
-        return compiled.builtin
+        return self._evaluator.BUILTINS
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'get_only_subelement', 'parent',

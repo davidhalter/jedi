@@ -64,7 +64,10 @@ def get_module(obj):
         # Unfortunately in some cases like `int` there's no __module__
         return builtins
     else:
-        return __import__(imp_plz)
+        if imp_plz is None:
+            return builtins
+        else:
+            return __import__(imp_plz)
 
 
 def _faked(module, obj, name):
@@ -83,17 +86,23 @@ def _faked(module, obj, name):
             return search_scope(faked_mod, obj.__name__)
         elif not inspect.isclass(obj):
             # object is a method or descriptor
-            cls = search_scope(faked_mod, obj.__objclass__.__name__)
-            if cls is None:
-                return
-            return search_scope(cls, obj.__name__)
+            try:
+                objclass = obj.__objclass__
+            except AttributeError:
+                return None
+            else:
+                cls = search_scope(faked_mod, objclass.__name__)
+                if cls is None:
+                    return None
+                return search_scope(cls, obj.__name__)
+
     else:
         if obj == module:
             return search_scope(faked_mod, name)
         else:
             cls = search_scope(faked_mod, obj.__name__)
             if cls is None:
-                return
+                return None
             return search_scope(cls, name)
 
 

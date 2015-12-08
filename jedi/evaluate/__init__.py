@@ -86,8 +86,8 @@ class Evaluator(object):
         # To memorize modules -> equals `sys.modules`.
         self.modules = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `compiled.create()`
-        self.recursion_detector = recursion.RecursionDetector()
-        self.execution_recursion_detector = recursion.ExecutionRecursionDetector()
+        self.recursion_detector = recursion.RecursionDetector(self)
+        self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
         self.analysis = []
         self.predefined_if_name_dict_dict = {}
         self.is_analysis = False
@@ -99,6 +99,9 @@ class Evaluator(object):
             self.sys_path.remove('')
         except ValueError:
             pass
+
+        # Constants
+        self.BUILTINS = compiled.get_special_object(self, 'BUILTINS')
 
     def wrap(self, element):
         if isinstance(element, tree.Class):
@@ -256,14 +259,15 @@ class Evaluator(object):
     @debug.increase_indent
     def _eval_element_not_cached(self, element):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
+        types = set()
         if isinstance(element, (tree.Name, tree.Literal)) or tree.is_node(element, 'atom'):
             types = self._eval_atom(element)
         elif isinstance(element, tree.Keyword):
             # For False/True/None
             if element.value in ('False', 'True', 'None'):
-                types = set([compiled.builtin.get_by_name(element.value)])
+                types.add(compiled.builtin_from_name(self, element.value))
             else:
-                types = set()
+                raise NotImplementedError
         elif element.isinstance(tree.Lambda):
             types = set([er.LambdaWrapper(self, element)])
         elif element.isinstance(er.LambdaWrapper):
