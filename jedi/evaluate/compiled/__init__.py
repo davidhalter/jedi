@@ -505,7 +505,7 @@ def get_special_object(evaluator, identifier):
 def compiled_objects_cache(func):
     def wrapper(evaluator, obj, parent=None, module=None):
         # Do a very cheap form of caching here.
-        if parent is None and obj != _builtins:
+        if parent is None and not inspect.ismodule(obj):
             parent = create(evaluator, _builtins)
 
         key = id(obj), id(parent), id(module)

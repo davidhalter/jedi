@@ -464,7 +464,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         return self._evaluator.find_types(self, name)
 
     def py__class__(self, evaluator):
-        return compiled.create(evaluator, 'type')
+        return compiled.create(evaluator, type)
 
     @property
     def params(self):
