@@ -185,7 +185,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             # whatever might not.
             return set([compiled.create(True), compiled.create(False)])
 
-        mro = mro_func(evaluator)
+        mro = mro_func()
 
         for cls_or_tup in types:
             if cls_or_tup.is_class():

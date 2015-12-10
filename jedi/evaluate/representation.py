@@ -21,7 +21,7 @@ py__call__(evaluator, params: Array)   On callable objects, returns types.
 py__bool__()                           Returns True/False/None; None means that
                                        there's no certainty.
 py__bases__(evaluator)                 Returns a list of base classes.
-py__mro__(evaluator)                   Returns a list of classes (the mro).
+py__mro__()                            Returns a list of classes (the mro).
 py__iter__()                           Returns a generator of a set of types.
 py__getitem__(index: int/str)          Returns a a set of types of the index.
                                        Can raise an IndexError/KeyError.
@@ -188,7 +188,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
     def names_dicts(self, search_global):
         yield self._self_names_dict()
 
-        for s in self.base.py__mro__(self._evaluator)[1:]:
+        for s in self.base.py__mro__()[1:]:
             if not isinstance(s, compiled.CompiledObject):
                 # Compiled objects don't have `self.` names.
                 for inst in self._evaluator.execute(s):
@@ -414,7 +414,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         self.base = base
 
     @memoize_default(default=())
-    def py__mro__(self, evaluator):
+    def py__mro__(self):
         def add(cls):
             if cls not in mro:
                 mro.append(cls)
@@ -442,7 +442,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
                 pass
             else:
                 add(cls)
-                for cls_new in mro_method(evaluator):
+                for cls_new in mro_method():
                     add(cls_new)
         return tuple(mro)
 
@@ -469,7 +469,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         if search_global:
             yield self.names_dict
         else:
-            for scope in self.py__mro__(self._evaluator):
+            for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
                     yield scope.names_dicts(False, is_instance)[0]
                 else:
@@ -479,7 +479,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         return True
 
     def get_subscope_by_name(self, name):
-        for s in self.py__mro__(self._evaluator):
+        for s in self.py__mro__():
             for sub in reversed(s.subscopes):
                 if sub.name.value == name:
                         return sub

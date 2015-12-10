@@ -64,8 +64,8 @@ class CompiledObject(Base):
         return create(evaluator, self.obj.__class__, parent=self.parent)
 
     @CheckAttribute
-    def py__mro__(self, evaluator):
-        return tuple(create(evaluator, cls, self.parent) for cls in self.obj.__mro__)
+    def py__mro__(self):
+        return tuple(create(self._evaluator, cls, self.parent) for cls in self.obj.__mro__)
 
     @CheckAttribute
     def py__bases__(self, evaluator):
