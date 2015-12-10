@@ -25,8 +25,6 @@ py__mro__(evaluator)                   Returns a list of classes (the mro).
 py__iter__()                           Returns a generator of a set of types.
 py__getitem__(index: int/str)          Returns a a set of types of the index.
                                        Can raise an IndexError/KeyError.
-py__getattribute__(evaluator, name)    Returns a list of attribute values. The
-                                       name can be str or Name.
 ====================================== ========================================
 
 __
@@ -459,9 +457,6 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
 
     def py__call__(self, evaluator, params):
         return set([Instance(evaluator, self, params)])
-
-    def py__getattribute__(self, name):
-        return self._evaluator.find_types(self, name)
 
     def py__class__(self, evaluator):
         return compiled.create(evaluator, type)
