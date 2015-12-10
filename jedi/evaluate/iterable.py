@@ -23,7 +23,7 @@ It is important to note that:
 from jedi.common import unite, ignored, safe_property
 from jedi import debug
 from jedi import settings
-from jedi._compatibility import use_metaclass, unicode
+from jedi._compatibility import use_metaclass, unicode, zip_longest
 from jedi.parser import tree
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
@@ -51,13 +51,11 @@ class GeneratorMixin(object):
                     dct[name.value] = [name]
         yield dct
 
-    def get_index_types(self, evaluator, index_array):
-        #debug.warning('Tried to get array access on a generator: %s', self)
-        analysis.add(self._evaluator, 'type-error-generator', index_array)
-        return set()
-
     def py__bool__(self):
         return True
+
+    def get_index_types(self):
+        raise NotImplementedError
 
     def py__class__(self, evaluator):
         gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
@@ -76,6 +74,7 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
         """ returns the content of __iter__ """
         # Directly execute it, because with a normal call to py__call__ a
         # Generator will be returned.
+        raise NotImplementedError
         from jedi.evaluate.representation import FunctionExecution
         f = FunctionExecution(self._evaluator, self.func, self.var_args)
         return f.get_return_types(check_yields=True)
@@ -90,6 +89,7 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
         Exact lookups are used for tuple lookups, which are perfectly fine if
         used with generators.
         """
+        raise NotImplementedError
         return list(self.py__iter__())[index]
 
     def __getattr__(self, name):
@@ -112,7 +112,7 @@ class GeneratorMethod(IterableWrapper):
 
     def py__call__(self, evaluator, params):
         # TODO add TypeError if params are given.
-        return self._generator.iter_content()
+        return unite(self._generator.py__iter__())
 
     def __getattr__(self, name):
         return getattr(self._builtin_func, name)
@@ -152,27 +152,27 @@ class Comprehension(IterableWrapper):
         return helpers.deep_ast_copy(self._get_comprehension().children[0], parent=last_comp)
 
     def py__iter__(self):
-        def nested(input_types, comp_fors, node):
-            iterated = py__iter__(evaluator, input_types, node)
+        def nested(comp_fors):
             comp_for = comp_fors[0]
+            input_node = comp_for.children[3]
+            input_types = evaluator.eval_element(input_node)
+
+            iterated = py__iter__(evaluator, input_types, input_node)
             exprlist = comp_for.children[1]
             for types in iterated:
                 evaluator.predefined_if_name_dict_dict[comp_for] = \
                     unpack_tuple_to_dict(evaluator, types, exprlist)
                 try:
-                    if len(comp_fors) > 1:
-                        for result in nested(types, comp_fors[1:], exprlist):
-                            yield result
-                    else:
-                        yield evaluator.eval_element(self.eval_node())
+                    for result in nested(comp_fors[1:]):
+                        yield result
+                except IndexError:
+                    yield evaluator.eval_element(self.eval_node())
                 finally:
                     del evaluator.predefined_if_name_dict_dict[comp_for]
 
         evaluator = self._evaluator
         comp_fors = list(self._get_comp_for().get_comp_fors())
-        input_node = comp_fors[0].children[3]
-        input_types = evaluator.eval_element(input_node)
-        for result in nested(input_types, comp_fors, input_node):
+        for result in nested(comp_fors):
             yield result
 
     def get_exact_index_types(self, index):
@@ -203,9 +203,11 @@ class ListComprehension(Comprehension, ArrayMixin):
     type = 'list'
 
     def get_index_types(self, evaluator, index):
+        raise NotImplementedError
         return self.iter_content()
 
     def iter_content(self):
+        raise NotImplementedError
         return self._evaluator.eval_element(self.eval_node())
 
     def py__getitem__(self, index):
@@ -219,6 +221,7 @@ class ListComprehension(Comprehension, ArrayMixin):
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
     def iter_content(self):
+        raise NotImplementedError
         return self._evaluator.eval_element(self.eval_node())
 
 
@@ -251,6 +254,7 @@ class Array(IterableWrapper, ArrayMixin):
 
         :param index: A subscriptlist node (or subnode).
         """
+        raise NotImplementedError
         indexes = create_index_types(evaluator, index)
         lookup_done = False
         types = set()
@@ -296,6 +300,7 @@ class Array(IterableWrapper, ArrayMixin):
             return self._evaluator.eval_element(self._items()[index])
 
     def iter_content(self):
+        raise NotImplementedError
         return self.values()
 
     @safe_property
@@ -489,6 +494,7 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
 
 def py__iter__(evaluator, types, node=None):
     debug.dbg('py__iter__')
+    type_iters = []
     for typ in types:
         try:
             iter_method = typ.py__iter__
@@ -497,8 +503,12 @@ def py__iter__(evaluator, types, node=None):
                 analysis.add(evaluator, 'type-error-not-iterable', node,
                              message="TypeError: '%s' object is not iterable" % typ)
         else:
-            for result in iter_method():
-                yield result
+            type_iters.append(iter_method())
+            #for result in iter_method():
+                #yield result
+
+    for t in zip_longest(*type_iters, fillvalue=set()):
+        yield unite(t)
 
 
 def py__iter__types(evaluator, types, node=None):
@@ -696,6 +706,7 @@ class _ArrayInstance(IterableWrapper):
         The index is here just ignored, because of all the appends, etc.
         lists/sets are too complicated too handle that.
         """
+        raise NotImplementedError
         items = set()
         for key, nodes in self.var_args.unpack():
             for node in nodes:

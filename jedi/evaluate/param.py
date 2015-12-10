@@ -383,8 +383,8 @@ def _iterate_star_args(evaluator, array, input_node, func=None):
         for field_stmt in array:  # yield from plz!
             yield field_stmt
     elif isinstance(array, iterable.Generator):
-        for field_stmt in array.iter_content():
-            yield iterable.AlreadyEvaluated([field_stmt])
+        for types in array.py__iter__():
+            yield iterable.AlreadyEvaluated(types)
     elif isinstance(array, Instance) and array.name.get_code() == 'tuple':
         debug.warning('Ignored a tuple *args input %s' % array)
     else:

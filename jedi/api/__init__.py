@@ -631,6 +631,7 @@ class Interpreter(Script):
         if isinstance(user_stmt, tree.Import) or not is_simple_path:
             return super(Interpreter, self)._simple_complete(path, dot, like)
         else:
+            # TODO Remove this branch? The above branch should be fast enough IMO.
             class NamespaceModule(object):
                 def __getattr__(_, name):
                     for n in self.namespaces:
