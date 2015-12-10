@@ -70,15 +70,6 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
         self.func = func
         self.var_args = var_args
 
-    def iter_content(self):
-        """ returns the content of __iter__ """
-        # Directly execute it, because with a normal call to py__call__ a
-        # Generator will be returned.
-        raise NotImplementedError
-        from jedi.evaluate.representation import FunctionExecution
-        f = FunctionExecution(self._evaluator, self.func, self.var_args)
-        return f.get_return_types(check_yields=True)
-
     def py__iter__(self):
         from jedi.evaluate.representation import FunctionExecution
         f = FunctionExecution(self._evaluator, self.func, self.var_args)
@@ -204,11 +195,6 @@ class ListComprehension(Comprehension, ArrayMixin):
 
     def get_index_types(self, evaluator, index):
         raise NotImplementedError
-        return self.iter_content()
-
-    def iter_content(self):
-        raise NotImplementedError
-        return self._evaluator.eval_element(self.eval_node())
 
     def py__getitem__(self, index):
         all_types = list(self.py__iter__())
@@ -220,9 +206,7 @@ class ListComprehension(Comprehension, ArrayMixin):
 
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
-    def iter_content(self):
-        raise NotImplementedError
-        return self._evaluator.eval_element(self.eval_node())
+    pass
 
 
 class Array(IterableWrapper, ArrayMixin):
@@ -298,10 +282,6 @@ class Array(IterableWrapper, ArrayMixin):
             return set([self])
         else:
             return self._evaluator.eval_element(self._items()[index])
-
-    def iter_content(self):
-        raise NotImplementedError
-        return self.values()
 
     @safe_property
     def parent(self):
@@ -700,23 +680,6 @@ class _ArrayInstance(IterableWrapper):
         self._evaluator = evaluator
         self.instance = instance
         self.var_args = instance.var_args
-
-    def iter_content(self):
-        """
-        The index is here just ignored, because of all the appends, etc.
-        lists/sets are too complicated too handle that.
-        """
-        raise NotImplementedError
-        items = set()
-        for key, nodes in self.var_args.unpack():
-            for node in nodes:
-                types = self._evaluator.eval_element(node)
-                items |= py__iter__types(self._evaluator, types, node)
-
-        module = self.var_args.get_parent_until()
-        is_list = str(self.instance.name) == 'list'
-        items |= _check_array_additions(self._evaluator, self.instance, module, is_list)
-        return items
 
     def py__iter__(self):
         try:
