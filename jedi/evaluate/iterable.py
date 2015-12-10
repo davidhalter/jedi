@@ -90,7 +90,7 @@ class GeneratorMethod(IterableWrapper):
         self._builtin_func = builtin_func
         self._generator = generator
 
-    def py__call__(self, evaluator, params):
+    def py__call__(self, params):
         # TODO add TypeError if params are given.
         return unite(self._generator.py__iter__())
 

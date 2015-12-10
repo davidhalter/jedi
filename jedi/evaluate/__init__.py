@@ -402,7 +402,7 @@ class Evaluator(object):
             debug.warning("no execution possible %s", obj)
             return set()
         else:
-            types = func(self, arguments)
+            types = func(arguments)
             debug.dbg('execute result: %s in %s', types, obj)
             return types
 

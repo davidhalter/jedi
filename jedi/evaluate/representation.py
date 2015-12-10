@@ -17,7 +17,7 @@ and others. Here's a list:
 ====================================== ========================================
 **Method**                             **Description**
 -------------------------------------- ----------------------------------------
-py__call__(evaluator, params: Array)   On callable objects, returns types.
+py__call__(params: Array)              On callable objects, returns types.
 py__bool__()                           Returns True/False/None; None means that
                                        there's no certainty.
 py__bases__()                          Returns a list of base classes.
@@ -99,8 +99,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
     @property
     def py__call__(self):
-        def actual(evaluator, params):
-            return evaluator.execute(method, params)
+        def actual(params):
+            return self._evaluator.execute(method, params)
 
         try:
             method = self.get_subscope_by_name('__call__')
@@ -371,13 +371,13 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
         """
         return self.var.is_scope()
 
-    def py__call__(self, evaluator, params):
+    def py__call__(self, params):
         if isinstance(self.var, compiled.CompiledObject):
             # This check is a bit strange, but CompiledObject itself is a bit
             # more complicated than we would it actually like to be.
-            return self.var.py__call__(evaluator, params)
+            return self.var.py__call__(params)
         else:
-            return Function.py__call__(self, evaluator, params)
+            return Function.py__call__(self, params)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)
@@ -455,8 +455,8 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         else:
             return [compiled.create(self._evaluator, object)]
 
-    def py__call__(self, evaluator, params):
-        return set([Instance(evaluator, self, params)])
+    def py__call__(self, params):
+        return set([Instance(self._evaluator, self, params)])
 
     def py__class__(self, evaluator):
         return compiled.create(evaluator, type)
@@ -570,11 +570,11 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 yield names_dict
 
     @Python3Method
-    def py__call__(self, evaluator, params):
+    def py__call__(self, params):
         if self.base.is_generator():
-            return set([iterable.Generator(evaluator, self, params)])
+            return set([iterable.Generator(self._evaluator, self, params)])
         else:
-            return FunctionExecution(evaluator, self, params).get_return_types()
+            return FunctionExecution(self._evaluator, self, params).get_return_types()
 
     def py__class__(self, evaluator):
         return compiled.get_special_object(evaluator, 'FUNCTION_CLASS')
