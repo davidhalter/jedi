@@ -26,6 +26,9 @@ py__iter__()                           Returns a generator of a set of types.
 py__class__()                          Returns the class of an instance.
 py__getitem__(index: int/str)          Returns a a set of types of the index.
                                        Can raise an IndexError/KeyError.
+py__file__()                           Only on modules.
+py__package__()                        Only on modules. For the import system.
+py__path__()                           Only on modules. For the import system.
 ====================================== ========================================
 
 __
