@@ -46,18 +46,13 @@ class CompiledObject(Base):
         self.obj = obj
         self.parent = parent
 
-    @property
-    def py__call__(self):
-        def actual(params):
-            if inspect.isclass(self.obj):
-                from jedi.evaluate.representation import Instance
-                return set([Instance(self._evaluator, self, params)])
-            else:
-                return set(self._execute_function(params))
-
-        # Might raise an AttributeError, which is intentional.
-        self.obj.__call__
-        return actual
+    @CheckAttribute
+    def py__call__(self, params):
+        if inspect.isclass(self.obj):
+            from jedi.evaluate.representation import Instance
+            return set([Instance(self._evaluator, self, params)])
+        else:
+            return set(self._execute_function(params))
 
     @CheckAttribute
     def py__class__(self):
@@ -168,32 +163,22 @@ class CompiledObject(Base):
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
-    @property
-    def py__getitem__(self):
-        if not hasattr(self.obj, '__getitem__'):
-            raise AttributeError('No __getitem__ on %s' % self.obj)
+    @CheckAttribute
+    def py__getitem__(self, index):
+        if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
+            # Get rid of side effects, we won't call custom `__getitem__`s.
+            return set()
 
-        def actual(index):
-            if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
-                # Get rid of side effects, we won't call custom `__getitem__`s.
-                return set()
+        return set([create(self._evaluator, self.obj[index])])
 
-            return set([create(self._evaluator, self.obj[index])])
-        return actual
-
-    @property
+    @CheckAttribute
     def py__iter__(self):
-        if not hasattr(self.obj, '__iter__'):
-            raise AttributeError('No __iter__ on %s' % self.obj)
+        if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
+            # Get rid of side effects, we won't call custom `__getitem__`s.
+            return
 
-        def actual():
-            if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
-                # Get rid of side effects, we won't call custom `__getitem__`s.
-                return
-
-            for part in self.obj:
-                yield set([create(self._evaluator, part)])
-        return actual
+        for part in self.obj:
+            yield set([create(self._evaluator, part)])
 
     @property
     def name(self):
