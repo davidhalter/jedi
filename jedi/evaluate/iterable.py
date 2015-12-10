@@ -72,14 +72,6 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
         f = FunctionExecution(self._evaluator, self.func, self.var_args)
         return f.get_yield_types()
 
-    def get_exact_index_types(self, index):
-        """
-        Exact lookups are used for tuple lookups, which are perfectly fine if
-        used with generators.
-        """
-        raise NotImplementedError
-        return list(self.py__iter__())[index]
-
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
                         'doc', 'docstr', 'get_parent_until',
@@ -162,10 +154,6 @@ class Comprehension(IterableWrapper):
         comp_fors = list(self._get_comp_for().get_comp_fors())
         for result in nested(comp_fors):
             yield result
-
-    def get_exact_index_types(self, index):
-        return list(self.py__iter__())[index]
-        return set([list(self._evaluator.eval_element(self.eval_node()))[index]])
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._atom)
@@ -343,10 +331,6 @@ class FakeSequence(_FakeArray):
     def _items(self):
         return self._sequence_values
 
-    def get_exact_index_types(self, index):
-        value = self._sequence_values[index]
-        return self._evaluator.eval_element(value)
-
 
 class AlreadyEvaluated(frozenset):
     """A simple container to add already evaluated objects to an array."""
@@ -378,9 +362,6 @@ class MergedArray(_FakeArray):
     def __init__(self, evaluator, arrays):
         super(MergedArray, self).__init__(evaluator, arrays, arrays[-1].type)
         self._arrays = arrays
-
-    def get_exact_index_types(self, mixed_index):
-        raise IndexError
 
     def py__iter__(self):
         for array in self._arrays:
