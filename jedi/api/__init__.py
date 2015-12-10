@@ -12,7 +12,7 @@ import warnings
 import sys
 from itertools import chain
 
-from jedi._compatibility import unicode
+from jedi._compatibility import unicode, builtins
 from jedi.parser import Parser, load_grammar
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import tree
@@ -646,7 +646,7 @@ class Interpreter(Script):
 
             paths = path.split('.') if path else []
 
-            namespaces = (NamespaceModule(), BUILTINS)
+            namespaces = (NamespaceModule(), builtins)
             for p in paths:
                 old, namespaces = namespaces, []
                 for n in old:

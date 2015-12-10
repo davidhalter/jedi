@@ -201,17 +201,30 @@ class CompiledObject(Base):
         return result
 
     @property
+    def py__getitem__(self):
+        if not hasattr(self.obj, '__getitem__'):
+            raise AttributeError('No __getitem__ on %s' % self.obj)
+
+        def actual(index):
+            if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
+                # Get rid of side effects, we won't call custom `__getitem__`s.
+                return set()
+
+            return set([create(self._evaluator, self.obj[index])])
+        return actual
+
+    @property
     def py__iter__(self):
         if not hasattr(self.obj, '__iter__'):
             raise AttributeError('No __iter__ on %s' % self.obj)
 
-        def actual(evaluator):
+        def actual():
             if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
                 # Get rid of side effects, we won't call custom `__getitem__`s.
                 return
 
             for part in self.obj:
-                yield set([create(evaluator, part)])
+                yield set([create(self._evaluator, part)])
         return actual
 
     @property
@@ -505,10 +518,7 @@ def get_special_object(evaluator, identifier):
 def compiled_objects_cache(func):
     def wrapper(evaluator, obj, parent=None, module=None):
         # Do a very cheap form of caching here.
-        if parent is None and not inspect.ismodule(obj):
-            parent = create(evaluator, _builtins)
-
-        key = id(obj), id(parent), id(module)
+        key = id(obj)
         try:
             return evaluator.compiled_cache[key][0]
         except KeyError:
@@ -525,6 +535,9 @@ def create(evaluator, obj, parent=None, module=None):
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
+    if parent is None and not inspect.ismodule(obj):
+        parent = create(evaluator, _builtins)
+
     if not inspect.ismodule(obj):
         faked = fake.get_faked(module and module.obj, obj)
         if faked is not None:
