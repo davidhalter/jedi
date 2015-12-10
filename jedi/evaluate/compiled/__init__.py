@@ -53,7 +53,7 @@ class CompiledObject(Base):
                 from jedi.evaluate.representation import Instance
                 return set([Instance(self._evaluator, self, params)])
             else:
-                return set(self._execute_function(self._evaluator, params))
+                return set(self._execute_function(params))
 
         # Might raise an AttributeError, which is intentional.
         self.obj.__call__
@@ -200,7 +200,7 @@ class CompiledObject(Base):
         # might not exist sometimes (raises AttributeError)
         return FakeName(self._cls().obj.__name__, self)
 
-    def _execute_function(self, evaluator, params):
+    def _execute_function(self, params):
         if self.type != 'funcdef':
             return
 
@@ -214,8 +214,8 @@ class CompiledObject(Base):
                     # We want to evaluate everything except None.
                     # TODO do we?
                     continue
-                bltn_obj = create(evaluator, bltn_obj)
-                for result in evaluator.execute(bltn_obj, params):
+                bltn_obj = create(self._evaluator, bltn_obj)
+                for result in self._evaluator.execute(bltn_obj, params):
                     yield result
 
     @property
