@@ -266,8 +266,7 @@ class Evaluator(object):
             # For False/True/None
             if element.value in ('False', 'True', 'None'):
                 types.add(compiled.builtin_from_name(self, element.value))
-            else:
-                raise NotImplementedError
+            # else: print e.g. could be evaluated like this in Python 2.7
         elif element.isinstance(tree.Lambda):
             types = set([er.LambdaWrapper(self, element)])
         elif element.isinstance(er.LambdaWrapper):

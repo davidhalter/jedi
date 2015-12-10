@@ -111,7 +111,7 @@ def _faked(module, obj, name):
 
 
 def get_faked(module, obj, name=None):
-    obj = obj.__class__ if is_class_instance(obj) else obj
+    obj = type(obj) if is_class_instance(obj) else obj
     result = _faked(module, obj, name)
     if result is None or isinstance(result, pt.Class):
         # We're not interested in classes. What we want is functions.
