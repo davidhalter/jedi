@@ -20,7 +20,7 @@ It is important to note that:
 1. Array modfications work only in the current module.
 2. Jedi only checks Array additions; ``list.pop``, etc are ignored.
 """
-from jedi.common import unite, ignored, safe_property
+from jedi.common import unite, safe_property
 from jedi import debug
 from jedi import settings
 from jedi._compatibility import use_metaclass, unicode, zip_longest
@@ -53,9 +53,6 @@ class GeneratorMixin(object):
 
     def py__bool__(self):
         return True
-
-    def get_index_types(self):
-        raise NotImplementedError
 
     def py__class__(self, evaluator):
         gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
@@ -193,9 +190,6 @@ class ArrayMixin(object):
 class ListComprehension(Comprehension, ArrayMixin):
     type = 'list'
 
-    def get_index_types(self, evaluator, index):
-        raise NotImplementedError
-
     def py__getitem__(self, index):
         all_types = list(self.py__iter__())
         return all_types[index]
@@ -230,31 +224,6 @@ class Array(IterableWrapper, ArrayMixin):
     @property
     def name(self):
         return helpers.FakeName(self.type, parent=self)
-
-    @memoize_default()
-    def get_index_types(self, evaluator, index=()):
-        """
-        Get the types of a specific index or all, if not given.
-
-        :param index: A subscriptlist node (or subnode).
-        """
-        raise NotImplementedError
-        indexes = create_index_types(evaluator, index)
-        lookup_done = False
-        types = set()
-        for index in indexes:
-            if isinstance(index, Slice):
-                types.add(self)
-                lookup_done = True
-            elif isinstance(index, compiled.CompiledObject) \
-                    and isinstance(index.obj, (int, str, unicode)):
-                with ignored(KeyError, IndexError, TypeError):
-                    # TODO REMOVE the ignores. this should not be the case,
-                    # because it tends to swallow errors.
-                    types |= self.get_exact_index_types(index.obj)
-                    lookup_done = True
-
-        return types if lookup_done else self.values()
 
     @memoize_default()
     def values(self):
@@ -296,6 +265,7 @@ class Array(IterableWrapper, ArrayMixin):
             raise AttributeError('Strange access on %s: %s.' % (self, name))
         return getattr(self.atom, name)
 
+    # @memoize_default()
     def py__iter__(self):
         """
         While values returns the possible values for any array field, this

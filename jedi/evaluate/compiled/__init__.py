@@ -168,38 +168,6 @@ class CompiledObject(Base):
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
-    def get_index_types(self, evaluator, index_array=()):
-        # If the object doesn't have `__getitem__`, just raise the
-        # AttributeError.
-        raise NotImplementedError
-        if not hasattr(self.obj, '__getitem__'):
-            debug.warning('Tried to call __getitem__ on non-iterable.')
-            return set()
-        if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
-            # Get rid of side effects, we won't call custom `__getitem__`s.
-            return set()
-
-        result = set()
-        from jedi.evaluate.iterable import create_indexes_or_slices
-        for typ in create_indexes_or_slices(evaluator, index_array):
-            index = None
-            try:
-                index = typ.obj
-                new = self.obj[index]
-            except (KeyError, IndexError, TypeError, AttributeError):
-                # Just try, we don't care if it fails, except for slices.
-                if isinstance(index, slice):
-                    result.add(self)
-            else:
-                result.add(CompiledObject(new))
-        if not result:
-            try:
-                for obj in self.obj:
-                    result.add(CompiledObject(obj))
-            except TypeError:
-                pass  # self.obj maynot have an __iter__ method.
-        return result
-
     @property
     def py__getitem__(self):
         if not hasattr(self.obj, '__getitem__'):
