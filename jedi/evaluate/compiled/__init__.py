@@ -68,8 +68,8 @@ class CompiledObject(Base):
         return tuple(create(self._evaluator, cls, self.parent) for cls in self.obj.__mro__)
 
     @CheckAttribute
-    def py__bases__(self, evaluator):
-        return tuple(create(evaluator, cls) for cls in self.obj.__bases__)
+    def py__bases__(self):
+        return tuple(create(self._evaluator, cls) for cls in self.obj.__bases__)
 
     def py__bool__(self):
         return bool(self.obj)

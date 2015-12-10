@@ -20,7 +20,7 @@ and others. Here's a list:
 py__call__(evaluator, params: Array)   On callable objects, returns types.
 py__bool__()                           Returns True/False/None; None means that
                                        there's no certainty.
-py__bases__(evaluator)                 Returns a list of base classes.
+py__bases__()                          Returns a list of base classes.
 py__mro__()                            Returns a list of classes (the mro).
 py__iter__()                           Returns a generator of a set of types.
 py__getitem__(index: int/str)          Returns a a set of types of the index.
@@ -422,7 +422,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         mro = [self]
         # TODO Do a proper mro resolution. Currently we are just listing
         # classes. However, it's a complicated algorithm.
-        for cls in self.py__bases__(self._evaluator):
+        for cls in self.py__bases__():
             # TODO detect for TypeError: duplicate base class str,
             # e.g.  `class X(str, str): pass`
             try:
@@ -447,13 +447,13 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         return tuple(mro)
 
     @memoize_default(default=())
-    def py__bases__(self, evaluator):
+    def py__bases__(self):
         arglist = self.base.get_super_arglist()
         if arglist:
             args = param.Arguments(self._evaluator, arglist)
             return list(chain.from_iterable(args.eval_args()))
         else:
-            return [compiled.create(evaluator, object)]
+            return [compiled.create(self._evaluator, object)]
 
     def py__call__(self, evaluator, params):
         return set([Instance(evaluator, self, params)])
