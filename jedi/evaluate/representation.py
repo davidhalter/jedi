@@ -23,6 +23,7 @@ py__bool__()                           Returns True/False/None; None means that
 py__bases__()                          Returns a list of base classes.
 py__mro__()                            Returns a list of classes (the mro).
 py__iter__()                           Returns a generator of a set of types.
+py__class__()                          Returns the class of an instance.
 py__getitem__(index: int/str)          Returns a a set of types of the index.
                                        Can raise an IndexError/KeyError.
 ====================================== ========================================
@@ -110,7 +111,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
         return actual
 
-    def py__class__(self, evaluator):
+    def py__class__(self):
         return self.base
 
     def py__bool__(self):
@@ -458,8 +459,8 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def py__call__(self, params):
         return set([Instance(self._evaluator, self, params)])
 
-    def py__class__(self, evaluator):
-        return compiled.create(evaluator, type)
+    def py__class__(self):
+        return compiled.create(self._evaluator, type)
 
     @property
     def params(self):
@@ -576,8 +577,8 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         else:
             return FunctionExecution(self._evaluator, self, params).get_return_types()
 
-    def py__class__(self, evaluator):
-        return compiled.get_special_object(evaluator, 'FUNCTION_CLASS')
+    def py__class__(self):
+        return compiled.get_special_object(self._evaluator, 'FUNCTION_CLASS')
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
@@ -916,8 +917,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
 
         return names
 
-    def py__class__(self, evaluator):
-        return compiled.get_special_object(evaluator, 'MODULE_CLASS')
+    def py__class__(self):
+        return compiled.get_special_object(self._evaluator, 'MODULE_CLASS')
 
     def __getattr__(self, name):
         return getattr(self._module, name)

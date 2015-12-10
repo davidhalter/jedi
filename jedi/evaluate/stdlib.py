@@ -125,7 +125,7 @@ def builtins_type(evaluator, objects, bases, dicts):
         # It's a type creation... maybe someday...
         return set()
     else:
-        return set([o.py__class__(evaluator) for o in objects])
+        return set([o.py__class__() for o in objects])
 
 
 class SuperInstance(er.Instance):
@@ -178,7 +178,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
     bool_results = set([])
     for o in objects:
         try:
-            mro_func = o.py__class__(evaluator).py__mro__
+            mro_func = o.py__class__().py__mro__
         except AttributeError:
             # This is temporary. Everything should have a class attribute in
             # Python?! Maybe we'll leave it here, because some numpy objects or

@@ -60,8 +60,8 @@ class CompiledObject(Base):
         return actual
 
     @CheckAttribute
-    def py__class__(self, evaluator):
-        return create(evaluator, self.obj.__class__, parent=self.parent)
+    def py__class__(self):
+        return create(self._evaluator, self.obj.__class__, parent=self.parent)
 
     @CheckAttribute
     def py__mro__(self):

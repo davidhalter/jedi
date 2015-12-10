@@ -54,9 +54,9 @@ class GeneratorMixin(object):
     def py__bool__(self):
         return True
 
-    def py__class__(self, evaluator):
+    def py__class__(self):
         gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
-        return gen_obj.py__class__(evaluator)
+        return gen_obj.py__class__()
 
 
 class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
@@ -171,8 +171,8 @@ class ArrayMixin(object):
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
 
-    def py__class__(self, evaluator):
-        return compiled.builtin_from_name(evaluator, self.type)
+    def py__class__(self):
+        return compiled.builtin_from_name(self._evaluator, self.type)
 
 
 class ListComprehension(Comprehension, ArrayMixin):
