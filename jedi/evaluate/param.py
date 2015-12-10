@@ -372,6 +372,7 @@ def get_params(evaluator, func, var_args):
                     # print('\t\tnonkw', non_kw_param.parent.var_args.argument_node, )
                     if origin_args not in [f.parent.parent for f in first_values]:
                         continue
+            print(v)
             analysis.add(evaluator, 'type-error-too-many-arguments',
                          v, message=m)
     return param_names
@@ -380,8 +381,9 @@ def get_params(evaluator, func, var_args):
 def _iterate_star_args(evaluator, array, input_node, func=None):
     from jedi.evaluate.representation import Instance
     if isinstance(array, iterable.Array):
-        for field_stmt in array:  # yield from plz!
-            yield field_stmt
+        # TODO ._items is not the call we want here. Replace in the future.
+        for node in array._items():
+            yield node
     elif isinstance(array, iterable.Generator):
         for types in array.py__iter__():
             yield iterable.AlreadyEvaluated(types)

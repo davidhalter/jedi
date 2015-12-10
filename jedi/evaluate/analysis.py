@@ -5,6 +5,8 @@ from jedi import debug
 from jedi.parser import tree
 from jedi.evaluate.compiled import CompiledObject
 
+from jedi.common import unite
+
 
 CODES = {
     'attribute-error': (1, AttributeError, 'Potential AttributeError.'),
@@ -160,8 +162,8 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
                     from jedi.evaluate import iterable
                     if isinstance(cls, iterable.Array) and cls.type == 'tuple':
                         # multiple exceptions
-                        for c in cls.values():
-                            if check_match(c, exception):
+                        for typ in unite(cls.py__iter__()):
+                            if check_match(typ, exception):
                                 return True
                     else:
                         if check_match(cls, exception):

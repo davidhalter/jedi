@@ -17,6 +17,7 @@ from jedi._compatibility import unicode, u
 from jedi.parser import tree
 from jedi import debug
 from jedi import common
+from jedi.common import unite
 from jedi import settings
 from jedi.evaluate import representation as er
 from jedi.evaluate import dynamic
@@ -467,9 +468,12 @@ def _check_isinstance_type(evaluator, element, search_name):
         return set()
 
     result = set()
-    for typ in evaluator.eval_element(classes):
-        for typ in (typ.values() if isinstance(typ, iterable.Array) else [typ]):
-            result |= evaluator.execute(typ)
+    for cls_or_tup in evaluator.eval_element(classes):
+        if isinstance(cls_or_tup, iterable.Array) and cls_or_tup.type == 'tuple':
+            for typ in unite(cls_or_tup.py__iter__()):
+                result |= evaluator.execute(typ)
+        else:
+            result |= evaluator.execute(cls_or_tup)
     return result
 
 

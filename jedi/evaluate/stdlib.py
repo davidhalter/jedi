@@ -225,7 +225,7 @@ def collections_namedtuple(evaluator, obj, arguments):
         fields = _fields.obj.replace(',', ' ').split()
     elif isinstance(_fields, iterable.Array):
         try:
-            fields = [v.obj for v in _fields.values()]
+            fields = [v.obj for v in unite(_fields.py__iter__())]
         except AttributeError:
             return set()
     else:

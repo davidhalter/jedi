@@ -226,12 +226,6 @@ class Array(IterableWrapper, ArrayMixin):
         return helpers.FakeName(self.type, parent=self)
 
     @memoize_default()
-    def values(self):
-        result = unite(self._evaluator.eval_element(v) for v in self._values())
-        result |= check_array_additions(self._evaluator, self)
-        return result
-
-    @memoize_default()
     def dict_values(self):
         return unite(self._evaluator.eval_element(v) for v in self._values())
 
@@ -321,9 +315,6 @@ class Array(IterableWrapper, ArrayMixin):
         else:
             return [array_node]
 
-    def __iter__(self):
-        return iter(self._items())
-
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.atom)
 
@@ -396,15 +387,12 @@ class MergedArray(_FakeArray):
             for types in array.py__iter__():
                 yield types
 
-    def values(self):
-        return unite((a.values() for a in self._arrays))
-
     def py__getitem__(self, index):
         return unite(self.py__iter__())
 
-    def __iter__(self):
+    def _items(self):
         for array in self._arrays:
-            for a in array:
+            for a in array._items():
                 yield a
 
     def __len__(self):
