@@ -570,7 +570,7 @@ class Script(object):
                         # Iterate tuples.
                         unpack_tuple_to_dict(self._evaluator, types, testlist)
                 else:
-                    try_iter_content(self._evaluator.eval_element(node))
+                    try_iter_content(self._evaluator.goto_definition(node))
 
             ana = [a for a in self._evaluator.analysis if self.path == a.path]
             return sorted(set(ana), key=lambda x: x.line)

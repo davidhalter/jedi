@@ -251,7 +251,6 @@ class NameFinder(object):
     def _names_to_types(self, names, search_global):
         types = set()
 
-        debug.warning('start nt %s', names)
         # Add isinstance and other if/assert knowledge.
         if isinstance(self.name_str, tree.Name):
             # Ignore FunctionExecution parents for now.

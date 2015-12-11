@@ -144,6 +144,51 @@ class Base(object):
             scope = scope.parent
         return scope
 
+    def get_definition(self):
+        scope = self
+        while scope.parent is not None:
+            parent = scope.parent
+            if scope.isinstance(Node, Name) and parent.type != 'simple_stmt':
+                if scope.type == 'testlist_comp':
+                    try:
+                        if isinstance(scope.children[1], CompFor):
+                            return scope.children[1]
+                    except IndexError:
+                        pass
+                scope = parent
+            else:
+                break
+        return scope
+
+    def assignment_indexes(self):
+        """
+        Returns an array of tuple(int, node) of the indexes that are used in
+        tuple assignments.
+
+        For example if the name is ``y`` in the following code::
+
+            x, (y, z) = 2, ''
+
+        would result in ``[(1, xyz_node), (0, yz_node)]``.
+        """
+        indexes = []
+        node = self.parent
+        compare = self
+        while node is not None:
+            if is_node(node, 'testlist_comp', 'testlist_star_expr', 'exprlist'):
+                for i, child in enumerate(node.children):
+                    if child == compare:
+                        indexes.insert(0, (int(i / 2), node))
+                        break
+                else:
+                    raise LookupError("Couldn't find the assignment.")
+            elif isinstance(node, (ExprStmt, CompFor)):
+                break
+
+            compare = node
+            node = node.parent
+        return indexes
+
     def is_scope(self):
         # Default is not being a scope. Just inherit from Scope.
         return False
@@ -288,22 +333,6 @@ class Name(Leaf):
         return "<%s: %s@%s,%s>" % (type(self).__name__, self.value,
                                    self.start_pos[0], self.start_pos[1])
 
-    def get_definition(self):
-        scope = self
-        while scope.parent is not None:
-            parent = scope.parent
-            if scope.isinstance(Node, Name) and parent.type != 'simple_stmt':
-                if scope.type == 'testlist_comp':
-                    try:
-                        if isinstance(scope.children[1], CompFor):
-                            return scope.children[1]
-                    except IndexError:
-                        pass
-                scope = parent
-            else:
-                break
-        return scope
-
     def is_definition(self):
         stmt = self.get_definition()
         if stmt.type in ('funcdef', 'classdef', 'file_input', 'param'):
@@ -316,35 +345,6 @@ class Name(Leaf):
             return stmt.type in ('expr_stmt', 'import_name', 'import_from',
                                  'comp_for', 'with_stmt') \
                 and self in stmt.get_defined_names()
-
-    def assignment_indexes(self):
-        """
-        Returns an array of tuple(int, node) of the indexes that are used in
-        tuple assignments.
-
-        For example if the name is ``y`` in the following code::
-
-            x, (y, z) = 2, ''
-
-        would result in ``[(1, xyz_node), (0, yz_node)]``.
-        """
-        indexes = []
-        node = self.parent
-        compare = self
-        while node is not None:
-            if is_node(node, 'testlist_comp', 'testlist_star_expr', 'exprlist'):
-                for i, child in enumerate(node.children):
-                    if child == compare:
-                        indexes.insert(0, (int(i / 2), node))
-                        break
-                else:
-                    raise LookupError("Couldn't find the assignment.")
-            elif isinstance(node, (ExprStmt, CompFor)):
-                break
-
-            compare = node
-            node = node.parent
-        return indexes
 
     def nodes_to_execute(self, last_added=False):
         if last_added is False:
@@ -500,7 +500,8 @@ class Node(BaseNode):
     _IGNORE_EXECUTE_NODES = set([
         'suite', 'subscriptlist', 'subscript', 'simple_stmt', 'sliceop',
         'testlist_comp', 'dictorsetmaker', 'trailer', 'decorators',
-        'decorated', 'arglist', 'argument'
+        'decorated', 'arglist', 'argument', 'exprlist', 'testlist',
+        'testlist_safe', 'testlist1'
     ])
 
     def __init__(self, type, children):
@@ -1023,12 +1024,6 @@ class WhileStmt(Flow):
 class ForStmt(Flow):
     type = 'for_stmt'
     __slots__ = ()
-
-    def nodes_to_execute(self, last_added=False):
-        # We shouldn't include the definitions.
-        for child in self.children[3:]:
-            for node_to_execute in child.nodes_to_execute():
-                yield node_to_execute
 
     def get_input_node(self):
         """

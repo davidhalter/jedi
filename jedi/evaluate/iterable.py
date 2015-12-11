@@ -452,7 +452,6 @@ def py__getitem__(evaluator, types, index, node):
             if isinstance(typ, Array) and typ.type == 'dict':
                 types.remove(typ)
                 result |= typ.dict_values()
-        print('ITER', types, py__iter__types(evaluator, types))
         return result | py__iter__types(evaluator, types)
 
     for typ in types:
