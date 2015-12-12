@@ -763,14 +763,16 @@ class Class(ClassOrFunc):
             children = arglist.children
         except AttributeError:
             if arglist is not None:
-                yield arglist
+                for node_to_execute in arglist.nodes_to_execute():
+                    yield node_to_execute
         else:
             for argument in children:
                 if argument.type == 'argument':
                     # metaclass= or list comprehension or */**
                     raise NotImplementedError('Metaclasses not implemented')
                 else:
-                    yield argument
+                    for node_to_execute in argument.nodes_to_execute():
+                        yield node_to_execute
 
         # care for the class suite:
         for node in self.children[self.children.index(':'):]:
