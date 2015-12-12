@@ -392,16 +392,20 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
                            'testlist_star_expr'):
         dct = {}
         parts = iter(exprlist.children[::2])
-        for iter_types in py__iter__(evaluator, types, exprlist):
+        n = 1
+        for iter_types in enumerate(py__iter__(evaluator, types, exprlist)):
+            n += 1
             try:
                 part = next(parts)
             except StopIteration:
-                raise NotImplementedError
+                analysis.add(evaluator, 'value-error-too-many-values', part,
+                             message="ValueError: too many values to unpack (expected %s)" % n)
             else:
                 dct.update(unpack_tuple_to_dict(evaluator, iter_types, part))
         has_parts = next(parts, None)
         if has_parts is not None:
-            raise NotImplementedError
+            analysis.add(evaluator, 'value-error-too-few-values', has_parts,
+                         message="ValueError: need more than %s values to unpack" % n)
         return dct
     elif exprlist.type == 'power':
         # Something like ``arr[x], var = ...``.

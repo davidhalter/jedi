@@ -28,3 +28,14 @@ tuple(a + 3 for a in [''])
 
 #! 19 name-error
 (1 for a in [1] if NOT_DEFINED)
+
+# ----------
+# unbalanced sides.
+# ----------
+
+# ok
+(1 for a, b in [(1, 2)])
+#! 13 value-error-too-few-values
+(1 for a, b, c in [(1, 2)])
+#! 10 value-error-too-many-values
+(1 for a, b in [(1, 2, 3)])

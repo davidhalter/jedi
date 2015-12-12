@@ -22,6 +22,8 @@ CODES = {
     'type-error-not-iterable': (11, TypeError, None),
     'type-error-isinstance': (12, TypeError, None),
     'type-error-not-subscriptable': (13, TypeError, None),
+    'value-error-too-many-values': (13, ValueError, None),
+    'value-error-too-few-values': (13, ValueError, None),
 }
 
 
