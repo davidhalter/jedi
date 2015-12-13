@@ -571,6 +571,7 @@ class Script(object):
                         unpack_tuple_to_dict(self._evaluator, types, testlist)
                 else:
                     try_iter_content(self._evaluator.goto_definition(node))
+                self._evaluator.reset_recursion_limitations()
 
             ana = [a for a in self._evaluator.analysis if self.path == a.path]
             return sorted(set(ana), key=lambda x: x.line)

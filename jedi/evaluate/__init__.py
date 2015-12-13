@@ -86,8 +86,6 @@ class Evaluator(object):
         # To memorize modules -> equals `sys.modules`.
         self.modules = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `compiled.create()`
-        self.recursion_detector = recursion.RecursionDetector(self)
-        self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
         self.analysis = []
         self.predefined_if_name_dict_dict = {}
         self.is_analysis = False
@@ -100,8 +98,14 @@ class Evaluator(object):
         except ValueError:
             pass
 
+        self.reset_recursion_limitations()
+
         # Constants
         self.BUILTINS = compiled.get_special_object(self, 'BUILTINS')
+
+    def reset_recursion_limitations(self):
+        self.recursion_detector = recursion.RecursionDetector(self)
+        self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
     def wrap(self, element):
         if isinstance(element, tree.Class):

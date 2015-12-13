@@ -263,9 +263,7 @@ class Array(IterableWrapper, ArrayMixin):
             for _ in types:
                 yield types
         else:
-            iterate = self._items()
-
-            for value in iterate:
+            for value in self._items():
                 yield self._evaluator.eval_element(value)
 
             additions = check_array_additions(self._evaluator, self)
@@ -392,8 +390,8 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
                            'testlist_star_expr'):
         dct = {}
         parts = iter(exprlist.children[::2])
-        n = 1
-        for iter_types in enumerate(py__iter__(evaluator, types, exprlist)):
+        n = 0
+        for iter_types in py__iter__(evaluator, types, exprlist):
             n += 1
             try:
                 part = next(parts)
@@ -403,7 +401,7 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
             else:
                 dct.update(unpack_tuple_to_dict(evaluator, iter_types, part))
         has_parts = next(parts, None)
-        if has_parts is not None:
+        if n > 0 and has_parts is not None:
             analysis.add(evaluator, 'value-error-too-few-values', has_parts,
                          message="ValueError: need more than %s values to unpack" % n)
         return dct

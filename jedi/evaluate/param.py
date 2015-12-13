@@ -372,7 +372,6 @@ def get_params(evaluator, func, var_args):
                     # print('\t\tnonkw', non_kw_param.parent.var_args.argument_node, )
                     if origin_args not in [f.parent.parent for f in first_values]:
                         continue
-            print(v)
             analysis.add(evaluator, 'type-error-too-many-arguments',
                          v, message=m)
     return param_names
