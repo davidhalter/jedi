@@ -580,6 +580,21 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         else:
             return FunctionExecution(self._evaluator, self, params).get_return_types()
 
+    @memoize_default()
+    def py__annotations__(self):
+        parser_func = self.base
+        return_annotation = parser_func.annotation()
+        if return_annotation:
+            dct = {'return': self._evaluator.eval_element(return_annotation)}
+        else:
+            dct = {}
+        for function_param in parser_func.params:
+            param_annotation = function_param.annotation()
+            if param_annotation:
+                dct[function_param.name.value] = \
+                    self._evaluator.eval_element(param_annotation)
+        return dct
+
     def py__class__(self):
         return compiled.get_special_object(self._evaluator, 'FUNCTION_CLASS')
 
@@ -639,6 +654,9 @@ class FunctionExecution(Executed):
         else:
             returns = self.returns
             types = set(docstrings.find_return_types(self._evaluator, func))
+            annotations = func.py__annotations__().get("return", [])
+            types |= set(chain.from_iterable(
+                self._evaluator.execute(d) for d in annotations))
 
         for r in returns:
             check = flow_analysis.break_check(self._evaluator, self, r)

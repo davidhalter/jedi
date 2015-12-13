@@ -866,7 +866,9 @@ class Function(ClassOrFunc):
 
     def annotation(self):
         try:
-            return self.children[6]  # 6th element: def foo(...) -> bar
+            if self.children[3] == "->":
+                return self.children[4]
+            assert self.children[3] == ":"
         except IndexError:
             return None
 
