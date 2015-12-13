@@ -1,5 +1,7 @@
 """ Pep-0484 type hinting """
 
+# python >= 3.2
+
 # -----------------
 # simple classes
 # -----------------
