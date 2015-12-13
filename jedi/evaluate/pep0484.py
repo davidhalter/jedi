@@ -7,8 +7,8 @@ as annotations in future python versions.
 The (initial / probably incomplete) implementation todo list for pep-0484:
 v Function parameter annotations with builtin/custom type classes
 v Function returntype annotations with builtin/custom type classes
-x Function parameter annotations with strings (forward reference)
-x Function return type annotations with strings (forward reference)
+v Function parameter annotations with strings (forward reference)
+v Function return type annotations with strings (forward reference)
 x Local variable type hints
 x Assigned types: `Url = str\ndef get(url:Url) -> str:`
 x Type hints in `with` statements

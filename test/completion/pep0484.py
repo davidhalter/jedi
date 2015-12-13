@@ -68,3 +68,23 @@ def return_annotation_and_docstring_different() -> str:
 
 #? str()
 return_annotation_and_docstring_different()
+
+
+def annotation_forward_reference(b: "B") -> "B":
+    #? B()
+    b
+
+#? B()
+annotation_forward_reference(1)
+
+class B:
+    pass
+
+
+class SelfReference:
+    def test(x: "SelfReference") -> "SelfReference":
+        #? SelfReference()
+        x
+
+#? SelfReference()
+SelfReference().test()

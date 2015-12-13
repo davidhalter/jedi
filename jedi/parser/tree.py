@@ -41,6 +41,7 @@ import textwrap
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, use_metaclass, unicode)
 from jedi import cache
+import ast
 
 
 def is_node(node, *symbol_names):
@@ -50,6 +51,19 @@ def is_node(node, *symbol_names):
         return False
     else:
         return type in symbol_names
+
+
+def _fix_forward_reference(annotation):
+    if isinstance(annotation, String):
+        newannotation = Name(
+            annotation.position_modifier,
+            ast.literal_eval(annotation.value),
+            annotation.start_pos,
+            annotation.prefix)
+        newannotation.parent = annotation.parent
+    else:
+        newannotation = annotation
+    return newannotation
 
 
 class PositionModifier(object):
@@ -865,9 +879,12 @@ class Function(ClassOrFunc):
         return bool(self.yields)
 
     def annotation(self):
+        if self.children[0] == "lambda":
+            # lambda functions have no annotation
+            return None
         try:
             if self.children[3] == "->":
-                return self.children[4]
+                return _fix_forward_reference(self.children[4])
             assert self.children[3] == ":"
         except IndexError:
             return None
@@ -1409,7 +1426,8 @@ class Param(BaseNode):
         if is_node(tfpdef, 'tfpdef'):
             assert tfpdef.children[1] == ":"
             assert len(tfpdef.children) == 3
-            return tfpdef.children[2]
+            annotation = tfpdef.children[2]
+            return _fix_forward_reference(annotation)
         else:
             return None
 
