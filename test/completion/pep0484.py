@@ -7,7 +7,13 @@ class A():
     pass
 
 
-def function_parameters(a: A, b, c: str, d: int=4):
+def function_parameters(a: A, b, c: str, d: int, e: str, f: str, g: int=4):
+    """
+    :param e: if docstring and annotation agree, only one should be returned
+    :type e: str
+    :param f: if docstring and annotation disagree, both should be returned
+    :type f: int
+    """
     #? A()
     a
     #?
@@ -16,6 +22,12 @@ def function_parameters(a: A, b, c: str, d: int=4):
     c
     #? int()
     d
+    #? str()
+    e
+    #? int() str()
+    f
+    # int()
+    g
 
 
 def return_unspecified():

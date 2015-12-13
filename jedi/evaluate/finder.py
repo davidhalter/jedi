@@ -388,15 +388,11 @@ def _eval_param(evaluator, param, scope):
             and func.instance.is_generated and str(func.name) == '__init__':
         param = func.var.params[param.position_nr]
 
-    # Add pep0484 type hints
+    # Add pep0484 and docstring knowledge.
     pep0484_hints = pep0484.follow_param(evaluator, param)
-    if pep0484_hints:
-        return pep0484_hints
-
-    # Add docstring knowledge.
     doc_params = docstrings.follow_param(evaluator, param)
-    if doc_params:
-        return doc_params
+    if pep0484_hints or doc_params:
+        return list(set(pep0484_hints) | set(doc_params))
 
     if isinstance(param, ExecutedParam):
         return res_new | param.eval(evaluator)
