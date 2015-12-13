@@ -23,6 +23,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import dynamic
 from jedi.evaluate import compiled
 from jedi.evaluate import docstrings
+from jedi.evaluate import pep0484
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import analysis
@@ -386,6 +387,11 @@ def _eval_param(evaluator, param, scope):
     if isinstance(func, er.InstanceElement) \
             and func.instance.is_generated and str(func.name) == '__init__':
         param = func.var.params[param.position_nr]
+
+    # Add pep0484 type hints
+    pep0484_hints = pep0484.follow_param(evaluator, param)
+    if pep0484_hints:
+        return pep0484_hints
 
     # Add docstring knowledge.
     doc_params = docstrings.follow_param(evaluator, param)
