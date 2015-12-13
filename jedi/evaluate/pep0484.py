@@ -13,6 +13,7 @@ x Local variable type hints
 x Assigned types: `Url = str\ndef get(url:Url) -> str:`
 x Type hints in `with` statements
 x Stub files support
+x support `@no_type_check` and `@no_type_check_decorator`
 """
 
 from itertools import chain
@@ -22,12 +23,9 @@ from jedi.evaluate.cache import memoize_default
 
 @memoize_default(None, evaluator_is_first_arg=True)
 def follow_param(evaluator, param):
-    # annotation is in param.children[0] if present
-    # either this firstchild is a Name (if no annotation is present) or a Node
-    if hasattr(param.children[0], "children"):
-        assert len(param.children[0].children) == 3 and \
-            param.children[0].children[1] == ":"
-        definitions = evaluator.eval_element(param.children[0].children[2])
+    annotation = param.annotation()
+    if annotation:
+        definitions = evaluator.eval_element(annotation)
         return list(chain.from_iterable(
             evaluator.execute(d) for d in definitions))
     else:

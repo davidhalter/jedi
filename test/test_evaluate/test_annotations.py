@@ -8,8 +8,8 @@ import pytest
 def test_simple_annotations():
     """
     Annotations only exist in Python 3.
-    At the moment we ignore them. So they should be parsed and not interfere
-    with anything.
+    If annotations adhere to PEP-0484, we use them (they override inference),
+    else they are parsed but ignored
     """
 
     source = dedent("""\
@@ -27,3 +27,11 @@ def test_simple_annotations():
 
     annot_ret('')""")
     assert [d.name for d in jedi.Script(source, ).goto_definitions()] == ['str']
+
+    source = dedent("""\
+    def annot(a:int):
+        return a
+
+    annot('')""")
+
+    assert [d.name for d in jedi.Script(source, ).goto_definitions()] == ['int']

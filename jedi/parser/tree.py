@@ -1403,8 +1403,13 @@ class Param(BaseNode):
             return None
 
     def annotation(self):
-        # Generate from tfpdef.
-        raise NotImplementedError
+        tfpdef = self._tfpdef()
+        if is_node(tfpdef, 'tfpdef'):
+            assert tfpdef.children[1] == ":"
+            assert len(tfpdef.children) == 3
+            return tfpdef.children[2]
+        else:
+            return None
 
     def _tfpdef(self):
         """
