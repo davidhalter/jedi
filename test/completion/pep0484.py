@@ -110,3 +110,13 @@ class SelfReference:
 
 #? SelfReference()
 SelfReference().test_method()
+
+def function_with_non_pep_0484_annotation(x: "I can put anything here", y: 3 + 3) -> int("42"):
+    # infers int from function call
+    #? int()
+    x
+    # infers str from function call
+    #? str()
+    y
+#?
+function_with_non_pep_0484_annotation(1, "force string")
