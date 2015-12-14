@@ -17,13 +17,23 @@ x support `@no_type_check` and `@no_type_check_decorator`
 """
 
 from itertools import chain
-
+from jedi.parser import Parser, load_grammar
 from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.compiled import CompiledObject
 
 
 def _evaluate_for_annotation(evaluator, annotation):
     if annotation is not None:
-        definitions = evaluator.eval_element(annotation)
+        definitions = set()
+        for definition in evaluator.eval_element(annotation):
+            if (isinstance(definition, CompiledObject) and
+                    isinstance(definition.obj, str)):
+                p = Parser(load_grammar(), definition.obj)
+                element = p.module.children[0].children[0]
+                element.parent = annotation.parent
+                definitions |= evaluator.eval_element(element)
+            else:
+                definitions.add(definition)
         return list(chain.from_iterable(
             evaluator.execute(d) for d in definitions))
     else:
