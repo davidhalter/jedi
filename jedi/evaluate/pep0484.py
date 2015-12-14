@@ -21,12 +21,22 @@ from itertools import chain
 from jedi.evaluate.cache import memoize_default
 
 
-@memoize_default(None, evaluator_is_first_arg=True)
-def follow_param(evaluator, param):
-    annotation = param.annotation()
-    if annotation:
+def _evaluate_for_annotation(evaluator, annotation):
+    if annotation is not None:
         definitions = evaluator.eval_element(annotation)
         return list(chain.from_iterable(
             evaluator.execute(d) for d in definitions))
     else:
         return []
+
+
+@memoize_default(None, evaluator_is_first_arg=True)
+def follow_param(evaluator, param):
+    annotation = param.annotation()
+    return _evaluate_for_annotation(evaluator, annotation)
+
+
+@memoize_default(None, evaluator_is_first_arg=True)
+def find_return_types(evaluator, func):
+    annotation = func.py__annotations__().get("return", None)
+    return _evaluate_for_annotation(evaluator, annotation)
