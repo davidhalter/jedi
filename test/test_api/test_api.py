@@ -9,13 +9,6 @@ from jedi._compatibility import is_py3
 from pytest import raises
 
 
-def _clear_last_exception_fields_in_sys():
-    import sys
-    sys.last_type = None
-    sys.last_value = None
-    sys.last_traceback = None
-
-
 def test_preload_modules():
     def check_loaded(*modules):
         # +1 for None module (currently used)
@@ -27,7 +20,6 @@ def test_preload_modules():
     temp_cache, cache.parser_cache = cache.parser_cache, {}
     parser_cache = cache.parser_cache
 
-    _clear_last_exception_fields_in_sys()
     api.preload_module('sys')
     check_loaded()  # compiled (c_builtin) modules shouldn't be in the cache.
     api.preload_module('json', 'token')
