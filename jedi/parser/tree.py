@@ -879,9 +879,6 @@ class Function(ClassOrFunc):
         return bool(self.yields)
 
     def annotation(self):
-        if self.children[0] == "lambda":
-            # lambda functions have no annotation
-            return None
         try:
             if self.children[3] == "->":
                 return _fix_forward_reference(self.children[4])
@@ -963,6 +960,10 @@ class Lambda(Function):
 
     def is_generator(self):
         return False
+
+    def annotation(self):
+        # lambda functions do not support annotations
+        return None
 
     @property
     def yields(self):
