@@ -401,7 +401,7 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
             else:
                 dct.update(unpack_tuple_to_dict(evaluator, iter_types, part))
         has_parts = next(parts, None)
-        if n > 0 and has_parts is not None:
+        if types and has_parts is not None:
             analysis.add(evaluator, 'value-error-too-few-values', has_parts,
                          message="ValueError: need more than %s values to unpack" % n)
         return dct
