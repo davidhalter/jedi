@@ -88,15 +88,25 @@ def annotation_forward_reference(b: "B") -> "B":
 
 #? B()
 annotation_forward_reference(1)
+#? ["test_element"]
+annotation_forward_reference(1).t
 
 class B:
+    test_element = 1
     pass
 
 
 class SelfReference:
-    def test(x: "SelfReference") -> "SelfReference":
+    test_element = 1
+    def test_method(self, x: "SelfReference") -> "SelfReference":
         #? SelfReference()
         x
+        #? ["test_element", "test_method"]
+        self.t
+        #? ["test_element", "test_method"]
+        x.t
+        #? ["test_element", "test_method"]
+        self.test_method(1).t
 
 #? SelfReference()
-SelfReference().test()
+SelfReference().test_method()
