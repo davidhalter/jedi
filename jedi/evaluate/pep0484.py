@@ -10,7 +10,7 @@ v Function returntype annotations with builtin/custom type classes
 v Function parameter annotations with strings (forward reference)
 v Function return type annotations with strings (forward reference)
 x Local variable type hints
-x Assigned types: `Url = str\ndef get(url:Url) -> str:`
+v Assigned types: `Url = str\ndef get(url:Url) -> str:`
 x Type hints in `with` statements
 x Stub files support
 x support `@no_type_check` and `@no_type_check_decorator`

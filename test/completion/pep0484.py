@@ -133,3 +133,12 @@ def function_forward_reference_dynamic(
 
 def return_str_type():
     return str
+
+
+X = str
+def function_with_assined_class_in_reference(x: X, y: "Y"):
+    #? str()
+    x
+    #? int()
+    y
+Y = int
