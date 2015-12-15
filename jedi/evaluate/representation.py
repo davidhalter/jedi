@@ -101,6 +101,9 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             else:
                 evaluator.execute(method, self.var_args)
 
+    def is_class(self):
+        return False
+
     @property
     def py__call__(self):
         def actual(params):

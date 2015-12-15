@@ -83,3 +83,10 @@ class Test():
             self.testing
             #? Test()
             self
+
+# -----------------
+# Syntax
+# -----------------
+
+#?
+isinstance(1, int())
