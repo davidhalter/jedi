@@ -34,5 +34,6 @@ Phillip Berndt (@phillipberndt) <phillip.berndt@gmail.com>
 Ian Lee (@IanLee1521) <IanLee1521@gmail.com>
 Farkhad Khatamov (@hatamov) <comsgn@gmail.com>
 Kevin Kelley (@kelleyk) <kelleyk@kelleyk.net>
+Sid Shanker (@squidarth) <sid.p.shanker@gmail.com>
 
 Note: (@user) means a github user name.

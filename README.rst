@@ -33,12 +33,14 @@ It's really easy.
 Jedi can currently be used with the following editors:
 
 - Vim (jedi-vim_, YouCompleteMe_)
-- Emacs (Jedi.el_, elpy_, anaconda-mode_, ycmd_)
+- Emacs (Jedi.el_, company-mode_, elpy_, anaconda-mode_, ycmd_)
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
 - SynWrite_
 - TextMate_ (Not sure if it's actually working)
 - Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
+- Atom_ (autocomplete-python_)
+- SourceLair_
 
 And it powers the following projects:
 
@@ -95,7 +97,7 @@ You can run Jedi on cPython 2.6, 2.7, 3.2, 3.3 or 3.4, but it should also
 understand/parse code older than those versions.
 
 Tips on how to use Jedi efficiently can be found `here
-<https://jedi.readthedocs.org/en/latest/docs/recipes.html>`_.
+<https://jedi.readthedocs.org/en/latest/docs/features.html#recipes>`_.
 
 API
 ---
@@ -176,6 +178,7 @@ For more detailed information visit the `testing documentation
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
+.. _company-mode: https://github.com/syohex/emacs-company-jedi
 .. _elpy: https://github.com/jorgenschaefer/elpy
 .. _anaconda-mode: https://github.com/proofit404/anaconda-mode
 .. _ycmd: https://github.com/abingham/emacs-ycmd
@@ -185,3 +188,6 @@ For more detailed information visit the `testing documentation
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
 .. _Kate: http://kate-editor.org
+.. _Atom: https://atom.io/
+.. _autocomplete-python: https://atom.io/packages/autocomplete-python
+.. _SourceLair: https://www.sourcelair.com

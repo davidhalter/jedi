@@ -76,8 +76,8 @@ class Script(object):
     :type source: str
     :param line: The line to perform actions on (starting with 1).
     :type line: int
-    :param col: The column of the cursor (starting with 0).
-    :type col: int
+    :param column: The column of the cursor (starting with 0).
+    :type column: int
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
     :type path: str or None
@@ -179,7 +179,7 @@ class Script(object):
                     if unfinished_dotted:
                         return completion_names
                     else:
-                        return keywords.keyword_names(self._evaluator, 'import')
+                        return set([keywords.keyword(self._evaluator, 'import').name])
 
             if isinstance(user_stmt, tree.Import):
                 module = self._parser.module()
@@ -190,7 +190,11 @@ class Script(object):
             if names is None and not isinstance(user_stmt, tree.Import):
                 if not path and not dot:
                     # add keywords
-                    completion_names += keywords.keyword_names(self._evaluator, all=True)
+                    completion_names += keywords.completion_names(
+                        self._evaluator,
+                        user_stmt,
+                        self._pos,
+                        module)
                     # TODO delete? We should search for valid parser
                     # transformations.
                 completion_names += self._simple_complete(path, dot, like)
