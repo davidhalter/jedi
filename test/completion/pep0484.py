@@ -111,7 +111,11 @@ class SelfReference:
 #? SelfReference()
 SelfReference().test_method()
 
-def function_with_non_pep_0484_annotation(x: "I can put anything here", y: 3 + 3) -> int("42"):
+def function_with_non_pep_0484_annotation(
+        x: "I can put anything here",
+        xx: "",
+        yy: "\r\n;+*&^564835(---^&*34",
+        y: 3 + 3) -> int("42"):
     # infers int from function call
     #? int()
     x
@@ -119,7 +123,7 @@ def function_with_non_pep_0484_annotation(x: "I can put anything here", y: 3 + 3
     #? str()
     y
 #?
-function_with_non_pep_0484_annotation(1, "force string")
+function_with_non_pep_0484_annotation(1, 2, 3, "force string")
 
 def function_forward_reference_dynamic(
         x: return_str_type(),
