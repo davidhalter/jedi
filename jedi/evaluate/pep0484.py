@@ -29,7 +29,10 @@ def _evaluate_for_annotation(evaluator, annotation):
             if (isinstance(definition, CompiledObject) and
                     isinstance(definition.obj, str)):
                 p = Parser(load_grammar(), definition.obj)
-                element = p.module.children[0].children[0]
+                try:
+                    element = p.module.children[0].children[0]
+                except (AttributeError, IndexError):
+                    continue
                 element.parent = annotation.parent
                 definitions |= evaluator.eval_element(element)
             else:

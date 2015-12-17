@@ -114,14 +114,23 @@ SelfReference().test_method()
 def function_with_non_pep_0484_annotation(
         x: "I can put anything here",
         xx: "",
-        yy: "\r\n;+*&^564835(---^&*34",
-        y: 3 + 3) -> int("42"):
+        yy: "\r\n\0;+*&^564835(---^&*34",
+        y: 3 + 3,
+        zz: float) -> int("42"):
     # infers int from function call
     #? int()
     x
+    # infers int from function call
+    #? int()
+    xx
+    # infers int from function call
+    #? int()
+    yy
     # infers str from function call
     #? str()
     y
+    #? float()
+    zz
 #?
 function_with_non_pep_0484_annotation(1, 2, 3, "force string")
 
