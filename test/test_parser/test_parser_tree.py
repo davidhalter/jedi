@@ -12,10 +12,11 @@ from jedi.parser import tree as pt
 class TestsFunctionAndLambdaParsing(object):
 
     FIXTURES = [
-        ('def my_function(x, y, z):\n    return x + y * z\n', {
+        ('def my_function(x, y, z) -> str:\n    return x + y * z\n', {
             'name': 'my_function',
             'call_sig': 'my_function(x, y, z)',
             'params': ['x', 'y', 'z'],
+            'annotation': "str",
         }),
         ('lambda x, y, z: x + y * z\n', {
             'name': '<lambda>',
@@ -55,7 +56,11 @@ class TestsFunctionAndLambdaParsing(object):
             assert not node.yields
 
     def test_annotation(self, node, expected):
-        assert node.annotation() is expected.get('annotation', None)
+        expected_annotation = expected.get('annotation', None)
+        if expected_annotation is None:
+            assert node.annotation() is None
+        else:
+            assert node.annotation().value == expected_annotation
 
     def test_get_call_signature(self, node, expected):
         assert node.get_call_signature() == expected['call_sig']

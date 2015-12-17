@@ -49,6 +49,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
+from jedi.evaluate import pep0484
 from jedi.evaluate import helpers
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
@@ -583,6 +584,20 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         else:
             return FunctionExecution(self._evaluator, self, params).get_return_types()
 
+    @memoize_default()
+    def py__annotations__(self):
+        parser_func = self.base
+        return_annotation = parser_func.annotation()
+        if return_annotation:
+            dct = {'return': return_annotation}
+        else:
+            dct = {}
+        for function_param in parser_func.params:
+            param_annotation = function_param.annotation()
+            if param_annotation is not None:
+                dct[function_param.name.value] = param_annotation
+        return dct
+
     def py__class__(self):
         return compiled.get_special_object(self._evaluator, 'FUNCTION_CLASS')
 
@@ -642,6 +657,7 @@ class FunctionExecution(Executed):
         else:
             returns = self.returns
             types = set(docstrings.find_return_types(self._evaluator, func))
+            types |= set(pep0484.find_return_types(self._evaluator, func))
 
         for r in returns:
             check = flow_analysis.break_check(self._evaluator, self, r)

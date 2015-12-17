@@ -35,5 +35,6 @@ Ian Lee (@IanLee1521) <IanLee1521@gmail.com>
 Farkhad Khatamov (@hatamov) <comsgn@gmail.com>
 Kevin Kelley (@kelleyk) <kelleyk@kelleyk.net>
 Sid Shanker (@squidarth) <sid.p.shanker@gmail.com>
+Reinoud Elhorst (@reinhrst)
 
 Note: (@user) means a github user name.

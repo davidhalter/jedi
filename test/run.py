@@ -111,6 +111,7 @@ Tests look like this::
 """
 import os
 import re
+import sys
 from ast import literal_eval
 from io import StringIO
 from functools import reduce
@@ -127,7 +128,7 @@ TEST_USAGES = 3
 
 class IntegrationTestCase(object):
     def __init__(self, test_type, correct, line_nr, column, start, line,
-                 path=None):
+                 path=None, skip=None):
         self.test_type = test_type
         self.correct = correct
         self.line_nr = line_nr
@@ -135,7 +136,7 @@ class IntegrationTestCase(object):
         self.start = start
         self.line = line
         self.path = path
-        self.skip = None
+        self.skip = skip
 
     @property
     def module_name(self):
@@ -234,10 +235,11 @@ class IntegrationTestCase(object):
 
 def collect_file_tests(lines, lines_to_execute):
     makecase = lambda t: IntegrationTestCase(t, correct, line_nr, column,
-                                             start, line)
+                                             start, line, path=None, skip=skip)
     start = None
     correct = None
     test_type = None
+    skip = None
     for line_nr, line in enumerate(lines, 1):
         if correct is not None:
             r = re.match('^(\d+)\s*(.*)$', correct)
@@ -257,6 +259,15 @@ def collect_file_tests(lines, lines_to_execute):
                 yield makecase(TEST_DEFINITIONS)
             correct = None
         else:
+            # check for python minimal version number
+            match = re.match(r" *# *python *>= *(\d+(?:\.\d+)?)$", line)
+            if match:
+                minimal_python_version = tuple(
+                    map(int, match.group(1).split(".")))
+                if sys.version_info >= minimal_python_version:
+                    skip = None
+                else:
+                    skip = "Minimal python version %s" % match.groups(1)
             try:
                 r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]*)', line)
                 # test_type is ? for completion and ! for goto_assignments
