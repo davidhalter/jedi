@@ -72,9 +72,14 @@ def _break_check(evaluator, stmt, base_scope, element_scope):
     if reachable in (UNREACHABLE, UNSURE):
         return reachable
 
+    if element_scope.type == 'file_input':
+        # The definition is in another module and therefore just return what we
+        # have generated.
+        return reachable
     if base_scope != element_scope and base_scope != element_scope.parent:
         return reachable & _break_check(evaluator, stmt, base_scope, element_scope.parent)
-    return reachable
+    else:
+        return reachable
 
 
 def _check_if(evaluator, node):

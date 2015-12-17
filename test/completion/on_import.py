@@ -65,7 +65,7 @@ import datetime.date
 from import_tree.pkg import pkg
 #? 22 ['mod1']
 from import_tree.pkg. import mod1
-#? 17 ['mod1', 'mod2', 'random', 'pkg', 'rename1', 'rename2', 'recurse_class1', 'recurse_class2', 'invisible_pkg']
+#? 17 ['mod1', 'mod2', 'random', 'pkg', 'rename1', 'rename2', 'recurse_class1', 'recurse_class2', 'invisible_pkg', 'flow_import']
 from import_tree. import pkg
 
 #? 18 ['pkg']
