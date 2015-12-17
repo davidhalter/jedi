@@ -273,8 +273,8 @@ def _get_buildout_scripts(module_path):
                 firstline = f.readline()
                 if firstline.startswith('#!') and 'python' in firstline:
                     extra_module_paths.append(filepath)
-        except IOError as e:
-            # either permission error or race cond. because file got deleted
+        except (UnicodeDecodeError, IOError) as e:
+            # Probably a binary file; permission error or race cond. because file got deleted
             # ignore
             debug.warning(unicode(e))
             continue
