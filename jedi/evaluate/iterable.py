@@ -107,6 +107,9 @@ class Comprehension(IterableWrapper):
         }
         return mapping[atom.children[0]](evaluator, atom)
 
+    def get_parent_until(self, *args, **kwargs):
+        return self._atom.get_parent_until(*args, **kwargs)
+
     def __init__(self, evaluator, atom):
         self._evaluator = evaluator
         self._atom = atom
