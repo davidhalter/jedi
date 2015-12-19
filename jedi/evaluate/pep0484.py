@@ -14,6 +14,8 @@ v Assigned types: `Url = str\ndef get(url:Url) -> str:`
 x Type hints in `with` statements
 x Stub files support
 x support `@no_type_check` and `@no_type_check_decorator`
+x support for type hint comments `# type: (int, str) -> int`. See comment from
+    Guido https://github.com/davidhalter/jedi/issues/662
 """
 
 from itertools import chain
