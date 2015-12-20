@@ -149,7 +149,7 @@ ALWAYS_BREAK_TOKENS = (';', 'import', 'from', 'class', 'def', 'try', 'except',
 
 def source_tokens(source):
     """Generate tokens from a the source code (string)."""
-    source = source + '\n'  # end with \n, because the parser needs it
+    source = source
     readline = StringIO(source).readline
     return generate_tokens(readline)
 
@@ -165,6 +165,7 @@ def generate_tokens(readline):
     paren_level = 0  # count parentheses
     indents = [0]
     lnum = 0
+    max = 0
     numchars = '0123456789'
     contstr = ''
     contline = None
@@ -282,9 +283,12 @@ def generate_tokens(readline):
                     paren_level -= 1
                 yield OP, token, spos, prefix
 
-    end_pos = (lnum, max - 1)
+    if new_line:
+        end_pos = lnum + 1, 0
+    else:
+        end_pos = lnum, max
     # As the last position we just take the maximally possible position. We
     # remove -1 for the last new line.
     for indent in indents[1:]:
         yield DEDENT, '', end_pos, ''
-    yield ENDMARKER, '', end_pos, prefix
+    yield ENDMARKER, '', end_pos, additional_prefix

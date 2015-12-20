@@ -81,92 +81,89 @@ class ParserSyntaxError(object):
 
 
 class Parser(object):
-    """
-    This class is used to parse a Python file, it then divides them into a
-    class structure of different scopes.
+    AST_MAPPING = {
+        'expr_stmt': pt.ExprStmt,
+        'classdef': pt.Class,
+        'funcdef': pt.Function,
+        'file_input': pt.Module,
+        'import_name': pt.ImportName,
+        'import_from': pt.ImportFrom,
+        'break_stmt': pt.KeywordStatement,
+        'continue_stmt': pt.KeywordStatement,
+        'return_stmt': pt.ReturnStmt,
+        'raise_stmt': pt.KeywordStatement,
+        'yield_expr': pt.YieldExpr,
+        'del_stmt': pt.KeywordStatement,
+        'pass_stmt': pt.KeywordStatement,
+        'global_stmt': pt.GlobalStmt,
+        'nonlocal_stmt': pt.KeywordStatement,
+        'print_stmt': pt.KeywordStatement,
+        'assert_stmt': pt.AssertStmt,
+        'if_stmt': pt.IfStmt,
+        'with_stmt': pt.WithStmt,
+        'for_stmt': pt.ForStmt,
+        'while_stmt': pt.WhileStmt,
+        'try_stmt': pt.TryStmt,
+        'comp_for': pt.CompFor,
+        'decorator': pt.Decorator,
+        'lambdef': pt.Lambda,
+        'old_lambdef': pt.Lambda,
+        'lambdef_nocond': pt.Lambda,
+    }
 
-    :param grammar: The grammar object of pgen2. Loaded by load_grammar.
-    :param source: The codebase for the parser. Must be unicode.
-    :param module_path: The path of the module in the file system, may be None.
-    :type module_path: str
-    :param top_module: Use this module as a parent instead of `self.module`.
-    """
-    def __init__(self, grammar, source, module_path=None, tokenizer=None):
-        self._ast_mapping = {
-            'expr_stmt': pt.ExprStmt,
-            'classdef': pt.Class,
-            'funcdef': pt.Function,
-            'file_input': pt.Module,
-            'import_name': pt.ImportName,
-            'import_from': pt.ImportFrom,
-            'break_stmt': pt.KeywordStatement,
-            'continue_stmt': pt.KeywordStatement,
-            'return_stmt': pt.ReturnStmt,
-            'raise_stmt': pt.KeywordStatement,
-            'yield_expr': pt.YieldExpr,
-            'del_stmt': pt.KeywordStatement,
-            'pass_stmt': pt.KeywordStatement,
-            'global_stmt': pt.GlobalStmt,
-            'nonlocal_stmt': pt.KeywordStatement,
-            'print_stmt': pt.KeywordStatement,
-            'assert_stmt': pt.AssertStmt,
-            'if_stmt': pt.IfStmt,
-            'with_stmt': pt.WithStmt,
-            'for_stmt': pt.ForStmt,
-            'while_stmt': pt.WhileStmt,
-            'try_stmt': pt.TryStmt,
-            'comp_for': pt.CompFor,
-            'decorator': pt.Decorator,
-            'lambdef': pt.Lambda,
-            'old_lambdef': pt.Lambda,
-            'lambdef_nocond': pt.Lambda,
-        }
+    class ParserError(Exception):
+        pass
 
-        self.syntax_errors = []
+    def __init__(self, grammar, source, start, tokenizer=None):
+        start_number = grammar.symbol2number[start]
 
-        self._global_names = []
-        self._omit_dedent_list = []
-        self._indent_counter = 0
-        self._last_failed_start_pos = (0, 0)
-
-        # TODO do print absolute import detection here.
-        #try:
-        #    del python_grammar_no_print_statement.keywords["print"]
-        #except KeyError:
-        #    pass  # Doesn't exist in the Python 3 grammar.
-
-        #if self.options["print_function"]:
-        #    python_grammar = pygram.python_grammar_no_print_statement
-        #else:
         self._used_names = {}
         self._scope_names_stack = [{}]
         self._error_statement_stacks = []
-
-        added_newline = False
-        # The Python grammar needs a newline at the end of each statement.
-        if not source.endswith('\n'):
-            source += '\n'
-            added_newline = True
+        self._last_failed_start_pos = (0, 0)
+        self._global_names = []
 
         # For the fast parser.
         self.position_modifier = pt.PositionModifier()
-        p = PgenParser(grammar, self.convert_node, self.convert_leaf,
-                       self.error_recovery)
-        tokenizer = tokenizer or tokenize.source_tokens(source)
-        self.module = p.parse(self._tokenize(tokenizer))
-        if self.module.type != 'file_input':
-            # If there's only one statement, we get back a non-module. That's
-            # not what we want, we want a module, so we add it here:
-            self.module = self.convert_node(grammar,
-                                            grammar.symbol2number['file_input'],
-                                            [self.module])
 
-        if added_newline:
-            self.remove_last_newline()
-        self.module.used_names = self._used_names
-        self.module.path = module_path
-        self.module.global_names = self._global_names
-        self.module.error_statement_stacks = self._error_statement_stacks
+        added_newline = False
+        # The Python grammar needs a newline at the end of each statement.
+        if not source.endswith('\n') and start == 'file_input':
+            source += '\n'
+            added_newline = True
+
+        p = PgenParser(grammar, self.convert_node, self.convert_leaf,
+                       self.error_recovery, start_number)
+        if tokenizer is None:
+            tokenizer = tokenize.source_tokens(source)
+        try:
+            self._parsed = p.parse(self._tokenize(tokenizer))
+        except Parser.ParserError:
+            self._parsed = None
+        else:
+            if start == 'file_input' != self._parsed.type:
+                # If there's only one statement, we get back a non-module. That's
+                # not what we want, we want a module, so we add it here:
+                self._parsed = self.convert_node(grammar,
+                                                 grammar.symbol2number['file_input'],
+                                                 [self._parsed])
+
+            if added_newline:
+                self.remove_last_newline()
+
+    def get_parsed_node(self):
+        return self._parsed
+
+    def _tokenize(self, tokenizer):
+        for typ, value, start_pos, prefix in tokenizer:
+            if typ == ERRORTOKEN:
+                raise Parser.ParserError
+            elif typ == OP:
+                typ = token.opmap[value]
+            yield typ, value, prefix, start_pos
+
+    def error_recovery(self, *args, **kwargs):
+        raise Parser.ParserError
 
     def convert_node(self, grammar, type, children):
         """
@@ -178,7 +175,7 @@ class Parser(object):
         """
         symbol = grammar.number2symbol[type]
         try:
-            new_node = self._ast_mapping[symbol](children)
+            new_node = Parser.AST_MAPPING[symbol](children)
         except KeyError:
             new_node = pt.Node(symbol, children)
 
@@ -230,6 +227,83 @@ class Parser(object):
             return pt.Whitespace(self.position_modifier, value, start_pos, prefix)
         else:
             return pt.Operator(self.position_modifier, value, start_pos, prefix)
+
+    def remove_last_newline(self):
+        """
+        In all of this we need to work with _start_pos, because if we worked
+        with start_pos, we would need to check the position_modifier as well
+        (which is accounted for in the start_pos property).
+        """
+        endmarker = self._parsed.children[-1]
+        # The newline is either in the endmarker as a prefix or the previous
+        # leaf as a newline token.
+        if endmarker.prefix.endswith('\n'):
+            endmarker.prefix = endmarker.prefix[:-1]
+            last_line = re.sub('.*\n', '', endmarker.prefix)
+            endmarker._start_pos = endmarker._start_pos[0] - 1, len(last_line)
+        else:
+            try:
+                newline = endmarker.get_previous()
+            except IndexError:
+                return  # This means that the parser is empty.
+            while True:
+                if newline.value == '':
+                    # Must be a DEDENT, just continue.
+                    try:
+                        newline = newline.get_previous()
+                    except IndexError:
+                        # If there's a statement that fails to be parsed, there
+                        # will be no previous leaf. So just ignore it.
+                        break
+                elif newline.value != '\n':
+                    # This may happen if error correction strikes and removes
+                    # a whole statement including '\n'.
+                    break
+                else:
+                    newline.value = ''
+                    if self._last_failed_start_pos > newline._start_pos:
+                        # It may be the case that there was a syntax error in a
+                        # function. In that case error correction removes the
+                        # right newline. So we use the previously assigned
+                        # _last_failed_start_pos variable to account for that.
+                        endmarker._start_pos = self._last_failed_start_pos
+                    else:
+                        endmarker._start_pos = newline._start_pos
+                    break
+
+
+class ParserWithRecovery(Parser):
+    """
+    This class is used to parse a Python file, it then divides them into a
+    class structure of different scopes.
+
+    :param grammar: The grammar object of pgen2. Loaded by load_grammar.
+    :param source: The codebase for the parser. Must be unicode.
+    :param module_path: The path of the module in the file system, may be None.
+    :type module_path: str
+    """
+    def __init__(self, grammar, source, module_path=None, tokenizer=None):
+        self.syntax_errors = []
+
+        self._omit_dedent_list = []
+        self._indent_counter = 0
+
+        # TODO do print absolute import detection here.
+        #try:
+        #    del python_grammar_no_print_statement.keywords["print"]
+        #except KeyError:
+        #    pass  # Doesn't exist in the Python 3 grammar.
+
+        #if self.options["print_function"]:
+        #    python_grammar = pygram.python_grammar_no_print_statement
+        #else:
+        super(ParserWithRecovery, self).__init__(grammar, source, 'file_input', tokenizer)
+
+        self.module = self._parsed
+        self.module.used_names = self._used_names
+        self.module.path = module_path
+        self.module.global_names = self._global_names
+        self.module.error_statement_stacks = self._error_statement_stacks
 
     def error_recovery(self, grammar, stack, typ, value, start_pos, prefix,
                        add_token_callback):
@@ -349,46 +423,3 @@ class Parser(object):
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
-
-    def remove_last_newline(self):
-        """
-        In all of this we need to work with _start_pos, because if we worked
-        with start_pos, we would need to check the position_modifier as well
-        (which is accounted for in the start_pos property).
-        """
-        endmarker = self.module.children[-1]
-        # The newline is either in the endmarker as a prefix or the previous
-        # leaf as a newline token.
-        if endmarker.prefix.endswith('\n'):
-            endmarker.prefix = endmarker.prefix[:-1]
-            last_line = re.sub('.*\n', '', endmarker.prefix)
-            endmarker._start_pos = endmarker._start_pos[0] - 1, len(last_line)
-        else:
-            try:
-                newline = endmarker.get_previous()
-            except IndexError:
-                return  # This means that the parser is empty.
-            while True:
-                if newline.value == '':
-                    # Must be a DEDENT, just continue.
-                    try:
-                        newline = newline.get_previous()
-                    except IndexError:
-                        # If there's a statement that fails to be parsed, there
-                        # will be no previous leaf. So just ignore it.
-                        break
-                elif newline.value != '\n':
-                    # This may happen if error correction strikes and removes
-                    # a whole statement including '\n'.
-                    break
-                else:
-                    newline.value = ''
-                    if self._last_failed_start_pos > newline._start_pos:
-                        # It may be the case that there was a syntax error in a
-                        # function. In that case error correction removes the
-                        # right newline. So we use the previously assigned
-                        # _last_failed_start_pos variable to account for that.
-                        endmarker._start_pos = self._last_failed_start_pos
-                    else:
-                        endmarker._start_pos = newline._start_pos
-                    break

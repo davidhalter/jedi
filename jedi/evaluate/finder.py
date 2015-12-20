@@ -23,6 +23,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import dynamic
 from jedi.evaluate import compiled
 from jedi.evaluate import docstrings
+from jedi.evaluate import pep0484
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import analysis
@@ -386,10 +387,11 @@ def _eval_param(evaluator, param, scope):
             and func.instance.is_generated and str(func.name) == '__init__':
         param = func.var.params[param.position_nr]
 
-    # Add docstring knowledge.
+    # Add pep0484 and docstring knowledge.
+    pep0484_hints = pep0484.follow_param(evaluator, param)
     doc_params = docstrings.follow_param(evaluator, param)
-    if doc_params:
-        return doc_params
+    if pep0484_hints or doc_params:
+        return list(set(pep0484_hints) | set(doc_params))
 
     if isinstance(param, ExecutedParam):
         return res_new | param.eval(evaluator)
@@ -485,8 +487,8 @@ def global_names_dict_generator(evaluator, scope, position):
     the current scope is function:
 
     >>> from jedi._compatibility import u, no_unicode_pprint
-    >>> from jedi.parser import Parser, load_grammar
-    >>> parser = Parser(load_grammar(), u('''
+    >>> from jedi.parser import ParserWithRecovery, load_grammar
+    >>> parser = ParserWithRecovery(load_grammar(), u('''
     ... x = ['a', 'b', 'c']
     ... def func():
     ...     y = None

@@ -7,7 +7,7 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     sys_path_with_modifications,
                                     _check_module)
 from jedi.evaluate import Evaluator
-from jedi.parser import Parser, load_grammar
+from jedi.parser import ParserWithRecovery, load_grammar
 
 from ..helpers import cwd_at
 
@@ -37,7 +37,7 @@ def test_append_on_non_sys_path():
         d = Dummy()
         d.path.append('foo')"""))
     grammar = load_grammar()
-    p = Parser(grammar, SRC)
+    p = ParserWithRecovery(grammar, SRC)
     paths = _check_module(Evaluator(grammar), p.module)
     assert len(paths) > 0
     assert 'foo' not in paths
@@ -48,7 +48,7 @@ def test_path_from_invalid_sys_path_assignment():
         import sys
         sys.path = 'invalid'"""))
     grammar = load_grammar()
-    p = Parser(grammar, SRC)
+    p = ParserWithRecovery(grammar, SRC)
     paths = _check_module(Evaluator(grammar), p.module)
     assert len(paths) > 0
     assert 'invalid' not in paths
@@ -60,7 +60,7 @@ def test_sys_path_with_modifications():
         import os
     """))
     grammar = load_grammar()
-    p = Parser(grammar, SRC)
+    p = ParserWithRecovery(grammar, SRC)
     p.module.path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
     paths = sys_path_with_modifications(Evaluator(grammar), p.module)
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
@@ -83,7 +83,7 @@ def test_path_from_sys_path_assignment():
         if __name__ == '__main__':
             sys.exit(important_package.main())"""))
     grammar = load_grammar()
-    p = Parser(grammar, SRC)
+    p = ParserWithRecovery(grammar, SRC)
     paths = _check_module(Evaluator(grammar), p.module)
     assert 1 not in paths
     assert '/home/test/.buildout/eggs/important_package.egg' in paths

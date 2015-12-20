@@ -305,6 +305,8 @@ class Evaluator(object):
                 types = set(chain.from_iterable(self.find_types(typ, next_name)
                                                 for typ in types))
             types = types
+        elif element.type == 'eval_input':
+            types = self._eval_element_not_cached(element.children[0])
         else:
             types = precedence.calculate_children(self, element.children)
         debug.dbg('eval_element result %s', types)

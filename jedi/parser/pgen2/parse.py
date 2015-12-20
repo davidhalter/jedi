@@ -60,7 +60,7 @@ class PgenParser(object):
 
     """
 
-    def __init__(self, grammar, convert_node, convert_leaf, error_recovery):
+    def __init__(self, grammar, convert_node, convert_leaf, error_recovery, start):
         """Constructor.
 
         The grammar argument is a grammar.Grammar instance; see the
@@ -90,8 +90,6 @@ class PgenParser(object):
         self.convert_node = convert_node
         self.convert_leaf = convert_leaf
 
-        # Prepare for parsing.
-        start = self.grammar.start
         # Each stack entry is a tuple: (dfa, state, node).
         # A node is a tuple: (type, children),
         # where children is a list of nodes or None

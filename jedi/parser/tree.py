@@ -14,8 +14,8 @@ The easiest way to play with this module is to use :class:`parsing.Parser`.
 :attr:`parsing.Parser.module` holds an instance of :class:`Module`:
 
 >>> from jedi._compatibility import u
->>> from jedi.parser import Parser, load_grammar
->>> parser = Parser(load_grammar(), u('import os'), 'example.py')
+>>> from jedi.parser import ParserWithRecovery, load_grammar
+>>> parser = ParserWithRecovery(load_grammar(), u('import os'), 'example.py')
 >>> submodule = parser.module
 >>> submodule
 <Module: example.py@1-1>
@@ -873,7 +873,10 @@ class Function(ClassOrFunc):
 
     def annotation(self):
         try:
-            return self.children[6]  # 6th element: def foo(...) -> bar
+            if self.children[3] == "->":
+                return self.children[4]
+            assert self.children[3] == ":"
+            return None
         except IndexError:
             return None
 
@@ -951,6 +954,10 @@ class Lambda(Function):
 
     def is_generator(self):
         return False
+
+    def annotation(self):
+        # lambda functions do not support annotations
+        return None
 
     @property
     def yields(self):
@@ -1404,8 +1411,14 @@ class Param(BaseNode):
             return None
 
     def annotation(self):
-        # Generate from tfpdef.
-        raise NotImplementedError
+        tfpdef = self._tfpdef()
+        if is_node(tfpdef, 'tfpdef'):
+            assert tfpdef.children[1] == ":"
+            assert len(tfpdef.children) == 3
+            annotation = tfpdef.children[2]
+            return annotation
+        else:
+            return None
 
     def _tfpdef(self):
         """

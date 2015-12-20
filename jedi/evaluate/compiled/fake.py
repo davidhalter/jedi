@@ -8,7 +8,7 @@ import os
 import inspect
 
 from jedi._compatibility import is_py3, builtins, unicode
-from jedi.parser import Parser, load_grammar
+from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser import tree as pt
 from jedi.evaluate.helpers import FakeName
 
@@ -31,7 +31,7 @@ def _load_faked_module(module):
             modules[module_name] = None
             return
         grammar = load_grammar('grammar3.4')
-        module = Parser(grammar, unicode(source), module_name).module
+        module = ParserWithRecovery(grammar, unicode(source), module_name).module
         modules[module_name] = module
 
         if module_name == 'builtins' and not is_py3:
@@ -68,7 +68,11 @@ def get_module(obj):
             # Happens for example in `(_ for _ in []).send.__module__`.
             return builtins
         else:
-            return __import__(imp_plz)
+            try:
+                return __import__(imp_plz)
+            except ImportError:
+                # __module__ can be something arbitrary that doesn't exist.
+                return builtins
 
 
 def _faked(module, obj, name):

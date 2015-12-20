@@ -14,7 +14,7 @@ from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
-from jedi.parser import Parser
+from jedi.parser import ParserWithRecovery
 from jedi.parser import tree
 from jedi import debug
 from jedi.evaluate import precedence
@@ -243,7 +243,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     )
 
     # Parse source
-    generated_class = Parser(evaluator.grammar, unicode(source)).module.subscopes[0]
+    generated_class = ParserWithRecovery(evaluator.grammar, unicode(source)).module.subscopes[0]
     return set([er.Class(evaluator, generated_class)])
 
 

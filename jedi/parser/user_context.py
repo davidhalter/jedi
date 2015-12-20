@@ -4,7 +4,7 @@ import keyword
 
 from jedi import cache
 from jedi import common
-from jedi.parser import tokenize, Parser
+from jedi.parser import tokenize, ParserWithRecovery
 from jedi._compatibility import u
 from jedi.parser.fast import FastParser
 from jedi.parser import tree
@@ -284,7 +284,7 @@ class UserContextParser(object):
             # Don't pickle that module, because the main module is changing quickly
             cache.save_parser(self._path, parser, pickling=False)
         else:
-            parser = Parser(self._grammar, self._source, self._path)
+            parser = ParserWithRecovery(self._grammar, self._source, self._path)
         self._parser_done_callback(parser)
         return parser
 
