@@ -20,7 +20,7 @@ from itertools import chain
 from textwrap import dedent
 
 from jedi.evaluate.cache import memoize_default
-from jedi.parser import Parser, load_grammar
+from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.common import indent_block
 from jedi.evaluate.iterable import Array, FakeSequence, AlreadyEvaluated
 
@@ -130,7 +130,7 @@ def _evaluate_for_statement_string(evaluator, string, module):
     # Take the default grammar here, if we load the Python 2.7 grammar here, it
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
-    p = Parser(load_grammar(), code % indent_block(string))
+    p = ParserWithRecovery(load_grammar(), code % indent_block(string))
     try:
         pseudo_cls = p.module.subscopes[0]
         # First pick suite, then simple_stmt (-2 for DEDENT) and then the node,

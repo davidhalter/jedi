@@ -322,14 +322,11 @@ class Script(object):
 
     @memoize_default()
     def _get_under_cursor_stmt(self, cursor_txt, start_pos=None):
-        tokenizer = source_tokens(cursor_txt)
-        r = Parser(self._grammar, cursor_txt, tokenizer=tokenizer)
-        try:
-            # Take the last statement available that is not an endmarker.
-            # And because it's a simple_stmt, we need to get the first child.
-            stmt = r.module.children[-2].children[0]
-        except (AttributeError, IndexError):
+        node = Parser(self._grammar, cursor_txt, 'eval_input').get_parsed_node()
+        if node is None:
             return None
+
+        stmt = node.children[0]
 
         user_stmt = self._parser.user_stmt()
         if user_stmt is None:

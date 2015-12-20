@@ -7,7 +7,7 @@ import pytest
 
 from jedi._compatibility import u, is_py3
 from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT
-from jedi.parser import Parser, load_grammar, tokenize
+from jedi.parser import ParserWithRecovery, load_grammar, tokenize
 
 
 from ..helpers import unittest
@@ -15,7 +15,7 @@ from ..helpers import unittest
 
 class TokenTest(unittest.TestCase):
     def test_end_pos_one_line(self):
-        parsed = Parser(load_grammar(), dedent(u('''
+        parsed = ParserWithRecovery(load_grammar(), dedent(u('''
         def testit():
             a = "huhu"
         ''')))
@@ -23,7 +23,7 @@ class TokenTest(unittest.TestCase):
         assert tok.end_pos == (3, 14)
 
     def test_end_pos_multi_line(self):
-        parsed = Parser(load_grammar(), dedent(u('''
+        parsed = ParserWithRecovery(load_grammar(), dedent(u('''
         def testit():
             a = """huhu
         asdfasdf""" + "h"
@@ -108,7 +108,7 @@ class TokenTest(unittest.TestCase):
         ]
 
         for s in string_tokens:
-            parsed = Parser(load_grammar(), u('''a = %s\n''' % s))
+            parsed = ParserWithRecovery(load_grammar(), u('''a = %s\n''' % s))
             simple_stmt = parsed.module.children[0]
             expr_stmt = simple_stmt.children[0]
             assert len(expr_stmt.children) == 3

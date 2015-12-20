@@ -35,3 +35,20 @@ def test_simple_annotations():
     annot('')""")
 
     assert [d.name for d in jedi.Script(source, ).goto_definitions()] == ['int']
+
+
+@pytest.mark.skipif('sys.version_info[0] < 3')
+@pytest.mark.parametrize('reference', [
+    'assert 1',
+    '1',
+    'lambda: 3',
+    'def x(): pass',
+    '1, 2',
+    r'1\n'
+])
+def test_illegal_forward_references(reference):
+    source = """
+    def foo(bar: "%s"):
+        bar""" % reference
+
+    assert not jedi.Script(source).goto_definitions()

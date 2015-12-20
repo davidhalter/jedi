@@ -5,7 +5,7 @@ from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
 from jedi.parser import tree
-from jedi.parser import Parser
+from jedi.parser import ParserWithRecovery
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
@@ -209,7 +209,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
             debug.dbg('Error trying to read buildout_script: %s', buildout_script)
             return
 
-        p = Parser(evaluator.grammar, source, buildout_script)
+        p = ParserWithRecovery(evaluator.grammar, source, buildout_script)
         cache.save_parser(buildout_script, p)
         return p.module
 

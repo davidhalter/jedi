@@ -487,8 +487,8 @@ def global_names_dict_generator(evaluator, scope, position):
     the current scope is function:
 
     >>> from jedi._compatibility import u, no_unicode_pprint
-    >>> from jedi.parser import Parser, load_grammar
-    >>> parser = Parser(load_grammar(), u('''
+    >>> from jedi.parser import ParserWithRecovery, load_grammar
+    >>> parser = ParserWithRecovery(load_grammar(), u('''
     ... x = ['a', 'b', 'c']
     ... def func():
     ...     y = None
