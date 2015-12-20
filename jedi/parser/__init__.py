@@ -156,7 +156,9 @@ class Parser(object):
 
     def _tokenize(self, tokenizer):
         for typ, value, start_pos, prefix in tokenizer:
-            if typ == OP:
+            if typ == ERRORTOKEN:
+                raise Parser.ParserError
+            elif typ == OP:
                 typ = token.opmap[value]
             yield typ, value, prefix, start_pos
 

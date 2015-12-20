@@ -51,6 +51,7 @@ def test_illegal_forward_references(reference):
     assert not jedi.Script(source).goto_definitions()
 
 
+@pytest.mark.skipif('sys.version_info[0] < 3')
 def test_lambda_forward_references():
     source = 'def foo(bar: "lambda: 3"): bar'
 

@@ -286,7 +286,7 @@ def generate_tokens(readline):
     if new_line:
         end_pos = lnum + 1, 0
     else:
-        end_pos = lnum, max - 1
+        end_pos = lnum, max
     # As the last position we just take the maximally possible position. We
     # remove -1 for the last new line.
     for indent in indents[1:]:
