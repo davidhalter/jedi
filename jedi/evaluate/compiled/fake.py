@@ -68,7 +68,11 @@ def get_module(obj):
             # Happens for example in `(_ for _ in []).send.__module__`.
             return builtins
         else:
-            return __import__(imp_plz)
+            try:
+                return __import__(imp_plz)
+            except ImportError:
+                # __module__ can be something arbitrary that doesn't exist.
+                return builtins
 
 
 def _faked(module, obj, name):
