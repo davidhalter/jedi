@@ -32,7 +32,7 @@ def _evaluate_for_annotation(evaluator, annotation):
         for definition in evaluator.eval_element(annotation):
             if (isinstance(definition, CompiledObject) and
                     isinstance(definition.obj, str)):
-                p = Parser(load_grammar(), definition.obj, start='expr')
+                p = Parser(load_grammar(), definition.obj, start='eval_input')
                 element = p.get_parsed_node()
                 if element is None:
                     debug.warning('Annotation not parsed: %s' % definition.obj)

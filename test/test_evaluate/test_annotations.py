@@ -41,14 +41,19 @@ def test_simple_annotations():
 @pytest.mark.parametrize('reference', [
     'assert 1',
     '1',
-    'lambda: 3',
     'def x(): pass',
     '1, 2',
     r'1\n'
 ])
 def test_illegal_forward_references(reference):
-    source = """
-    def foo(bar: "%s"):
-        bar""" % reference
+    source = 'def foo(bar: "%s"): bar' % reference
 
     assert not jedi.Script(source).goto_definitions()
+
+
+def test_lambda_forward_references():
+    source = 'def foo(bar: "lambda: 3"): bar'
+
+    # For now just receiving the 3 is ok. I'm doubting that this is what we
+    # want. We also execute functions. Should we only execute classes?
+    assert jedi.Script(source).goto_definitions()

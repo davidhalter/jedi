@@ -322,11 +322,9 @@ class Script(object):
 
     @memoize_default()
     def _get_under_cursor_stmt(self, cursor_txt, start_pos=None):
-        node = Parser(self._grammar, cursor_txt, 'eval_input').get_parsed_node()
-        if node is None:
+        stmt = Parser(self._grammar, cursor_txt, 'eval_input').get_parsed_node()
+        if stmt is None:
             return None
-
-        stmt = node.children[0]
 
         user_stmt = self._parser.user_stmt()
         if user_stmt is None:
