@@ -396,6 +396,8 @@ if __name__ == '__main__':
     current = cases[0].path if cases else None
     count = fails = 0
     for c in cases:
+        if c.skip:
+            continue
         if current != c.path:
             file_change(current, count, fails)
             current = c.path
