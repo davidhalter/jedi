@@ -28,6 +28,7 @@ from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi import debug
 from jedi import _compatibility
+import re
 
 
 def _evaluate_for_annotation(evaluator, annotation):
@@ -136,3 +137,30 @@ def get_types_for_typing_module(evaluator, typ, node):
 
     result = evaluator.execute_evaluated(factory, compiled_classname, args)
     return result
+
+
+def find_type_from_comment_hint(evaluator, stmt):
+    try:
+        stmtpos = stmt.parent.children.index(stmt)
+    except ValueError:
+        return []
+    try:
+        next_sibling = stmt.parent.children[stmtpos + 1]
+    except IndexError:
+        return []
+    if not isinstance(next_sibling, tree.Whitespace):
+        return []
+    comment = next_sibling.get_pre_comment()
+    if comment is None:
+        return []
+    match = re.match(r"\s*type:\s*([^#]*)", comment)
+    if not match:
+        return []
+    start_pos = (next_sibling.start_pos[0],
+                 next_sibling.start_pos[1] - len(comment))
+    annotation = tree.String(
+        tree.zero_position_modifier,
+        repr(str(match.group(1).strip())),
+        start_pos)
+    annotation.parent = stmt.parent
+    return _evaluate_for_annotation(evaluator, annotation)

@@ -280,6 +280,15 @@ class Leaf(Base):
     def nodes_to_execute(self, last_added=False):
         return []
 
+    def get_pre_comment(self):
+        """
+        returns comment before this leaf, excluding #, or None if no comment
+        """
+        match = re.match(r"\s*#(.*)$", self.prefix)
+        if match:
+            return match.group(1)
+        return None
+
     @utf8_repr
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.value)

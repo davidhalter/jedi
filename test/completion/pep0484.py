@@ -157,3 +157,27 @@ Y = int
 def just_because_we_can(x: "flo" + "at"):
     #? float()
     x
+
+# python >= 2.6
+
+x = 3  # type: str
+#? str()
+x
+
+y = 3  # type: str but I write more
+#? int()
+y
+
+z = 3  # type: str # I comment more
+#? str()
+z
+
+class BB: pass
+
+def test(a, b):
+    a = a  # type: BB
+    c = a  # type: str
+    #? BB()
+    a
+    #? str()
+    c
