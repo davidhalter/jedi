@@ -322,6 +322,13 @@ class Evaluator(object):
             # This is the first global lookup.
             stmt = atom.get_definition()
             scope = stmt.get_parent_until(tree.IsScope, include_current=True)
+            if isinstance(scope, (tree.Function, er.FunctionExecution)):
+                # Adjust scope: If the name is not in the suite, it's a param
+                # default or annotation and will be resolved as part of the
+                # parent scope.
+                colon = scope.children.index(':')
+                if atom.start_pos < scope.children[colon + 1].start_pos:
+                    scope = scope.get_parent_scope()
             if isinstance(stmt, tree.CompFor):
                 stmt = stmt.get_parent_until((tree.ClassOrFunc, tree.ExprStmt))
             if stmt.type != 'expr_stmt':

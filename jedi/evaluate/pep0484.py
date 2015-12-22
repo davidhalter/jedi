@@ -37,7 +37,9 @@ def _evaluate_for_annotation(evaluator, annotation):
                 if element is None:
                     debug.warning('Annotation not parsed: %s' % definition.obj)
                 else:
-                    element.parent = annotation.parent
+                    module = annotation.get_parent_until()
+                    p.position_modifier.line = module.end_pos[0]
+                    element.parent = module
                     definitions |= evaluator.eval_element(element)
             else:
                 definitions.add(definition)

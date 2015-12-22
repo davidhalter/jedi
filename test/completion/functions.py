@@ -178,6 +178,23 @@ nested_default(a=1.0)[1]
 #? str()
 nested_default(a=1.0, b='')[1]
 
+# Defaults should only work if they are defined before - not after.
+def default_function(a=default):
+    #?
+    return a
+
+#?
+default_function()
+
+default = int()
+
+def default_function(a=default):
+    #? int()
+    return a
+
+#? int()
+default_function()
+
 
 # -----------------
 # closures

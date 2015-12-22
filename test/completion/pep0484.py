@@ -137,9 +137,7 @@ function_with_non_pep_0484_annotation(1, 2, 3, "force string")
 def function_forward_reference_dynamic(
         x: return_str_type(),
         y: "return_str_type()") -> None:
-    # technically should not be resolvable since out of scope,
-    # but jedi is not smart enough for that
-    #? str()
+    #?
     x
     #? str()
     y
