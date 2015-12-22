@@ -1,6 +1,7 @@
 """
 Some special cases of Python 2.
 """
+# python <= 2.7
 
 # print is syntax:
 print 1

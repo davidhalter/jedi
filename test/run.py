@@ -112,6 +112,7 @@ Tests look like this::
 import os
 import re
 import sys
+import operator
 from ast import literal_eval
 from io import StringIO
 from functools import reduce
@@ -233,6 +234,26 @@ class IntegrationTestCase(object):
         return compare_cb(self, compare, sorted(wanted))
 
 
+def skip_python_version(line):
+    comp_map = {
+        '==': 'eq',
+        '<=': 'le',
+        '>=': 'ge',
+        '<': 'gk',
+        '>': 'lt',
+    }
+    # check for python minimal version number
+    match = re.match(r" *# *python *([<>]=?|==) *(\d+(?:\.\d+)?)$", line)
+    if match:
+        minimal_python_version = tuple(
+            map(int, match.group(2).split(".")))
+        operation = getattr(operator, comp_map[match.group(1)])
+        if not operation(sys.version_info, minimal_python_version):
+            return "Minimal python version %s" % match.group(1)
+
+    return None
+
+
 def collect_file_tests(lines, lines_to_execute):
     makecase = lambda t: IntegrationTestCase(t, correct, line_nr, column,
                                              start, line, path=None, skip=skip)
@@ -259,15 +280,7 @@ def collect_file_tests(lines, lines_to_execute):
                 yield makecase(TEST_DEFINITIONS)
             correct = None
         else:
-            # check for python minimal version number
-            match = re.match(r" *# *python *>= *(\d+(?:\.\d+)?)$", line)
-            if match:
-                minimal_python_version = tuple(
-                    map(int, match.group(1).split(".")))
-                if sys.version_info >= minimal_python_version:
-                    skip = None
-                else:
-                    skip = "Minimal python version %s" % match.groups(1)
+            skip = skip or skip_python_version(line)
             try:
                 r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]*)', line)
                 # test_type is ? for completion and ! for goto_assignments
