@@ -734,50 +734,28 @@ class FunctionExecution(Executed):
     def name_for_position(self, position):
         return tree.Function.name_for_position(self, position)
 
-    def _copy_list(self, lst):
-        """
-        Copies a list attribute of a parser Function. Copying is very
-        expensive, because it is something like `copy.deepcopy`. However, these
-        copied objects can be used for the executions, as if they were in the
-        execution.
-        """
-        objects = []
-        for element in lst:
-            self._scope_copy(element.parent)
-            copied = helpers.deep_ast_copy(element, self._copy_dict)
-            objects.append(copied)
-        return objects
-
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'imports', 'name', 'type']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
-    def _scope_copy(self, scope):
-        raise NotImplementedError
-        """ Copies a scope (e.g. `if foo:`) in an execution """
-        if scope != self.base.base_func:
-            # Just make sure the parents been copied.
-            self._scope_copy(scope.parent)
-            helpers.deep_ast_copy(scope, self._copy_dict)
-
     @common.safe_property
-    @memoize_default([])
+    @memoize_default()
     def returns(self):
         return tree.Scope._search_in_scope(self, tree.ReturnStmt)
 
     @common.safe_property
-    @memoize_default([])
+    @memoize_default()
     def yields(self):
         return tree.Scope._search_in_scope(self, tree.YieldExpr)
 
     @common.safe_property
-    @memoize_default([])
+    @memoize_default()
     def statements(self):
         return tree.Scope._search_in_scope(self, tree.ExprStmt)
 
     @common.safe_property
-    @memoize_default([])
+    @memoize_default()
     def subscopes(self):
         return tree.Scope._search_in_scope(self, tree.Scope)
 
