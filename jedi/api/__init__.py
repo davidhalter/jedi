@@ -122,7 +122,7 @@ class Script(object):
 
         cache.clear_time_caches()
         debug.reset_time()
-        self._grammar = load_grammar('grammar%s.%s' % sys.version_info[:2])
+        self._grammar = load_grammar(version='%s.%s' % sys.version_info[:2])
         self._user_context = UserContext(self.source, self._pos)
         self._parser = UserContextParser(self._grammar, self.source, path,
                                          self._pos, self._user_context,

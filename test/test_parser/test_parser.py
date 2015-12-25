@@ -190,7 +190,7 @@ def test_param_splitting():
     """
     def check(src, result):
         # Python 2 tuple params should be ignored for now.
-        grammar = load_grammar('grammar%s.%s' % sys.version_info[:2])
+        grammar = load_grammar('%s.%s' % sys.version_info[:2])
         m = ParserWithRecovery(grammar, u(src)).module
         if is_py3:
             assert not m.subscopes

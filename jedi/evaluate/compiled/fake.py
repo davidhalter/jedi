@@ -30,7 +30,7 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        grammar = load_grammar('grammar3.4')
+        grammar = load_grammar(version='3.4')
         module = ParserWithRecovery(grammar, unicode(source), module_name).module
         modules[module_name] = module
 
