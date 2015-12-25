@@ -35,6 +35,12 @@ STATEMENT_KEYWORDS = 'assert', 'del', 'global', 'nonlocal', 'raise', \
 _loaded_grammars = {}
 
 
+class ParseError(Exception):
+    """
+    Signals you that the code you fed the Parser was not correct Python code.
+    """
+
+
 def load_grammar(file='grammar3.4'):
     # For now we only support two different Python syntax versions: The latest
     # Python 3 and Python 2. This may change.
@@ -111,9 +117,6 @@ class Parser(object):
         'lambdef_nocond': pt.Lambda,
     }
 
-    class ParserError(Exception):
-        pass
-
     def __init__(self, grammar, source, start, tokenizer=None):
         start_number = grammar.symbol2number[start]
 
@@ -136,20 +139,18 @@ class Parser(object):
                        self.error_recovery, start_number)
         if tokenizer is None:
             tokenizer = tokenize.source_tokens(source)
-        try:
-            self._parsed = p.parse(self._tokenize(tokenizer))
-        except Parser.ParserError:
-            self._parsed = None
-        else:
-            if start == 'file_input' != self._parsed.type:
-                # If there's only one statement, we get back a non-module. That's
-                # not what we want, we want a module, so we add it here:
-                self._parsed = self.convert_node(grammar,
-                                                 grammar.symbol2number['file_input'],
-                                                 [self._parsed])
 
-            if added_newline:
-                self.remove_last_newline()
+        self._parsed = p.parse(self._tokenize(tokenizer))
+
+        if start == 'file_input' != self._parsed.type:
+            # If there's only one statement, we get back a non-module. That's
+            # not what we want, we want a module, so we add it here:
+            self._parsed = self.convert_node(grammar,
+                                             grammar.symbol2number['file_input'],
+                                             [self._parsed])
+
+        if added_newline:
+            self.remove_last_newline()
 
     def get_parsed_node(self):
         return self._parsed
@@ -157,13 +158,13 @@ class Parser(object):
     def _tokenize(self, tokenizer):
         for typ, value, start_pos, prefix in tokenizer:
             if typ == ERRORTOKEN:
-                raise Parser.ParserError
+                raise ParseError
             elif typ == OP:
                 typ = token.opmap[value]
             yield typ, value, prefix, start_pos
 
     def error_recovery(self, *args, **kwargs):
-        raise Parser.ParserError
+        raise ParseError
 
     def convert_node(self, grammar, type, children):
         """

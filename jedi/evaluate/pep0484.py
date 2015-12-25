@@ -20,7 +20,7 @@ x support for type hint comments `# type: (int, str) -> int`. See comment from
 
 from itertools import chain
 
-from jedi.parser import Parser, load_grammar
+from jedi.parser import Parser, load_grammar, ParseError
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.compiled import CompiledObject
 from jedi import debug
@@ -32,9 +32,10 @@ def _evaluate_for_annotation(evaluator, annotation):
         for definition in evaluator.eval_element(annotation):
             if (isinstance(definition, CompiledObject) and
                     isinstance(definition.obj, str)):
-                p = Parser(load_grammar(), definition.obj, start='eval_input')
-                element = p.get_parsed_node()
-                if element is None:
+                try:
+                    p = Parser(load_grammar(), definition.obj, start='eval_input')
+                    element = p.get_parsed_node()
+                except ParseError:
                     debug.warning('Annotation not parsed: %s' % definition.obj)
                 else:
                     module = annotation.get_parent_until()

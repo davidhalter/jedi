@@ -13,7 +13,7 @@ import sys
 from itertools import chain
 
 from jedi._compatibility import unicode, builtins
-from jedi.parser import Parser, load_grammar
+from jedi.parser import Parser, load_grammar, ParseError
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import tree
 from jedi.parser.user_context import UserContext, UserContextParser
@@ -322,8 +322,9 @@ class Script(object):
 
     @memoize_default()
     def _get_under_cursor_stmt(self, cursor_txt, start_pos=None):
-        stmt = Parser(self._grammar, cursor_txt, 'eval_input').get_parsed_node()
-        if stmt is None:
+        try:
+            stmt = Parser(self._grammar, cursor_txt, 'eval_input').get_parsed_node()
+        except ParseError:
             return None
 
         user_stmt = self._parser.user_stmt()
