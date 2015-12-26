@@ -3,6 +3,9 @@ Searching for names with given scope and name. This is very central in Jedi and
 Python. The name resolution is quite complicated with descripter,
 ``__getattribute__``, ``__getattr__``, ``global``, etc.
 
+If you want to understand name resolution, please read the first few chapters
+in http://blog.ionelmc.ro/2015/02/09/understanding-python-metaclasses/.
+
 Flow checks
 +++++++++++
 
@@ -13,7 +16,7 @@ check for -> a is a string). There's big potential in these checks.
 """
 from itertools import chain
 
-from jedi._compatibility import unicode, u
+from jedi._compatibility import unicode
 from jedi.parser import tree
 from jedi import debug
 from jedi import common
