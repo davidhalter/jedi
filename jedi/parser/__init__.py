@@ -165,7 +165,8 @@ class Parser(object):
                 typ = token.opmap[value]
             yield typ, value, prefix, start_pos
 
-    def error_recovery(self, *args, **kwargs):
+    def error_recovery(self, grammar, stack, typ, value, start_pos, prefix,
+                       add_token_callback):
         raise ParseError
 
     def convert_node(self, grammar, type, children):
@@ -207,7 +208,7 @@ class Parser(object):
         return new_node
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
-        #print('leaf', value, pytree.type_repr(type))
+        #print('leaf', repr(value), token.tok_ntype)
         if type == tokenize.NAME:
             if value in grammar.keywords:
                 if value in ('def', 'class', 'lambda'):
@@ -350,7 +351,7 @@ class ParserWithRecovery(Parser):
             # Otherwise the parser will get into trouble and DEDENT too early.
             self._omit_dedent_list.append(self._indent_counter)
 
-        if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
+        if value in ('import', 'class', 'def', 'try', 'while', 'return'):
             # Those can always be new statements.
             add_token_callback(typ, value, prefix, start_pos)
         elif typ == DEDENT and symbol == 'suite':
