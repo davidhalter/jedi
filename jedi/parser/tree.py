@@ -1319,9 +1319,8 @@ class ReturnStmt(KeywordStatement):
 
 class YieldExpr(BaseNode):
     __slots__ = ()
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
+    @property
     def type(self):
         return 'yield_expr'
 
