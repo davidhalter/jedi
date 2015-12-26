@@ -219,6 +219,10 @@ def generate_tokens(readline):
             if new_line and initial not in '\r\n#':
                 new_line = False
                 if paren_level == 0:
+                    i = 0
+                    while line[i] == '\f':
+                        i += 1
+                        start -= 1
                     if start > indents[-1]:
                         yield INDENT, '', spos, ''
                         indents.append(start)

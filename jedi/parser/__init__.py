@@ -208,7 +208,7 @@ class Parser(object):
         return new_node
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
-        #print('leaf', repr(value), token.tok_ntype)
+        #print('leaf', repr(value), token.tok_name[type])
         if type == tokenize.NAME:
             if value in grammar.keywords:
                 if value in ('def', 'class', 'lambda'):
