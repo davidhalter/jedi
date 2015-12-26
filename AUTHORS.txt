@@ -36,5 +36,6 @@ Farkhad Khatamov (@hatamov) <comsgn@gmail.com>
 Kevin Kelley (@kelleyk) <kelleyk@kelleyk.net>
 Sid Shanker (@squidarth) <sid.p.shanker@gmail.com>
 Reinoud Elhorst (@reinhrst)
+Guido van Rossum (@gvanrossum) <guido@python.org>
 
 Note: (@user) means a github user name.
