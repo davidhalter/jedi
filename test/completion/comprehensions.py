@@ -51,26 +51,6 @@ left
 #? int()
 [a for a in {1:'x'}][0]
 
-##? str()
-{a-1:b for a,b in {1:'a', 3:1.0}.items()}[0]
-
-# with a set literal
-#? int()
-[a for a in {1, 2, 3}][0]
-
-##? set()
-{a for a in range(10)}
-
-##? int()
-[x for x in {a for a in range(10)}][0]
-
-##? int()
-{a for a in range(10)}.pop()
-
-##? int()
-iter({a for a in range(10)}).next()
-
-
 # list comprehensions should also work in combination with functions
 def listen(arg):
     for x in arg:
@@ -81,6 +61,9 @@ listen(['' for x in [1]])
 #?
 ([str for x in []])[0]
 
+# with a set literal
+#? int()
+[a for a in {1, 2, 3}][0]
 
 # -----------------
 # nested list comprehensions
@@ -140,16 +123,33 @@ left
 right
 
 # -----------------
-# set comprehensions
+# dict comprehensions
 # -----------------
 
 ##? str()
 {a - 1: b for a, b in {1: 'a', 3: 1.0}.items()}[0]
-
-#?
-{a - 1 for a in [1]}
 #? int()
 {a - 1: 3 for a in [1]}[0]
+
+# -----------------
+# set comprehensions
+# -----------------
+
+#? set()
+{a - 1 for a in [1]}
+
+#? set()
+{a for a in range(10)}
+
+#? int()
+[x for x in {a for a in range(10)}][0]
+
+#? int()
+{a for a in range(10)}.pop()
+
+#? int()
+iter({a for a in range(10)}).next()
+
 
 # -----------------
 # name resolution in comprehensions.

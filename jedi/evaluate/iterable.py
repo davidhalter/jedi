@@ -101,14 +101,17 @@ class GeneratorMethod(IterableWrapper):
 class Comprehension(IterableWrapper):
     @staticmethod
     def from_atom(evaluator, atom):
-        mapping = {
-            '(': GeneratorComprehension,
-            '[': ListComprehension
-        }
-        return mapping[atom.children[0]](evaluator, atom)
-
-    def get_parent_until(self, *args, **kwargs):
-        return self._atom.get_parent_until(*args, **kwargs)
+        bracket = atom.children[0]
+        if bracket == '{':
+            if atom.children[1].children[1] == ':':
+                cls = DictComprehension
+            else:
+                cls = SetComprehension
+        elif bracket == '(':
+            cls = GeneratorComprehension
+        elif bracket == '[':
+            cls = ListComprehension
+        return cls(evaluator, atom)
 
     def __init__(self, evaluator, atom):
         self._evaluator = evaluator
@@ -177,6 +180,14 @@ class ArrayMixin(object):
     def py__class__(self):
         return compiled.builtin_from_name(self._evaluator, self.type)
 
+    @safe_property
+    def parent(self):
+        return self._evaluator.BUILTINS
+
+    @property
+    def name(self):
+        return FakeSequence(self._evaluator, [], self.type).name
+
 
 class ListComprehension(Comprehension, ArrayMixin):
     type = 'list'
@@ -185,9 +196,9 @@ class ListComprehension(Comprehension, ArrayMixin):
         all_types = list(self.py__iter__())
         return all_types[index]
 
-    @property
-    def name(self):
-        return FakeSequence(self._evaluator, [], 'list').name
+
+class SetComprehension(Comprehension, ArrayMixin):
+    type = 'set'
 
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
@@ -236,13 +247,6 @@ class Array(IterableWrapper, ArrayMixin):
             return set([self])
         else:
             return self._evaluator.eval_element(self._items()[index])
-
-    @safe_property
-    def parent(self):
-        return self._evaluator.BUILTINS
-
-    def get_parent_until(self):
-        return self._evaluator.BUILTINS
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'get_only_subelement', 'parent',

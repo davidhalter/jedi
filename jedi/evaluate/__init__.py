@@ -352,15 +352,14 @@ class Evaluator(object):
                     and not(tree.is_node(c[1], 'testlist_comp')
                             and len(c[1].children) > 1):
                 return self.eval_element(c[1])
+
             try:
                 comp_for = c[1].children[1]
             except (IndexError, AttributeError):
                 pass
             else:
-                if isinstance(comp_for, tree.CompFor):
-                    if atom.children[0] == '{':
-                        # TODO dict/set comprehensions should be working.
-                        return set()
+                if comp_for.type == 'comp_for' \
+                        or comp_for == ':' and c[1].children[3].type == 'comp_for':  # dict
                     return set([iterable.Comprehension.from_atom(self, atom)])
             return set([iterable.Array(self, atom)])
 
