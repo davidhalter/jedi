@@ -199,7 +199,7 @@ class Evaluator(object):
 
         if_stmt = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
         predefined_if_name_dict = self.predefined_if_name_dict_dict.get(if_stmt)
-        if not predefined_if_name_dict and isinstance(if_stmt, tree.IfStmt):
+        if predefined_if_name_dict is None and isinstance(if_stmt, tree.IfStmt):
             if_stmt_test = if_stmt.children[1]
             name_dicts = [{}]
             # If we already did a check, we don't want to do it again -> If
@@ -358,8 +358,14 @@ class Evaluator(object):
             except (IndexError, AttributeError):
                 pass
             else:
-                if comp_for.type == 'comp_for' \
-                        or comp_for == ':' and c[1].children[3].type == 'comp_for':  # dict
+                if comp_for == ':':
+                    # Dict comprehensions have it at the 3rd index.
+                    try:
+                        comp_for = c[1].children[3]
+                    except IndexError:
+                        pass
+
+                if comp_for.type == 'comp_for':
                     return set([iterable.Comprehension.from_atom(self, atom)])
             return set([iterable.Array(self, atom)])
 

@@ -124,7 +124,7 @@ class list():
         return self.__iterable[y]
 
     def pop(self):
-        return self.__iterable[-1]
+        return self.__iterable[int()]
 
 
 class tuple():

@@ -201,6 +201,13 @@ class SetComprehension(Comprehension, ArrayMixin):
     type = 'set'
 
 
+class DictComprehension(Comprehension, ArrayMixin):
+    type = 'dict'
+
+    def _get_comp_for(self):
+        return self._get_comprehension().children[3]
+
+
 class GeneratorComprehension(Comprehension, GeneratorMixin):
     pass
 
