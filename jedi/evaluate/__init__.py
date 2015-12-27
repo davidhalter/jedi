@@ -249,12 +249,26 @@ class Evaluator(object):
                         del self.predefined_if_name_dict_dict[if_stmt]
                 return result
             else:
+                return self._eval_element_if_evaluated(element)
                 return self._eval_element_cached(element)
         else:
             if predefined_if_name_dict:
                 return self._eval_element_not_cached(element)
             else:
+                return self._eval_element_if_evaluated(element)
                 return self._eval_element_cached(element)
+
+    def _eval_element_if_evaluated(self, element):
+        """
+        TODO This function is temporary: Merge with eval_element.
+        """
+        parent = element
+        while parent is not None:
+            parent = parent.parent
+            predefined_if_name_dict = self.predefined_if_name_dict_dict.get(parent)
+            if predefined_if_name_dict:
+                return self._eval_element_not_cached(element)
+        return self._eval_element_cached(element)
 
     @memoize_default(evaluator_is_first_arg=True)
     def _eval_element_cached(self, element):
