@@ -35,21 +35,68 @@ class IterableWrapper(tree.Base):
     def is_class(self):
         return False
 
+    @memoize_default()
+    def _get_names_dict(self, obj):
+        dct = {}
+        for names in obj.names_dict.values():
+            for name in names:
+                name_str = name.value
+                try:
+                    method = self._builtin_methods[name_str, self.type]
+                    parent = BuiltinMethod(self, method, name.parent)
+                    dct[name_str] = [helpers.FakeName(name.name, parent, is_definition=True)]
+                except KeyError:
+                    dct[name.value] = [name]
+        return dct
 
+
+class BuiltinMethod(IterableWrapper):
+    """``Generator.__next__`` ``dict.values`` methods and so on."""
+    def __init__(self, builtin, method, builtin_func):
+        self._builtin = builtin
+        self._method = method
+        self._builtin_func = builtin_func
+
+    def py__call__(self, params):
+        return self._method(self._builtin)
+
+    def __getattr__(self, name):
+        return getattr(self._builtin_func, name)
+
+
+def has_builtin_methods(cls):
+    cls._builtin_methods = {}
+    for func in cls.__dict__.values():
+        try:
+            cls._builtin_methods.update(func.registered_builtin_methods)
+        except AttributeError:
+            pass
+    return cls
+
+
+def register_builtin_method(method_name, type=None):
+    def wrapper(func):
+        dct = func.__dict__.setdefault('registered_builtin_methods', {})
+        dct[method_name, type] = func
+        return func
+    return wrapper
+
+
+@has_builtin_methods
 class GeneratorMixin(object):
+    type = None
+
+    @register_builtin_method('send')
+    @register_builtin_method('next')
+    @register_builtin_method('__next__')
+    def py__next__(self):
+        # TODO add TypeError if params are given.
+        return unite(self.py__iter__())
+
     @memoize_default()
     def names_dicts(self, search_global=False):  # is always False
-        dct = {}
-        executes_generator = '__next__', 'send', 'next'
         gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
-        for names in gen_obj.names_dict.values():
-            for name in names:
-                if name.value in executes_generator:
-                    parent = GeneratorMethod(self, name.parent)
-                    dct[name.value] = [helpers.FakeName(name.name, parent, is_definition=True)]
-                else:
-                    dct[name.value] = [name]
-        yield dct
+        yield self._get_names_dict(gen_obj)
 
     def py__bool__(self):
         return True
@@ -61,6 +108,7 @@ class GeneratorMixin(object):
 
 class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
     """Handling of `yield` functions."""
+
     def __init__(self, evaluator, func, var_args):
         super(Generator, self).__init__()
         self._evaluator = evaluator
@@ -82,20 +130,6 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.func)
-
-
-class GeneratorMethod(IterableWrapper):
-    """``__next__`` and ``send`` methods."""
-    def __init__(self, generator, builtin_func):
-        self._builtin_func = builtin_func
-        self._generator = generator
-
-    def py__call__(self, params):
-        # TODO add TypeError if params are given.
-        return unite(self._generator.py__iter__())
-
-    def __getattr__(self, name):
-        return getattr(self._builtin_func, name)
 
 
 class Comprehension(IterableWrapper):
@@ -234,6 +268,7 @@ class Array(IterableWrapper, ArrayMixin):
     def name(self):
         return helpers.FakeName(self.type, parent=self)
 
+    #@register_builtin_method('values', type='dict'):
     @memoize_default()
     def dict_values(self):
         return unite(self._evaluator.eval_element(v) for v in self._values())
