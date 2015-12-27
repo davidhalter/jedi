@@ -202,6 +202,9 @@ class dict():
         except KeyError:
             return d
 
+    def values(self):
+        return self.__elements.values()
+
     def setdefault(self, k, d):
         # TODO maybe also return the content
         return d

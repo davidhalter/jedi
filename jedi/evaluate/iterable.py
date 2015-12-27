@@ -36,17 +36,23 @@ class IterableWrapper(tree.Base):
         return False
 
     @memoize_default()
-    def _get_names_dict(self, obj):
+    def _get_names_dict(self, names_dict):
+        try:
+            builtin_methods = self._builtin_methods
+        except AttributeError:
+            return names_dict
+
         dct = {}
-        for names in obj.names_dict.values():
+        for names in names_dict.values():
             for name in names:
                 name_str = name.value
                 try:
-                    method = self._builtin_methods[name_str, self.type]
-                    parent = BuiltinMethod(self, method, name.parent)
-                    dct[name_str] = [helpers.FakeName(name.name, parent, is_definition=True)]
+                    method = builtin_methods[name_str, self.type]
                 except KeyError:
-                    dct[name.value] = [name]
+                    dct[name_str] = [name]
+                else:
+                    parent = BuiltinMethod(self, method, name.parent)
+                    dct[name_str] = [helpers.FakeName(name_str, parent, is_definition=True)]
         return dct
 
 
@@ -96,7 +102,7 @@ class GeneratorMixin(object):
     @memoize_default()
     def names_dicts(self, search_global=False):  # is always False
         gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
-        yield self._get_names_dict(gen_obj)
+        yield self._get_names_dict(gen_obj.names_dict)
 
     def py__bool__(self):
         return True
@@ -206,7 +212,9 @@ class ArrayMixin(object):
         scope = compiled.builtin_from_name(self._evaluator, self.type)
         # builtins only have one class -> [0]
         scopes = self._evaluator.execute_evaluated(scope, self)
-        return list(scopes)[0].names_dicts(search_global)
+        names_dicts = list(scopes)[0].names_dicts(search_global)
+        yield names_dicts[0]
+        yield self._get_names_dict(names_dicts[1])
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
@@ -246,6 +254,7 @@ class GeneratorComprehension(Comprehension, GeneratorMixin):
     pass
 
 
+@has_builtin_methods
 class Array(IterableWrapper, ArrayMixin):
     mapping = {'(': 'tuple',
                '[': 'list',
@@ -268,10 +277,13 @@ class Array(IterableWrapper, ArrayMixin):
     def name(self):
         return helpers.FakeName(self.type, parent=self)
 
-    #@register_builtin_method('values', type='dict'):
     @memoize_default()
     def dict_values(self):
         return unite(self._evaluator.eval_element(v) for v in self._values())
+
+    @register_builtin_method('values', type='dict')
+    def py_values(self):
+        return set([FakeSequence(self._evaluator, [AlreadyEvaluated(self.dict_values())], 'tuple')])
 
     def py__getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
