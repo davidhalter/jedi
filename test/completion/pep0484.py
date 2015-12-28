@@ -157,3 +157,26 @@ Y = int
 def just_because_we_can(x: "flo" + "at"):
     #? float()
     x
+
+import typing
+def we_can_has_sequence(
+        p: typing.Sequence[int],
+        q: typing.Sequence[B],
+        r: "typing.Sequence[int]",
+        s: typing.Sequence["int"]):
+    #? ["count"]
+    p.c
+    #? int()
+    p[1]
+    #? ["count"]
+    q.c
+    #? B()
+    q[1]
+    #? ["count"]
+    r.c
+    #? int()
+    r[1]
+    #? ["count"]
+    s.c
+    #? int()
+    s[1]

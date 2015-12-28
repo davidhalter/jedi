@@ -20,9 +20,10 @@ x support for type hint comments `# type: (int, str) -> int`. See comment from
 
 from itertools import chain
 
-from jedi.parser import Parser, load_grammar, ParseError
+from jedi.parser import Parser, load_grammar, ParseError, tree, ParserWithRecovery
 from jedi.evaluate.cache import memoize_default
-from jedi.evaluate.compiled import CompiledObject
+from jedi.evaluate import compiled
+from textwrap import dedent
 from jedi import debug
 
 
@@ -30,7 +31,7 @@ def _evaluate_for_annotation(evaluator, annotation):
     if annotation is not None:
         definitions = set()
         for definition in evaluator.eval_element(annotation):
-            if (isinstance(definition, CompiledObject) and
+            if (isinstance(definition, compiled.CompiledObject) and
                     isinstance(definition.obj, str)):
                 try:
                     p = Parser(load_grammar(), definition.obj, start='eval_input')
@@ -60,3 +61,40 @@ def follow_param(evaluator, param):
 def find_return_types(evaluator, func):
     annotation = func.py__annotations__().get("return", None)
     return _evaluate_for_annotation(evaluator, annotation)
+
+
+# TODO: Memoize
+def get_typing_replacement_module():
+    """
+    The idea is to return our jedi replacement for the PEP-0484 typing module
+    as discussed at https://github.com/davidhalter/jedi/issues/663
+    """
+
+    code = dedent("""
+    from collections import abc
+
+    class MakeSequence:
+        def __getitem__(self, indextype):
+            class Sequence(abc.Sequence):
+                def __getitem__(self) -> indextype:
+                    pass
+            return Sequence
+    """)
+    p = ParserWithRecovery(load_grammar(), code)
+    return p.module
+
+
+def get_typing_replacement_class(evaluator, typ):
+    if not typ.base.get_parent_until(tree.Module).name.value == "typing":
+        return None
+    # we assume that any class using [] in a module called
+    # "typing" with a name for which we have a replacement
+    # should be replaced by that class. This is not 100%
+    # airtight but I don't have a better idea to check that it's
+    # actually the PEP-0484 typing module and not some other
+    typing = get_typing_replacement_module()
+    types = evaluator.find_types(typing, "Make" + typ.name.value)
+    if not types:
+        return None
+    else:
+        return list(types)[0]

@@ -29,6 +29,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
+from jedi.evaluate import pep0484
 
 
 class IterableWrapper(tree.Base):
@@ -560,11 +561,22 @@ def py__iter__types(evaluator, types, node=None):
 
 
 def py__getitem__(evaluator, types, index, node):
+    from jedi.evaluate.representation import Class
     result = set()
 
     # Index handling.
     if isinstance(index, (compiled.CompiledObject, Slice)):
         index = index.obj
+
+    # special case: PEP0484 typing module, see
+    # https://github.com/davidhalter/jedi/issues/663
+    for typ in list(types):
+        if isinstance(typ, Class):
+            replacementclass = \
+                pep0484.get_typing_replacement_class(evaluator, typ)
+            if replacementclass:
+                types.remove(typ)
+                result |= replacementclass.py__getitem__(index)
 
     if type(index) not in (float, int, str, unicode, slice):
         # If the index is not clearly defined, we have to get all the
@@ -588,7 +600,7 @@ def py__getitem__(evaluator, types, index, node):
             except IndexError:
                 result |= py__iter__types(evaluator, set([typ]))
             except KeyError:
-                # Must be a dict. Lists don't raise IndexErrors.
+                # Must be a dict. Lists don't raise KeyErrors.
                 result |= typ.dict_values()
     return result
 
