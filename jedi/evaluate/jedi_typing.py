@@ -20,15 +20,11 @@ def factory(typing_name, indextype):
             return indextype()
 
     class Sequence(Iterable, abc.Sequence):
-        def __getitem__(self, index: int):
+        def __getitem__(self, index):
             return indextype()
 
     class MutableSequence(Sequence, abc.MutableSequence):
-        def __setitem__(self, index: int, value: indextype):
-            pass
-
-        def __delitem__(self, index: int, value: indextype):
-            pass
+        pass
 
     class List(MutableSequence, list):
         pass
@@ -37,11 +33,7 @@ def factory(typing_name, indextype):
         pass
 
     class MutableSet(AbstractSet, abc.MutableSet):
-        def add(item: indextype):
-            pass
-
-        def discard(item: indextype):
-            pass
+        pass
 
     dct = {
         "Sequence": Sequence,
