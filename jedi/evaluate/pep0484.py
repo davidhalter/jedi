@@ -21,7 +21,8 @@ x support for type hint comments `# type: (int, str) -> int`. See comment from
 from itertools import chain
 
 import os
-from jedi.parser import Parser, load_grammar, ParseError, ParserWithRecovery
+from jedi.parser import \
+    Parser, load_grammar, ParseError, ParserWithRecovery, tree
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import compiled
 from jedi import debug
@@ -107,13 +108,16 @@ def get_types_for_typing_module(evaluator, typ, trailer):
     assert len(factories) == 1
     factory = list(factories)[0]
     assert factory
+    function_body_nodes = factory.children[4].children
+    valid_classnames = {child.name.value
+                        for child in function_body_nodes
+                        if isinstance(child, tree.Class)}
+    if typ.name.value not in valid_classnames:
+        return None
     compiled_classname = compiled.create(evaluator, typ.name.value)
 
     result = set()
     for indextyp in dereferencedindextypes:
         result |= \
             evaluator.execute_evaluated(factory, compiled_classname, indextyp)
-    if result:
-        return result
-    else:
-        return None
+    return result
