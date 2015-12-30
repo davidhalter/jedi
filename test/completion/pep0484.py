@@ -153,7 +153,3 @@ def function_with_assined_class_in_reference(x: X, y: "Y"):
     #? int()
     y
 Y = int
-
-def just_because_we_can(x: "flo" + "at"):
-    #? float()
-    x

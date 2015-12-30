@@ -30,33 +30,45 @@ from jedi import debug
 
 def _evaluate_for_annotation(evaluator, annotation):
     if annotation is not None:
-        definitions = set()
-        module = annotation.get_parent_until()
-        for definition in evaluator.eval_element(annotation):
-            definitions |= \
-                _fix_forward_reference(evaluator, definition, module)
+        dereferenced_annotation = _fix_forward_reference(evaluator, annotation)
+        definitions = evaluator.eval_element(dereferenced_annotation)
         return list(chain.from_iterable(
             evaluator.execute(d) for d in definitions))
     else:
         return []
 
 
-def _fix_forward_reference(evaluator, item, module):
-    if (isinstance(item, compiled.CompiledObject) and
-            isinstance(item.obj, str)):
+def _fix_forward_reference(evaluator, item):
+    """
+    Gets something from the parse tree, and replaces any string literal
+    in there with the result of evaluating that string at the bottom of the
+    module
+    """
+    if isinstance(item, tree.String):
+        compiledobjects = evaluator.eval_element(item)
+        assert len(compiledobjects) == 1
+        compiledobject = list(compiledobjects)[0]
         try:
-            p = Parser(
-                load_grammar(), item.obj, start='eval_input')
+            p = Parser(load_grammar(), compiledobject.obj, start='eval_input')
             element = p.get_parsed_node()
         except ParseError:
-            debug.warning('Annotation not parsed: %s' % item.obj)
-            return set()
+            debug.warning('Annotation not parsed: %s' % compiledobject.obj)
+            return item
         else:
+            module = item.get_parent_until()
             p.position_modifier.line = module.end_pos[0]
             element.parent = module
-            return evaluator.eval_element(element)
-    else:
-        return set([item])
+            dereferenced = _fix_forward_reference(evaluator, element)
+            return dereferenced
+    if isinstance(item, tree.Node):
+        newnode = tree.Node(item.type, [])
+        for child in item.children:
+            newchild = _fix_forward_reference(evaluator, child)
+            newchild.parent = newnode
+            newnode.children.append(newchild)
+        newnode.parent = item.parent
+        return newnode
+    return item
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
@@ -97,12 +109,6 @@ def get_types_for_typing_module(evaluator, typ, trailer):
     if not isinstance(indextypes, set):
         indextypes = set([indextypes])
 
-    module = trailer.get_parent_until()
-    dereferencedindextypes = set()
-    for indextyp in indextypes:
-        dereferencedindextypes |= \
-            _fix_forward_reference(evaluator, indextyp, module)
-
     typing = _get_typing_replacement_module()
     factories = evaluator.find_types(typing, "factory")
     assert len(factories) == 1
@@ -117,7 +123,7 @@ def get_types_for_typing_module(evaluator, typ, trailer):
     compiled_classname = compiled.create(evaluator, typ.name.value)
 
     result = set()
-    for indextyp in dereferencedindextypes:
+    for indextyp in indextypes:
         result |= \
             evaluator.execute_evaluated(factory, compiled_classname, indextyp)
     for singleresult in result:
