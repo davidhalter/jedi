@@ -120,4 +120,6 @@ def get_types_for_typing_module(evaluator, typ, trailer):
     for indextyp in dereferencedindextypes:
         result |= \
             evaluator.execute_evaluated(factory, compiled_classname, indextyp)
+    for singleresult in result:
+        singleresult.name.value += "[%s]" % indextyp.name
     return result
