@@ -56,7 +56,7 @@ def _fix_forward_reference(evaluator, item, module):
             element.parent = module
             return evaluator.eval_element(element)
     else:
-        return {item}
+        return set([item])
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
@@ -95,7 +95,7 @@ def get_types_for_typing_module(evaluator, typ, trailer):
     # actually the PEP-0484 typing module and not some other
     indextypes = evaluator.eval_element(trailer.children[1])
     if not isinstance(indextypes, set):
-        indextypes = {indextypes}
+        indextypes = set([indextypes])
 
     module = trailer.get_parent_until()
     dereferencedindextypes = set()
@@ -109,9 +109,9 @@ def get_types_for_typing_module(evaluator, typ, trailer):
     factory = list(factories)[0]
     assert factory
     function_body_nodes = factory.children[4].children
-    valid_classnames = {child.name.value
-                        for child in function_body_nodes
-                        if isinstance(child, tree.Class)}
+    valid_classnames = set(child.name.value
+                           for child in function_body_nodes
+                           if isinstance(child, tree.Class))
     if typ.name.value not in valid_classnames:
         return None
     compiled_classname = compiled.create(evaluator, typ.name.value)

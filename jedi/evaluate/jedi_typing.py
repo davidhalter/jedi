@@ -3,7 +3,11 @@ This module is not intended to be used in jedi, rather it will be fed to the
 jedi-parser to replace classes in the typing module
 """
 
-from collections import abc
+try:
+    from collections import abc
+except ImportError:
+    # python 2
+    import collections as abc
 
 
 def factory(typing_name, indextype):
