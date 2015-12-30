@@ -192,3 +192,35 @@ def we_can_has_sequence(
     u.a
     #? float()
     u[1]
+
+def iterators(
+        ps: typing.Iterable[int],
+        qs: typing.Iterator[str],
+        rs: typing.Sequence["B"],
+        ts: typing.AbstractSet["float"]):
+    for p in ps:
+        #? int()
+        p
+    #?
+    next(ps)
+    for q in qs:
+        #? str()
+        q
+    #? str()
+    next(qs)
+    for r in rs:
+        #? B()
+        r
+    #?
+    next(rs)
+    for t in ts:
+        #? float()
+        t
+
+def sets(
+        p: typing.AbstractSet[int],
+        q: typing.MutableSet[float]):
+    #? []
+    p.a
+    #? ["add"]
+    q.a
