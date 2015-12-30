@@ -163,7 +163,9 @@ def we_can_has_sequence(
         p: typing.Sequence[int],
         q: typing.Sequence[B],
         r: "typing.Sequence[int]",
-        s: typing.Sequence["int"]):
+        s: typing.Sequence["int"],
+        t: typing.MutableSequence[dict],
+        u: typing.List[float]):
     #? ["count"]
     p.c
     #? int()
@@ -180,3 +182,13 @@ def we_can_has_sequence(
     s.c
     #? int()
     s[1]
+    #? []
+    s.a
+    #? ["append"]
+    t.a
+    #? dict()
+    t[1]
+    #? ["append"]
+    u.a
+    #? float()
+    u[1]

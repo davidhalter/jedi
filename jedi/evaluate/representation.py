@@ -469,24 +469,6 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def py__class__(self):
         return compiled.create(self._evaluator, type)
 
-    def py__getitem__(self, index):
-        instances = self.py__call__(())
-        assert len(instances) == 1
-        instance = list(instances)[0]
-        try:
-            method = instance.get_subscope_by_name('__getitem__')
-        except KeyError:
-            debug.warning('No __getitem__, cannot access the array.')
-            return set()
-        else:
-            # it feels like this should be handled somewhere else,
-            # not sure where though
-            if isinstance(index, type(self)):
-                index_obj = index
-            else:
-                index_obj = compiled.create(self._evaluator, index)
-            return instance._evaluator.execute_evaluated(method, index_obj)
-
     @property
     def params(self):
         return self.get_subscope_by_name('__init__').params

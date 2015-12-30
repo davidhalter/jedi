@@ -572,11 +572,15 @@ def py__getitem__(evaluator, types, index, node):
     # https://github.com/davidhalter/jedi/issues/663
     for typ in list(types):
         if isinstance(typ, Class):
-            replacementclass = \
-                pep0484.get_typing_replacement_class(evaluator, typ)
-            if replacementclass:
+            typing_module_types = \
+                pep0484.get_types_for_typing_module(evaluator, typ, index)
+            if typing_module_types is not None:
                 types.remove(typ)
-                result |= replacementclass.py__getitem__(index)
+                result |= typing_module_types
+
+    if not types:
+        # all consumed by special cases
+        return result
 
     if type(index) not in (float, int, str, unicode, slice):
         # If the index is not clearly defined, we have to get all the
