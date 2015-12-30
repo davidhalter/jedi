@@ -560,20 +560,17 @@ def py__iter__types(evaluator, types, node=None):
     return unite(py__iter__(evaluator, types, node))
 
 
-def py__getitem__(evaluator, types, index, node):
+def py__getitem__(evaluator, types, trailer):
     from jedi.evaluate.representation import Class
     result = set()
 
-    # Index handling.
-    if isinstance(index, (compiled.CompiledObject, Slice)):
-        index = index.obj
 
     # special case: PEP0484 typing module, see
     # https://github.com/davidhalter/jedi/issues/663
     for typ in list(types):
         if isinstance(typ, Class):
             typing_module_types = \
-                pep0484.get_types_for_typing_module(evaluator, typ, index)
+                pep0484.get_types_for_typing_module(evaluator, typ, trailer)
             if typing_module_types is not None:
                 types.remove(typ)
                 result |= typing_module_types
@@ -582,30 +579,40 @@ def py__getitem__(evaluator, types, index, node):
         # all consumed by special cases
         return result
 
-    if type(index) not in (float, int, str, unicode, slice):
-        # If the index is not clearly defined, we have to get all the
-        # possiblities.
-        for typ in list(types):
-            if isinstance(typ, Array) and typ.type == 'dict':
-                types.remove(typ)
-                result |= typ.dict_values()
-        return result | py__iter__types(evaluator, types)
+    trailer_op, node, trailer_cl = trailer.children[:3]
+    assert trailer_op == "["
+    if trailer_cl != "]":
+        debug.warning("No support for complex indices: %s" % trailer)
+        return result
 
-    for typ in types:
-        # The actual getitem call.
-        try:
-            getitem = typ.py__getitem__
-        except AttributeError:
-            analysis.add(evaluator, 'type-error-not-subscriptable', node,
-                         message="TypeError: '%s' object is not subscriptable" % typ)
-        else:
+    for index in create_index_types(evaluator, node):
+        if isinstance(index, (compiled.CompiledObject, Slice)):
+            index = index.obj
+
+        if type(index) not in (float, int, str, unicode, slice):
+            # If the index is not clearly defined, we have to get all the
+            # possiblities.
+            for typ in list(types):
+                if isinstance(typ, Array) and typ.type == 'dict':
+                    types.remove(typ)
+                    result |= typ.dict_values()
+            return result | py__iter__types(evaluator, types)
+
+        for typ in types:
+            # The actual getitem call.
             try:
-                result |= getitem(index)
-            except IndexError:
-                result |= py__iter__types(evaluator, set([typ]))
-            except KeyError:
-                # Must be a dict. Lists don't raise KeyErrors.
-                result |= typ.dict_values()
+                getitem = typ.py__getitem__
+            except AttributeError:
+                analysis.add(evaluator, 'type-error-not-subscriptable', trailer_op,
+                             message="TypeError: '%s' object is not subscriptable" % typ)
+            else:
+                try:
+                    result |= getitem(index)
+                except IndexError:
+                    result |= py__iter__types(evaluator, set([typ]))
+                except KeyError:
+                    # Must be a dict. Lists don't raise KeyErrors.
+                    result |= typ.dict_values()
     return result
 
 

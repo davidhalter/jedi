@@ -8,10 +8,11 @@ from collections import abc
 
 def factory(typing_name, indextype):
     class Sequence(abc.Sequence):
-        def __getitem__(self) -> indextype:
-            pass
+        def __getitem__(self, index: int):
+            return indextype()
 
     class MutableSequence(Sequence, abc.MutableSequence):
+        def __setitem__(self, index: int, value: indextype):
             pass
 
     class List(MutableSequence, list):
