@@ -110,6 +110,13 @@ def get_types_for_typing_module(evaluator, typ, node):
         nodes = node.children[::2]  # skip the commas
     else:
         nodes = [node]
+    del node
+
+    # hacked in Union and Optional, since it's hard to do nicely in parsed code
+    if typ.name.value == "Union":
+        return set().union(*[evaluator.eval_element(node) for node in nodes])
+    if typ.name.value == "Optional":
+        return evaluator.eval_element(nodes[0])
 
     typing = _get_typing_replacement_module()
     factories = evaluator.find_types(typing, "factory")

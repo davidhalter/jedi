@@ -154,5 +154,32 @@ def mapping(
         ##? Value()  --- TODO fix support for tuple assignment
         value
 
+def union(
+        p: typing.Union[int],
+        q: typing.Union[int, int],
+        r: typing.Union[int, str, "int"],
+        s: typing.Union[int, typing.Union[str, "typing.Union['float', 'dict']"]],
+        t: typing.Union[int, None]):
+    #? int()
+    p
+    #? int()
+    q
+    #? int() str()
+    r
+    #? int() str() float() dict()
+    s
+    #? int()
+    t
+
+def optional(
+        p: typing.Optional[int]):
+    """
+    Optional does not do anything special. However it should be recognised
+    as being of that type. Jedi doesn't do anything with the extra into that
+    it can be None as well
+    """
+    #? int()
+    p
+
 class ForwardReference:
     pass
