@@ -69,5 +69,90 @@ def sets(
     #? ["add"]
     q.a
 
+def tuple(
+        p: typing.Tuple[int],
+        q: typing.Tuple[int, str, float],
+        r: typing.Tuple[B, ...]):
+    #? int()
+    p[0]
+    #? int()
+    q[0]
+    #? str()
+    q[1]
+    #? float()
+    q[2]
+    #? B()
+    r[0]
+    ##? B()  --- TODO fix support for arbitrary length
+    r[1]
+    #? B()
+    r[2]
+    #? B()
+    r[10000]
+    i, s, f = q
+    #? int()
+    i
+    ##? str()  --- TODO fix support for tuple assignment
+    s
+    ##? float()  --- TODO fix support for tuple assignment
+    f
+
+class Key:
+    pass
+
+class Value:
+    pass
+
+def mapping(
+        p: typing.Mapping[Key, Value],
+        q: typing.MutableMapping[Key, Value],
+        d: typing.Dict[Key, Value],
+        r: typing.KeysView[Key],
+        s: typing.ValuesView[Value],
+        t: typing.ItemsView[Key, Value]):
+    #? []
+    p.setd
+    #? ["setdefault"]
+    q.setd
+    #? ["setdefault"]
+    d.setd
+    #? Value()
+    p[1]
+    for key in p:
+        #? Key()
+        key
+    for key in p.keys():
+        #? Key()
+        key
+    for value in p.values():
+        #? Value()
+        value
+    for item in p.items():
+        #? Key()
+        item[0]
+        #? Value()
+        item[1]
+        (key, value) = item
+        #? Key()
+        key
+        ##? Value()  --- TODO fix support for tuple assignment
+        value
+    for key, value in p.items():
+        #? Key()
+        key
+        ##? Value()  --- TODO fix support for tuple assignment
+        value
+    for key in r:
+        #? Key()
+        key
+    for value in s:
+        #? Value()
+        value
+    for key, value in t:
+        #? Key()
+        key
+        ##? Value()  --- TODO fix support for tuple assignment
+        value
+
 class ForwardReference:
     pass

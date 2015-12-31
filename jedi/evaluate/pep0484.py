@@ -18,7 +18,7 @@ x support for type hint comments `# type: (int, str) -> int`. See comment from
     Guido https://github.com/davidhalter/jedi/issues/662
 """
 
-from itertools import chain
+import itertools
 
 import os
 from jedi.parser import \
@@ -32,7 +32,7 @@ def _evaluate_for_annotation(evaluator, annotation):
     if annotation is not None:
         dereferenced_annotation = _fix_forward_reference(evaluator, annotation)
         definitions = evaluator.eval_element(dereferenced_annotation)
-        return list(chain.from_iterable(
+        return list(itertools.chain.from_iterable(
             evaluator.execute(d) for d in definitions))
     else:
         return []
@@ -97,7 +97,8 @@ def _get_typing_replacement_module():
     return p.module
 
 
-def get_types_for_typing_module(evaluator, typ, trailer):
+def get_types_for_typing_module(evaluator, typ, node):
+    from jedi.evaluate.iterable import FakeSequence
     if not typ.base.get_parent_until().name.value == "typing":
         return None
     # we assume that any class using [] in a module called
@@ -105,9 +106,10 @@ def get_types_for_typing_module(evaluator, typ, trailer):
     # should be replaced by that class. This is not 100%
     # airtight but I don't have a better idea to check that it's
     # actually the PEP-0484 typing module and not some other
-    indextypes = evaluator.eval_element(trailer.children[1])
-    if not isinstance(indextypes, set):
-        indextypes = set([indextypes])
+    if tree.is_node(node, "subscriptlist"):
+        nodes = node.children[::2]  # skip the commas
+    else:
+        nodes = [node]
 
     typing = _get_typing_replacement_module()
     factories = evaluator.find_types(typing, "factory")
@@ -123,9 +125,30 @@ def get_types_for_typing_module(evaluator, typ, trailer):
     compiled_classname = compiled.create(evaluator, typ.name.value)
 
     result = set()
-    for indextyp in indextypes:
-        result |= \
-            evaluator.execute_evaluated(factory, compiled_classname, indextyp)
+    # don't know what the last parameter is for, this seems to work :)
+    args = FakeSequence(evaluator, nodes, "x-type")
+
+    result |= evaluator.execute_evaluated(factory, compiled_classname, args)
+    human_nodes = []
+    for node in nodes:
+        evalled_node = evaluator.eval_element(node)
+        if len(evalled_node) != 1:
+            human_nodes.append("???")
+            continue
+        evalled_node = list(evalled_node)[0]
+        try:
+            human_nodes.append(str(evalled_node.name))
+        except AttributeError:
+            pass
+        else:
+            continue
+        try:
+            human_nodes.append(evalled_node.obj.__name__)
+        except AttributeError:
+            pass
+        else:
+            continue
+        human_nodes.append("???")
     for singleresult in result:
-        singleresult.name.value += "[%s]" % indextyp.name
+        singleresult.name.value += "[%s]" % ", ".join(human_nodes)
     return result

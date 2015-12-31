@@ -10,10 +10,10 @@ except ImportError:
     import collections as abc
 
 
-def factory(typing_name, indextype):
+def factory(typing_name, indextypes):
     class Iterable(abc.Iterable):
         def __iter__(self):
-            yield indextype()
+            yield indextypes[0]()
 
     class Iterator(Iterable, abc.Iterator):
         def next(self):
@@ -21,11 +21,11 @@ def factory(typing_name, indextype):
             return self.__next__()
 
         def __next__(self):
-            return indextype()
+            return indextypes[0]()
 
     class Sequence(Iterable, abc.Sequence):
         def __getitem__(self, index):
-            return indextype()
+            return indextypes[0]()
 
     class MutableSequence(Sequence, abc.MutableSequence):
         pass
@@ -33,10 +33,44 @@ def factory(typing_name, indextype):
     class List(MutableSequence, list):
         pass
 
+    class Tuple(Sequence, tuple):
+        def __getitem__(self, index):
+            return indextypes[index]()
+
     class AbstractSet(Iterable, abc.Set):
         pass
 
     class MutableSet(AbstractSet, abc.MutableSet):
+        pass
+
+    class KeysView(Iterable, abc.KeysView):
+        pass
+
+    class ValuesView(abc.ValuesView):
+        def __iter__(self):
+            yield indextypes[1]()
+
+    class ItemsView(abc.ItemsView):
+        def __iter__(self):
+            yield Tuple()
+
+    class Mapping(Iterable, abc.Mapping):
+        def __getitem__(self, item):
+            return indextypes[1]()
+
+        def keys(self):
+            return KeysView()
+
+        def values(self):
+            return ValuesView()
+
+        def items(self):
+            return ItemsView()
+
+    class MutableMapping(Mapping, abc.MutableMapping):
+        pass
+
+    class Dict(MutableMapping, dict):
         pass
 
     dct = {
@@ -47,5 +81,12 @@ def factory(typing_name, indextype):
         "Iterator": Iterator,
         "AbstractSet": AbstractSet,
         "MutableSet": MutableSet,
+        "Mapping": Mapping,
+        "MutableMapping": MutableMapping,
+        "Tuple": Tuple,
+        "KeysView": KeysView,
+        "ItemsView": ItemsView,
+        "ValuesView": ValuesView,
+        "Dict": Dict,
     }
     return dct[typing_name]

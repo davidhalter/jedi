@@ -564,25 +564,22 @@ def py__getitem__(evaluator, types, trailer):
     from jedi.evaluate.representation import Class
     result = set()
 
+    trailer_op, node, trailer_cl = trailer.children
+    assert trailer_op == "["
+    assert trailer_cl == "]"
 
     # special case: PEP0484 typing module, see
     # https://github.com/davidhalter/jedi/issues/663
     for typ in list(types):
         if isinstance(typ, Class):
             typing_module_types = \
-                pep0484.get_types_for_typing_module(evaluator, typ, trailer)
+                pep0484.get_types_for_typing_module(evaluator, typ, node)
             if typing_module_types is not None:
                 types.remove(typ)
                 result |= typing_module_types
 
     if not types:
         # all consumed by special cases
-        return result
-
-    trailer_op, node, trailer_cl = trailer.children[:3]
-    assert trailer_op == "["
-    if trailer_cl != "]":
-        debug.warning("No support for complex indices: %s" % trailer)
         return result
 
     for index in create_index_types(evaluator, node):
