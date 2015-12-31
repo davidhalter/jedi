@@ -183,3 +183,18 @@ def optional(
 
 class ForwardReference:
     pass
+
+import typing as t
+def union2(x: t.Union[int, str]):
+    #? int() str()
+    x
+
+from typing import Union
+def union3(x: Union[int, str]):
+    #? int() str()
+    x
+
+from typing import Union as U
+def union4(x: U[int, str]):
+    #? int() str()
+    x
