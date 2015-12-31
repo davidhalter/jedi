@@ -198,3 +198,27 @@ from typing import Union as U
 def union4(x: U[int, str]):
     #? int() str()
     x
+
+class TestDict(typing.Dict[str, int]):
+    def setdud(self):
+        pass
+
+def testdict(x: TestDict):
+    #? ["setdud", "setdefault"]
+    x.setd
+    for key in x.keys():
+        #? str()
+        key
+    for value in x.values():
+        #? int()
+        value
+
+x = TestDict()
+#? ["setdud", "setdefault"]
+x.setd
+for key in x.keys():
+    #? str()
+    key
+for value in x.values():
+    #? int()
+    value
