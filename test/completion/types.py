@@ -86,6 +86,11 @@ d.values()[0]
 ##? int() list
 dict(d).values()[0]
 
+#? str() float()
+d.items()[0][0]
+#? int() list
+d.items()[0][1]
+
 # -----------------
 # set
 # -----------------

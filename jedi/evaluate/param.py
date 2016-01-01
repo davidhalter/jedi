@@ -269,7 +269,7 @@ def get_params(evaluator, func, var_args):
             try:
                 key_param = param_dict[unicode(key)]
             except KeyError:
-                non_matching_keys[key] += va_values
+                non_matching_keys[key] = va_values
             else:
                 param_names.append(ExecutedParam(key_param, var_args, va_values).name)
 
@@ -407,10 +407,10 @@ def _star_star_dict(evaluator, array, input_node, func):
         return array._dct
     elif isinstance(array, iterable.Array) and array.type == 'dict':
         # TODO bad call to non-public API
-        for key_node, values in array._items():
+        for key_node, value in array._items():
             for key in evaluator.eval_element(key_node):
                 if precedence.is_string(key):
-                    dct[key.obj] += values
+                    dct[key.obj].append(value)
 
     else:
         if func is not None:

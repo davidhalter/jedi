@@ -279,21 +279,29 @@ class Array(IterableWrapper, ArrayMixin):
 
     @memoize_default()
     def dict_values(self):
-        return unite(self._evaluator.eval_element(v) for v in self._values())
+        return unite(self._evaluator.eval_element(v) for k, v in self._items())
 
     @register_builtin_method('values', type='dict')
-    def py_values(self):
-        return set([FakeSequence(self._evaluator, [AlreadyEvaluated(self.dict_values())], 'tuple')])
+    def _imitate_values(self):
+        items = unite(self._evaluator.eval_element(v) for k, v in self._items())
+        return create_evaluated_sequence_set(self._evaluator, items, type='list')
+        #return set([FakeSequence(self._evaluator, [AlreadyEvaluated(items)], 'tuple')])
+
+    @register_builtin_method('items', type='dict')
+    def _imitate_items(self):
+        items = set(FakeSequence(self._evaluator, (k, v), 'tuple')
+                    for k, v in self._items())
+
+        return create_evaluated_sequence_set(self._evaluator, items, type='list')
 
     def py__getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
         if self.type == 'dict':
-            for key, values in self._items():
+            for key, value in self._items():
                 for k in self._evaluator.eval_element(key):
                     if isinstance(k, compiled.CompiledObject) \
                             and index == k.obj:
-                        for value in values:
-                            return self._evaluator.eval_element(value)
+                        return self._evaluator.eval_element(value)
             raise KeyError('No key found in dictionary %s.' % self)
 
         # Can raise an IndexError
@@ -353,11 +361,10 @@ class Array(IterableWrapper, ArrayMixin):
                 op = next(iterator, None)
                 if op is None or op == ',':
                     kv.append(key)  # A set.
-                elif op == ':':  # A dict.
-                    kv.append((key, [next(iterator)]))
-                    next(iterator, None)  # Possible comma.
                 else:
-                    raise NotImplementedError('dict/set comprehensions')
+                    assert op == ':'  # A dict.
+                    kv.append((key, next(iterator)))
+                    next(iterator, None)  # Possible comma.
             return kv
         else:
             return [array_node]
@@ -391,6 +398,16 @@ class FakeSequence(_FakeArray):
         return self._sequence_values
 
 
+def create_evaluated_sequence_set(evaluator, *types_order, **kwargs):
+    """
+    ``sequence_type`` is a named argument, that doesn't work in Python2. For backwards
+    compatibility reasons, we're now using kwargs.
+    """
+    sequence_type = kwargs.get('sequence_type')
+    sets = tuple(AlreadyEvaluated(types) for types in types_order)
+    return set([FakeSequence(evaluator, sets, sequence_type)])
+
+
 class AlreadyEvaluated(frozenset):
     """A simple container to add already evaluated objects to an array."""
     def get_code(self, normalized=False):
@@ -414,7 +431,9 @@ class FakeDict(_FakeArray):
         return unite(self._evaluator.eval_element(v) for v in self._dct[index])
 
     def _items(self):
-        return self._dct.items()
+        for key, values in self._dct.items():
+            # TODO this is not proper. The values could be multiple values?!
+            yield key, values[0]
 
 
 class MergedArray(_FakeArray):
