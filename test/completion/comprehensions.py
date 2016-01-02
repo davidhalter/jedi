@@ -126,12 +126,20 @@ right
 # dict comprehensions
 # -----------------
 
-d = {a - 1: b for a, b in {1: 'a', 3: 1.0}.items()}
-#? str()
-list()[0]
-
 #? int()
 list({a - 1: 3 for a in [1]})[0]
+
+d = {a - 1: b for a, b in {1: 'a', 3: 1.0}.items()}
+#? int()
+list(d)[0]
+#? str()
+d.values()[0]
+#? str()
+d[0]
+#? float() str()
+d[1]
+#? float()
+d[2]
 
 # -----------------
 # set comprehensions

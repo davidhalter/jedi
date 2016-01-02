@@ -38,7 +38,7 @@ class IterableWrapper(tree.Base):
     @memoize_default()
     def _get_names_dict(self, names_dict):
         try:
-            builtin_methods = self._builtin_methods
+            builtin_methods = self.builtin_methods
         except AttributeError:
             return names_dict
 
@@ -71,10 +71,10 @@ class BuiltinMethod(IterableWrapper):
 
 
 def has_builtin_methods(cls):
-    cls._builtin_methods = {}
+    cls.builtin_methods = {}
     for func in cls.__dict__.values():
         try:
-            cls._builtin_methods.update(func.registered_builtin_methods)
+            cls.builtin_methods.update(func.registered_builtin_methods)
         except AttributeError:
             pass
     return cls
@@ -166,7 +166,7 @@ class Comprehension(IterableWrapper):
         return self._get_comprehension().children[1]
 
     @memoize_default()
-    def eval_node(self):
+    def _eval_node(self, index=0):
         """
         The first part `x + 1` of the list comprehension:
 
@@ -175,9 +175,10 @@ class Comprehension(IterableWrapper):
         comp_for = self._get_comp_for()
         # For nested comprehensions we need to search the last one.
         last_comp = list(comp_for.get_comp_fors())[-1]
-        return helpers.deep_ast_copy(self._get_comprehension().children[0], parent=last_comp)
+        return helpers.deep_ast_copy(self._get_comprehension().children[index], parent=last_comp)
 
-    def py__iter__(self):
+    @memoize_default()
+    def _iterate(self):
         def nested(comp_fors):
             comp_for = comp_fors[0]
             input_node = comp_for.children[3]
@@ -192,7 +193,11 @@ class Comprehension(IterableWrapper):
                     for result in nested(comp_fors[1:]):
                         yield result
                 except IndexError:
-                    yield evaluator.eval_element(self.eval_node())
+                    iterated = evaluator.eval_element(self._eval_node())
+                    if self.type == 'dict':
+                        yield iterated, evaluator.eval_element(self._eval_node(2))
+                    else:
+                        yield iterated
                 finally:
                     del evaluator.predefined_if_name_dict_dict[comp_for]
 
@@ -201,10 +206,14 @@ class Comprehension(IterableWrapper):
         for result in nested(comp_fors):
             yield result
 
+    def py__iter__(self):
+        return self._iterate()
+
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._atom)
 
 
+@has_builtin_methods
 class ArrayMixin(object):
     @memoize_default()
     def names_dicts(self, search_global=False):  # Always False.
@@ -213,7 +222,7 @@ class ArrayMixin(object):
         # builtins only have one class -> [0]
         scopes = self._evaluator.execute_evaluated(scope, self)
         names_dicts = list(scopes)[0].names_dicts(search_global)
-        yield names_dicts[0]
+        #yield names_dicts[0]
         yield self._get_names_dict(names_dicts[1])
 
     def py__bool__(self):
@@ -230,6 +239,23 @@ class ArrayMixin(object):
     def name(self):
         return FakeSequence(self._evaluator, [], self.type).name
 
+    @memoize_default()
+    def dict_values(self):
+        return unite(self._evaluator.eval_element(v) for k, v in self._items())
+
+    @register_builtin_method('values', type='dict')
+    def _imitate_values(self):
+        items = self.dict_values()
+        return create_evaluated_sequence_set(self._evaluator, items, type='list')
+        #return set([FakeSequence(self._evaluator, [AlreadyEvaluated(items)], 'tuple')])
+
+    @register_builtin_method('items', type='dict')
+    def _imitate_items(self):
+        items = [set([FakeSequence(self._evaluator, (k, v), 'tuple')])
+                 for k, v in self._items()]
+
+        return create_evaluated_sequence_set(self._evaluator, *items, type='list')
+
 
 class ListComprehension(Comprehension, ArrayMixin):
     type = 'list'
@@ -243,18 +269,39 @@ class SetComprehension(Comprehension, ArrayMixin):
     type = 'set'
 
 
+@has_builtin_methods
 class DictComprehension(Comprehension, ArrayMixin):
     type = 'dict'
 
     def _get_comp_for(self):
         return self._get_comprehension().children[3]
 
+    def py__getitem__(self, index):
+        for keys, values in self._iterate():
+            for k in keys:
+                if isinstance(k, compiled.CompiledObject):
+                    if k.obj == index:
+                        return values
+        return self.dict_values()
+
+    def dict_values(self):
+        return unite(values for keys, values in self._iterate())
+
+    @register_builtin_method('items', type='dict')
+    def _imitate_items(self):
+        items = set(FakeSequence(self._evaluator,
+                    (AlreadyEvaluated(keys), AlreadyEvaluated(values)), 'tuple')
+                    for keys, values in self._iterate())
+
+        return create_evaluated_sequence_set(self._evaluator, items, type='list')
+
+
+
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
     pass
 
 
-@has_builtin_methods
 class Array(IterableWrapper, ArrayMixin):
     mapping = {'(': 'tuple',
                '[': 'list',
@@ -276,23 +323,6 @@ class Array(IterableWrapper, ArrayMixin):
     @property
     def name(self):
         return helpers.FakeName(self.type, parent=self)
-
-    @memoize_default()
-    def dict_values(self):
-        return unite(self._evaluator.eval_element(v) for k, v in self._items())
-
-    @register_builtin_method('values', type='dict')
-    def _imitate_values(self):
-        items = unite(self._evaluator.eval_element(v) for k, v in self._items())
-        return create_evaluated_sequence_set(self._evaluator, items, type='list')
-        #return set([FakeSequence(self._evaluator, [AlreadyEvaluated(items)], 'tuple')])
-
-    @register_builtin_method('items', type='dict')
-    def _imitate_items(self):
-        items = set(FakeSequence(self._evaluator, (k, v), 'tuple')
-                    for k, v in self._items())
-
-        return create_evaluated_sequence_set(self._evaluator, items, type='list')
 
     def py__getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
