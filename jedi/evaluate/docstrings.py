@@ -20,7 +20,7 @@ from itertools import chain
 from textwrap import dedent
 
 from jedi.evaluate.cache import memoize_default
-from jedi.parser import Parser, load_grammar
+from jedi.parser import Parser, load_grammar, tree
 from jedi.common import indent_block
 from jedi.evaluate.iterable import Array, FakeSequence, AlreadyEvaluated
 
@@ -174,13 +174,30 @@ def _execute_array_values(evaluator, array):
 
 @memoize_default(None, evaluator_is_first_arg=True)
 def follow_param(evaluator, param):
+    result = []
     func = param.parent_function
-
-    return [p
-            for param_str in _search_param_in_docstr(func.raw_doc,
-                                                     str(param.name))
+    while not result and func:
+        result = [
+            p for param_str in _search_param_in_docstr(func.raw_doc,
+                                                       str(param.name))
             for p in _evaluate_for_statement_string(evaluator, param_str,
-                                                    param.get_parent_until())]
+                                                    param.get_parent_until())
+        ]
+        func = _get_superfunc(evaluator, func)
+    return result
+
+
+def _get_superfunc(evaluator, func):
+    from jedi.evaluate import representation as er
+
+    if not isinstance(func.parent, tree.Class):
+        return
+    for cls in er.Class(evaluator, func.parent).py__mro__(evaluator)[1:]:
+        if isinstance(cls, er.Class):
+            try:
+                return cls.py__getattribute__(str(func.name))[0].base_func
+            except IndexError:
+                pass
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
