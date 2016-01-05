@@ -19,9 +19,19 @@ from jedi.evaluate import helpers
 from jedi.parser import tree as pt
 
 
+class Position(object):
+
+    def __init__(self, line, column):
+        self.line = line
+        self.column = column
+        
+
+
 class Refactoring(object):
     def __init__(self, change_dct):
-        """
+        """ """ """ """ """ """  """
+        .__init__(self)
+
         :param change_dct: dict(old_path=(new_path, old_lines, new_lines))
         """
         self.change_dct = change_dct
