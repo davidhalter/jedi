@@ -189,7 +189,6 @@ def follow_param(evaluator, param):
 
 def _get_superfunc(evaluator, func):
     from jedi.evaluate import representation as er
-
     if not isinstance(func.parent, tree.Class):
         return
     for cls in er.Class(evaluator, func.parent).py__mro__(evaluator)[1:]:
@@ -200,8 +199,29 @@ def _get_superfunc(evaluator, func):
                 pass
 
 
+def _get_superfunc_instance(evaluator, func):
+    from jedi.evaluate import representation as er
+    superfunc = _get_superfunc(evaluator, func.var.base_func)
+    if superfunc:
+        return er.get_instance_el(
+            evaluator,
+            er.Instance(evaluator, evaluator.wrap(superfunc.parent), func.instance.var_args),
+            superfunc,
+            func.is_class_var
+        )
+
+
 @memoize_default(None, evaluator_is_first_arg=True)
 def find_return_types(evaluator, func):
+    result = []
+    func = func
+    while not result and func:
+        result = _find_return_types_on_level(evaluator, func)
+        func = _get_superfunc_instance(evaluator, func)
+    return result
+
+
+def _find_return_types_on_level(evaluator, func):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(code)
