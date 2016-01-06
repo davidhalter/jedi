@@ -14,9 +14,11 @@ following functions (sometimes bug-prone):
 """
 import difflib
 
+from itertools import groupby
 from jedi import common
 from jedi.evaluate import helpers
 from jedi.parser import tree as pt
+from common import content, source_to_unicode, splitlines
 
 
 class Position(object):
@@ -24,7 +26,71 @@ class Position(object):
     def __init__(self, line, column):
         self.line = line
         self.column = column
-        
+        self.real_line = line - 1
+
+
+class PosRange(object):
+
+    def __init__(self, start, stop):
+        self.start = start
+        self.stop = stop
+
+
+class Content(object):
+
+    def __init__(self, lines=()):
+        self.lines = list(lines)
+
+    def __getitem__(self, index):
+        start_line_slice_start = index.start.column
+        start_line_slice_stop = None
+        first_line = []
+        whole_lines = []
+        end_line = []
+        if index.start.real_line < index.stop.real_line:
+            whole_lines.extend(
+                self.lines[index.start.real_line + 1: index.stop.real_line]
+            )
+            end_line = [
+                self.lines[index.stop.real_line][:index.stop.column]
+            ]
+        else:
+            start_line_slice_stop = index.stop.column
+        fst_selected_line = self.lines[index.start.real_line]
+        first_line.append(
+            fst_selected_line[start_line_slice_start:start_line_slice_stop]
+        )
+        return first_line + whole_lines + end_line
+
+    def __delitem__(self, index):
+        fst_affected_line = self.lines[index.start.real_line]
+        lst_affected_line = self.lines[index.stop.real_line]
+        fst_ln_slice_start = index.start.column
+        fst_ln_slice_stop = len(fst_affected_line)
+        lst_ln_remainder = ''
+        if index.start.real_line == index.stop.real_line:
+            fst_ln_slice_stop = index.stop.column
+        else:
+            del self.lines[index.start.real_line + 1: index.stop.real_line]
+            del self.lines[index.stop.real_line]
+            lst_ln_remainder = lst_affected_line[index.stop.column:]
+        p1 = fst_affected_line[:fst_ln_slice_start]
+        p2 = fst_affected_line[fst_ln_slice_stop:]
+        fst_ln_remainder = p1 + p2
+        self.lines[index.start.real_line] = fst_ln_remainder + lst_ln_remainder
+        if self.lines[index.start.real_line] == '':
+            del self.lines[index.start.real_line]
+
+    def __setitem__(self, index, value):
+        del self[index]
+        line = self.lines[index.start.real_line]
+        part_1 = line[:index.start.column]
+        part_2 = line[index.start.column:]
+        self.lines[index.start.real_line] = ''.join((part_1, value, part_2))
+
+    @classmethod
+    def from_file(cls, path):
+        return cls(splitlines(source_to_unicode(content(path))))
 
 
 class Refactoring(object):
@@ -60,48 +126,24 @@ class Refactoring(object):
 
 
 def rename(script, new_name):
-    """ The `args` / `kwargs` params are the same as in `api.Script`.
-    :param operation: The refactoring operation to execute.
-    :type operation: str
-    :type source: str
-    :return: list of changed lines/changed files
-    """
-    return Refactoring(_rename(script.usages(), new_name))
 
+    def by_module_path(script):
+        return script.module_path
 
-def _rename(names, replace_str):
-    """ For both rename and inline. """
-    order = sorted(names, key=lambda x: (x.module_path, x.line, x.column),
-                   reverse=True)
-
-    def process(path, old_lines, new_lines):
-        if new_lines is not None:  # goto next file, save last
-            dct[path] = path, old_lines, new_lines
-
-    dct = {}
-    current_path = object()
-    new_lines = old_lines = None
-    for name in order:
-        if name.in_builtin_module():
-            continue
-        if current_path != name.module_path:
-            current_path = name.module_path
-
-            process(current_path, old_lines, new_lines)
-            if current_path is not None:
-                # None means take the source that is a normal param.
-                with open(current_path) as f:
-                    source = f.read()
-
-            new_lines = common.splitlines(common.source_to_unicode(source))
-            old_lines = new_lines[:]
-
-        nr, indent = name.line, name.column
-        line = new_lines[nr - 1]
-        new_lines[nr - 1] = line[:indent] + replace_str + \
-            line[indent + len(name.name):]
-    process(current_path, old_lines, new_lines)
-    return dct
+    usages = (u for u in sorted(script.usages(), key=by_module_path)
+              if not u.in_builtin_module())
+    usages_by_file = groupby(usages, by_module_path)
+    output = dict()
+    for m_path, usages in usages_by_file:
+        c = Content.from_file(m_path)
+        old_lines = c.lines[:]
+        for u in usages:
+            start_pos = Position(u.line, u.column)
+            end_pos = Position(u.line, u.column + len(u.name))
+            c[PosRange(start_pos, end_pos)] = new_name
+        new_lines = c.lines
+        output[m_path] = (m_path, old_lines, new_lines)
+    return Refactoring(output)
 
 
 def extract(script, new_name):

@@ -46,6 +46,7 @@ def reraise_uncaught(func):
     .. note:: Treating StopIteration here is easy.
               Add that feature when needed.
     """
+
     @functools.wraps(func)
     def wrapper(*args, **kwds):
         try:
@@ -53,6 +54,7 @@ def reraise_uncaught(func):
         except AttributeError:
             exc_info = sys.exc_info()
             reraise(UncaughtAttributeError(exc_info[1]), exc_info[2])
+
     return wrapper
 
 
@@ -152,3 +154,8 @@ def splitlines(string):
     Also different: Returns ``['']`` for an empty string input.
     """
     return re.split('\n|\r\n', string)
+
+
+def content(file_path):
+    with open(file_path, 'r') as f:
+        return f.read()

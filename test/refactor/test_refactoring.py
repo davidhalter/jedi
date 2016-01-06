@@ -1,18 +1,19 @@
-from os.path import join, abspath, basename
-from os import walk
-from itertools import chain
-from functools import partial
 import logging
+from functools import partial
+from itertools import chain
 
 from jedi import Script
-from jedi.refactoring import rename, Position
+from jedi.common import content, source_to_unicode, splitlines
+from jedi.refactoring import new_rename, Position
+from os import walk
+from os.path import join, abspath, basename
 
 
 def test_rename():
     check_refactoring(
             'refactoring_files/rename',
             Position(6, 9),
-            partial(rename, new_name='baz')
+            partial(new_rename, new_name='baz')
     )
 
 
@@ -28,17 +29,29 @@ def check_refactoring(directory, position, refactoring):
         logging.warning("{} \n files haven't had a match in output.\
                         Either you have deleted them, or this is a mistake"
                         .format(non_matched))
-
-    data = [(in_f, (out_fs[0], content(in_f), content(out_fs[0])))
+    data = [(
+        in_f, (
+            change_base_folder(out_fs[0], 'input'),
+            splitlines(source_to_unicode(content(in_f))),
+            splitlines(source_to_unicode(content(out_fs[0])))
+        )
+    )
             for in_f, out_fs in matched]
     initial_file_data = data[0]
     s = Script(
-            source=initial_file_data[1][1],
+            source=content(initial_file_data[0]),
             column=column,
             line=line,
             path=initial_file_data[0]
     )
     assert dict(data) == refactoring(s).change_dct
+
+
+def change_base_folder(path, folder):
+    parts = path.split('/')
+    r = list(reversed(parts))
+    r[r.index('output')] = folder
+    return '/'.join(reversed(r))
 
 
 def match_files(in_paths, out_paths):
@@ -65,11 +78,6 @@ def all_files_below(directory, path):
     all_files = chain(*[map(partial(rel_path, dp), filter(is_not_init, files))
                         for dp, _, files in walk(full_path)])
     return map(abspath, list(all_files))
-
-
-def content(file_path):
-    with open(file_path, 'r') as f:
-        return f.read()
 
 
 def is_not_init(file):
