@@ -4,16 +4,16 @@ from itertools import chain
 
 from jedi import Script
 from jedi.common import content, source_to_unicode, splitlines
-from jedi.refactoring import new_rename, Position
+from jedi.refactoring import rename, Pos
 from os import walk
 from os.path import join, abspath, basename
 
 
 def test_rename():
     check_refactoring(
-            'refactoring_files/rename',
-            Position(6, 9),
-            partial(new_rename, new_name='baz')
+            'refactoring_fixtures/rename',
+            Pos(6, 9),
+            partial(rename, new_name='baz')
     )
 
 

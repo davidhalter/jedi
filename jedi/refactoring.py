@@ -21,8 +21,7 @@ from jedi.parser import tree as pt
 from common import content, source_to_unicode, splitlines
 
 
-class Position(object):
-
+class Pos(object):
     def __init__(self, line, column):
         self.line = line
         self.column = column
@@ -30,14 +29,12 @@ class Position(object):
 
 
 class PosRange(object):
-
     def __init__(self, start, stop):
         self.start = start
         self.stop = stop
 
 
 class Content(object):
-
     def __init__(self, lines=()):
         self.lines = list(lines)
 
@@ -49,7 +46,7 @@ class Content(object):
         end_line = []
         if index.start.real_line < index.stop.real_line:
             whole_lines.extend(
-                self.lines[index.start.real_line + 1: index.stop.real_line]
+                    self.lines[index.start.real_line + 1: index.stop.real_line]
             )
             end_line = [
                 self.lines[index.stop.real_line][:index.stop.column]
@@ -58,7 +55,7 @@ class Content(object):
             start_line_slice_stop = index.stop.column
         fst_selected_line = self.lines[index.start.real_line]
         first_line.append(
-            fst_selected_line[start_line_slice_start:start_line_slice_stop]
+                fst_selected_line[start_line_slice_start:start_line_slice_stop]
         )
         return first_line + whole_lines + end_line
 
@@ -126,24 +123,25 @@ class Refactoring(object):
 
 
 def rename(script, new_name):
-
     def by_module_path(script):
         return script.module_path
 
     usages = (u for u in sorted(script.usages(), key=by_module_path)
               if not u.in_builtin_module())
     usages_by_file = groupby(usages, by_module_path)
-    output = dict()
-    for m_path, usages in usages_by_file:
-        c = Content.from_file(m_path)
-        old_lines = c.lines[:]
-        for u in usages:
-            start_pos = Position(u.line, u.column)
-            end_pos = Position(u.line, u.column + len(u.name))
-            c[PosRange(start_pos, end_pos)] = new_name
-        new_lines = c.lines
-        output[m_path] = (m_path, old_lines, new_lines)
-    return Refactoring(output)
+    out = [(m_path, change_for_rename(m_path, usages, new_name))
+           for m_path, usages in usages_by_file]
+    return Refactoring(dict(out))
+
+
+def change_for_rename(path, usages, new_name):
+    c = Content.from_file(path)
+    old_lines = c.lines[:]
+    for u in usages:
+        start_pos = Pos(u.line, u.column)
+        end_pos = Pos(u.line, u.column + len(u.name))
+        c[PosRange(start_pos, end_pos)] = new_name
+    return path, old_lines, c.lines
 
 
 def extract(script, new_name):
@@ -197,7 +195,7 @@ def extract(script, new_name):
             open_brackets = ['(', '[', '{']
             close_brackets = [')', ']', '}']
             if '\n' in text and not (text[0] in open_brackets and text[-1] ==
-                                     close_brackets[open_brackets.index(text[0])]):
+                close_brackets[open_brackets.index(text[0])]):
                 text = '(%s)' % text
 
             # add new line before statement
