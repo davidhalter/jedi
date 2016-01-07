@@ -266,7 +266,7 @@ class Evaluator(object):
         while parent is not None:
             parent = parent.parent
             predefined_if_name_dict = self.predefined_if_name_dict_dict.get(parent)
-            if predefined_if_name_dict:
+            if predefined_if_name_dict is not None:
                 return self._eval_element_not_cached(element)
         return self._eval_element_cached(element)
 

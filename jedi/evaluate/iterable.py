@@ -38,9 +38,9 @@ class IterableWrapper(tree.Base):
     @memoize_default()
     def _get_names_dict(self, names_dict):
         builtin_methods = {}
-        for cls in type(self).mro():
+        for cls in reversed(type(self).mro()):
             try:
-                builtin_methods = dict(builtin_methods, **cls.builtin_methods)
+                builtin_methods.update(cls.builtin_methods)
             except AttributeError:
                 pass
 

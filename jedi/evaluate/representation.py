@@ -630,7 +630,9 @@ class FunctionExecution(Executed):
     def __init__(self, evaluator, base, *args, **kwargs):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
         self._copy_dict = {}
-        new_func = helpers.deep_ast_copy(base.base_func, self, self._copy_dict)
+        new_func = helpers.deep_ast_copy(base.base_func, new_elements=self._copy_dict)
+        for child in new_func.children:
+            child.parent = self
         self.children = new_func.children
         self.names_dict = new_func.names_dict
 

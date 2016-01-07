@@ -55,19 +55,14 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
                     new_names_dict[string] = [new_elements[n] for n in names]
         return new_obj
 
-    if obj.type == 'name':
+    if isinstance(obj, tree.BaseNode):
+        new_obj = copy_node(obj)
+    else:
         # Special case of a Name object.
         new_elements[obj] = new_obj = copy.copy(obj)
-        if parent is not None:
-            new_obj.parent = parent
-    elif isinstance(obj, tree.BaseNode):
-        new_obj = copy_node(obj)
-        if parent is not None:
-            for child in new_obj.children:
-                if isinstance(child, (tree.Name, tree.BaseNode)):
-                    child.parent = parent
-    else:  # String literals and so on.
-        new_obj = obj  # Good enough, don't need to copy anything.
+
+    if parent is not None:
+        new_obj.parent = parent
     return new_obj
 
 
