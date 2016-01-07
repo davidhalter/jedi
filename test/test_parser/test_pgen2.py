@@ -6,10 +6,6 @@ parts of the grammar we've changed, we also make sure we can parse the
 test_grammar.py files from both Python 2 and Python 3.
 """
 
-#from . import support
-#from .support import driver
-#from test.support import verbose
-
 from textwrap import dedent
 
 
@@ -17,7 +13,6 @@ from jedi.parser import Parser, load_grammar, ParseError
 import pytest
 
 from test.helpers import TestCase
-#from lib2to3.pygram import python_symbols as syms
 
 
 def parse(code, version='3.4'):
@@ -48,7 +43,7 @@ class GrammarTest(TestCase):
 
 
 class TestMatrixMultiplication(GrammarTest):
-    @pytest.mark.skipif('sys.version_info[0] < 3.5')
+    @pytest.mark.skipif('sys.version_info[:2] < (3, 5)')
     def test_matrix_multiplication_operator(self):
         parse("a @ b")
         parse("a @= b")
@@ -62,7 +57,7 @@ class TestYieldFrom(GrammarTest):
 
 
 class TestAsyncAwait(GrammarTest):
-    @pytest.mark.skipif('sys.version_info[0] < 3.5')
+    @pytest.mark.skipif('sys.version_info[:2] < (3, 5)')
     def test_await_expr(self):
         parse("""async def foo():
                              await x
@@ -94,13 +89,13 @@ class TestAsyncAwait(GrammarTest):
             await x
         """)
 
-    @pytest.mark.skipif('sys.version_info[0] < 3.5')
+    @pytest.mark.skipif('sys.version_info[:2] < (3, 5)')
     def test_async_var(self):
         parse("""async = 1""")
         parse("""await = 1""")
         parse("""def async(): pass""")
 
-    @pytest.mark.skipif('sys.version_info[0] < 3.5')
+    @pytest.mark.skipif('sys.version_info[:2] < (3, 5)')
     def test_async_with(self):
         parse("""async def foo():
                              async for a in b: pass""")
@@ -108,7 +103,7 @@ class TestAsyncAwait(GrammarTest):
         self.invalid_syntax("""def foo():
                                    async for a in b: pass""")
 
-    @pytest.mark.skipif('sys.version_info[0] < 3.5')
+    @pytest.mark.skipif('sys.version_info[:2] < (3, 5)')
     def test_async_for(self):
         parse("""async def foo():
                              async with a: pass""")
