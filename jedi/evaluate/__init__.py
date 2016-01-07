@@ -312,7 +312,8 @@ class Evaluator(object):
                      self.eval_element(element.children[-1]))
         elif element.type == 'operator':
             # Must be an ellipsis, other operators are not evaluated.
-            types = set()  # Ignore for now.
+            assert element.value == '...'
+            types = set([compiled.create(self, Ellipsis)])
         elif element.type == 'dotted_name':
             types = self._eval_atom(element.children[0])
             for next_name in element.children[2::2]:
