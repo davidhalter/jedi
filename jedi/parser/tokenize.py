@@ -285,13 +285,7 @@ def generate_tokens(readline):
                     paren_level += 1
                 elif token in ')]}':
                     paren_level -= 1
-                if token == '...' and not is_py3:
-                    # Ellipsis tokens were not syntax yet, in Python 2.7.
-                    yield OP, '.', spos, prefix
-                    yield OP, '.', (spos[0], spos[1] + 1), ''
-                    yield OP, '.', (spos[0], spos[1] + 2), ''
-                else:
-                    yield OP, token, spos, prefix
+                yield OP, token, spos, prefix
 
     if new_line:
         end_pos = lnum + 1, 0
