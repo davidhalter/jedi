@@ -13,6 +13,7 @@ following functions (sometimes bug-prone):
 - inline variable
 """
 import difflib
+from collections import namedtuple
 
 from itertools import groupby
 from jedi import common
@@ -21,17 +22,14 @@ from jedi.parser import tree as pt
 from common import content, source_to_unicode, splitlines
 
 
-class Pos(object):
-    def __init__(self, line, column):
-        self.line = line
-        self.column = column
-        self.real_line = line - 1
+class Pos(namedtuple('Position', ['line', 'column'])):
+    @property
+    def real_line(self):
+        return self.line - 1
 
 
-class PosRange(object):
-    def __init__(self, start, stop):
-        self.start = start
-        self.stop = stop
+class PosRange(namedtuple('PRange', ['start', 'stop'])):
+    pass
 
 
 class Content(object):
