@@ -37,9 +37,14 @@ class IterableWrapper(tree.Base):
 
     @memoize_default()
     def _get_names_dict(self, names_dict):
-        try:
-            builtin_methods = self.builtin_methods
-        except AttributeError:
+        builtin_methods = {}
+        for cls in type(self).mro():
+            try:
+                builtin_methods = dict(builtin_methods, **cls.builtin_methods)
+            except AttributeError:
+                pass
+
+        if not builtin_methods:
             return names_dict
 
         dct = {}
@@ -275,6 +280,10 @@ class DictComprehension(Comprehension, ArrayMixin):
 
     def _get_comp_for(self):
         return self._get_comprehension().children[3]
+
+    def py__iter__(self):
+        for keys, values in self._iterate():
+            yield keys
 
     def py__getitem__(self, index):
         for keys, values in self._iterate():
