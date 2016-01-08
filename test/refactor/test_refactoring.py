@@ -4,7 +4,7 @@ from itertools import chain
 
 from jedi import Script
 from jedi.common import content, source_to_unicode, splitlines
-from jedi.refactoring import rename, Pos
+from jedi.refactoring import rename, extract, Pos
 from os import walk
 from os.path import join, abspath, basename
 
@@ -14,6 +14,14 @@ def test_rename():
             'refactoring_fixtures/rename',
             Pos(6, 9),
             partial(rename, new_name='baz')
+    )
+
+
+def test_extract():
+    check_refactoring(
+        'refactoring_fixtures/extract',
+        Pos(6, 9),
+        partial(extract, new_name='f')
     )
 
 
@@ -44,10 +52,12 @@ def check_refactoring(directory, position, refactoring):
             line=line,
             path=initial_file_data[0]
     )
-    assert dict(data) == refactoring(s).change_dct
+    assert data == refactoring(s)
 
 
 def change_base_folder(path, folder):
+    len = 1
+    print(len)
     parts = path.split('/')
     r = list(reversed(parts))
     r[r.index('output')] = folder
