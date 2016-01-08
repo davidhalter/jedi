@@ -3,8 +3,8 @@ from functools import partial
 from itertools import chain
 
 from jedi import Script
-from jedi.common import content, source_to_unicode, splitlines
-from jedi.refactoring import rename, extract, Pos
+from jedi.common import content
+from jedi.refactoring import rename, extract, Pos, Content, FileState, Change
 from os import walk
 from os.path import join, abspath, basename
 
@@ -37,22 +37,19 @@ def check_refactoring(directory, position, refactoring):
         logging.warning("{} \n files haven't had a match in output.\
                         Either you have deleted them, or this is a mistake"
                         .format(non_matched))
-    data = [(
-        in_f, (
-            change_base_folder(out_fs[0], 'input'),
-            splitlines(source_to_unicode(content(in_f))),
-            splitlines(source_to_unicode(content(out_fs[0])))
-        )
-    )
+    changes = [Change(
+                old_state=FileState(in_f, Content.from_file(in_f).lines),
+                new_state=FileState(change_base_folder(out_fs[0], 'input'), Content.from_file(out_fs[0]).lines)
+            )
             for in_f, out_fs in matched]
-    initial_file_data = data[0]
+    initial_file_path = changes[0].old_state.path
     s = Script(
-            source=content(initial_file_data[0]),
+            source=content(initial_file_path),
             column=column,
             line=line,
-            path=initial_file_data[0]
+            path=initial_file_path
     )
-    assert data == refactoring(s)
+    assert changes == refactoring(s)
 
 
 def change_base_folder(path, folder):
@@ -96,3 +93,4 @@ def is_not_init(file):
 
 def rel_path(dir, file):
     return join(dir, file)
+

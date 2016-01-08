@@ -12,7 +12,7 @@ following functions (sometimes bug-prone):
 - extract variable
 - inline variable
 """
-import difflib
+from difflib import unified_diff
 from collections import namedtuple
 
 from itertools import groupby
@@ -88,36 +88,49 @@ class Content(object):
         return cls(splitlines(source_to_unicode(content(path))))
 
 
-class Refactoring(object):
-    def __init__(self, change_dct):
-        """ """ """ """ """ """  """
-        .__init__(self)
+class FileState(namedtuple('FileState', ['path', 'lines'])):
+    @property
+    def content_str(self):
+        return '\n'.join(self.lines)
 
-        :param change_dct: dict(old_path=(new_path, old_lines, new_lines))
-        """
-        self.change_dct = change_dct
+    def __eq__(self, other):
+        if not isinstance(other, FileState):
+            return False
+        return self.path == other.path and \
+               len(self.lines) == len(other.lines) and \
+               all((l1 == l2 for l1, l2 in zip(self.lines, other.lines)))
 
-    def old_files(self):
-        dct = {}
-        for old_path, (new_path, old_l, new_l) in self.change_dct.items():
-            dct[new_path] = '\n'.join(new_l)
-        return dct
+
+class Change(namedtuple('Change', ['old_state', 'new_state'])):
+    @property
+    def diff(self):
+        return unified_diff(self.old_state.lines, self.new_state.lines)
+
+    def __eq__(self, other):
+        if not isinstance(other, Change):
+            return False
+        return self.old_state == other.old_state and \
+               self.new_state == other.new_state
+
+
+class Changes(object):
+    def __init__(self, changes):
+        self.changes = changes
 
     def new_files(self):
-        dct = {}
-        for old_path, (new_path, old_l, new_l) in self.change_dct.items():
-            dct[new_path] = '\n'.join(new_l)
-        return dct
+        return {ch.new_state.path: ch.new_state.content_str
+                for ch in self.changes}
+
+    def old_files(self):
+        return {ch.old_state.path: ch.old_state.content_str
+                for ch in self.changes}
 
     def diff(self):
-        texts = []
-        for old_path, (new_path, old_l, new_l) in self.change_dct.items():
-            if old_path:
-                udiff = difflib.unified_diff(old_l, new_l)
-            else:
-                udiff = difflib.unified_diff(old_l, new_l, old_path, new_path)
-            texts.append('\n'.join(udiff))
-        return '\n'.join(texts)
+        return '\n'.join([ch.content_str for ch in self.changes])
+
+
+def changes_for(refactoring, *args, **kwargs):
+    return Changes(refactoring(*args, **kwargs))
 
 
 def rename(script, new_name):
@@ -127,19 +140,18 @@ def rename(script, new_name):
     usages = (u for u in sorted(script.usages(), key=by_module_path)
               if not u.in_builtin_module())
     usages_by_file = groupby(usages, by_module_path)
-    out = [(m_path, change_for_rename(m_path, usages, new_name))
-           for m_path, usages in usages_by_file]
-    return Refactoring(dict(out))
+    return [change_for_rename(m_path, usages, new_name)
+            for m_path, usages in usages_by_file]
 
 
 def change_for_rename(path, usages, new_name):
     c = Content.from_file(path)
-    old_lines = c.lines[:]
+    old_state = FileState(path, c.lines[:])
     for u in usages:
         start_pos = Pos(u.line, u.column)
         end_pos = Pos(u.line, u.column + len(u.name))
         c[PosRange(start_pos, end_pos)] = new_name
-    return path, old_lines, c.lines
+    return Change(old_state, FileState(path, c.lines))
 
 
 def extract(script, new_name):
@@ -201,7 +213,7 @@ def extract(script, new_name):
             new = "%s%s = %s" % (' ' * indent, new_name, text)
             new_lines.insert(line_index, new)
     dct[script.path] = script.path, old_lines, new_lines
-    return Refactoring(dct)
+    return Changes(dct)
 
 
 def inline(script):
@@ -247,4 +259,4 @@ def inline(script):
         else:
             new_lines.pop(index)
 
-    return Refactoring(dct)
+    return Changes(dct)
